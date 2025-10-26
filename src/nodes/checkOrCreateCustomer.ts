@@ -25,13 +25,13 @@ export const checkOrCreateCustomer = async (
 
     if (existingCustomer) {
       return {
-        id: existingCustomer.id,
-        client_id: existingCustomer.client_id,
-        phone: existingCustomer.telefone,
+        id: String(existingCustomer.telefone),
+        client_id: 'demo-client-id', // Tabela legada não tem client_id
+        phone: String(existingCustomer.telefone),
         name: existingCustomer.nome,
         status: existingCustomer.status,
         created_at: existingCustomer.created_at,
-        updated_at: existingCustomer.updated_at,
+        updated_at: existingCustomer.created_at, // Tabela não tem updated_at, usando created_at
       }
     }
 
@@ -50,13 +50,13 @@ export const checkOrCreateCustomer = async (
     }
 
     return {
-      id: newCustomer.id,
-      client_id: newCustomer.client_id,
-      phone: newCustomer.telefone,
+      id: String(newCustomer.telefone),
+      client_id: 'demo-client-id', // Tabela legada não tem client_id
+      phone: String(newCustomer.telefone),
       name: newCustomer.nome,
       status: newCustomer.status,
       created_at: newCustomer.created_at,
-      updated_at: newCustomer.updated_at,
+      updated_at: newCustomer.created_at, // Tabela não tem updated_at, usando created_at
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
