@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
       status: cliente.status || 'bot',
       last_message: cliente.ultima_mensagem || '',
       last_update: cliente.updated_at || cliente.created_at || new Date().toISOString(),
+      created_at: cliente.created_at || new Date().toISOString(),
       message_count: 0, // Será calculado depois se necessário
       assigned_to: null,
     }))

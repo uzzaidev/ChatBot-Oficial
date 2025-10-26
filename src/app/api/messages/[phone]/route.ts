@@ -62,6 +62,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return {
         id: item.id?.toString() || `msg-${index}`,
         client_id: clientId,
+        conversation_id: String(phone),
         phone: String(phone),
         name: messageType === 'human' ? 'Cliente' : 'Bot',
         content: cleanedContent,
@@ -69,6 +70,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         direction: messageType === 'human' ? ('incoming' as const) : ('outgoing' as const),
         status: 'sent' as const,
         timestamp: new Date().toISOString(),
+        metadata: null,
       }
     })
 
