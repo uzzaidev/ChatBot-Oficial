@@ -31,7 +31,8 @@
       "Bash(npm install:*)",
       "Bash(curl:*)",
       "Bash(npx shadcn-ui@latest add:*)",
-      "Bash(npx shadcn@latest add:*)"
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": [],
     "ask": []
