@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import type { ConversationWithCount, ConversationStatus } from '@/lib/types'
 
 interface UseConversationsOptions {
@@ -29,7 +29,7 @@ export const useConversations = ({
   const [error, setError] = useState<string | null>(null)
   const [total, setTotal] = useState(0)
 
-  const fetchConversations = async () => {
+  const fetchConversations = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -61,13 +61,13 @@ export const useConversations = ({
     } finally {
       setLoading(false)
     }
-  }
+  }, [clientId, status, limit, offset])
 
   useEffect(() => {
     if (clientId) {
       fetchConversations()
     }
-  }, [clientId, status, limit, offset])
+  }, [clientId, fetchConversations])
 
   useEffect(() => {
     if (refreshInterval > 0 && clientId) {
@@ -77,7 +77,7 @@ export const useConversations = ({
 
       return () => clearInterval(interval)
     }
-  }, [refreshInterval, clientId])
+  }, [refreshInterval, clientId, fetchConversations])
 
   return {
     conversations,

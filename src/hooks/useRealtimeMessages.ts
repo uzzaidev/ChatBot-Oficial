@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { createClientBrowser } from '@/lib/supabase'
 import type { Message } from '@/lib/types'
 import type { RealtimeChannel } from '@supabase/supabase-js'
@@ -15,6 +15,12 @@ export const useRealtimeMessages = ({
   onNewMessage,
 }: UseRealtimeMessagesOptions) => {
   const [isConnected, setIsConnected] = useState(false)
+  const onNewMessageRef = useRef(onNewMessage)
+
+  // Keep the callback ref up to date
+  useEffect(() => {
+    onNewMessageRef.current = onNewMessage
+  }, [onNewMessage])
 
   useEffect(() => {
     if (!clientId || !phone) {
@@ -55,8 +61,8 @@ export const useRealtimeMessages = ({
               timestamp: new Date().toISOString(),
               metadata: null,
             }
-            if (onNewMessage) {
-              onNewMessage(newMessage)
+            if (onNewMessageRef.current) {
+              onNewMessageRef.current(newMessage)
             }
           }
         )
@@ -79,7 +85,7 @@ export const useRealtimeMessages = ({
         setIsConnected(false)
       }
     }
-  }, [clientId, phone, onNewMessage])
+  }, [clientId, phone])
 
   return { isConnected }
 }

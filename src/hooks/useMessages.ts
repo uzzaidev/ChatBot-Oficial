@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import type { Message } from '@/lib/types'
 
 interface UseMessagesOptions {
@@ -27,7 +27,7 @@ export const useMessages = ({
   const [error, setError] = useState<string | null>(null)
   const [total, setTotal] = useState(0)
 
-  const fetchMessages = async () => {
+  const fetchMessages = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -54,13 +54,13 @@ export const useMessages = ({
     } finally {
       setLoading(false)
     }
-  }
+  }, [clientId, phone, limit])
 
   useEffect(() => {
     if (clientId && phone) {
       fetchMessages()
     }
-  }, [clientId, phone, limit])
+  }, [clientId, phone, fetchMessages])
 
   useEffect(() => {
     if (refreshInterval > 0 && clientId && phone) {
@@ -70,7 +70,7 @@ export const useMessages = ({
 
       return () => clearInterval(interval)
     }
-  }, [refreshInterval, clientId, phone])
+  }, [refreshInterval, clientId, phone, fetchMessages])
 
   return {
     messages,

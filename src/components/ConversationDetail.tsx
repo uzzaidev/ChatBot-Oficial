@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -26,23 +26,44 @@ export const ConversationDetail = ({
   conversationStatus = 'bot',
 }: ConversationDetailProps) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const [realtimeMessages, setRealtimeMessages] = useState<Message[]>([])
 
-  const { messages, loading, error, refetch } = useMessages({
+  const { messages: fetchedMessages, loading, error, refetch } = useMessages({
     clientId,
     phone,
     limit: 100,
   })
 
+  // Combine fetched messages with realtime messages using useMemo
+  const messages = useMemo(() => {
+    return [...fetchedMessages, ...realtimeMessages]
+  }, [fetchedMessages, realtimeMessages])
+
+  // Stable callback for handling new messages
+  const handleNewMessage = useCallback((newMessage: Message) => {
+    // Add message optimistically to avoid refetch
+    setRealtimeMessages(prev => {
+      // Check if message already exists to avoid duplicates
+      const exists = prev.some(msg => msg.id === newMessage.id)
+      if (exists) return prev
+      return [...prev, newMessage]
+    })
+
+    toast({
+      title: 'Nova mensagem',
+      description: 'Uma nova mensagem foi recebida',
+    })
+  }, [])
+
+  // Clear realtime messages when phone changes or when refetching
+  useEffect(() => {
+    setRealtimeMessages([])
+  }, [phone])
+
   useRealtimeMessages({
     clientId,
     phone,
-    onNewMessage: (newMessage: Message) => {
-      refetch()
-      toast({
-        title: 'Nova mensagem',
-        description: 'Uma nova mensagem foi recebida',
-      })
-    },
+    onNewMessage: handleNewMessage,
   })
 
   const handleTransferToHuman = async () => {
