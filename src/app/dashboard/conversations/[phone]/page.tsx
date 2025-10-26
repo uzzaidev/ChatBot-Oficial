@@ -26,6 +26,7 @@ export default function ConversationPage({ params }: ConversationPageProps) {
 
   const { conversations, loading } = useConversations({
     clientId,
+    enableRealtime: true,
   })
 
   const conversation = conversations.find((c) => c.phone === phone)

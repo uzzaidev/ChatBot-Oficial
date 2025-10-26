@@ -23,6 +23,7 @@ export default function DashboardPage() {
     clientId: DEFAULT_CLIENT_ID,
     limit: 50,
     refreshInterval: 10000,
+    enableRealtime: true,
   })
 
   useEffect(() => {
