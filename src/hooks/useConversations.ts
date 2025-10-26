@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { createClientBrowser } from '@/lib/supabase'
 import type { ConversationWithCount, ConversationStatus } from '@/lib/types'
 
 interface UseConversationsOptions {
@@ -7,6 +8,7 @@ interface UseConversationsOptions {
   limit?: number
   offset?: number
   refreshInterval?: number
+  enableRealtime?: boolean
 }
 
 interface UseConversationsResult {
@@ -23,6 +25,7 @@ export const useConversations = ({
   limit = 50,
   offset = 0,
   refreshInterval = 0,
+  enableRealtime = false,
 }: UseConversationsOptions): UseConversationsResult => {
   const [conversations, setConversations] = useState<ConversationWithCount[]>([])
   const [loading, setLoading] = useState(true)
@@ -78,6 +81,34 @@ export const useConversations = ({
       return () => clearInterval(interval)
     }
   }, [refreshInterval, clientId, fetchConversations])
+
+  // Realtime subscription for new conversations
+  useEffect(() => {
+    if (!enableRealtime || !clientId) {
+      return
+    }
+
+    const supabase = createClientBrowser()
+    const channel = supabase
+      .channel('clientes-whatsapp-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'Clientes WhatsApp',
+        },
+        () => {
+          // Refetch conversations when any change occurs
+          fetchConversations()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [enableRealtime, clientId, fetchConversations])
 
   return {
     conversations,
