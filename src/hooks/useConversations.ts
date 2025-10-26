@@ -89,7 +89,7 @@ export const useConversations = ({
     }
 
     const supabase = createClientBrowser()
-    const channel = supabase
+    let channel = supabase
       .channel('clientes-whatsapp-changes')
       .on(
         'postgres_changes',
@@ -97,6 +97,8 @@ export const useConversations = ({
           event: '*', // INSERT, UPDATE, DELETE
           schema: 'public',
           table: 'Clientes WhatsApp',
+          // Note: Not filtering by client_id as this is a legacy n8n table
+          // and client_id might not be populated for all records yet
         },
         () => {
           // Refetch conversations when any change occurs
@@ -106,7 +108,9 @@ export const useConversations = ({
       .subscribe()
 
     return () => {
-      supabase.removeChannel(channel)
+      if (channel) {
+        supabase.removeChannel(channel)
+      }
     }
   }, [enableRealtime, clientId, fetchConversations])
 
