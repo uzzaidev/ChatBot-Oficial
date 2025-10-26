@@ -1,6 +1,9 @@
 import { CustomerRecord } from '@/lib/types'
 import { createServerClient } from '@/lib/supabase'
 
+// Constant for legacy table that doesn't have client_id column
+const DEFAULT_CLIENT_ID = 'demo-client-id'
+
 export interface CheckOrCreateCustomerInput {
   phone: string
   name: string
@@ -24,14 +27,15 @@ export const checkOrCreateCustomer = async (
     }
 
     if (existingCustomer) {
+      const telefoneStr = String(existingCustomer.telefone)
       return {
-        id: existingCustomer.id,
-        client_id: existingCustomer.client_id,
-        phone: existingCustomer.telefone,
+        id: telefoneStr,
+        client_id: DEFAULT_CLIENT_ID, // Tabela legada não tem client_id
+        phone: telefoneStr,
         name: existingCustomer.nome,
         status: existingCustomer.status,
         created_at: existingCustomer.created_at,
-        updated_at: existingCustomer.updated_at,
+        updated_at: existingCustomer.created_at, // Tabela não tem updated_at, usando created_at
       }
     }
 
@@ -49,14 +53,15 @@ export const checkOrCreateCustomer = async (
       throw new Error(`Failed to create new customer: ${insertError?.message || 'No data returned'}`)
     }
 
+    const telefoneStr = String(newCustomer.telefone)
     return {
-      id: newCustomer.id,
-      client_id: newCustomer.client_id,
-      phone: newCustomer.telefone,
+      id: telefoneStr,
+      client_id: DEFAULT_CLIENT_ID, // Tabela legada não tem client_id
+      phone: telefoneStr,
       name: newCustomer.nome,
       status: newCustomer.status,
       created_at: newCustomer.created_at,
-      updated_at: newCustomer.updated_at,
+      updated_at: newCustomer.created_at, // Tabela não tem updated_at, usando created_at
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
