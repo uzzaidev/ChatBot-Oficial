@@ -129,11 +129,6 @@ export const ConversationDetail = ({
               <h3 className="text-lg font-semibold">
                 {conversationName || formatPhone(phone)}
               </h3>
-              {conversationName && (
-                <p className="text-sm text-muted-foreground">
-                  {formatPhone(phone)}
-                </p>
-              )}
             </div>
           </div>
 

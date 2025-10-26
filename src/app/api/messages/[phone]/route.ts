@@ -69,7 +69,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         type: 'text' as const,
         direction: messageType === 'human' ? ('incoming' as const) : ('outgoing' as const),
         status: 'sent' as const,
-        timestamp: new Date().toISOString(),
+        timestamp: item.created_at || new Date().toISOString(),
         metadata: null,
       }
     })
