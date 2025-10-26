@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button'
 import { Send } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 
+const MAX_TEXTAREA_HEIGHT = 120 // Maximum height for textarea expansion (about 5 lines)
+const MIN_TEXTAREA_HEIGHT = 40 // Minimum height for textarea
+
 interface SendMessageFormProps {
   phone: string
   clientId: string
@@ -25,7 +28,7 @@ export const SendMessageForm = ({
     const textarea = textareaRef.current
     if (textarea) {
       textarea.style.height = 'auto'
-      const newHeight = Math.min(textarea.scrollHeight, 120) // Max 120px (about 5 lines)
+      const newHeight = Math.min(textarea.scrollHeight, MAX_TEXTAREA_HEIGHT)
       textarea.style.height = `${newHeight}px`
     }
   }, [content])
