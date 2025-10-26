@@ -1,6 +1,9 @@
 import { CustomerRecord } from '@/lib/types'
 import { createServerClient } from '@/lib/supabase'
 
+// Constant for legacy table that doesn't have client_id column
+const DEFAULT_CLIENT_ID = 'demo-client-id'
+
 export interface CheckOrCreateCustomerInput {
   phone: string
   name: string
@@ -24,10 +27,11 @@ export const checkOrCreateCustomer = async (
     }
 
     if (existingCustomer) {
+      const telefoneStr = String(existingCustomer.telefone)
       return {
-        id: String(existingCustomer.telefone),
-        client_id: 'demo-client-id', // Tabela legada não tem client_id
-        phone: String(existingCustomer.telefone),
+        id: telefoneStr,
+        client_id: DEFAULT_CLIENT_ID, // Tabela legada não tem client_id
+        phone: telefoneStr,
         name: existingCustomer.nome,
         status: existingCustomer.status,
         created_at: existingCustomer.created_at,
@@ -49,10 +53,11 @@ export const checkOrCreateCustomer = async (
       throw new Error(`Failed to create new customer: ${insertError?.message || 'No data returned'}`)
     }
 
+    const telefoneStr = String(newCustomer.telefone)
     return {
-      id: String(newCustomer.telefone),
-      client_id: 'demo-client-id', // Tabela legada não tem client_id
-      phone: String(newCustomer.telefone),
+      id: telefoneStr,
+      client_id: DEFAULT_CLIENT_ID, // Tabela legada não tem client_id
+      phone: telefoneStr,
       name: newCustomer.nome,
       status: newCustomer.status,
       created_at: newCustomer.created_at,
