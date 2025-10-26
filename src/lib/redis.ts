@@ -68,7 +68,8 @@ export const getRedisClient = async (): Promise<RedisClient> => {
 export const lpushMessage = async (key: string, value: string): Promise<number> => {
   try {
     const client = await getRedisClient()
-    return await client.lPush(key, value)
+    const result = await client.lPush(key, value)
+    return typeof result === 'number' ? result : parseInt(String(result))
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     throw new Error(`Failed to push message to Redis list: ${errorMessage}`)
@@ -78,7 +79,8 @@ export const lpushMessage = async (key: string, value: string): Promise<number> 
 export const lrangeMessages = async (key: string, start: number, stop: number): Promise<string[]> => {
   try {
     const client = await getRedisClient()
-    return await client.lRange(key, start, stop)
+    const result = await client.lRange(key, start, stop)
+    return result.map(item => String(item))
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     throw new Error(`Failed to retrieve messages from Redis list: ${errorMessage}`)
@@ -88,7 +90,8 @@ export const lrangeMessages = async (key: string, start: number, stop: number): 
 export const deleteKey = async (key: string): Promise<number> => {
   try {
     const client = await getRedisClient()
-    return await client.del(key)
+    const result = await client.del(key)
+    return typeof result === 'number' ? result : parseInt(String(result))
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     throw new Error(`Failed to delete key from Redis: ${errorMessage}`)

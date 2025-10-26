@@ -29,17 +29,12 @@ export const createServerClient = () => {
   return createClient(getSupabaseUrl(), getSupabaseServiceRoleKey(), {
     auth: {
       persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
     },
     global: {
-      fetch: (url, options = {}) => {
-        // Timeout de 10 segundos para evitar hang infinito
-        const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 10000)
-        
-        return fetch(url, {
-          ...options,
-          signal: controller.signal,
-        }).finally(() => clearTimeout(timeoutId))
+      headers: {
+        'X-Client-Info': 'supabase-js-node',
       },
     },
   })

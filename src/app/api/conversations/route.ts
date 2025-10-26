@@ -97,10 +97,14 @@ export async function GET(request: NextRequest) {
 
         if (lastMsg) {
           try {
+            // @ts-ignore - lastMsg pode ter estrutura variável
             const msgData = typeof lastMsg.message === 'string'
+              // @ts-ignore
               ? JSON.parse(lastMsg.message)
+              // @ts-ignore
               : lastMsg.message
             lastMessageContent = msgData.content || ''
+            // @ts-ignore
             lastMessageTimestamp = lastMsg.created_at
           } catch {
             lastMessageContent = ''
