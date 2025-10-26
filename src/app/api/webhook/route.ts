@@ -32,8 +32,12 @@ export async function GET(req: NextRequest) {
  * POST - usado pela Meta para enviar mensagens e atualizações
  */
 export async function POST(req: NextRequest) {
+  console.log('🚀🚀🚀 [WEBHOOK POST] FUNÇÃO INICIADA! 🚀🚀🚀')
+  
   try {
+    console.log('[WEBHOOK] Tentando parsear body...')
     const body = await req.json();
+    console.log('[WEBHOOK] ✅ Body parseado com sucesso!')
 
     console.log("📩 Webhook recebido:", JSON.stringify(body, null, 2));
 
@@ -79,7 +83,8 @@ export async function POST(req: NextRequest) {
       console.error('❌ Erro ao extrair dados da mensagem:', parseError)
     }
 
-    console.log('[WEBHOOK] ⚡ Iniciando processChatbotMessage...')
+    console.log('[WEBHOOK] ✅ Extração concluída, agora vai processar chatbot flow...')
+    console.log('[WEBHOOK] ⚡⚡⚡ CHAMANDO processChatbotMessage AGORA! ⚡⚡⚡')
 
     // Processa mensagem de forma assíncrona (não bloqueia resposta)
     // O logger está dentro do chatbotFlow.ts
