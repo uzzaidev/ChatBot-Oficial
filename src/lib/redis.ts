@@ -20,20 +20,47 @@ export const getRedisClient = async (): Promise<RedisClient> => {
   const redisUrl = getRequiredEnvVariable('REDIS_URL')
 
   try {
-    const client = createClient({
+    // Parse URL to check protocol
+    const url = new URL(redisUrl)
+    const useSSL = url.protocol === 'rediss:'
+    
+    console.log(`[Redis] Connecting to ${url.hostname}:${url.port} (SSL: ${useSSL})`)
+
+    const clientConfig: any = {
       url: redisUrl,
-    })
+    }
+
+    // Se usar SSL, adiciona configuração TLS
+    if (useSSL) {
+      clientConfig.socket = {
+        tls: true,
+        rejectUnauthorized: false, // Aceita certificados self-signed
+      }
+    }
+
+    const client = createClient(clientConfig)
 
     client.on('error', (error) => {
-      console.error('Redis client error:', error)
+      console.error('[Redis] Client error:', error)
+    })
+
+    client.on('connect', () => {
+      console.log('[Redis] ✅ Connected successfully')
+    })
+
+    client.on('reconnecting', () => {
+      console.log('[Redis] 🔄 Reconnecting...')
     })
 
     await client.connect()
     redisClient = client
 
+    console.log('[Redis] ✅ Client ready')
     return client
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error('[Redis] ❌ Connection failed:', errorMessage)
+    console.error('[Redis] URL format:', redisUrl.replace(/:[^:@]+@/, ':****@')) // Hide password
     throw new Error(`Failed to connect to Redis: ${errorMessage}`)
   }
 }

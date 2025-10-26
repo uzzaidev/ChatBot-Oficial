@@ -288,6 +288,133 @@ export default function DebugDashboardPage({
         </CardContent>
       </Card>
 
+      {/* Card de Monitoramento do Workflow Automático */}
+      <Card className="border-2 border-primary">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <span className="animate-pulse">🔴</span>
+                Workflow Automático - Status em Tempo Real
+              </CardTitle>
+              <CardDescription>
+                Mostra exatamente onde o workflow está travando quando você envia mensagem pelo WhatsApp
+              </CardDescription>
+            </div>
+            <Button onClick={() => window.location.reload()} variant="outline" size="sm">
+              🔄 Recarregar
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* Pipeline Visual */}
+            <div className="grid grid-cols-12 gap-2">
+              {[
+                { id: 1, name: 'Filter', short: 'FLT' },
+                { id: 2, name: 'Parse', short: 'PRS' },
+                { id: 3, name: 'Customer', short: 'CST' },
+                { id: 4, name: 'Media', short: 'MDA' },
+                { id: 5, name: 'Normalize', short: 'NRM' },
+                { id: 6, name: 'Redis', short: 'RDS' },
+                { id: 7, name: 'Save User', short: 'SVU' },
+                { id: 8, name: 'Batch', short: 'BCH' },
+                { id: 9, name: 'History', short: 'HST' },
+                { id: 10, name: 'RAG', short: 'RAG' },
+                { id: 11, name: 'AI', short: 'AI' },
+                { id: 12, name: 'Send', short: 'SND' },
+              ].map((node) => {
+                const nodeLog = logs.find(log => log.node_name.toLowerCase().includes(node.name.toLowerCase()))
+                const status = nodeLog?.status || 'idle'
+                const bgColor = status === 'success' ? 'bg-green-500' : 
+                               status === 'error' ? 'bg-red-500' : 
+                               status === 'running' ? 'bg-yellow-500' : 
+                               'bg-gray-300 dark:bg-gray-700'
+                
+                return (
+                  <div key={node.id} className="flex flex-col items-center">
+                    <div
+                      className={`w-full aspect-square rounded-lg ${bgColor} flex items-center justify-center text-xs font-bold text-white shadow-md`}
+                      title={`${node.id}. ${node.name} - ${status}`}
+                    >
+                      {node.short}
+                    </div>
+                    <span className="text-xs mt-1 text-muted-foreground">{node.id}</span>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Legenda */}
+            <div className="flex items-center gap-4 text-xs">
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded bg-green-500" />
+                <span>Sucesso</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded bg-yellow-500" />
+                <span>Executando</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded bg-red-500" />
+                <span>Erro</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded bg-gray-300 dark:bg-gray-700" />
+                <span>Não executado</span>
+              </div>
+            </div>
+
+            {/* Análise Automática */}
+            {selectedExecution && logs.length > 0 && (
+              <div className="p-4 rounded-lg bg-muted">
+                <h4 className="font-semibold mb-2">🔍 Diagnóstico Automático:</h4>
+                <div className="space-y-2 text-sm">
+                  {logs.filter(log => log.status === 'success').length === 0 && (
+                    <p className="text-red-500">
+                      ❌ <strong>NENHUM NODE EXECUTOU!</strong> O webhook pode não estar sendo chamado.
+                    </p>
+                  )}
+                  {logs.filter(log => log.status === 'success').length > 0 && logs.filter(log => log.status === 'success').length < 5 && (
+                    <p className="text-orange-500">
+                      ⚠️ Workflow iniciou mas travou no node <strong>{logs.find(log => log.status === 'error')?.node_name || 'desconhecido'}</strong>
+                    </p>
+                  )}
+                  {logs.filter(log => log.status === 'error').length > 0 && (
+                    <div className="text-red-500">
+                      <p className="font-semibold">❌ Erros encontrados:</p>
+                      <ul className="list-disc list-inside ml-4">
+                        {logs.filter(log => log.status === 'error').map(log => (
+                          <li key={log.id}>
+                            <strong>{log.node_name}</strong>: {log.error?.message || 'Erro desconhecido'}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {logs.filter(log => log.status === 'success').length === 12 && (
+                    <p className="text-green-500">
+                      ✅ <strong>WORKFLOW COMPLETO!</strong> Todos os 12 nodes executaram com sucesso.
+                    </p>
+                  )}
+                  <p className="text-muted-foreground mt-2">
+                    Nodes executados: {logs.filter(log => log.status === 'success').length}/12
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {!selectedExecution && (
+              <div className="p-4 rounded-lg bg-muted text-center">
+                <p className="text-sm text-muted-foreground">
+                  Aguardando execução... Envie uma mensagem pelo WhatsApp para ver o workflow em ação.
+                </p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Painel de Mensagens Recebidas */}
       <Card>
         <CardHeader>
