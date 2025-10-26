@@ -26,6 +26,20 @@ export async function saveChatMessage(input: SaveChatMessageInput): Promise<void
     if (error) {
       throw new Error(`Erro ao salvar mensagem no histórico: ${error.message}`)
     }
+
+    // Atualizar a última mensagem do cliente na tabela Clientes WhatsApp
+    const { error: updateError } = await supabase
+      .from('Clientes WhatsApp')
+      .update({
+        ultima_mensagem: message,
+        updated_at: new Date().toISOString()
+      })
+      .eq('telefone', phone)
+
+    if (updateError) {
+      // Log do erro mas não falha a operação principal
+      console.error('Erro ao atualizar última mensagem do cliente:', updateError.message)
+    }
   } catch (error) {
     throw new Error(
       `saveChatMessage falhou: ${error instanceof Error ? error.message : 'Erro desconhecido'}`

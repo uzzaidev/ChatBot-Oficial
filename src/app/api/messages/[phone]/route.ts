@@ -52,9 +52,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     // Transformar dados do n8n_chat_histories para formato Message
     const messages: Message[] = (data || []).map((item: any, index: number) => {
-      const messageData = item.message || {}
-      const messageType = messageData.type || 'ai'
-      const messageContent = messageData.content || ''
+      // O n8n_chat_histories tem a estrutura:
+      // - type: 'user' | 'ai'
+      // - message: string (conteúdo da mensagem)
+      const messageType = item.type || 'ai'
+      const messageContent = typeof item.message === 'string' ? item.message : (item.message?.content || '')
 
       // Limpar tags de function calls
       const cleanedContent = cleanMessageContent(messageContent)
@@ -64,10 +66,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         client_id: clientId,
         conversation_id: String(phone),
         phone: String(phone),
-        name: messageType === 'human' ? 'Cliente' : 'Bot',
+        name: messageType === 'user' ? 'Cliente' : 'Bot',
         content: cleanedContent,
         type: 'text' as const,
-        direction: messageType === 'human' ? ('incoming' as const) : ('outgoing' as const),
+        direction: messageType === 'user' ? ('incoming' as const) : ('outgoing' as const),
         status: 'sent' as const,
         timestamp: item.created_at || new Date().toISOString(),
         metadata: null,
