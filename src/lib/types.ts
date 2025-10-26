@@ -8,6 +8,22 @@ export type MessageStatus = 'sent' | 'delivered' | 'read' | 'failed' | 'queued'
 
 export type UsageSource = 'openai' | 'meta' | 'groq' | 'whisper'
 
+export type ExecutionStatus = 'running' | 'success' | 'error'
+
+export interface ExecutionLog {
+  id: number
+  execution_id: string
+  node_name: string
+  input_data?: any
+  output_data?: any
+  error?: any
+  status: ExecutionStatus
+  duration_ms?: number
+  timestamp: string
+  metadata?: Record<string, any>
+  created_at: string
+}
+
 export interface Client {
   id: string
   name: string
