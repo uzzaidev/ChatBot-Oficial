@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
 import { Send } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
+
+const MAX_TEXTAREA_HEIGHT = 120 // Maximum height for textarea expansion (about 5 lines)
+const MIN_TEXTAREA_HEIGHT = 40 // Minimum height for textarea
 
 interface SendMessageFormProps {
   phone: string
@@ -20,6 +21,17 @@ export const SendMessageForm = ({
 }: SendMessageFormProps) => {
   const [content, setContent] = useState('')
   const [sending, setSending] = useState(false)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Auto-expand textarea like WhatsApp
+  useEffect(() => {
+    const textarea = textareaRef.current
+    if (textarea) {
+      textarea.style.height = 'auto'
+      const newHeight = Math.min(textarea.scrollHeight, MAX_TEXTAREA_HEIGHT)
+      textarea.style.height = `${newHeight}px`
+    }
+  }, [content])
 
   const handleSendMessage = async () => {
     if (!content.trim()) {
@@ -81,31 +93,26 @@ export const SendMessageForm = ({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Enviar Mensagem Manual</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-col gap-3">
-          <Textarea
-            placeholder="Digite sua mensagem aqui... (Enter para enviar, Shift+Enter para nova linha)"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            onKeyDown={handleKeyDown}
-            rows={4}
-            disabled={sending}
-          />
+    <div className="flex items-end gap-2 bg-white rounded-lg p-2">
+      <textarea
+        ref={textareaRef}
+        placeholder="Digite sua mensagem... (Enter para enviar, Shift+Enter para nova linha)"
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        onKeyDown={handleKeyDown}
+        disabled={sending}
+        className="flex-1 resize-none border-0 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-0 rounded-lg max-h-[120px] min-h-[40px]"
+        rows={1}
+      />
 
-          <Button
-            onClick={handleSendMessage}
-            disabled={sending || !content.trim()}
-            className="w-full"
-          >
-            <Send className="h-4 w-4 mr-2" />
-            {sending ? 'Enviando...' : 'Enviar Mensagem'}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+      <Button
+        onClick={handleSendMessage}
+        disabled={sending || !content.trim()}
+        size="icon"
+        className="h-10 w-10 rounded-full flex-shrink-0"
+      >
+        <Send className="h-4 w-4" />
+      </Button>
+    </div>
   )
 }
