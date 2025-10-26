@@ -32,7 +32,13 @@ export async function GET(req: NextRequest) {
  * POST - usado pela Meta para enviar mensagens e atualizações
  */
 export async function POST(req: NextRequest) {
+  // LOG CRÍTICO: Este deve SEMPRE aparecer quando webhook é chamado
+  console.log('═══════════════════════════════════════════════')
   console.log('🚀🚀🚀 [WEBHOOK POST] FUNÇÃO INICIADA! 🚀🚀🚀')
+  console.log('Timestamp:', new Date().toISOString())
+  console.log('URL:', req.url)
+  console.log('Method:', req.method)
+  console.log('═══════════════════════════════════════════════')
   
   try {
     console.log('[WEBHOOK] Tentando parsear body...')

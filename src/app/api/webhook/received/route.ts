@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
   try {
     const messages = getRecentWebhookMessages()
 
+    // Removido console.log para não poluir logs de produção
     return NextResponse.json({ 
       messages,
       count: messages.length 

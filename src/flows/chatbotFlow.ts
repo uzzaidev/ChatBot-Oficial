@@ -160,9 +160,18 @@ export const processChatbotMessage = async (
     console.log('[chatbotFlow] Message normalized, pushing to Redis for batching')
 
     // NODE 6: Push to Redis
+    console.log('[chatbotFlow] NODE 6: Tentando push to Redis...')
     await logger.logNodeStart('6. Push to Redis', normalizedMessage)
-    await pushToRedis(normalizedMessage)
-    await logger.logNodeSuccess('6. Push to Redis', { success: true })
+    
+    try {
+      await pushToRedis(normalizedMessage)
+      console.log('[chatbotFlow] NODE 6: ✅ Push to Redis concluído com sucesso!')
+      await logger.logNodeSuccess('6. Push to Redis', { success: true })
+    } catch (redisError) {
+      console.error('[chatbotFlow] NODE 6: ❌ ERRO NO REDIS!', redisError)
+      await logger.logNodeError('6. Push to Redis', redisError)
+      throw new Error(`Redis push failed: ${redisError instanceof Error ? redisError.message : 'Unknown error'}`)
+    }
 
     // NODE 7: Save User Message
     await logger.logNodeStart('7. Save Chat Message (User)', { phone: parsedMessage.phone, type: 'user' })
