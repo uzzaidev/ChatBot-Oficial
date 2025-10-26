@@ -21,18 +21,39 @@ export async function GET(request: NextRequest) {
 
     const supabase = createServerClient()
 
-    // Buscar clientes da tabela Clientes WhatsApp
-    let query = supabase
+    // Buscar clientes da tabela Clientes WhatsApp com contagem total
+    let countQuery = supabase
+      .from('Clientes WhatsApp')
+      .select('*', { count: 'exact', head: true })
+
+    // Filtrar por status se fornecido (para contagem)
+    if (status) {
+      countQuery = countQuery.eq('status', status)
+    }
+
+    // Obter contagem total
+    const { count: totalCount, error: countError } = await countQuery
+
+    if (countError) {
+      console.error('Erro ao contar conversas:', countError)
+      return NextResponse.json(
+        { error: 'Erro ao contar conversas' },
+        { status: 500 }
+      )
+    }
+
+    // Buscar dados paginados
+    let dataQuery = supabase
       .from('Clientes WhatsApp')
       .select('*')
 
     // Filtrar por status se fornecido
     if (status) {
-      query = query.eq('status', status)
+      dataQuery = dataQuery.eq('status', status)
     }
 
-    const { data, error } = await query
-      .order('created_at', { ascending: false })
+    const { data, error } = await dataQuery
+      .order('updated_at', { ascending: false })
       .range(offset, offset + limit - 1)
 
     if (error) {
@@ -57,11 +78,9 @@ export async function GET(request: NextRequest) {
       assigned_to: null,
     }))
 
-    const paginated = conversations
-
     return NextResponse.json({
-      conversations: paginated,
-      total: conversations.length,
+      conversations: conversations,
+      total: totalCount || 0,
       limit,
       offset,
     })
