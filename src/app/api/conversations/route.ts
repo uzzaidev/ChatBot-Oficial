@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { data, error } = await dataQuery
-      .order('updated_at', { ascending: false })
+      .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
 
     if (error) {
@@ -66,13 +66,13 @@ export async function GET(request: NextRequest) {
 
     // Transformar dados para formato ConversationWithCount
     const conversations: ConversationWithCount[] = (data || []).map((cliente: any) => ({
-      id: cliente.id || String(cliente.telefone),
+      id: String(cliente.telefone),
       client_id: clientId,
       phone: String(cliente.telefone),
       name: cliente.nome || 'Sem nome',
       status: cliente.status || 'bot',
-      last_message: cliente.ultima_mensagem || '',
-      last_update: cliente.updated_at || cliente.created_at || new Date().toISOString(),
+      last_message: '',
+      last_update: cliente.created_at || new Date().toISOString(),
       created_at: cliente.created_at || new Date().toISOString(),
       message_count: 0, // Será calculado depois se necessário
       assigned_to: null,
