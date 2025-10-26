@@ -17,6 +17,7 @@ import { handleHumanHandoff } from '@/nodes/handleHumanHandoff'
 import { saveChatMessage } from '@/nodes/saveChatMessage'
 import { downloadMedia } from '@/lib/meta'
 import { createExecutionLogger } from '@/lib/logger'
+import { resetServerClient } from '@/lib/supabase'
 
 export interface ChatbotFlowResult {
   success: boolean
@@ -88,6 +89,10 @@ export const processChatbotMessage = async (
 ): Promise<ChatbotFlowResult> => {
   console.log('🚀🚀🚀 [chatbotFlow] FUNÇÃO INICIADA! 🚀🚀🚀')
   console.log('[chatbotFlow] Payload recebido:', JSON.stringify(payload, null, 2))
+  
+  // CRÍTICO: Reset do cliente Supabase para não reutilizar conexão antiga/lenta
+  resetServerClient()
+  console.log('[chatbotFlow] ✅ Cliente Supabase resetado')
   
   // Cria logger para rastreamento completo
   console.log('[chatbotFlow] Criando logger...')

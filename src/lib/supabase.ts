@@ -25,8 +25,24 @@ const getSupabaseServiceRoleKey = (): string => {
   return key
 }
 
+// Singleton global do cliente Supabase (reutilizado em toda a execução)
+let serverClientInstance: ReturnType<typeof createClient> | null = null
+
+// Reset forçado da conexão (útil no início de cada workflow)
+export const resetServerClient = () => {
+  console.log('[Supabase] 🔄 Reset forçado do cliente')
+  serverClientInstance = null
+}
+
 export const createServerClient = () => {
-  return createClient(getSupabaseUrl(), getSupabaseServiceRoleKey(), {
+  // Reutiliza instância se já existe
+  if (serverClientInstance) {
+    console.log('[Supabase] ♻️ Reutilizando cliente existente')
+    return serverClientInstance
+  }
+
+  console.log('[Supabase] 🆕 Criando novo cliente')
+  serverClientInstance = createClient(getSupabaseUrl(), getSupabaseServiceRoleKey(), {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
@@ -38,6 +54,8 @@ export const createServerClient = () => {
       },
     },
   })
+
+  return serverClientInstance
 }
 
 export const createClientBrowser = () => {

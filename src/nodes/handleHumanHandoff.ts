@@ -99,8 +99,10 @@ export const handleHumanHandoff = async (
     const { phone, customerName } = input
     const supabase = createServerClient()
 
+    // @ts-ignore - Clientes WhatsApp table structure
     const { error: updateError } = await supabase
       .from('Clientes WhatsApp')
+      // @ts-ignore
       .update({ status: 'Transferido' })
       .eq('telefone', phone)
 
