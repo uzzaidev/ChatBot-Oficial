@@ -32,13 +32,16 @@ export const MessageBubble = ({ message }: MessageBubbleProps) => {
   }
 
   const renderMessageContent = () => {
+    // Trim trailing whitespace from content to avoid displaying \n\n added by n8n AI formatter
+    const trimmedContent = message.content.trimEnd()
+    
     switch (message.type) {
       case 'audio':
         return (
           <div className="flex items-center gap-2">
             <span className="text-sm">Audio</span>
             <span className="text-xs text-muted-foreground">
-              {message.content}
+              {trimmedContent}
             </span>
           </div>
         )
@@ -53,8 +56,8 @@ export const MessageBubble = ({ message }: MessageBubbleProps) => {
                 className="max-w-xs rounded-lg"
               />
             ) : null}
-            {message.content && (
-              <span className="text-sm">{message.content}</span>
+            {trimmedContent && (
+              <span className="text-sm">{trimmedContent}</span>
             )}
           </div>
         )
@@ -63,12 +66,12 @@ export const MessageBubble = ({ message }: MessageBubbleProps) => {
           <div className="flex items-center gap-2">
             <span className="text-sm">Documento</span>
             <span className="text-xs text-muted-foreground">
-              {message.content}
+              {trimmedContent}
             </span>
           </div>
         )
       default:
-        return <span className="text-sm whitespace-pre-wrap">{message.content}</span>
+        return <span className="text-sm whitespace-pre-wrap">{trimmedContent}</span>
     }
   }
 

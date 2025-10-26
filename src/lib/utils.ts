@@ -92,10 +92,12 @@ export const estimateWhatsAppCost = (): number => {
 }
 
 export const truncateText = (text: string, maxLength: number = 100): string => {
-  if (text.length <= maxLength) {
-    return text
+  // Trim trailing whitespace first (e.g., \n\n from n8n AI formatter)
+  const trimmed = text.trimEnd()
+  if (trimmed.length <= maxLength) {
+    return trimmed
   }
-  return `${text.slice(0, maxLength)}...`
+  return `${trimmed.slice(0, maxLength)}...`
 }
 
 export const getInitials = (name: string): string => {
