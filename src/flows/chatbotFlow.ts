@@ -106,131 +106,167 @@ export const processChatbotMessage = async (
 
     // NODE 1: Filter Status Updates
     console.log('[chatbotFlow] NODE 1: Iniciando Filter Status Updates...')
-    await logger.logNodeStart('1. Filter Status Updates', payload)
+    logger.logNodeStart('1. Filter Status Updates', payload)
     const filteredPayload = filterStatusUpdates(payload)
     if (!filteredPayload) {
-      await logger.logNodeSuccess('1. Filter Status Updates', { filtered: true, reason: 'Status update' })
+      logger.logNodeSuccess('1. Filter Status Updates', { filtered: true, reason: 'Status update' })
       console.log('[chatbotFlow] Status update filtered out, skipping')
-      await logger.finishExecution('success')
+      logger.finishExecution('success')
       return { success: true }
     }
-    await logger.logNodeSuccess('1. Filter Status Updates', { filtered: false })
+    logger.logNodeSuccess('1. Filter Status Updates', { filtered: false })
 
     // NODE 2: Parse Message
-    await logger.logNodeStart('2. Parse Message', filteredPayload)
+    logger.logNodeStart('2. Parse Message', filteredPayload)
     const parsedMessage = parseMessage(filteredPayload)
-    await logger.logNodeSuccess('2. Parse Message', { phone: parsedMessage.phone, type: parsedMessage.type })
+    logger.logNodeSuccess('2. Parse Message', { phone: parsedMessage.phone, type: parsedMessage.type })
     console.log(`[chatbotFlow] Parsed message from ${parsedMessage.phone}, type: ${parsedMessage.type}`)
 
     // NODE 3: Check/Create Customer
-    await logger.logNodeStart('3. Check/Create Customer', { phone: parsedMessage.phone, name: parsedMessage.name })
+    logger.logNodeStart('3. Check/Create Customer', { phone: parsedMessage.phone, name: parsedMessage.name })
     const customer = await checkOrCreateCustomer({
       phone: parsedMessage.phone,
       name: parsedMessage.name,
     })
-    await logger.logNodeSuccess('3. Check/Create Customer', { status: customer.status })
+    logger.logNodeSuccess('3. Check/Create Customer', { status: customer.status })
 
     if (customer.status === 'human') {
       console.log(`[chatbotFlow] Customer ${parsedMessage.phone} already transferred to human, skipping bot response`)
-      await logger.finishExecution('success')
+      logger.finishExecution('success')
       return { success: true, handedOff: true }
     }
 
     console.log('[chatbotFlow] Processing message content based on type')
     let normalizedContent: string
 
-    // NODE 4: Process Media (optional)
+        // NODE 4: Process Media (optional)
     const startNode4 = Date.now()
     if (parsedMessage.type === 'text') {
       normalizedContent = parsedMessage.content
       console.log('[chatbotFlow] NODE 4: Texto - pulando download de mídia')
-      await logger.logNodeStart('4. Download Media', null)
-      await logger.logNodeSuccess('4. Download Media', { skipped: true, reason: 'Text message' })
+      logger.logNodeStart('4. Download Media', null)
+      logger.logNodeSuccess('4. Download Media', { skipped: true, reason: 'Text message' })
     } else {
       console.log('[chatbotFlow] NODE 4: Iniciando download de mídia...')
-      await logger.logNodeStart('4. Download Media', { type: parsedMessage.type, mediaId: parsedMessage.metadata?.id })
-      normalizedContent = await processMediaMessage(parsedMessage)
-      console.log('[chatbotFlow] NODE 4: ✅ Download concluído')
-      await logger.logNodeSuccess('4. Download Media', { processedLength: normalizedContent.length })
+      logger.logNodeStart('4. Download Media', { mediaId: parsedMessage.mediaId, type: parsedMessage.type })
+      const mediaUrl = await downloadMetaMedia(parsedMessage.mediaId!)
+      logger.logNodeSuccess('4. Download Media', { url: mediaUrl })
+      console.log(`[chatbotFlow] NODE 4: ✅ Mídia baixada`)
+
+      // NODE 5: Transcribe/Analyze Media
+      const startNode5 = Date.now()
+      logger.logNodeStart('5. Process Media Content', { type: parsedMessage.type, url: mediaUrl })
+      normalizedContent = await normalizeMessage({
+        type: parsedMessage.type,
+        content: parsedMessage.content,
+        mediaUrl,
+      })
+      const durationNode5 = Date.now() - startNode5
+      logger.logNodeSuccess('5. Process Media Content', { content: normalizedContent.substring(0, 100) })
+      console.log(`[chatbotFlow] NODE 5: ✅ Normalização concluída em ${durationNode5}ms`)
     }
     const durationNode4 = Date.now() - startNode4
     console.log(`[chatbotFlow] NODE 4: Duração ${durationNode4}ms`)
 
+    console.log(`[chatbotFlow] Message normalized, pushing to Redis for batching`)
+
+    // NODE 6: Push to Redis
+    try {
+      logger.logNodeStart('6. Push to Redis', { phone: parsedMessage.phone })
+      await pushToRedis(parsedMessage.phone, normalizedContent)
+      logger.logNodeSuccess('6. Push to Redis', { success: true })
+      console.log('[chatbotFlow] NODE 6: ✅ Pushed to Redis')
+    } catch (error: any) {
+      console.error('[chatbotFlow] NODE 6: ❌ Redis error:', error.message)
+      logger.logNodeError('6. Push to Redis', error)
+      // Continue mesmo se Redis falhar (degradação graceful)
+    }
+
+    // NODE 7: Batch Messages
+    logger.logNodeStart('7. Batch Messages', { phone: parsedMessage.phone })
+    const batchedMessage = await batchMessages(parsedMessage.phone)
+    logger.logNodeSuccess('7. Batch Messages', { batched: batchedMessage })
+
+    // NODE 8: Get Chat History
+    logger.logNodeStart('8. Get Chat History', { phone: parsedMessage.phone })
+    const chatHistory = await getChatHistory(parsedMessage.phone)
+    logger.logNodeSuccess('8. Get Chat History', { historyLength: chatHistory.length })
+
     // NODE 5: Normalize Message
     const startNode5 = Date.now()
     console.log('[chatbotFlow] NODE 5: Iniciando normalização...')
-    await logger.logNodeStart('5. Normalize Message', { parsedMessage, processedContent: normalizedContent })
+    logger.logNodeStart('5. Normalize Message', { parsedMessage, processedContent: normalizedContent })
     const normalizedMessage = normalizeMessage({
       parsedMessage,
       processedContent: normalizedContent,
     })
     const durationNode5 = Date.now() - startNode5
     console.log(`[chatbotFlow] NODE 5: ✅ Normalização concluída em ${durationNode5}ms`)
-    await logger.logNodeSuccess('5. Normalize Message', { content: normalizedMessage.content })
+    logger.logNodeSuccess('5. Normalize Message', { content: normalizedMessage.content })
     console.log('[chatbotFlow] Message normalized, pushing to Redis for batching')
 
     // NODE 6: Push to Redis
     console.log('[chatbotFlow] NODE 6: Tentando push to Redis...')
-    await logger.logNodeStart('6. Push to Redis', normalizedMessage)
+    logger.logNodeStart('6. Push to Redis', normalizedMessage)
     
     try {
       await pushToRedis(normalizedMessage)
       console.log('[chatbotFlow] NODE 6: ✅ Push to Redis concluído com sucesso!')
-      await logger.logNodeSuccess('6. Push to Redis', { success: true })
+      logger.logNodeSuccess('6. Push to Redis', { success: true })
     } catch (redisError) {
       console.error('[chatbotFlow] NODE 6: ❌ ERRO NO REDIS!', redisError)
-      await logger.logNodeError('6. Push to Redis', redisError)
+      logger.logNodeError('6. Push to Redis', redisError)
       throw new Error(`Redis push failed: ${redisError instanceof Error ? redisError.message : 'Unknown error'}`)
     }
 
     // NODE 7: Save User Message
-    await logger.logNodeStart('7. Save Chat Message (User)', { phone: parsedMessage.phone, type: 'user' })
+    logger.logNodeStart('7. Save Chat Message (User)', { phone: parsedMessage.phone, type: 'user' })
     console.log('[chatbotFlow] Saving user message to chat history')
     await saveChatMessage({
       phone: parsedMessage.phone,
       message: normalizedMessage.content,
       type: 'user',
     })
-    await logger.logNodeSuccess('7. Save Chat Message (User)', { saved: true })
+    logger.logNodeSuccess('7. Save Chat Message (User)', { saved: true })
 
     // NODE 8: Batch Messages
-    await logger.logNodeStart('8. Batch Messages', { phone: parsedMessage.phone })
+    logger.logNodeStart('8. Batch Messages', { phone: parsedMessage.phone })
     console.log('[chatbotFlow] Waiting for message batching (10s delay)')
     const batchedContent = await batchMessages(parsedMessage.phone)
-    await logger.logNodeSuccess('8. Batch Messages', { contentLength: batchedContent?.length || 0 })
+    logger.logNodeSuccess('8. Batch Messages', { contentLength: batchedContent?.length || 0 })
 
     if (!batchedContent || batchedContent.trim().length === 0) {
       console.log('[chatbotFlow] No batched content available, skipping AI processing')
-      await logger.finishExecution('success')
+      logger.finishExecution('success')
       return { success: true }
     }
 
     console.log('[chatbotFlow] Fetching chat history and RAG context in parallel')
     
     // NODE 9 & 10: Get Chat History + RAG Context (parallel)
-    await logger.logNodeStart('9. Get Chat History', { phone: parsedMessage.phone })
-    await logger.logNodeStart('10. Get RAG Context', { queryLength: batchedContent.length })
+    logger.logNodeStart('9. Get Chat History', { phone: parsedMessage.phone })
+    logger.logNodeStart('10. Get RAG Context', { queryLength: batchedContent.length })
     
-    const [chatHistory, ragContext] = await Promise.all([
+    const [chatHistory2, ragContext] = await Promise.all([
       getChatHistory(parsedMessage.phone),
       getRAGContext(batchedContent),
     ])
     
-    await logger.logNodeSuccess('9. Get Chat History', { messageCount: chatHistory.length })
-    await logger.logNodeSuccess('10. Get RAG Context', { contextLength: ragContext.length })
+    logger.logNodeSuccess('9. Get Chat History', { messageCount: chatHistory2.length })
+    logger.logNodeSuccess('10. Get RAG Context', { contextLength: ragContext.length })
 
-    console.log(`[chatbotFlow] Context retrieved - History: ${chatHistory.length} messages, RAG: ${ragContext.length} chars`)
+    console.log(`[chatbotFlow] Context retrieved - History: ${chatHistory2.length} messages, RAG: ${ragContext.length} chars`)
 
     // NODE 11: Generate AI Response
-    await logger.logNodeStart('11. Generate AI Response', { messageLength: batchedContent.length, historyCount: chatHistory.length })
+    logger.logNodeStart('11. Generate AI Response', { messageLength: batchedContent.length, historyCount: chatHistory2.length })
     console.log('[chatbotFlow] Generating AI response')
     const aiResponse = await generateAIResponse({
       message: batchedContent,
-      chatHistory,
+      chatHistory: chatHistory2,
       ragContext,
       customerName: parsedMessage.name,
     })
-    await logger.logNodeSuccess('11. Generate AI Response', { 
+    logger.logNodeSuccess('11. Generate AI Response', { 
       contentLength: aiResponse.content?.length || 0, 
       hasToolCalls: !!aiResponse.toolCalls,
       toolCount: aiResponse.toolCalls?.length || 0
@@ -247,7 +283,7 @@ export const processChatbotMessage = async (
           phone: parsedMessage.phone,
           customerName: parsedMessage.name,
         })
-        await logger.finishExecution('success')
+        logger.finishExecution('success')
         return { success: true, handedOff: true }
       }
 
@@ -262,7 +298,7 @@ export const processChatbotMessage = async (
 
     if (!aiResponse.content || aiResponse.content.trim().length === 0) {
       console.log('[chatbotFlow] AI response is empty, skipping message sending')
-      await logger.finishExecution('success')
+      logger.finishExecution('success')
       return { success: true, messagesSent: 0 }
     }
 
@@ -275,34 +311,34 @@ export const processChatbotMessage = async (
     })
 
     // NODE 12: Format Response
-    await logger.logNodeStart('12. Format Response', { contentLength: aiResponse.content.length })
+    logger.logNodeStart('12. Format Response', { contentLength: aiResponse.content.length })
     console.log('[chatbotFlow] Formatting AI response into WhatsApp messages')
     const formattedMessages = formatResponse(aiResponse.content)
-    await logger.logNodeSuccess('12. Format Response', { messageCount: formattedMessages.length })
+    logger.logNodeSuccess('12. Format Response', { messageCount: formattedMessages.length })
 
     if (formattedMessages.length === 0) {
       console.log('[chatbotFlow] No formatted messages to send')
-      await logger.finishExecution('success')
+      logger.finishExecution('success')
       return { success: true, messagesSent: 0 }
     }
 
     // NODE 13: Send WhatsApp Message
-    await logger.logNodeStart('13. Send WhatsApp Message', { phone: parsedMessage.phone, messageCount: formattedMessages.length })
+    logger.logNodeStart('13. Send WhatsApp Message', { phone: parsedMessage.phone, messageCount: formattedMessages.length })
     console.log(`[chatbotFlow] Sending ${formattedMessages.length} messages to customer`)
     const messageIds = await sendWhatsAppMessage({
       phone: parsedMessage.phone,
       messages: formattedMessages,
     })
-    await logger.logNodeSuccess('13. Send WhatsApp Message', { sentCount: messageIds.length })
+    logger.logNodeSuccess('13. Send WhatsApp Message', { sentCount: messageIds.length })
 
     console.log(`[chatbotFlow] Successfully sent ${messageIds.length} messages`)
-    await logger.finishExecution('success')
+    logger.finishExecution('success')
     return { success: true, messagesSent: messageIds.length }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
     console.error(`[chatbotFlow] Error processing message: ${errorMessage}`)
     
-    await logger.finishExecution('error')
+    logger.finishExecution('error')
 
     return {
       success: false,

@@ -90,9 +90,9 @@ export default function DebugDashboardPage({
 
     fetchReceivedMessages()
     
-    // Atualiza a cada 3 segundos (mais frequente para debug)
-    const interval = setInterval(fetchReceivedMessages, 3000)
-    return () => clearInterval(interval)
+    // ❌ POLLING DESATIVADO - Dashboard agora aguarda webhook push
+    // const interval = setInterval(fetchReceivedMessages, 3000)
+    // return () => clearInterval(interval)
   }, [])
 
   const forceRefreshMessages = async () => {

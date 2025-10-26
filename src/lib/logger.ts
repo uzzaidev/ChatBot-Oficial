@@ -49,33 +49,38 @@ class ExecutionLogger {
     return this.executionId
   }
 
-  // Log de entrada em um node
-  async logNodeStart(nodeName: string, input?: any): Promise<void> {
+  // Log de entrada em um node (fire-and-forget - não bloqueia)
+  logNodeStart(nodeName: string, input?: any): void {
     if (!this.executionId || !this.supabase) return
 
     const startTime = Date.now()
 
-    // @ts-ignore - execution_logs table might not exist until migration is run
-    await this.supabase.from('execution_logs').insert({
+    // Fire-and-forget - não bloqueia execução
+    this.supabase.from('execution_logs').insert({
       execution_id: this.executionId,
       node_name: nodeName,
       input_data: input,
       status: 'running',
       timestamp: new Date().toISOString(),
       metadata: { start_time: startTime },
+    }).then(result => {
+      if (result.error) {
+        console.warn(`[Logger] Failed to log node start for ${nodeName}:`, result.error.message)
+      }
+    }).catch(err => {
+      console.warn(`[Logger] Exception logging node start:`, err)
     })
   }
 
-  // Log de saída de um node com sucesso
-  async logNodeSuccess(nodeName: string, output?: any, startTime?: number): Promise<void> {
+  // Log de saída de um node com sucesso (fire-and-forget)
+  logNodeSuccess(nodeName: string, output?: any, startTime?: number): void {
     if (!this.executionId || !this.supabase) return
 
     const duration = startTime ? Date.now() - startTime : undefined
 
-    // @ts-ignore - execution_logs table schema
-    await this.supabase
+    // Fire-and-forget - não bloqueia execução
+    this.supabase
       .from('execution_logs')
-      // @ts-ignore
       .update({
         output_data: output,
         status: 'success',
@@ -84,16 +89,22 @@ class ExecutionLogger {
       .eq('execution_id', this.executionId)
       .eq('node_name', nodeName)
       .eq('status', 'running')
+      .then(result => {
+        if (result.error) {
+          console.warn(`[Logger] Failed to log node success for ${nodeName}:`, result.error.message)
+        }
+      }).catch(err => {
+        console.warn(`[Logger] Exception logging node success:`, err)
+      })
   }
 
-  // Log de erro em um node
-  async logNodeError(nodeName: string, error: any): Promise<void> {
+  // Log de erro em um node (fire-and-forget)
+  logNodeError(nodeName: string, error: any): void {
     if (!this.executionId || !this.supabase) return
 
-    // @ts-ignore - execution_logs table schema
-    await this.supabase
+    // Fire-and-forget - não bloqueia execução
+    this.supabase
       .from('execution_logs')
-      // @ts-ignore
       .update({
         error: {
           message: error.message || String(error),
@@ -105,6 +116,13 @@ class ExecutionLogger {
       .eq('execution_id', this.executionId)
       .eq('node_name', nodeName)
       .eq('status', 'running')
+      .then(result => {
+        if (result.error) {
+          console.warn(`[Logger] Failed to log node error for ${nodeName}:`, result.error.message)
+        }
+      }).catch(err => {
+        console.warn(`[Logger] Exception logging node error:`, err)
+      })
   }
 
   // Wrapper para executar um node com logging automático
@@ -115,28 +133,34 @@ class ExecutionLogger {
   ): Promise<T> {
     const startTime = Date.now()
     
-    await this.logNodeStart(nodeName, input)
+    this.logNodeStart(nodeName, input) // Sem await - fire-and-forget
 
     try {
       const result = await fn()
-      await this.logNodeSuccess(nodeName, result, startTime)
+      this.logNodeSuccess(nodeName, result, startTime) // Sem await - fire-and-forget
       return result
     } catch (error) {
-      await this.logNodeError(nodeName, error)
+      this.logNodeError(nodeName, error) // Sem await - fire-and-forget
       throw error
     }
   }
 
-  // Finaliza a execução
-  async finishExecution(status: 'success' | 'error'): Promise<void> {
+  // Finaliza a execução (fire-and-forget)
+  finishExecution(status: 'success' | 'error'): void {
     if (!this.executionId || !this.supabase) return
 
-    // @ts-ignore - execution_logs table schema
-    await this.supabase.from('execution_logs').insert({
+    // Fire-and-forget - não bloqueia execução
+    this.supabase.from('execution_logs').insert({
       execution_id: this.executionId,
       node_name: '_END',
       status,
       timestamp: new Date().toISOString(),
+    }).then(result => {
+      if (result.error) {
+        console.warn(`[Logger] Failed to finish execution:`, result.error.message)
+      }
+    }).catch(err => {
+      console.warn(`[Logger] Exception finishing execution:`, err)
     })
   }
 
