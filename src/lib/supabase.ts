@@ -30,6 +30,18 @@ export const createServerClient = () => {
     auth: {
       persistSession: false,
     },
+    global: {
+      fetch: (url, options = {}) => {
+        // Timeout de 10 segundos para evitar hang infinito
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 10000)
+        
+        return fetch(url, {
+          ...options,
+          signal: controller.signal,
+        }).finally(() => clearTimeout(timeoutId))
+      },
+    },
   })
 }
 

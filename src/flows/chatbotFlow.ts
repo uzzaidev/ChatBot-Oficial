@@ -137,73 +137,35 @@ export const processChatbotMessage = async (
     }
 
     console.log('[chatbotFlow] Processing message content based on type')
-    let normalizedContent: string
 
-        // NODE 4: Process Media (optional)
-    const startNode4 = Date.now()
-    if (parsedMessage.type === 'text') {
-      normalizedContent = parsedMessage.content
-      console.log('[chatbotFlow] NODE 4: Texto - pulando download de mídia')
-      logger.logNodeStart('4. Download Media', null)
-      logger.logNodeSuccess('4. Download Media', { skipped: true, reason: 'Text message' })
-    } else {
-      console.log('[chatbotFlow] NODE 4: Iniciando download de mídia...')
-      logger.logNodeStart('4. Download Media', { mediaId: parsedMessage.mediaId, type: parsedMessage.type })
-      const mediaUrl = await downloadMetaMedia(parsedMessage.mediaId!)
+    // NODE 4: Download Media (if not text)
+    console.log('[chatbotFlow] NODE 4: Verificando tipo de mensagem...')
+    logger.logNodeStart('4. Download Media', { type: parsedMessage.type })
+    
+    let processedContent: string | undefined
+    
+    if (parsedMessage.type !== 'text' && parsedMessage.metadata?.id) {
+      console.log('[chatbotFlow] NODE 4: Baixando mídia...')
+      const mediaUrl = await downloadMetaMedia(parsedMessage.metadata.id)
       logger.logNodeSuccess('4. Download Media', { url: mediaUrl })
-      console.log(`[chatbotFlow] NODE 4: ✅ Mídia baixada`)
-
-      // NODE 5: Transcribe/Analyze Media
-      const startNode5 = Date.now()
-      logger.logNodeStart('5. Process Media Content', { type: parsedMessage.type, url: mediaUrl })
-      normalizedContent = await normalizeMessage({
-        type: parsedMessage.type,
-        content: parsedMessage.content,
-        mediaUrl,
-      })
-      const durationNode5 = Date.now() - startNode5
-      logger.logNodeSuccess('5. Process Media Content', { content: normalizedContent.substring(0, 100) })
-      console.log(`[chatbotFlow] NODE 5: ✅ Normalização concluída em ${durationNode5}ms`)
+      
+      // Aqui você pode processar áudio/imagem com Whisper/Vision
+      // Por enquanto, só retorna vazio
+      processedContent = ''
+    } else {
+      console.log('[chatbotFlow] NODE 4: Mensagem de texto, pulando mídia')
+      logger.logNodeSuccess('4. Download Media', { skipped: true })
     }
-    const durationNode4 = Date.now() - startNode4
-    console.log(`[chatbotFlow] NODE 4: Duração ${durationNode4}ms`)
-
-    console.log(`[chatbotFlow] Message normalized, pushing to Redis for batching`)
-
-    // NODE 6: Push to Redis
-    try {
-      logger.logNodeStart('6. Push to Redis', { phone: parsedMessage.phone })
-      await pushToRedis(parsedMessage.phone, normalizedContent)
-      logger.logNodeSuccess('6. Push to Redis', { success: true })
-      console.log('[chatbotFlow] NODE 6: ✅ Pushed to Redis')
-    } catch (error: any) {
-      console.error('[chatbotFlow] NODE 6: ❌ Redis error:', error.message)
-      logger.logNodeError('6. Push to Redis', error)
-      // Continue mesmo se Redis falhar (degradação graceful)
-    }
-
-    // NODE 7: Batch Messages
-    logger.logNodeStart('7. Batch Messages', { phone: parsedMessage.phone })
-    const batchedMessage = await batchMessages(parsedMessage.phone)
-    logger.logNodeSuccess('7. Batch Messages', { batched: batchedMessage })
-
-    // NODE 8: Get Chat History
-    logger.logNodeStart('8. Get Chat History', { phone: parsedMessage.phone })
-    const chatHistory = await getChatHistory(parsedMessage.phone)
-    logger.logNodeSuccess('8. Get Chat History', { historyLength: chatHistory.length })
 
     // NODE 5: Normalize Message
-    const startNode5 = Date.now()
     console.log('[chatbotFlow] NODE 5: Iniciando normalização...')
-    logger.logNodeStart('5. Normalize Message', { parsedMessage, processedContent: normalizedContent })
+    logger.logNodeStart('5. Normalize Message', { parsedMessage, processedContent })
     const normalizedMessage = normalizeMessage({
       parsedMessage,
-      processedContent: normalizedContent,
+      processedContent,
     })
-    const durationNode5 = Date.now() - startNode5
-    console.log(`[chatbotFlow] NODE 5: ✅ Normalização concluída em ${durationNode5}ms`)
     logger.logNodeSuccess('5. Normalize Message', { content: normalizedMessage.content })
-    console.log('[chatbotFlow] Message normalized, pushing to Redis for batching')
+    console.log(`[chatbotFlow] NODE 5: ✅ Normalização concluída`)
 
     // NODE 6: Push to Redis
     console.log('[chatbotFlow] NODE 6: Tentando push to Redis...')
@@ -216,7 +178,7 @@ export const processChatbotMessage = async (
     } catch (redisError) {
       console.error('[chatbotFlow] NODE 6: ❌ ERRO NO REDIS!', redisError)
       logger.logNodeError('6. Push to Redis', redisError)
-      throw new Error(`Redis push failed: ${redisError instanceof Error ? redisError.message : 'Unknown error'}`)
+      // Continua mesmo com erro Redis (graceful degradation)
     }
 
     // NODE 7: Save User Message
