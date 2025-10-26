@@ -90,12 +90,6 @@ export const MessageBubble = ({ message }: MessageBubbleProps) => {
             : 'message-incoming text-gray-900 rounded-bl-none'
         )}
       >
-        {!isOutgoing && message.name && (
-          <span className="text-xs font-semibold mb-1 text-primary">
-            {message.name}
-          </span>
-        )}
-
         <div className="mb-1">{renderMessageContent()}</div>
 
         <div
