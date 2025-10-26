@@ -12,6 +12,12 @@ interface MatchedDocument {
 
 export const getRAGContext = async (query: string): Promise<string> => {
   try {
+    // TODO: Implementar RAG quando a função match_documents estiver criada no Supabase
+    // Por enquanto, retorna vazio para não travar o fluxo
+    console.warn('[getRAGContext] ⚠️ RAG desabilitado temporariamente - função match_documents não existe')
+    return ''
+    
+    /* CÓDIGO ORIGINAL - DESCOMENTAR QUANDO CRIAR A FUNÇÃO NO SUPABASE
     const embedding = await generateEmbedding(query)
     const supabase = createServerClient()
 
@@ -34,8 +40,11 @@ export const getRAGContext = async (query: string): Promise<string> => {
       .join('\n\n---\n\n')
 
     return concatenatedContent
+    */
   } catch (error) {
+    // Se der erro, retorna vazio ao invés de quebrar o fluxo
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    throw new Error(`Failed to get RAG context: ${errorMessage}`)
+    console.error(`[getRAGContext] Error (returning empty): ${errorMessage}`)
+    return ''
   }
 }

@@ -140,22 +140,32 @@ export const processChatbotMessage = async (
     let normalizedContent: string
 
     // NODE 4: Process Media (optional)
+    const startNode4 = Date.now()
     if (parsedMessage.type === 'text') {
       normalizedContent = parsedMessage.content
+      console.log('[chatbotFlow] NODE 4: Texto - pulando download de mídia')
       await logger.logNodeStart('4. Download Media', null)
       await logger.logNodeSuccess('4. Download Media', { skipped: true, reason: 'Text message' })
     } else {
+      console.log('[chatbotFlow] NODE 4: Iniciando download de mídia...')
       await logger.logNodeStart('4. Download Media', { type: parsedMessage.type, mediaId: parsedMessage.metadata?.id })
       normalizedContent = await processMediaMessage(parsedMessage)
+      console.log('[chatbotFlow] NODE 4: ✅ Download concluído')
       await logger.logNodeSuccess('4. Download Media', { processedLength: normalizedContent.length })
     }
+    const durationNode4 = Date.now() - startNode4
+    console.log(`[chatbotFlow] NODE 4: Duração ${durationNode4}ms`)
 
     // NODE 5: Normalize Message
+    const startNode5 = Date.now()
+    console.log('[chatbotFlow] NODE 5: Iniciando normalização...')
     await logger.logNodeStart('5. Normalize Message', { parsedMessage, processedContent: normalizedContent })
     const normalizedMessage = normalizeMessage({
       parsedMessage,
       processedContent: normalizedContent,
     })
+    const durationNode5 = Date.now() - startNode5
+    console.log(`[chatbotFlow] NODE 5: ✅ Normalização concluída em ${durationNode5}ms`)
     await logger.logNodeSuccess('5. Normalize Message', { content: normalizedMessage.content })
     console.log('[chatbotFlow] Message normalized, pushing to Redis for batching')
 
