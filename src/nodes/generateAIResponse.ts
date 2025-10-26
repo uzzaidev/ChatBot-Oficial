@@ -130,18 +130,47 @@ export const generateAIResponse = async (input: GenerateAIResponseInput): Promis
       },
     ]
 
-    if (ragContext) {
+    if (ragContext && ragContext.trim().length > 0) {
       messages.push({
         role: 'user',
         content: `Contexto relevante da base de conhecimento:\n\n${ragContext}`,
       })
     }
 
-    messages.push(...chatHistory)
+    // Valida e adiciona chatHistory - VALIDAÇÃO EXTRA
+    if (Array.isArray(chatHistory) && chatHistory.length > 0) {
+      const validHistory = chatHistory.filter((msg) => {
+        const isValid = msg && 
+          typeof msg === 'object' &&
+          (msg.role === 'user' || msg.role === 'assistant') &&
+          typeof msg.content === 'string' &&
+          msg.content.trim().length > 0
+        
+        if (!isValid) {
+          console.warn('[generateAIResponse] Invalid message in chatHistory:', msg)
+        }
+        
+        return isValid
+      })
+      
+      messages.push(...validHistory)
+    }
+
+    // Adiciona mensagem atual - VALIDAÇÃO
+    if (!message || typeof message !== 'string' || message.trim().length === 0) {
+      throw new Error('Message must be a non-empty string')
+    }
 
     messages.push({
       role: 'user',
       content: `${customerName}: ${message}`,
+    })
+
+    // Log para debug
+    console.log('[generateAIResponse] Final messages array:', {
+      totalMessages: messages.length,
+      messageRoles: messages.map((m, i) => `${i}: ${m.role}`),
+      allContentsAreStrings: messages.every((m) => typeof m.content === 'string'),
     })
 
     const tools = [SUB_AGENT_TOOL_DEFINITION, HUMAN_HANDOFF_TOOL_DEFINITION]

@@ -223,6 +223,11 @@ export default function DebugDashboardPage({
             Monitor mensagens em tempo real - estilo n8n
           </p>
         </div>
+        <a href="/dashboard/workflow">
+          <Button variant="outline">
+            🔀 Workflow Debugger (Passo a Passo)
+          </Button>
+        </a>
       </div>
 
       {/* Painel de Teste */}
