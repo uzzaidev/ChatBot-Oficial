@@ -46,13 +46,13 @@ export const MessageBubble = ({ message }: MessageBubbleProps) => {
         return (
           <div className="flex flex-col gap-2">
             <span className="text-sm">Imagem</span>
-            {message.metadata?.url && (
+            {message.metadata?.url ? (
               <img
                 src={message.metadata.url as string}
                 alt="Imagem enviada"
                 className="max-w-xs rounded-lg"
               />
-            )}
+            ) : null}
             {message.content && (
               <span className="text-sm">{message.content}</span>
             )}

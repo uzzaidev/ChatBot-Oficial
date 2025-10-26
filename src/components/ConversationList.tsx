@@ -68,7 +68,7 @@ export const ConversationList = ({
             {/* Avatar */}
             <Avatar className="h-12 w-12 flex-shrink-0">
               <AvatarFallback className="bg-primary text-white text-sm">
-                {getInitials(conversation.name)}
+                {getInitials(conversation.name || 'Sem nome')}
               </AvatarFallback>
             </Avatar>
 

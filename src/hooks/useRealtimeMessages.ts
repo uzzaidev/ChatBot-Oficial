@@ -45,6 +45,7 @@ export const useRealtimeMessages = ({
             const newMessage: Message = {
               id: item.id?.toString() || `msg-${Date.now()}`,
               client_id: clientId,
+              conversation_id: String(phone),
               phone: phone,
               name: messageType === 'human' ? 'Cliente' : 'Bot',
               content: messageContent,
@@ -52,6 +53,7 @@ export const useRealtimeMessages = ({
               direction: messageType === 'human' ? 'incoming' : 'outgoing',
               status: 'sent',
               timestamp: new Date().toISOString(),
+              metadata: null,
             }
             if (onNewMessage) {
               onNewMessage(newMessage)
