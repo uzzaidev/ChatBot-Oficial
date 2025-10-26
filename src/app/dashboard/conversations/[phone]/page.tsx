@@ -8,7 +8,8 @@ import { ConversationList } from '@/components/ConversationList'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { getInitials } from '@/lib/utils'
-import { MessageCircle, ArrowLeft, LayoutDashboard } from 'lucide-react'
+import { MessageCircle, LayoutDashboard } from 'lucide-react'
+import Link from 'next/link'
 
 interface ConversationPageProps {
   params: {
@@ -39,6 +40,11 @@ export default function ConversationPage({ params }: ConversationPageProps) {
             <MessageCircle className="h-6 w-6 text-white" />
             <h2 className="text-white font-semibold text-lg">ChatBot</h2>
           </div>
+          <Link href="/dashboard">
+            <Button variant="ghost" size="sm" className="text-white hover:bg-secondary-foreground/10">
+              <LayoutDashboard className="h-4 w-4" />
+            </Button>
+          </Link>
         </div>
 
         {/* Lista de Conversas */}
@@ -59,7 +65,7 @@ export default function ConversationPage({ params }: ConversationPageProps) {
             <div className="bg-muted p-3 flex items-center gap-3 border-b border-gray-200">
               <Avatar>
                 <AvatarFallback className="bg-primary text-white">
-                  {getInitials(conversation.name)}
+                  {getInitials(conversation.name || '')}
                 </AvatarFallback>
               </Avatar>
               <div>
@@ -69,17 +75,17 @@ export default function ConversationPage({ params }: ConversationPageProps) {
             </div>
 
             {/* Área de Mensagens */}
-            <div className="flex-1 whatsapp-bg overflow-hidden">
+            <div className="flex-1 overflow-hidden whatsapp-bg">
               <ConversationDetail
                 phone={phone}
                 clientId={clientId}
-                conversationName={conversation.name}
+                conversationName={conversation.name || undefined}
                 conversationStatus={conversation.status}
               />
             </div>
 
             {/* Footer - Input de Mensagem */}
-            <div className="bg-muted p-4 border-t border-gray-200">
+            <div className="bg-muted p-3 border-t border-gray-200">
               <SendMessageForm
                 phone={phone}
                 clientId={clientId}

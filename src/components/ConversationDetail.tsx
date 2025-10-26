@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -91,26 +90,24 @@ export const ConversationDetail = ({
 
   if (error) {
     return (
-      <Card>
-        <CardContent className="p-8">
-          <div className="text-center text-red-500">
-            Erro ao carregar mensagens: {error}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center h-full bg-white">
+        <div className="text-center text-red-500 p-8">
+          Erro ao carregar mensagens: {error}
+        </div>
+      </div>
     )
   }
 
   return (
-    <Card className="flex flex-col h-[calc(100vh-12rem)]">
-      <CardHeader className="flex-shrink-0">
+    <div className="flex flex-col h-full">
+      <div className="flex-shrink-0 bg-white p-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <UserCircle className="h-8 w-8 text-muted-foreground" />
             <div>
-              <CardTitle className="text-lg">
+              <h3 className="text-lg font-semibold">
                 {conversationName || formatPhone(phone)}
-              </CardTitle>
+              </h3>
               {conversationName && (
                 <p className="text-sm text-muted-foreground">
                   {formatPhone(phone)}
@@ -139,9 +136,9 @@ export const ConversationDetail = ({
             )}
           </div>
         </div>
-      </CardHeader>
+      </div>
 
-      <CardContent className="flex-1 overflow-hidden p-0">
+      <div className="flex-1 overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <span className="text-muted-foreground">Carregando mensagens...</span>
@@ -159,7 +156,7 @@ export const ConversationDetail = ({
             </div>
           </ScrollArea>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
