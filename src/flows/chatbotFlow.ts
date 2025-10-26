@@ -86,17 +86,26 @@ const checkForToolCall = (aiResponseContent: string, toolName: string): boolean 
 export const processChatbotMessage = async (
   payload: WhatsAppWebhookPayload
 ): Promise<ChatbotFlowResult> => {
+  console.log('🚀🚀🚀 [chatbotFlow] FUNÇÃO INICIADA! 🚀🚀🚀')
+  console.log('[chatbotFlow] Payload recebido:', JSON.stringify(payload, null, 2))
+  
   // Cria logger para rastreamento completo
+  console.log('[chatbotFlow] Criando logger...')
   const logger = createExecutionLogger()
+  
+  console.log('[chatbotFlow] Iniciando execução...')
   const executionId = logger.startExecution({
     source: 'chatbotFlow',
     payload_from: payload.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from,
   })
+  
+  console.log(`[chatbotFlow] ✅ Execution ID: ${executionId}`)
 
   try {
     console.log(`[chatbotFlow][${executionId}] Starting message processing`)
 
     // NODE 1: Filter Status Updates
+    console.log('[chatbotFlow] NODE 1: Iniciando Filter Status Updates...')
     await logger.logNodeStart('1. Filter Status Updates', payload)
     const filteredPayload = filterStatusUpdates(payload)
     if (!filteredPayload) {

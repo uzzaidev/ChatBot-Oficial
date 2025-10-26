@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createExecutionLogger } from '@/lib/logger'
 import { processChatbotMessage } from '@/flows/chatbotFlow'
 import { addWebhookMessage } from '@/lib/webhookCache'
 
@@ -80,24 +79,21 @@ export async function POST(req: NextRequest) {
       console.error('❌ Erro ao extrair dados da mensagem:', parseError)
     }
 
-    // Cria logger para esta execução
-    const logger = createExecutionLogger()
-    const executionId = logger.startExecution({
-      source: 'whatsapp-webhook',
-      webhook_payload: body,
-    })
-
-    console.log(`[WEBHOOK] Starting execution: ${executionId}`)
+    console.log('[WEBHOOK] ⚡ Iniciando processChatbotMessage...')
 
     // Processa mensagem de forma assíncrona (não bloqueia resposta)
+    // O logger está dentro do chatbotFlow.ts
     processChatbotMessage(body)
-      .then(async (result) => {
-        console.log(`[WEBHOOK] Execution ${executionId} completed:`, result)
-        await logger.finishExecution(result.success ? 'success' : 'error')
+      .then((result) => {
+        console.log('[WEBHOOK] ✅ Processamento concluído com sucesso!')
+        console.log('[WEBHOOK] Resultado:', JSON.stringify(result, null, 2))
       })
-      .catch(async (error) => {
-        console.error(`[WEBHOOK] Execution ${executionId} failed:`, error)
-        await logger.finishExecution('error')
+      .catch((error) => {
+        console.error('[WEBHOOK] ❌❌❌ ERRO NO PROCESSAMENTO ❌❌❌')
+        console.error('[WEBHOOK] Error name:', error?.name)
+        console.error('[WEBHOOK] Error message:', error?.message)
+        console.error('[WEBHOOK] Error stack:', error?.stack)
+        console.error('[WEBHOOK] Full error:', error)
       })
 
     // Confirma o recebimento imediatamente (importante: SEM esperar processamento)
