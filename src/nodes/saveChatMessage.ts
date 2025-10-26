@@ -12,10 +12,18 @@ export async function saveChatMessage(input: SaveChatMessageInput): Promise<void
   try {
     const supabase = createServerClient()
 
+    // O n8n_chat_histories salva no formato LangChain:
+    // { "type": "human" | "ai", "content": "...", "additional_kwargs": {}, "response_metadata": {} }
+    const messageJson = {
+      type: type === 'user' ? 'human' : 'ai',  // Converter 'user' → 'human'
+      content: message,
+      additional_kwargs: {},
+      response_metadata: {}
+    }
+
     const record = {
       session_id: phone,
-      type,
-      message,
+      message: JSON.stringify(messageJson),
       created_at: new Date().toISOString()
     }
 

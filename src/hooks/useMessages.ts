@@ -4,7 +4,6 @@ import type { Message } from '@/lib/types'
 interface UseMessagesOptions {
   clientId: string
   phone: string
-  limit?: number
   refreshInterval?: number
 }
 
@@ -19,7 +18,6 @@ interface UseMessagesResult {
 export const useMessages = ({
   clientId,
   phone,
-  limit = 100,
   refreshInterval = 0,
 }: UseMessagesOptions): UseMessagesResult => {
   const [messages, setMessages] = useState<Message[]>([])
@@ -34,7 +32,6 @@ export const useMessages = ({
 
       const params = new URLSearchParams({
         client_id: clientId,
-        limit: limit.toString(),
       })
 
       const response = await fetch(`/api/messages/${phone}?${params.toString()}`)
@@ -54,7 +51,7 @@ export const useMessages = ({
     } finally {
       setLoading(false)
     }
-  }, [clientId, phone, limit])
+  }, [clientId, phone])
 
   useEffect(() => {
     if (clientId && phone) {

@@ -45,11 +45,27 @@ export const useRealtimeMessages = ({
           (payload) => {
             // Transformar dados do n8n para formato Message
             const item = payload.new as any
-            // O n8n_chat_histories tem a estrutura:
-            // - type: 'user' | 'ai'
-            // - message: string (conteúdo da mensagem)
-            const messageType = item.type || 'ai'
-            const messageContent = typeof item.message === 'string' ? item.message : (item.message?.content || '')
+
+            // O n8n_chat_histories salva message como JSON:
+            // { "type": "human" | "ai", "content": "...", "additional_kwargs": {}, "response_metadata": {} }
+
+            let messageData: any
+
+            // Parse o JSON da coluna message
+            if (typeof item.message === 'string') {
+              try {
+                messageData = JSON.parse(item.message)
+              } catch {
+                // Fallback se não for JSON válido
+                messageData = { type: 'ai', content: item.message }
+              }
+            } else {
+              messageData = item.message || {}
+            }
+
+            // Extrair type e content do JSON
+            const messageType = messageData.type || 'ai'  // 'human' ou 'ai'
+            const messageContent = messageData.content || ''
 
             // Limpar tags de function calls
             const cleanedContent = cleanMessageContent(messageContent)
@@ -59,12 +75,12 @@ export const useRealtimeMessages = ({
               client_id: clientId,
               conversation_id: String(phone),
               phone: phone,
-              name: messageType === 'user' ? 'Cliente' : 'Bot',
+              name: messageType === 'human' ? 'Cliente' : 'Bot',
               content: cleanedContent,
               type: 'text',
-              direction: messageType === 'user' ? 'incoming' : 'outgoing',
+              direction: messageType === 'human' ? 'incoming' : 'outgoing',
               status: 'sent',
-              timestamp: new Date().toISOString(),
+              timestamp: item.created_at || new Date().toISOString(),  // Usar created_at do banco
               metadata: null,
             }
             if (onNewMessageRef.current) {

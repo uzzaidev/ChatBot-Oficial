@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClientBrowser } from '@/lib/supabase'
 import type { ConversationWithCount, ConversationStatus } from '@/lib/types'
 
@@ -31,6 +31,7 @@ export const useConversations = ({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [total, setTotal] = useState(0)
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const fetchConversations = useCallback(async () => {
     try {
@@ -66,6 +67,16 @@ export const useConversations = ({
     }
   }, [clientId, status, limit, offset])
 
+  // Função debounced para evitar múltiplas chamadas rápidas do realtime
+  const debouncedFetch = useCallback((delay: number = 0) => {
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current)
+    }
+    fetchTimeoutRef.current = setTimeout(() => {
+      fetchConversations()
+    }, delay)
+  }, [fetchConversations])
+
   useEffect(() => {
     if (clientId) {
       fetchConversations()
@@ -89,20 +100,36 @@ export const useConversations = ({
     }
 
     const supabase = createClientBrowser()
+
+    // Monitorar mudanças em AMBAS as tabelas para garantir que novos clientes apareçam
     let channel = supabase
-      .channel('clientes-whatsapp-changes')
+      .channel('conversations-realtime')
+      // Detectar novos clientes
       .on(
         'postgres_changes',
         {
           event: '*', // INSERT, UPDATE, DELETE
           schema: 'public',
           table: 'Clientes WhatsApp',
-          // Note: Not filtering by client_id as this is a legacy n8n table
-          // and client_id might not be populated for all records yet
         },
         () => {
-          // Refetch conversations when any change occurs
-          fetchConversations()
+          console.log('[Realtime] Mudança detectada em Clientes WhatsApp')
+          // Delay de 500ms para garantir que mensagem foi salva primeiro
+          debouncedFetch(500)
+        }
+      )
+      // Detectar novas mensagens (para cobrir race condition e novos clientes)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'n8n_chat_histories',
+        },
+        () => {
+          console.log('[Realtime] Nova mensagem detectada em n8n_chat_histories')
+          // Delay de 300ms para agrupar múltiplas inserções (user + ai)
+          debouncedFetch(300)
         }
       )
       .subscribe()
@@ -111,8 +138,12 @@ export const useConversations = ({
       if (channel) {
         supabase.removeChannel(channel)
       }
+      // Limpar timeout pendente
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current)
+      }
     }
-  }, [enableRealtime, clientId, fetchConversations])
+  }, [enableRealtime, clientId, debouncedFetch])
 
   return {
     conversations,

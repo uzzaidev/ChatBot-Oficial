@@ -16,7 +16,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const { phone } = params
     const searchParams = request.nextUrl.searchParams
     const clientId = searchParams.get('client_id')
-    const limit = parseInt(searchParams.get('limit') || '100')
 
     if (!clientId) {
       return NextResponse.json(
@@ -34,13 +33,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const supabase = createServerClient()
 
-    // Buscar histórico do n8n_chat_histories
+    // Buscar TODAS as mensagens do histórico (sem limit)
     const { data, error } = await supabase
       .from('n8n_chat_histories')
       .select('*')
       .eq('session_id', phone)
-      .order('id', { ascending: true })
-      .limit(limit)
+      .order('created_at', { ascending: true })  // Ordenar por created_at (mais antigas primeiro)
 
     if (error) {
       console.error('Erro ao buscar mensagens:', error)
@@ -52,11 +50,26 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     // Transformar dados do n8n_chat_histories para formato Message
     const messages: Message[] = (data || []).map((item: any, index: number) => {
-      // O n8n_chat_histories tem a estrutura:
-      // - type: 'user' | 'ai'
-      // - message: string (conteúdo da mensagem)
-      const messageType = item.type || 'ai'
-      const messageContent = typeof item.message === 'string' ? item.message : (item.message?.content || '')
+      // O n8n_chat_histories salva message como JSON:
+      // { "type": "human" | "ai", "content": "...", "additional_kwargs": {}, "response_metadata": {} }
+
+      let messageData: any
+
+      // Parse o JSON da coluna message
+      if (typeof item.message === 'string') {
+        try {
+          messageData = JSON.parse(item.message)
+        } catch {
+          // Fallback se não for JSON válido (mensagens antigas)
+          messageData = { type: 'ai', content: item.message }
+        }
+      } else {
+        messageData = item.message || {}
+      }
+
+      // Extrair type e content do JSON
+      const messageType = messageData.type || 'ai'  // 'human' ou 'ai'
+      const messageContent = messageData.content || ''
 
       // Limpar tags de function calls
       const cleanedContent = cleanMessageContent(messageContent)
@@ -66,10 +79,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         client_id: clientId,
         conversation_id: String(phone),
         phone: String(phone),
-        name: messageType === 'user' ? 'Cliente' : 'Bot',
+        name: messageType === 'human' ? 'Cliente' : 'Bot',
         content: cleanedContent,
         type: 'text' as const,
-        direction: messageType === 'user' ? ('incoming' as const) : ('outgoing' as const),
+        direction: messageType === 'human' ? ('incoming' as const) : ('outgoing' as const),
         status: 'sent' as const,
         timestamp: item.created_at || new Date().toISOString(),
         metadata: null,
