@@ -7,7 +7,8 @@ const POOL_MAX_AGE_MS = 60000 // Recria pool após 60 segundos (serverless best 
 const getConnectionString = (): string => {
   // Usa POSTGRES_URL se disponível, senão constrói manualmente
   if (process.env.POSTGRES_URL_NON_POOLING) {
-    return process.env.POSTGRES_URL_NON_POOLING
+    // Remove sslmode parameter if present - SSL config is handled by Pool options
+    return process.env.POSTGRES_URL_NON_POOLING.replace(/[?&]sslmode=[^&]*(&|$)/, '$1').replace(/\?$/, '')
   }
 
   const host = process.env.POSTGRES_HOST || 'db.jhodhxvvhohygijqcxbo.supabase.co'
@@ -19,7 +20,7 @@ const getConnectionString = (): string => {
     throw new Error('POSTGRES_PASSWORD não configurado')
   }
 
-  return `postgres://${user}:${password}@${host}:5432/${database}?sslmode=require`
+  return `postgres://${user}:${password}@${host}:5432/${database}`
 }
 
 export const getPool = (): Pool => {
