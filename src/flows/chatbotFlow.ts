@@ -17,7 +17,6 @@ import { handleHumanHandoff } from '@/nodes/handleHumanHandoff'
 import { saveChatMessage } from '@/nodes/saveChatMessage'
 import { downloadMedia } from '@/lib/meta'
 import { createExecutionLogger } from '@/lib/logger'
-import { resetServerClient } from '@/lib/supabase'
 
 export interface ChatbotFlowResult {
   success: boolean
@@ -87,24 +86,14 @@ const checkForToolCall = (aiResponseContent: string, toolName: string): boolean 
 export const processChatbotMessage = async (
   payload: WhatsAppWebhookPayload
 ): Promise<ChatbotFlowResult> => {
-  console.log('🚀🚀🚀 [chatbotFlow] FUNÇÃO INICIADA! 🚀🚀🚀')
-  console.log('[chatbotFlow] Payload recebido:', JSON.stringify(payload, null, 2))
+  console.log('🚀 [chatbotFlow] Starting message processing')
   
-  // CRÍTICO: Reset do cliente Supabase para não reutilizar conexão antiga/lenta
-  resetServerClient()
-  console.log('[chatbotFlow] ✅ Cliente Supabase resetado')
-  
-  // Cria logger para rastreamento completo
-  console.log('[chatbotFlow] Criando logger...')
   const logger = createExecutionLogger()
   
-  console.log('[chatbotFlow] Iniciando execução...')
   const executionId = logger.startExecution({
     source: 'chatbotFlow',
     payload_from: payload.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from,
   })
-  
-  console.log(`[chatbotFlow] ✅ Execution ID: ${executionId}`)
 
   try {
     console.log(`[chatbotFlow][${executionId}] Starting message processing`)
