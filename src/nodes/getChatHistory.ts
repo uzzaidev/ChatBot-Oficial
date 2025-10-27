@@ -1,43 +1,35 @@
 import { ChatMessage } from '@/lib/types'
-import { createServerClient } from '@/lib/supabase'
-
-const CHAT_HISTORY_LIMIT = 15
+import { query } from '@/lib/postgres'
 
 export const getChatHistory = async (phone: string): Promise<ChatMessage[]> => {
   try {
-    const supabase = createServerClient()
+    console.log('[getChatHistory] 📚 Fetching chat history for:', phone)
 
-    const { data, error } = await supabase
-      .from('n8n_chat_histories')
-      .select('*')
-      .eq('session_id', phone)
-      .order('created_at', { ascending: false })
-      .limit(CHAT_HISTORY_LIMIT)
+    const result = await query<any>(
+      `SELECT session_id, message, type, created_at 
+       FROM n8n_chat_histories 
+       WHERE session_id = $1 
+       ORDER BY created_at DESC 
+       LIMIT 15`,
+      [phone]
+    )
 
-    if (error) {
-      throw new Error(`Failed to fetch chat history: ${error.message}`)
-    }
-
-    if (!data || data.length === 0) {
+    if (!result.rows || result.rows.length === 0) {
       return []
     }
 
-    // @ts-ignore - n8n_chat_histories table structure
-    const chatMessages: ChatMessage[] = data
+    const chatMessages: ChatMessage[] = result.rows
       .reverse()
-      // @ts-ignore
       .map((record) => ({
-        // @ts-ignore
         role: record.type === 'ai' ? 'assistant' : 'user',
-        // @ts-ignore
         content: record.message,
-        // @ts-ignore
         timestamp: record.created_at,
       }))
 
+    console.log(`[getChatHistory] ✅ Retrieved ${chatMessages.length} messages`)
     return chatMessages
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    throw new Error(`Failed to get chat history: ${errorMessage}`)
+    console.error('[getChatHistory] ❌ Error fetching chat history:', error)
+    return []
   }
 }
