@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { query } from '@/lib/postgres'
 import type { ConversationWithCount } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
+  const startTime = Date.now()
+  
   try {
     const searchParams = request.nextUrl.searchParams
     const clientId = searchParams.get('client_id')
@@ -19,126 +21,89 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const supabase = createServerClient()
+    console.log('[API /conversations] 🚀 Fetching conversations with optimized query')
 
-    // Buscar apenas clientes que TÊM mensagens no histórico
-    // Primeiro, buscar telefones únicos que têm mensagens
-    const { data: phonesWithMessages, error: phonesError } = await supabase
-      .from('n8n_chat_histories')
-      .select('session_id')
-      .not('session_id', 'is', null)
-
-    if (phonesError) {
-      console.error('Erro ao buscar telefones com mensagens:', phonesError)
-      return NextResponse.json(
-        { error: 'Erro ao buscar telefones com mensagens' },
-        { status: 500 }
+    // OTIMIZAÇÃO: Uma única query SQL com JOINs e agregações
+    // Isso elimina o problema N+1 (antes eram 1 + N*2 queries)
+    const sqlQuery = `
+      WITH customer_stats AS (
+        SELECT 
+          c.telefone,
+          c.nome,
+          c.status,
+          c.created_at as customer_created_at,
+          COUNT(h.id) as message_count,
+          MAX(h.created_at) as last_message_time,
+          (
+            SELECT h2.message 
+            FROM n8n_chat_histories h2 
+            WHERE h2.session_id = CAST(c.telefone AS TEXT)
+            ORDER BY h2.created_at DESC 
+            LIMIT 1
+          ) as last_message_json
+        FROM "Clientes WhatsApp" c
+        LEFT JOIN n8n_chat_histories h ON CAST(c.telefone AS TEXT) = h.session_id
+        WHERE EXISTS (
+          SELECT 1 
+          FROM n8n_chat_histories h3 
+          WHERE h3.session_id = CAST(c.telefone AS TEXT)
+        )
+        ${status ? 'AND c.status = $1' : ''}
+        GROUP BY c.telefone, c.nome, c.status, c.created_at
       )
-    }
+      SELECT * FROM customer_stats
+      ORDER BY last_message_time DESC NULLS LAST
+      LIMIT $${status ? '2' : '1'} OFFSET $${status ? '3' : '2'}
+    `
 
-    // Extrair lista única de telefones
-    const uniquePhones = Array.from(new Set((phonesWithMessages || []).map((item: any) => item.session_id)))
+    const params = status ? [status, limit, offset] : [limit, offset]
+    const result = await query<any>(sqlQuery, params)
 
-    if (uniquePhones.length === 0) {
-      return NextResponse.json({
-        conversations: [],
-        total: 0,
-        limit,
-        offset,
-      })
-    }
-
-    // Buscar dados dos clientes que têm mensagens
-    let dataQuery = supabase
-      .from('Clientes WhatsApp')
-      .select('*')
-      .in('telefone', uniquePhones)
-
-    // Filtrar por status se fornecido
-    if (status) {
-      dataQuery = dataQuery.eq('status', status)
-    }
-
-    const { data, error } = await dataQuery
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1)
-
-    if (error) {
-      console.error('Erro ao buscar conversas:', error)
-      return NextResponse.json(
-        { error: 'Erro ao buscar conversas' },
-        { status: 500 }
-      )
-    }
-
-    // Buscar última mensagem e contagem para cada cliente
-    const conversationsWithMessages = await Promise.all(
-      (data || []).map(async (cliente: any) => {
-        const telefoneStr = String(cliente.telefone)
-
-        // Buscar última mensagem
-        const { data: lastMsg } = await supabase
-          .from('n8n_chat_histories')
-          .select('message, created_at')
-          .eq('session_id', telefoneStr)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single()
-
-        // Buscar contagem de mensagens
-        const { count } = await supabase
-          .from('n8n_chat_histories')
-          .select('*', { count: 'exact', head: true })
-          .eq('session_id', telefoneStr)
-
-        // Parse última mensagem (JSON do LangChain)
-        let lastMessageContent = ''
-        let lastMessageTimestamp = cliente.created_at
-
-        if (lastMsg) {
-          try {
-            // @ts-ignore - lastMsg pode ter estrutura variável
-            const msgData = typeof lastMsg.message === 'string'
-              // @ts-ignore
-              ? JSON.parse(lastMsg.message)
-              // @ts-ignore
-              : lastMsg.message
-            lastMessageContent = msgData.content || ''
-            // @ts-ignore
-            lastMessageTimestamp = lastMsg.created_at
-          } catch {
-            lastMessageContent = ''
-          }
+    const conversations: ConversationWithCount[] = result.rows.map((row) => {
+      const telefoneStr = String(row.telefone)
+      
+      // Parse última mensagem (JSON do LangChain)
+      let lastMessageContent = ''
+      if (row.last_message_json) {
+        try {
+          const msgData = typeof row.last_message_json === 'string'
+            ? JSON.parse(row.last_message_json)
+            : row.last_message_json
+          
+          // Extrai conteúdo da mensagem (formato LangChain)
+          lastMessageContent = msgData.data?.content || msgData.content || ''
+        } catch (error) {
+          console.error('[API /conversations] Error parsing message JSON:', error)
+          lastMessageContent = ''
         }
+      }
 
-        return {
-          id: telefoneStr,
-          client_id: clientId,
-          phone: telefoneStr,
-          name: cliente.nome || 'Sem nome',
-          status: cliente.status || 'bot',
-          last_message: lastMessageContent.substring(0, 100), // Limitar a 100 chars
-          last_update: lastMessageTimestamp || new Date().toISOString(),
-          created_at: cliente.created_at || new Date().toISOString(),
-          message_count: count || 0,
-          assigned_to: null,
-        }
-      })
-    )
+      return {
+        id: telefoneStr,
+        client_id: clientId,
+        phone: telefoneStr,
+        name: row.nome || 'Sem nome',
+        status: row.status || 'bot',
+        last_message: lastMessageContent.substring(0, 100),
+        last_update: row.last_message_time || row.customer_created_at || new Date().toISOString(),
+        created_at: row.customer_created_at || new Date().toISOString(),
+        message_count: parseInt(row.message_count) || 0,
+        assigned_to: null,
+      }
+    })
 
-    // Ordenar por última atualização
-    const conversations = conversationsWithMessages.sort((a, b) =>
-      new Date(b.last_update).getTime() - new Date(a.last_update).getTime()
-    )
+    const duration = Date.now() - startTime
+    console.log(`[API /conversations] ✅ Query completed in ${duration}ms - ${conversations.length} conversations`)
 
     return NextResponse.json({
-      conversations: conversations,
-      total: conversations.length,  // Total real de conversas com mensagens
+      conversations,
+      total: conversations.length,
       limit,
       offset,
     })
   } catch (error) {
-    console.error('Erro inesperado:', error)
+    const duration = Date.now() - startTime
+    console.error(`[API /conversations] ❌ Error after ${duration}ms:`, error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
