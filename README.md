@@ -1,68 +1,104 @@
-# WhatsApp SaaS Chatbot - Phase 2 Dashboard
+# WhatsApp AI Chatbot - Next.js Full-Stack Application
 
-Dashboard Next.js para gerenciamento de conversas WhatsApp integrado com n8n.
+Sistema de chatbot de WhatsApp com IA, migrando de n8n para Next.js com arquitetura serverless.
 
-## Status do Projeto
+## 📌 Status do Projeto
 
-**Phase 2 - Dashboard Next.js + n8n Backend**
+**✅ PRODUÇÃO ATIVA** - Sistema funcionando em https://chat.luisfboff.com
 
-- Dashboard read-only para visualização de conversas
-- Envio de comandos via webhooks n8n
-- Realtime updates via Supabase
-- n8n continua processando mensagens
+**Fase Atual: Next.js Full-Stack (Migração completa)**
 
-## Stack Tecnológico
+- ✅ Webhook Meta WhatsApp totalmente funcional
+- ✅ Processamento completo de mensagens (texto, áudio, imagem)
+- ✅ Sistema de batching Redis (evita respostas duplicadas)
+- ✅ Integração com Groq (Llama 3.3 70B) para respostas
+- ✅ RAG com Supabase Vector Store
+- ✅ Transcrição de áudio (OpenAI Whisper)
+- ✅ Análise de imagem (GPT-4o Vision)
+- ✅ Histórico de conversas persistido
+- ✅ Suporte a tool calls (sub-agentes, transferência humana)
+- ⚠️ Dashboard ainda em desenvolvimento
 
-- **Framework**: Next.js 14 (App Router)
-- **Linguagem**: TypeScript
-- **Estilo**: Tailwind CSS
-- **Componentes**: shadcn/ui
-- **Banco de Dados**: Supabase (PostgreSQL)
-- **Backend**: n8n (webhook automation)
-- **Deploy**: Vercel (recomendado)
+---
 
-## Estrutura do Projeto
+## 🏗️ Arquitetura
+
+### Stack Tecnológico
+
+- **Framework**: Next.js 14 (App Router) - TypeScript
+- **Deploy**: Vercel (Serverless Functions)
+- **Banco de Dados**: Supabase PostgreSQL (via `@supabase/supabase-js`)
+- **Cache/Queue**: Redis (Upstash)
+- **IA/LLM**:
+  - Groq (Llama 3.3 70B Versatile) - Chat
+  - OpenAI (Whisper) - Transcrição de áudio
+  - OpenAI (GPT-4o) - Análise de imagem
+  - OpenAI (text-embedding-3-small) - Embeddings para RAG
+- **Estilo**: Tailwind CSS + shadcn/ui
+- **WhatsApp API**: Meta WhatsApp Business Cloud API
+
+### Estrutura de Diretórios
 
 ```
-.
-├── migration.sql              # Schema do banco de dados
-├── src/
-│   ├── app/                   # Pages e API routes
-│   │   ├── api/               # API routes (backend)
-│   │   ├── dashboard/         # Dashboard pages
-│   │   └── layout.tsx         # Root layout
-│   ├── components/            # React components
-│   │   ├── ui/                # shadcn components
-│   │   └── *.tsx              # Custom components
-│   ├── hooks/                 # Custom React hooks
-│   ├── lib/                   # Utilities e clients
-│   │   ├── supabase.ts        # Supabase client
-│   │   ├── types.ts           # TypeScript types
-│   │   └── utils.ts           # Helper functions
-└── .env.local                 # Environment variables (crie este)
+src/
+├── app/
+│   ├── api/
+│   │   ├── webhook/route.ts          # ⚡ WEBHOOK PRINCIPAL (recebe msgs da Meta)
+│   │   ├── conversations/route.ts     # API conversas (dashboard)
+│   │   ├── messages/[phone]/route.ts  # API mensagens por telefone
+│   │   └── debug/                     # Endpoints de debug
+│   └── dashboard/                     # UI Dashboard (em desenvolvimento)
+│
+├── flows/
+│   └── chatbotFlow.ts                 # 🔥 ORQUESTRAÇÃO PRINCIPAL (12 nodes)
+│
+├── nodes/                             # 🧩 Funções atômicas (12 nodes)
+│   ├── filterStatusUpdates.ts         # [1] Filtra status updates
+│   ├── parseMessage.ts                # [2] Parse payload Meta
+│   ├── checkOrCreateCustomer.ts       # [3] Upsert cliente
+│   ├── downloadMetaMedia.ts           # [4a] Download mídia da Meta
+│   ├── transcribeAudio.ts             # [4b] Whisper transcrição
+│   ├── analyzeImage.ts                # [4c] GPT-4o visão
+│   ├── normalizeMessage.ts            # [5] Normaliza para formato comum
+│   ├── pushToRedis.ts                 # [6] Push para fila Redis
+│   ├── batchMessages.ts               # [7] Batch msgs (10s delay)
+│   ├── getChatHistory.ts              # [8] Busca histórico PostgreSQL
+│   ├── getRAGContext.ts               # [9] Vector search Supabase
+│   ├── generateAIResponse.ts          # [10] Groq Llama 3.3 70B
+│   ├── formatResponse.ts              # [11] Split em msgs WhatsApp
+│   ├── sendWhatsAppMessage.ts         # [12] Envia via Meta API
+│   ├── saveChatMessage.ts             # Salva msg no histórico
+│   └── handleHumanHandoff.ts          # Transferência para humano
+│
+└── lib/
+    ├── config.ts                      # Configurações centralizadas
+    ├── supabase.ts                    # Supabase client (service role)
+    ├── postgres.ts                    # PostgreSQL pool (direct)
+    ├── redis.ts                       # Redis client (Upstash)
+    ├── openai.ts                      # OpenAI client
+    └── types.ts                       # TypeScript types
 ```
 
-## Instalação
+---
 
-### 1. Instalar Dependências
+## 🚀 Instalação e Configuração
+
+### 1. Pré-requisitos
+
+- Node.js 18+ instalado
+- Conta Supabase (PostgreSQL + Vector Store)
+- Conta Redis (Upstash recomendado)
+- Conta OpenAI com créditos
+- Conta Groq com API key
+- Meta WhatsApp Business App configurado
+
+### 2. Clonar e Instalar Dependências
 
 ```bash
+git clone <repo-url>
+cd chatbot-v2
 npm install
 ```
-
-### 2. Configurar Banco de Dados
-
-Execute o arquivo `migration.sql` no Supabase SQL Editor:
-
-1. Acesse: https://app.supabase.com/project/_/sql
-2. Cole o conteúdo de `migration.sql`
-3. Execute o script
-
-Isso criará as tabelas necessárias:
-- `clients` - Configuração multi-tenant
-- `conversations` - Estado das conversas
-- `messages` - Mensagens individuais
-- `usage_logs` - Tracking de custos
 
 ### 3. Configurar Variáveis de Ambiente
 
@@ -72,90 +108,212 @@ Copie `.env.example` para `.env.local`:
 cp .env.example .env.local
 ```
 
-Preencha as variáveis no `.env.local`:
+**Preencha todas as variáveis:**
 
 ```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-anon-key
-SUPABASE_SERVICE_ROLE_KEY=sua-service-role-key
+# =====================================================
+# WEBHOOK (SEMPRE PRODUÇÃO)
+# =====================================================
+WEBHOOK_BASE_URL=https://chat.luisfboff.com
+META_VERIFY_TOKEN=seu_token_verificacao_meta
 
-# n8n Webhooks (opcional para Phase 2)
-N8N_WEBHOOK_BASE_URL=https://sua-instancia-n8n.com
-N8N_SEND_MESSAGE_WEBHOOK=/webhook/send-message
-N8N_TRANSFER_HUMAN_WEBHOOK=/webhook/transfer-human
+# =====================================================
+# SUPABASE
+# =====================================================
+NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
+
+# =====================================================
+# POSTGRESQL (Direct Connection)
+# =====================================================
+POSTGRES_URL_NON_POOLING=postgresql://postgres.xxx:senha@aws-0-sa-east-1.pooler.supabase.com:5432/postgres
+
+# =====================================================
+# EXTERNAL SERVICES
+# =====================================================
+REDIS_URL=redis://default:senha@region.upstash.io:6379
+OPENAI_API_KEY=sk-...
+GROQ_API_KEY=gsk_...
+META_ACCESS_TOKEN=EAA...
+META_PHONE_NUMBER_ID=899639703222013
+GMAIL_USER=seu@email.com
+GMAIL_PASSWORD=senha_app_gmail
 ```
 
-**Onde encontrar as chaves do Supabase:**
-- Acesse: https://app.supabase.com/project/_/settings/api
-- `NEXT_PUBLIC_SUPABASE_URL`: Project URL
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: anon/public key
-- `SUPABASE_SERVICE_ROLE_KEY`: service_role key (cuidado!)
+**📖 Guia completo**: Consulte [CONFIGURAR_ENV.md](./CONFIGURAR_ENV.md)
 
-### 4. Executar em Desenvolvimento
+### 4. Configurar Banco de Dados
+
+Execute as migrations no Supabase SQL Editor:
+
+```bash
+# 1. Acesse: https://app.supabase.com/project/_/sql
+# 2. Execute cada migration em ordem:
+migrations/001_initial_schema.sql
+migrations/002_add_indexes.sql
+migrations/003_performance_indexes.sql
+migrations/004_rename_clientes_table.sql  # Renomeia "Clientes WhatsApp" → clientes_whatsapp
+```
+
+**Tabelas principais:**
+- `clientes_whatsapp` - Clientes (telefone, nome, status)
+- `n8n_chat_histories` - Histórico de mensagens (JSON format)
+- `documents` - Vector store para RAG
+
+### 5. Configurar Webhook da Meta
+
+No Meta Developer Dashboard:
+
+1. Acesse: https://developers.facebook.com/apps
+2. WhatsApp → Configuration → Edit
+3. **Callback URL**: `https://chat.luisfboff.com/api/webhook`
+4. **Verify Token**: O mesmo valor de `META_VERIFY_TOKEN` no `.env.local`
+5. **Subscribe to**: `messages`
+
+### 6. Executar em Desenvolvimento
 
 ```bash
 npm run dev
 ```
 
-Acesse: http://localhost:3000
+**⚠️ IMPORTANTE**: O webhook SEMPRE aponta para produção, mesmo em dev. Para testar localmente:
+- Código roda em `localhost:3000`
+- Webhook da Meta chama produção (Vercel)
+- Faça deploy para testar fluxo completo
 
-## Funcionalidades
+---
 
-### Dashboard Principal
-- Métricas em tempo real (total conversas, ativas, aguardando humano)
-- Lista de conversas com filtros
-- Atualização automática (polling 10s)
+## 📊 Como Funciona (Fluxo de Processamento)
 
-### Detalhes da Conversa
-- Histórico completo de mensagens
-- Realtime updates via Supabase
-- Suporte para múltiplos tipos (text, audio, image)
-- Status de entrega das mensagens
+Quando uma mensagem chega no WhatsApp:
 
-### Comandos
-- Enviar mensagem manual (via webhook n8n)
-- Transferir para atendimento humano (via webhook n8n)
+```
+[1] Meta envia POST para /api/webhook
+     ↓
+[2] Webhook chama processChatbotMessage(payload)
+     ↓
+[3] chatbotFlow.ts executa 12 nodes em sequência:
 
-## Integração com n8n
+     NODE 1: filterStatusUpdates     → Remove status updates (delivered, read)
+     NODE 2: parseMessage             → Extrai phone, name, type, content
+     NODE 3: checkOrCreateCustomer    → Upsert na tabela clientes_whatsapp
+     NODE 4: downloadMetaMedia        → Download + transcreve/analisa (se áudio/imagem)
+     NODE 5: normalizeMessage         → Normaliza formato
+     NODE 6: pushToRedis              → Push para fila Redis
+     NODE 7: batchMessages            → Aguarda 10s, agrupa mensagens
+     NODE 8: getChatHistory           → Busca últimas 15 msgs do histórico
+     NODE 9: getRAGContext            → Vector search no conhecimento
+     NODE 10: generateAIResponse      → Groq Llama 3.3 70B gera resposta
+     NODE 11: formatResponse          → Remove tool calls, split em msgs
+     NODE 12: sendWhatsAppMessage     → Envia via Meta API
+```
 
-O dashboard se comunica com o n8n através de webhooks:
+**Consulte [WORKFLOW-LOGIC.md](./WORKFLOW-LOGIC.md)** para detalhes de cada node.
 
-### Webhook: Enviar Mensagem Manual
-- Endpoint: `POST ${N8N_WEBHOOK_BASE_URL}/webhook/send-message`
-- Payload:
-  ```json
-  {
-    "phone": "5511999999999",
-    "content": "Mensagem manual do dashboard",
-    "client_id": "uuid-do-cliente",
-    "source": "dashboard"
-  }
-  ```
+---
 
-### Webhook: Transferir para Humano
-- Endpoint: `POST ${N8N_WEBHOOK_BASE_URL}/webhook/transfer-human`
-- Payload:
-  ```json
-  {
-    "phone": "5511999999999",
-    "client_id": "uuid-do-cliente",
-    "assigned_to": "suporte"
-  }
-  ```
+## 🔧 Decisões Técnicas Importantes
 
-**Nota:** Esses webhooks precisam ser criados no workflow n8n.
+### 1. Migração de `pg` para Supabase Client
 
-## Arquitetura Multi-Tenant
+**Problema**: NODE 3 (`checkOrCreateCustomer`) ficava travando em produção (serverless).
 
-O sistema suporta múltiplos clientes:
+**Causa**: Conexões TCP diretas via `pg` library não funcionam bem em ambientes serverless.
 
-1. Cada cliente tem registro na tabela `clients`
-2. Todas as tabelas incluem `client_id`
-3. Dashboard usa `DEFAULT_CLIENT_ID` (hardcoded para Phase 2)
-4. Phase 3 implementará seletor de cliente no UI
+**Solução**: Migrado para `@supabase/supabase-js`:
+- Usa connection pooling (Supavisor)
+- Otimizado para serverless
+- Retry automático
 
-## Deploy (Vercel)
+**Arquivo**: `src/nodes/checkOrCreateCustomer.ts:78`
+
+### 2. Webhook deve `await` processamento completo
+
+**Problema**: Webhook retornava 200 ANTES de processar mensagem (fire-and-forget).
+
+**Causa**: Serverless functions terminam processo imediatamente após retornar resposta.
+
+**Solução**: Adicionado `await processChatbotMessage(body)` no webhook.
+
+**Arquivo**: `src/app/api/webhook/route.ts:107`
+
+### 3. Tabela sem espaço no nome
+
+**Problema**: TypeScript não conseguia inferir tipos de `"Clientes WhatsApp"` (com espaço).
+
+**Solução**: Criada migration 004 que:
+- Renomeia para `clientes_whatsapp`
+- Cria VIEW `"Clientes WhatsApp"` para compatibilidade com n8n
+- INSTEAD OF trigger para INSERT na VIEW
+
+**Arquivo**: `migrations/004_rename_clientes_table.sql`
+
+### 4. Remoção de tool calls nas mensagens
+
+**Problema**: Mensagens incluíam `<function=subagente_diagnostico>{...}</function>` para o usuário.
+
+**Solução**: Adicionado `removeToolCalls()` em `formatResponse()` usando regex.
+
+**Arquivo**: `src/nodes/formatResponse.ts:7-10`
+
+### 5. Coluna `type` não existe em `n8n_chat_histories`
+
+**Problema**: Código tentava inserir `type` como coluna separada.
+
+**Realidade**: `type` é campo DENTRO do JSON da coluna `message`.
+
+**Formato correto**:
+```json
+{
+  "type": "human",
+  "content": "Mensagem do usuário",
+  "additional_kwargs": {}
+}
+```
+
+**Arquivos**:
+- `src/nodes/saveChatMessage.ts:23-27`
+- `src/nodes/getChatHistory.ts:12-18`
+
+---
+
+## 🧪 Testing
+
+### Testar Webhook Localmente
+
+```bash
+# Simular payload da Meta
+curl -X POST http://localhost:3000/api/webhook \
+  -H "Content-Type: application/json" \
+  -d @test-payload.json
+```
+
+### Testar Nodes Individualmente
+
+Cada node tem endpoint de teste:
+
+```bash
+# Testar NODE 3 (checkOrCreateCustomer)
+curl http://localhost:3000/api/test/nodes/check-customer
+
+# Testar NODE 10 (AI Response)
+curl http://localhost:3000/api/test/nodes/ai-response
+```
+
+### Debug em Produção
+
+```bash
+# Ver configuração
+curl https://chat.luisfboff.com/api/debug/config
+
+# Ver logs
+curl https://chat.luisfboff.com/api/debug/logs
+```
+
+---
+
+## 🚀 Deploy (Vercel)
 
 ### 1. Conectar Repositório
 
@@ -165,79 +323,90 @@ vercel
 
 ### 2. Configurar Variáveis de Ambiente
 
-No dashboard da Vercel:
-- Settings → Environment Variables
-- Adicione todas as variáveis do `.env.local`
+No Vercel Dashboard → Settings → Environment Variables:
+- Adicione TODAS as variáveis do `.env.local`
+- Marque: Production, Preview, Development
 
 ### 3. Deploy
 
 ```bash
-vercel --prod
+git add .
+git commit -m "feat: Sua mensagem"
+git push origin main
 ```
 
-## Desenvolvimento
+Vercel faz deploy automático.
 
-### Estrutura de Código
+---
 
-**Princípios seguidos:**
-- Functional programming (sem classes)
-- Apenas `const` (nunca `let` ou `var`)
-- Funções puras quando possível
-- Nomes descritivos (sem comentários necessários)
-- Error handling com try-catch
-- TypeScript strict mode
+## 📁 Arquivos de Documentação
 
-### API Routes
+- **README.md** (este arquivo) - Overview geral
+- **CLAUDE.md** - Instruções para Claude Code (AI assistant)
+- **ARCHITECTURE.md** - Detalhes técnicos da arquitetura _(criado nesta atualização)_
+- **WORKFLOW-LOGIC.md** - Mapeamento exato do fluxo de processamento
+- **CONFIGURAR_ENV.md** - Guia de configuração de variáveis
+- **TROUBLESHOOTING.md** - Solução de problemas comuns
+- **MIGRACAO_URGENTE.md** - Guia de migração da tabela clientes
 
-Todas as rotas API usam:
-- Server-side Supabase client (service role key)
-- Validação de parâmetros
-- Error handling consistente
-- `export const dynamic = 'force-dynamic'` (evita cache)
+---
 
-### Custom Hooks
+## 🐛 Troubleshooting
 
-- `useConversations`: Busca lista de conversas
-- `useMessages`: Busca mensagens de um número
-- `useRealtimeMessages`: Supabase Realtime subscription
+### "NODE 3 freezing" / Query nunca retorna
 
-## Troubleshooting
+**Causa**: Uso de `pg` library em serverless + webhook não await.
 
-### Erro: Missing SUPABASE_URL
-- Verifique se `.env.local` existe
-- Confirme que as variáveis estão corretas
-- Reinicie `npm run dev`
+**Solução**: Já corrigido (migrado para Supabase client + await no webhook).
 
-### Conversas não aparecem
-- Execute `migration.sql` no Supabase
-- Verifique se há dados na tabela `conversations`
-- Confirme `client_id` correto
+### "column 'type' does not exist"
 
-### Realtime não funciona
-- Habilite Realtime no Supabase: Database → Replication
-- Verifique Row Level Security (RLS) policies
-- Confirme que `NEXT_PUBLIC_SUPABASE_ANON_KEY` está correto
+**Causa**: Tentativa de inserir `type` como coluna separada.
 
-### Webhooks n8n retornam 501
-- Webhooks são opcionais na Phase 2
-- Configure `N8N_WEBHOOK_BASE_URL` se quiser testar
-- Crie webhooks correspondentes no n8n
+**Solução**: Já corrigido (`type` agora fica dentro do JSON da coluna `message`).
 
-## Próximos Passos (Phase 3)
+### "Token verification failed"
 
-- Migrar lógica do n8n para Next.js API Routes
-- Implementar autenticação (NextAuth)
-- Adicionar seletor de clientes no UI
-- Implementar filas (Upstash Queue)
-- Dashboard de custos detalhado
-- Configuração de webhooks Meta via UI
+**Causa**: `META_VERIFY_TOKEN` não configurado ou diferente do Meta Dashboard.
 
-## Licença
+**Solução**:
+1. Verifique `.env.local` tem `META_VERIFY_TOKEN`
+2. Valor DEVE ser IGUAL ao configurado no Meta Dashboard
+3. Reinicie `npm run dev`
+
+### Build Error: "No overload matches this call"
+
+**Causa**: TypeScript não reconhece tabela `clientes_whatsapp`.
+
+**Solução**: Já corrigido (casting `as any` em `checkOrCreateCustomer.ts:34`).
+
+### Mensagens com `<function=...>`
+
+**Causa**: Tool calls não estavam sendo removidos.
+
+**Solução**: Já corrigido (`removeToolCalls()` em `formatResponse.ts`).
+
+---
+
+## 🎯 Próximos Passos
+
+- [ ] Dashboard funcional (visualizar conversas em tempo real)
+- [ ] Autenticação (NextAuth.js)
+- [ ] Multi-tenant UI (seletor de clientes)
+- [ ] Dashboard de custos (OpenAI + Groq + Meta)
+- [ ] Configuração de webhooks via UI
+- [ ] Migração completa de n8n → Next.js (100%)
+
+---
+
+## 📝 Licença
 
 Proprietário - Luis Fernando Boff
 
-## Suporte
+---
 
-Para dúvidas ou problemas:
-- Email: luisfboff@hotmail.com
-- Consulte `CLAUDE.md` para arquitetura detalhada
+## 💬 Suporte
+
+- **Email**: luisfboff@hotmail.com
+- **Issues**: Crie uma issue neste repositório
+- **Documentação**: Consulte arquivos `.md` na raiz do projeto

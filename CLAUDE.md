@@ -306,6 +306,180 @@ const config = await getClientConfig(clientId)
 
 **Not yet implemented**: Client selector, per-client webhook URLs, database-stored tokens
 
+## ⚠️ Critical Technical Decisions & Fixes
+
+This section documents important problems encountered and their solutions. **READ THIS BEFORE MODIFYING DATABASE OR WEBHOOK CODE**.
+
+### 1. Serverless Connection Pooling (NODE 3 Fix)
+
+**Problem**: `checkOrCreateCustomer` node was hanging indefinitely in production (Vercel serverless), causing webhook timeouts.
+
+**Root Cause**:
+- Used `pg` library with direct TCP connections
+- Serverless functions have ephemeral execution context
+- Connection pooling doesn't work well in Lambda-like environments
+- Webhook was fire-and-forget (returned 200 immediately, process terminated before query completed)
+
+**Solution**: Migrated from `pg` to `@supabase/supabase-js` client
+- Uses Supavisor (Supabase connection pooler)
+- Optimized for serverless environments
+- Automatic retry and connection management
+- **PLUS**: Webhook now `await`s `processChatbotMessage()` before returning
+
+**Files Changed**:
+- `src/nodes/checkOrCreateCustomer.ts` (line 78) - Uses `createServerClient()` instead of `pg.query()`
+- `src/app/api/webhook/route.ts` (line 107) - Added `await processChatbotMessage(body)`
+
+**IMPORTANT**: Do NOT use `pg` library for upserts/inserts in serverless functions. Always use Supabase client.
+
+### 2. Webhook MUST Await Processing
+
+**Problem**: Serverless functions terminate IMMEDIATELY after returning HTTP response, killing any ongoing async operations.
+
+**Mistake**: Original code was:
+```typescript
+processChatbotMessage(body) // Fire-and-forget ❌
+return new NextResponse("EVENT_RECEIVED", { status: 200 })
+```
+
+**Fix**: Must await completion:
+```typescript
+await processChatbotMessage(body) // Wait for completion ✅
+return new NextResponse("EVENT_RECEIVED", { status: 200 })
+```
+
+**File**: `src/app/api/webhook/route.ts:107`
+
+**Rule**: NEVER use fire-and-forget async calls in serverless webhooks. Always `await`.
+
+### 3. Table Name Without Spaces (TypeScript Fix)
+
+**Problem**: Table name `"Clientes WhatsApp"` (with space) breaks TypeScript type inference.
+
+**Error**: `Property 'from' does not exist on type...` or `No overload matches this call`
+
+**Solution**: Migration 004 renames table + creates VIEW for backward compatibility
+- Renamed: `"Clientes WhatsApp"` → `clientes_whatsapp`
+- Created VIEW: `"Clientes WhatsApp"` (points to `clientes_whatsapp`)
+- INSTEAD OF trigger: Upserts on VIEW redirect to real table
+- n8n workflows continue working (use VIEW name)
+- Next.js code uses new table name (with TypeScript casting `as any`)
+
+**Files**:
+- `migrations/004_rename_clientes_table.sql` - Migration SQL
+- `src/nodes/checkOrCreateCustomer.ts:34` - Casts supabase client to bypass TypeScript
+
+**Workaround in Code**:
+```typescript
+const supabaseAny = supabase as any
+await supabaseAny.from('clientes_whatsapp').upsert(...)
+```
+
+**Rule**: NEVER use table names with spaces in new schema. Use snake_case.
+
+### 4. Column `type` is Inside JSON (Not a Column)
+
+**Problem**: Code tried to `INSERT INTO n8n_chat_histories (session_id, message, type, created_at)` but column `type` doesn't exist.
+
+**Error**: `error: column "type" of relation "n8n_chat_histories" does not exist`
+
+**Reality**: Table schema is:
+```sql
+CREATE TABLE n8n_chat_histories (
+  id SERIAL PRIMARY KEY,
+  session_id TEXT,
+  message JSONB,  -- ⬅️ type is INSIDE this JSON
+  created_at TIMESTAMPTZ
+)
+```
+
+**Correct JSON format**:
+```json
+{
+  "type": "human",
+  "content": "User message text",
+  "additional_kwargs": {}
+}
+```
+
+**Fix**: Remove `type` from column list, save it inside `message` JSON:
+```typescript
+// BEFORE (wrong)
+INSERT INTO n8n_chat_histories (session_id, message, type, created_at)
+VALUES ($1, $2, $3, NOW())
+
+// AFTER (correct)
+INSERT INTO n8n_chat_histories (session_id, message, created_at)
+VALUES ($1, $2, NOW())
+// where $2 = JSON.stringify({ type: 'human', content: '...', additional_kwargs: {} })
+```
+
+**Files Changed**:
+- `src/nodes/saveChatMessage.ts:23-27` - Removed `type` column, embedded in JSON
+- `src/nodes/getChatHistory.ts:12-18` - Parse JSON to extract `type` and `content`
+
+**Rule**: ALWAYS check actual table schema before writing INSERT/UPDATE queries. Don't assume column structure.
+
+### 5. Tool Calls Must Be Removed from User Messages
+
+**Problem**: AI responses included `<function=subagente_diagnostico>{...}</function>` in messages sent to WhatsApp users.
+
+**Example Bad Output**:
+```
+Você poderia me explicar melhor? <function=subagente_diagnostico>{"mensagem_usuario": "projeto"}</function>
+```
+
+**Solution**: Added `removeToolCalls()` function in `formatResponse()`:
+```typescript
+const removeToolCalls = (text: string): string => {
+  return text.replace(/<function=[^>]+>[\s\S]*?<\/function>/g, '').trim()
+}
+```
+
+**File**: `src/nodes/formatResponse.ts:7-10`
+
+**Rule**: ALWAYS sanitize AI output before sending to end users. Remove internal metadata/tool calls.
+
+### 6. WEBHOOK_BASE_URL Must Always Use Production
+
+**Problem**: Localhost webhooks don't work because Meta can't call `http://localhost:3000`.
+
+**Solution**: ALWAYS use production URL in `.env.local`:
+```env
+WEBHOOK_BASE_URL=https://chat.luisfboff.com
+```
+
+Even in development:
+- Code runs on `localhost:3000`
+- Webhook calls go to production (Vercel)
+- To test changes, deploy to Vercel first
+
+**Files**:
+- `src/lib/config.ts` - Centralized config functions
+- `.env.example` - Documents this pattern
+- `CONFIGURAR_ENV.md` - Explains why
+
+**Rule**: NEVER use localhost in `WEBHOOK_BASE_URL`. Meta webhooks require public HTTPS URLs.
+
+### 7. META_VERIFY_TOKEN vs META_ACCESS_TOKEN (Different Tokens!)
+
+**Problem**: User accidentally set `META_VERIFY_TOKEN=EAA...` (the ACCESS_TOKEN value).
+
+**Clarification**:
+- **META_ACCESS_TOKEN** (`EAA...`): Used to SEND messages via WhatsApp API
+- **META_VERIFY_TOKEN** (any string you create): Used in webhook verification (GET request from Meta)
+
+**Correct Setup**:
+```env
+META_ACCESS_TOKEN=EAA...  # From Meta Dashboard → WhatsApp → API Setup
+META_VERIFY_TOKEN=my-secret-token-123  # YOU create this (any random string)
+```
+
+**In Meta Dashboard**:
+- Webhook Configuration → Verify Token: `my-secret-token-123` (must match .env.local)
+
+**Rule**: These are DIFFERENT tokens with DIFFERENT purposes. Don't confuse them.
+
 ## Code Patterns
 
 ### Node Function Signature
