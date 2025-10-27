@@ -33,6 +33,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const supabase = createServerClient()
 
+    console.log('[API Messages] Fetching messages for phone:', phone)
+
     // Buscar TODAS as mensagens do histórico (sem limit)
     const { data, error } = await supabase
       .from('n8n_chat_histories')
@@ -41,12 +43,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .order('created_at', { ascending: true })  // Ordenar por created_at (mais antigas primeiro)
 
     if (error) {
-      console.error('Erro ao buscar mensagens:', error)
+      console.error('[API Messages] Error fetching messages:', error)
       return NextResponse.json(
         { error: 'Erro ao buscar mensagens' },
         { status: 500 }
       )
     }
+
+    console.log('[API Messages] Found', data?.length || 0, 'messages in database')
 
     // Transformar dados do n8n_chat_histories para formato Message
     const messages: Message[] = (data || []).map((item: any, index: number) => {

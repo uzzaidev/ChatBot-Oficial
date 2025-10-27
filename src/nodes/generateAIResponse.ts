@@ -7,9 +7,6 @@ Você atua como uma **secretária inteligente e consultora técnica**, capaz de 
 
 Seu tom é **acolhedor, profissional e seguro**, transmitindo a credibilidade do Luis e mostrando que ele é um especialista completo, mas com foco em **entender primeiro o cliente** antes de apresentar qualquer serviço.
 
-Você possui uma **tool auxiliar chamada "subagente de diagnóstico"**, que pode ser usada quando precisar **descobrir a área certa do cliente** (Energia Solar, Ciência de Dados ou Desenvolvimento).
-Use essa tool quando o visitante ainda **não deixou claro o tipo de necessidade** ou quando houver **dúvida entre áreas técnicas**.
-
 ---
 
 ## Instruções de Atendimento
@@ -29,8 +26,7 @@ Use essa tool quando o visitante ainda **não deixou claro o tipo de necessidade
 > "Entendi. Você poderia me explicar um pouco melhor o que gostaria de resolver ou criar?"
 > "É algo mais voltado à parte técnica, estratégica ou de implementação?"
 
-Se o contexto **ainda não estiver claro**, acione a **tool de subagente de diagnóstico**.
-Ele fará perguntas direcionadas e te devolverá a **área ideal (Energia Solar, Ciência de Dados ou Desenvolvimento)** para prosseguir o atendimento corretamente.
+Se o contexto **ainda não estiver claro**, faça perguntas direcionadas para identificar a **área ideal (Energia Solar, Ciência de Dados ou Desenvolvimento)** para prosseguir o atendimento corretamente.
 
 ---
 
@@ -67,7 +63,7 @@ Encaminhe o cliente com naturalidade, sem pressão.
 - **Sem emojis.**
 - Priorize **entender antes de oferecer**.
 - Evite listar áreas ou serviços até compreender a necessidade.
-- Use o **subagente de diagnóstico** sempre que houver dúvida sobre a área correta.
+- Faça perguntas direcionadas sempre que houver dúvida sobre a área correta.
 - Encaminhe para o **atendimento humano** se o cliente quiser detalhes técnicos, proposta formal ou reunião direta com o Luis.
 
 ---
@@ -76,23 +72,24 @@ Encaminhe o cliente com naturalidade, sem pressão.
 Transformar cada interação em uma **conversa de confiança**.
 O cliente deve sentir que falou com **um especialista de verdade**, representado por um assistente inteligente, capaz de unir **engenharia, tecnologia e inteligência de dados** para encontrar a melhor solução para o seu caso.`
 
-const SUB_AGENT_TOOL_DEFINITION = {
-  type: 'function',
-  function: {
-    name: 'subagente_diagnostico',
-    description: 'Utilize esse agente para buscar a area que mais se adequa a necessidade do cliente',
-    parameters: {
-      type: 'object',
-      properties: {
-        mensagem_usuario: {
-          type: 'string',
-          description: 'Mensagem do usuário para diagnóstico',
-        },
-      },
-      required: ['mensagem_usuario'],
-    },
-  },
-}
+// SUBAGENTE DESATIVADO - Não está implementado
+// const SUB_AGENT_TOOL_DEFINITION = {
+//   type: 'function',
+//   function: {
+//     name: 'subagente_diagnostico',
+//     description: 'Utilize esse agente para buscar a area que mais se adequa a necessidade do cliente',
+//     parameters: {
+//       type: 'object',
+//       properties: {
+//         mensagem_usuario: {
+//           type: 'string',
+//           description: 'Mensagem do usuário para diagnóstico',
+//         },
+//       },
+//       required: ['mensagem_usuario'],
+//     },
+//   },
+// }
 
 const HUMAN_HANDOFF_TOOL_DEFINITION = {
   type: 'function',
@@ -173,7 +170,7 @@ export const generateAIResponse = async (input: GenerateAIResponseInput): Promis
       allContentsAreStrings: messages.every((m) => typeof m.content === 'string'),
     })
 
-    const tools = [SUB_AGENT_TOOL_DEFINITION, HUMAN_HANDOFF_TOOL_DEFINITION]
+    const tools = [HUMAN_HANDOFF_TOOL_DEFINITION]
 
     return await generateChatCompletion(messages, tools)
   } catch (error) {

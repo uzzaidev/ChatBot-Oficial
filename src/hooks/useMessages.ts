@@ -32,9 +32,12 @@ export const useMessages = ({
 
       const params = new URLSearchParams({
         client_id: clientId,
+        _t: Date.now().toString(), // Cache-busting timestamp
       })
 
-      const response = await fetch(`/api/messages/${phone}?${params.toString()}`)
+      const response = await fetch(`/api/messages/${phone}?${params.toString()}`, {
+        cache: 'no-store', // Disable fetch cache
+      })
 
       if (!response.ok) {
         const errorData = await response.json()

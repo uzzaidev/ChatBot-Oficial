@@ -208,14 +208,6 @@ export const processChatbotMessage = async (
         logger.finishExecution('success')
         return { success: true, handedOff: true }
       }
-
-      const hasDiagnosticAgent = aiResponse.toolCalls.some(
-        (tool) => tool.function.name === 'subagente_diagnostico'
-      )
-
-      if (hasDiagnosticAgent) {
-        console.log('[chatbotFlow] Diagnostic subagent tool called - tool result handling not yet implemented')
-      }
     }
 
     if (!aiResponse.content || aiResponse.content.trim().length === 0) {

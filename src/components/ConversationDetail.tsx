@@ -34,18 +34,48 @@ export const ConversationDetail = ({
     // Sem polling - vamos depender 100% do realtime
   })
 
-  // Combine fetched messages with realtime messages using useMemo
+  // Clear realtime messages when phone changes
+  useEffect(() => {
+    console.log('[ConversationDetail] Phone changed, clearing realtime messages')
+    setRealtimeMessages([])
+  }, [phone])
+
+  // Combine fetched messages with realtime messages, removing duplicates
   const messages = useMemo(() => {
-    return [...fetchedMessages, ...realtimeMessages]
+    const allMessages = [...fetchedMessages, ...realtimeMessages]
+
+    // Remove duplicates based on message ID
+    const uniqueMessages = allMessages.reduce((acc, message) => {
+      const exists = acc.some(m => m.id === message.id)
+      if (!exists) {
+        acc.push(message)
+      }
+      return acc
+    }, [] as Message[])
+
+    console.log('[ConversationDetail] Combined messages:', {
+      fetchedCount: fetchedMessages.length,
+      realtimeCount: realtimeMessages.length,
+      totalUnique: uniqueMessages.length
+    })
+
+    return uniqueMessages
   }, [fetchedMessages, realtimeMessages])
 
   // Stable callback for handling new messages
   const handleNewMessage = useCallback((newMessage: Message) => {
+    console.log('[ConversationDetail] New realtime message received:', newMessage.id)
+
     // Add message optimistically to avoid refetch
     setRealtimeMessages(prev => {
-      // Check if message already exists to avoid duplicates
+      // Check if message already exists in realtime messages
       const exists = prev.some(msg => msg.id === newMessage.id)
-      if (exists) return prev
+      if (exists) {
+        console.log('[ConversationDetail] Message already exists in realtime, skipping')
+        return prev
+      }
+
+      console.log('[ConversationDetail] Adding new message to realtime array')
       return [...prev, newMessage]
     })
 
@@ -54,11 +84,6 @@ export const ConversationDetail = ({
       description: 'Uma nova mensagem foi recebida',
     })
   }, [])
-
-  // Clear realtime messages when phone changes or when refetching
-  useEffect(() => {
-    setRealtimeMessages([])
-  }, [phone])
 
   useRealtimeMessages({
     clientId,
