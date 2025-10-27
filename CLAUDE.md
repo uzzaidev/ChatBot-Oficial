@@ -4,273 +4,620 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a WhatsApp SaaS chatbot system built with n8n automation workflows. The project is designed to handle multi-client AI-powered conversations through WhatsApp Business API, with plans to migrate to a Next.js full-stack application.
+WhatsApp SaaS chatbot system with AI-powered conversations through WhatsApp Business API. Built with Next.js 14, TypeScript, and serverless architecture.
 
-**Current State**: Backend automation running on n8n with webhook integrations
-**Target State**: Full Next.js application with TypeScript, Supabase, and Redis
+**Current State**: Phase 2.5 - Full Next.js implementation with node-based workflow architecture
+**Tech Stack**: Next.js 14 (App Router), TypeScript, Supabase (PostgreSQL), Redis, Groq (Llama 3.3 70B), OpenAI (Whisper, GPT-4o Vision)
 
-## Architecture
+## Development Commands
 
-### Current n8n Workflow (IA.json)
+```bash
+# Install dependencies (ALWAYS run first)
+npm install
 
-The main workflow handles the complete message lifecycle:
+# Development server (http://localhost:3000)
+npm run dev
 
-1. **Webhook Reception** (`/teste`) - Receives WhatsApp Cloud API events from Meta
-2. **Message Filtering** - Filters out status updates, only processes actual messages
-3. **Message Processing Pipeline**:
-   - Extracts contact info (name, phone) and message content
-   - Handles multiple message types: text, audio, image
-   - Checks/creates customer records in Supabase (`Clientes WhatsApp` table)
+# Production build (may fail in restricted networks due to Google Fonts)
+npm run build
+npm start
 
-4. **Media Processing**:
-   - Audio: Downloads from Meta API → Transcribes with OpenAI Whisper
-   - Image: Downloads from Meta API → Analyzes with GPT-4o Vision
-   - Text: Passes through directly
+# Linting
+npm run lint
 
-5. **Message Batching with Redis**:
-   - Pushes messages to Redis list (keyed by phone number)
-   - Waits 10 seconds to batch multiple rapid messages
-   - Retrieves and consolidates messages
-   - Prevents duplicate AI responses for rapid user inputs
+# Type checking (informational - shows pre-existing errors)
+npx tsc --noEmit
+```
 
-6. **AI Processing**:
-   - **Main Agent**: Primary assistant for Luis Fernando Boff (engineer specializing in Solar Energy, Data Science, Full Stack Development)
-   - **Sub-agent Tool**: Diagnostic agent to identify client needs and route to appropriate service area
-   - **Vector Store RAG**: Retrieves relevant knowledge from Supabase vector store
-   - **Memory**: PostgreSQL-backed chat history (15 message context window)
-   - LLM: Groq Llama 3.3 70B
+**CRITICAL**: Create `.env.local` from `.env.example` before running dev server. Missing environment variables will cause build failures.
 
-7. **Response Formatting**:
-   - Second AI agent splits responses into natural WhatsApp-friendly messages
-   - Splits on `\n\n` boundaries while preserving content integrity
+## Architecture Overview
 
-8. **Message Delivery**:
-   - Loops through split messages with delays
-   - Sends via WhatsApp Business API
+### Node-Based Message Processing Pipeline
 
-9. **Human Handoff** (when triggered by tool):
-   - Updates customer status to "Transferido" in Supabase
-   - Retrieves chat history from PostgreSQL
-   - Summarizes conversation with third AI agent
-   - Sends email notification to luisfboff@hotmail.com
+The system uses a **flow orchestration pattern** where individual nodes (pure functions) are composed into a complete message processing pipeline. This architecture was designed for future migration from n8n but is now fully implemented in Next.js.
 
-### Data Storage (Supabase)
+**Flow**: `src/flows/chatbotFlow.ts` - Main orchestrator that chains 13 nodes sequentially
+**Nodes**: `src/nodes/*` - Atomic, reusable functions (one responsibility each)
+**API Endpoint**: `/api/webhook` receives WhatsApp Cloud API webhooks from Meta
 
-Key tables referenced in the workflow:
-- `Clientes WhatsApp` - Customer records (phone, name, status)
-- `n8n_chat_histories` - Conversation memory storage
-- `documents` - Vector store for RAG knowledge base
+### Message Processing Flow (13 Nodes)
 
-### External Services
+```
+WhatsApp → Webhook → chatbotFlow → 13 Nodes → WhatsApp Response
+```
 
-- **Meta (WhatsApp Business API)**: Message sending/receiving
-  - Phone Number ID: `899639703222013`
-  - Display: `555499567051`
+**Nodes in sequence**:
 
-- **OpenAI**: Image analysis (GPT-4o), Audio transcription (Whisper), Embeddings
-- **Groq**: Main LLM inference (Llama 3.3 70B)
-- **Redis**: Message batching and deduplication
-- **PostgreSQL**: Chat memory persistence
-- **Gmail**: Email notifications for human handoff
+1. **Filter Status Updates** - Ignores delivery receipts, only processes messages
+2. **Parse Message** - Extracts phone, name, content, type from Meta payload
+3. **Check/Create Customer** - Upserts customer in `Clientes WhatsApp` table
+4. **Download Media** - Fetches audio/image from Meta API (if not text)
+5. **Normalize Message** - Converts all message types to text (Whisper for audio, GPT-4o Vision for images)
+6. **Push to Redis** - Adds message to Redis list keyed by phone number
+7. **Save User Message** - Stores message in PostgreSQL chat history
+8. **Batch Messages** - Waits 10s, retrieves all messages from Redis (batching strategy)
+9. **Get Chat History** - Fetches last 15 messages from PostgreSQL
+10. **Get RAG Context** - Vector search in Supabase for relevant knowledge
+11. **Generate AI Response** - Groq Llama 3.3 70B with tools (diagnostic subagent, human handoff)
+12. **Format Response** - Splits response into natural WhatsApp messages (splits on `\n\n`)
+13. **Send WhatsApp Message** - Loops through formatted messages, sends via Meta API
 
-## Migration Roadmap (see plano_de_arquitetura)
+**Critical Design Patterns**:
+- Each node is a pure function (no side effects except I/O)
+- Flow uses `try-catch` per node with execution logging
+- Redis batching prevents duplicate AI responses for rapid user messages
+- Parallel execution for independent nodes (9 & 10)
+- Tool calls trigger special flows (human handoff, diagnostic subagent)
 
-The architectural plan outlines a 3-phase migration:
+### Data Storage
 
-### Phase 1 (Current): 100% n8n Backend
-- All logic in n8n workflows
-- Direct Supabase writes
-- No frontend
+**Supabase (PostgreSQL)**:
+- `Clientes WhatsApp` - Customer records (phone, name, status: "bot" | "waiting" | "human")
+- `n8n_chat_histories` - Conversation memory (sessionId = phone number, 15 message window)
+- `documents` - Vector store for RAG (pgvector with OpenAI embeddings)
+- `clients` - Multi-tenant config table (Phase 3, not yet used)
+- `conversations`, `messages`, `usage_logs` - Dashboard tables (Phase 3, not yet used)
 
-### Phase 2 (Next): Next.js Dashboard + n8n
-- Next.js frontend for viewing conversations
-- Dashboard reads from Supabase
-- Sends commands via n8n webhooks
-- n8n remains the processing engine
+**Redis**:
+- Message batching: `chat:${phone}` (list structure)
+- TTL: Messages expire after processing
 
-### Phase 3 (Future): Full Next.js Migration
-**Target Stack**: Next.js 14 (App Router) + TypeScript + Vercel
+**PostgreSQL (Direct Connection)**:
+- Chat history via `pg` library (not Supabase client)
+- Connection string: `DATABASE_URL` env var
 
-**Planned Structure**:
+### AI System
+
+**Main Agent** (Groq Llama 3.3 70B):
+- Role: Virtual assistant for Luis Fernando Boff
+- Expertise: Solar Energy, Data Science, Full Stack Development
+- Behavior: Consultative, empathetic, professional (no emojis)
+- Tools:
+  - `transferir_atendimento` - Human handoff
+  - `subagente_diagnostico` - Diagnostic routing agent
+
+**RAG Knowledge Base**:
+- Vector search with OpenAI embeddings
+- Supabase RPC function: `match_documents(query_embedding, match_count)`
+- Top 5 most relevant documents injected into system prompt
+
+**Chat Memory**:
+- Last 15 messages per session (phone number = sessionId)
+- Format: `[{role: "user" | "ai", message: string}]`
+
+### Multi-Message Response Strategy
+
+AI responses are split into multiple WhatsApp messages to improve UX:
+
+1. AI generates single response
+2. Second AI agent (Groq) splits on `\n\n` boundaries
+3. Rules: Never break sentences, keep lists intact, always 2+ messages
+4. Messages sent with 2s delay between each
+
+### Human Handoff Flow
+
+When `transferir_atendimento` tool is called:
+
+1. Update customer status to "Transferido" in Supabase
+2. Fetch full chat history from PostgreSQL
+3. Third AI agent summarizes conversation
+4. Send email via Gmail to luisfboff@hotmail.com
+5. Stop bot responses (future messages skip AI processing)
+
+## Directory Structure
+
 ```
 src/
-  app/
-    api/
-      webhook/[clientId]/route.ts  # Per-client webhook endpoints
-      usage/route.ts
-      messages/route.ts
-  flows/
-    chatbotFlow.ts                 # Main orchestration
-  nodes/                           # Reusable atomic functions
-    webhookHandler.ts
-    parseMessage.ts
-    openaiGenerate.ts
-    saveToSupabase.ts
-    sendToMeta.ts
-  lib/
-    clients.ts                     # getClientConfig(clientId)
-    supabase.ts
-    redis.ts
+├── app/
+│   ├── api/
+│   │   ├── webhook/route.ts          # Main entry: Meta webhook receiver
+│   │   ├── conversations/route.ts    # Dashboard: List conversations
+│   │   ├── messages/[phone]/route.ts # Dashboard: Fetch messages
+│   │   ├── commands/                 # Dashboard actions (send message, transfer)
+│   │   ├── debug/                    # Debug endpoints (logs, env, executions)
+│   │   └── test/                     # Node testing endpoints
+│   ├── dashboard/                    # React dashboard UI
+│   │   ├── page.tsx                  # Main dashboard (metrics, conversation list)
+│   │   ├── conversations/[phone]/    # Conversation detail view
+│   │   ├── workflow/                 # Workflow execution viewer
+│   │   └── debug/                    # Debug dashboard (env vars, logs)
+│   ├── layout.tsx                    # Root layout (Google Fonts)
+│   └── globals.css                   # Tailwind CSS
+├── flows/
+│   └── chatbotFlow.ts                # Main orchestrator (13-node pipeline)
+├── nodes/                            # Atomic functions (one per node)
+│   ├── filterStatusUpdates.ts
+│   ├── parseMessage.ts
+│   ├── checkOrCreateCustomer.ts
+│   ├── downloadMetaMedia.ts
+│   ├── transcribeAudio.ts
+│   ├── analyzeImage.ts
+│   ├── normalizeMessage.ts
+│   ├── pushToRedis.ts
+│   ├── batchMessages.ts
+│   ├── getChatHistory.ts
+│   ├── getRAGContext.ts
+│   ├── generateAIResponse.ts
+│   ├── formatResponse.ts
+│   ├── sendWhatsAppMessage.ts
+│   ├── handleHumanHandoff.ts
+│   ├── saveChatMessage.ts
+│   └── index.ts                      # Barrel export
+├── lib/
+│   ├── supabase.ts                   # Supabase client factory
+│   ├── postgres.ts                   # Direct PostgreSQL connection
+│   ├── redis.ts                      # Redis client
+│   ├── groq.ts                       # Groq SDK client
+│   ├── openai.ts                     # OpenAI SDK client
+│   ├── meta.ts                       # WhatsApp Business API helpers
+│   ├── gmail.ts                      # Gmail API (human handoff emails)
+│   ├── logger.ts                     # Execution logger (in-memory)
+│   ├── webhookCache.ts               # In-memory webhook message cache
+│   ├── types.ts                      # TypeScript type definitions
+│   └── utils.ts                      # Utility functions (cn, etc.)
+├── components/
+│   ├── ui/                           # shadcn/ui components (DON'T edit directly)
+│   ├── ConversationList.tsx
+│   ├── ConversationDetail.tsx
+│   ├── MessageBubble.tsx
+│   ├── MetricsDashboard.tsx
+│   └── SendMessageForm.tsx
+└── hooks/
+    ├── useConversations.ts           # Fetch conversation list (polling)
+    ├── useMessages.ts                # Fetch messages for phone number
+    ├── useRealtimeMessages.ts        # Supabase realtime subscriptions
+    └── use-toast.ts                  # Toast notifications
 ```
-
-**Key Principles**:
-- Multi-tenant architecture with `client_id` in all tables
-- Config per client (loaded per request, never global)
-- One webhook URL per client: `/api/webhook/[clientId]`
-- Flows orchestrate nodes (pure TypeScript functions)
-- No global state (serverless-friendly)
-
-## Important Concepts
-
-### Multi-Client Architecture
-- Each client has unique webhook URL and configuration
-- Client-specific tokens stored in database (not env vars)
-- All database tables include `client_id` foreign key
-
-### Message Batching Strategy
-The Redis batching mechanism solves a critical UX problem:
-- Users often send multiple messages in quick succession
-- Without batching, each message triggers a separate AI response
-- Solution: Collect messages for 10 seconds, then process as single context
-
-### RAG Knowledge Base
-- Knowledge lives in database vector store, not in code
-- Supabase vector search with OpenAI embeddings
-- Function name in n8n: `match_documents` (Supabase RPC)
-
-### Hybrid Bot/Human Support
-- Conversation status: `"bot"` | `"waiting"` | `"human"`
-- Same WhatsApp number used for both bot and human agents
-- Status switch triggers email notification with conversation summary
 
 ## Key Configuration
 
-### Environment Variables (Future Next.js)
+### Environment Variables
+
+**Required for Production**:
+```env
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGc...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGc...
+
+# Meta (WhatsApp Business API)
+META_ACCESS_TOKEN=EAAG...
+META_PHONE_NUMBER_ID=899639703222013
+META_VERIFY_TOKEN=your_verify_token_here
+
+# OpenAI
+OPENAI_API_KEY=sk-...
+
+# Groq
+GROQ_API_KEY=gsk_...
+
+# Redis
+REDIS_URL=redis://localhost:6379
+
+# PostgreSQL (direct connection for chat history)
+DATABASE_URL=postgresql://user:pass@host:5432/db
+
+# Gmail (for human handoff notifications)
+GMAIL_USER=email@gmail.com
+GMAIL_APP_PASSWORD=app_password_here
 ```
-SUPABASE_URL=
-SUPABASE_KEY=
-REDIS_URL=
-# Per-client tokens stored in database, NOT here
+
+**Where to get credentials**:
+- **Supabase**: https://app.supabase.com/project/_/settings/api
+- **Meta**: https://developers.facebook.com/apps/ → WhatsApp → API Setup
+- **OpenAI**: https://platform.openai.com/api-keys
+- **Groq**: https://console.groq.com/keys
+- **Gmail App Password**: Google Account → Security → 2-Step Verification → App passwords
+
+### Database Setup
+
+**MUST RUN** `migration.sql` in Supabase SQL Editor before first use.
+
+**Existing tables from n8n** (DO NOT modify):
+- `Clientes WhatsApp` - Customer records (used by chatbot flow)
+- `n8n_chat_histories` - Chat memory (used by node 9)
+- `documents` - Vector store (used by node 10)
+
+**New tables for Phase 3** (not yet used):
+- `clients` - Multi-tenant configuration
+- `conversations` - Conversation state tracking
+- `messages` - Message history with metadata
+- `usage_logs` - Cost tracking (OpenAI tokens, Meta messages)
+
+## Important Concepts
+
+### Message Batching Strategy (Redis)
+
+**Problem**: Users send multiple messages in quick succession (e.g., 3 messages in 5 seconds)
+**Without batching**: Each message triggers separate AI response → poor UX
+**Solution**:
+
+1. Push each message to Redis list: `chat:${phone}`
+2. Wait 10 seconds (Node 8)
+3. Retrieve all messages from list (LRANGE + DELETE)
+4. Concatenate into single context
+5. Process as one AI request
+
+**Key files**: `pushToRedis.ts`, `batchMessages.ts`
+
+### RAG Knowledge Injection
+
+Vector search retrieves top 5 relevant documents based on semantic similarity:
+
+1. User message → OpenAI embedding
+2. Query Supabase: `match_documents(embedding, 5)`
+3. Concatenate documents into context string
+4. Inject into system prompt before AI generation
+
+**Key file**: `getRAGContext.ts`
+
+### Tool Calling (Function Calling)
+
+AI can invoke tools via JSON schema:
+
+**`transferir_atendimento`**: Human handoff
+- Triggers: `handleHumanHandoff.ts`
+- Actions: Update Supabase status, send email, stop bot
+
+**`subagente_diagnostico`**: Diagnostic routing
+- Purpose: Identify client needs (Solar, Data Science, Full Stack)
+- Status: Tool defined but not yet implemented (no tool result loop)
+
+### Conversation Status States
+
+Customer `status` in `Clientes WhatsApp`:
+- `"bot"` - AI is responding
+- `"waiting"` - Waiting for human (not used yet)
+- `"human"` - Transferred to human (bot stops responding)
+
+**Check in Node 3**: If status = "human", skip entire pipeline (return early)
+
+### Multi-Tenant Architecture (Planned, Not Implemented)
+
+**Current**: Single client (hardcoded config in env vars)
+**Phase 3 Goal**: Multiple clients with unique configs
+
+Pattern:
+```typescript
+const config = await getClientConfig(clientId)
+// Use config.META_ACCESS_TOKEN instead of process.env.META_ACCESS_TOKEN
 ```
 
-### Database Schema (Planned)
-```sql
--- clients table
-id (uuid), name, verify_token, meta_access_token,
-phone_number_id, openai_api_key, created_at
+**Not yet implemented**: Client selector, per-client webhook URLs, database-stored tokens
 
--- messages table
-id (uuid), client_id, phone, name, content, type,
-direction (incoming/outgoing), status, timestamp
+## Code Patterns
 
--- conversations table
-id (uuid), client_id, phone, status (bot/waiting/human),
-assigned_to, last_message, last_update
+### Node Function Signature
 
--- usage_logs table
-id (uuid), client_id, source (openai/meta),
-tokens_used, messages_sent, cost_usd, created_at
+All nodes follow this pattern:
+
+```typescript
+// nodes/exampleNode.ts
+export interface ExampleNodeInput {
+  phone: string
+  content: string
+}
+
+export const exampleNode = (input: ExampleNodeInput): string => {
+  const { phone, content } = input
+  // ... pure logic
+  return result
+}
+
+// For async operations
+export const exampleNodeAsync = async (input: ExampleNodeInput): Promise<string> => {
+  // ... async logic
+  return result
+}
 ```
 
-## AI Agent System Prompts
+**Rules**:
+- Export input type interface
+- Export named function (not default)
+- Pure function (no global state mutations)
+- Single responsibility
+- Descriptive names (no comments needed)
 
-### Main Agent Role
-Virtual assistant for engineer Luis Fernando Boff with expertise in:
-- Solar Energy projects
-- Data Science & AI
-- Full Stack Development
+### API Route Pattern
 
-**Behavior**: Consultative, empathetic, professional tone. Asks questions to understand client needs before offering services. No emojis.
+All API routes use this structure:
 
-### Diagnostic Sub-Agent
-Identifies which service area matches client needs through contextual questions. Never lists all service options upfront. Routes to appropriate domain after understanding context.
+```typescript
+// app/api/example/route.ts
+export const dynamic = 'force-dynamic' // CRITICAL: Disable Next.js caching
 
-### Message Formatter Agent
-Splits AI responses into natural WhatsApp messages. Rules:
-- Always split into 2+ messages when possible
-- Exactly two line breaks (`\n\n`) between messages
-- Never break sentences mid-thought
-- Keep lists intact (don't split)
-- Never alter content, only format
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = createServerClient() // Service role key
+    const { data, error } = await supabase.from('table').select('*')
 
-## Development Notes
+    if (error) throw error
 
-### When Modifying n8n Workflow
-- Test with pinned data (see `pinData` in IA.json)
-- Verify Redis key cleanup (prevents memory leaks)
-- Check that all Supabase writes include `client_id`
-- Ensure media downloads handle Meta API token refresh
+    return NextResponse.json({ data })
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Descriptive message' },
+      { status: 500 }
+    )
+  }
+}
+```
 
-### When Building Next.js Migration
-- Start with read-only dashboard (Phase 2)
-- Implement webhook validation (verify_token per client)
-- Use `getClientConfig()` pattern - never global config
-- Handle concurrency (serverless = parallel execution)
-- For long tasks, use queues (Upstash/Vercel Queue)
+**Always include**:
+- `export const dynamic = 'force-dynamic'`
+- Server-side Supabase client (not browser client)
+- Try-catch error handling
+- Proper HTTP status codes
 
-### Testing WhatsApp Integration
-- Use Meta's webhook testing tool for validation
-- Test message types: text, audio, image
-- Verify 24-hour conversation window tracking
-- Check status update filtering (don't process delivery receipts)
+### Functional Programming Style
+
+**Enforced patterns**:
+- Only `const` (never `let` or `var`)
+- Arrow functions for all functions
+- No classes (only functions and interfaces)
+- Immutable data (no mutations)
+- Descriptive naming (code self-documents)
+
+**Example**:
+```typescript
+// ✅ Good
+const processMessage = (message: string): string => {
+  const normalized = message.toLowerCase().trim()
+  return normalized
+}
+
+// ❌ Bad
+function processMessage(message) {
+  let result = message
+  result = result.toLowerCase()
+  result = result.trim()
+  return result
+}
+```
+
+## Testing & Debugging
+
+### Testing Individual Nodes
+
+Test endpoints available at `/api/test/nodes/*`:
+
+```bash
+# Test filter node
+curl http://localhost:3000/api/test/nodes/filter-status
+
+# Test parse message node
+curl http://localhost:3000/api/test/nodes/parse-message
+
+# Test all nodes
+curl http://localhost:3000/api/test/nodes/check-customer
+curl http://localhost:3000/api/test/nodes/push-redis
+curl http://localhost:3000/api/test/nodes/batch
+curl http://localhost:3000/api/test/nodes/chat-history
+curl http://localhost:3000/api/test/nodes/rag-context
+curl http://localhost:3000/api/test/nodes/ai-response
+curl http://localhost:3000/api/test/nodes/format-response
+curl http://localhost:3000/api/test/nodes/send-whatsapp
+```
+
+**Each endpoint**:
+- Uses realistic test data
+- Logs execution to console
+- Returns node output as JSON
+- Safe to run (uses test phone numbers)
+
+### Execution Logging
+
+All chatbot flow executions are logged:
+
+```typescript
+// In chatbotFlow.ts
+const logger = createExecutionLogger()
+const executionId = logger.startExecution({ source: 'chatbotFlow', payload_from: phone })
+
+logger.logNodeStart('1. Node Name', input)
+logger.logNodeSuccess('1. Node Name', output)
+// or
+logger.logNodeError('1. Node Name', error)
+
+logger.finishExecution('success' | 'error')
+```
+
+**View logs**:
+- Console: `npm run dev` (stdout)
+- Dashboard: http://localhost:3000/dashboard/debug
+- API: `/api/debug/logs`
+
+### Debugging Webhook Issues
+
+**WhatsApp webhook not triggering flow**:
+
+1. Check webhook verification: `/api/webhook` GET endpoint
+2. Verify `META_VERIFY_TOKEN` matches Meta dashboard
+3. Check webhook URL is publicly accessible (use ngrok for local dev)
+4. View webhook messages: http://localhost:3000/dashboard/debug → "Últimas Webhooks"
+
+**Message not processing**:
+
+1. Check Node 1 logs (might be status update, not message)
+2. Check Redis connection (Node 6 errors are logged but don't crash flow)
+3. Check PostgreSQL connection (Node 7, 9)
+4. Check Groq API key (Node 11)
+5. Check Meta API token (Node 13)
+
+**View execution flow**:
+http://localhost:3000/dashboard/workflow
+
+### Common Errors
+
+**"Missing NEXT_PUBLIC_SUPABASE_URL"**
+- Missing `.env.local` file
+- Restart dev server after creating `.env.local`
+
+**"Redis connection failed"**
+- Redis not running (`redis-server` or Docker)
+- Wrong `REDIS_URL` in `.env.local`
+- Flow continues without Redis (graceful degradation)
+
+**"Failed to send WhatsApp message"**
+- Invalid `META_ACCESS_TOKEN` (expired or wrong)
+- Wrong `META_PHONE_NUMBER_ID`
+- Phone number not in correct format (must be international, no +)
+
+**TypeScript errors in IDE**
+- Pre-existing errors exist (7 errors in API routes)
+- Don't prevent dev server or build from working
+- Only fix if modifying affected files
+
+## Development Workflow
+
+### Adding a New Node
+
+1. Create file: `src/nodes/myNewNode.ts`
+2. Define input type interface
+3. Implement pure function
+4. Export from `src/nodes/index.ts`
+5. Add to flow: `src/flows/chatbotFlow.ts`
+6. Create test endpoint: `src/app/api/test/nodes/my-new-node/route.ts`
+7. Test in isolation before integrating
+
+### Modifying Existing Node
+
+1. Read current implementation
+2. Check where node is used in `chatbotFlow.ts`
+3. Understand input/output contracts
+4. Make changes (preserve type signatures)
+5. Test with test endpoint
+6. Test full flow with `/api/test/simulate-webhook`
+
+### Modifying AI Prompts
+
+**Main agent prompt**: `src/nodes/generateAIResponse.ts` (system message)
+**Formatter agent prompt**: `src/nodes/formatResponse.ts` (system message)
+**Diagnostic subagent**: Not yet implemented (tool defined but no execution)
+
+**When changing prompts**:
+- Test with real conversations (not just test data)
+- Check message splitting behavior (formatter)
+- Verify tool calls still work (human handoff)
+
+### Working with shadcn/ui Components
+
+**DO NOT** edit files in `src/components/ui/*` directly.
+
+To update component:
+```bash
+npx shadcn@latest add button  # Re-generates component
+```
+
+To customize: Create wrapper component in `src/components/`
+
+## Known Limitations
+
+1. **No multi-tenant support** - Single client only (env vars)
+2. **Diagnostic subagent tool not implemented** - Defined but no execution loop
+3. **No cost tracking** - `usage_logs` table exists but not populated
+4. **No conversation state management** - `conversations` table not used yet
+5. **Google Fonts build failure** - In restricted networks, build fails (font fetch)
+6. **No authentication** - Dashboard is publicly accessible
+7. **Polling instead of webhooks** - Dashboard uses 10s polling (not Supabase realtime everywhere)
+
+## Migration Notes
+
+### From n8n (IA.json)
+
+This Next.js implementation **replaces** the n8n workflow. Key differences:
+
+- **n8n**: Visual workflow editor, no code
+- **Next.js**: TypeScript functions, full control
+
+**Migration status**:
+- ✅ All 13 nodes migrated
+- ✅ Redis batching implemented
+- ✅ RAG context retrieval
+- ✅ Human handoff flow
+- ✅ Multi-message formatting
+- ✅ Media processing (audio, image)
+- ⏳ Diagnostic subagent (defined, not executed)
+- ❌ Multi-tenant config (Phase 3)
+
+### To Phase 3 (Full Multi-Tenant SaaS)
+
+**Remaining work**:
+
+1. Implement `getClientConfig(clientId)` pattern
+2. Move tokens from env vars to database (`clients` table)
+3. Add authentication (NextAuth.js)
+4. Per-client webhook URLs: `/api/webhook/[clientId]`
+5. Client selector UI in dashboard
+6. Cost tracking (populate `usage_logs`)
+7. Conversation state management (use `conversations`, `messages` tables)
+8. Queue system for long tasks (Upstash/Vercel Queue)
+
+## External Services
+
+**Meta (WhatsApp Business API)**:
+- Phone Number ID: `899639703222013`
+- Display Number: `555499567051`
+- API Version: `v18.0`
+- Docs: https://developers.facebook.com/docs/whatsapp/cloud-api
+
+**OpenAI**:
+- Whisper: Audio transcription (node 5)
+- GPT-4o Vision: Image analysis (node 5)
+- Embeddings: RAG vector search (node 10)
+
+**Groq**:
+- Model: Llama 3.3 70B
+- Main agent (node 11)
+- Formatter agent (node 12)
+- Docs: https://console.groq.com/docs
+
+**Supabase**:
+- PostgreSQL database
+- Vector search (pgvector)
+- Realtime subscriptions (dashboard only)
+
+**Redis**:
+- Message batching
+- TTL-based cleanup
+
+**Gmail**:
+- Human handoff email notifications
+- Uses App Password (not OAuth)
 
 ## Language
 
-All prompts, messages, and documentation are in **Portuguese (Brazilian)**.
+All user-facing content (prompts, messages, UI) is in **Portuguese (Brazilian)**.
+All code, comments, and technical documentation is in **English**.
 
-## Key Files
+## Key Files Reference
 
-- `IA.json` - Main n8n workflow definition (1783 lines)
-- `plano_de_arquitetura_saa_s_whats_app_resumao_n_8_n_→_next.md` - Complete architectural migration plan
-
-## Common Patterns
-
-### Client Configuration Loading
-```typescript
-// Future pattern
-async function getClientConfig(clientId: string) {
-  const { data } = await supabase
-    .from('clients')
-    .select('*')
-    .eq('id', clientId)
-    .single();
-  return {
-    META_ACCESS_TOKEN: data.meta_access_token,
-    OPENAI_API_KEY: data.openai_api_key || process.env.OPENAI_API_KEY,
-    // ...
-  };
-}
-```
-
-### Message Processing Flow
-```typescript
-// Future pattern
-async function processMessage(clientId: string, message: Message) {
-  const config = await getClientConfig(clientId);
-  const parsed = parseMessage(message);
-  const context = await enrichWithContext(parsed, config);
-  const response = await openaiGenerate(context, config);
-  await saveToSupabase(response, config);
-  await sendToMeta(response, config);
-}
-```
-
-### Cost Tracking
-Track both OpenAI token usage and Meta conversation windows:
-```typescript
-// Log after each AI call
-await logUsage({
-  client_id,
-  source: 'openai',
-  tokens_used: completion.usage.total_tokens,
-  cost_usd: calculateCost(tokens, model)
-});
-
-// Log after sending WhatsApp message
-await logUsage({
-  client_id,
-  source: 'meta',
-  messages_sent: 1,
-  cost_usd: estimateWhatsAppCost(timestamp)
-});
-```
+- `src/flows/chatbotFlow.ts` - Main orchestrator (start here to understand flow)
+- `src/app/api/webhook/route.ts` - Webhook entry point
+- `src/nodes/generateAIResponse.ts` - AI agent configuration (prompts, tools)
+- `src/lib/types.ts` - All TypeScript types
+- `.env.example` - Required environment variables
+- `migration.sql` - Database schema
+- `README.md` - User documentation
+- `.github/copilot-instructions.md` - Build/validation steps
