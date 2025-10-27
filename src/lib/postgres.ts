@@ -89,12 +89,53 @@ export const getPool = (): Pool => {
   return pool
 }
 
+/**
+ * Validates if a pool connection is healthy
+ * Returns true if healthy, false if stale/broken
+ */
+const validateConnection = async (testPool: Pool): Promise<boolean> => {
+  let client: PoolClient | null = null
+  try {
+    // Try to get a client with a short timeout
+    const timeoutPromise = new Promise<never>((_, reject) => 
+      setTimeout(() => reject(new Error('Connection validation timeout')), 3000)
+    )
+    
+    client = await Promise.race([
+      testPool.connect(),
+      timeoutPromise
+    ])
+    
+    // Test the connection with a simple query
+    await client.query('SELECT 1')
+    return true
+  } catch (error) {
+    console.warn('[Postgres] ⚠️ Connection validation failed:', error instanceof Error ? error.message : error)
+    return false
+  } finally {
+    if (client) {
+      client.release()
+    }
+  }
+}
+
+/**
+ * Forces pool recreation (useful when connections become stale)
+ */
+const recreatePool = async (): Promise<void> => {
+  if (pool) {
+    console.log('[Postgres] ♻️ Recreating pool...')
+    await pool.end().catch(err => console.error('[Postgres] Error closing pool:', err))
+    pool = null
+    poolCreatedAt = null
+  }
+}
+
 export const query = async <T = any>(
   text: string,
   params?: any[],
   maxRetries = 2
 ): Promise<QueryResult<T>> => {
-  const pool = getPool()
   let lastError: Error | null = null
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -103,15 +144,37 @@ export const query = async <T = any>(
     try {
       if (attempt > 0) {
         console.log(`[Postgres] 🔄 Retry attempt ${attempt}/${maxRetries}`)
+        
+        // On retry, validate connection health and recreate pool if needed
+        const currentPool = getPool()
+        const isHealthy = await validateConnection(currentPool)
+        if (!isHealthy) {
+          console.log('[Postgres] ♻️ Connection unhealthy, forcing pool recreation...')
+          await recreatePool()
+        }
+        
         // Exponential backoff: 500ms, 1s
         await new Promise(resolve => setTimeout(resolve, attempt * 500))
       }
+
+      // Get pool for this attempt
+      const currentPool = getPool()
 
       // OTIMIZAÇÃO: Log simplificado para reduzir overhead
       const queryPreview = text.replace(/\s+/g, ' ').substring(0, 80)
       console.log(`[Postgres] 🔍 Query: ${queryPreview}...`)
       
-      const result = await pool.query<T>(text, params)
+      // Add client-side timeout to prevent hanging queries
+      const queryTimeout = 20000 // 20 seconds max per query (includes connection time)
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error(`Query timeout exceeded ${queryTimeout}ms`)), queryTimeout)
+      )
+      
+      const result = await Promise.race([
+        currentPool.query<T>(text, params),
+        timeoutPromise
+      ])
+      
       const duration = Date.now() - start
       
       // OTIMIZAÇÃO: Log com métricas de performance
@@ -141,6 +204,12 @@ export const query = async <T = any>(
       // If not retryable or last attempt, throw immediately
       if (!isRetryable || attempt === maxRetries) {
         throw error
+      }
+      
+      // Force pool recreation on connection errors for next retry
+      if (isRetryable && attempt < maxRetries) {
+        console.log('[Postgres] ♻️ Forcing pool recreation due to connection error')
+        await recreatePool()
       }
     }
   }
