@@ -22,56 +22,51 @@ const removeSslModeFromUrl = (url: string): string => {
 }
 
 const getConnectionString = (): string => {
-  // Usa POSTGRES_URL se disponível, senão constrói manualmente
-  if (process.env.POSTGRES_URL_NON_POOLING) {
+  // Usa POSTGRES_URL (pooled) em vez de POSTGRES_URL_NON_POOLING
+  // Isso evita esgotar conexões diretas ao banco
+  if (process.env.POSTGRES_URL) {
     // Remove sslmode parameter if present - SSL config is handled by Pool options
-    return removeSslModeFromUrl(process.env.POSTGRES_URL_NON_POOLING)
+    return removeSslModeFromUrl(process.env.POSTGRES_URL)
   }
 
   const host = process.env.POSTGRES_HOST || 'db.jhodhxvvhohygijqcxbo.supabase.co'
   const user = process.env.POSTGRES_USER || 'postgres.jhodhxvvhohygijqcxbo'
   const password = process.env.POSTGRES_PASSWORD
   const database = process.env.POSTGRES_DATABASE || 'postgres'
+  const port = 6543 // Porta do pooler do Supabase
 
   if (!password) {
     throw new Error('POSTGRES_PASSWORD não configurado')
   }
 
-  return `postgres://${user}:${password}@${host}:5432/${database}`
+  return `postgres://${user}:${password}@${host}:${port}/${database}`
 }
 
 export const getPool = (): Pool => {
-  // Recria pool se estiver muito velho (serverless best practice)
-  const now = Date.now()
-  if (pool && poolCreatedAt && (now - poolCreatedAt) > POOL_MAX_AGE_MS) {
-    console.log('[Postgres] ♻️ Pool age limit exceeded, recreating...')
-    pool.end().catch(err => console.error('[Postgres] Error closing old pool:', err))
-    pool = null
-    poolCreatedAt = null
-  }
-
+  // Em ambiente serverless, NÃO recriamos o pool
+  // Deixamos o Lambda/Vercel gerenciar o ciclo de vida
   if (pool) {
     return pool
   }
 
   console.log('[Postgres] 🆕 Creating new connection pool')
 
-  // OTIMIZAÇÃO: Configurações otimizadas para ambientes serverless
+  // OTIMIZAÇÃO: Configurações otimizadas para Supabase Pooler
   pool = new Pool({
     connectionString: getConnectionString(),
-    max: 10, // AUMENTADO: Suporta múltiplos webhooks simultâneos
-    min: 0, // NOVO: Permite pool vazio quando idle (economiza recursos)
-    idleTimeoutMillis: 30000, // AUMENTADO: Mantém conexões por mais tempo (reduz overhead)
-    connectionTimeoutMillis: 20000, // AUMENTADO: Suficiente para cold starts lentos
-    statement_timeout: 45000, // AUMENTADO: Mais tempo para queries completarem
-    query_timeout: 45000, // AUMENTADO: Timeout mais generoso para serverless
-    allowExitOnIdle: true, // NOVO: Permite processo encerrar quando pool está idle
+    max: 3, // REDUZIDO: Supabase pooler já faz pooling, não precisamos de muitas conexões
+    min: 0, // Permite pool vazio quando idle (economiza recursos)
+    idleTimeoutMillis: 10000, // REDUZIDO: Libera conexões idle mais rápido
+    connectionTimeoutMillis: 10000, // Timeout razoável
+    statement_timeout: 30000, // 30 segundos para queries
+    query_timeout: 30000, // 30 segundos para queries
+    allowExitOnIdle: true, // Permite processo encerrar quando pool está idle
     ssl: {
       rejectUnauthorized: false, // Necessário para Supabase
     },
   })
 
-  poolCreatedAt = now
+  poolCreatedAt = Date.now()
 
   // Log de erros
   pool.on('error', (err) => {
@@ -122,11 +117,13 @@ const validateConnection = async (testPool: Pool): Promise<boolean> => {
 
 /**
  * Forces pool recreation (useful when connections become stale)
+ * WARNING: Only use this when absolutely necessary (connection errors)
  */
 const recreatePool = async (): Promise<void> => {
   if (pool) {
-    console.log('[Postgres] ♻️ Recreating pool...')
-    await pool.end().catch(err => console.error('[Postgres] Error closing pool:', err))
+    console.log('[Postgres] ♻️ Forcing pool recreation due to connection error...')
+    // NÃO chamamos pool.end() - apenas descartamos a referência
+    // O garbage collector vai limpar quando não houver mais referências
     pool = null
     poolCreatedAt = null
   }
@@ -233,10 +230,10 @@ export const getClient = async (): Promise<PoolClient> => {
   return await pool.connect()
 }
 
-// Fechar pool (útil para testes)
+// Fechar pool (útil APENAS para testes - NÃO usar em produção)
 export const closePool = async (): Promise<void> => {
   if (pool) {
-    console.log('[Postgres] 🔒 Fechando connection pool')
+    console.log('[Postgres] 🔒 Fechando connection pool (TEST ONLY)')
     await pool.end()
     pool = null
     poolCreatedAt = null
