@@ -96,12 +96,12 @@ export const SendMessageForm = ({
     <div className="flex items-end gap-2 bg-white rounded-lg p-2">
       <textarea
         ref={textareaRef}
-        placeholder="Digite sua mensagem... (Enter para enviar, Shift+Enter para nova linha)"
+        placeholder="Digite sua mensagem..."
         value={content}
         onChange={(e) => setContent(e.target.value)}
         onKeyDown={handleKeyDown}
         disabled={sending}
-        className="flex-1 resize-none border-0 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-0 rounded-lg max-h-[120px] min-h-[40px]"
+        className="flex-1 resize-none border-0 bg-white px-3 py-2 text-sm md:text-base focus:outline-none focus:ring-0 rounded-lg max-h-[120px] min-h-[40px]"
         rows={1}
       />
 
@@ -109,9 +109,10 @@ export const SendMessageForm = ({
         onClick={handleSendMessage}
         disabled={sending || !content.trim()}
         size="icon"
-        className="h-10 w-10 rounded-full flex-shrink-0"
+        className="h-10 w-10 md:h-11 md:w-11 rounded-full flex-shrink-0"
+        title="Enviar mensagem (Enter)"
       >
-        <Send className="h-4 w-4" />
+        <Send className="h-4 w-4 md:h-5 md:w-5" />
       </Button>
     </div>
   )

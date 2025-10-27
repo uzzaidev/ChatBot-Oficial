@@ -121,20 +121,20 @@ export const ConversationDetail = ({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-shrink-0 bg-white p-4 border-b border-gray-200">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <UserCircle className="h-8 w-8 text-muted-foreground" />
-            <div>
-              <h3 className="text-lg font-semibold">
+      <div className="flex-shrink-0 bg-white p-3 md:p-4 border-b border-gray-200">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-2 md:gap-3 min-w-0">
+            <UserCircle className="h-6 w-6 md:h-8 md:w-8 text-muted-foreground flex-shrink-0" />
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm md:text-lg font-semibold truncate">
                 {conversationName || formatPhone(phone)}
               </h3>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Badge
-              className={getStatusColor(conversationStatus)}
+              className={`${getStatusColor(conversationStatus)} text-xs`}
               variant="secondary"
             >
               {getStatusLabel(conversationStatus)}
@@ -145,9 +145,11 @@ export const ConversationDetail = ({
                 variant="outline"
                 size="sm"
                 onClick={handleTransferToHuman}
+                className="text-xs md:text-sm"
               >
-                <UserCog className="h-4 w-4 mr-2" />
-                Transferir para Humano
+                <UserCog className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
+                <span className="hidden md:inline">Transferir para Humano</span>
+                <span className="md:hidden ml-1">Humano</span>
               </Button>
             )}
           </div>
@@ -157,15 +159,15 @@ export const ConversationDetail = ({
       <div className="flex-1 overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center h-full">
-            <span className="text-muted-foreground">Carregando mensagens...</span>
+            <span className="text-sm text-muted-foreground">Carregando mensagens...</span>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
-            <span className="text-muted-foreground">Nenhuma mensagem ainda</span>
+            <span className="text-sm text-muted-foreground">Nenhuma mensagem ainda</span>
           </div>
         ) : (
-          <ScrollArea ref={scrollAreaRef} className="h-full px-4">
-            <div className="py-4">
+          <ScrollArea ref={scrollAreaRef} className="h-full px-2 md:px-4">
+            <div className="py-3 md:py-4">
               {messages.map((message) => (
                 <MessageBubble key={message.id} message={message} />
               ))}

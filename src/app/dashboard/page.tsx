@@ -60,10 +60,10 @@ export default function DashboardPage() {
   }, [conversations, loading])
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8 p-4 md:p-6 lg:p-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Dashboard</h1>
+        <p className="text-sm md:text-base text-muted-foreground">
           Visão geral das conversas WhatsApp
         </p>
       </div>
@@ -72,11 +72,13 @@ export default function DashboardPage() {
 
       <MetricsDashboard metrics={metrics} loading={metricsLoading} />
 
-      <ConversationList
-        conversations={conversations}
-        loading={loading}
-        clientId={DEFAULT_CLIENT_ID}
-      />
+      <div className="pb-4">
+        <ConversationList
+          conversations={conversations}
+          loading={loading}
+          clientId={DEFAULT_CLIENT_ID}
+        />
+      </div>
     </div>
   )
 }
