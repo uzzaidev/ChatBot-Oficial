@@ -15,7 +15,6 @@ import { formatResponse } from '@/nodes/formatResponse'
 import { sendWhatsAppMessage } from '@/nodes/sendWhatsAppMessage'
 import { handleHumanHandoff } from '@/nodes/handleHumanHandoff'
 import { saveChatMessage } from '@/nodes/saveChatMessage'
-import { downloadMedia } from '@/lib/meta'
 import { createExecutionLogger } from '@/lib/logger'
 
 export interface ChatbotFlowResult {
@@ -25,6 +24,10 @@ export interface ChatbotFlowResult {
   error?: string
 }
 
+/**
+ * Obtém a URL pública de um arquivo de mídia no Meta/WhatsApp
+ * Primeiro faz uma chamada para obter a URL, depois pode ser usado para download
+ */
 const getMediaUrl = async (mediaId: string): Promise<string> => {
   const META_ACCESS_TOKEN = process.env.META_ACCESS_TOKEN
   if (!META_ACCESS_TOKEN) {
@@ -47,40 +50,6 @@ const getMediaUrl = async (mediaId: string): Promise<string> => {
 
   const data = await response.json()
   return data.url
-}
-
-const processMediaMessage = async (
-  parsedMessage: ParsedMessage
-): Promise<string> => {
-  const { type, content, metadata } = parsedMessage
-
-  if (!metadata?.id) {
-    throw new Error(`No media ID found for ${type} message`)
-  }
-
-  if (type === 'audio') {
-    const audioBuffer = await downloadMetaMedia(metadata.id)
-    const transcription = await transcribeAudio(audioBuffer)
-    return transcription
-  }
-
-  if (type === 'image') {
-    const imageUrl = await getMediaUrl(metadata.id)
-    const description = await analyzeImage(imageUrl)
-
-    if (content && content.trim().length > 0) {
-      return `${description}\n\nLegenda: ${content}`
-    }
-
-    return description
-  }
-
-  return content
-}
-
-const checkForToolCall = (aiResponseContent: string, toolName: string): boolean => {
-  const toolPattern = new RegExp(`"name":\\s*"${toolName}"`, 'i')
-  return toolPattern.test(aiResponseContent)
 }
 
 export const processChatbotMessage = async (
@@ -132,23 +101,43 @@ export const processChatbotMessage = async (
 
     console.log('[chatbotFlow] Processing message content based on type')
 
-    // NODE 4: Download Media (if not text)
+    // NODE 4: Process Media (audio/image)
     console.log('[chatbotFlow] NODE 4: Verificando tipo de mensagem...')
-    logger.logNodeStart('4. Download Media', { type: parsedMessage.type })
+    logger.logNodeStart('4. Process Media', { type: parsedMessage.type })
     
     let processedContent: string | undefined
     
-    if (parsedMessage.type !== 'text' && parsedMessage.metadata?.id) {
-      console.log('[chatbotFlow] NODE 4: Baixando mídia...')
-      const mediaUrl = await downloadMetaMedia(parsedMessage.metadata.id)
-      logger.logNodeSuccess('4. Download Media', { url: mediaUrl })
+    if (parsedMessage.type === 'audio' && parsedMessage.metadata?.id) {
+      console.log('[chatbotFlow] NODE 4a: Baixando áudio...')
+      const audioBuffer = await downloadMetaMedia(parsedMessage.metadata.id)
+      logger.logNodeSuccess('4a. Download Audio', { size: audioBuffer.length })
       
-      // Aqui você pode processar áudio/imagem com Whisper/Vision
-      // Por enquanto, só retorna vazio
-      processedContent = ''
+      console.log('[chatbotFlow] NODE 4b: Transcrevendo áudio...')
+      processedContent = await transcribeAudio(audioBuffer)
+      logger.logNodeSuccess('4b. Transcribe Audio', { transcription: processedContent.substring(0, 100) })
+      console.log(`[chatbotFlow] 🎤 Áudio transcrito: ${processedContent}`)
+      
+    } else if (parsedMessage.type === 'image' && parsedMessage.metadata?.id) {
+      console.log('[chatbotFlow] NODE 4a: Obtendo URL da imagem...')
+      const imageUrl = await getMediaUrl(parsedMessage.metadata.id)
+      logger.logNodeSuccess('4a. Get Image URL', { url: imageUrl })
+      
+      console.log('[chatbotFlow] NODE 4b: Analisando imagem com GPT-4o Vision...')
+      const imageDescription = await analyzeImage(imageUrl)
+      
+      // Se houver legenda, combinar com descrição
+      if (parsedMessage.content && parsedMessage.content.trim().length > 0) {
+        processedContent = `Descrição da imagem: ${imageDescription}\n\nLegenda: ${parsedMessage.content}`
+      } else {
+        processedContent = `Descrição da imagem: ${imageDescription}`
+      }
+      
+      logger.logNodeSuccess('4b. Analyze Image', { description: processedContent.substring(0, 100) })
+      console.log(`[chatbotFlow] 🖼️ Imagem analisada: ${processedContent}`)
+      
     } else {
-      console.log('[chatbotFlow] NODE 4: Mensagem de texto, pulando mídia')
-      logger.logNodeSuccess('4. Download Media', { skipped: true })
+      console.log('[chatbotFlow] NODE 4: Mensagem de texto, pulando processamento de mídia')
+      logger.logNodeSuccess('4. Process Media', { skipped: true, reason: 'text message' })
     }
 
     // NODE 5: Normalize Message
