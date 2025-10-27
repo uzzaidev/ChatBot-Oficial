@@ -35,10 +35,11 @@ export const checkOrCreateCustomer = async (
 
     // UPSERT usando Supabase client
     // Supabase detecta automaticamente a unique constraint em 'telefone'
+    // Nota: Usamos 'as any' porque o nome da tabela tem espaço e TypeScript não consegue inferir o tipo
     console.log('[checkOrCreateCustomer] 🚀 Executando UPSERT via Supabase...')
 
     const { data, error } = await supabase
-      .from('Clientes WhatsApp')
+      .from('Clientes WhatsApp' as any)
       .upsert(
         {
           telefone: phone,

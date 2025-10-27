@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     // Test 2: Simple query to Clientes WhatsApp table
     const queryStart = Date.now()
     const { data, error, count } = await supabase
-      .from('Clientes WhatsApp')
+      .from('Clientes WhatsApp' as any)
       .select('*', { count: 'exact', head: false })
       .limit(1)
     
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     // Test 3: Health check with timeout
     const healthStart = Date.now()
     const healthPromise = supabase
-      .from('Clientes WhatsApp')
+      .from('Clientes WhatsApp' as any)
       .select('telefone')
       .limit(1)
     

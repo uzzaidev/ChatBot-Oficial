@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
     // 4. Verificar se Supabase consegue acessar
     const supabase = createServerClient()
     const { data: testData, error: testError } = await supabase
-      .from('Clientes WhatsApp')
+      .from('Clientes WhatsApp' as any)
       .select('telefone, nome, status')
       .limit(5)
 
