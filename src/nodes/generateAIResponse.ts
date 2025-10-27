@@ -95,13 +95,13 @@ const HUMAN_HANDOFF_TOOL_DEFINITION = {
   type: 'function',
   function: {
     name: 'transferir_atendimento',
-    description: 'Utilize essa tool para transferir o atendimento para um humano quando solicitado pelo usuario ou quando voce não souber responder uma pergunta',
+    description: 'SOMENTE utilize essa tool quando o usuário EXPLICITAMENTE solicitar falar com um humano, atendente ou pessoa. Exemplos: "quero falar com alguém", "preciso de um atendente", "pode me transferir para um humano". NÃO use esta tool para perguntas normais que você pode responder.',
     parameters: {
       type: 'object',
       properties: {
         motivo: {
           type: 'string',
-          description: 'Motivo da transferência',
+          description: 'Motivo da transferência solicitada pelo usuário',
         },
       },
       required: ['motivo'],
@@ -120,10 +120,26 @@ export const generateAIResponse = async (input: GenerateAIResponseInput): Promis
   try {
     const { message, chatHistory, ragContext, customerName } = input
 
+    // Data e hora atual (para contexto da IA)
+    const now = new Date()
+    const dateTimeInfo = `Data e hora atual: ${now.toLocaleDateString('pt-BR', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'America/Sao_Paulo'
+    })} (horário de Brasília)`
+
     const messages: ChatMessage[] = [
       {
         role: 'system',
         content: MAIN_AGENT_SYSTEM_PROMPT,
+      },
+      {
+        role: 'system',
+        content: dateTimeInfo,
       },
     ]
 
