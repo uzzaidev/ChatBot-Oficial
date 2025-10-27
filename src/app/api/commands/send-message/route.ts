@@ -1,67 +1,90 @@
 import { NextRequest, NextResponse } from 'next/server'
 import type { SendMessageRequest } from '@/lib/types'
+import { sendWhatsAppMessage } from '@/nodes/sendWhatsAppMessage'
+import { saveChatMessage } from '@/nodes/saveChatMessage'
 
 export const dynamic = 'force-dynamic'
 
+/**
+ * POST /api/commands/send-message
+ *
+ * Envia mensagem manual pelo dashboard para WhatsApp
+ *
+ * Fluxo:
+ * 1. Valida input (phone, content)
+ * 2. Envia mensagem via Meta WhatsApp API (sendWhatsAppMessage node)
+ * 3. Salva mensagem no histórico com type: 'ai' (saveChatMessage node)
+ *
+ * NOTA: type: 'ai' será mudado para 'atendente' no futuro
+ */
 export async function POST(request: NextRequest) {
-  try {
-    const body = (await request.json()) as SendMessageRequest
+  const startTime = Date.now()
 
+  try {
+    console.log('[SEND-MESSAGE API] 🚀 Iniciando envio de mensagem manual')
+
+    const body = (await request.json()) as SendMessageRequest
     const { phone, content, client_id } = body
 
-    if (!phone || !content || !client_id) {
+    // Validação
+    if (!phone || !content) {
+      console.warn('[SEND-MESSAGE API] ⚠️ Validação falhou: phone ou content faltando')
       return NextResponse.json(
-        { error: 'phone, content e client_id são obrigatórios' },
+        { error: 'phone e content são obrigatórios' },
         { status: 400 }
       )
     }
 
-    const n8nBaseUrl = process.env.N8N_WEBHOOK_BASE_URL
-    const n8nWebhookPath = process.env.N8N_SEND_MESSAGE_WEBHOOK
+    console.log(`[SEND-MESSAGE API] 📱 Phone: ${phone}`)
+    console.log(`[SEND-MESSAGE API] 💬 Content: ${content.substring(0, 50)}...`)
 
-    if (!n8nBaseUrl || !n8nWebhookPath) {
-      return NextResponse.json(
-        { error: 'Webhooks n8n não configurados. Configure N8N_WEBHOOK_BASE_URL e N8N_SEND_MESSAGE_WEBHOOK no .env.local' },
-        { status: 501 }
-      )
-    }
-
-    const webhookUrl = `${n8nBaseUrl}${n8nWebhookPath}`
-
-    const n8nResponse = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        phone,
-        content,
-        client_id,
-        source: 'dashboard',
-        timestamp: new Date().toISOString(),
-      }),
+    // NODE 12: Envia mensagem via WhatsApp
+    console.log('[SEND-MESSAGE API] 📤 Chamando sendWhatsAppMessage node...')
+    const messageIds = await sendWhatsAppMessage({
+      phone,
+      messages: [content], // Array com uma mensagem
     })
 
-    if (!n8nResponse.ok) {
-      const errorText = await n8nResponse.text()
-      console.error('Erro ao enviar mensagem via n8n:', errorText)
-      return NextResponse.json(
-        { error: 'Falha ao enviar mensagem via n8n' },
-        { status: 502 }
-      )
-    }
+    const duration = Date.now() - startTime
+    console.log(`[SEND-MESSAGE API] ✅ Mensagem enviada via WhatsApp em ${duration}ms`)
+    console.log(`[SEND-MESSAGE API] 📨 Message IDs: ${messageIds.join(', ')}`)
 
-    const result = await n8nResponse.json()
+    // Salvar no histórico com type: 'ai'
+    console.log('[SEND-MESSAGE API] 💾 Salvando mensagem no histórico...')
+    await saveChatMessage({
+      phone,
+      message: content,
+      type: 'ai', // TODO: Mudar para 'atendente' no futuro
+    })
+
+    const totalDuration = Date.now() - startTime
+    console.log(`[SEND-MESSAGE API] ✅ SUCESSO TOTAL em ${totalDuration}ms`)
 
     return NextResponse.json({
       success: true,
       message: 'Mensagem enviada com sucesso',
-      data: result,
+      data: {
+        messageIds,
+        phone,
+        content,
+        savedToHistory: true,
+        duration: totalDuration,
+      },
     })
   } catch (error) {
-    console.error('Erro inesperado ao enviar mensagem:', error)
+    const duration = Date.now() - startTime
+    console.error(`[SEND-MESSAGE API] ❌❌❌ ERRO após ${duration}ms`)
+    console.error(`[SEND-MESSAGE API] Error type:`, error instanceof Error ? error.constructor.name : typeof error)
+    console.error(`[SEND-MESSAGE API] Error message:`, error instanceof Error ? error.message : String(error))
+    console.error(`[SEND-MESSAGE API] Error stack:`, error instanceof Error ? error.stack : 'No stack trace')
+
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
+
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      {
+        error: 'Erro ao enviar mensagem',
+        details: errorMessage,
+      },
       { status: 500 }
     )
   }
