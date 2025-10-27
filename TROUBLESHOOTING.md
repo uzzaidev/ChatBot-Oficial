@@ -19,20 +19,23 @@ This error occurs in serverless environments (Vercel/AWS Lambda) where:
 
 **Solutions Implemented:**
 
-#### 1. Increased Timeouts
-The connection timeout has been increased from 10s to 30s to accommodate serverless cold starts:
+#### 1. Optimized Timeout Configuration
+Database timeouts have been configured to accommodate serverless cold starts:
 ```typescript
 // src/lib/postgres.ts
-connectionTimeoutMillis: 30000, // 30 seconds
-statement_timeout: 25000,       // 25 seconds
-query_timeout: 25000,           // 25 seconds
+connectionTimeoutMillis: 10000, // 10 seconds - fail fast on connection
+statement_timeout: 30000,       // 30 seconds - allows cold start queries
+query_timeout: 30000,           // 30 seconds - sufficient for complex queries
 ```
+
+**Important:** Client-side timeout has been removed. PostgreSQL's native `statement_timeout` is more reliable and prevents premature query cancellation during cold starts.
 
 #### 2. Automatic Retry Logic
 Transient connection failures are automatically retried up to 2 times with exponential backoff:
 - Retries on: timeout, connection terminated, ECONNREFUSED, ETIMEDOUT
-- Backoff: 1s, 2s between retries
+- Backoff: 500ms, 1s between retries
 - Non-retryable errors fail immediately
+- Database timeout errors (from PostgreSQL) are retryable if caused by cold starts
 
 #### 3. Pool Age Management
 Connection pools are automatically recreated after 60 seconds to prevent stale connections in serverless environments.
