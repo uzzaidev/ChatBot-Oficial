@@ -51,6 +51,19 @@ export const createServerClient = () => {
     global: {
       headers: {
         'X-Client-Info': 'supabase-js-node',
+        'Connection': 'keep-alive',
+      },
+      fetch: (url, options = {}) => {
+        // Timeout de 15 segundos (mais do que suficiente para queries simples)
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), 15000)
+        
+        return fetch(url, {
+          ...options,
+          signal: controller.signal,
+          // @ts-ignore - keepalive não está na tipagem mas funciona
+          keepalive: true,
+        }).finally(() => clearTimeout(timeout))
       },
     },
   })

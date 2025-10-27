@@ -55,7 +55,9 @@ export async function GET(request: NextRequest) {
         duration_ms: queryTime,
         rowCount: count,
         sampleData: data?.[0] ? {
+          // @ts-ignore
           telefone: data[0].telefone,
+          // @ts-ignore
           status: data[0].status
         } : null
       })
