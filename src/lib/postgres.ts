@@ -59,12 +59,12 @@ export const getPool = (): Pool => {
   // OTIMIZAÇÃO: Configurações otimizadas para ambientes serverless
   pool = new Pool({
     connectionString: getConnectionString(),
-    max: 5, // REDUZIDO: Menos conexões simultâneas para evitar pool exhaustion
+    max: 10, // AUMENTADO: Suporta múltiplos webhooks simultâneos
     min: 0, // NOVO: Permite pool vazio quando idle (economiza recursos)
-    idleTimeoutMillis: 20000, // REDUZIDO: Fecha conexões idle mais rápido
-    connectionTimeoutMillis: 10000, // REDUZIDO: Fail fast em cold starts
-    statement_timeout: 30000, // AUMENTADO: Queries devem completar em 30s (cold starts)
-    query_timeout: 30000, // AUMENTADO: Timeout mais generoso para serverless
+    idleTimeoutMillis: 30000, // AUMENTADO: Mantém conexões por mais tempo (reduz overhead)
+    connectionTimeoutMillis: 20000, // AUMENTADO: Suficiente para cold starts lentos
+    statement_timeout: 45000, // AUMENTADO: Mais tempo para queries completarem
+    query_timeout: 45000, // AUMENTADO: Timeout mais generoso para serverless
     allowExitOnIdle: true, // NOVO: Permite processo encerrar quando pool está idle
     ssl: {
       rejectUnauthorized: false, // Necessário para Supabase
@@ -161,13 +161,23 @@ export const query = async <T = any>(
       // Get pool for this attempt
       const currentPool = getPool()
 
-      // OTIMIZAÇÃO: Log simplificado para reduzir overhead
-      const queryPreview = text.replace(/\s+/g, ' ').substring(0, 80)
-      console.log(`[Postgres] 🔍 Query: ${queryPreview}...`)
-      
+      // Log detalhado para debugging
+      const queryPreview = text.replace(/\s+/g, ' ').substring(0, 100)
+      console.log(`[Postgres] 🔍 Query (attempt ${attempt + 1}/${maxRetries + 1}): ${queryPreview}...`)
+      console.log(`[Postgres] 📊 Pool status: { total: ${currentPool.totalCount}, idle: ${currentPool.idleCount}, waiting: ${currentPool.waitingCount} }`)
+      console.log(`[Postgres] ⏱️  Timestamp: ${new Date().toISOString()}`)
+
+      if (currentPool.waitingCount > 0) {
+        console.warn(`[Postgres] ⚠️  WARNING: ${currentPool.waitingCount} clients waiting for connection!`)
+      }
+
+      console.log(`[Postgres] 🚀 Executando query...`)
+
       // Execute query directly - PostgreSQL handles timeout via statement_timeout
       // Removed client-side timeout to avoid premature failures in serverless cold starts
       const result = await currentPool.query<T>(text, params)
+
+      console.log(`[Postgres] ✅ Query executada com sucesso!`)
       
       const duration = Date.now() - start
       
