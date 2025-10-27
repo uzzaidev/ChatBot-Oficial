@@ -85,6 +85,48 @@ export const analyzeImage = async (imageUrl: string, prompt: string): Promise<st
   }
 }
 
+export const analyzeImageFromBuffer = async (imageBuffer: Buffer, prompt: string, mimeType: string = 'image/jpeg'): Promise<string> => {
+  try {
+    const client = getOpenAIClient()
+
+    // Converter buffer para base64
+    const base64Image = imageBuffer.toString('base64')
+    const dataUrl = `data:${mimeType};base64,${base64Image}`
+
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: prompt,
+            },
+            {
+              type: 'image_url',
+              image_url: {
+                url: dataUrl,
+              },
+            },
+          ],
+        },
+      ],
+      max_tokens: 1000,
+    })
+
+    const content = response.choices[0]?.message?.content
+    if (!content) {
+      throw new Error('No content returned from GPT-4o Vision')
+    }
+
+    return content
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    throw new Error(`Failed to analyze image with GPT-4o Vision: ${errorMessage}`)
+  }
+}
+
 export const generateEmbedding = async (text: string): Promise<number[]> => {
   try {
     const client = getOpenAIClient()

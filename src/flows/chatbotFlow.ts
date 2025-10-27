@@ -24,34 +24,6 @@ export interface ChatbotFlowResult {
   error?: string
 }
 
-/**
- * Obtém a URL pública de um arquivo de mídia no Meta/WhatsApp
- * Primeiro faz uma chamada para obter a URL, depois pode ser usado para download
- */
-const getMediaUrl = async (mediaId: string): Promise<string> => {
-  const META_ACCESS_TOKEN = process.env.META_ACCESS_TOKEN
-  if (!META_ACCESS_TOKEN) {
-    throw new Error('META_ACCESS_TOKEN not configured')
-  }
-
-  const META_API_VERSION = 'v18.0'
-  const response = await fetch(
-    `https://graph.facebook.com/${META_API_VERSION}/${mediaId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${META_ACCESS_TOKEN}`,
-      },
-    }
-  )
-
-  if (!response.ok) {
-    throw new Error(`Failed to get media URL: ${response.statusText}`)
-  }
-
-  const data = await response.json()
-  return data.url
-}
-
 export const processChatbotMessage = async (
   payload: WhatsAppWebhookPayload
 ): Promise<ChatbotFlowResult> => {
@@ -118,12 +90,12 @@ export const processChatbotMessage = async (
       console.log(`[chatbotFlow] 🎤 Áudio transcrito: ${processedContent}`)
       
     } else if (parsedMessage.type === 'image' && parsedMessage.metadata?.id) {
-      console.log('[chatbotFlow] NODE 4a: Obtendo URL da imagem...')
-      const imageUrl = await getMediaUrl(parsedMessage.metadata.id)
-      logger.logNodeSuccess('4a. Get Image URL', { url: imageUrl })
+      console.log('[chatbotFlow] NODE 4a: Baixando imagem...')
+      const imageBuffer = await downloadMetaMedia(parsedMessage.metadata.id)
+      logger.logNodeSuccess('4a. Download Image', { size: imageBuffer.length })
       
       console.log('[chatbotFlow] NODE 4b: Analisando imagem com GPT-4o Vision...')
-      const imageDescription = await analyzeImage(imageUrl)
+      const imageDescription = await analyzeImage(imageBuffer, parsedMessage.metadata.mimeType || 'image/jpeg')
       
       // Se houver legenda, combinar com descrição
       if (parsedMessage.content && parsedMessage.content.trim().length > 0) {

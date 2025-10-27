@@ -19,13 +19,26 @@ Webhook → Parse → CheckOrCreateCustomer →
   → NormalizeMessage → Redis → AI Agent
 ```
 
-### Mensagem de Imagem (type: "image")
+### Processamento de Imagem
+```
+[chatbotFlow] NODE 4a: Baixando imagem...
+[chatbotFlow] NODE 4b: Analisando imagem com GPT-4o Vision...
+[chatbotFlow] 🖼️ Imagem analisada: Descrição da imagem: A imagem mostra...
+```
+
+## Troubleshooting
+
+### Erro: "Error while downloading ... lookaside.fbsbx.com"
+**Causa**: URL da imagem do Meta expirou ou requer autenticação
+**Solução**: ✅ **Já corrigido!** Agora baixamos a imagem como Buffer e enviamos como base64 para o GPT-4o Vision
 ```
 Webhook → Parse → CheckOrCreateCustomer →
-  → Get Image URL (Meta API) →
-  → Analyze Image (GPT-4o Vision) →
+  → Download Image (Meta API) →
+  → Analyze Image (GPT-4o Vision com base64) →
   → NormalizeMessage → Redis → AI Agent
 ```
+
+**Importante**: A imagem é baixada como Buffer e convertida para base64 antes de ser enviada ao GPT-4o Vision, pois as URLs do Meta exigem autenticação e expiram rapidamente.
 
 ## Exemplo de Webhook (Áudio)
 
@@ -73,12 +86,14 @@ const transcription = await transcribeAudio(audioBuffer)
 ```
 
 ### 4. `analyzeImage.ts`
-Analisa imagem com GPT-4o Vision:
+Analisa imagem com GPT-4o Vision (usando base64):
 ```typescript
-const imageUrl = await getMediaUrl(imageId)
-const description = await analyzeImage(imageUrl)
+const imageBuffer = await downloadMetaMedia(imageId)
+const description = await analyzeImage(imageBuffer, mimeType)
 // Retorna: "A imagem mostra um painel solar instalado no telhado..."
 ```
+
+**Por que base64?** As URLs do Meta/WhatsApp requerem autenticação (Bearer token) e expiram em ~5 minutos. Converter para base64 garante que a imagem seja enviada diretamente ao GPT-4o Vision sem problemas de autenticação.
 
 ### 5. `normalizeMessage.ts`
 Unifica o conteúdo processado:
