@@ -102,6 +102,17 @@ export default function ConversationPage({ params }: ConversationPageProps) {
                 <h3 className="font-semibold text-foreground truncate">{conversation.name}</h3>
                 <p className="text-xs text-muted-foreground truncate">{conversation.phone}</p>
               </div>
+
+              {/* Badge de Status */}
+              <div className="flex items-center gap-2">
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  conversation.status === 'bot' ? 'bg-blue-100 text-blue-700' :
+                  conversation.status === 'human' ? 'bg-green-100 text-green-700' :
+                  'bg-gray-100 text-gray-700'
+                }`}>
+                  {conversation.status === 'bot' ? 'Bot' : conversation.status === 'human' ? 'Humano' : conversation.status}
+                </span>
+              </div>
             </div>
 
             {/* Área de Mensagens */}
@@ -110,7 +121,6 @@ export default function ConversationPage({ params }: ConversationPageProps) {
                 phone={phone}
                 clientId={clientId}
                 conversationName={conversation.name || undefined}
-                conversationStatus={conversation.status}
               />
             </div>
 

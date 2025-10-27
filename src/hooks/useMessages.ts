@@ -45,6 +45,15 @@ export const useMessages = ({
       }
 
       const data = await response.json()
+
+      console.log('[useMessages] Received data from API:', {
+        messageCount: data.messages?.length || 0,
+        total: data.total || 0,
+        phone,
+        firstMessage: data.messages?.[0],
+        lastMessage: data.messages?.[data.messages?.length - 1]
+      })
+
       setMessages(data.messages || [])
       setTotal(data.total || 0)
     } catch (err) {

@@ -139,13 +139,18 @@ export const getStatusLabel = (status: string): string => {
 }
 
 export const cleanMessageContent = (content: string): string => {
-  // Remove tags de function calls (ex: <function=AI_Agent_Tool>{...}</function>)
-  let cleaned = content.replace(/<function=[\s\S]*?<\/function>/gi, '')
+  if (!content || typeof content !== 'string') {
+    return content || ''
+  }
+
+  // Remove tags de function calls com closing tag (ex: <function=transferir_atendimento>{...}</function>)
+  // Usa [^] ao invés de [\s\S] para capturar qualquer caractere incluindo newlines
+  let cleaned = content.replace(/<function=[^>]+>[^]*?<\/function>/gi, '')
 
   // Remove tags de function sem closing tag (ex: <function=AI_Agent_Tool>{...})
   cleaned = cleaned.replace(/<function=[^>]*>\{[^}]*\}/gi, '')
 
-  // Remove espaços extras no final
+  // Remove espaços extras, mas mantém quebras de linha internas
   cleaned = cleaned.trim()
 
   return cleaned
