@@ -93,6 +93,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       messages,
       total: messages.length,
       phone,
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
     })
   } catch (error) {
     console.error('Erro inesperado:', error)

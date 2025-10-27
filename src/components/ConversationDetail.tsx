@@ -31,6 +31,7 @@ export const ConversationDetail = ({
   const { messages: fetchedMessages, loading, error, refetch } = useMessages({
     clientId,
     phone,
+    // Sem polling - vamos depender 100% do realtime
   })
 
   // Combine fetched messages with realtime messages using useMemo
