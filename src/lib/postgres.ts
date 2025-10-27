@@ -4,10 +4,27 @@ let pool: Pool | null = null
 let poolCreatedAt: number | null = null
 const POOL_MAX_AGE_MS = 60000 // Recria pool após 60 segundos (serverless best practice)
 
+/**
+ * Remove sslmode parameter from PostgreSQL connection URL
+ * SSL configuration should be handled by Pool options instead
+ */
+const removeSslModeFromUrl = (url: string): string => {
+  try {
+    const urlObj = new URL(url)
+    urlObj.searchParams.delete('sslmode')
+    return urlObj.toString()
+  } catch {
+    // If URL parsing fails, fallback to regex approach
+    // This handles cases where connection string might not be a valid URL
+    return url.replace(/[?&]sslmode=[^&]*(&?)/, (match, amp) => amp ? '&' : '').replace(/\?&/, '?').replace(/\?$/, '')
+  }
+}
+
 const getConnectionString = (): string => {
   // Usa POSTGRES_URL se disponível, senão constrói manualmente
   if (process.env.POSTGRES_URL_NON_POOLING) {
-    return process.env.POSTGRES_URL_NON_POOLING
+    // Remove sslmode parameter if present - SSL config is handled by Pool options
+    return removeSslModeFromUrl(process.env.POSTGRES_URL_NON_POOLING)
   }
 
   const host = process.env.POSTGRES_HOST || 'db.jhodhxvvhohygijqcxbo.supabase.co'
@@ -19,7 +36,7 @@ const getConnectionString = (): string => {
     throw new Error('POSTGRES_PASSWORD não configurado')
   }
 
-  return `postgres://${user}:${password}@${host}:5432/${database}?sslmode=require`
+  return `postgres://${user}:${password}@${host}:5432/${database}`
 }
 
 export const getPool = (): Pool => {
