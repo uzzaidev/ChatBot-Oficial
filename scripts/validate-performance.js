@@ -11,6 +11,14 @@
 
 const { Pool } = require('pg')
 
+// Performance thresholds (milliseconds)
+const SLOW_QUERY_THRESHOLD = 1000
+const WARNING_THRESHOLD = 500
+const UPSERT_THRESHOLD = 200
+
+// Display constants
+const SEPARATOR = '='.repeat(60)
+
 const pool = new Pool({
   connectionString: process.env.POSTGRES_URL_NON_POOLING,
   ssl: { rejectUnauthorized: false }
@@ -109,11 +117,11 @@ async function testOptimizedQuery() {
   console.log(`✅ Query executed in ${duration}ms`)
   console.log(`📝 Found ${result.rows.length} conversations`)
   
-  if (duration > 1000) {
-    console.log('⚠️  WARNING: Query took longer than expected (>1s)')
+  if (duration > SLOW_QUERY_THRESHOLD) {
+    console.log(`⚠️  WARNING: Query took longer than expected (>${SLOW_QUERY_THRESHOLD}ms)`)
     console.log('   Consider running ANALYZE on tables')
     return false
-  } else if (duration > 500) {
+  } else if (duration > WARNING_THRESHOLD) {
     console.log('⚠️  Query performance is acceptable but could be better')
   } else {
     console.log('✨ Excellent query performance!')
@@ -125,7 +133,8 @@ async function testOptimizedQuery() {
 async function testUpsertPattern() {
   console.log('\n🔄 Testing UPSERT Pattern...\n')
   
-  const testPhone = `test_${Date.now()}`
+  // Generate unique test phone using timestamp and random component
+  const testPhone = `test_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
   const testName = 'Test Customer'
   
   const startTime = Date.now()
@@ -160,13 +169,13 @@ async function testUpsertPattern() {
   await pool.query('DELETE FROM "Clientes WhatsApp" WHERE telefone = $1', [testPhone])
   console.log('🧹 Test data cleaned up')
   
-  return insertDuration < 200 && updateDuration < 200
+  return insertDuration < UPSERT_THRESHOLD && updateDuration < UPSERT_THRESHOLD
 }
 
 async function main() {
-  console.log('=' .repeat(60))
+  console.log(SEPARATOR)
   console.log('Performance Optimization Validation Script')
-  console.log('=' .repeat(60))
+  console.log(SEPARATOR)
   
   if (!process.env.POSTGRES_URL_NON_POOLING) {
     console.error('\n❌ ERROR: POSTGRES_URL_NON_POOLING not set in environment')
@@ -180,14 +189,14 @@ async function main() {
     const queryOk = await testOptimizedQuery()
     const upsertOk = await testUpsertPattern()
     
-    console.log('\n' + '=' .repeat(60))
+    console.log('\n' + SEPARATOR)
     console.log('Validation Summary')
-    console.log('=' .repeat(60))
+    console.log(SEPARATOR)
     console.log(`Indexes:         ${indexesOk ? '✅ PASS' : '❌ FAIL'}`)
     console.log(`UNIQUE Constraint: ${constraintOk ? '✅ PASS' : '❌ FAIL'}`)
     console.log(`Optimized Query:   ${queryOk ? '✅ PASS' : '⚠️  WARN'}`)
     console.log(`UPSERT Pattern:    ${upsertOk ? '✅ PASS' : '⚠️  WARN'}`)
-    console.log('=' .repeat(60))
+    console.log(SEPARATOR)
     
     if (!indexesOk || !constraintOk) {
       console.log('\n❌ CRITICAL: Run migrations/003_performance_indexes.sql first!\n')
