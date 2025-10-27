@@ -1,5 +1,14 @@
 const MAX_MESSAGE_LENGTH = 4096
 
+/**
+ * Remove tool calls (function calls) do texto da IA
+ * Exemplo: "Olá! <function=foo>{...}</function>" → "Olá!"
+ */
+const removeToolCalls = (text: string): string => {
+  // Remove padrão: <function=nome_funcao>{...}</function>
+  return text.replace(/<function=[^>]+>[\s\S]*?<\/function>/g, '').trim()
+}
+
 const splitIntoParagraphs = (text: string): string[] => {
   const paragraphs = text.split('\n\n').filter((p) => p.trim().length > 0)
 
@@ -55,7 +64,14 @@ export const formatResponse = (aiResponseContent: string): string[] => {
       return []
     }
 
-    const initialSplit = aiResponseContent
+    // Remove tool calls antes de formatar
+    const cleanedContent = removeToolCalls(aiResponseContent)
+
+    if (!cleanedContent || cleanedContent.trim().length === 0) {
+      return []
+    }
+
+    const initialSplit = cleanedContent
       .split('\n\n')
       .filter((msg) => msg.trim().length > 0)
 
@@ -64,7 +80,7 @@ export const formatResponse = (aiResponseContent: string): string[] => {
     if (initialSplit.length >= 2) {
       messages = initialSplit
     } else {
-      messages = splitIntoParagraphs(aiResponseContent)
+      messages = splitIntoParagraphs(cleanedContent)
     }
 
     const finalMessages = enforceMaxLength(messages)
