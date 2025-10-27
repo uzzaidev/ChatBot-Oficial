@@ -42,14 +42,14 @@ For Vercel deployments, use `POSTGRES_URL_NON_POOLING` environment variable:
 
 ```env
 # .env.local or Vercel Environment Variables
-POSTGRES_URL_NON_POOLING=postgresql://postgres.xxx:[PASSWORD]@xxx.supabase.co:5432/postgres
+POSTGRES_URL_NON_POOLING=postgresql://username:your-password@hostname:5432/database
 ```
 
 **Where to find this:**
 1. Go to your Supabase dashboard
 2. Settings → Database
 3. Copy the "Connection string" under "Direct connection" (NOT "Connection pooling")
-4. Replace `[YOUR-PASSWORD]` with your actual database password
+4. Replace the placeholders with your actual database credentials
 
 **Why this helps:**
 - Supabase's connection pooler adds another layer that can timeout
@@ -74,8 +74,8 @@ Check your logs for these indicators:
 
 **Pool Recreation:**
 ```
-[Postgres] ♻️ Pool muito antigo, recriando...
-[Postgres] 🆕 Criando connection pool
+[Postgres] ♻️ Pool age limit exceeded, recreating...
+[Postgres] 🆕 Creating new connection pool
 ```
 
 ### Additional Recommendations
@@ -113,8 +113,11 @@ If connection timeouts persist:
    - Check if database is accessible from your deployment region
 
 3. **Increase Vercel Function Timeout**
-   - Default is 10s for Hobby plan, 60s for Pro
+   - Default is 10s for Hobby tier
+   - Pro tier allows up to 60s for Edge Functions, 300s for Serverless Functions
+   - Enterprise tier offers extended limits
    - May need to upgrade plan for longer-running operations
+   - See: https://vercel.com/docs/functions/serverless-functions/runtimes#max-duration
 
 4. **Contact Support**
    - Supabase: support@supabase.io

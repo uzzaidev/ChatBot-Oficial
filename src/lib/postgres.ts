@@ -26,7 +26,7 @@ export const getPool = (): Pool => {
   // Recria pool se estiver muito velho (serverless best practice)
   const now = Date.now()
   if (pool && poolCreatedAt && (now - poolCreatedAt) > POOL_MAX_AGE_MS) {
-    console.log('[Postgres] ♻️ Pool muito antigo, recriando...')
+    console.log('[Postgres] ♻️ Pool age limit exceeded, recreating...')
     pool.end().catch(err => console.error('[Postgres] Error closing old pool:', err))
     pool = null
     poolCreatedAt = null
@@ -36,7 +36,7 @@ export const getPool = (): Pool => {
     return pool
   }
 
-  console.log('[Postgres] 🆕 Criando connection pool')
+  console.log('[Postgres] 🆕 Creating new connection pool')
 
   pool = new Pool({
     connectionString: getConnectionString(),
