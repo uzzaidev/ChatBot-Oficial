@@ -13,18 +13,17 @@ export const saveChatMessage = async (input: SaveChatMessageInput): Promise<void
     const { phone, message, type } = input
 
     const messageJson = {
-      type,
-      data: {
-        content: message,
-        additional_kwargs: {},
-      },
+      type: type === 'user' ? 'human' : 'ai',
+      content: message,
+      additional_kwargs: {},
     }
 
     // OTIMIZAÇÃO: INSERT simples, beneficia-se do índice idx_chat_histories_session_id
+    // NOTA: A coluna 'type' não existe na tabela - o type fica dentro do JSON 'message'
     await query(
-      `INSERT INTO n8n_chat_histories (session_id, message, type, created_at) 
-       VALUES ($1, $2, $3, NOW())`,
-      [phone, JSON.stringify(messageJson), type]
+      `INSERT INTO n8n_chat_histories (session_id, message, created_at)
+       VALUES ($1, $2, NOW())`,
+      [phone, JSON.stringify(messageJson)]
     )
 
     const duration = Date.now() - startTime
