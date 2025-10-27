@@ -8,6 +8,11 @@ import { Toaster } from '@/components/ui/toaster'
 export const metadata: Metadata = {
   title: 'ChatBot Dashboard - WhatsApp SaaS',
   description: 'Dashboard para gerenciamento de conversas WhatsApp',
+  icons: {
+    icon: '/favcon.ico',
+    shortcut: '/favcon.ico',
+    apple: '/favcon.ico',
+  },
 }
 
 export default function RootLayout({
@@ -17,6 +22,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
+      <head>
+        {/* Fallback link for browsers that don't read metadata.icons */}
+        <link rel="icon" href="/favcon.ico" />
+        <link rel="shortcut icon" href="/favcon.ico" />
+        {/* If you prefer an ICO file, place it at /public/favicon.ico and the browser will pick it up */}
+      </head>
       <body>
         {children}
         <Toaster />
