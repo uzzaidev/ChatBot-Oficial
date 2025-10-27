@@ -1,4 +1,4 @@
-import { CustomerRecord } from '@/lib/types'
+import { CustomerRecord, ConversationStatus } from '@/lib/types'
 import { createServerClient } from '@/lib/supabase'
 
 const DEFAULT_CLIENT_ID = 'demo-client-id'
@@ -9,20 +9,32 @@ export interface CheckOrCreateCustomerInput {
 }
 
 /**
- * Helper function para fazer upsert
- *
- * IMPORTANTE: Esta função usa o nome ANTIGO da tabela ("Clientes WhatsApp" com espaço)
- * porque a migration 004 ainda não foi executada.
- *
- * DEPOIS DE RODAR migrations/004_rename_clientes_table.sql:
- * - Mude 'Clientes WhatsApp' para 'clientes_whatsapp' (sem espaço)
- * - Remove o parâmetro `supabase: any` e usa tipo correto
- * - TypeScript vai inferir tipos automaticamente
+ * Interface para dados do cliente
  */
-const upsertClienteWhatsApp = async (supabase: any, phone: string, name: string) => {
-  // TODO: Após migration 004, mudar para: .from('clientes_whatsapp')
-  const result = await supabase
-    .from('Clientes WhatsApp')
+interface ClienteWhatsAppData {
+  telefone: string
+  nome: string
+  status: string
+  created_at?: string
+}
+
+/**
+ * Helper function para fazer upsert na tabela de clientes
+ *
+ * NOTA: Usa tabela clientes_whatsapp (sem espaço) após migration 004
+ * Se a migration ainda não foi rodada, a VIEW "Clientes WhatsApp" vai redirecionar
+ */
+const upsertClienteWhatsApp = async (
+  supabase: ReturnType<typeof createServerClient>,
+  phone: string,
+  name: string
+): Promise<{ data: ClienteWhatsAppData | null; error: any }> => {
+  // Usa tabela SEM espaço (após migration 004)
+  // Precisa do cast explícito porque TypeScript não conhece a tabela ainda
+  const supabaseAny = supabase as any
+
+  const result = await supabaseAny
+    .from('clientes_whatsapp')
     .upsert(
       {
         telefone: phone,
@@ -93,7 +105,7 @@ export const checkOrCreateCustomer = async (
       client_id: DEFAULT_CLIENT_ID,
       phone: String(data.telefone),
       name: data.nome,
-      status: data.status,
+      status: data.status as ConversationStatus,
       created_at: data.created_at,
       updated_at: data.created_at,
     }

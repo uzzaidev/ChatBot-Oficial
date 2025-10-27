@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { processChatbotMessage } from '@/flows/chatbotFlow'
 import { addWebhookMessage } from '@/lib/webhookCache'
+import { getMetaVerifyToken, getWebhookUrl } from '@/lib/config'
 
 /**
  * GET - usado pela Meta para verificar e ativar o webhook (hub.challenge)
@@ -12,19 +13,26 @@ export async function GET(req: NextRequest) {
     const token = url.searchParams.get("hub.verify_token");
     const challenge = url.searchParams.get("hub.challenge");
 
-    const VERIFY_TOKEN = process.env.META_VERIFY_TOKEN; // definido no .env
+    const VERIFY_TOKEN = getMetaVerifyToken()
+
+    console.log(`[WEBHOOK GET] Verificação da Meta`)
+    console.log(`[WEBHOOK GET] Mode: ${mode}`)
+    console.log(`[WEBHOOK GET] Token match: ${token === VERIFY_TOKEN}`)
+    console.log(`[WEBHOOK GET] Webhook URL configurada: ${getWebhookUrl()}`)
 
     // Verifica se o token e o modo estão corretos
     if (mode === "subscribe" && token === VERIFY_TOKEN) {
-      console.log("✅ Webhook verificado com sucesso pela Meta!");
-      return new NextResponse(challenge, { status: 200 });
+      console.log("✅ Webhook verificado com sucesso pela Meta!")
+      return new NextResponse(challenge, { status: 200 })
     } else {
-      console.warn("❌ Falha na verificação do webhook");
-      return new NextResponse("Erro de verificação", { status: 403 });
+      console.warn("❌ Falha na verificação do webhook")
+      console.warn(`Token esperado: ${VERIFY_TOKEN.substring(0, 10)}...`)
+      console.warn(`Token recebido: ${token?.substring(0, 10)}...`)
+      return new NextResponse("Erro de verificação", { status: 403 })
     }
   } catch (err) {
-    console.error("Erro ao processar GET do webhook:", err);
-    return new NextResponse("Erro interno", { status: 500 });
+    console.error("Erro ao processar GET do webhook:", err)
+    return new NextResponse("Erro interno", { status: 500 })
   }
 }
 
@@ -92,22 +100,23 @@ export async function POST(req: NextRequest) {
     console.log('[WEBHOOK] ✅ Extração concluída, agora vai processar chatbot flow...')
     console.log('[WEBHOOK] ⚡⚡⚡ CHAMANDO processChatbotMessage AGORA! ⚡⚡⚡')
 
-    // Processa mensagem de forma assíncrona (não bloqueia resposta)
-    // O logger está dentro do chatbotFlow.ts
-    processChatbotMessage(body)
-      .then((result) => {
-        console.log('[WEBHOOK] ✅ Processamento concluído com sucesso!')
-        console.log('[WEBHOOK] Resultado:', JSON.stringify(result, null, 2))
-      })
-      .catch((error) => {
-        console.error('[WEBHOOK] ❌❌❌ ERRO NO PROCESSAMENTO ❌❌❌')
-        console.error('[WEBHOOK] Error name:', error?.name)
-        console.error('[WEBHOOK] Error message:', error?.message)
-        console.error('[WEBHOOK] Error stack:', error?.stack)
-        console.error('[WEBHOOK] Full error:', error)
-      })
+    // MUDANÇA CRÍTICA: Aguardar processamento completar
+    // Razão: Em serverless, processo pode terminar antes de NODE 3 completar
+    // Isso causava queries "órfãs" que nunca retornavam
+    try {
+      const result = await processChatbotMessage(body)
+      console.log('[WEBHOOK] ✅ Processamento concluído com sucesso!')
+      console.log('[WEBHOOK] Resultado:', JSON.stringify(result, null, 2))
+    } catch (error) {
+      console.error('[WEBHOOK] ❌❌❌ ERRO NO PROCESSAMENTO ❌❌❌')
+      console.error('[WEBHOOK] Error name:', error?.name)
+      console.error('[WEBHOOK] Error message:', error?.message)
+      console.error('[WEBHOOK] Error stack:', error?.stack)
+      console.error('[WEBHOOK] Full error:', error)
+      // Continua e retorna 200 mesmo com erro (Meta requer isso)
+    }
 
-    // Confirma o recebimento imediatamente (importante: SEM esperar processamento)
+    // Confirma o recebimento (após processamento completar)
     return new NextResponse("EVENT_RECEIVED", { status: 200 });
   } catch (err) {
     console.error("Erro ao processar POST do webhook:", err);
