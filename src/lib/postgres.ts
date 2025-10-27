@@ -3,6 +3,8 @@ import { Pool, PoolClient, QueryResult } from 'pg'
 let pool: Pool | null = null
 let poolCreatedAt: number | null = null
 const POOL_MAX_AGE_MS = 60000 // Recria pool após 60 segundos (serverless best practice)
+const CONNECTION_VALIDATION_TIMEOUT = 3000 // Timeout for connection health checks
+const QUERY_TIMEOUT_MS = 20000 // Maximum time for a single query execution
 
 /**
  * Remove sslmode parameter from PostgreSQL connection URL
@@ -98,7 +100,7 @@ const validateConnection = async (testPool: Pool): Promise<boolean> => {
   try {
     // Try to get a client with a short timeout
     const timeoutPromise = new Promise<never>((_, reject) => 
-      setTimeout(() => reject(new Error('Connection validation timeout')), 3000)
+      setTimeout(() => reject(new Error('Connection validation timeout')), CONNECTION_VALIDATION_TIMEOUT)
     )
     
     client = await Promise.race([
@@ -165,9 +167,8 @@ export const query = async <T = any>(
       console.log(`[Postgres] 🔍 Query: ${queryPreview}...`)
       
       // Add client-side timeout to prevent hanging queries
-      const queryTimeout = 20000 // 20 seconds max per query (includes connection time)
       const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error(`Query timeout exceeded ${queryTimeout}ms`)), queryTimeout)
+        setTimeout(() => reject(new Error(`Query timeout exceeded ${QUERY_TIMEOUT_MS}ms`)), QUERY_TIMEOUT_MS)
       )
       
       const result = await Promise.race([
@@ -206,8 +207,14 @@ export const query = async <T = any>(
         throw error
       }
       
-      // Force pool recreation on connection errors for next retry
-      if (isRetryable && attempt < maxRetries) {
+      // Force pool recreation only for connection-specific errors before next retry
+      const isConnectionError = 
+        errorMessage.includes('Connection terminated') ||
+        errorMessage.includes('ECONNREFUSED') ||
+        errorMessage.includes('ETIMEDOUT') ||
+        errorMessage.includes('ECONNRESET')
+      
+      if (isConnectionError && attempt < maxRetries) {
         console.log('[Postgres] ♻️ Forcing pool recreation due to connection error')
         await recreatePool()
       }
