@@ -7,6 +7,8 @@ export interface SaveChatMessageInput {
 }
 
 export const saveChatMessage = async (input: SaveChatMessageInput): Promise<void> => {
+  const startTime = Date.now()
+  
   try {
     const { phone, message, type } = input
 
@@ -18,15 +20,23 @@ export const saveChatMessage = async (input: SaveChatMessageInput): Promise<void
       },
     }
 
+    // OTIMIZAÇÃO: INSERT simples, beneficia-se do índice idx_chat_histories_session_id
     await query(
       `INSERT INTO n8n_chat_histories (session_id, message, type, created_at) 
        VALUES ($1, $2, $3, NOW())`,
       [phone, JSON.stringify(messageJson), type]
     )
 
-    console.log(`[saveChatMessage] ✅ Saved ${type} message for ${phone}`)
+    const duration = Date.now() - startTime
+    console.log(`[saveChatMessage] ✅ Saved ${type} message for ${phone} in ${duration}ms`)
+    
+    // Alerta se INSERT for lento
+    if (duration > 500) {
+      console.warn(`[saveChatMessage] ⚠️ SLOW INSERT: ${duration}ms`)
+    }
   } catch (error) {
-    console.error('[saveChatMessage] ❌ Error saving message:', error)
+    const duration = Date.now() - startTime
+    console.error(`[saveChatMessage] ❌ Error after ${duration}ms:`, error)
     throw new Error(`Failed to save chat message: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
 }

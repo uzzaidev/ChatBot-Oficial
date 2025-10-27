@@ -11,65 +11,45 @@ export interface CheckOrCreateCustomerInput {
 export const checkOrCreateCustomer = async (
   input: CheckOrCreateCustomerInput
 ): Promise<CustomerRecord> => {
+  const startTime = Date.now()
+  
   try {
-    console.log('[checkOrCreateCustomer] 🔍 Consultando cliente...', { phone: input.phone })
+    console.log('[checkOrCreateCustomer] 🔍 UPSERT para cliente:', input.phone)
     
     const { phone, name } = input
-    const startQuery = Date.now()
     
-    // Query direto no PostgreSQL
+    // OTIMIZAÇÃO: Usa UPSERT (INSERT ... ON CONFLICT) para eliminar a query SELECT
+    // Isso reduz de 2 queries (SELECT + INSERT) para 1 query sempre
     const result = await query<any>(
-      'SELECT * FROM "Clientes WhatsApp" WHERE telefone = $1 LIMIT 1',
-      [phone]
-    )
-
-    const queryDuration = Date.now() - startQuery
-    console.log(`[checkOrCreateCustomer] ⏱️ Query levou ${queryDuration}ms`)
-
-    if (result.rows.length > 0) {
-      const existingCustomer = result.rows[0]
-      console.log('[checkOrCreateCustomer] ✅ Cliente encontrado:', existingCustomer.telefone)
-      
-      return {
-        id: String(existingCustomer.telefone),
-        client_id: DEFAULT_CLIENT_ID,
-        phone: String(existingCustomer.telefone),
-        name: existingCustomer.nome,
-        status: existingCustomer.status,
-        created_at: existingCustomer.created_at,
-        updated_at: existingCustomer.created_at,
-      }
-    }
-
-    console.log('[checkOrCreateCustomer] 📝 Cliente não existe, criando novo...')
-    const startInsert = Date.now()
-    
-    const insertResult = await query<any>(
-      'INSERT INTO "Clientes WhatsApp" (telefone, nome, status, created_at) VALUES ($1, $2, $3, NOW()) RETURNING *',
+      `INSERT INTO "Clientes WhatsApp" (telefone, nome, status, created_at)
+       VALUES ($1, $2, $3, NOW())
+       ON CONFLICT (telefone) 
+       DO UPDATE SET nome = COALESCE(EXCLUDED.nome, "Clientes WhatsApp".nome)
+       RETURNING *`,
       [phone, name, 'bot']
     )
 
-    const insertDuration = Date.now() - startInsert
-    console.log(`[checkOrCreateCustomer] ⏱️ Insert levou ${insertDuration}ms`)
+    const duration = Date.now() - startTime
+    console.log(`[checkOrCreateCustomer] ✅ UPSERT completed in ${duration}ms`)
 
-    if (insertResult.rows.length === 0) {
-      throw new Error('Failed to create new customer: No data returned')
+    if (result.rows.length === 0) {
+      throw new Error('Failed to upsert customer: No data returned')
     }
 
-    const newCustomer = insertResult.rows[0]
-    console.log('[checkOrCreateCustomer] ✅ Cliente criado:', newCustomer.telefone)
+    const customer = result.rows[0]
     
     return {
-      id: String(newCustomer.telefone),
+      id: String(customer.telefone),
       client_id: DEFAULT_CLIENT_ID,
-      phone: String(newCustomer.telefone),
-      name: newCustomer.nome,
-      status: newCustomer.status,
-      created_at: newCustomer.created_at,
-      updated_at: newCustomer.created_at,
+      phone: String(customer.telefone),
+      name: customer.nome,
+      status: customer.status,
+      created_at: customer.created_at,
+      updated_at: customer.created_at,
     }
   } catch (error) {
-    console.error('[checkOrCreateCustomer] 💥 ERRO:', error)
+    const duration = Date.now() - startTime
+    console.error(`[checkOrCreateCustomer] 💥 ERRO after ${duration}ms:`, error)
     const errorMessage = error instanceof Error ? error.message : String(error)
     throw new Error(`Failed to check or create customer: ${errorMessage}`)
   }

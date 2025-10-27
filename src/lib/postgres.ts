@@ -38,13 +38,16 @@ export const getPool = (): Pool => {
 
   console.log('[Postgres] 🆕 Creating new connection pool')
 
+  // OTIMIZAÇÃO: Configurações otimizadas para ambientes serverless
   pool = new Pool({
     connectionString: getConnectionString(),
-    max: 10, // Máximo 10 conexões
-    idleTimeoutMillis: 30000, // Fecha conexões idle após 30s
-    connectionTimeoutMillis: 30000, // Aumentado para 30s (serverless cold starts)
-    statement_timeout: 25000, // Timeout de statement SQL em 25s
-    query_timeout: 25000, // Timeout de query em 25s
+    max: 5, // REDUZIDO: Menos conexões simultâneas para evitar pool exhaustion
+    min: 0, // NOVO: Permite pool vazio quando idle (economiza recursos)
+    idleTimeoutMillis: 20000, // REDUZIDO: Fecha conexões idle mais rápido
+    connectionTimeoutMillis: 10000, // REDUZIDO: Fail fast em cold starts
+    statement_timeout: 15000, // REDUZIDO: Queries devem ser rápidas
+    query_timeout: 15000, // REDUZIDO: Timeout mais agressivo
+    allowExitOnIdle: true, // NOVO: Permite processo encerrar quando pool está idle
     ssl: {
       rejectUnauthorized: false, // Necessário para Supabase
     },
@@ -55,6 +58,15 @@ export const getPool = (): Pool => {
   // Log de erros
   pool.on('error', (err) => {
     console.error('[Postgres] ❌ Pool error:', err)
+  })
+
+  // NOVO: Log quando pool conecta/desconecta (útil para debugging)
+  pool.on('connect', () => {
+    console.log('[Postgres] ✅ New client connected to pool')
+  })
+
+  pool.on('remove', () => {
+    console.log('[Postgres] ⚠️ Client removed from pool')
   })
 
   return pool
@@ -74,14 +86,25 @@ export const query = async <T = any>(
     try {
       if (attempt > 0) {
         console.log(`[Postgres] 🔄 Retry attempt ${attempt}/${maxRetries}`)
-        // Exponential backoff: 1s, 2s
-        await new Promise(resolve => setTimeout(resolve, attempt * 1000))
+        // Exponential backoff: 500ms, 1s
+        await new Promise(resolve => setTimeout(resolve, attempt * 500))
       }
 
-      console.log(`[Postgres] 🔍 Query: ${text.substring(0, 100)}...`)
+      // OTIMIZAÇÃO: Log simplificado para reduzir overhead
+      const queryPreview = text.replace(/\s+/g, ' ').substring(0, 80)
+      console.log(`[Postgres] 🔍 Query: ${queryPreview}...`)
+      
       const result = await pool.query<T>(text, params)
       const duration = Date.now() - start
+      
+      // OTIMIZAÇÃO: Log com métricas de performance
       console.log(`[Postgres] ✅ Query OK (${duration}ms) - ${result.rowCount} rows`)
+      
+      // Alerta se query for lenta
+      if (duration > 3000) {
+        console.warn(`[Postgres] ⚠️ SLOW QUERY WARNING: ${duration}ms`)
+      }
+      
       return result
     } catch (error) {
       const duration = Date.now() - start
@@ -93,7 +116,8 @@ export const query = async <T = any>(
         errorMessage.includes('timeout') ||
         errorMessage.includes('Connection terminated') ||
         errorMessage.includes('ECONNREFUSED') ||
-        errorMessage.includes('ETIMEDOUT')
+        errorMessage.includes('ETIMEDOUT') ||
+        errorMessage.includes('ECONNRESET')
 
       console.error(`[Postgres] ❌ Query ERRO (${duration}ms) - Attempt ${attempt + 1}/${maxRetries + 1}:`, error)
 
@@ -119,5 +143,6 @@ export const closePool = async (): Promise<void> => {
     console.log('[Postgres] 🔒 Fechando connection pool')
     await pool.end()
     pool = null
+    poolCreatedAt = null
   }
 }
