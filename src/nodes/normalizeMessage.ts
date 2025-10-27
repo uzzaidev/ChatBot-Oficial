@@ -24,9 +24,12 @@ export const normalizeMessage = (input: NormalizeMessageInput): NormalizedMessag
     } else if (type === 'audio' && processedContent) {
       normalizedContent = processedContent
     } else if (type === 'image' && processedContent) {
-      normalizedContent = content
-        ? `${processedContent}\n\nLegenda: ${content}`
-        : processedContent
+      // Para imagem: enviar descrição + legenda para o AI processar
+      if (content && content.trim().length > 0) {
+        normalizedContent = `[Imagem] Descrição: ${processedContent}\nLegenda do usuário: ${content}`
+      } else {
+        normalizedContent = `[Imagem] Descrição: ${processedContent}`
+      }
     }
 
     return {

@@ -97,12 +97,8 @@ export const processChatbotMessage = async (
       console.log('[chatbotFlow] NODE 4b: Analisando imagem com GPT-4o Vision...')
       const imageDescription = await analyzeImage(imageBuffer, parsedMessage.metadata.mimeType || 'image/jpeg')
       
-      // Se houver legenda, combinar com descrição
-      if (parsedMessage.content && parsedMessage.content.trim().length > 0) {
-        processedContent = `Descrição da imagem: ${imageDescription}\n\nLegenda: ${parsedMessage.content}`
-      } else {
-        processedContent = `Descrição da imagem: ${imageDescription}`
-      }
+      // Passar apenas a descrição da IA (a legenda será adicionada pelo normalizeMessage)
+      processedContent = imageDescription
       
       logger.logNodeSuccess('4b. Analyze Image', { description: processedContent.substring(0, 100) })
       console.log(`[chatbotFlow] 🖼️ Imagem analisada: ${processedContent}`)
@@ -139,9 +135,18 @@ export const processChatbotMessage = async (
     // NODE 7: Save User Message
     logger.logNodeStart('7. Save Chat Message (User)', { phone: parsedMessage.phone, type: 'user' })
     console.log('[chatbotFlow] Saving user message to chat history')
+    
+    // Para imagens, salvar uma versão simplificada no histórico
+    let messageForHistory = normalizedMessage.content
+    if (parsedMessage.type === 'image') {
+      messageForHistory = parsedMessage.content && parsedMessage.content.trim().length > 0
+        ? `[Imagem recebida] ${parsedMessage.content}`
+        : '[Imagem recebida]'
+    }
+    
     await saveChatMessage({
       phone: parsedMessage.phone,
-      message: normalizedMessage.content,
+      message: messageForHistory,
       type: 'user',
     })
     logger.logNodeSuccess('7. Save Chat Message (User)', { saved: true })
