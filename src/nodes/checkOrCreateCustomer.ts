@@ -1,5 +1,5 @@
 import { CustomerRecord } from '@/lib/types'
-import { query } from '@/lib/postgres'
+import { createServerClient } from '@/lib/supabase'
 
 const DEFAULT_CLIENT_ID = 'demo-client-id'
 
@@ -8,57 +8,77 @@ export interface CheckOrCreateCustomerInput {
   name: string
 }
 
+/**
+ * VERSÃO OTIMIZADA: Usa Supabase client em vez de pg direto
+ *
+ * Vantagens:
+ * - Connection pooling automático do Supabase (mais rápido)
+ * - Funciona perfeitamente em serverless (sem problemas de cold start)
+ * - Sem necessidade de gerenciar pool manualmente
+ * - Retry automático em caso de falha temporária
+ */
 export const checkOrCreateCustomer = async (
   input: CheckOrCreateCustomerInput
 ): Promise<CustomerRecord> => {
   const startTime = Date.now()
 
   try {
-    console.log('[checkOrCreateCustomer] 🔍 INICIANDO UPSERT')
+    console.log('[checkOrCreateCustomer] 🔍 INICIANDO UPSERT (via Supabase)')
     console.log('[checkOrCreateCustomer] 📱 Phone:', input.phone)
     console.log('[checkOrCreateCustomer] 👤 Name:', input.name)
     console.log('[checkOrCreateCustomer] ⏱️  Timestamp:', new Date().toISOString())
 
     const { phone, name } = input
 
-    // OTIMIZAÇÃO: Usa UPSERT (INSERT ... ON CONFLICT) para eliminar a query SELECT
-    // Isso reduz de 2 queries (SELECT + INSERT) para 1 query sempre
-    // IMPORTANTE: maxRetries=3 (aumentado para maior resiliência)
-    console.log('[checkOrCreateCustomer] 🔄 Executando query com maxRetries=3...')
+    // Cria cliente Supabase (usa service_role para bypass de RLS)
+    const supabase = createServerClient()
 
-    const result = await query<any>(
-      `INSERT INTO "Clientes WhatsApp" (telefone, nome, status, created_at)
-       VALUES ($1, $2, $3, NOW())
-       ON CONFLICT (telefone)
-       DO UPDATE SET nome = COALESCE(EXCLUDED.nome, "Clientes WhatsApp".nome)
-       RETURNING *`,
-      [phone, name, 'bot'],
-      3 // AUMENTADO: 3 retries para maior resiliência
-    )
+    // UPSERT usando Supabase client
+    // Supabase detecta automaticamente a unique constraint em 'telefone'
+    console.log('[checkOrCreateCustomer] 🚀 Executando UPSERT via Supabase...')
+
+    const { data, error } = await supabase
+      .from('Clientes WhatsApp')
+      .upsert(
+        {
+          telefone: phone,
+          nome: name,
+          status: 'bot',
+        },
+        {
+          onConflict: 'telefone', // Campo único para detectar duplicatas
+          ignoreDuplicates: false, // Atualiza se já existe
+        }
+      )
+      .select()
+      .single()
 
     const duration = Date.now() - startTime
-    console.log(`[checkOrCreateCustomer] ✅ UPSERT SUCESSO em ${duration}ms`)
-    console.log(`[checkOrCreateCustomer] 📊 Rows returned: ${result.rows.length}`)
 
-    if (result.rows.length === 0) {
-      throw new Error('Failed to upsert customer: No data returned')
+    if (error) {
+      console.error(`[checkOrCreateCustomer] 💥 Erro do Supabase after ${duration}ms:`, error)
+      throw new Error(`Supabase error: ${error.message} (code: ${error.code})`)
     }
 
-    const customer = result.rows[0]
+    if (!data) {
+      throw new Error('No data returned from upsert')
+    }
+
+    console.log(`[checkOrCreateCustomer] ✅ UPSERT SUCESSO em ${duration}ms`)
     console.log(`[checkOrCreateCustomer] ✅ Customer data:`, {
-      telefone: customer.telefone,
-      nome: customer.nome,
-      status: customer.status
+      telefone: data.telefone,
+      nome: data.nome,
+      status: data.status
     })
 
     return {
-      id: String(customer.telefone),
+      id: String(data.telefone),
       client_id: DEFAULT_CLIENT_ID,
-      phone: String(customer.telefone),
-      name: customer.nome,
-      status: customer.status,
-      created_at: customer.created_at,
-      updated_at: customer.created_at,
+      phone: String(data.telefone),
+      name: data.nome,
+      status: data.status,
+      created_at: data.created_at,
+      updated_at: data.created_at,
     }
   } catch (error) {
     const duration = Date.now() - startTime
