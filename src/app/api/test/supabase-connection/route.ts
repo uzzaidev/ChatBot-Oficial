@@ -29,8 +29,9 @@ export async function GET(request: NextRequest) {
 
     // Test 2: Simple query to Clientes WhatsApp table
     const queryStart = Date.now()
+    // @ts-ignore - Tabela com espaço no nome
     const { data, error, count } = await supabase
-      .from('Clientes WhatsApp' as any)
+      .from('Clientes WhatsApp')
       .select('*', { count: 'exact', head: false })
       .limit(1)
     
@@ -65,8 +66,9 @@ export async function GET(request: NextRequest) {
 
     // Test 3: Health check with timeout
     const healthStart = Date.now()
+    // @ts-ignore - Tabela com espaço no nome
     const healthPromise = supabase
-      .from('Clientes WhatsApp' as any)
+      .from('Clientes WhatsApp')
       .select('telefone')
       .limit(1)
     

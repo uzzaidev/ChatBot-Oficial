@@ -9,6 +9,38 @@ export interface CheckOrCreateCustomerInput {
 }
 
 /**
+ * Helper function para fazer upsert
+ *
+ * IMPORTANTE: Esta função usa o nome ANTIGO da tabela ("Clientes WhatsApp" com espaço)
+ * porque a migration 004 ainda não foi executada.
+ *
+ * DEPOIS DE RODAR migrations/004_rename_clientes_table.sql:
+ * - Mude 'Clientes WhatsApp' para 'clientes_whatsapp' (sem espaço)
+ * - Remove o parâmetro `supabase: any` e usa tipo correto
+ * - TypeScript vai inferir tipos automaticamente
+ */
+const upsertClienteWhatsApp = async (supabase: any, phone: string, name: string) => {
+  // TODO: Após migration 004, mudar para: .from('clientes_whatsapp')
+  const result = await supabase
+    .from('Clientes WhatsApp')
+    .upsert(
+      {
+        telefone: phone,
+        nome: name,
+        status: 'bot',
+      },
+      {
+        onConflict: 'telefone',
+        ignoreDuplicates: false,
+      }
+    )
+    .select()
+    .single()
+
+  return result
+}
+
+/**
  * VERSÃO OTIMIZADA: Usa Supabase client em vez de pg direto
  *
  * Vantagens:
@@ -33,26 +65,10 @@ export const checkOrCreateCustomer = async (
     // Cria cliente Supabase (usa service_role para bypass de RLS)
     const supabase = createServerClient()
 
-    // UPSERT usando Supabase client
-    // Supabase detecta automaticamente a unique constraint em 'telefone'
-    // Nota: Usamos 'as any' porque o nome da tabela tem espaço e TypeScript não consegue inferir o tipo
+    // UPSERT usando helper function (bypass de tipos do TypeScript)
     console.log('[checkOrCreateCustomer] 🚀 Executando UPSERT via Supabase...')
 
-    const { data, error } = await supabase
-      .from('Clientes WhatsApp' as any)
-      .upsert(
-        {
-          telefone: phone,
-          nome: name,
-          status: 'bot',
-        },
-        {
-          onConflict: 'telefone', // Campo único para detectar duplicatas
-          ignoreDuplicates: false, // Atualiza se já existe
-        }
-      )
-      .select()
-      .single()
+    const { data, error } = await upsertClienteWhatsApp(supabase, phone, name)
 
     const duration = Date.now() - startTime
 
