@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
 import { cleanMessageContent } from '@/lib/utils'
+import { query } from '@/lib/postgres'
 import type { Message } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -31,29 +31,57 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    const supabase = createServerClient()
-
+    console.log('[API Messages] =====================================')
     console.log('[API Messages] Fetching messages for phone:', phone)
 
-    // Buscar TODAS as mensagens do histórico (sem limit)
-    const { data, error } = await supabase
-      .from('n8n_chat_histories')
-      .select('*')
-      .eq('session_id', phone)
-      .order('created_at', { ascending: true })  // Ordenar por created_at (mais antigas primeiro)
-
-    if (error) {
-      console.error('[API Messages] Error fetching messages:', error)
-      return NextResponse.json(
-        { error: 'Erro ao buscar mensagens' },
-        { status: 500 }
+    // Debug: Query direta via PostgreSQL para comparar
+    try {
+      const pgResult = await query<any>(
+        `SELECT COUNT(*) as count FROM n8n_chat_histories WHERE session_id = $1`,
+        [phone]
       )
+      console.log('[API Messages] PostgreSQL direct count:', pgResult.rows[0]?.count)
+    } catch (pgError) {
+      console.error('[API Messages] PostgreSQL count error:', pgError)
     }
 
-    console.log('[API Messages] Found', data?.length || 0, 'messages in database')
+
+    // Buscar TODAS as mensagens via PostgreSQL direto (sem limite)
+    // Motivo: Supabase pode ter limites de paginação que não queremos
+    console.log('[API Messages] Fetching via PostgreSQL (no limits)...')
+
+    const pgMessages = await query<any>(
+      `SELECT id, session_id, message, created_at
+       FROM n8n_chat_histories
+       WHERE session_id = $1
+       ORDER BY created_at DESC`,  // DESC: mais recentes primeiro
+      [phone]
+    )
+
+    console.log('[API Messages] PostgreSQL returned', pgMessages.rows.length, 'messages')
+
+    const data = pgMessages.rows
+    const error = null
+
+    // Debug: Mostrar primeira e última mensagem (ordem DESC)
+    if (data && data.length > 0) {
+      console.log('[API Messages] Newest message (first in result):', {
+        id: data[0].id,
+        created_at: data[0].created_at
+      })
+      console.log('[API Messages] Oldest message (last in result):', {
+        id: data[data.length - 1].id,
+        created_at: data[data.length - 1].created_at
+      })
+    }
+
+    console.log('[API Messages] =====================================')
+
+    // Reverter ordem para exibir antigas primeiro (como esperado pela UI)
+    const dataReversed = (data || []).reverse()
 
     // Transformar dados do n8n_chat_histories para formato Message
-    const messages: Message[] = (data || []).map((item: any, index: number) => {
+    const messages: Message[] = dataReversed.map((item: any, index: number) => {
       // O n8n_chat_histories salva message como JSON:
       // { "type": "human" | "ai", "content": "...", "additional_kwargs": {}, "response_metadata": {} }
 
