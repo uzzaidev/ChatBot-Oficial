@@ -4,7 +4,6 @@ let pool: Pool | null = null
 let poolCreatedAt: number | null = null
 const POOL_MAX_AGE_MS = 60000 // Recria pool após 60 segundos (serverless best practice)
 const CONNECTION_VALIDATION_TIMEOUT = 3000 // Timeout for connection health checks
-const QUERY_TIMEOUT_MS = 20000 // Maximum time for a single query execution
 
 /**
  * Remove sslmode parameter from PostgreSQL connection URL
@@ -64,8 +63,8 @@ export const getPool = (): Pool => {
     min: 0, // NOVO: Permite pool vazio quando idle (economiza recursos)
     idleTimeoutMillis: 20000, // REDUZIDO: Fecha conexões idle mais rápido
     connectionTimeoutMillis: 10000, // REDUZIDO: Fail fast em cold starts
-    statement_timeout: 15000, // REDUZIDO: Queries devem ser rápidas
-    query_timeout: 15000, // REDUZIDO: Timeout mais agressivo
+    statement_timeout: 30000, // AUMENTADO: Queries devem completar em 30s (cold starts)
+    query_timeout: 30000, // AUMENTADO: Timeout mais generoso para serverless
     allowExitOnIdle: true, // NOVO: Permite processo encerrar quando pool está idle
     ssl: {
       rejectUnauthorized: false, // Necessário para Supabase
@@ -166,15 +165,9 @@ export const query = async <T = any>(
       const queryPreview = text.replace(/\s+/g, ' ').substring(0, 80)
       console.log(`[Postgres] 🔍 Query: ${queryPreview}...`)
       
-      // Add client-side timeout to prevent hanging queries
-      const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error(`Query timeout exceeded ${QUERY_TIMEOUT_MS}ms`)), QUERY_TIMEOUT_MS)
-      )
-      
-      const result = await Promise.race([
-        currentPool.query<T>(text, params),
-        timeoutPromise
-      ])
+      // Execute query directly - PostgreSQL handles timeout via statement_timeout
+      // Removed client-side timeout to avoid premature failures in serverless cold starts
+      const result = await currentPool.query<T>(text, params)
       
       const duration = Date.now() - start
       
