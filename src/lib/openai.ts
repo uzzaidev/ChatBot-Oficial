@@ -1,8 +1,5 @@
 import OpenAI from 'openai'
 
-// pdf-parse não tem export default, usar require
-const pdfParse = require('pdf-parse')
-
 const getRequiredEnvVariable = (key: string): string => {
   const value = process.env[key]
   if (!value) {
@@ -153,6 +150,9 @@ export const generateEmbedding = async (text: string): Promise<number[]> => {
 
 export const extractTextFromPDF = async (pdfBuffer: Buffer): Promise<string> => {
   try {
+    // 🔧 Import dinâmico: só carrega pdf-parse quando função é chamada
+    // Isso evita erro de DOMMatrix/canvas no Vercel quando webhook é carregado
+    const pdfParse = require('pdf-parse')
     const pdfData = await pdfParse(pdfBuffer)
     return pdfData.text
   } catch (error) {
