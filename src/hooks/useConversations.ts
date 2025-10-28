@@ -17,6 +17,7 @@ interface UseConversationsResult {
   error: string | null
   total: number
   refetch: () => Promise<void>
+  lastUpdatePhone: string | null
 }
 
 export const useConversations = ({
@@ -31,6 +32,7 @@ export const useConversations = ({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [total, setTotal] = useState(0)
+  const [lastUpdatePhone, setLastUpdatePhone] = useState<string | null>(null)
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const fetchConversations = useCallback(async () => {
@@ -126,8 +128,13 @@ export const useConversations = ({
           schema: 'public',
           table: 'n8n_chat_histories',
         },
-        () => {
+        (payload) => {
           console.log('[Realtime] Nova mensagem detectada em n8n_chat_histories')
+          // Extract phone from session_id
+          const sessionId = (payload.new as any)?.session_id
+          if (sessionId) {
+            setLastUpdatePhone(sessionId)
+          }
           // Delay de 300ms para agrupar múltiplas inserções (user + ai)
           debouncedFetch(300)
         }
@@ -151,5 +158,6 @@ export const useConversations = ({
     error,
     total,
     refetch: fetchConversations,
+    lastUpdatePhone,
   }
 }
