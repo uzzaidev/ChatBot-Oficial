@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { processChatbotMessage } from '@/flows/chatbotFlow'
 import { addWebhookMessage } from '@/lib/webhookCache'
-import { getMetaVerifyToken, getWebhookUrl } from '@/lib/config'
+import { getMetaVerifyToken, getWebhookUrl, getClientConfigWithFallback } from '@/lib/config'
 
 /**
  * GET - usado pela Meta para verificar e ativar o webhook (hub.challenge)
@@ -98,13 +98,25 @@ export async function POST(req: NextRequest) {
     }
 
     console.log('[WEBHOOK] ✅ Extração concluída, agora vai processar chatbot flow...')
+
+    // 🔐 FASE 2: Buscar config do cliente (do Vault ou fallback para .env)
+    console.log('[WEBHOOK] 🔐 Buscando config do cliente...')
+    const clientId = process.env.DEFAULT_CLIENT_ID // Usa cliente default
+    const config = await getClientConfigWithFallback(clientId)
+
+    if (!config) {
+      console.error('[WEBHOOK] ❌ Failed to load client config!')
+      return new NextResponse("Configuration error", { status: 500 })
+    }
+
+    console.log(`[WEBHOOK] ✅ Config carregado: ${config.name} (${config.slug})`)
     console.log('[WEBHOOK] ⚡⚡⚡ CHAMANDO processChatbotMessage AGORA! ⚡⚡⚡')
 
     // MUDANÇA CRÍTICA: Aguardar processamento completar
     // Razão: Em serverless, processo pode terminar antes de NODE 3 completar
     // Isso causava queries "órfãs" que nunca retornavam
     try {
-      const result = await processChatbotMessage(body)
+      const result = await processChatbotMessage(body, config) // 🔐 Passa config
       console.log('[WEBHOOK] ✅ Processamento concluído com sucesso!')
       console.log('[WEBHOOK] Resultado:', JSON.stringify(result, null, 2))
     } catch (error) {

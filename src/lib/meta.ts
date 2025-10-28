@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { ClientConfig } from './types'
 
 const META_API_VERSION = 'v18.0'
 const META_BASE_URL = `https://graph.facebook.com/${META_API_VERSION}`
@@ -11,13 +12,19 @@ const getRequiredEnvVariable = (key: string): string => {
   return value
 }
 
-const createMetaApiClient = () => {
-  const accessToken = getRequiredEnvVariable('META_ACCESS_TOKEN')
+/**
+ * 🔐 Cria cliente Meta API com accessToken dinâmico ou fallback para env
+ *
+ * @param accessToken - Token opcional (do config do cliente)
+ * @returns Cliente Axios configurado
+ */
+const createMetaApiClient = (accessToken?: string) => {
+  const token = accessToken || getRequiredEnvVariable('META_ACCESS_TOKEN')
 
   return axios.create({
     baseURL: META_BASE_URL,
     headers: {
-      Authorization: `Bearer ${accessToken}`,
+      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
   })
@@ -45,13 +52,24 @@ export const downloadMedia = async (mediaId: string): Promise<Buffer> => {
   }
 }
 
+/**
+ * 🔐 Envia mensagem de texto usando config dinâmica do cliente
+ *
+ * @param phone - Número do destinatário
+ * @param message - Conteúdo da mensagem
+ * @param config - Config opcional (do Vault), usa env se não fornecido
+ * @returns ID da mensagem enviada
+ */
 export const sendTextMessage = async (
   phone: string,
-  message: string
+  message: string,
+  config?: ClientConfig // 🔐 Novo parâmetro opcional
 ): Promise<{ messageId: string }> => {
   try {
-    const client = createMetaApiClient()
-    const phoneNumberId = getRequiredEnvVariable('META_PHONE_NUMBER_ID')
+    const accessToken = config?.apiKeys.metaAccessToken
+    const phoneNumberId = config?.apiKeys.metaPhoneNumberId || getRequiredEnvVariable('META_PHONE_NUMBER_ID')
+
+    const client = createMetaApiClient(accessToken) // Usa token do config
 
     const response = await client.post(`/${phoneNumberId}/messages`, {
       messaging_product: 'whatsapp',

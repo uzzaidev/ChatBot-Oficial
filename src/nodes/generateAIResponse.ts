@@ -1,7 +1,8 @@
-import { AIResponse, ChatMessage } from '@/lib/types'
+import { AIResponse, ChatMessage, ClientConfig } from '@/lib/types'
 import { generateChatCompletion } from '@/lib/groq'
 
-const MAIN_AGENT_SYSTEM_PROMPT = `## Papel
+// 📝 PROMPT PADRÃO (usado apenas como fallback se config não tiver systemPrompt)
+const DEFAULT_SYSTEM_PROMPT = `## Papel
 Você é o **assistente principal de IA do engenheiro Luis Fernando Boff**, profissional especializado em **engenharia elétrica, energia solar, ciência de dados e desenvolvimento full stack**.
 Você atua como uma **secretária inteligente e consultora técnica**, capaz de **ouvir, entender o contexto e direcionar o cliente** para a solução mais adequada — seja um projeto, consultoria, parceria ou serviço técnico.
 
@@ -114,11 +115,20 @@ export interface GenerateAIResponseInput {
   chatHistory: ChatMessage[]
   ragContext: string
   customerName: string
+  config: ClientConfig // 🔐 Config dinâmica do cliente
 }
 
+/**
+ * 🔐 Gera resposta da IA usando config dinâmica do cliente
+ *
+ * Usa systemPrompt e groqApiKey do config do cliente do Vault
+ */
 export const generateAIResponse = async (input: GenerateAIResponseInput): Promise<AIResponse> => {
   try {
-    const { message, chatHistory, ragContext, customerName } = input
+    const { message, chatHistory, ragContext, customerName, config } = input
+
+    // Usar systemPrompt do config do cliente (ou fallback)
+    const systemPrompt = config.prompts.systemPrompt || DEFAULT_SYSTEM_PROMPT
 
     // Data e hora atual (para contexto da IA)
     const now = new Date()
@@ -135,7 +145,7 @@ export const generateAIResponse = async (input: GenerateAIResponseInput): Promis
     const messages: ChatMessage[] = [
       {
         role: 'system',
-        content: MAIN_AGENT_SYSTEM_PROMPT,
+        content: systemPrompt, // 🔐 Usa prompt do config do cliente
       },
       {
         role: 'system',
@@ -188,7 +198,7 @@ export const generateAIResponse = async (input: GenerateAIResponseInput): Promis
 
     const tools = [HUMAN_HANDOFF_TOOL_DEFINITION]
 
-    return await generateChatCompletion(messages, tools)
+    return await generateChatCompletion(messages, tools, config.apiKeys.groqApiKey) // 🔐 Usa groqKey do config
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     throw new Error(`Failed to generate AI response: ${errorMessage}`)

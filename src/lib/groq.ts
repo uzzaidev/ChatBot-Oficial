@@ -11,15 +11,27 @@ const getRequiredEnvVariable = (key: string): string => {
 
 let groqClient: Groq | null = null
 
-export const getGroqClient = (): Groq => {
+/**
+ * 🔐 Obtém cliente Groq com key dinâmica ou fallback para env
+ *
+ * @param apiKey - API key opcional (do config do cliente)
+ * @returns Cliente Groq configurado
+ */
+export const getGroqClient = (apiKey?: string): Groq => {
+  // Se apiKey fornecida, sempre criar novo client (não cachear)
+  if (apiKey) {
+    return new Groq({ apiKey })
+  }
+
+  // Fallback: usar client cacheado ou criar novo do env
   if (groqClient) {
     return groqClient
   }
 
-  const apiKey = getRequiredEnvVariable('GROQ_API_KEY')
+  const envApiKey = getRequiredEnvVariable('GROQ_API_KEY')
 
   groqClient = new Groq({
-    apiKey,
+    apiKey: envApiKey,
   })
 
   return groqClient
@@ -42,12 +54,21 @@ const extractToolCallsFromResponse = (choice: any): AIResponse['toolCalls'] => {
   }))
 }
 
+/**
+ * 🔐 Gera resposta com Groq usando key dinâmica
+ *
+ * @param messages - Mensagens do chat
+ * @param tools - Ferramentas disponíveis
+ * @param apiKey - API key opcional (do config do cliente)
+ * @returns Resposta da IA
+ */
 export const generateChatCompletion = async (
   messages: ChatMessage[],
-  tools?: any[]
+  tools?: any[],
+  apiKey?: string // 🔐 Novo parâmetro opcional
 ): Promise<AIResponse> => {
   try {
-    const client = getGroqClient()
+    const client = getGroqClient(apiKey) // Usa key dinâmica se fornecida
 
     const groqMessages = messages.map((msg) => ({
       role: msg.role,

@@ -62,11 +62,20 @@ export async function POST(request: NextRequest) {
       customerName: input.customerName || 'Cliente',
     })
 
+    // Buscar config para teste
+    const { getClientConfigWithFallback } = await import('@/lib/config')
+    const config = await getClientConfigWithFallback(process.env.DEFAULT_CLIENT_ID)
+
+    if (!config) {
+      return NextResponse.json({ error: 'Failed to load client config' }, { status: 500 })
+    }
+
     const output = await generateAIResponse({
       message,
       chatHistory,
       ragContext,
       customerName: input.customerName || 'Cliente',
+      config, // 🔐 Passa config
     })
 
     return NextResponse.json({

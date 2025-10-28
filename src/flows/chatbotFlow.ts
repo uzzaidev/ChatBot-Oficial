@@ -1,4 +1,4 @@
-import { WhatsAppWebhookPayload, ParsedMessage } from '@/lib/types'
+import { WhatsAppWebhookPayload, ParsedMessage, ClientConfig } from '@/lib/types'
 import { filterStatusUpdates } from '@/nodes/filterStatusUpdates'
 import { parseMessage } from '@/nodes/parseMessage'
 import { checkOrCreateCustomer } from '@/nodes/checkOrCreateCustomer'
@@ -26,8 +26,16 @@ export interface ChatbotFlowResult {
   error?: string
 }
 
+/**
+ * 🔐 Processa mensagem do chatbot com configuração dinâmica do cliente
+ *
+ * @param payload - Payload do webhook do WhatsApp
+ * @param config - Configuração do cliente (do Vault ou fallback)
+ * @returns Resultado do processamento
+ */
 export const processChatbotMessage = async (
-  payload: WhatsAppWebhookPayload
+  payload: WhatsAppWebhookPayload,
+  config: ClientConfig
 ): Promise<ChatbotFlowResult> => {
   console.log('🚀 [chatbotFlow] Starting message processing')
   
@@ -204,7 +212,7 @@ export const processChatbotMessage = async (
 
     console.log(`[chatbotFlow] Context retrieved - History: ${chatHistory2.length} messages, RAG: ${ragContext.length} chars`)
 
-    // NODE 11: Generate AI Response
+    // NODE 11: Generate AI Response (com config do cliente)
     logger.logNodeStart('11. Generate AI Response', { messageLength: batchedContent.length, historyCount: chatHistory2.length })
     console.log('[chatbotFlow] Generating AI response')
     const aiResponse = await generateAIResponse({
@@ -212,6 +220,7 @@ export const processChatbotMessage = async (
       chatHistory: chatHistory2,
       ragContext,
       customerName: parsedMessage.name,
+      config, // 🔐 Passa config com systemPrompt e groqApiKey
     })
     logger.logNodeSuccess('11. Generate AI Response', { 
       contentLength: aiResponse.content?.length || 0, 
@@ -229,6 +238,7 @@ export const processChatbotMessage = async (
         await handleHumanHandoff({
           phone: parsedMessage.phone,
           customerName: parsedMessage.name,
+          config, // 🔐 Passa config com notificationEmail
         })
         logger.finishExecution('success')
         return { success: true, handedOff: true }
@@ -261,12 +271,13 @@ export const processChatbotMessage = async (
       return { success: true, messagesSent: 0 }
     }
 
-    // NODE 13: Send WhatsApp Message
+    // NODE 13: Send WhatsApp Message (com config do cliente)
     logger.logNodeStart('13. Send WhatsApp Message', { phone: parsedMessage.phone, messageCount: formattedMessages.length })
     console.log(`[chatbotFlow] Sending ${formattedMessages.length} messages to customer`)
     const messageIds = await sendWhatsAppMessage({
       phone: parsedMessage.phone,
       messages: formattedMessages,
+      config, // 🔐 Passa config com metaAccessToken e metaPhoneNumberId
     })
     logger.logNodeSuccess('13. Send WhatsApp Message', { sentCount: messageIds.length })
 

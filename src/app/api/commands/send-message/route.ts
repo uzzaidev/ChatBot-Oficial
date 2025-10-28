@@ -38,11 +38,20 @@ export async function POST(request: NextRequest) {
     console.log(`[SEND-MESSAGE API] 📱 Phone: ${phone}`)
     console.log(`[SEND-MESSAGE API] 💬 Content: ${content.substring(0, 50)}...`)
 
+    // Buscar config do cliente
+    const { getClientConfigWithFallback } = await import('@/lib/config')
+    const config = await getClientConfigWithFallback(process.env.DEFAULT_CLIENT_ID)
+
+    if (!config) {
+      return NextResponse.json({ error: 'Failed to load client config' }, { status: 500 })
+    }
+
     // NODE 12: Envia mensagem via WhatsApp
     console.log('[SEND-MESSAGE API] 📤 Chamando sendWhatsAppMessage node...')
     const messageIds = await sendWhatsAppMessage({
       phone,
       messages: [content], // Array com uma mensagem
+      config, // 🔐 Passa config
     })
 
     const duration = Date.now() - startTime
