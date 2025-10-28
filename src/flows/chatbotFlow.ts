@@ -16,6 +16,7 @@ import { sendWhatsAppMessage } from '@/nodes/sendWhatsAppMessage'
 import { handleHumanHandoff } from '@/nodes/handleHumanHandoff'
 import { saveChatMessage } from '@/nodes/saveChatMessage'
 import { createExecutionLogger } from '@/lib/logger'
+import { setWithExpiry } from '@/lib/redis'
 
 export interface ChatbotFlowResult {
   success: boolean
@@ -126,6 +127,12 @@ export const processChatbotMessage = async (
       await pushToRedis(normalizedMessage)
       console.log('[chatbotFlow] NODE 6: ✅ Push to Redis concluído com sucesso!')
       logger.logNodeSuccess('6. Push to Redis', { success: true })
+      
+      // Update debounce timestamp (resets the 10s timer)
+      const debounceKey = `debounce:${parsedMessage.phone}`
+      await setWithExpiry(debounceKey, String(Date.now()), 15) // 15s TTL (buffer above 10s delay)
+      console.log(`[chatbotFlow] 🕐 Debounce timer reset for ${parsedMessage.phone}`)
+      
     } catch (redisError) {
       console.error('[chatbotFlow] NODE 6: ❌ ERRO NO REDIS!', redisError)
       logger.logNodeError('6. Push to Redis', redisError)

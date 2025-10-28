@@ -1,4 +1,4 @@
-import { lrangeMessages, deleteKey } from '@/lib/redis'
+import { lrangeMessages, deleteKey, get } from '@/lib/redis'
 
 const BATCH_DELAY_MS = 10000
 
@@ -14,6 +14,20 @@ const delay = (ms: number): Promise<void> => {
 export const batchMessages = async (phone: string): Promise<string> => {
   try {
     await delay(BATCH_DELAY_MS)
+
+    // Check if enough time has passed since last message
+    const debounceKey = `debounce:${phone}`
+    const lastMessageTimestamp = await get(debounceKey)
+
+    if (lastMessageTimestamp) {
+      const timeSinceLastMessage = Date.now() - parseInt(lastMessageTimestamp, 10)
+
+      // If less than 10s since last message, skip processing (timer was reset)
+      if (timeSinceLastMessage < BATCH_DELAY_MS) {
+        console.log(`[Debounce] Skipping batch for ${phone} - new message received (${timeSinceLastMessage}ms ago)`)
+        return ''
+      }
+    }
 
     const key = `messages:${phone}`
     const messages = await lrangeMessages(key, 0, -1)
@@ -37,6 +51,7 @@ export const batchMessages = async (phone: string): Promise<string> => {
       .join('\n\n')
 
     await deleteKey(key)
+    await deleteKey(debounceKey) // Clear debounce timestamp after processing
 
     return consolidatedContent
   } catch (error) {

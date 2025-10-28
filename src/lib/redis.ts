@@ -97,3 +97,24 @@ export const deleteKey = async (key: string): Promise<number> => {
     throw new Error(`Failed to delete key from Redis: ${errorMessage}`)
   }
 }
+
+export const setWithExpiry = async (key: string, value: string, expirySeconds: number): Promise<void> => {
+  try {
+    const client = await getRedisClient()
+    await client.setEx(key, expirySeconds, value)
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    throw new Error(`Failed to set key with expiry in Redis: ${errorMessage}`)
+  }
+}
+
+export const get = async (key: string): Promise<string | null> => {
+  try {
+    const client = await getRedisClient()
+    const result = await client.get(key)
+    return result ? String(result) : null
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    throw new Error(`Failed to get key from Redis: ${errorMessage}`)
+  }
+}
