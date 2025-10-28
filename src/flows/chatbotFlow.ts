@@ -5,6 +5,7 @@ import { checkOrCreateCustomer } from '@/nodes/checkOrCreateCustomer'
 import { downloadMetaMedia } from '@/nodes/downloadMetaMedia'
 import { transcribeAudio } from '@/nodes/transcribeAudio'
 import { analyzeImage } from '@/nodes/analyzeImage'
+import { analyzeDocument } from '@/nodes/analyzeDocument'
 import { normalizeMessage } from '@/nodes/normalizeMessage'
 import { pushToRedis } from '@/nodes/pushToRedis'
 import { batchMessages } from '@/nodes/batchMessages'
@@ -74,36 +75,53 @@ export const processChatbotMessage = async (
 
     console.log('[chatbotFlow] Processing message content based on type')
 
-    // NODE 4: Process Media (audio/image)
+    // NODE 4: Process Media (audio/image/document)
     console.log('[chatbotFlow] NODE 4: Verificando tipo de mensagem...')
     logger.logNodeStart('4. Process Media', { type: parsedMessage.type })
-    
+
     let processedContent: string | undefined
-    
+
     if (parsedMessage.type === 'audio' && parsedMessage.metadata?.id) {
       console.log('[chatbotFlow] NODE 4a: Baixando áudio...')
       const audioBuffer = await downloadMetaMedia(parsedMessage.metadata.id)
       logger.logNodeSuccess('4a. Download Audio', { size: audioBuffer.length })
-      
+
       console.log('[chatbotFlow] NODE 4b: Transcrevendo áudio...')
       processedContent = await transcribeAudio(audioBuffer)
       logger.logNodeSuccess('4b. Transcribe Audio', { transcription: processedContent.substring(0, 100) })
       console.log(`[chatbotFlow] 🎤 Áudio transcrito: ${processedContent}`)
-      
+
     } else if (parsedMessage.type === 'image' && parsedMessage.metadata?.id) {
       console.log('[chatbotFlow] NODE 4a: Baixando imagem...')
       const imageBuffer = await downloadMetaMedia(parsedMessage.metadata.id)
       logger.logNodeSuccess('4a. Download Image', { size: imageBuffer.length })
-      
+
       console.log('[chatbotFlow] NODE 4b: Analisando imagem com GPT-4o Vision...')
       const imageDescription = await analyzeImage(imageBuffer, parsedMessage.metadata.mimeType || 'image/jpeg')
-      
+
       // Passar apenas a descrição da IA (a legenda será adicionada pelo normalizeMessage)
       processedContent = imageDescription
-      
+
       logger.logNodeSuccess('4b. Analyze Image', { description: processedContent.substring(0, 100) })
       console.log(`[chatbotFlow] 🖼️ Imagem analisada: ${processedContent}`)
-      
+
+    } else if (parsedMessage.type === 'document' && parsedMessage.metadata?.id) {
+      console.log('[chatbotFlow] NODE 4a: Baixando documento...')
+      const documentBuffer = await downloadMetaMedia(parsedMessage.metadata.id)
+      logger.logNodeSuccess('4a. Download Document', { size: documentBuffer.length, filename: parsedMessage.metadata.filename })
+
+      console.log('[chatbotFlow] NODE 4b: Analisando documento...')
+      const documentSummary = await analyzeDocument(
+        documentBuffer,
+        parsedMessage.metadata.mimeType,
+        parsedMessage.metadata.filename
+      )
+
+      processedContent = documentSummary
+
+      logger.logNodeSuccess('4b. Analyze Document', { summary: processedContent.substring(0, 100) })
+      console.log(`[chatbotFlow] 📄 Documento analisado: ${processedContent.substring(0, 200)}...`)
+
     } else {
       console.log('[chatbotFlow] NODE 4: Mensagem de texto, pulando processamento de mídia')
       logger.logNodeSuccess('4. Process Media', { skipped: true, reason: 'text message' })

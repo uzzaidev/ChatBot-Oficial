@@ -51,6 +51,14 @@ export const parseMessage = (payload: WhatsAppWebhookPayload): ParsedMessage => 
         mimeType: message.image.mime_type,
         sha256: message.image.sha256,
       }
+    } else if (type === 'document' && 'document' in message) {
+      content = message.document.caption || ''
+      metadata = {
+        id: message.document.id,
+        mimeType: message.document.mime_type,
+        sha256: message.document.sha256,
+        filename: message.document.filename,
+      }
     }
 
     return {

@@ -1,5 +1,8 @@
 import OpenAI from 'openai'
 
+// pdf-parse não tem export default, usar require
+const pdfParse = require('pdf-parse')
+
 const getRequiredEnvVariable = (key: string): string => {
   const value = process.env[key]
   if (!value) {
@@ -145,5 +148,51 @@ export const generateEmbedding = async (text: string): Promise<number[]> => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     throw new Error(`Failed to generate embedding: ${errorMessage}`)
+  }
+}
+
+export const extractTextFromPDF = async (pdfBuffer: Buffer): Promise<string> => {
+  try {
+    const pdfData = await pdfParse(pdfBuffer)
+    return pdfData.text
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    throw new Error(`Failed to extract text from PDF: ${errorMessage}`)
+  }
+}
+
+export const summarizePDFContent = async (pdfText: string, filename?: string): Promise<string> => {
+  try {
+    const client = getOpenAIClient()
+
+    const prompt = `Você recebeu um documento PDF${filename ? ` chamado "${filename}"` : ''}.
+Analise o conteúdo e forneça um resumo detalhado em português, incluindo:
+1. Tipo de documento (catálogo, contrato, relatório, etc.)
+2. Principais informações e tópicos
+3. Detalhes relevantes que podem ser importantes para a conversa
+
+Conteúdo do PDF:
+${pdfText.substring(0, 12000)}`
+
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+      max_tokens: 1500,
+    })
+
+    const content = response.choices[0]?.message?.content
+    if (!content) {
+      throw new Error('No content returned from GPT-4o')
+    }
+
+    return content
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    throw new Error(`Failed to summarize PDF content: ${errorMessage}`)
   }
 }

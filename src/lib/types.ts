@@ -144,7 +144,21 @@ export interface WhatsAppImageMessage {
   }
 }
 
-export type WhatsAppMessage = WhatsAppTextMessage | WhatsAppAudioMessage | WhatsAppImageMessage
+export interface WhatsAppDocumentMessage {
+  from: string
+  id: string
+  timestamp: string
+  type: 'document'
+  document: {
+    id: string
+    mime_type: string
+    sha256: string
+    filename?: string
+    caption?: string
+  }
+}
+
+export type WhatsAppMessage = WhatsAppTextMessage | WhatsAppAudioMessage | WhatsAppImageMessage | WhatsAppDocumentMessage
 
 export interface WhatsAppWebhookValue {
   messaging_product: string
@@ -193,6 +207,7 @@ export interface MediaMetadata {
   sha256?: string
   fileSize?: number
   id: string
+  filename?: string
 }
 
 export interface AIResponse {
