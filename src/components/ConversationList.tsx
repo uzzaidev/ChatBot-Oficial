@@ -28,12 +28,18 @@ export const ConversationList = ({
 }: ConversationListProps) => {
   const router = useRouter()
   const [unreadConversations, setUnreadConversations] = useState<Set<string>>(new Set())
+  const [recentlyUpdated, setRecentlyUpdated] = useState<string | null>(null)
 
   // Track new messages for conversations not currently open
   useEffect(() => {
     if (lastUpdatePhone && lastUpdatePhone !== currentPhone) {
       console.log('[ConversationList] Nova mensagem de:', lastUpdatePhone, 'Conversa atual:', currentPhone)
       setUnreadConversations(prev => new Set(prev).add(lastUpdatePhone))
+      
+      // Add visual pulse animation
+      setRecentlyUpdated(lastUpdatePhone)
+      const timer = setTimeout(() => setRecentlyUpdated(null), 2000)
+      return () => clearTimeout(timer)
     }
   }, [lastUpdatePhone, currentPhone])
 
@@ -88,6 +94,7 @@ export const ConversationList = ({
       {conversations.map((conversation) => {
         const isActive = currentPhone === conversation.phone
         const hasUnread = unreadConversations.has(conversation.phone)
+        const isRecentlyUpdated = recentlyUpdated === conversation.phone
         const statusColor = conversation.status === 'bot'
           ? 'bg-green-100 text-green-800'
           : conversation.status === 'waiting'
@@ -98,9 +105,10 @@ export const ConversationList = ({
           <div
             key={conversation.id}
             className={cn(
-              "flex items-center gap-3 p-3 cursor-pointer transition-colors border-b border-gray-100",
+              "flex items-center gap-3 p-3 cursor-pointer transition-all duration-300 border-b border-gray-100",
               isActive ? "bg-gray-100" : "hover:bg-gray-50",
-              hasUnread && !isActive && "bg-blue-50"
+              hasUnread && !isActive && "bg-blue-50",
+              isRecentlyUpdated && "animate-pulse"
             )}
             onClick={() => handleConversationClick(conversation.phone)}
           >
