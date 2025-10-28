@@ -36,11 +36,15 @@ export const ConversationList = ({
       console.log('[ConversationList] Nova mensagem de:', lastUpdatePhone, 'Conversa atual:', currentPhone)
       setUnreadConversations(prev => new Set(prev).add(lastUpdatePhone))
       
-      // Add visual pulse animation
+      // Add visual pulse animation with cleanup
       setRecentlyUpdated(lastUpdatePhone)
       const timer = setTimeout(() => setRecentlyUpdated(null), 2000)
-      return () => clearTimeout(timer)
+      return () => {
+        clearTimeout(timer)
+      }
     }
+    // No cleanup needed if condition not met
+    return undefined
   }, [lastUpdatePhone, currentPhone])
 
   // Clear unread when conversation becomes active
@@ -105,7 +109,7 @@ export const ConversationList = ({
           <div
             key={conversation.id}
             className={cn(
-              "flex items-center gap-3 p-3 cursor-pointer transition-all duration-300 border-b border-gray-100",
+              "flex items-center gap-3 p-3 cursor-pointer transition-colors duration-300 border-b border-gray-100",
               isActive ? "bg-gray-100" : "hover:bg-gray-50",
               hasUnread && !isActive && "bg-blue-50",
               isRecentlyUpdated && "animate-pulse"
