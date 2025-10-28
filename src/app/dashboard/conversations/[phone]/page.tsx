@@ -27,7 +27,7 @@ export default function ConversationPage({ params }: ConversationPageProps) {
   const clientId = searchParams.get('client_id') || DEFAULT_CLIENT_ID
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  const { conversations, loading } = useConversations({
+  const { conversations, loading, lastUpdatePhone } = useConversations({
     clientId,
     enableRealtime: true,
   })
@@ -56,6 +56,7 @@ export default function ConversationPage({ params }: ConversationPageProps) {
           conversations={conversations}
           loading={loading}
           currentPhone={phone}
+          lastUpdatePhone={lastUpdatePhone}
         />
       </div>
     </>

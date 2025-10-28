@@ -4,15 +4,18 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { formatPhone, formatDateTime, getInitials, truncateText } from '@/lib/utils'
 import type { ConversationWithCount } from '@/lib/types'
-import { MessageCircle, Check, CheckCheck } from 'lucide-react'
+import { MessageCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { useState, useEffect } from 'react'
 
 interface ConversationListProps {
   conversations: ConversationWithCount[]
   loading: boolean
   clientId?: string
   currentPhone?: string
+  lastUpdatePhone?: string | null
+  onConversationOpen?: (phone: string) => void
 }
 
 export const ConversationList = ({
@@ -20,10 +23,54 @@ export const ConversationList = ({
   loading,
   clientId = 'demo-client-id',
   currentPhone,
+  lastUpdatePhone,
+  onConversationOpen,
 }: ConversationListProps) => {
   const router = useRouter()
+  const [unreadConversations, setUnreadConversations] = useState<Set<string>>(new Set())
+  const [recentlyUpdated, setRecentlyUpdated] = useState<string | null>(null)
+
+  // Track new messages for conversations not currently open
+  useEffect(() => {
+    if (lastUpdatePhone && lastUpdatePhone !== currentPhone) {
+      console.log('[ConversationList] Nova mensagem de:', lastUpdatePhone, 'Conversa atual:', currentPhone)
+      setUnreadConversations(prev => new Set(prev).add(lastUpdatePhone))
+      
+      // Add visual pulse animation with cleanup
+      setRecentlyUpdated(lastUpdatePhone)
+      const timer = setTimeout(() => setRecentlyUpdated(null), 2000)
+      return () => {
+        clearTimeout(timer)
+      }
+    }
+    // No cleanup needed if condition not met
+    return undefined
+  }, [lastUpdatePhone, currentPhone])
+
+  // Clear unread when conversation becomes active
+  useEffect(() => {
+    if (currentPhone) {
+      setUnreadConversations(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(currentPhone)
+        return newSet
+      })
+    }
+  }, [currentPhone])
 
   const handleConversationClick = (phone: string) => {
+    // Clear unread for this conversation
+    setUnreadConversations(prev => {
+      const newSet = new Set(prev)
+      newSet.delete(phone)
+      return newSet
+    })
+    
+    // Notify parent component if callback provided
+    if (onConversationOpen) {
+      onConversationOpen(phone)
+    }
+    
     router.push(`/dashboard/conversations/${phone}?client_id=${clientId}`)
   }
 
@@ -48,8 +95,10 @@ export const ConversationList = ({
 
   return (
     <div>
-      {conversations.map((conversation, index) => {
+      {conversations.map((conversation) => {
         const isActive = currentPhone === conversation.phone
+        const hasUnread = unreadConversations.has(conversation.phone)
+        const isRecentlyUpdated = recentlyUpdated === conversation.phone
         const statusColor = conversation.status === 'bot'
           ? 'bg-green-100 text-green-800'
           : conversation.status === 'waiting'
@@ -60,8 +109,10 @@ export const ConversationList = ({
           <div
             key={conversation.id}
             className={cn(
-              "flex items-center gap-3 p-3 cursor-pointer transition-colors border-b border-gray-100",
-              isActive ? "bg-gray-100" : "hover:bg-gray-50"
+              "flex items-center gap-3 p-3 cursor-pointer transition-colors duration-300 border-b border-gray-100",
+              isActive ? "bg-gray-100" : "hover:bg-gray-50",
+              hasUnread && !isActive && "bg-blue-50",
+              isRecentlyUpdated && "animate-pulse"
             )}
             onClick={() => handleConversationClick(conversation.phone)}
           >
@@ -75,7 +126,10 @@ export const ConversationList = ({
             {/* Info da Conversa */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-1">
-                <span className="font-semibold text-sm truncate text-gray-900">
+                <span className={cn(
+                  "font-semibold text-sm truncate text-gray-900",
+                  hasUnread && !isActive && "font-bold"
+                )}>
                   {conversation.name}
                 </span>
                 <span className="text-xs text-gray-500 ml-2 flex-shrink-0">
@@ -84,7 +138,10 @@ export const ConversationList = ({
               </div>
 
               <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-600 truncate flex-1">
+                <p className={cn(
+                  "text-xs text-gray-600 truncate flex-1",
+                  hasUnread && !isActive && "font-semibold text-gray-900"
+                )}>
                   {conversation.last_message
                     ? truncateText(conversation.last_message, 35)
                     : formatPhone(conversation.phone)
@@ -101,10 +158,10 @@ export const ConversationList = ({
               </div>
             </div>
 
-            {/* Indicador de mensagens não lidas (placeholder) */}
-            {index === 0 && !isActive && (
+            {/* Indicador de mensagens não lidas */}
+            {hasUnread && !isActive && (
               <div className="bg-primary text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-semibold flex-shrink-0">
-                1
+                •
               </div>
             )}
           </div>

@@ -19,7 +19,7 @@ export default function DashboardPage() {
   })
   const [metricsLoading, setMetricsLoading] = useState(true)
 
-  const { conversations, loading } = useConversations({
+  const { conversations, loading, lastUpdatePhone } = useConversations({
     clientId: DEFAULT_CLIENT_ID,
     limit: 50,
     refreshInterval: 10000,
@@ -77,6 +77,7 @@ export default function DashboardPage() {
           conversations={conversations}
           loading={loading}
           clientId={DEFAULT_CLIENT_ID}
+          lastUpdatePhone={lastUpdatePhone}
         />
       </div>
     </div>
