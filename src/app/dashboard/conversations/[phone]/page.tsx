@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { ConversationDetail } from '@/components/ConversationDetail'
 import { SendMessageForm } from '@/components/SendMessageForm'
 import { useConversations } from '@/hooks/useConversations'
+import { useGlobalRealtimeNotifications } from '@/hooks/useGlobalRealtimeNotifications'
 import { ConversationList } from '@/components/ConversationList'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -27,10 +28,26 @@ export default function ConversationPage({ params }: ConversationPageProps) {
   const clientId = searchParams.get('client_id') || DEFAULT_CLIENT_ID
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  const { conversations, loading, lastUpdatePhone } = useConversations({
+  const { conversations, loading, lastUpdatePhone: pollingLastUpdate } = useConversations({
     clientId,
     enableRealtime: true,
   })
+
+  // Hook global para notificações em tempo real
+  const { lastUpdatePhone: realtimeLastUpdate, isConnected } = useGlobalRealtimeNotifications()
+
+  // Estado combinado - prioriza realtime, mas aceita polling como fallback
+  const [lastUpdatePhone, setLastUpdatePhone] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (realtimeLastUpdate) {
+      console.log('[ConversationPage] Atualização via Realtime Global:', realtimeLastUpdate)
+      setLastUpdatePhone(realtimeLastUpdate)
+    } else if (pollingLastUpdate) {
+      console.log('[ConversationPage] Atualização via Polling:', pollingLastUpdate)
+      setLastUpdatePhone(pollingLastUpdate)
+    }
+  }, [realtimeLastUpdate, pollingLastUpdate])
 
   const conversation = conversations.find((c) => c.phone === phone)
 

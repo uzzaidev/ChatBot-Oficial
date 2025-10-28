@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { MetricsDashboard } from '@/components/MetricsDashboard'
 import { ConversationList } from '@/components/ConversationList'
 import { useConversations } from '@/hooks/useConversations'
+import { useGlobalRealtimeNotifications } from '@/hooks/useGlobalRealtimeNotifications'
 import type { DashboardMetrics } from '@/lib/types'
 import { Separator } from '@/components/ui/separator'
 
@@ -19,12 +20,28 @@ export default function DashboardPage() {
   })
   const [metricsLoading, setMetricsLoading] = useState(true)
 
-  const { conversations, loading, lastUpdatePhone } = useConversations({
+  const { conversations, loading, lastUpdatePhone: pollingLastUpdate } = useConversations({
     clientId: DEFAULT_CLIENT_ID,
     limit: 50,
     refreshInterval: 10000,
     enableRealtime: true,
   })
+
+  // Hook global para notificações em tempo real
+  const { lastUpdatePhone: realtimeLastUpdate } = useGlobalRealtimeNotifications()
+
+  // Estado combinado - prioriza realtime, mas aceita polling como fallback
+  const [lastUpdatePhone, setLastUpdatePhone] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (realtimeLastUpdate) {
+      console.log('[Dashboard] Atualização via Realtime Global:', realtimeLastUpdate)
+      setLastUpdatePhone(realtimeLastUpdate)
+    } else if (pollingLastUpdate) {
+      console.log('[Dashboard] Atualização via Polling:', pollingLastUpdate)
+      setLastUpdatePhone(pollingLastUpdate)
+    }
+  }, [realtimeLastUpdate, pollingLastUpdate])
 
   useEffect(() => {
     const calculateMetrics = () => {
