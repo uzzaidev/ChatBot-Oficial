@@ -28,46 +28,136 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { clientId: string } }
 ) {
+  const timestamp = new Date().toISOString()
+
+  console.log('═══════════════════════════════════════════════════════════')
+  console.log(`🔍 [WEBHOOK GET] CHAMADA RECEBIDA - ${timestamp}`)
+  console.log('═══════════════════════════════════════════════════════════')
+
   try {
     const { clientId } = params
     const searchParams = request.nextUrl.searchParams
 
+    // Log 1: Informações da requisição
+    console.log('📍 [STEP 1] INFORMAÇÕES DA REQUISIÇÃO:')
+    console.log(`  URL completa: ${request.url}`)
+    console.log(`  Method: ${request.method}`)
+    console.log(`  Client ID extraído da URL: ${clientId}`)
+
+    // Log 2: Headers recebidos
+    console.log('\n📋 [STEP 2] HEADERS RECEBIDOS:')
+    const headers: Record<string, string> = {}
+    request.headers.forEach((value, key) => {
+      headers[key] = value
+    })
+    console.log(JSON.stringify(headers, null, 2))
+
+    // Log 3: Query parameters
     const mode = searchParams.get('hub.mode')
     const token = searchParams.get('hub.verify_token')
     const challenge = searchParams.get('hub.challenge')
 
-    console.log(`[WEBHOOK/${clientId}] GET - Verificação da Meta`)
-    console.log(`  Mode: ${mode}`)
+    console.log('\n🔑 [STEP 3] QUERY PARAMETERS:')
+    console.log(`  hub.mode: ${mode}`)
+    console.log(`  hub.verify_token: ${token}`)
+    console.log(`  hub.challenge: ${challenge}`)
+
+    // Mostrar TODOS os query params
+    console.log('\n  Todos os query params:')
+    searchParams.forEach((value, key) => {
+      console.log(`    ${key}: ${value}`)
+    })
+
+    // Log 4: Buscar config do cliente
+    console.log('\n🔐 [STEP 4] BUSCANDO CONFIG DO VAULT:')
     console.log(`  Client ID: ${clientId}`)
 
-    // 1. Buscar config do cliente
     const config = await getClientConfig(clientId)
 
     if (!config) {
-      console.error(`[WEBHOOK/${clientId}] ❌ Cliente não encontrado ou inativo`)
+      console.error('\n❌ [ERRO] Cliente não encontrado ou inativo no banco de dados')
+      console.error(`  Client ID procurado: ${clientId}`)
+      console.error('  Verifique se o cliente existe na tabela "clients" e está com status "active"')
       return new NextResponse('Client not found', { status: 404 })
     }
 
+    console.log('✅ Config carregado do Vault:')
+    console.log(`  Nome: ${config.name}`)
+    console.log(`  Slug: ${config.slug}`)
+    console.log(`  Status: ${config.status}`)
+
     if (config.status !== 'active') {
-      console.error(`[WEBHOOK/${clientId}] ❌ Cliente não está ativo: ${config.status}`)
+      console.error('\n❌ [ERRO] Cliente não está ativo')
+      console.error(`  Status atual: ${config.status}`)
+      console.error('  O cliente precisa ter status "active" para funcionar')
       return new NextResponse('Client not active', { status: 403 })
     }
 
-    // 2. Validar verify token do cliente
+    // Log 5: Validar verify token
+    console.log('\n🔒 [STEP 5] VALIDAÇÃO DO VERIFY TOKEN:')
     const expectedToken = config.apiKeys.metaVerifyToken
 
+    console.log(`  Mode recebido: "${mode}"`)
+    console.log(`  Mode esperado: "subscribe"`)
+    console.log(`  Mode válido: ${mode === 'subscribe' ? '✅' : '❌'}`)
+    console.log(`\n  Token recebido: "${token}"`)
+    console.log(`  Token esperado: "${expectedToken}"`)
+    console.log(`  Token válido: ${token === expectedToken ? '✅' : '❌'}`)
+
+    // Comparação character-by-character se tokens não batem
+    if (token !== expectedToken) {
+      console.log('\n⚠️  TOKENS NÃO BATEM - Análise detalhada:')
+      console.log(`  Length recebido: ${token?.length || 0}`)
+      console.log(`  Length esperado: ${expectedToken.length}`)
+
+      if (token && expectedToken) {
+        const minLen = Math.min(token.length, expectedToken.length)
+        for (let i = 0; i < minLen; i++) {
+          if (token[i] !== expectedToken[i]) {
+            console.log(`  Primeira diferença no char ${i}:`)
+            console.log(`    Recebido: "${token[i]}" (code: ${token.charCodeAt(i)})`)
+            console.log(`    Esperado: "${expectedToken[i]}" (code: ${expectedToken.charCodeAt(i)})`)
+            break
+          }
+        }
+      }
+    }
+
+    // Log 6: Decisão final
     if (mode === 'subscribe' && token === expectedToken) {
-      console.log(`[WEBHOOK/${clientId}] ✅ Verificação bem-sucedida!`)
+      console.log('\n✅ [STEP 6] VERIFICAÇÃO BEM-SUCEDIDA!')
       console.log(`  Cliente: ${config.name}`)
+      console.log(`  Challenge retornado: ${challenge}`)
+      console.log(`  Status HTTP: 200`)
+      console.log('═══════════════════════════════════════════════════════════\n')
+
       return new NextResponse(challenge, { status: 200 })
     } else {
-      console.warn(`[WEBHOOK/${clientId}] ❌ Token inválido`)
-      console.warn(`  Esperado: ${expectedToken.substring(0, 10)}...`)
-      console.warn(`  Recebido: ${token?.substring(0, 10)}...`)
+      console.error('\n❌ [STEP 6] VERIFICAÇÃO FALHOU!')
+
+      if (mode !== 'subscribe') {
+        console.error(`  Motivo: Mode inválido (recebido: "${mode}", esperado: "subscribe")`)
+      }
+
+      if (token !== expectedToken) {
+        console.error('  Motivo: Token não corresponde ao configurado no Vault')
+        console.error(`  Token recebido (primeiros 20): ${token?.substring(0, 20)}...`)
+        console.error(`  Token esperado (primeiros 20): ${expectedToken.substring(0, 20)}...`)
+      }
+
+      console.error('  Status HTTP: 403')
+      console.error('═══════════════════════════════════════════════════════════\n')
+
       return new NextResponse('Invalid verification token', { status: 403 })
     }
   } catch (error) {
-    console.error(`[WEBHOOK] Erro no GET:`, error)
+    console.error('\n💥 [ERRO CRÍTICO] Exceção no GET:')
+    console.error('  Tipo:', error instanceof Error ? error.constructor.name : typeof error)
+    console.error('  Mensagem:', error instanceof Error ? error.message : String(error))
+    console.error('  Stack:', error instanceof Error ? error.stack : 'N/A')
+    console.error('  Status HTTP: 500')
+    console.error('═══════════════════════════════════════════════════════════\n')
+
     return new NextResponse('Internal error', { status: 500 })
   }
 }
