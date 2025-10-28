@@ -1,0 +1,197 @@
+/**
+ * Supabase Client - Server-Side (Next.js App Router)
+ *
+ * Usado em:
+ * - Server Components
+ * - API Routes
+ * - Server Actions
+ *
+ * Features:
+ * - Cookie-based authentication
+ * - Automatic session refresh
+ * - Type-safe with Database types
+ */
+
+import { createServerClient as createSupabaseServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+import type { Database } from './types'
+
+/**
+ * Cria cliente Supabase para Server Components
+ *
+ * IMPORTANTE: Só funciona em Server Components, não em Client Components
+ *
+ * @returns Supabase client com autenticação via cookies
+ *
+ * @example
+ * // Em um Server Component
+ * const supabase = createServerClient()
+ * const { data: { user } } = await supabase.auth.getUser()
+ */
+export const createServerClient = () => {
+  const cookieStore = cookies()
+
+  return createSupabaseServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+        set(name: string, value: string, options) {
+          try {
+            cookieStore.set({ name, value, ...options })
+          } catch (error) {
+            // Ignora erro em Server Components (cookies são read-only)
+            // Cookies são setados corretamente em Route Handlers
+          }
+        },
+        remove(name: string, options) {
+          try {
+            cookieStore.set({ name, value: '', ...options })
+          } catch (error) {
+            // Ignora erro em Server Components
+          }
+        },
+      },
+    }
+  )
+}
+
+/**
+ * Cria cliente Supabase para API Routes (Route Handlers)
+ *
+ * IMPORTANTE: Só funciona em Route Handlers (app/api/*/route.ts)
+ *
+ * @returns Supabase client com autenticação via cookies
+ *
+ * @example
+ * // Em app/api/example/route.ts
+ * export async function GET(request: NextRequest) {
+ *   const supabase = createRouteHandlerClient()
+ *   const { data: { user } } = await supabase.auth.getUser()
+ *   return NextResponse.json({ user })
+ * }
+ */
+export const createRouteHandlerClient = () => {
+  const cookieStore = cookies()
+
+  return createSupabaseServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+        set(name: string, value: string, options) {
+          cookieStore.set({ name, value, ...options })
+        },
+        remove(name: string, options) {
+          cookieStore.set({ name, value: '', ...options })
+        },
+      },
+    }
+  )
+}
+
+/**
+ * Helper: Obtém usuário autenticado ou retorna null
+ *
+ * @returns User object ou null se não autenticado
+ *
+ * @example
+ * const user = await getCurrentUser()
+ * if (!user) {
+ *   redirect('/login')
+ * }
+ */
+export const getCurrentUser = async () => {
+  const supabase = createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  return user
+}
+
+/**
+ * Helper: Obtém client_id do usuário autenticado
+ *
+ * Busca o client_id do user_profile linkado ao usuário
+ *
+ * @returns client_id (UUID) ou null se não autenticado
+ *
+ * @example
+ * const clientId = await getClientIdFromSession()
+ * if (!clientId) {
+ *   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+ * }
+ */
+export const getClientIdFromSession = async (): Promise<string | null> => {
+  const supabase = createServerClient()
+
+  // 1. Obter usuário autenticado
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    return null
+  }
+
+  // 2. Buscar user_profile para pegar client_id
+  const { data: profile, error } = await supabase
+    .from('user_profiles')
+    .select('client_id')
+    .eq('id', user.id)
+    .single()
+
+  if (error || !profile) {
+    console.error('[getClientIdFromSession] Erro ao buscar profile:', error)
+    return null
+  }
+
+  return profile.client_id
+}
+
+/**
+ * Helper: Verifica se usuário está autenticado (throw redirect se não)
+ *
+ * @throws Redirect para /login se não autenticado
+ *
+ * @example
+ * // Em um Server Component
+ * await requireAuth()
+ * // Se chegou aqui, usuário está autenticado
+ */
+export const requireAuth = async () => {
+  const { redirect } = await import('next/navigation')
+  const user = await getCurrentUser()
+
+  if (!user) {
+    redirect('/login')
+  }
+
+  return user
+}
+
+/**
+ * Helper: Obtém configuração do cliente atual (autenticado)
+ *
+ * Substitui getClientConfigWithFallback() após implementar autenticação
+ *
+ * @returns ClientConfig ou null
+ *
+ * @example
+ * const config = await getClientConfigFromAuth()
+ * if (!config) {
+ *   return NextResponse.json({ error: 'Client not found' }, { status: 404 })
+ * }
+ */
+export const getClientConfigFromAuth = async () => {
+  const clientId = await getClientIdFromSession()
+
+  if (!clientId) {
+    return null
+  }
+
+  const { getClientConfig } = await import('./config')
+  return getClientConfig(clientId)
+}

@@ -284,3 +284,64 @@ export interface ChatMessage {
   content: string
   timestamp?: string
 }
+
+/**
+ * Supabase Database Types
+ *
+ * NOTA: Para types completos, gerar com:
+ * npx supabase gen types typescript --project-id <project-id> > src/lib/database.types.ts
+ *
+ * Por enquanto, usamos tipo genérico
+ */
+export interface Database {
+  public: {
+    Tables: {
+      clients: {
+        Row: Client
+        Insert: Omit<Client, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<Client, 'id' | 'created_at' | 'updated_at'>>
+      }
+      user_profiles: {
+        Row: {
+          id: string
+          client_id: string
+          email: string
+          full_name: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          client_id: string
+          email: string
+          full_name?: string | null
+        }
+        Update: {
+          full_name?: string | null
+        }
+      }
+      conversations: {
+        Row: Conversation
+        Insert: Omit<Conversation, 'id' | 'created_at'>
+        Update: Partial<Omit<Conversation, 'id' | 'created_at'>>
+      }
+      messages: {
+        Row: Message
+        Insert: Omit<Message, 'id'>
+        Update: Partial<Omit<Message, 'id'>>
+      }
+      clientes_whatsapp: {
+        Row: CustomerRecord
+        Insert: Omit<CustomerRecord, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<CustomerRecord, 'id' | 'created_at' | 'updated_at'>>
+      }
+    }
+    Views: {}
+    Functions: {
+      get_user_client_id: {
+        Args: {}
+        Returns: string
+      }
+    }
+  }
+}
