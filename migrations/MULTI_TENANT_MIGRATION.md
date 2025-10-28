@@ -114,9 +114,54 @@ Sistema multi-tenant:
 
 ## Mudanças no Schema (Banco de Dados)
 
+### 🔐 Supabase Vault para Secrets
+
+**IMPORTANTE**: Todos os secrets (API keys, tokens) serão armazenados usando **Supabase Vault** com criptografia AES-256.
+
+#### Por que Vault?
+
+1. **Segurança**: Secrets criptografados no banco
+2. **Compliance**: LGPD, GDPR, ISO 27001
+3. **Auditoria**: Logs automáticos de acesso
+4. **Isolamento**: RLS funciona normalmente
+5. **Rotação**: Atualização de keys simplificada
+
+#### Como funciona?
+
+```sql
+-- ❌ SEM Vault (INSEGURO)
+INSERT INTO clients (meta_access_token) VALUES ('EAA123456...');
+-- Token fica em texto plano no banco!
+
+-- ✅ COM Vault (SEGURO)
+SELECT vault.create_secret('EAA123456...', 'client-a-meta-token');
+-- Retorna: '550e8400-e29b-41d4-a716-446655440000'
+
+INSERT INTO clients (meta_access_token_secret_id) VALUES ('550e8400-...');
+-- Apenas ID do secret fica no banco!
+
+-- Para ler:
+SELECT vault.decrypted_secret FROM vault.decrypted_secrets
+WHERE id = '550e8400-...';
+-- Retorna: 'EAA123456...' (descriptografado em runtime)
+```
+
+#### Configuração do Vault
+
+```sql
+-- 1. Habilitar extensão (já vem habilitada no Supabase)
+-- Se necessário:
+CREATE EXTENSION IF NOT EXISTS vault WITH SCHEMA vault;
+
+-- 2. Verificar se está funcionando
+SELECT vault.create_secret('test-secret-value', 'test-secret');
+```
+
+---
+
 ### Nova Tabela: `clients`
 
-Armazena configuração de cada cliente (tenant).
+Armazena configuração de cada cliente (tenant). **Secrets protegidos com Vault**.
 
 ```sql
 CREATE TABLE clients (
@@ -129,23 +174,23 @@ CREATE TABLE clients (
   status TEXT NOT NULL DEFAULT 'active',  -- 'active' | 'suspended' | 'trial'
   plan TEXT NOT NULL DEFAULT 'free',      -- 'free' | 'pro' | 'enterprise'
 
-  -- Credenciais Meta (WhatsApp)
-  meta_access_token TEXT NOT NULL,
-  meta_phone_number_id TEXT NOT NULL,
-  meta_verify_token TEXT NOT NULL,
-  meta_display_phone TEXT,             -- Ex: "555499567051" (display)
+  -- 🔐 Credenciais Meta (WhatsApp) - Armazenadas no Vault
+  meta_access_token_secret_id UUID NOT NULL,  -- ← ID do secret no Vault
+  meta_verify_token_secret_id UUID NOT NULL,  -- ← ID do secret no Vault
+  meta_phone_number_id TEXT NOT NULL,         -- Não é secret (ID público)
+  meta_display_phone TEXT,                    -- Ex: "555499567051" (display)
 
-  -- Credenciais OpenAI
-  openai_api_key TEXT,                 -- NULL = usa chave global
-  openai_model TEXT DEFAULT 'gpt-4o', -- Modelo para visão
+  -- 🔐 Credenciais OpenAI - Armazenadas no Vault
+  openai_api_key_secret_id UUID,              -- ← ID do secret no Vault (NULL = usa global)
+  openai_model TEXT DEFAULT 'gpt-4o',         -- Modelo para visão
 
-  -- Credenciais Groq
-  groq_api_key TEXT,                   -- NULL = usa chave global
+  -- 🔐 Credenciais Groq - Armazenadas no Vault
+  groq_api_key_secret_id UUID,                -- ← ID do secret no Vault (NULL = usa global)
   groq_model TEXT DEFAULT 'llama-3.3-70b-versatile',
 
-  -- Prompts Customizados
-  system_prompt TEXT NOT NULL,         -- Prompt principal do agente
-  formatter_prompt TEXT,               -- Prompt do formatador (opcional)
+  -- Prompts Customizados (não são secrets)
+  system_prompt TEXT NOT NULL,                -- Prompt principal do agente
+  formatter_prompt TEXT,                      -- Prompt do formatador (opcional)
 
   -- Configurações de Comportamento
   settings JSONB DEFAULT '{
@@ -160,8 +205,8 @@ CREATE TABLE clients (
   }'::jsonb,
 
   -- Notificações
-  notification_email TEXT,             -- Email para handoff notifications
-  notification_webhook_url TEXT,       -- Webhook para eventos (opcional)
+  notification_email TEXT,                    -- Email para handoff notifications
+  notification_webhook_url TEXT,              -- Webhook para eventos (opcional)
 
   -- Auditoria
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -182,6 +227,72 @@ CREATE TRIGGER update_clients_updated_at
   BEFORE UPDATE ON clients
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
+```
+
+---
+
+### Funções Helper para Vault
+
+```sql
+-- Função para criar secret e retornar ID
+CREATE OR REPLACE FUNCTION create_client_secret(
+  secret_value TEXT,
+  secret_name TEXT,
+  secret_description TEXT DEFAULT NULL
+)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  secret_id UUID;
+BEGIN
+  -- Criar secret no Vault
+  INSERT INTO vault.secrets (secret, name, description)
+  VALUES (secret_value, secret_name, secret_description)
+  RETURNING id INTO secret_id;
+
+  RETURN secret_id;
+END;
+$$;
+
+-- Função para ler secret descriptografado
+CREATE OR REPLACE FUNCTION get_client_secret(secret_id UUID)
+RETURNS TEXT
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  secret_value TEXT;
+BEGIN
+  SELECT decrypted_secret INTO secret_value
+  FROM vault.decrypted_secrets
+  WHERE id = secret_id;
+
+  RETURN secret_value;
+END;
+$$;
+
+-- View para facilitar leitura (apenas para service role)
+CREATE OR REPLACE VIEW client_secrets_decrypted AS
+SELECT
+  c.id as client_id,
+  c.name,
+  c.slug,
+  get_client_secret(c.meta_access_token_secret_id) as meta_access_token,
+  get_client_secret(c.meta_verify_token_secret_id) as meta_verify_token,
+  CASE
+    WHEN c.openai_api_key_secret_id IS NOT NULL
+    THEN get_client_secret(c.openai_api_key_secret_id)
+    ELSE NULL
+  END as openai_api_key,
+  CASE
+    WHEN c.groq_api_key_secret_id IS NOT NULL
+    THEN get_client_secret(c.groq_api_key_secret_id)
+    ELSE NULL
+  END as groq_api_key
+FROM clients c
+WHERE c.status = 'active';
 ```
 
 ---
@@ -765,9 +876,31 @@ export interface ClientConfig {
 import { createServerClient } from './supabase'
 import type { ClientConfig } from './types'
 
+/**
+ * 🔐 Busca secret descriptografado do Vault
+ */
+const getSecret = async (supabase: any, secretId: string | null): Promise<string | null> => {
+  if (!secretId) return null
+
+  const { data, error } = await supabase.rpc('get_client_secret', {
+    secret_id: secretId
+  })
+
+  if (error) {
+    console.error('[getSecret] Failed to decrypt secret:', error)
+    return null
+  }
+
+  return data
+}
+
+/**
+ * ✅ Busca configuração completa do cliente com secrets descriptografados
+ */
 export const getClientConfig = async (clientId: string): Promise<ClientConfig | null> => {
   const supabase = createServerClient()
 
+  // 1. Buscar config do cliente (sem secrets)
   const { data: client, error } = await supabase
     .from('clients')
     .select('*')
@@ -780,15 +913,34 @@ export const getClientConfig = async (clientId: string): Promise<ClientConfig | 
     return null
   }
 
+  // 2. Descriptografar secrets do Vault em paralelo
+  const [metaAccessToken, metaVerifyToken, openaiApiKey, groqApiKey] = await Promise.all([
+    getSecret(supabase, client.meta_access_token_secret_id),
+    getSecret(supabase, client.meta_verify_token_secret_id),
+    getSecret(supabase, client.openai_api_key_secret_id),
+    getSecret(supabase, client.groq_api_key_secret_id),
+  ])
+
+  // 3. Fallback para env vars globais se cliente não tiver keys próprias
+  const finalOpenaiKey = openaiApiKey || process.env.OPENAI_API_KEY!
+  const finalGroqKey = groqApiKey || process.env.GROQ_API_KEY!
+
+  if (!metaAccessToken || !metaVerifyToken) {
+    console.error('[getClientConfig] Missing required Meta secrets for client:', clientId)
+    return null
+  }
+
+  // 4. Retornar config completo
   return {
     id: client.id,
     name: client.name,
     slug: client.slug,
     apiKeys: {
-      metaAccessToken: client.meta_access_token,
-      metaPhoneNumberId: client.meta_phone_number_id,
-      openaiApiKey: client.openai_api_key || process.env.OPENAI_API_KEY!,
-      groqApiKey: client.groq_api_key || process.env.GROQ_API_KEY!,
+      metaAccessToken,                           // ✅ Descriptografado do Vault
+      metaVerifyToken,                           // ✅ Descriptografado do Vault
+      metaPhoneNumberId: client.meta_phone_number_id,  // Não é secret
+      openaiApiKey: finalOpenaiKey,              // ✅ Vault ou global
+      groqApiKey: finalGroqKey,                  // ✅ Vault ou global
     },
     prompts: {
       systemPrompt: client.system_prompt,
@@ -799,6 +951,9 @@ export const getClientConfig = async (clientId: string): Promise<ClientConfig | 
   }
 }
 
+/**
+ * Valida se config tem todos os campos obrigatórios
+ */
 export const validateClientConfig = (config: ClientConfig): boolean => {
   const required = [
     config.apiKeys.metaAccessToken,
@@ -971,16 +1126,50 @@ export const generateAIResponse = async (input: GenerateAIResponseInput) => {
 const createClient = async (formData: ClientFormData) => {
   const supabase = createClientBrowser()
 
-  // 1. Criar registro de cliente
+  // 1. 🔐 Criar secrets no Vault
+  const metaAccessTokenSecretId = await supabase.rpc('create_client_secret', {
+    secret_value: formData.metaAccessToken,
+    secret_name: `${formData.slug}-meta-access-token`,
+    secret_description: `Meta Access Token for ${formData.name}`
+  }).then(r => r.data)
+
+  const metaVerifyToken = generateSecureToken()
+  const metaVerifyTokenSecretId = await supabase.rpc('create_client_secret', {
+    secret_value: metaVerifyToken,
+    secret_name: `${formData.slug}-meta-verify-token`,
+    secret_description: `Meta Verify Token for ${formData.name}`
+  }).then(r => r.data)
+
+  // Opcional: OpenAI e Groq keys próprias
+  let openaiSecretId = null
+  let groqSecretId = null
+
+  if (formData.openaiApiKey) {
+    openaiSecretId = await supabase.rpc('create_client_secret', {
+      secret_value: formData.openaiApiKey,
+      secret_name: `${formData.slug}-openai-key`,
+    }).then(r => r.data)
+  }
+
+  if (formData.groqApiKey) {
+    groqSecretId = await supabase.rpc('create_client_secret', {
+      secret_value: formData.groqApiKey,
+      secret_name: `${formData.slug}-groq-key`,
+    }).then(r => r.data)
+  }
+
+  // 2. Criar registro de cliente (apenas IDs dos secrets)
   const { data: client, error } = await supabase
     .from('clients')
     .insert({
       name: formData.name,
-      slug: formData.slug,  // Ex: "empresa-abc"
-      meta_access_token: formData.metaAccessToken,
+      slug: formData.slug,
+      meta_access_token_secret_id: metaAccessTokenSecretId,  // ✅ ID do Vault
+      meta_verify_token_secret_id: metaVerifyTokenSecretId,  // ✅ ID do Vault
       meta_phone_number_id: formData.metaPhoneNumberId,
-      meta_verify_token: generateSecureToken(),  // Auto-gerado
-      system_prompt: DEFAULT_SYSTEM_PROMPT,      // Template inicial
+      openai_api_key_secret_id: openaiSecretId,              // ✅ ID do Vault ou NULL
+      groq_api_key_secret_id: groqSecretId,                  // ✅ ID do Vault ou NULL
+      system_prompt: DEFAULT_SYSTEM_PROMPT,
       settings: DEFAULT_SETTINGS,
     })
     .select()
@@ -988,7 +1177,7 @@ const createClient = async (formData: ClientFormData) => {
 
   if (error) throw error
 
-  // 2. Criar usuário admin do cliente
+  // 3. Criar usuário admin do cliente
   const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
     email: formData.adminEmail,
     password: generateTempPassword(),
@@ -1001,13 +1190,13 @@ const createClient = async (formData: ClientFormData) => {
 
   if (authError) throw authError
 
-  // 3. Configurar webhook na Meta
+  // 4. Retornar info para configuração
   const webhookUrl = `https://chat.luisfboff.com/api/webhook/${client.id}`
 
   return {
     clientId: client.id,
     webhookUrl,
-    verifyToken: client.meta_verify_token,
+    verifyToken: metaVerifyToken,  // ✅ Token gerado (não-criptografado para exibir)
     adminEmail: formData.adminEmail,
     tempPassword: generateTempPassword(),
   }
@@ -1091,19 +1280,39 @@ const uploadDocument = async (clientId: string, file: File) => {
 
 ## Implementação Faseada
 
-### FASE 1: Database & Auth (Semana 1)
+### FASE 1: Database & Vault (Semana 1-2)
 
-**Objetivo**: Preparar infraestrutura de dados
+**Objetivo**: Preparar infraestrutura de dados com segurança
 
-- [ ] Criar tabela `clients`
-- [ ] Adicionar coluna `client_id` em todas as tabelas existentes
-- [ ] Migrar dados existentes para cliente "default"
-- [ ] Habilitar Row-Level Security (RLS)
-- [ ] Configurar Supabase Auth
-- [ ] Criar tabela `user_profiles`
-- [ ] Implementar middleware de autenticação
+#### Database Schema
+- [ ] Criar tabela `clients` (com `_secret_id` para Vault)
+- [ ] Adicionar coluna `client_id` NULLABLE em todas as tabelas existentes
+- [ ] Criar índices compostos
 
-**Entrega**: Schema multi-tenant pronto + autenticação funcionando
+#### 🔐 Supabase Vault
+- [ ] Verificar que extensão `vault` está habilitada
+- [ ] Criar funções SQL helper (`create_client_secret`, `get_client_secret`)
+- [ ] Criar view `client_secrets_decrypted`
+- [ ] Testar criação e leitura de secrets
+
+#### Migração de Dados (SAFE)
+- [ ] Criar cliente "default" no Supabase
+- [ ] Mover secrets do `.env.local` para Vault
+- [ ] Popular `client_id` em todas as tabelas (apontar para "default")
+- [ ] Tornar `client_id` NOT NULL após migração
+- [ ] **Validar que sistema continua funcionando!**
+
+#### Row-Level Security
+- [ ] Habilitar RLS em todas as tabelas
+- [ ] Criar policies básicas (admin vê tudo)
+- [ ] Testar isolamento de dados
+
+#### TypeScript Helpers
+- [ ] Criar `lib/config.ts` com `getClientConfig()` usando Vault
+- [ ] Criar `lib/vault.ts` com funções auxiliares
+- [ ] Testar descriptografia de secrets
+
+**Entrega**: Schema multi-tenant pronto + Vault funcionando + dados migrados
 
 ---
 

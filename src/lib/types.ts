@@ -225,15 +225,48 @@ export interface ToolCall {
   }
 }
 
+/**
+ * 🔐 Configuração Multi-Tenant de Cliente (com Vault)
+ *
+ * Esta interface representa a configuração completa de um cliente (tenant)
+ * incluindo secrets descriptografados do Supabase Vault.
+ */
 export interface ClientConfig {
-  clientId: string
-  metaAccessToken: string
-  phoneNumberId: string
-  openaiApiKey: string
-  groqApiKey: string
-  redisUrl: string
-  gmailUser: string
-  gmailPassword: string
+  // Identificação
+  id: string
+  name: string
+  slug: string
+  status: 'active' | 'suspended' | 'trial' | 'cancelled'
+
+  // API Keys (descriptografadas do Vault)
+  apiKeys: {
+    metaAccessToken: string
+    metaVerifyToken: string
+    metaPhoneNumberId: string
+    openaiApiKey: string
+    groqApiKey: string
+  }
+
+  // Prompts Customizados
+  prompts: {
+    systemPrompt: string
+    formatterPrompt?: string
+  }
+
+  // Configurações de Comportamento
+  settings: {
+    batchingDelaySeconds: number
+    maxTokens: number
+    temperature: number
+    enableRAG: boolean
+    enableTools: boolean
+    enableHumanHandoff: boolean
+    messageSplitEnabled: boolean
+    maxChatHistory: number
+  }
+
+  // Notificações
+  notificationEmail?: string
 }
 
 export interface CustomerRecord {
