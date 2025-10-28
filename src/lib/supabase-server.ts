@@ -62,7 +62,7 @@ export const createServerClient = () => {
 /**
  * Cria cliente Supabase para API Routes (Route Handlers)
  *
- * IMPORTANTE: Só funciona em Route Handlers (app/api/*/route.ts)
+ * IMPORTANTE: Só funciona em Route Handlers (app/api/[path]/route.ts)
  *
  * @returns Supabase client com autenticação via cookies
  *
