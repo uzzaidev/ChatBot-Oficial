@@ -14,7 +14,7 @@ export const getChatHistory = async (phone: string): Promise<ChatMessage[]> => {
        FROM n8n_chat_histories
        WHERE session_id = $1
        ORDER BY created_at DESC
-       LIMIT 15`,
+       LIMIT 30`,
       [phone]
     )
 
