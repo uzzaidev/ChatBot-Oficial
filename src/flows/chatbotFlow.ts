@@ -72,6 +72,7 @@ export const processChatbotMessage = async (
     const customer = await checkOrCreateCustomer({
       phone: parsedMessage.phone,
       name: parsedMessage.name,
+      clientId: config.id, // 🔐 Multi-tenant: Associa customer ao cliente
     })
     logger.logNodeSuccess('3. Check/Create Customer', { status: customer.status })
 

@@ -6,6 +6,7 @@ const DEFAULT_CLIENT_ID = 'demo-client-id'
 export interface CheckOrCreateCustomerInput {
   phone: string
   name: string
+  clientId?: string // 🔐 Multi-tenant: ID do cliente
 }
 
 /**
@@ -27,7 +28,8 @@ interface ClienteWhatsAppData {
 const upsertClienteWhatsApp = async (
   supabase: ReturnType<typeof createServerClient>,
   phone: string,
-  name: string
+  name: string,
+  clientId: string // 🔐 Multi-tenant: ID do cliente (obrigatório após migration 005)
 ): Promise<{ data: ClienteWhatsAppData | null; error: any }> => {
   // Usa tabela SEM espaço (após migration 004)
   // Precisa do cast explícito porque TypeScript não conhece a tabela ainda
@@ -40,6 +42,7 @@ const upsertClienteWhatsApp = async (
         telefone: phone,
         nome: name,
         status: 'bot',
+        client_id: clientId, // 🔐 Multi-tenant: Associa customer ao cliente
       },
       {
         onConflict: 'telefone',
@@ -67,12 +70,13 @@ export const checkOrCreateCustomer = async (
   const startTime = Date.now()
 
   try {
-    console.log('[checkOrCreateCustomer] 🔍 INICIANDO UPSERT (via Supabase)')
-    console.log('[checkOrCreateCustomer] 📱 Phone:', input.phone)
-    console.log('[checkOrCreateCustomer] 👤 Name:', input.name)
-    console.log('[checkOrCreateCustomer] ⏱️  Timestamp:', new Date().toISOString())
+    const { phone, name, clientId = DEFAULT_CLIENT_ID } = input
 
-    const { phone, name } = input
+    console.log('[checkOrCreateCustomer] 🔍 INICIANDO UPSERT (via Supabase)')
+    console.log('[checkOrCreateCustomer] 📱 Phone:', phone)
+    console.log('[checkOrCreateCustomer] 👤 Name:', name)
+    console.log('[checkOrCreateCustomer] 🔐 Client ID:', clientId)
+    console.log('[checkOrCreateCustomer] ⏱️  Timestamp:', new Date().toISOString())
 
     // Cria cliente Supabase (usa service_role para bypass de RLS)
     const supabase = createServerClient()
@@ -80,7 +84,7 @@ export const checkOrCreateCustomer = async (
     // UPSERT usando helper function (bypass de tipos do TypeScript)
     console.log('[checkOrCreateCustomer] 🚀 Executando UPSERT via Supabase...')
 
-    const { data, error } = await upsertClienteWhatsApp(supabase, phone, name)
+    const { data, error } = await upsertClienteWhatsApp(supabase, phone, name, clientId)
 
     const duration = Date.now() - startTime
 
@@ -102,7 +106,7 @@ export const checkOrCreateCustomer = async (
 
     return {
       id: String(data.telefone),
-      client_id: DEFAULT_CLIENT_ID,
+      client_id: clientId, // 🔐 Usa clientId recebido (não mais DEFAULT_CLIENT_ID hardcoded)
       phone: String(data.telefone),
       name: data.nome,
       status: data.status as ConversationStatus,
