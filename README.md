@@ -17,7 +17,8 @@ Sistema de chatbot de WhatsApp com IA, migrando de n8n para Next.js com arquitet
 - ✅ Análise de imagem (GPT-4o Vision)
 - ✅ Histórico de conversas persistido
 - ✅ Suporte a tool calls (sub-agentes, transferência humana)
-- ⚠️ Dashboard ainda em desenvolvimento
+- ✅ Dashboard com notificações em tempo real
+- ⚠️ Dashboard ainda em desenvolvimento (melhorias contínuas)
 
 ---
 
@@ -213,6 +214,60 @@ Quando uma mensagem chega no WhatsApp:
 
 ---
 
+## 📱 Dashboard com Notificações Real-time
+
+O dashboard Next.js agora possui **notificações visuais em tempo real** quando novas mensagens chegam, mesmo em conversas que não estão abertas no momento.
+
+### Recursos do Dashboard
+
+✅ **Visualização de Conversas**: Lista todas as conversas WhatsApp  
+✅ **Histórico de Mensagens**: Veja todas as mensagens trocadas  
+✅ **Notificações Real-time**: Indicadores visuais quando mensagens chegam  
+✅ **Interface Responsiva**: Funciona em desktop e mobile  
+✅ **Busca e Filtros**: Encontre conversas rapidamente  
+
+### Notificações Real-time
+
+Quando uma mensagem chega em uma conversa **que não está aberta**:
+
+🔵 **Fundo azul claro** na lista de conversas  
+**Texto em negrito** (nome e prévia)  
+**Indicador de bolinha** (`•`) no lado direito  
+✨ **Animação pulse** por 2 segundos  
+🧹 **Auto-limpa** ao abrir a conversa  
+
+#### Como Funciona
+
+1. Cliente B envia mensagem no WhatsApp
+2. Sistema processa via webhook → n8n → database
+3. Supabase Realtime detecta nova mensagem
+4. Dashboard atualiza instantaneamente
+5. Indicador visual aparece para Cliente B
+6. Ao clicar, indicador desaparece
+
+#### Configuração Necessária
+
+Para as notificações funcionarem, você precisa:
+
+1. **Supabase Realtime habilitado**:
+   - Acesse: Database → Replication
+   - Habilite para tabela `n8n_chat_histories`
+   - Aguarde 1-2 minutos
+
+2. **Variáveis de ambiente** (já configuradas):
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=...
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+   ```
+
+#### Documentação Completa
+
+- **[docs/REALTIME_NOTIFICATIONS.md](./docs/REALTIME_NOTIFICATIONS.md)** - Arquitetura técnica
+- **[docs/VISUAL_GUIDE_REALTIME.md](./docs/VISUAL_GUIDE_REALTIME.md)** - Guia visual com exemplos
+- **[IMPLEMENTATION_COMPLETE.md](./IMPLEMENTATION_COMPLETE.md)** - Sumário completo
+
+---
+
 ## 🔧 Decisões Técnicas Importantes
 
 ### 1. Migração de `pg` para Supabase Client
@@ -343,11 +398,14 @@ Vercel faz deploy automático.
 
 - **README.md** (este arquivo) - Overview geral
 - **CLAUDE.md** - Instruções para Claude Code (AI assistant)
-- **ARCHITECTURE.md** - Detalhes técnicos da arquitetura _(criado nesta atualização)_
+- **ARCHITECTURE.md** - Detalhes técnicos da arquitetura
 - **WORKFLOW-LOGIC.md** - Mapeamento exato do fluxo de processamento
 - **CONFIGURAR_ENV.md** - Guia de configuração de variáveis
 - **TROUBLESHOOTING.md** - Solução de problemas comuns
 - **MIGRACAO_URGENTE.md** - Guia de migração da tabela clientes
+- **IMPLEMENTATION_COMPLETE.md** - Sumário de implementação (notificações real-time)
+- **docs/REALTIME_NOTIFICATIONS.md** - Documentação técnica de notificações
+- **docs/VISUAL_GUIDE_REALTIME.md** - Guia visual de notificações
 
 ---
 
@@ -390,7 +448,8 @@ Vercel faz deploy automático.
 
 ## 🎯 Próximos Passos
 
-- [ ] Dashboard funcional (visualizar conversas em tempo real)
+- [x] Dashboard funcional (visualizar conversas em tempo real)
+- [x] Notificações em tempo real de novas mensagens
 - [ ] Autenticação (NextAuth.js)
 - [ ] Multi-tenant UI (seletor de clientes)
 - [ ] Dashboard de custos (OpenAI + Groq + Meta)
