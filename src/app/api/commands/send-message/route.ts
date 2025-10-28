@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
       phone,
       message: content,
       type: 'ai', // TODO: Mudar para 'atendente' no futuro
+      clientId: config.id, // 🔐 Multi-tenant: Associa mensagem ao cliente
     })
 
     const totalDuration = Date.now() - startTime

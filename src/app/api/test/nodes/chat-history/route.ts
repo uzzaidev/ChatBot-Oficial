@@ -28,8 +28,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Buscar config para teste
+    const { getClientConfigWithFallback } = await import('@/lib/config')
+    const config = await getClientConfigWithFallback(process.env.DEFAULT_CLIENT_ID)
+
+    if (!config) {
+      return NextResponse.json({ error: 'Failed to load client config' }, { status: 500 })
+    }
+
     // Executa o node
-    const output = await getChatHistory(phone)
+    const output = await getChatHistory({
+      phone,
+      clientId: config.id, // 🔐 Multi-tenant: Filtra mensagens do cliente
+    })
 
     return NextResponse.json({
       success: true,

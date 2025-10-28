@@ -182,6 +182,7 @@ export const processChatbotMessage = async (
       phone: parsedMessage.phone,
       message: messageForHistory,
       type: 'user',
+      clientId: config.id, // 🔐 Multi-tenant: Associa mensagem ao cliente
     })
     logger.logNodeSuccess('7. Save Chat Message (User)', { saved: true })
 
@@ -204,7 +205,10 @@ export const processChatbotMessage = async (
     logger.logNodeStart('10. Get RAG Context', { queryLength: batchedContent.length })
     
     const [chatHistory2, ragContext] = await Promise.all([
-      getChatHistory(parsedMessage.phone),
+      getChatHistory({
+        phone: parsedMessage.phone,
+        clientId: config.id, // 🔐 Multi-tenant: Filtra mensagens do cliente
+      }),
       getRAGContext(batchedContent),
     ])
     
@@ -258,6 +262,7 @@ export const processChatbotMessage = async (
       phone: parsedMessage.phone,
       message: aiResponse.content,
       type: 'ai',
+      clientId: config.id, // 🔐 Multi-tenant: Associa mensagem ao cliente
     })
 
     // NODE 12: Format Response
