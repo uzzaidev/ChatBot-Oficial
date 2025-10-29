@@ -22,7 +22,7 @@ interface LogUsageParams {
 /**
  * Calculate cost based on provider and tokens
  * 
- * Pricing (as of 2024):
+ * Pricing (updated regularly - verify current rates):
  * - OpenAI GPT-4: $0.03/1K prompt tokens, $0.06/1K completion tokens
  * - OpenAI GPT-3.5-turbo: $0.0015/1K prompt tokens, $0.002/1K completion tokens
  * - Groq: Free tier (rate limited)
@@ -57,7 +57,8 @@ const calculateCost = (
 
   // Whisper pricing (estimated)
   if (source === 'whisper') {
-    // Assume ~1000 tokens per minute of audio
+    // Whisper is charged per minute of audio
+    // We estimate ~1000 tokens represent 1 minute of transcribed audio
     const estimatedMinutes = promptTokens / 1000
     return estimatedMinutes * 0.006
   }
