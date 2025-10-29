@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { processChatbotMessage } from '@/flows/chatbotFlow'
 import { addWebhookMessage } from '@/lib/webhookCache'
-import { getMetaVerifyToken, getWebhookUrl, getClientConfigWithFallback } from '@/lib/config'
+import { getWebhookBaseUrl } from '@/lib/config'
 
 /**
  * GET - usado pela Meta para verificar e ativar o webhook (hub.challenge)
