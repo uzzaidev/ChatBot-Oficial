@@ -16,7 +16,7 @@ interface UseMessagesResult {
 }
 
 export const useMessages = ({
-  clientId,
+  clientId, // Keep for backward compatibility, but not sent to API
   phone,
   refreshInterval = 0,
 }: UseMessagesOptions): UseMessagesResult => {
@@ -30,8 +30,9 @@ export const useMessages = ({
       setLoading(true)
       setError(null)
 
+      // 🔐 SECURITY: No longer send client_id as query param
+      // API route gets it from authenticated session
       const params = new URLSearchParams({
-        client_id: clientId,
         _t: Date.now().toString(), // Cache-busting timestamp
       })
 
@@ -63,23 +64,23 @@ export const useMessages = ({
     } finally {
       setLoading(false)
     }
-  }, [clientId, phone])
+  }, [phone]) // Removed clientId from dependencies since it's not used in API call
 
   useEffect(() => {
-    if (clientId && phone) {
+    if (phone) {
       fetchMessages()
     }
-  }, [clientId, phone, fetchMessages])
+  }, [phone, fetchMessages])
 
   useEffect(() => {
-    if (refreshInterval > 0 && clientId && phone) {
+    if (refreshInterval > 0 && phone) {
       const interval = setInterval(() => {
         fetchMessages()
       }, refreshInterval)
 
       return () => clearInterval(interval)
     }
-  }, [refreshInterval, clientId, phone, fetchMessages])
+  }, [refreshInterval, phone, fetchMessages])
 
   return {
     messages,

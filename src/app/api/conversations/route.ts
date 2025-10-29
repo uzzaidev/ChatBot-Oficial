@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/postgres'
 import type { ConversationWithCount } from '@/lib/types'
+import { getClientIdFromSession } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
 
@@ -8,21 +9,24 @@ export async function GET(request: NextRequest) {
   const startTime = Date.now()
   
   try {
+    // 🔐 SECURITY: Get client_id from authenticated session, not query params
+    const clientId = await getClientIdFromSession()
+
+    if (!clientId) {
+      return NextResponse.json(
+        { error: 'Unauthorized - authentication required' },
+        { status: 401 }
+      )
+    }
+
     const searchParams = request.nextUrl.searchParams
-    const clientId = searchParams.get('client_id')
     const status = searchParams.get('status')
     const limit = parseInt(searchParams.get('limit') || '50')
     const offset = parseInt(searchParams.get('offset') || '0')
 
-    if (!clientId) {
-      return NextResponse.json(
-        { error: 'client_id é obrigatório' },
-        { status: 400 }
-      )
-    }
+    console.log('[API /conversations] 🚀 Fetching conversations with optimized query for client:', clientId)
 
-    console.log('[API /conversations] 🚀 Fetching conversations with optimized query')
-
+    // 🔐 SECURITY: Filter by authenticated user's client_id
     // OTIMIZAÇÃO: Uma única query SQL com JOINs e agregações
     // Isso elimina o problema N+1 (antes eram 1 + N*2 queries)
     const sqlQuery = `
@@ -38,25 +42,28 @@ export async function GET(request: NextRequest) {
             SELECT h2.message 
             FROM n8n_chat_histories h2 
             WHERE h2.session_id = CAST(c.telefone AS TEXT)
+              AND (h2.client_id = $1 OR h2.client_id IS NULL)
             ORDER BY h2.created_at DESC 
             LIMIT 1
           ) as last_message_json
         FROM "Clientes WhatsApp" c
         LEFT JOIN n8n_chat_histories h ON CAST(c.telefone AS TEXT) = h.session_id
+          AND (h.client_id = $1 OR h.client_id IS NULL)
         WHERE EXISTS (
           SELECT 1 
           FROM n8n_chat_histories h3 
           WHERE h3.session_id = CAST(c.telefone AS TEXT)
+            AND (h3.client_id = $1 OR h3.client_id IS NULL)
         )
-        ${status ? 'AND c.status = $1' : ''}
+        ${status ? 'AND c.status = $2' : ''}
         GROUP BY c.telefone, c.nome, c.status, c.created_at
       )
       SELECT * FROM customer_stats
       ORDER BY last_message_time DESC NULLS LAST
-      LIMIT $${status ? '2' : '1'} OFFSET $${status ? '3' : '2'}
+      LIMIT $${status ? '3' : '2'} OFFSET $${status ? '4' : '3'}
     `
 
-    const params = status ? [status, limit, offset] : [limit, offset]
+    const params = status ? [clientId, status, limit, offset] : [clientId, limit, offset]
     const result = await query<any>(sqlQuery, params)
 
     const conversations: ConversationWithCount[] = result.rows.map((row) => {
