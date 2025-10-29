@@ -4,15 +4,17 @@ import { query } from '@/lib/postgres'
 export interface GetChatHistoryInput {
   phone: string
   clientId: string // 🔐 Multi-tenant: ID do cliente
+  maxHistory?: number // 🔧 Configurável (padrão: 30)
 }
 
 export const getChatHistory = async (input: GetChatHistoryInput): Promise<ChatMessage[]> => {
   const startTime = Date.now()
 
   try {
-    const { phone, clientId } = input
+    const { phone, clientId, maxHistory = 30 } = input
     console.log('[getChatHistory] 📚 Fetching chat history for:', phone)
     console.log('[getChatHistory] 🔐 Client ID:', clientId)
+    console.log('[getChatHistory] 📊 Max history:', maxHistory)
 
     // OTIMIZAÇÃO: Query usa índice idx_chat_histories_session_created
     // NOTA: A coluna 'type' não existe - extraímos o type do JSON 'message'
@@ -22,8 +24,8 @@ export const getChatHistory = async (input: GetChatHistoryInput): Promise<ChatMe
        FROM n8n_chat_histories
        WHERE session_id = $1 AND client_id = $2
        ORDER BY created_at DESC
-       LIMIT 30`,
-      [phone, clientId]
+       LIMIT $3`,
+      [phone, clientId, maxHistory]
     )
 
     const duration = Date.now() - startTime

@@ -76,6 +76,16 @@ export default function SettingsPage() {
     formatter_prompt: '',
     openai_model: 'gpt-4o',
     groq_model: 'llama-3.3-70b-versatile',
+    settings: {
+      enable_rag: false,
+      max_tokens: 2000,
+      temperature: 0.7,
+      enable_tools: false,
+      max_chat_history: 10,
+      enable_human_handoff: false,
+      message_split_enabled: false,
+      batching_delay_seconds: 10,
+    },
   })
   const [editingAgent, setEditingAgent] = useState(false)
   const [loadingAgent, setLoadingAgent] = useState(false)
@@ -136,6 +146,16 @@ export default function SettingsPage() {
             formatter_prompt: data.config.formatter_prompt || '',
             openai_model: data.config.openai_model || 'gpt-4o',
             groq_model: data.config.groq_model || 'llama-3.3-70b-versatile',
+            settings: data.config.settings || {
+              enable_rag: false,
+              max_tokens: 2000,
+              temperature: 0.7,
+              enable_tools: false,
+              max_chat_history: 10,
+              enable_human_handoff: false,
+              message_split_enabled: false,
+              batching_delay_seconds: 10,
+            },
           })
         }
       } catch (error) {
@@ -601,6 +621,181 @@ export default function SettingsPage() {
               <p className="text-xs text-gray-500 mt-1">
                 Modelo usado para respostas de texto rápidas
               </p>
+            </div>
+
+            {/* Divisor */}
+            <div className="border-t pt-4">
+              <h3 className="font-semibold text-sm mb-4">Configurações Avançadas</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Enable RAG */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="enable_rag">Habilitar RAG</Label>
+                    <p className="text-xs text-gray-500">Busca em documentos</p>
+                  </div>
+                  <Input
+                    type="checkbox"
+                    id="enable_rag"
+                    checked={agentConfig.settings.enable_rag}
+                    onChange={(e) =>
+                      setAgentConfig({
+                        ...agentConfig,
+                        settings: { ...agentConfig.settings, enable_rag: e.target.checked },
+                      })
+                    }
+                    disabled={!editingAgent}
+                    className="w-5 h-5"
+                  />
+                </div>
+
+                {/* Enable Tools */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="enable_tools">Habilitar Tools</Label>
+                    <p className="text-xs text-gray-500">Function calling</p>
+                  </div>
+                  <Input
+                    type="checkbox"
+                    id="enable_tools"
+                    checked={agentConfig.settings.enable_tools}
+                    onChange={(e) =>
+                      setAgentConfig({
+                        ...agentConfig,
+                        settings: { ...agentConfig.settings, enable_tools: e.target.checked },
+                      })
+                    }
+                    disabled={!editingAgent}
+                    className="w-5 h-5"
+                  />
+                </div>
+
+                {/* Enable Human Handoff */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="enable_human_handoff">Transferência Humana</Label>
+                    <p className="text-xs text-gray-500">Permite transferir para atendente</p>
+                  </div>
+                  <Input
+                    type="checkbox"
+                    id="enable_human_handoff"
+                    checked={agentConfig.settings.enable_human_handoff}
+                    onChange={(e) =>
+                      setAgentConfig({
+                        ...agentConfig,
+                        settings: { ...agentConfig.settings, enable_human_handoff: e.target.checked },
+                      })
+                    }
+                    disabled={!editingAgent}
+                    className="w-5 h-5"
+                  />
+                </div>
+
+                {/* Message Split Enabled */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="message_split_enabled">Dividir Mensagens</Label>
+                    <p className="text-xs text-gray-500">Quebra mensagens longas</p>
+                  </div>
+                  <Input
+                    type="checkbox"
+                    id="message_split_enabled"
+                    checked={agentConfig.settings.message_split_enabled}
+                    onChange={(e) =>
+                      setAgentConfig({
+                        ...agentConfig,
+                        settings: { ...agentConfig.settings, message_split_enabled: e.target.checked },
+                      })
+                    }
+                    disabled={!editingAgent}
+                    className="w-5 h-5"
+                  />
+                </div>
+
+                {/* Max Tokens */}
+                <div>
+                  <Label htmlFor="max_tokens">Max Tokens</Label>
+                  <Input
+                    type="number"
+                    id="max_tokens"
+                    value={agentConfig.settings.max_tokens}
+                    onChange={(e) =>
+                      setAgentConfig({
+                        ...agentConfig,
+                        settings: { ...agentConfig.settings, max_tokens: parseInt(e.target.value) || 2000 },
+                      })
+                    }
+                    disabled={!editingAgent}
+                    min={100}
+                    max={8000}
+                    className="mt-2"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">100 - 8000</p>
+                </div>
+
+                {/* Temperature */}
+                <div>
+                  <Label htmlFor="temperature">Temperature</Label>
+                  <Input
+                    type="number"
+                    id="temperature"
+                    value={agentConfig.settings.temperature}
+                    onChange={(e) =>
+                      setAgentConfig({
+                        ...agentConfig,
+                        settings: { ...agentConfig.settings, temperature: parseFloat(e.target.value) || 0.7 },
+                      })
+                    }
+                    disabled={!editingAgent}
+                    min={0}
+                    max={2}
+                    step={0.1}
+                    className="mt-2"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">0.0 - 2.0 (criatividade)</p>
+                </div>
+
+                {/* Max Chat History */}
+                <div>
+                  <Label htmlFor="max_chat_history">Max Chat History</Label>
+                  <Input
+                    type="number"
+                    id="max_chat_history"
+                    value={agentConfig.settings.max_chat_history}
+                    onChange={(e) =>
+                      setAgentConfig({
+                        ...agentConfig,
+                        settings: { ...agentConfig.settings, max_chat_history: parseInt(e.target.value) || 10 },
+                      })
+                    }
+                    disabled={!editingAgent}
+                    min={1}
+                    max={50}
+                    className="mt-2"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">1 - 50 mensagens</p>
+                </div>
+
+                {/* Batching Delay */}
+                <div>
+                  <Label htmlFor="batching_delay_seconds">Delay de Agrupamento (s)</Label>
+                  <Input
+                    type="number"
+                    id="batching_delay_seconds"
+                    value={agentConfig.settings.batching_delay_seconds}
+                    onChange={(e) =>
+                      setAgentConfig({
+                        ...agentConfig,
+                        settings: { ...agentConfig.settings, batching_delay_seconds: parseInt(e.target.value) || 10 },
+                      })
+                    }
+                    disabled={!editingAgent}
+                    min={0}
+                    max={60}
+                    className="mt-2"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">0 - 60 segundos</p>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

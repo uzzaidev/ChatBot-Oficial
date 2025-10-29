@@ -200,6 +200,10 @@ export const getClientConfig = async (clientId: string): Promise<ClientConfig | 
         systemPrompt: client.system_prompt,
         formatterPrompt: client.formatter_prompt || undefined,
       },
+      models: {
+        openaiModel: client.openai_model || 'gpt-4o',
+        groqModel: client.groq_model || 'llama-3.3-70b-versatile',
+      },
       settings: {
         batchingDelaySeconds: client.settings.batching_delay_seconds,
         maxTokens: client.settings.max_tokens,

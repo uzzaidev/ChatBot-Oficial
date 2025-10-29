@@ -60,12 +60,18 @@ const extractToolCallsFromResponse = (choice: any): AIResponse['toolCalls'] => {
  * @param messages - Mensagens do chat
  * @param tools - Ferramentas disponíveis
  * @param apiKey - API key opcional (do config do cliente)
+ * @param settings - Configurações opcionais (temperature, max_tokens, model)
  * @returns Resposta da IA
  */
 export const generateChatCompletion = async (
   messages: ChatMessage[],
   tools?: any[],
-  apiKey?: string // 🔐 Novo parâmetro opcional
+  apiKey?: string, // 🔐 Novo parâmetro opcional
+  settings?: {
+    temperature?: number
+    max_tokens?: number
+    model?: string
+  }
 ): Promise<AIResponse> => {
   try {
     const client = getGroqClient(apiKey) // Usa key dinâmica se fornecida
@@ -76,10 +82,10 @@ export const generateChatCompletion = async (
     }))
 
     const completionParams: any = {
-      model: 'llama-3.3-70b-versatile',
+      model: settings?.model || 'llama-3.3-70b-versatile',
       messages: groqMessages,
-      temperature: 0.7,
-      max_tokens: 2048,
+      temperature: settings?.temperature ?? 0.7,
+      max_tokens: settings?.max_tokens ?? 2048,
     }
 
     if (tools && tools.length > 0) {

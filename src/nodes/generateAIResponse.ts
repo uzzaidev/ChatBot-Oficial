@@ -198,7 +198,17 @@ export const generateAIResponse = async (input: GenerateAIResponseInput): Promis
 
     const tools = [HUMAN_HANDOFF_TOOL_DEFINITION]
 
-    return await generateChatCompletion(messages, tools, config.apiKeys.groqApiKey) // 🔐 Usa groqKey do config
+    // 🔐 Passar settings do config para o Groq
+    return await generateChatCompletion(
+      messages,
+      config.settings.enableTools ? tools : undefined,
+      config.apiKeys.groqApiKey,
+      {
+        temperature: config.settings.temperature,
+        max_tokens: config.settings.maxTokens,
+        model: config.models.groqModel,
+      }
+    )
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     throw new Error(`Failed to generate AI response: ${errorMessage}`)

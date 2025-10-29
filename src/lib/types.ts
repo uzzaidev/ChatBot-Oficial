@@ -253,6 +253,12 @@ export interface ClientConfig {
     formatterPrompt?: string
   }
 
+  // Modelos de IA
+  models: {
+    openaiModel: string
+    groqModel: string
+  }
+
   // Configurações de Comportamento
   settings: {
     batchingDelaySeconds: number

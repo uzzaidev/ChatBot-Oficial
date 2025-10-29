@@ -208,6 +208,7 @@ export const processChatbotMessage = async (
       getChatHistory({
         phone: parsedMessage.phone,
         clientId: config.id, // 🔐 Multi-tenant: Filtra mensagens do cliente
+        maxHistory: config.settings.maxChatHistory, // 🔧 Usa config do cliente
       }),
       getRAGContext(batchedContent),
     ])
