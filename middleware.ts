@@ -84,15 +84,21 @@ export async function middleware(request: NextRequest) {
     }
 
     // Buscar user_profile para obter client_id
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
       .select('client_id, role')
       .eq('id', user.id)
       .single()
 
-    if (!profile || !profile.client_id) {
-      // Profile não configurado - redirecionar para login
-      console.error('[middleware] Profile não encontrado ou sem client_id:', user.id)
+    // Se profile não existe ou está inválido - redirecionar para login
+    if (profileError || !profile || !profile.client_id) {
+      console.error('[middleware] Profile não encontrado ou inválido:', user.id)
+      console.error('  Error:', profileError?.message || 'Profile sem client_id')
+      console.error('  → Redirecionando para /login')
+
+      // Fazer logout (limpar cookies) antes de redirecionar
+      await supabase.auth.signOut()
+
       const loginUrl = new URL('/login', request.url)
       return NextResponse.redirect(loginUrl)
     }

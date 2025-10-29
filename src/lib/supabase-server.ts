@@ -117,6 +117,7 @@ export const getCurrentUser = async () => {
  * Helper: Obtém client_id do usuário autenticado
  *
  * Busca o client_id do user_profile linkado ao usuário
+ * Se profile não existir, tenta criar automaticamente (fallback para trigger falho)
  *
  * @returns client_id (UUID) ou null se não autenticado
  *
@@ -143,12 +144,50 @@ export const getClientIdFromSession = async (): Promise<string | null> => {
     .eq('id', user.id)
     .single()
 
-  if (error || !profile) {
-    console.error('[getClientIdFromSession] Erro ao buscar profile:', error)
+  // 3. Se profile existe, retornar client_id
+  if (profile && profile.client_id) {
+    return profile.client_id
+  }
+
+  // 4. FALLBACK: Se profile não existe, tentar criar automaticamente
+  // Isso pode acontecer se o trigger handle_new_user() falhou
+  console.warn('[getClientIdFromSession] Profile não encontrado, tentando criar automaticamente...')
+  console.warn(`  User ID: ${user.id}`)
+  console.warn(`  Email: ${user.email}`)
+  console.warn(`  Error: ${error?.message || 'Profile not found'}`)
+
+  // Verificar se user_metadata tem client_id
+  const metadataClientId = user.user_metadata?.client_id
+
+  if (!metadataClientId) {
+    console.error('[getClientIdFromSession] ❌ user_metadata não tem client_id!')
+    console.error('  Usuário foi criado sem client_id no metadata.')
+    console.error('  Possíveis soluções:')
+    console.error('  1. Deletar usuário e registrar novamente via /register')
+    console.error('  2. Criar manualmente no Supabase Dashboard com client_id')
     return null
   }
 
-  return profile.client_id
+  // Tentar criar profile manualmente
+  console.log('[getClientIdFromSession] Criando user_profile automaticamente...')
+  const { data: newProfile, error: createError } = await supabase
+    .from('user_profiles')
+    .insert({
+      id: user.id,
+      client_id: metadataClientId,
+      email: user.email!,
+      full_name: user.user_metadata?.full_name || null,
+    })
+    .select('client_id')
+    .single()
+
+  if (createError || !newProfile) {
+    console.error('[getClientIdFromSession] ❌ Falha ao criar profile:', createError)
+    return null
+  }
+
+  console.log('[getClientIdFromSession] ✅ Profile criado com sucesso!')
+  return newProfile.client_id
 }
 
 /**

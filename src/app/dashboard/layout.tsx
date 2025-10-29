@@ -1,8 +1,9 @@
-import { MessageSquare, LayoutDashboard, LogOut } from 'lucide-react'
+import { MessageSquare, LayoutDashboard, LogOut, Settings } from 'lucide-react'
 import Link from 'next/link'
 import { Separator } from '@/components/ui/separator'
 import { getCurrentUser } from '@/lib/supabase-server'
 import { LogoutButton } from '@/components/LogoutButton'
+import { AuthMonitor } from '@/components/AuthMonitor'
 
 /**
  * Dashboard Layout - Server Component
@@ -27,6 +28,9 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex min-h-screen">
+      {/* Monitor de autenticação - redireciona para login se token expirar */}
+      <AuthMonitor />
+
       <aside className="w-64 border-r bg-gray-50 p-6">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-blue-600 flex items-center gap-2">
@@ -55,6 +59,14 @@ export default async function DashboardLayout({
           >
             <MessageSquare className="h-5 w-5" />
             <span className="font-medium">Conversas</span>
+          </Link>
+
+          <Link
+            href="/dashboard/settings"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <Settings className="h-5 w-5" />
+            <span className="font-medium">Configurações</span>
           </Link>
         </nav>
 
