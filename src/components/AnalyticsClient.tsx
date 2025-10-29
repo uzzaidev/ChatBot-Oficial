@@ -4,11 +4,14 @@ import { useState } from 'react'
 import { useAnalytics } from '@/hooks/useAnalytics'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { Button } from '@/components/ui/button'
 import { WeeklyUsageChart } from '@/components/WeeklyUsageChart'
 import { DailyUsageChart } from '@/components/DailyUsageChart'
 import { ModelComparisonChart } from '@/components/ModelComparisonChart'
 import { ConversationUsageTable } from '@/components/ConversationUsageTable'
+import { PricingConfigModal } from '@/components/PricingConfigModal'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Settings } from 'lucide-react'
 
 interface AnalyticsClientProps {
   clientId: string
@@ -25,6 +28,7 @@ interface AnalyticsClientProps {
  */
 export function AnalyticsClient({ clientId }: AnalyticsClientProps) {
   const [days, setDays] = useState(30)
+  const [pricingModalOpen, setPricingModalOpen] = useState(false)
   const { analytics, loading, error, refetch } = useAnalytics({
     days,
     type: 'all',
@@ -82,18 +86,30 @@ export function AnalyticsClient({ clientId }: AnalyticsClientProps) {
             Acompanhe tokens, custos e uso de APIs
           </p>
         </div>
-        
-        <Select value={days.toString()} onValueChange={(value) => setDays(parseInt(value))}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Período" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="7">Últimos 7 dias</SelectItem>
-            <SelectItem value="30">Últimos 30 dias</SelectItem>
-            <SelectItem value="60">Últimos 60 dias</SelectItem>
-            <SelectItem value="90">Últimos 90 dias</SelectItem>
-          </SelectContent>
-        </Select>
+
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPricingModalOpen(true)}
+            className="gap-2"
+          >
+            <Settings className="h-4 w-4" />
+            Configurar Preços
+          </Button>
+
+          <Select value={days.toString()} onValueChange={(value) => setDays(parseInt(value))}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Período" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7">Últimos 7 dias</SelectItem>
+              <SelectItem value="30">Últimos 30 dias</SelectItem>
+              <SelectItem value="60">Últimos 60 dias</SelectItem>
+              <SelectItem value="90">Últimos 90 dias</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <Separator />
@@ -197,6 +213,9 @@ export function AnalyticsClient({ clientId }: AnalyticsClientProps) {
             </CardContent>
           </Card>
         )}
+
+      {/* Pricing Configuration Modal */}
+      <PricingConfigModal open={pricingModalOpen} onOpenChange={setPricingModalOpen} />
     </div>
   )
 }

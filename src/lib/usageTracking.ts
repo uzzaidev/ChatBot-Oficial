@@ -2,7 +2,7 @@ import { query } from './postgres'
 
 /**
  * Usage tracking utility for OpenAI and Groq API calls
- * 
+ *
  * This module provides functions to log API usage to the database
  * for analytics and billing purposes.
  */
@@ -20,60 +20,108 @@ interface LogUsageParams {
 }
 
 /**
- * Calculate cost based on provider and tokens
- * 
- * Pricing (updated regularly - verify current rates):
- * - OpenAI GPT-4: $0.03/1K prompt tokens, $0.06/1K completion tokens
- * - OpenAI GPT-3.5-turbo: $0.0015/1K prompt tokens, $0.002/1K completion tokens
- * - Groq: Free tier (rate limited)
- * - Whisper: $0.006/minute (estimated ~1000 tokens/minute for audio)
+ * Fetch pricing from database for a specific model
+ * Returns default pricing if not found in database
  */
-const calculateCost = (
+const getPricingFromDatabase = async (
+  clientId: string,
+  provider: string,
+  model: string
+): Promise<{ promptPrice: number; completionPrice: number; unit: string }> => {
+  try {
+    const result = await query(
+      `SELECT prompt_price, completion_price, unit
+       FROM pricing_config
+       WHERE client_id = $1 AND provider = $2 AND model = $3
+       LIMIT 1`,
+      [clientId, provider, model]
+    )
+
+    if (result.rows.length > 0) {
+      return {
+        promptPrice: parseFloat(result.rows[0].prompt_price),
+        completionPrice: parseFloat(result.rows[0].completion_price),
+        unit: result.rows[0].unit,
+      }
+    }
+  } catch (error) {
+    console.warn('[UsageTracking] Failed to fetch pricing from database:', error)
+  }
+
+  // Return default pricing if not found in database
+  return getDefaultPricing(provider, model)
+}
+
+/**
+ * Get default pricing when database lookup fails
+ *
+ * Default Pricing (fallback):
+ * - OpenAI GPT-4: $0.03/1K prompt, $0.06/1K completion
+ * - OpenAI GPT-4 Turbo: $0.01/1K prompt, $0.03/1K completion
+ * - OpenAI GPT-4o: $0.005/1K prompt, $0.015/1K completion
+ * - OpenAI GPT-3.5-turbo: $0.0015/1K prompt, $0.002/1K completion
+ * - Groq: Free (rate limited)
+ * - Whisper: $0.006/minute
+ */
+const getDefaultPricing = (
+  provider: string,
+  model: string
+): { promptPrice: number; completionPrice: number; unit: string } => {
+  const modelLower = model.toLowerCase()
+
+  if (provider === 'openai') {
+    if (modelLower.includes('gpt-4o')) {
+      return { promptPrice: 0.005, completionPrice: 0.015, unit: 'per_1k_tokens' }
+    } else if (modelLower.includes('gpt-4-turbo')) {
+      return { promptPrice: 0.01, completionPrice: 0.03, unit: 'per_1k_tokens' }
+    } else if (modelLower.includes('gpt-4')) {
+      return { promptPrice: 0.03, completionPrice: 0.06, unit: 'per_1k_tokens' }
+    } else if (modelLower.includes('gpt-3.5-turbo')) {
+      return { promptPrice: 0.0015, completionPrice: 0.002, unit: 'per_1k_tokens' }
+    }
+    // Default OpenAI
+    return { promptPrice: 0.0015, completionPrice: 0.002, unit: 'per_1k_tokens' }
+  }
+
+  if (provider === 'whisper') {
+    return { promptPrice: 0.006, completionPrice: 0, unit: 'per_minute' }
+  }
+
+  // Groq and others are free
+  return { promptPrice: 0, completionPrice: 0, unit: 'per_1k_tokens' }
+}
+
+/**
+ * Calculate cost based on pricing configuration
+ * Now uses database pricing when available
+ */
+const calculateCost = async (
+  clientId: string,
   source: string,
   model: string | undefined,
   promptTokens: number,
   completionTokens: number
-): number => {
-  // Groq is free (for now)
-  if (source === 'groq') {
-    return 0
-  }
+): Promise<number> => {
+  const modelName = model || 'unknown'
+  const pricing = await getPricingFromDatabase(clientId, source, modelName)
 
-  // OpenAI pricing
-  if (source === 'openai') {
-    const modelLower = (model || '').toLowerCase()
-    
-    if (modelLower.includes('gpt-4')) {
-      // GPT-4 pricing
-      return (promptTokens / 1000) * 0.03 + (completionTokens / 1000) * 0.06
-    } else if (modelLower.includes('gpt-3.5-turbo')) {
-      // GPT-3.5-turbo pricing
-      return (promptTokens / 1000) * 0.0015 + (completionTokens / 1000) * 0.002
-    } else {
-      // Default to GPT-3.5-turbo pricing
-      return (promptTokens / 1000) * 0.0015 + (completionTokens / 1000) * 0.002
-    }
-  }
-
-  // Whisper pricing (estimated)
-  if (source === 'whisper') {
-    // Whisper is charged per minute of audio
-    // We estimate ~1000 tokens represent 1 minute of transcribed audio
+  // Calculate based on unit
+  if (pricing.unit === 'per_minute') {
+    // For audio (Whisper) - estimate minutes from tokens
     const estimatedMinutes = promptTokens / 1000
-    return estimatedMinutes * 0.006
+    return estimatedMinutes * pricing.promptPrice
   }
 
-  // Meta/WhatsApp API is typically free for messages
-  if (source === 'meta') {
-    return 0
-  }
-
-  return 0
+  // Default: per_1k_tokens
+  return (
+    (promptTokens / 1000) * pricing.promptPrice +
+    (completionTokens / 1000) * pricing.completionPrice
+  )
 }
 
 /**
  * Log API usage to database
- * 
+ *
  * @param params Usage logging parameters
  */
 export const logUsage = async (params: LogUsageParams): Promise<void> => {
@@ -90,7 +138,7 @@ export const logUsage = async (params: LogUsageParams): Promise<void> => {
   } = params
 
   try {
-    const cost = calculateCost(source, model, promptTokens, completionTokens)
+    const cost = await calculateCost(clientId, source, model, promptTokens, completionTokens)
 
     await query(
       `
