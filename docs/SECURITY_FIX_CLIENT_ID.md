@@ -88,13 +88,16 @@ If your database doesn't have `client_id` column in the n8n legacy tables, you *
 
 2. **Populate existing data** with your default client ID:
    ```sql
-   -- Replace with your actual client_id from the clients table
+   -- First, find your client_id
+   SELECT id, name FROM clients;
+   
+   -- Then replace YOUR_CLIENT_ID_HERE with the actual UUID
    UPDATE "Clientes WhatsApp" 
-   SET client_id = 'b21b314f-c49a-467d-94b3-a21ed4412227'::UUID
+   SET client_id = 'YOUR_CLIENT_ID_HERE'::UUID
    WHERE client_id IS NULL;
    
    UPDATE n8n_chat_histories 
-   SET client_id = 'b21b314f-c49a-467d-94b3-a21ed4412227'::UUID
+   SET client_id = 'YOUR_CLIENT_ID_HERE'::UUID
    WHERE client_id IS NULL;
    ```
 

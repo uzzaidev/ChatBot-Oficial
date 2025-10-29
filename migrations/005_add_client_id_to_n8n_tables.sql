@@ -139,19 +139,22 @@ END $$;
 -- =====================================================
 -- 
 -- AÇÃO NECESSÁRIA: Execute os comandos abaixo MANUALMENTE
--- substituindo 'your-default-client-id' pelo UUID real
+-- substituindo 'YOUR_CLIENT_ID_HERE' pelo UUID real do cliente
 -- 
--- Exemplo:
+-- Para encontrar o client_id correto:
+-- SELECT id, name FROM clients;
+-- 
+-- Exemplo de uso (substitua o UUID):
 -- UPDATE "Clientes WhatsApp" 
--- SET client_id = 'b21b314f-c49a-467d-94b3-a21ed4412227'::UUID
+-- SET client_id = 'YOUR_CLIENT_ID_HERE'::UUID
 -- WHERE client_id IS NULL;
 -- 
 -- UPDATE n8n_chat_histories 
--- SET client_id = 'b21b314f-c49a-467d-94b3-a21ed4412227'::UUID
+-- SET client_id = 'YOUR_CLIENT_ID_HERE'::UUID
 -- WHERE client_id IS NULL;
 -- 
 -- UPDATE documents 
--- SET client_id = 'b21b314f-c49a-467d-94b3-a21ed4412227'::UUID
+-- SET client_id = 'YOUR_CLIENT_ID_HERE'::UUID
 -- WHERE client_id IS NULL;
 -- 
 -- =====================================================
@@ -237,10 +240,27 @@ END $$;
 -- ROLLBACK (se necessário)
 -- =====================================================
 -- 
--- Para reverter esta migration (CUIDADO - perda de dados de client_id):
+-- ATENÇÃO: Para reverter esta migration (CUIDADO - perda de dados!)
 -- 
+-- O uso de CASCADE irá remover:
+-- - Índices criados: idx_clientes_whatsapp_client_id, idx_n8n_chat_histories_client_id, etc.
+-- - Políticas RLS que dependem da coluna client_id
+-- - Constraints de foreign key
+-- 
+-- Certifique-se de fazer backup antes de executar:
+-- 
+-- -- Backup das tabelas
+-- CREATE TABLE clientes_whatsapp_backup AS SELECT * FROM "Clientes WhatsApp";
+-- CREATE TABLE n8n_chat_histories_backup AS SELECT * FROM n8n_chat_histories;
+-- CREATE TABLE documents_backup AS SELECT * FROM documents;
+-- 
+-- -- Remover colunas (após backup)
 -- ALTER TABLE "Clientes WhatsApp" DROP COLUMN IF EXISTS client_id CASCADE;
 -- ALTER TABLE n8n_chat_histories DROP COLUMN IF EXISTS client_id CASCADE;
 -- ALTER TABLE documents DROP COLUMN IF EXISTS client_id CASCADE;
+-- 
+-- Após rollback, você precisará:
+-- 1. Re-executar RLS.sql (se foi aplicado antes)
+-- 2. Recriar índices customizados
 -- 
 -- =====================================================
