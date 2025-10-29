@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import type { SendMessageRequest } from '@/lib/types'
 import { sendWhatsAppMessage } from '@/nodes/sendWhatsAppMessage'
 import { saveChatMessage } from '@/nodes/saveChatMessage'
+import { getClientIdFromSession } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,10 +11,13 @@ export const dynamic = 'force-dynamic'
  *
  * Envia mensagem manual pelo dashboard para WhatsApp
  *
+ * FASE 3: Agora usa client_id da sessão (autenticação)
+ *
  * Fluxo:
- * 1. Valida input (phone, content)
- * 2. Envia mensagem via Meta WhatsApp API (sendWhatsAppMessage node)
- * 3. Salva mensagem no histórico com type: 'ai' (saveChatMessage node)
+ * 1. Obtém client_id do usuário autenticado
+ * 2. Valida input (phone, content)
+ * 3. Envia mensagem via Meta WhatsApp API (sendWhatsAppMessage node)
+ * 4. Salva mensagem no histórico com type: 'ai' (saveChatMessage node)
  *
  * NOTA: type: 'ai' será mudado para 'atendente' no futuro
  */
@@ -23,8 +27,21 @@ export async function POST(request: NextRequest) {
   try {
     console.log('[SEND-MESSAGE API] 🚀 Iniciando envio de mensagem manual')
 
+    // 🔐 FASE 3: Obter client_id da sessão do usuário autenticado
+    const clientId = await getClientIdFromSession()
+
+    if (!clientId) {
+      console.error('[SEND-MESSAGE API] ❌ Usuário não autenticado ou sem client_id')
+      return NextResponse.json(
+        { error: 'Unauthorized - client_id not found in session' },
+        { status: 401 }
+      )
+    }
+
+    console.log(`[SEND-MESSAGE API] 🔐 Client ID from session: ${clientId}`)
+
     const body = (await request.json()) as SendMessageRequest
-    const { phone, content, client_id } = body
+    const { phone, content } = body
 
     // Validação
     if (!phone || !content) {
@@ -38,12 +55,13 @@ export async function POST(request: NextRequest) {
     console.log(`[SEND-MESSAGE API] 📱 Phone: ${phone}`)
     console.log(`[SEND-MESSAGE API] 💬 Content: ${content.substring(0, 50)}...`)
 
-    // Buscar config do cliente
-    const { getClientConfigWithFallback } = await import('@/lib/config')
-    const config = await getClientConfigWithFallback(process.env.DEFAULT_CLIENT_ID)
+    // Buscar config do cliente autenticado
+    const { getClientConfig } = await import('@/lib/config')
+    const config = await getClientConfig(clientId)
 
     if (!config) {
-      return NextResponse.json({ error: 'Failed to load client config' }, { status: 500 })
+      console.error('[SEND-MESSAGE API] ❌ Config não encontrado para client_id:', clientId)
+      return NextResponse.json({ error: 'Client configuration not found' }, { status: 404 })
     }
 
     // NODE 12: Envia mensagem via WhatsApp

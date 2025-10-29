@@ -1,12 +1,10 @@
 import { CustomerRecord, ConversationStatus } from '@/lib/types'
 import { createServerClient } from '@/lib/supabase'
 
-const DEFAULT_CLIENT_ID = 'demo-client-id'
-
 export interface CheckOrCreateCustomerInput {
   phone: string
   name: string
-  clientId?: string // 🔐 Multi-tenant: ID do cliente
+  clientId: string // 🔐 Multi-tenant: ID do cliente (obrigatório - não mais opcional)
 }
 
 /**
@@ -70,7 +68,11 @@ export const checkOrCreateCustomer = async (
   const startTime = Date.now()
 
   try {
-    const { phone, name, clientId = DEFAULT_CLIENT_ID } = input
+    const { phone, name, clientId } = input
+
+    if (!clientId) {
+      throw new Error('clientId is required - DEFAULT_CLIENT_ID is no longer used')
+    }
 
     console.log('[checkOrCreateCustomer] 🔍 INICIANDO UPSERT (via Supabase)')
     console.log('[checkOrCreateCustomer] 📱 Phone:', phone)

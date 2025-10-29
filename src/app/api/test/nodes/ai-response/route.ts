@@ -6,10 +6,23 @@ export const dynamic = 'force-dynamic'
 /**
  * POST /api/test/nodes/ai-response
  * Testa o node generateAIResponse isoladamente
+ * 
+ * FASE 3: Requer clientId no body (não usa mais DEFAULT_CLIENT_ID)
  */
 export async function POST(request: NextRequest) {
   try {
-    const { input } = await request.json()
+    const { input, clientId } = await request.json()
+
+    if (!clientId) {
+      return NextResponse.json(
+        { 
+          error: 'clientId is required',
+          message: 'Provide clientId in request body. Example: { "clientId": "b21b314f-...", "input": {...} }',
+          note: 'DEFAULT_CLIENT_ID is no longer used. All API routes now require authentication or explicit clientId.',
+        },
+        { status: 400 }
+      )
+    }
 
     if (!input || !input.message) {
       return NextResponse.json(
@@ -62,12 +75,15 @@ export async function POST(request: NextRequest) {
       customerName: input.customerName || 'Cliente',
     })
 
-    // Buscar config para teste
-    const { getClientConfigWithFallback } = await import('@/lib/config')
-    const config = await getClientConfigWithFallback(process.env.DEFAULT_CLIENT_ID)
+    // Buscar config do cliente especificado
+    const { getClientConfig } = await import('@/lib/config')
+    const config = await getClientConfig(clientId)
 
     if (!config) {
-      return NextResponse.json({ error: 'Failed to load client config' }, { status: 500 })
+      return NextResponse.json(
+        { error: `Client config not found for clientId: ${clientId}` }, 
+        { status: 404 }
+      )
     }
 
     const output = await generateAIResponse({
