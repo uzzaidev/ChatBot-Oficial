@@ -91,6 +91,63 @@ export interface DashboardMetrics {
   total_cost_month: number
 }
 
+// Analytics Types
+export interface DailyUsage {
+  date: string
+  source: UsageSource
+  total_tokens: number
+  total_cost: number
+  request_count: number
+}
+
+export interface WeeklyUsage {
+  week_start: string
+  week_number: number
+  total_tokens: number
+  openai_tokens: number
+  groq_tokens: number
+  total_cost: number
+}
+
+export interface MonthlyUsageByModel {
+  source: UsageSource
+  model: string
+  total_tokens: number
+  prompt_tokens: number
+  completion_tokens: number
+  total_cost: number
+  request_count: number
+}
+
+export interface ConversationUsage {
+  phone: string
+  conversation_name: string
+  total_tokens: number
+  total_cost: number
+  request_count: number
+  openai_tokens: number
+  groq_tokens: number
+}
+
+export interface AnalyticsSummary {
+  unique_conversations: number
+  total_tokens: number
+  total_cost: number
+  total_requests: number
+  openai_tokens: number
+  groq_tokens: number
+  openai_cost: number
+  groq_cost: number
+}
+
+export interface AnalyticsData {
+  daily?: DailyUsage[]
+  weekly?: WeeklyUsage[]
+  monthly?: MonthlyUsageByModel[]
+  byConversation?: ConversationUsage[]
+  summary?: AnalyticsSummary
+}
+
 export interface SendMessageRequest {
   phone: string
   content: string
