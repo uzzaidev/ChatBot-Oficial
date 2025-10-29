@@ -82,6 +82,31 @@ src/
 
 ---
 
+## 📊 Estrutura do Banco de Dados
+
+**⚠️ IMPORTANTE**: Este projeto compartilha o banco de dados com outro aplicativo (sistema de poker).
+
+**Antes de trabalhar com dados, SEMPRE consulte**: [`docs/tables/tabelas.md`](docs/tables/tabelas.md)
+
+Este arquivo contém:
+- ✅ Estrutura completa de todas as tabelas (nomes exatos de colunas, tipos de dados)
+- ✅ Políticas RLS ativas
+- ✅ Triggers configurados
+- ✅ Comandos SQL para consultar estrutura do banco
+
+**Tabelas principais do chatbot**:
+- `clientes_whatsapp` - Clientes WhatsApp (⚠️ colunas em português: `telefone`, `nome`)
+- `clients` - Configuração multi-tenant
+- `user_profiles` - Perfis de usuários (contém `client_id`)
+- `conversations` - Estado das conversas
+- `messages` - Histórico de mensagens
+- `usage_logs` - Tracking de uso de APIs
+- `pricing_config` - Configuração de preços personalizados
+- `n8n_chat_histories` - Histórico de chat (formato n8n)
+- `documents` - Base de conhecimento RAG (vector store)
+
+---
+
 ## 🚀 Instalação e Configuração
 
 ### 1. Pré-requisitos

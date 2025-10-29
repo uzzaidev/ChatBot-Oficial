@@ -18,7 +18,7 @@ import { handleHumanHandoff } from '@/nodes/handleHumanHandoff'
 import { saveChatMessage } from '@/nodes/saveChatMessage'
 import { createExecutionLogger } from '@/lib/logger'
 import { setWithExpiry } from '@/lib/redis'
-import { logOpenAIUsage, logGroqUsage } from '@/lib/usageTracking'
+import { logOpenAIUsage, logGroqUsage, logWhisperUsage } from '@/lib/usageTracking'
 
 export interface ChatbotFlowResult {
   success: boolean
@@ -97,9 +97,24 @@ export const processChatbotMessage = async (
       logger.logNodeSuccess('4a. Download Audio', { size: audioBuffer.length })
 
       console.log('[chatbotFlow] NODE 4b: Transcrevendo áudio...')
-      processedContent = await transcribeAudio(audioBuffer)
+      const transcriptionResult = await transcribeAudio(audioBuffer)
+      processedContent = transcriptionResult.text
       logger.logNodeSuccess('4b. Transcribe Audio', { transcription: processedContent.substring(0, 100) })
       console.log(`[chatbotFlow] 🎤 Áudio transcrito: ${processedContent}`)
+
+      // 📊 Registrar uso de Whisper
+      try {
+        await logWhisperUsage(
+          config.id,
+          undefined,
+          parsedMessage.phone,
+          transcriptionResult.durationSeconds || 0,
+          transcriptionResult.usage.total_tokens
+        )
+        console.log('[chatbotFlow] ✅ Whisper usage logged')
+      } catch (usageError) {
+        console.error('[chatbotFlow] ❌ Failed to log Whisper usage:', usageError)
+      }
 
     } else if (parsedMessage.type === 'image' && parsedMessage.metadata?.id) {
       console.log('[chatbotFlow] NODE 4a: Baixando imagem...')
@@ -107,13 +122,27 @@ export const processChatbotMessage = async (
       logger.logNodeSuccess('4a. Download Image', { size: imageBuffer.length })
 
       console.log('[chatbotFlow] NODE 4b: Analisando imagem com GPT-4o Vision...')
-      const imageDescription = await analyzeImage(imageBuffer, parsedMessage.metadata.mimeType || 'image/jpeg')
+      const visionResult = await analyzeImage(imageBuffer, parsedMessage.metadata.mimeType || 'image/jpeg')
 
       // Passar apenas a descrição da IA (a legenda será adicionada pelo normalizeMessage)
-      processedContent = imageDescription
+      processedContent = visionResult.content
 
       logger.logNodeSuccess('4b. Analyze Image', { description: processedContent.substring(0, 100) })
       console.log(`[chatbotFlow] 🖼️ Imagem analisada: ${processedContent}`)
+
+      // 📊 Registrar uso de GPT-4o Vision
+      try {
+        await logOpenAIUsage(
+          config.id,
+          undefined,
+          parsedMessage.phone,
+          visionResult.model,
+          visionResult.usage
+        )
+        console.log('[chatbotFlow] ✅ GPT-4o Vision usage logged')
+      } catch (usageError) {
+        console.error('[chatbotFlow] ❌ Failed to log Vision usage:', usageError)
+      }
 
     } else if (parsedMessage.type === 'document' && parsedMessage.metadata?.id) {
       console.log('[chatbotFlow] NODE 4a: Baixando documento...')
@@ -121,16 +150,32 @@ export const processChatbotMessage = async (
       logger.logNodeSuccess('4a. Download Document', { size: documentBuffer.length, filename: parsedMessage.metadata.filename })
 
       console.log('[chatbotFlow] NODE 4b: Analisando documento...')
-      const documentSummary = await analyzeDocument(
+      const documentResult = await analyzeDocument(
         documentBuffer,
         parsedMessage.metadata.mimeType,
         parsedMessage.metadata.filename
       )
 
-      processedContent = documentSummary
+      processedContent = documentResult.content
 
       logger.logNodeSuccess('4b. Analyze Document', { summary: processedContent.substring(0, 100) })
       console.log(`[chatbotFlow] 📄 Documento analisado: ${processedContent.substring(0, 200)}...`)
+
+      // 📊 Registrar uso de GPT-4o PDF (se houver usage data)
+      if (documentResult.usage && documentResult.model) {
+        try {
+          await logOpenAIUsage(
+            config.id,
+            undefined,
+            parsedMessage.phone,
+            documentResult.model,
+            documentResult.usage
+          )
+          console.log('[chatbotFlow] ✅ GPT-4o PDF usage logged')
+        } catch (usageError) {
+          console.error('[chatbotFlow] ❌ Failed to log PDF usage:', usageError)
+        }
+      }
 
     } else {
       console.log('[chatbotFlow] NODE 4: Mensagem de texto, pulando processamento de mídia')

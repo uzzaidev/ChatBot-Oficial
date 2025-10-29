@@ -72,12 +72,32 @@ WhatsApp → Webhook → chatbotFlow → 13 Nodes → WhatsApp Response
 
 ### Data Storage
 
+**⚠️ CRITICAL - Database Schema Reference**
+
+**ALWAYS check `docs/tables/tabelas.md` before working with database queries or migrations.**
+
+This file contains:
+- Complete table structures with exact column names and types
+- Active RLS policies
+- Triggers and functions
+- SQL commands to query database schema
+
+**Why this is critical**:
+- ⚠️ This database is shared with another application (poker system)
+- ⚠️ Column names use Portuguese (e.g., `telefone`, `nome` NOT `phone`, `name`)
+- ⚠️ Data types may differ from expectations (e.g., `telefone` is NUMERIC, not TEXT)
+- ⚠️ RLS policies must reference correct tables (`user_profiles`, NOT `auth.users`)
+
 **Supabase (PostgreSQL)**:
-- `Clientes WhatsApp` - Customer records (phone, name, status: "bot" | "waiting" | "human")
+- `clientes_whatsapp` - Customer records (⚠️ columns: `telefone` NUMERIC, `nome` TEXT, `status` TEXT)
 - `n8n_chat_histories` - Conversation memory (sessionId = phone number, 15 message window)
 - `documents` - Vector store for RAG (pgvector with OpenAI embeddings)
-- `clients` - Multi-tenant config table (Phase 3, not yet used)
-- `conversations`, `messages`, `usage_logs` - Dashboard tables (Phase 3, not yet used)
+- `clients` - Multi-tenant config table
+- `user_profiles` - User profiles (contains `client_id` for RLS policies)
+- `conversations` - Conversation state tracking
+- `messages` - Message history with metadata
+- `usage_logs` - API usage tracking (tokens, costs)
+- `pricing_config` - Custom pricing configurations
 
 **Redis**:
 - Message batching: `chat:${phone}` (list structure)
@@ -305,6 +325,46 @@ const config = await getClientConfig(clientId)
 ```
 
 **Not yet implemented**: Client selector, per-client webhook URLs, database-stored tokens
+
+## 📊 Database Schema Reference
+
+**⚠️ CRITICAL**: Before ANY database work, consult [`docs/tables/tabelas.md`](docs/tables/tabelas.md)
+
+Common mistakes to avoid:
+1. ❌ Assuming column names are in English (they're in Portuguese)
+2. ❌ Using `auth.users` in RLS policies (use `user_profiles` instead)
+3. ❌ Ignoring type casting (e.g., `telefone::TEXT` when comparing with TEXT columns)
+4. ❌ Forgetting this database is shared with another app (poker system)
+
+**Quick reference for chatbot tables**:
+```sql
+-- clientes_whatsapp (customer records)
+telefone NUMERIC       -- NOT TEXT, requires ::TEXT cast for comparisons
+nome TEXT              -- customer name in Portuguese
+status TEXT            -- "bot" | "waiting" | "human"
+client_id UUID         -- multi-tenant isolation
+
+-- user_profiles (for RLS policies)
+id UUID                -- auth.uid()
+client_id UUID         -- USE THIS in RLS policies, NOT auth.users
+email TEXT
+full_name TEXT
+
+-- usage_logs (API tracking)
+phone TEXT             -- note: TEXT here, but telefone is NUMERIC in clientes_whatsapp
+source TEXT            -- 'openai' | 'groq' | 'whisper' | 'meta'
+total_tokens INTEGER
+cost_usd NUMERIC
+
+-- pricing_config (custom pricing)
+client_id UUID         -- RLS: must match user_profiles.client_id
+provider TEXT          -- 'openai' | 'groq' | 'whisper'
+model TEXT
+prompt_price DECIMAL
+completion_price DECIMAL
+```
+
+---
 
 ## ⚠️ Critical Technical Decisions & Fixes
 

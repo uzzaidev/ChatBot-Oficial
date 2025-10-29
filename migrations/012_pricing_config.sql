@@ -34,7 +34,7 @@ CREATE POLICY "Users can view own client pricing config"
   FOR SELECT
   USING (
     client_id IN (
-      SELECT client_id FROM auth.users WHERE id = auth.uid()
+      SELECT client_id FROM user_profiles WHERE id = auth.uid()
     )
   );
 
@@ -44,7 +44,7 @@ CREATE POLICY "Users can insert own client pricing config"
   FOR INSERT
   WITH CHECK (
     client_id IN (
-      SELECT client_id FROM auth.users WHERE id = auth.uid()
+      SELECT client_id FROM user_profiles WHERE id = auth.uid()
     )
   );
 
@@ -54,7 +54,7 @@ CREATE POLICY "Users can update own client pricing config"
   FOR UPDATE
   USING (
     client_id IN (
-      SELECT client_id FROM auth.users WHERE id = auth.uid()
+      SELECT client_id FROM user_profiles WHERE id = auth.uid()
     )
   );
 
@@ -64,7 +64,7 @@ CREATE POLICY "Users can delete own client pricing config"
   FOR DELETE
   USING (
     client_id IN (
-      SELECT client_id FROM auth.users WHERE id = auth.uid()
+      SELECT client_id FROM user_profiles WHERE id = auth.uid()
     )
   );
 

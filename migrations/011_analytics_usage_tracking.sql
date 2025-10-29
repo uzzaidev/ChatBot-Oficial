@@ -117,17 +117,17 @@ BEGIN
   RETURN QUERY
   SELECT
     ul.phone,
-    COALESCE(c.name, 'Sem nome') as conversation_name,
+    COALESCE(cw.nome, 'Sem nome') as conversation_name,
     SUM(ul.total_tokens)::BIGINT as total_tokens,
     SUM(ul.cost_usd)::NUMERIC as total_cost,
     COUNT(*)::BIGINT as request_count,
     SUM(CASE WHEN ul.source = 'openai' THEN ul.total_tokens ELSE 0 END)::BIGINT as openai_tokens,
     SUM(CASE WHEN ul.source = 'groq' THEN ul.total_tokens ELSE 0 END)::BIGINT as groq_tokens
   FROM usage_logs ul
-  LEFT JOIN conversations c ON ul.conversation_id = c.id
+  LEFT JOIN clientes_whatsapp cw ON ul.phone = cw.telefone::TEXT AND cw.client_id = p_client_id
   WHERE ul.client_id = p_client_id
     AND ul.created_at >= NOW() - (p_days || ' days')::INTERVAL
-  GROUP BY ul.phone, c.name
+  GROUP BY ul.phone, cw.nome
   ORDER BY total_tokens DESC
   LIMIT p_limit;
 END;

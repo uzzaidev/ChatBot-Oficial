@@ -25,7 +25,12 @@ export const getOpenAIClient = (): OpenAI => {
   return openaiClient
 }
 
-export const transcribeAudio = async (audioBuffer: Buffer): Promise<string> => {
+export const transcribeAudio = async (audioBuffer: Buffer): Promise<{
+  text: string
+  usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number }
+  model: string
+  durationSeconds?: number
+}> => {
   try {
     const client = getOpenAIClient()
 
@@ -41,7 +46,31 @@ export const transcribeAudio = async (audioBuffer: Buffer): Promise<string> => {
       language: 'pt',
     })
 
-    return transcription.text
+    // Whisper cobra por minuto, não por token
+    // Estimativa: áudio OGG tem ~1KB por segundo
+    const estimatedDurationSeconds = Math.ceil(audioBuffer.length / 1024)
+
+    // Whisper API não retorna tokens, mas estimamos baseado na duração
+    // 1000 tokens por minuto de áudio (estimativa rough)
+    const estimatedTokens = Math.ceil((estimatedDurationSeconds / 60) * 1000)
+
+    console.log('[Whisper] Transcription completed:', {
+      audioSizeKB: Math.ceil(audioBuffer.length / 1024),
+      estimatedDuration: estimatedDurationSeconds,
+      estimatedTokens,
+      textLength: transcription.text.length
+    })
+
+    return {
+      text: transcription.text,
+      usage: {
+        prompt_tokens: estimatedTokens,
+        completion_tokens: 0,
+        total_tokens: estimatedTokens,
+      },
+      model: 'whisper-1',
+      durationSeconds: estimatedDurationSeconds
+    }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     throw new Error(`Failed to transcribe audio with Whisper: ${errorMessage}`)
@@ -86,7 +115,11 @@ export const analyzeImage = async (imageUrl: string, prompt: string): Promise<st
   }
 }
 
-export const analyzeImageFromBuffer = async (imageBuffer: Buffer, prompt: string, mimeType: string = 'image/jpeg'): Promise<string> => {
+export const analyzeImageFromBuffer = async (imageBuffer: Buffer, prompt: string, mimeType: string = 'image/jpeg'): Promise<{
+  content: string
+  usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number }
+  model: string
+}> => {
   try {
     const client = getOpenAIClient()
 
@@ -121,14 +154,33 @@ export const analyzeImageFromBuffer = async (imageBuffer: Buffer, prompt: string
       throw new Error('No content returned from GPT-4o Vision')
     }
 
-    return content
+    // Capturar usage data
+    const usage = response.usage
+      ? {
+          prompt_tokens: response.usage.prompt_tokens || 0,
+          completion_tokens: response.usage.completion_tokens || 0,
+          total_tokens: response.usage.total_tokens || 0,
+        }
+      : { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }
+
+    console.log('[GPT-4o Vision] Usage data:', usage)
+
+    return {
+      content,
+      usage,
+      model: 'gpt-4o'
+    }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     throw new Error(`Failed to analyze image with GPT-4o Vision: ${errorMessage}`)
   }
 }
 
-export const generateEmbedding = async (text: string): Promise<number[]> => {
+export const generateEmbedding = async (text: string): Promise<{
+  embedding: number[]
+  usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number }
+  model: string
+}> => {
   try {
     const client = getOpenAIClient()
 
@@ -142,7 +194,22 @@ export const generateEmbedding = async (text: string): Promise<number[]> => {
       throw new Error('No embedding returned from OpenAI')
     }
 
-    return embedding
+    // Capturar usage data
+    const usage = response.usage
+      ? {
+          prompt_tokens: response.usage.prompt_tokens || 0,
+          completion_tokens: 0, // Embeddings não têm completion tokens
+          total_tokens: response.usage.total_tokens || 0,
+        }
+      : { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }
+
+    console.log('[OpenAI Embeddings] Usage data:', usage)
+
+    return {
+      embedding,
+      usage,
+      model: 'text-embedding-3-small'
+    }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     throw new Error(`Failed to generate embedding: ${errorMessage}`)
@@ -162,7 +229,11 @@ export const extractTextFromPDF = async (pdfBuffer: Buffer): Promise<string> => 
   }
 }
 
-export const summarizePDFContent = async (pdfText: string, filename?: string): Promise<string> => {
+export const summarizePDFContent = async (pdfText: string, filename?: string): Promise<{
+  content: string
+  usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number }
+  model: string
+}> => {
   try {
     const client = getOpenAIClient()
 
@@ -191,7 +262,22 @@ ${pdfText.substring(0, 12000)}`
       throw new Error('No content returned from GPT-4o')
     }
 
-    return content
+    // Capturar usage data
+    const usage = response.usage
+      ? {
+          prompt_tokens: response.usage.prompt_tokens || 0,
+          completion_tokens: response.usage.completion_tokens || 0,
+          total_tokens: response.usage.total_tokens || 0,
+        }
+      : { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }
+
+    console.log('[GPT-4o PDF] Usage data:', usage)
+
+    return {
+      content,
+      usage,
+      model: 'gpt-4o'
+    }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     throw new Error(`Failed to summarize PDF content: ${errorMessage}`)

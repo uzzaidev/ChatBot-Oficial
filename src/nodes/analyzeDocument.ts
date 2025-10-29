@@ -4,20 +4,36 @@ export const analyzeDocument = async (
   documentBuffer: Buffer,
   mimeType: string,
   filename?: string
-): Promise<string> => {
+): Promise<{
+  content: string
+  usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number }
+  model?: string
+}> => {
   try {
     if (mimeType === 'application/pdf') {
       const pdfText = await extractTextFromPDF(documentBuffer)
 
       if (!pdfText || pdfText.trim().length === 0) {
-        return `Recebi um documento PDF${filename ? ` chamado "${filename}"` : ''}, mas não consegui extrair texto dele. O arquivo pode estar protegido ou conter apenas imagens.`
+        return {
+          content: `Recebi um documento PDF${filename ? ` chamado "${filename}"` : ''}, mas não consegui extrair texto dele. O arquivo pode estar protegido ou conter apenas imagens.`,
+          usage: undefined,
+          model: undefined
+        }
       }
 
-      const summary = await summarizePDFContent(pdfText, filename)
-      return `📄 Documento recebido${filename ? ` (${filename})` : ''}:\n\n${summary}`
+      const result = await summarizePDFContent(pdfText, filename)
+      return {
+        content: `📄 Documento recebido${filename ? ` (${filename})` : ''}:\n\n${result.content}`,
+        usage: result.usage,
+        model: result.model
+      }
     }
 
-    return `Recebi um documento${filename ? ` chamado "${filename}"` : ''} do tipo ${mimeType}. No momento, apenas documentos PDF são suportados para análise automática.`
+    return {
+      content: `Recebi um documento${filename ? ` chamado "${filename}"` : ''} do tipo ${mimeType}. No momento, apenas documentos PDF são suportados para análise automática.`,
+      usage: undefined,
+      model: undefined
+    }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     throw new Error(`Failed to analyze document: ${errorMessage}`)
