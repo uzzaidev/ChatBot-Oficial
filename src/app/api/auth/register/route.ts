@@ -220,34 +220,31 @@ export async function POST(request: NextRequest) {
     console.log('[register] Usuário criado:', authData.user.id)
 
     // ========================================
-    // 5. Verificar se user_profile foi criado pelo trigger
+    // 5. Criar user_profile SEMPRE manualmente
     // ========================================
-    // Esperar 1 segundo para trigger executar
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    const { data: profile, error: profileError } = await (supabase as any)
+    // Não depender de trigger que pode falhar
+    console.log('[register] Criando user_profile...')
+    
+    const { error: manualProfileError } = await (supabase as any)
       .from('user_profiles')
-      .select('id, client_id')
-      .eq('id', authData.user.id)
-      .single()
+      .insert({
+        id: authData.user.id,
+        client_id: clientId,
+        email,
+        full_name: fullName,
+      })
 
-    if (profileError || !profile) {
-      console.error('[register] User profile não criado pelo trigger:', profileError)
-      console.warn('[register] Criando user_profile manualmente')
-
-      // Criar manualmente se trigger falhou
-      const { error: manualProfileError } = await (supabase as any)
-        .from('user_profiles')
-        .insert({
-          id: authData.user.id,
-          client_id: clientId,
-          email,
-          full_name: fullName,
-        })
-
-      if (manualProfileError) {
-        console.error('[register] Erro ao criar user_profile manual:', manualProfileError)
-      }
+    if (manualProfileError) {
+      console.error('[register] Erro ao criar user_profile:', manualProfileError)
+      
+      // Rollback: deletar usuário e client
+      await supabase.auth.admin.deleteUser(authData.user.id)
+      await (supabase as any).from('clients').delete().eq('id', clientId)
+      
+      return NextResponse.json(
+        { error: 'Erro ao criar perfil de usuário' },
+        { status: 500 }
+      )
     }
 
     console.log('[register] ✅ Registro completo:', {
