@@ -18,6 +18,7 @@ import { handleHumanHandoff } from '@/nodes/handleHumanHandoff'
 import { saveChatMessage } from '@/nodes/saveChatMessage'
 import { createExecutionLogger } from '@/lib/logger'
 import { setWithExpiry } from '@/lib/redis'
+import { logOpenAIUsage, logGroqUsage } from '@/lib/usageTracking'
 
 export interface ChatbotFlowResult {
   success: boolean
@@ -228,11 +229,46 @@ export const processChatbotMessage = async (
       customerName: parsedMessage.name,
       config, // 🔐 Passa config com systemPrompt e groqApiKey
     })
-    logger.logNodeSuccess('11. Generate AI Response', { 
-      contentLength: aiResponse.content?.length || 0, 
+    logger.logNodeSuccess('11. Generate AI Response', {
+      contentLength: aiResponse.content?.length || 0,
       hasToolCalls: !!aiResponse.toolCalls,
       toolCount: aiResponse.toolCalls?.length || 0
     })
+
+    // 📊 Log usage to database for analytics
+    if (aiResponse.usage && aiResponse.provider) {
+      console.log('[chatbotFlow] Logging API usage:', {
+        provider: aiResponse.provider,
+        model: aiResponse.model,
+        tokens: aiResponse.usage.total_tokens,
+      })
+
+      try {
+        if (aiResponse.provider === 'openai') {
+          await logOpenAIUsage(
+            config.id, // client_id
+            undefined, // conversation_id (não temos ainda)
+            parsedMessage.phone,
+            aiResponse.model || 'gpt-4o',
+            aiResponse.usage
+          )
+        } else if (aiResponse.provider === 'groq') {
+          await logGroqUsage(
+            config.id, // client_id
+            undefined, // conversation_id (não temos ainda)
+            parsedMessage.phone,
+            aiResponse.model || 'llama-3.3-70b-versatile',
+            aiResponse.usage
+          )
+        }
+        console.log('[chatbotFlow] ✅ Usage logged successfully')
+      } catch (usageError) {
+        console.error('[chatbotFlow] ❌ Failed to log usage:', usageError)
+        // Não quebrar o fluxo por erro de logging
+      }
+    } else {
+      console.warn('[chatbotFlow] ⚠️ No usage data to log')
+    }
 
     if (aiResponse.toolCalls && aiResponse.toolCalls.length > 0) {
       const hasHumanHandoff = aiResponse.toolCalls.some(

@@ -271,6 +271,13 @@ export interface AIResponse {
   content: string
   toolCalls?: ToolCall[]
   finished: boolean
+  usage?: {
+    prompt_tokens: number
+    completion_tokens: number
+    total_tokens: number
+  }
+  model?: string
+  provider?: 'openai' | 'groq'
 }
 
 export interface ToolCall {

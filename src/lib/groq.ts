@@ -104,10 +104,24 @@ export const generateChatCompletion = async (
     const toolCalls = extractToolCallsFromResponse(choice)
     const finished = choice.finish_reason === 'stop' || choice.finish_reason === 'tool_calls'
 
+    // Capturar dados de usage
+    const usage = completion.usage
+      ? {
+          prompt_tokens: completion.usage.prompt_tokens || 0,
+          completion_tokens: completion.usage.completion_tokens || 0,
+          total_tokens: completion.usage.total_tokens || 0,
+        }
+      : undefined
+
+    console.log('[Groq] Usage data:', usage)
+
     return {
       content,
       toolCalls,
       finished,
+      usage,
+      model: completionParams.model,
+      provider: 'groq',
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'

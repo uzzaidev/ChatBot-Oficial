@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase-server'
+import { createServerClient, getClientIdFromSession } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,37 +9,23 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerClient()
+    // Get client_id from authenticated session
+    const clientId = await getClientIdFromSession()
 
-    // Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
-    }
-
-    // Get user's client_id
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('client_id')
-      .eq('id', user.id)
-      .single()
-
-    if (userError || !userData?.client_id) {
+    if (!clientId) {
       return NextResponse.json(
-        { error: 'Client ID não encontrado' },
-        { status: 404 }
+        { error: 'Não autenticado ou client_id não encontrado' },
+        { status: 401 }
       )
     }
+
+    const supabase = createServerClient()
 
     // Fetch pricing configurations
     const { data: pricingConfigs, error: pricingError } = await supabase
       .from('pricing_config')
       .select('*')
-      .eq('client_id', userData.client_id)
+      .eq('client_id', clientId)
       .order('provider', { ascending: true })
       .order('model', { ascending: true })
 
@@ -77,31 +63,17 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerClient()
+    // Get client_id from authenticated session
+    const clientId = await getClientIdFromSession()
 
-    // Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
-    }
-
-    // Get user's client_id
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('client_id')
-      .eq('id', user.id)
-      .single()
-
-    if (userError || !userData?.client_id) {
+    if (!clientId) {
       return NextResponse.json(
-        { error: 'Client ID não encontrado' },
-        { status: 404 }
+        { error: 'Não autenticado ou client_id não encontrado' },
+        { status: 401 }
       )
     }
+
+    const supabase = createServerClient()
 
     // Parse request body
     const body = await request.json()
@@ -129,7 +101,7 @@ export async function POST(request: NextRequest) {
       .from('pricing_config')
       .upsert(
         {
-          client_id: userData.client_id,
+          client_id: clientId,
           provider,
           model,
           prompt_price,
@@ -183,31 +155,17 @@ export async function POST(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = createServerClient()
+    // Get client_id from authenticated session
+    const clientId = await getClientIdFromSession()
 
-    // Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
-    }
-
-    // Get user's client_id
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('client_id')
-      .eq('id', user.id)
-      .single()
-
-    if (userError || !userData?.client_id) {
+    if (!clientId) {
       return NextResponse.json(
-        { error: 'Client ID não encontrado' },
-        { status: 404 }
+        { error: 'Não autenticado ou client_id não encontrado' },
+        { status: 401 }
       )
     }
+
+    const supabase = createServerClient()
 
     // Parse request body
     const body = await request.json()
@@ -225,7 +183,7 @@ export async function DELETE(request: NextRequest) {
     const { error: deleteError } = await supabase
       .from('pricing_config')
       .delete()
-      .eq('client_id', userData.client_id)
+      .eq('client_id', clientId)
       .eq('provider', provider)
       .eq('model', model)
 
