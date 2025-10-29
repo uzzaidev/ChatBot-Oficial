@@ -6,7 +6,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Eye, EyeOff, Save, Lock, Copy, Check } from 'lucide-react'
+import { Eye, EyeOff, Save, Lock, Copy, Check, Bot } from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 /**
  * Settings Page - Configurações do Usuário
@@ -62,6 +70,19 @@ export default function SettingsPage() {
   // Estado de cópia
   const [copied, setCopied] = useState<string | null>(null)
 
+  // Estado do Agent Config
+  const [agentConfig, setAgentConfig] = useState({
+    system_prompt: '',
+    formatter_prompt: '',
+    openai_model: 'gpt-4o',
+    groq_model: 'llama-3.3-70b-versatile',
+  })
+  const [editingAgent, setEditingAgent] = useState(false)
+  const [loadingAgent, setLoadingAgent] = useState(false)
+  const [showAgentRevalidationModal, setShowAgentRevalidationModal] = useState(false)
+  const [agentRevalidationPassword, setAgentRevalidationPassword] = useState('')
+  const [agentRevalidating, setAgentRevalidating] = useState(false)
+
   // Carregar perfil do usuário
   useEffect(() => {
     const fetchProfile = async () => {
@@ -100,6 +121,29 @@ export default function SettingsPage() {
     }
 
     fetchSecrets()
+  }, [])
+
+  // Carregar configurações do Agent
+  useEffect(() => {
+    const fetchAgentConfig = async () => {
+      try {
+        const response = await fetch('/api/client/config')
+        const data = await response.json()
+
+        if (response.ok && data.config) {
+          setAgentConfig({
+            system_prompt: data.config.system_prompt || '',
+            formatter_prompt: data.config.formatter_prompt || '',
+            openai_model: data.config.openai_model || 'gpt-4o',
+            groq_model: data.config.groq_model || 'llama-3.3-70b-versatile',
+          })
+        }
+      } catch (error) {
+        console.error('[settings] Erro ao carregar agent config:', error)
+      }
+    }
+
+    fetchAgentConfig()
   }, [])
 
   // Atualizar nome do usuário
@@ -238,6 +282,62 @@ export default function SettingsPage() {
     setShowPasswords((prev) => ({ ...prev, [key]: !prev[key] }))
   }
 
+  // Revalidar senha antes de editar configurações do Agent
+  const handleRevalidateAgentPassword = async () => {
+    setAgentRevalidating(true)
+    setNotification(null)
+
+    try {
+      const response = await fetch('/api/user/revalidate-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: agentRevalidationPassword }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.valid) {
+        setShowAgentRevalidationModal(false)
+        setEditingAgent(true)
+        setAgentRevalidationPassword('')
+        setNotification({ type: 'success', message: 'Senha validada! Você pode editar as configurações do Agent.' })
+      } else {
+        setNotification({ type: 'error', message: 'Senha incorreta' })
+      }
+    } catch (error) {
+      setNotification({ type: 'error', message: 'Erro ao validar senha' })
+    } finally {
+      setAgentRevalidating(false)
+    }
+  }
+
+  // Salvar configurações do Agent
+  const handleSaveAgentConfig = async () => {
+    setLoadingAgent(true)
+    setNotification(null)
+
+    try {
+      const response = await fetch('/api/client/config', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(agentConfig),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setNotification({ type: 'success', message: 'Configurações do Agent atualizadas com sucesso!' })
+        setEditingAgent(false)
+      } else {
+        setNotification({ type: 'error', message: data.error || 'Erro ao atualizar configurações' })
+      }
+    } catch (error) {
+      setNotification({ type: 'error', message: 'Erro ao atualizar configurações' })
+    } finally {
+      setLoadingAgent(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -370,7 +470,142 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Seção 3: Variáveis de Ambiente */}
+        {/* Seção 3: Configurações do Agent */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Bot className="w-5 h-5" />
+                <div>
+                  <CardTitle>Configurações do Agent</CardTitle>
+                  <CardDescription>
+                    Configure os prompts e modelos de IA do seu assistente
+                  </CardDescription>
+                </div>
+              </div>
+              {!editingAgent && (
+                <Button
+                  onClick={() => setShowAgentRevalidationModal(true)}
+                  variant="outline"
+                  className="gap-2"
+                >
+                  <Lock className="w-4 h-4" />
+                  Editar
+                </Button>
+              )}
+              {editingAgent && (
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleSaveAgentConfig}
+                    disabled={loadingAgent}
+                    className="gap-2"
+                  >
+                    <Save className="w-4 h-4" />
+                    Salvar Tudo
+                  </Button>
+                  <Button
+                    onClick={() => setEditingAgent(false)}
+                    variant="outline"
+                    disabled={loadingAgent}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* System Prompt */}
+            <div>
+              <Label htmlFor="system_prompt">System Prompt</Label>
+              <Textarea
+                id="system_prompt"
+                value={agentConfig.system_prompt}
+                onChange={(e) =>
+                  setAgentConfig({ ...agentConfig, system_prompt: e.target.value })
+                }
+                disabled={!editingAgent}
+                placeholder="Você é um assistente virtual prestativo..."
+                rows={6}
+                className="mt-2 font-mono text-sm"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Prompt principal que define o comportamento do assistente
+              </p>
+            </div>
+
+            {/* Formatter Prompt */}
+            <div>
+              <Label htmlFor="formatter_prompt">Formatter Prompt (Opcional)</Label>
+              <Textarea
+                id="formatter_prompt"
+                value={agentConfig.formatter_prompt || ''}
+                onChange={(e) =>
+                  setAgentConfig({ ...agentConfig, formatter_prompt: e.target.value })
+                }
+                disabled={!editingAgent}
+                placeholder="Formate a resposta de forma clara e objetiva..."
+                rows={4}
+                className="mt-2 font-mono text-sm"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Prompt usado para formatar as respostas do assistente
+              </p>
+            </div>
+
+            {/* OpenAI Model */}
+            <div>
+              <Label htmlFor="openai_model">Modelo OpenAI</Label>
+              <Select
+                value={agentConfig.openai_model}
+                onValueChange={(value) =>
+                  setAgentConfig({ ...agentConfig, openai_model: value })
+                }
+                disabled={!editingAgent}
+              >
+                <SelectTrigger className="mt-2">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="gpt-4o">GPT-4o (Recomendado)</SelectItem>
+                  <SelectItem value="gpt-4o-mini">GPT-4o Mini (Mais rápido)</SelectItem>
+                  <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
+                  <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo (Econômico)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500 mt-1">
+                Modelo usado para processamento de imagens e tarefas complexas
+              </p>
+            </div>
+
+            {/* Groq Model */}
+            <div>
+              <Label htmlFor="groq_model">Modelo Groq</Label>
+              <Select
+                value={agentConfig.groq_model}
+                onValueChange={(value) =>
+                  setAgentConfig({ ...agentConfig, groq_model: value })
+                }
+                disabled={!editingAgent}
+              >
+                <SelectTrigger className="mt-2">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="llama-3.3-70b-versatile">Llama 3.3 70B (Recomendado)</SelectItem>
+                  <SelectItem value="llama-3.1-70b-versatile">Llama 3.1 70B</SelectItem>
+                  <SelectItem value="llama-3.1-8b-instant">Llama 3.1 8B (Mais rápido)</SelectItem>
+                  <SelectItem value="mixtral-8x7b-32768">Mixtral 8x7B</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500 mt-1">
+                Modelo usado para respostas de texto rápidas
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Seção 4: Variáveis de Ambiente */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -651,6 +886,54 @@ export default function SettingsPage() {
                     setRevalidationPassword('')
                   }}
                   disabled={revalidating}
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Modal de Revalidação de Senha - Agent Config */}
+      {showAgentRevalidationModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Confirme sua Senha</CardTitle>
+              <CardDescription>
+                Por segurança, confirme sua senha antes de editar as configurações do Agent
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="agent_revalidation_password">Senha</Label>
+                <Input
+                  id="agent_revalidation_password"
+                  type="password"
+                  value={agentRevalidationPassword}
+                  onChange={(e) => setAgentRevalidationPassword(e.target.value)}
+                  disabled={agentRevalidating}
+                  onKeyDown={(e) => e.key === 'Enter' && handleRevalidateAgentPassword()}
+                  className="mt-2"
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleRevalidateAgentPassword}
+                  disabled={agentRevalidating || !agentRevalidationPassword}
+                  className="flex-1"
+                >
+                  {agentRevalidating ? 'Validando...' : 'Confirmar'}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowAgentRevalidationModal(false)
+                    setAgentRevalidationPassword('')
+                  }}
+                  disabled={agentRevalidating}
                 >
                   Cancelar
                 </Button>
