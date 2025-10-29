@@ -151,16 +151,36 @@ export const getClientConfig = async (clientId: string): Promise<ClientConfig | 
       groq_api_key_secret_id: client.groq_api_key_secret_id,
     })
 
-    // 3. Fallback para env vars globais se cliente não tiver keys próprias
-    const finalOpenaiKey = secrets.openaiApiKey || process.env.OPENAI_API_KEY!
-    const finalGroqKey = secrets.groqApiKey || process.env.GROQ_API_KEY!
+    // 3. Validar que secrets obrigatórios existem no Vault (SEM fallback para .env)
+    const finalOpenaiKey = secrets.openaiApiKey
+    const finalGroqKey = secrets.groqApiKey
 
     if (!finalOpenaiKey) {
-      console.warn(`[getClientConfig] No OpenAI key for client ${clientId} (neither Vault nor env)`)
+      throw new Error(
+        `[getClientConfig] No OpenAI key configured for client ${clientId}. ` +
+        `Please configure in Settings: /dashboard/settings`
+      )
     }
 
     if (!finalGroqKey) {
-      console.warn(`[getClientConfig] No Groq key for client ${clientId} (neither Vault nor env)`)
+      throw new Error(
+        `[getClientConfig] No Groq key configured for client ${clientId}. ` +
+        `Please configure in Settings: /dashboard/settings`
+      )
+    }
+
+    if (!secrets.metaAccessToken) {
+      throw new Error(
+        `[getClientConfig] No Meta Access Token configured for client ${clientId}. ` +
+        `Please configure in Settings: /dashboard/settings`
+      )
+    }
+
+    if (!client.meta_phone_number_id || client.meta_phone_number_id === 'CONFIGURE_IN_SETTINGS') {
+      throw new Error(
+        `[getClientConfig] No Meta Phone Number ID configured for client ${clientId}. ` +
+        `Please configure in Settings: /dashboard/settings`
+      )
     }
 
     // 4. Retornar config completo (transformar snake_case do DB para camelCase)
@@ -236,12 +256,16 @@ export const validateClientConfig = (config: ClientConfig): boolean => {
 /**
  * 🔄 Busca config do cliente com fallback para .env (compatibilidade retroativa)
  *
+ * ⚠️ DEPRECATED: Esta função será removida em breve.
+ * Não use .env fallback - configure todas as credenciais no Vault via /dashboard/settings
+ *
  * Esta função permite transição gradual:
- * - Se clientId fornecido: usa multi-tenant
- * - Se clientId null: usa .env (sistema antigo)
+ * - Se clientId fornecido: usa multi-tenant (recomendado)
+ * - Se clientId null: lança erro (não mais suportado)
  *
  * @param clientId - UUID do cliente ou null
- * @returns Config do cliente ou config legada do .env
+ * @returns Config do cliente ou lança erro se null
+ * @deprecated Use getClientConfig(clientId) diretamente e configure credenciais no Vault
  */
 export const getClientConfigWithFallback = async (
   clientId?: string | null
@@ -251,40 +275,16 @@ export const getClientConfigWithFallback = async (
     return await getClientConfig(clientId)
   }
 
-  // Fallback: modo legacy (lê .env.local)
-  console.warn('[getClientConfigWithFallback] Using legacy .env config (no clientId provided)')
+  // DEPRECATED: .env fallback não é mais suportado
+  console.error(
+    '❌ [getClientConfigWithFallback] DEPRECATED: .env fallback não é mais suportado. ' +
+    'Configure o webhook com client_id: {WEBHOOK_BASE_URL}/api/webhook/{client_id}'
+  )
 
-  try {
-    const metaConfig = getMetaConfig()
-
-    return {
-      id: 'legacy-client',
-      name: 'Legacy Client',
-      slug: 'legacy',
-      status: 'active',
-      apiKeys: {
-        metaAccessToken: metaConfig.accessToken,
-        metaVerifyToken: metaConfig.verifyToken,
-        metaPhoneNumberId: metaConfig.phoneNumberId,
-        openaiApiKey: process.env.OPENAI_API_KEY!,
-        groqApiKey: process.env.GROQ_API_KEY!,
-      },
-      prompts: {
-        systemPrompt: 'Legacy system prompt',
-      },
-      settings: {
-        batchingDelaySeconds: 10,
-        maxTokens: 2000,
-        temperature: 0.7,
-        enableRAG: true,
-        enableTools: true,
-        enableHumanHandoff: true,
-        messageSplitEnabled: true,
-        maxChatHistory: 15,
-      },
-    }
-  } catch (error) {
-    console.error('[getClientConfigWithFallback] Failed to load legacy config:', error)
-    return null
-  }
+  throw new Error(
+    'Legacy .env config is no longer supported. ' +
+    'Please update your webhook URL to: ' +
+    `${process.env.WEBHOOK_BASE_URL}/api/webhook/{client_id} ` +
+    'and configure all credentials in /dashboard/settings'
+  )
 }

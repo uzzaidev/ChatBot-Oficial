@@ -5,31 +5,45 @@ import { getMetaVerifyToken, getWebhookUrl, getClientConfigWithFallback } from '
 
 /**
  * GET - usado pela Meta para verificar e ativar o webhook (hub.challenge)
+ *
+ * ⚠️ DEPRECATED: Este webhook legacy não é mais suportado
+ * Use: /api/webhook/{client_id}
  */
 export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url);
     const mode = url.searchParams.get("hub.mode");
-    const token = url.searchParams.get("hub.verify_token");
     const challenge = url.searchParams.get("hub.challenge");
 
-    const VERIFY_TOKEN = getMetaVerifyToken()
+    console.error('❌ [WEBHOOK GET] DEPRECATED: Este endpoint não é mais suportado')
+    console.error('📋 [WEBHOOK GET] AÇÃO NECESSÁRIA: Migre para /api/webhook/{client_id}')
+    console.error(`📋 [WEBHOOK GET] Acesse ${getWebhookBaseUrl()}/dashboard/settings para obter sua webhook URL`)
 
-    console.log(`[WEBHOOK GET] Verificação da Meta`)
-    console.log(`[WEBHOOK GET] Mode: ${mode}`)
-    console.log(`[WEBHOOK GET] Token match: ${token === VERIFY_TOKEN}`)
-    console.log(`[WEBHOOK GET] Webhook URL configurada: ${getWebhookUrl()}`)
-
-    // Verifica se o token e o modo estão corretos
-    if (mode === "subscribe" && token === VERIFY_TOKEN) {
-      console.log("✅ Webhook verificado com sucesso pela Meta!")
-      return new NextResponse(challenge, { status: 200 })
-    } else {
-      console.warn("❌ Falha na verificação do webhook")
-      console.warn(`Token esperado: ${VERIFY_TOKEN.substring(0, 10)}...`)
-      console.warn(`Token recebido: ${token?.substring(0, 10)}...`)
-      return new NextResponse("Erro de verificação", { status: 403 })
-    }
+    // Retornar erro em formato JSON para facilitar debug
+    return new NextResponse(
+      JSON.stringify({
+        error: 'DEPRECATED_ENDPOINT',
+        message: 'This webhook endpoint is deprecated and no longer supported.',
+        action: 'Please update your Meta webhook URL to include your client_id',
+        new_format: `${getWebhookBaseUrl()}/api/webhook/{client_id}`,
+        instructions: [
+          '1. Login to dashboard: ' + getWebhookBaseUrl() + '/dashboard',
+          '2. Go to Settings → Environment Variables',
+          '3. Copy the complete Webhook URL with your client_id',
+          '4. Update in Meta Dashboard: https://developers.facebook.com/apps/',
+        ],
+        received_params: {
+          mode,
+          has_challenge: !!challenge,
+        },
+      }),
+      {
+        status: 410, // 410 Gone - Resource permanently removed
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    )
   } catch (err) {
     console.error("Erro ao processar GET do webhook:", err)
     return new NextResponse("Erro interno", { status: 500 })
@@ -99,46 +113,43 @@ export async function POST(req: NextRequest) {
 
     console.log('[WEBHOOK] ✅ Extração concluída, agora vai processar chatbot flow...')
 
-    // 🔐 FASE 2.5: Buscar config do cliente (do Vault ou fallback para .env)
-    // 
-    // NOTA IMPORTANTE: Este webhook (/api/webhook) mantém backward compatibility
-    // usando DEFAULT_CLIENT_ID do .env para clientes que configuraram o webhook
-    // antes da implementação multi-tenant.
+    // ⚠️ DEPRECATED: Este webhook legacy (/api/webhook) não é mais suportado
     //
-    // Para novos clientes, usar: /api/webhook/[clientId]
-    // Este endpoint dinâmico extrai o clientId da URL e não depende de .env
+    // MIGRAÇÃO OBRIGATÓRIA: Configure o webhook com client_id na URL
+    // Novo formato: {WEBHOOK_BASE_URL}/api/webhook/{client_id}
     //
-    // Ver: src/app/api/webhook/[clientId]/route.ts
-    console.log('[WEBHOOK] 🔐 Buscando config do cliente...')
-    const clientId = process.env.DEFAULT_CLIENT_ID // Usa cliente default (backward compatibility)
-    const config = await getClientConfigWithFallback(clientId)
+    // Onde encontrar seu client_id:
+    // 1. Faça login no dashboard: https://chat.luisfboff.com/dashboard
+    // 2. Vá em Configurações → Variáveis de Ambiente
+    // 3. Copie a Webhook URL completa com seu client_id
+    // 4. Configure no Meta Dashboard: https://developers.facebook.com/apps/
+    //
+    // Ver endpoint novo: src/app/api/webhook/[clientId]/route.ts
+    console.error('❌ [WEBHOOK] DEPRECATED: Este endpoint não usa mais .env fallback')
+    console.error('📋 [WEBHOOK] AÇÃO NECESSÁRIA: Migre para /api/webhook/{client_id}')
+    console.error(`📋 [WEBHOOK] Acesse ${getWebhookBaseUrl()}/dashboard/settings para obter sua webhook URL`)
 
-    if (!config) {
-      console.error('[WEBHOOK] ❌ Failed to load client config!')
-      return new NextResponse("Configuration error", { status: 500 })
-    }
-
-    console.log(`[WEBHOOK] ✅ Config carregado: ${config.name} (${config.slug})`)
-    console.log('[WEBHOOK] ⚡⚡⚡ CHAMANDO processChatbotMessage AGORA! ⚡⚡⚡')
-
-    // MUDANÇA CRÍTICA: Aguardar processamento completar
-    // Razão: Em serverless, processo pode terminar antes de NODE 3 completar
-    // Isso causava queries "órfãs" que nunca retornavam
-    try {
-      const result = await processChatbotMessage(body, config) // 🔐 Passa config
-      console.log('[WEBHOOK] ✅ Processamento concluído com sucesso!')
-      console.log('[WEBHOOK] Resultado:', JSON.stringify(result, null, 2))
-    } catch (error) {
-      console.error('[WEBHOOK] ❌❌❌ ERRO NO PROCESSAMENTO ❌❌❌')
-      console.error('[WEBHOOK] Error name:', error?.name)
-      console.error('[WEBHOOK] Error message:', error?.message)
-      console.error('[WEBHOOK] Error stack:', error?.stack)
-      console.error('[WEBHOOK] Full error:', error)
-      // Continua e retorna 200 mesmo com erro (Meta requer isso)
-    }
-
-    // Confirma o recebimento (após processamento completar)
-    return new NextResponse("EVENT_RECEIVED", { status: 200 });
+    return new NextResponse(
+      JSON.stringify({
+        error: 'DEPRECATED_ENDPOINT',
+        message: 'This webhook endpoint is deprecated and no longer supported.',
+        action: 'Please update your Meta webhook URL to include your client_id',
+        new_format: `${getWebhookBaseUrl()}/api/webhook/{client_id}`,
+        instructions: [
+          '1. Login to dashboard: ' + getWebhookBaseUrl() + '/dashboard',
+          '2. Go to Settings → Environment Variables',
+          '3. Copy the complete Webhook URL with your client_id',
+          '4. Update in Meta Dashboard: https://developers.facebook.com/apps/',
+        ],
+        documentation: 'All credentials must now be configured in /dashboard/settings (no .env fallback)',
+      }),
+      {
+        status: 410, // 410 Gone - Resource permanently removed
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
   } catch (err) {
     console.error("Erro ao processar POST do webhook:", err);
     return new NextResponse("Erro interno", { status: 500 });

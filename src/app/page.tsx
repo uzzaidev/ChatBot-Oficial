@@ -1,6 +1,9 @@
 import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/supabase-server'
 
+// Marcar como rota dinâmica (não pode ser estática porque usa cookies)
+export const dynamic = 'force-dynamic'
+
 /**
  * Home Page - Server Component
  *
@@ -9,13 +12,20 @@ import { getCurrentUser } from '@/lib/supabase-server'
  * Lógica:
  * - Se usuário autenticado → /dashboard
  * - Se não autenticado → /login
+ * - Se erro → /login
  */
 export default async function HomePage() {
-  const user = await getCurrentUser()
+  try {
+    const user = await getCurrentUser()
 
-  if (user) {
-    redirect('/dashboard')
-  } else {
+    if (user) {
+      redirect('/dashboard')
+    } else {
+      redirect('/login')
+    }
+  } catch (error) {
+    // Se houver erro ao buscar usuário, redirecionar para login
+    console.error('[HomePage] Erro ao verificar autenticação:', error)
     redirect('/login')
   }
 }

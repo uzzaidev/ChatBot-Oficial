@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { signInWithEmail } from '@/lib/supabase-browser'
 
 /**
@@ -160,7 +161,15 @@ export default function LoginPage() {
 
         {/* Footer */}
         <div className="mt-6 text-center text-sm text-gray-600">
-          <p>Não tem acesso? Contate o administrador.</p>
+          <p>
+            Não tem uma conta?{' '}
+            <Link
+              href="/register"
+              className="text-blue-600 hover:text-blue-700 font-medium hover:underline"
+            >
+              Crie uma conta
+            </Link>
+          </p>
         </div>
       </div>
     </div>
