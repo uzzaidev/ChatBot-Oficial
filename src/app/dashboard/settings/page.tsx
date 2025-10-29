@@ -499,7 +499,11 @@ export default function SettingsPage() {
                 <div>
                   <CardTitle>Configurações do Agent</CardTitle>
                   <CardDescription>
-                    Configure os prompts e modelos de IA do seu assistente
+                    Configure os prompts e modelos de IA do seu assistente.
+                    <br />
+                    <span className="text-xs">
+                      ℹ️ Groq é usado para conversação (rápido e econômico), OpenAI para mídia (Vision, Whisper)
+                    </span>
                   </CardDescription>
                 </div>
               </div>
@@ -594,13 +598,13 @@ export default function SettingsPage() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-gray-500 mt-1">
-                Modelo usado para processamento de imagens e tarefas complexas
+                🎤 Usado para: Transcrição de áudio, análise de imagens e documentos (Vision)
               </p>
             </div>
 
             {/* Groq Model */}
             <div>
-              <Label htmlFor="groq_model">Modelo Groq</Label>
+              <Label htmlFor="groq_model">Modelo Groq (Principal)</Label>
               <Select
                 value={agentConfig.groq_model}
                 onValueChange={(value) =>
@@ -619,7 +623,7 @@ export default function SettingsPage() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-gray-500 mt-1">
-                Modelo usado para respostas de texto rápidas
+                💬 Usado para: Respostas de texto do agente (conversação principal)
               </p>
             </div>
 

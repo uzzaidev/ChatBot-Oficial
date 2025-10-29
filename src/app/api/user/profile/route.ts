@@ -35,11 +35,12 @@ export async function GET() {
     // Buscar user_profile
     const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
-      .select('id, email, full_name, client_id, role')
+      .select('id, email, full_name, client_id')
       .eq('id', user.id)
       .single()
 
     if (profileError || !profile) {
+      console.error('[profile] Erro ao buscar user_profile:', profileError)
       return NextResponse.json({ error: 'Perfil não encontrado' }, { status: 404 })
     }
 
@@ -56,11 +57,10 @@ export async function GET() {
 
     return NextResponse.json({
       id: profile.id,
-      email: profile.email,
-      full_name: profile.full_name,
+      email: profile.email || user.email || '',
+      full_name: profile.full_name || user.user_metadata?.full_name || '',
       client_id: profile.client_id,
       phone: client?.meta_display_phone || '',
-      role: profile.role || 'user',
     })
   } catch (error) {
     console.error('[profile] Erro:', error)
