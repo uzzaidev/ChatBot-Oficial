@@ -76,6 +76,7 @@ export default function SettingsPage() {
     formatter_prompt: '',
     openai_model: 'gpt-4o',
     groq_model: 'llama-3.3-70b-versatile',
+    primary_model_provider: 'groq', // NOVO
     settings: {
       enable_rag: false,
       max_tokens: 2000,
@@ -92,6 +93,14 @@ export default function SettingsPage() {
   const [showAgentRevalidationModal, setShowAgentRevalidationModal] = useState(false)
   const [agentRevalidationPassword, setAgentRevalidationPassword] = useState('')
   const [agentRevalidating, setAgentRevalidating] = useState(false)
+
+  // Estado do teste de modelo
+  const [testingModel, setTestingModel] = useState(false)
+  const [testResult, setTestResult] = useState<{
+    success: boolean
+    message: string
+    latency_ms?: number
+  } | null>(null)
 
   // Carregar perfil do usuário
   useEffect(() => {
@@ -146,6 +155,7 @@ export default function SettingsPage() {
             formatter_prompt: data.config.formatter_prompt || '',
             openai_model: data.config.openai_model || 'gpt-4o',
             groq_model: data.config.groq_model || 'llama-3.3-70b-versatile',
+            primary_model_provider: data.config.primary_model_provider || 'groq', // NOVO
             settings: data.config.settings || {
               enable_rag: false,
               max_tokens: 2000,
@@ -355,6 +365,58 @@ export default function SettingsPage() {
       setNotification({ type: 'error', message: 'Erro ao atualizar configurações' })
     } finally {
       setLoadingAgent(false)
+    }
+  }
+
+  // Testar modelo selecionado
+  const handleTestModel = async () => {
+    setTestingModel(true)
+    setTestResult(null)
+    setNotification(null)
+
+    try {
+      const provider = agentConfig.primary_model_provider
+      const model = provider === 'openai' ? agentConfig.openai_model : agentConfig.groq_model
+
+      const response = await fetch('/api/client/test-model', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider, model }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setTestResult({
+          success: true,
+          message: `${data.message} (${data.latency_ms}ms)`,
+          latency_ms: data.latency_ms,
+        })
+        setNotification({ 
+          type: 'success', 
+          message: `✅ Modelo testado com sucesso! Latência: ${data.latency_ms}ms` 
+        })
+      } else {
+        setTestResult({
+          success: false,
+          message: data.message || data.error,
+        })
+        setNotification({ 
+          type: 'error', 
+          message: `❌ ${data.message || data.error}` 
+        })
+      }
+    } catch (error) {
+      setTestResult({
+        success: false,
+        message: 'Erro ao conectar com o servidor',
+      })
+      setNotification({ 
+        type: 'error', 
+        message: 'Erro ao testar modelo' 
+      })
+    } finally {
+      setTestingModel(false)
     }
   }
 
@@ -577,9 +639,114 @@ export default function SettingsPage() {
               </p>
             </div>
 
+            {/* Primary Provider Selection */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <Label htmlFor="primary_model_provider" className="text-base font-semibold">
+                🤖 Provedor Principal do Agente
+              </Label>
+              <p className="text-xs text-gray-600 mb-3">
+                Escolha qual IA vai responder as mensagens de texto do seu chatbot
+              </p>
+              
+              <Select
+                value={agentConfig.primary_model_provider}
+                onValueChange={(value) =>
+                  setAgentConfig({ ...agentConfig, primary_model_provider: value })
+                }
+                disabled={!editingAgent}
+              >
+                <SelectTrigger className="mt-2">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="groq">
+                    <div className="flex flex-col items-start">
+                      <span className="font-semibold">🚀 Groq (Llama) - Recomendado</span>
+                      <span className="text-xs text-gray-500">
+                        Rápido (~1000 tokens/s) • Econômico (~$0.60/1M tokens)
+                      </span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="openai">
+                    <div className="flex flex-col items-start">
+                      <span className="font-semibold">🧠 OpenAI (GPT-4o)</span>
+                      <span className="text-xs text-gray-500">
+                        Mais inteligente • Mais lento • Mais caro (~$5/1M tokens)
+                      </span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              
+              {/* Alertas de custo */}
+              {agentConfig.primary_model_provider === 'openai' && (
+                <div className="mt-3 text-xs bg-yellow-50 border border-yellow-200 p-3 rounded">
+                  ⚠️ <strong>Custo estimado:</strong> GPT-4o é ~8x mais caro que Groq.
+                  Para 100k mensagens/mês, pode custar $500+ vs $60 com Groq.
+                </div>
+              )}
+              
+              {agentConfig.primary_model_provider === 'groq' && (
+                <div className="mt-3 text-xs bg-green-50 border border-green-200 p-3 rounded">
+                  ✅ <strong>Econômico:</strong> Llama 3.3 70B oferece ótima qualidade
+                  com custo muito baixo (~$0.60/1M tokens).
+                </div>
+              )}
+
+              {/* Botão de teste */}
+              <div className="mt-4">
+                <Button
+                  onClick={handleTestModel}
+                  disabled={testingModel || !editingAgent}
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                >
+                  {testingModel ? (
+                    <>
+                      <span className="animate-spin mr-2">⏳</span>
+                      Testando modelo...
+                    </>
+                  ) : (
+                    <>
+                      🧪 Testar Modelo
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* Resultado do teste */}
+              {testResult && (
+                <div className={`mt-3 text-xs p-3 rounded ${
+                  testResult.success 
+                    ? 'bg-green-50 border border-green-200 text-green-800' 
+                    : 'bg-red-50 border border-red-200 text-red-800'
+                }`}>
+                  {testResult.success ? '✅' : '❌'} {testResult.message}
+                </div>
+              )}
+            </div>
+
+            {/* Divisor */}
+            <div className="border-t my-4"></div>
+
+            <h3 className="font-semibold text-sm mb-2">
+              Modelos Específicos
+            </h3>
+            <p className="text-xs text-gray-500 mb-4">
+              Configure qual versão do modelo será usado para cada provedor
+            </p>
+
             {/* OpenAI Model */}
             <div>
-              <Label htmlFor="openai_model">Modelo OpenAI</Label>
+              <Label htmlFor="openai_model">
+                Modelo OpenAI
+                {agentConfig.primary_model_provider === 'openai' && (
+                  <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                    EM USO
+                  </span>
+                )}
+              </Label>
               <Select
                 value={agentConfig.openai_model}
                 onValueChange={(value) =>
@@ -598,13 +765,23 @@ export default function SettingsPage() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-gray-500 mt-1">
-                🎤 Usado para: Transcrição de áudio, análise de imagens e documentos (Vision)
+                {agentConfig.primary_model_provider === 'openai' 
+                  ? '💬 Conversação + 🎤 Mídia (transcrição, imagens, PDFs)'
+                  : '🎤 Apenas para: Transcrição de áudio, análise de imagens e documentos'
+                }
               </p>
             </div>
 
             {/* Groq Model */}
             <div>
-              <Label htmlFor="groq_model">Modelo Groq (Principal)</Label>
+              <Label htmlFor="groq_model">
+                Modelo Groq
+                {agentConfig.primary_model_provider === 'groq' && (
+                  <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                    EM USO
+                  </span>
+                )}
+              </Label>
               <Select
                 value={agentConfig.groq_model}
                 onValueChange={(value) =>
@@ -623,7 +800,10 @@ export default function SettingsPage() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-gray-500 mt-1">
-                💬 Usado para: Respostas de texto do agente (conversação principal)
+                {agentConfig.primary_model_provider === 'groq'
+                  ? '💬 Usado para: Respostas de texto do agente (conversação principal)'
+                  : '(Não está sendo usado no momento)'
+                }
               </p>
             </div>
 

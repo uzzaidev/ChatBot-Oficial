@@ -1,5 +1,6 @@
 import { AIResponse, ChatMessage, ClientConfig } from '@/lib/types'
 import { generateChatCompletion } from '@/lib/groq'
+import { generateChatCompletionOpenAI } from '@/lib/openai'
 
 // 📝 PROMPT PADRÃO (usado apenas como fallback se config não tiver systemPrompt)
 const DEFAULT_SYSTEM_PROMPT = `## Papel
@@ -198,17 +199,34 @@ export const generateAIResponse = async (input: GenerateAIResponseInput): Promis
 
     const tools = [HUMAN_HANDOFF_TOOL_DEFINITION]
 
-    // 🔐 Passar settings do config para o Groq
-    return await generateChatCompletion(
-      messages,
-      config.settings.enableTools ? tools : undefined,
-      config.apiKeys.groqApiKey,
-      {
-        temperature: config.settings.temperature,
-        max_tokens: config.settings.maxTokens,
-        model: config.models.groqModel,
-      }
-    )
+    // 🔐 Escolher provider dinamicamente baseado na config do cliente
+    console.log(`[generateAIResponse] Using provider: ${config.primaryProvider}`)
+    
+    if (config.primaryProvider === 'openai') {
+      // Usar OpenAI Chat Completion
+      return await generateChatCompletionOpenAI(
+        messages,
+        config.settings.enableTools ? tools : undefined,
+        config.apiKeys.openaiApiKey,
+        {
+          temperature: config.settings.temperature,
+          max_tokens: config.settings.maxTokens,
+          model: config.models.openaiModel, // gpt-4o, gpt-4o-mini, etc
+        }
+      )
+    } else {
+      // Usar Groq Chat Completion (padrão)
+      return await generateChatCompletion(
+        messages,
+        config.settings.enableTools ? tools : undefined,
+        config.apiKeys.groqApiKey,
+        {
+          temperature: config.settings.temperature,
+          max_tokens: config.settings.maxTokens,
+          model: config.models.groqModel,
+        }
+      )
+    }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     throw new Error(`Failed to generate AI response: ${errorMessage}`)

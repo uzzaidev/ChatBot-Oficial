@@ -238,6 +238,9 @@ export interface ClientConfig {
   slug: string
   status: 'active' | 'suspended' | 'trial' | 'cancelled'
 
+  // 🤖 Provider principal do agente (NOVO)
+  primaryProvider: 'openai' | 'groq'
+
   // API Keys (descriptografadas do Vault)
   apiKeys: {
     metaAccessToken: string

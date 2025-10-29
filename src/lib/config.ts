@@ -189,6 +189,10 @@ export const getClientConfig = async (clientId: string): Promise<ClientConfig | 
       name: client.name,
       slug: client.slug,
       status: client.status,
+      
+      // 🤖 Provider principal (NOVO)
+      primaryProvider: client.primary_model_provider || 'groq',
+      
       apiKeys: {
         metaAccessToken: secrets.metaAccessToken,
         metaVerifyToken: secrets.metaVerifyToken,

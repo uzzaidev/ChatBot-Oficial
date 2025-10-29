@@ -35,10 +35,10 @@ export async function GET() {
 
     const clientId = profile.client_id
 
-    // Buscar configurações do client (incluindo settings JSON)
+    // Buscar configurações do client (incluindo settings JSON e provider)
     const { data: client, error: clientError } = await supabase
       .from('clients')
-      .select('system_prompt, formatter_prompt, openai_model, groq_model, settings')
+      .select('system_prompt, formatter_prompt, openai_model, groq_model, primary_model_provider, settings')
       .eq('id', clientId)
       .single()
 
@@ -52,6 +52,7 @@ export async function GET() {
         formatter_prompt: client.formatter_prompt || '',
         openai_model: client.openai_model || 'gpt-4o',
         groq_model: client.groq_model || 'llama-3.3-70b-versatile',
+        primary_model_provider: client.primary_model_provider || 'groq', // NOVO
         settings: client.settings || {
           enable_rag: false,
           max_tokens: 2000,
@@ -89,7 +90,7 @@ export async function GET() {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json()
-    const { system_prompt, formatter_prompt, openai_model, groq_model, settings } = body
+    const { system_prompt, formatter_prompt, openai_model, groq_model, primary_model_provider, settings } = body
 
     const supabase = createRouteHandlerClient()
 
@@ -125,6 +126,7 @@ export async function PATCH(request: NextRequest) {
     if (formatter_prompt !== undefined) updateData.formatter_prompt = formatter_prompt
     if (openai_model !== undefined) updateData.openai_model = openai_model
     if (groq_model !== undefined) updateData.groq_model = groq_model
+    if (primary_model_provider !== undefined) updateData.primary_model_provider = primary_model_provider // NOVO
     if (settings !== undefined) updateData.settings = settings
 
     // Atualizar client

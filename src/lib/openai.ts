@@ -1,4 +1,5 @@
 import OpenAI from 'openai'
+import { AIResponse, ChatMessage } from './types'
 
 const getRequiredEnvVariable = (key: string): string => {
   const value = process.env[key]
@@ -194,5 +195,99 @@ ${pdfText.substring(0, 12000)}`
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     throw new Error(`Failed to summarize PDF content: ${errorMessage}`)
+  }
+}
+
+/**
+ * 🔐 Gera resposta com OpenAI Chat Completion usando key dinâmica
+ * 
+ * Similar ao generateChatCompletion do Groq, mas usando OpenAI SDK.
+ * Suporta function calling e configurações personalizadas.
+ * 
+ * @param messages - Mensagens do chat
+ * @param tools - Ferramentas disponíveis (function calling)
+ * @param apiKey - API key opcional (do config do cliente)
+ * @param settings - Configurações opcionais (temperature, max_tokens, model)
+ * @returns Resposta da IA com content, toolCalls e finished
+ */
+export const generateChatCompletionOpenAI = async (
+  messages: ChatMessage[],
+  tools?: any[],
+  apiKey?: string,
+  settings?: {
+    temperature?: number
+    max_tokens?: number
+    model?: string // gpt-4o, gpt-4o-mini, etc
+  }
+): Promise<AIResponse> => {
+  try {
+    // 1. Criar cliente OpenAI (dinâmico ou cached)
+    let client: OpenAI
+    
+    if (apiKey) {
+      // Se apiKey fornecida, criar novo client (não cachear)
+      client = new OpenAI({ apiKey })
+    } else {
+      // Fallback: usar client cacheado do env
+      client = getOpenAIClient()
+    }
+
+    // 2. Converter mensagens para formato OpenAI
+    const openaiMessages = messages.map((msg) => ({
+      role: msg.role as 'system' | 'user' | 'assistant',
+      content: msg.content,
+    }))
+
+    // 3. Montar parâmetros da completion
+    const completionParams: any = {
+      model: settings?.model || 'gpt-4o',
+      messages: openaiMessages,
+      temperature: settings?.temperature ?? 0.7,
+      max_tokens: settings?.max_tokens ?? 2000,
+    }
+
+    // 4. Adicionar tools se fornecidas
+    if (tools && tools.length > 0) {
+      completionParams.tools = tools.map(tool => ({
+        type: 'function',
+        function: {
+          name: tool.function.name,
+          description: tool.function.description,
+          parameters: tool.function.parameters,
+        }
+      }))
+      completionParams.tool_choice = 'auto'
+    }
+
+    // 5. Chamar API OpenAI
+    const completion = await client.chat.completions.create(completionParams)
+
+    const choice = completion.choices[0]
+    if (!choice) {
+      throw new Error('No completion choice returned from OpenAI')
+    }
+
+    // 6. Extrair content e tool calls
+    const content = choice.message?.content || ''
+    const toolCalls = choice.message?.tool_calls?.map((call: any) => ({
+      id: call.id,
+      type: call.type,
+      function: {
+        name: call.function.name,
+        arguments: call.function.arguments,
+      }
+    }))
+    
+    const finished = choice.finish_reason === 'stop' || choice.finish_reason === 'tool_calls'
+
+    // 7. Retornar no formato AIResponse (igual ao Groq)
+    return {
+      content,
+      toolCalls,
+      finished,
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    throw new Error(`Failed to generate OpenAI chat completion: ${errorMessage}`)
   }
 }
