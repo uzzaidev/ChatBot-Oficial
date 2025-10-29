@@ -99,9 +99,18 @@ export async function POST(req: NextRequest) {
 
     console.log('[WEBHOOK] ✅ Extração concluída, agora vai processar chatbot flow...')
 
-    // 🔐 FASE 2: Buscar config do cliente (do Vault ou fallback para .env)
+    // 🔐 FASE 2.5: Buscar config do cliente (do Vault ou fallback para .env)
+    // 
+    // NOTA IMPORTANTE: Este webhook (/api/webhook) mantém backward compatibility
+    // usando DEFAULT_CLIENT_ID do .env para clientes que configuraram o webhook
+    // antes da implementação multi-tenant.
+    //
+    // Para novos clientes, usar: /api/webhook/[clientId]
+    // Este endpoint dinâmico extrai o clientId da URL e não depende de .env
+    //
+    // Ver: src/app/api/webhook/[clientId]/route.ts
     console.log('[WEBHOOK] 🔐 Buscando config do cliente...')
-    const clientId = process.env.DEFAULT_CLIENT_ID // Usa cliente default
+    const clientId = process.env.DEFAULT_CLIENT_ID // Usa cliente default (backward compatibility)
     const config = await getClientConfigWithFallback(clientId)
 
     if (!config) {

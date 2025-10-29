@@ -2,11 +2,17 @@
  * Script de teste para validar configuração multi-tenant com Vault
  *
  * Execute: npx ts-node test-vault-config.ts
+ * 
+ * Ou com client_id específico:
+ * npx ts-node test-vault-config.ts <client-id>
  */
 
 import { getClientConfig, validateClientConfig } from './src/lib/config'
 
-const CLIENT_ID = process.env.DEFAULT_CLIENT_ID || 'b21b314f-c49a-467d-94b3-a21ed4412227'
+// Aceita client_id via argumento CLI ou usa fallback
+// Nota: DEFAULT_CLIENT_ID está sendo removido do código de produção,
+// mas mantemos aqui apenas como conveniência para este script de teste
+const CLIENT_ID = process.argv[2] || process.env.DEFAULT_CLIENT_ID || 'b21b314f-c49a-467d-94b3-a21ed4412227'
 
 const testVaultConfig = async () => {
   console.log('='.repeat(60))

@@ -13,15 +13,16 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    // 1. Buscar clientId da query string ou usar default
+    // 1. Buscar clientId da query string (obrigatório)
     const searchParams = request.nextUrl.searchParams
-    const clientId = searchParams.get('clientId') || process.env.DEFAULT_CLIENT_ID
+    const clientId = searchParams.get('clientId')
 
     if (!clientId) {
       return NextResponse.json(
         {
           error: 'Missing clientId',
-          message: 'Provide ?clientId=xxx or set DEFAULT_CLIENT_ID in .env.local',
+          message: 'Provide ?clientId=xxx in query string. Example: /api/test/vault-config?clientId=b21b314f-c49a-467d-94b3-a21ed4412227',
+          note: 'DEFAULT_CLIENT_ID is no longer used. All API routes now require authentication or explicit clientId.',
         },
         { status: 400 }
       )
