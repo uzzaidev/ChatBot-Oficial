@@ -36,6 +36,4 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-MULTI_TENANT_MIGRATION.md
-
-/migrations
+006_setup_default_client.sql

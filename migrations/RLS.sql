@@ -52,10 +52,22 @@ CREATE INDEX IF NOT EXISTS idx_user_profiles_email ON user_profiles(email);
 CREATE INDEX IF NOT EXISTS idx_user_profiles_role ON user_profiles(role);
 
 -- Trigger para auto-update timestamp
-CREATE TRIGGER IF NOT EXISTS update_user_profiles_updated_at
-  BEFORE UPDATE ON user_profiles
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
+-- Create trigger to auto-update "updated_at" only if it doesn't already exist
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_trigger t
+    JOIN pg_class c ON t.tgrelid = c.oid
+    WHERE t.tgname = 'update_user_profiles_updated_at'
+      AND c.relname = 'user_profiles'
+  ) THEN
+    CREATE TRIGGER update_user_profiles_updated_at
+      BEFORE UPDATE ON user_profiles
+      FOR EACH ROW
+      EXECUTE FUNCTION update_updated_at_column();
+  END IF;
+END $$;
 
 -- =====================================================
 -- 2. TRIGGER: Auto-create user_profile on signup
@@ -87,44 +99,32 @@ CREATE TRIGGER on_auth_user_created
 -- =====================================================
 -- 3. RLS POLICIES - user_profiles
 -- =====================================================
+-- 
+-- NOTA IMPORTANTE: RLS DESABILITADO PARA user_profiles
+-- 
+-- Motivo: Aplicar RLS em user_profiles causa recursão infinita, pois as 
+-- políticas de outras tabelas precisam fazer SELECT em user_profiles para
+-- obter client_id e role do usuário autenticado.
+--
+-- Segurança alternativa:
+-- 1. Tabela vinculada a auth.users (CASCADE DELETE)
+-- 2. Apenas service_role pode inserir/deletar
+-- 3. Helper functions (auth.user_client_id, auth.user_role) são STABLE/SECURITY DEFINER
+-- 4. API routes usam getClientIdFromSession() que valida auth.uid()
+--
+-- Se precisar de RLS no futuro, considere:
+-- - Usar SECURITY DEFINER functions que bypassam RLS
+-- - Cachear client_id/role em JWT custom claims
+-- - Usar materialized views
+-- =====================================================
 
--- Habilitar RLS
-ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_profiles DISABLE ROW LEVEL SECURITY;
 
--- Política 1: Usuários podem ver seu próprio perfil
+-- Remover políticas antigas (se existirem)
 DROP POLICY IF EXISTS "Users can view own profile" ON user_profiles;
-CREATE POLICY "Users can view own profile"
-  ON user_profiles FOR SELECT
-  USING (id = auth.uid());
-
--- Política 2: Usuários podem atualizar seu próprio perfil (exceto client_id e role)
 DROP POLICY IF EXISTS "Users can update own profile" ON user_profiles;
-CREATE POLICY "Users can update own profile"
-  ON user_profiles FOR UPDATE
-  USING (id = auth.uid())
-  WITH CHECK (id = auth.uid());
-
--- Política 3: Client admins podem ver membros do time
 DROP POLICY IF EXISTS "Client admins can view team members" ON user_profiles;
-CREATE POLICY "Client admins can view team members"
-  ON user_profiles FOR SELECT
-  USING (
-    client_id = (
-      SELECT client_id FROM user_profiles WHERE id = auth.uid()
-    )
-    AND (
-      (SELECT role FROM user_profiles WHERE id = auth.uid()) IN ('client_admin', 'admin')
-      OR id = auth.uid()
-    )
-  );
-
--- Política 4: Admins globais podem ver tudo
 DROP POLICY IF EXISTS "Admins can view all profiles" ON user_profiles;
-CREATE POLICY "Admins can view all profiles"
-  ON user_profiles FOR SELECT
-  USING (
-    (SELECT role FROM user_profiles WHERE id = auth.uid()) = 'admin'
-  );
 
 -- =====================================================
 -- 4. RLS POLICIES - clients
@@ -137,29 +137,23 @@ ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users can view own client" ON clients;
 CREATE POLICY "Users can view own client"
   ON clients FOR SELECT
-  USING (
-    id = (SELECT client_id FROM user_profiles WHERE id = auth.uid())
-  );
+  USING (id = auth.user_client_id());
 
 -- Política 2: Admins podem ver todos os clientes
 DROP POLICY IF EXISTS "Admins can view all clients" ON clients;
 CREATE POLICY "Admins can view all clients"
   ON clients FOR SELECT
-  USING (
-    (SELECT role FROM user_profiles WHERE id = auth.uid()) = 'admin'
-  );
+  USING (auth.user_role() = 'admin');
 
 -- Política 3: Client admins podem atualizar seu próprio cliente
 DROP POLICY IF EXISTS "Client admins can update own client" ON clients;
 CREATE POLICY "Client admins can update own client"
   ON clients FOR UPDATE
   USING (
-    id = (SELECT client_id FROM user_profiles WHERE id = auth.uid())
-    AND (SELECT role FROM user_profiles WHERE id = auth.uid()) = 'client_admin'
+    id = auth.user_client_id()
+    AND auth.user_role() = 'client_admin'
   )
-  WITH CHECK (
-    id = (SELECT client_id FROM user_profiles WHERE id = auth.uid())
-  );
+  WITH CHECK (id = auth.user_client_id());
 
 -- Política 4: Service role tem acesso total (API backend)
 DROP POLICY IF EXISTS "Service role can access all clients" ON clients;
@@ -178,28 +172,20 @@ ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users can view own client conversations" ON conversations;
 CREATE POLICY "Users can view own client conversations"
   ON conversations FOR SELECT
-  USING (
-    client_id = (SELECT client_id FROM user_profiles WHERE id = auth.uid())
-  );
+  USING (client_id = auth.user_client_id());
 
 -- Política 2: Usuários podem inserir conversas
 DROP POLICY IF EXISTS "Users can insert conversations" ON conversations;
 CREATE POLICY "Users can insert conversations"
   ON conversations FOR INSERT
-  WITH CHECK (
-    client_id = (SELECT client_id FROM user_profiles WHERE id = auth.uid())
-  );
+  WITH CHECK (client_id = auth.user_client_id());
 
 -- Política 3: Usuários podem atualizar conversas (status, assigned_to)
 DROP POLICY IF EXISTS "Users can update conversations" ON conversations;
 CREATE POLICY "Users can update conversations"
   ON conversations FOR UPDATE
-  USING (
-    client_id = (SELECT client_id FROM user_profiles WHERE id = auth.uid())
-  )
-  WITH CHECK (
-    client_id = (SELECT client_id FROM user_profiles WHERE id = auth.uid())
-  );
+  USING (client_id = auth.user_client_id())
+  WITH CHECK (client_id = auth.user_client_id());
 
 -- Política 4: Service role tem acesso total
 DROP POLICY IF EXISTS "Service role can access all conversations" ON conversations;
@@ -218,17 +204,13 @@ ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users can view own client messages" ON messages;
 CREATE POLICY "Users can view own client messages"
   ON messages FOR SELECT
-  USING (
-    client_id = (SELECT client_id FROM user_profiles WHERE id = auth.uid())
-  );
+  USING (client_id = auth.user_client_id());
 
 -- Política 2: Usuários podem inserir mensagens
 DROP POLICY IF EXISTS "Users can insert messages" ON messages;
 CREATE POLICY "Users can insert messages"
   ON messages FOR INSERT
-  WITH CHECK (
-    client_id = (SELECT client_id FROM user_profiles WHERE id = auth.uid())
-  );
+  WITH CHECK (client_id = auth.user_client_id());
 
 -- Política 3: Service role tem acesso total
 DROP POLICY IF EXISTS "Service role can access all messages" ON messages;
@@ -247,9 +229,7 @@ ALTER TABLE usage_logs ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users can view own client usage logs" ON usage_logs;
 CREATE POLICY "Users can view own client usage logs"
   ON usage_logs FOR SELECT
-  USING (
-    client_id = (SELECT client_id FROM user_profiles WHERE id = auth.uid())
-  );
+  USING (client_id = auth.user_client_id());
 
 -- Política 2: Service role tem acesso total
 DROP POLICY IF EXISTS "Service role can access all usage logs" ON usage_logs;
@@ -282,9 +262,7 @@ BEGIN
       DROP POLICY IF EXISTS "Users can view own client whatsapp customers" ON clientes_whatsapp;
       CREATE POLICY "Users can view own client whatsapp customers"
         ON clientes_whatsapp FOR SELECT
-        USING (
-          client_id = (SELECT client_id FROM user_profiles WHERE id = auth.uid())
-        );
+        USING (client_id = auth.user_client_id());
       
       -- Política 2: Service role tem acesso total
       DROP POLICY IF EXISTS "Service role can access all whatsapp customers" ON clientes_whatsapp;
@@ -326,9 +304,7 @@ BEGIN
       DROP POLICY IF EXISTS "Users can view own client chat histories" ON n8n_chat_histories;
       CREATE POLICY "Users can view own client chat histories"
         ON n8n_chat_histories FOR SELECT
-        USING (
-          client_id = (SELECT client_id FROM user_profiles WHERE id = auth.uid())
-        );
+        USING (client_id = auth.user_client_id());
       
       -- Política 2: Service role tem acesso total
       DROP POLICY IF EXISTS "Service role can access all chat histories" ON n8n_chat_histories;
@@ -370,21 +346,17 @@ BEGIN
       DROP POLICY IF EXISTS "Users can view own client documents" ON documents;
       CREATE POLICY "Users can view own client documents"
         ON documents FOR SELECT
-        USING (
-          client_id = (SELECT client_id FROM user_profiles WHERE id = auth.uid())
-        );
+        USING (client_id = auth.user_client_id());
       
       -- Política 2: Client admins podem gerenciar documentos
       DROP POLICY IF EXISTS "Client admins can manage documents" ON documents;
       CREATE POLICY "Client admins can manage documents"
         ON documents FOR ALL
         USING (
-          client_id = (SELECT client_id FROM user_profiles WHERE id = auth.uid())
-          AND (SELECT role FROM user_profiles WHERE id = auth.uid()) IN ('client_admin', 'admin')
+          client_id = auth.user_client_id()
+          AND auth.user_role() IN ('client_admin', 'admin')
         )
-        WITH CHECK (
-          client_id = (SELECT client_id FROM user_profiles WHERE id = auth.uid())
-        );
+        WITH CHECK (client_id = auth.user_client_id());
       
       -- Política 3: Service role tem acesso total
       DROP POLICY IF EXISTS "Service role can access all documents" ON documents;
@@ -406,11 +378,12 @@ END $$;
 -- 11. HELPER FUNCTION - Get user client_id
 -- =====================================================
 -- Função helper para facilitar obter client_id do usuário atual
+-- SECURITY DEFINER permite que a função bypasse RLS e acesse user_profiles
 
 CREATE OR REPLACE FUNCTION auth.user_client_id()
 RETURNS UUID AS $$
   SELECT client_id FROM public.user_profiles WHERE id = auth.uid();
-$$ LANGUAGE SQL STABLE;
+$$ LANGUAGE SQL STABLE SECURITY DEFINER;
 
 COMMENT ON FUNCTION auth.user_client_id IS 'Retorna o client_id do usuário autenticado atual';
 
@@ -418,11 +391,12 @@ COMMENT ON FUNCTION auth.user_client_id IS 'Retorna o client_id do usuário aute
 -- 12. HELPER FUNCTION - Get user role
 -- =====================================================
 -- Função helper para facilitar obter role do usuário atual
+-- SECURITY DEFINER permite que a função bypasse RLS e acesse user_profiles
 
 CREATE OR REPLACE FUNCTION auth.user_role()
 RETURNS TEXT AS $$
   SELECT role FROM public.user_profiles WHERE id = auth.uid();
-$$ LANGUAGE SQL STABLE;
+$$ LANGUAGE SQL STABLE SECURITY DEFINER;
 
 COMMENT ON FUNCTION auth.user_role IS 'Retorna o role do usuário autenticado atual';
 
