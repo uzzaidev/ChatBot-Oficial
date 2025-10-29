@@ -1,17 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import type { TransferHumanRequest } from '@/lib/types'
+import { getClientIdFromSession } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
+    // 🔐 SECURITY: Get client_id from authenticated session, not request body
+    const clientId = await getClientIdFromSession()
+
+    if (!clientId) {
+      return NextResponse.json(
+        { error: 'Unauthorized - authentication required' },
+        { status: 401 }
+      )
+    }
+
     const body = (await request.json()) as TransferHumanRequest
 
-    const { phone, client_id, assigned_to } = body
+    const { phone, assigned_to } = body
 
-    if (!phone || !client_id) {
+    if (!phone) {
       return NextResponse.json(
-        { error: 'phone e client_id são obrigatórios' },
+        { error: 'phone é obrigatório' },
         { status: 400 }
       )
     }
@@ -35,7 +46,7 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         phone,
-        client_id,
+        client_id: clientId, // 🔐 Use authenticated client_id, not from request body
         assigned_to: assigned_to || 'suporte',
         timestamp: new Date().toISOString(),
       }),

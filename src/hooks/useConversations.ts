@@ -21,7 +21,7 @@ interface UseConversationsResult {
 }
 
 export const useConversations = ({
-  clientId,
+  clientId, // Keep for backward compatibility and realtime filtering, but not sent to API
   status,
   limit = 50,
   offset = 0,
@@ -40,8 +40,9 @@ export const useConversations = ({
       setLoading(true)
       setError(null)
 
+      // 🔐 SECURITY: No longer send client_id as query param
+      // API route gets it from authenticated session
       const params = new URLSearchParams({
-        client_id: clientId,
         limit: limit.toString(),
         offset: offset.toString(),
       })
@@ -67,7 +68,7 @@ export const useConversations = ({
     } finally {
       setLoading(false)
     }
-  }, [clientId, status, limit, offset])
+  }, [status, limit, offset]) // Removed clientId from dependencies since it's not used in API call
 
   // Função debounced para evitar múltiplas chamadas rápidas do realtime
   const debouncedFetch = useCallback((delay: number = 0) => {
@@ -80,24 +81,22 @@ export const useConversations = ({
   }, [fetchConversations])
 
   useEffect(() => {
-    if (clientId) {
-      fetchConversations()
-    }
-  }, [clientId, fetchConversations])
+    fetchConversations()
+  }, [fetchConversations])
 
   useEffect(() => {
-    if (refreshInterval > 0 && clientId) {
+    if (refreshInterval > 0) {
       const interval = setInterval(() => {
         fetchConversations()
       }, refreshInterval)
 
       return () => clearInterval(interval)
     }
-  }, [refreshInterval, clientId, fetchConversations])
+  }, [refreshInterval, fetchConversations])
 
   // Realtime subscription for new conversations
   useEffect(() => {
-    if (!enableRealtime || !clientId) {
+    if (!enableRealtime) {
       return
     }
 
@@ -150,7 +149,7 @@ export const useConversations = ({
         clearTimeout(fetchTimeoutRef.current)
       }
     }
-  }, [enableRealtime, clientId, debouncedFetch])
+  }, [enableRealtime, debouncedFetch])
 
   return {
     conversations,

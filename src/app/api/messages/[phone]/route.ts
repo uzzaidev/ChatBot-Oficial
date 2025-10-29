@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cleanMessageContent } from '@/lib/utils'
 import { query } from '@/lib/postgres'
 import type { Message } from '@/lib/types'
+import { getClientIdFromSession } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,13 +15,14 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { phone } = params
-    const searchParams = request.nextUrl.searchParams
-    const clientId = searchParams.get('client_id')
+
+    // 🔐 SECURITY: Get client_id from authenticated session, not query params
+    const clientId = await getClientIdFromSession()
 
     if (!clientId) {
       return NextResponse.json(
-        { error: 'client_id é obrigatório' },
-        { status: 400 }
+        { error: 'Unauthorized - authentication required' },
+        { status: 401 }
       )
     }
 
@@ -32,13 +34,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     console.log('[API Messages] =====================================')
-    console.log('[API Messages] Fetching messages for phone:', phone)
+    console.log('[API Messages] Fetching messages for phone:', phone, 'client:', clientId)
 
     // Debug: Query direta via PostgreSQL para comparar
     try {
       const pgResult = await query<any>(
-        `SELECT COUNT(*) as count FROM n8n_chat_histories WHERE session_id = $1`,
-        [phone]
+        `SELECT COUNT(*) as count FROM n8n_chat_histories 
+         WHERE session_id = $1 
+         AND (client_id = $2 OR client_id IS NULL)`,
+        [phone, clientId]
       )
       console.log('[API Messages] PostgreSQL direct count:', pgResult.rows[0]?.count)
     } catch (pgError) {
@@ -46,6 +50,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
 
+    // 🔐 SECURITY: Filter messages by authenticated user's client_id
     // Buscar TODAS as mensagens via PostgreSQL direto (sem limite)
     // Motivo: Supabase pode ter limites de paginação que não queremos
     console.log('[API Messages] Fetching via PostgreSQL (no limits)...')
@@ -54,8 +59,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       `SELECT id, session_id, message, created_at
        FROM n8n_chat_histories
        WHERE session_id = $1
+       AND (client_id = $2 OR client_id IS NULL)
        ORDER BY created_at DESC`,  // DESC: mais recentes primeiro
-      [phone]
+      [phone, clientId]
     )
 
     console.log('[API Messages] PostgreSQL returned', pgMessages.rows.length, 'messages')
