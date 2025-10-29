@@ -78,6 +78,24 @@ export default function RegisterPage() {
 
       console.log('[Register] Conta criada com sucesso:', data)
 
+      // Se recebeu sessão, fazer login automático
+      if (data.session) {
+        console.log('[Register] Fazendo login automático...')
+
+        // Importar createBrowserClient dinamicamente
+        const { createBrowserClient } = await import('@supabase/ssr')
+        const supabase = createBrowserClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        )
+
+        // Setar sessão no client
+        await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        })
+      }
+
       // Redirecionar para dashboard
       router.push('/dashboard')
       router.refresh()

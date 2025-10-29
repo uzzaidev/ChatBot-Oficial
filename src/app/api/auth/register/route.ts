@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@/lib/supabase-server'
+import { createServerClient } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,7 +47,8 @@ export async function POST(request: NextRequest) {
 
     console.log('[register] Iniciando registro:', { email, companyName })
 
-    const supabase = createRouteHandlerClient()
+    // Usar Service Role Key para operações administrativas (criar usuários)
+    const supabase = createServerClient()
 
     // ========================================
     // 1. Gerar slug único para o cliente
@@ -81,7 +82,7 @@ export async function POST(request: NextRequest) {
     // ========================================
     // NOTA: Secrets são criados vazios e serão preenchidos nas configurações
     const { data: metaAccessTokenSecretData, error: metaAccessError } =
-      await supabase.rpc('create_client_secret', {
+      await (supabase as any).rpc('create_client_secret', {
         secret_value: 'CONFIGURE_IN_SETTINGS',
         secret_name: `${slug}_meta_access_token`,
         secret_description: `Meta Access Token for ${companyName}`,
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { data: metaVerifyTokenSecretData, error: metaVerifyError } =
-      await supabase.rpc('create_client_secret', {
+      await (supabase as any).rpc('create_client_secret', {
         secret_value: 'CONFIGURE_IN_SETTINGS',
         secret_name: `${slug}_meta_verify_token`,
         secret_description: `Meta Verify Token for ${companyName}`,
@@ -111,7 +112,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { data: openaiApiKeySecretData, error: openaiError } =
-      await supabase.rpc('create_client_secret', {
+      await (supabase as any).rpc('create_client_secret', {
         secret_value: 'CONFIGURE_IN_SETTINGS',
         secret_name: `${slug}_openai_api_key`,
         secret_description: `OpenAI API Key for ${companyName}`,
@@ -126,7 +127,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { data: groqApiKeySecretData, error: groqError } =
-      await supabase.rpc('create_client_secret', {
+      await (supabase as any).rpc('create_client_secret', {
         secret_value: 'CONFIGURE_IN_SETTINGS',
         secret_name: `${slug}_groq_api_key`,
         secret_description: `Groq API Key for ${companyName}`,
@@ -150,7 +151,7 @@ export async function POST(request: NextRequest) {
     // ========================================
     // 3. Criar client na tabela clients
     // ========================================
-    const { data: newClient, error: clientError } = await supabase
+    const { data: newClient, error: clientError } = await (supabase as any)
       .from('clients')
       .insert({
         name: companyName,
@@ -201,7 +202,7 @@ export async function POST(request: NextRequest) {
       console.error('[register] Erro ao criar usuário:', authError)
 
       // Rollback: deletar client criado
-      await supabase.from('clients').delete().eq('id', clientId)
+      await (supabase as any).from('clients').delete().eq('id', clientId)
 
       if (authError?.message?.includes('User already registered')) {
         return NextResponse.json(
@@ -224,7 +225,7 @@ export async function POST(request: NextRequest) {
     // Esperar 1 segundo para trigger executar
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await (supabase as any)
       .from('user_profiles')
       .select('id, client_id')
       .eq('id', authData.user.id)
@@ -235,7 +236,7 @@ export async function POST(request: NextRequest) {
       console.warn('[register] Criando user_profile manualmente')
 
       // Criar manualmente se trigger falhou
-      const { error: manualProfileError } = await supabase
+      const { error: manualProfileError } = await (supabase as any)
         .from('user_profiles')
         .insert({
           id: authData.user.id,
@@ -256,12 +257,29 @@ export async function POST(request: NextRequest) {
       slug,
     })
 
+    // ========================================
+    // 6. Fazer login automático após registro
+    // ========================================
+    // Criar sessão para o usuário recém-criado
+    const { data: sessionData, error: sessionError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (sessionError) {
+      console.warn('[register] Não foi possível fazer login automático:', sessionError)
+      // Não é erro crítico - usuário pode fazer login manualmente
+    } else {
+      console.log('[register] ✅ Login automático realizado')
+    }
+
     return NextResponse.json({
       success: true,
       user_id: authData.user.id,
       client_id: clientId,
       email,
       slug,
+      session: sessionData?.session || null,
       message: 'Conta criada com sucesso! Configure suas credenciais em Configurações.',
     })
   } catch (error) {
