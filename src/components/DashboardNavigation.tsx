@@ -26,11 +26,8 @@ interface NavItemProps {
 
 const NavItem = ({ href, icon, label, isCollapsed, onClick }: NavItemProps) => {
   const pathname = usePathname()
-  // For exact match on /dashboard, only highlight if label matches to avoid duplicates
-  const isExactDashboard = href === '/dashboard' && pathname === '/dashboard'
-  const isActive = isExactDashboard 
-    ? label === 'Dashboard' // Only highlight the "Dashboard" item, not "Conversas"
-    : pathname.startsWith(href) && href !== '/dashboard'
+  // Check if current route matches this nav item
+  const isActive = pathname === href || (pathname.startsWith(href) && href !== '/dashboard')
 
   return (
     <Link
@@ -87,7 +84,7 @@ export function DashboardNavigation({
         />
 
         <NavItem
-          href="/dashboard"
+          href="/dashboard/conversations"
           icon={<MessageSquare className="h-5 w-5 flex-shrink-0" />}
           label="Conversas"
           isCollapsed={isCollapsed}
