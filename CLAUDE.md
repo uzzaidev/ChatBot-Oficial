@@ -99,6 +99,93 @@ This file contains:
 - `usage_logs` - API usage tracking (tokens, costs)
 - `pricing_config` - Custom pricing configurations
 
+### Database Migrations & Schema Changes
+
+**⚠️ CRITICAL RULE**: ALWAYS use migrations for structural database changes. NEVER execute `ALTER TABLE`, `CREATE TABLE`, or similar SQL directly in Supabase Dashboard for production changes.
+
+**Workflow**:
+
+```bash
+# 1. Create migration file
+supabase migration new add_feature_name
+
+# 2. Edit generated file in supabase/migrations/TIMESTAMP_add_feature_name.sql
+# Add your SQL (ALTER TABLE, CREATE INDEX, RLS policies, etc)
+
+# 3. Test locally (optional)
+supabase db reset  # Reapplies all migrations from scratch
+
+# 4. Apply to production
+supabase db push
+
+# 5. Commit to Git
+git add supabase/migrations/
+git commit -m "feat: add feature_name to database"
+```
+
+**Example - Adding a new column**:
+
+```sql
+-- supabase/migrations/20251030_add_media_url_to_messages.sql
+
+-- Add column for media attachments
+ALTER TABLE public.messages 
+ADD COLUMN media_url TEXT;
+
+-- Index for filtering media messages
+CREATE INDEX idx_messages_media_url 
+ON public.messages(media_url) 
+WHERE media_url IS NOT NULL;
+
+-- Documentation
+COMMENT ON COLUMN public.messages.media_url 
+IS 'URL do arquivo de mídia (imagem, áudio, vídeo, documento)';
+```
+
+**Backup Strategy**:
+
+Before risky migrations, create backups:
+
+```powershell
+cd db
+
+# Backup both schemas (public + auth)
+.\backup-complete.bat
+
+# Or individual schemas
+.\backup-postgres.bat  # Application data (public schema)
+.\backup-auth.bat      # Supabase Auth users (auth schema)
+```
+
+**Generated files**:
+- `chatbot_full_TIMESTAMP.sql` - Complete backup with structure + data
+- `chatbot_structure_TIMESTAMP.sql` - DDL only (CREATE TABLE, etc)
+- `chatbot_data_TIMESTAMP.sql` - INSERT statements only
+- `auth_full_TIMESTAMP.sql` - Auth schema backup (⚠️ contains hashed passwords)
+
+**Rollback strategy**:
+
+Supabase migrations **do not have automatic rollback**. Options:
+
+1. **Create reversal migration** (recommended):
+   ```bash
+   supabase migration new revert_feature_name
+   # Write SQL to undo previous changes
+   ```
+
+2. **Restore from backup** (if migration caused data corruption):
+   ```powershell
+   psql "YOUR_CONNECTION_STRING" -f db\chatbot_full_TIMESTAMP.sql
+   ```
+
+**What NOT to do**:
+- ❌ Edit already-applied migration files
+- ❌ Delete migration files (they're version history)
+- ❌ Use migrations to insert production data (use API or separate seed files)
+- ❌ Modify legacy n8n tables (`clientes_whatsapp`, `n8n_chat_histories`, `documents`) without coordination
+
+**See**: `db/MIGRATION_WORKFLOW.md` for complete guide with examples
+
 **Redis**:
 - Message batching: `chat:${phone}` (list structure)
 - TTL: Messages expire after processing

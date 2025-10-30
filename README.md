@@ -99,6 +99,49 @@ Este arquivo contém:
 - `clients` - Configuração multi-tenant
 - `user_profiles` - Perfis de usuários (contém `client_id`)
 - `conversations` - Estado das conversas
+
+### 🔄 Migrations & Backup
+
+**REGRA DE OURO**: Sempre use migrations para mudanças estruturais no banco de dados!
+
+#### Workflow de Migrations
+
+```powershell
+# 1. Criar nova migration
+supabase migration new add_nova_coluna
+
+# 2. Editar arquivo gerado em supabase/migrations/
+# Adicione seu SQL (ALTER TABLE, CREATE INDEX, etc)
+
+# 3. Aplicar em produção
+supabase db push
+
+# 4. Commitar no Git
+git add supabase/migrations/
+git commit -m "feat: add nova coluna"
+```
+
+#### Backup do Banco de Dados
+
+```powershell
+# Backup completo (public + auth schemas)
+cd db
+.\backup-complete.bat
+
+# Backup apenas dados da aplicação
+.\backup-postgres.bat
+
+# Backup apenas usuários Supabase Auth
+.\backup-auth.bat
+```
+
+**Arquivos gerados**:
+- `chatbot_full_TIMESTAMP.sql` - Estrutura + dados (public schema)
+- `chatbot_structure_TIMESTAMP.sql` - Apenas DDL
+- `chatbot_data_TIMESTAMP.sql` - Apenas dados
+- `auth_full_TIMESTAMP.sql` - Usuários Supabase (⚠️ contém senhas hasheadas)
+
+**📖 Documentação completa**: [`db/MIGRATION_WORKFLOW.md`](db/MIGRATION_WORKFLOW.md)
 - `messages` - Histórico de mensagens
 - `usage_logs` - Tracking de uso de APIs
 - `pricing_config` - Configuração de preços personalizados

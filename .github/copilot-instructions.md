@@ -192,7 +192,7 @@ N8N_TRANSFER_HUMAN_WEBHOOK=/webhook/transfer-human
 **MUST RUN BEFORE FIRST USE**:
 
 1. Open Supabase SQL Editor: https://app.supabase.com/project/_/sql
-2. Copy entire contents of `migration.sql`
+2. Copy entire contents of `migrations/migration.sql`
 3. Paste and execute
 4. Verify tables created: `clients`, `conversations`, `messages`, `usage_logs`
 
@@ -200,6 +200,63 @@ N8N_TRANSFER_HUMAN_WEBHOOK=/webhook/transfer-human
 - `Clientes WhatsApp` - Used by n8n workflow
 - `n8n_chat_histories` - Chat memory storage
 - `documents` - Vector store for RAG
+
+### Database Migrations
+
+**⚠️ CRITICAL RULE**: ALWAYS use migrations for structural database changes.
+
+**Workflow**:
+
+```bash
+# 1. Create migration
+supabase migration new add_feature_name
+
+# 2. Edit file in supabase/migrations/TIMESTAMP_add_feature_name.sql
+# Add SQL (ALTER TABLE, CREATE INDEX, RLS policies)
+
+# 3. Apply to production
+supabase db push
+
+# 4. Commit to Git
+git add supabase/migrations/
+git commit -m "feat: add feature_name"
+```
+
+**Example**:
+
+```sql
+-- Add new column
+ALTER TABLE public.messages ADD COLUMN media_url TEXT;
+
+-- Create index
+CREATE INDEX idx_messages_media_url ON public.messages(media_url) 
+WHERE media_url IS NOT NULL;
+```
+
+**Backup Before Risky Changes**:
+
+```powershell
+cd db
+
+# Backup both schemas (public + auth)
+.\backup-complete.bat
+
+# Individual schemas
+.\backup-postgres.bat  # Application data
+.\backup-auth.bat      # Supabase Auth users
+```
+
+**Rollback Options**:
+1. Create reversal migration: `supabase migration new revert_feature`
+2. Restore from backup: `psql CONNECTION_STRING -f db\chatbot_full_TIMESTAMP.sql`
+
+**Never**:
+- ❌ Execute ALTER TABLE directly in Supabase Dashboard (production)
+- ❌ Edit already-applied migration files
+- ❌ Delete migration files
+- ❌ Modify n8n tables without coordination
+
+**See**: `db/MIGRATION_WORKFLOW.md` for complete guide
 
 ## Key Technical Concepts
 
@@ -315,6 +372,11 @@ export async function GET(request: NextRequest) {
 4. ✅ Navigate to http://localhost:3000 (verify no runtime errors)
 5. ✅ Check browser console for errors
 
+**Database Changes**:
+- ✅ Migration file created in `supabase/migrations/`
+- ✅ Migration committed to Git
+- ✅ Backup created before risky changes (`.\backup-complete.bat`)
+
 **TypeScript Check** (informational only):
 ```bash
 npx tsc --noEmit
@@ -323,7 +385,7 @@ npx tsc --noEmit
 
 **SKIP** (not applicable to this project):
 - ❌ Unit tests (no test suite)
-- ❌ Production build (Google Fonts restriction)
+- ❌ Production build (Google Fonts restriction in sandboxed environments)
 - ❌ E2E tests (not configured)
 
 ## Making Code Changes
@@ -333,6 +395,7 @@ npx tsc --noEmit
 1. **Read** `CLAUDE.md` for architectural context
 2. **Check** if change affects n8n workflow (if yes, coordinate)
 3. **Verify** you understand the multi-tenant pattern
+4. **Review** `db/MIGRATION_WORKFLOW.md` if changing database
 
 ### Adding New Dependencies
 
@@ -347,12 +410,74 @@ If vulnerabilities found, investigate before proceeding.
 
 ### Modifying Database Schema
 
-**CRITICAL**: Changes to `migration.sql` affect production data
+**CRITICAL**: Use migrations, never direct SQL in production
 
-1. Test changes in a separate Supabase project first
-2. Document migration steps
-3. Consider existing data (n8n tables)
-4. Update TypeScript types in `src/lib/types.ts`
+**Workflow**:
+
+1. Create migration: `supabase migration new add_feature_name`
+2. Edit generated file in `supabase/migrations/`
+3. Test locally (optional): `supabase db reset`
+4. Backup before risky changes: `cd db && .\backup-complete.bat`
+5. Apply: `supabase db push`
+6. Update TypeScript types in `src/lib/types.ts`
+7. Commit migration file to Git
+
+**Example Migration**:
+
+```sql
+-- supabase/migrations/20251030_add_priority_to_conversations.sql
+
+-- Add priority column
+ALTER TABLE public.conversations 
+ADD COLUMN priority INTEGER DEFAULT 0 CHECK (priority BETWEEN 0 AND 5);
+
+-- Create index
+CREATE INDEX idx_conversations_priority 
+ON public.conversations(priority DESC);
+
+-- Documentation
+COMMENT ON COLUMN public.conversations.priority 
+IS 'Prioridade da conversa (0-5, sendo 5 a mais alta)';
+```
+
+**Backup Strategy**:
+
+```powershell
+# Complete backup (public + auth schemas) - RECOMMENDED
+cd db
+.\backup-complete.bat
+
+# Individual schemas
+.\backup-postgres.bat  # Application data (clients, conversations, messages)
+.\backup-auth.bat      # Supabase Auth users (auth.users, auth.identities)
+```
+
+**Generated files** (all in `db/` directory):
+- `chatbot_full_TIMESTAMP.sql` - Complete public schema backup
+- `chatbot_structure_TIMESTAMP.sql` - DDL only (CREATE TABLE, etc)
+- `chatbot_data_TIMESTAMP.sql` - INSERT statements only
+- `auth_full_TIMESTAMP.sql` - Complete auth schema (⚠️ contains hashed passwords)
+- `auth_structure_TIMESTAMP.sql` - Auth DDL
+- `auth_data_TIMESTAMP.sql` - Auth data (users, sessions)
+
+**Important**:
+- Backup files are **NOT** committed to Git (in `.gitignore`)
+- Store backups securely (contain production data)
+- `auth_*` files contain sensitive data (user credentials)
+
+**Rollback**:
+1. **Preferred**: Create reversal migration
+   ```bash
+   supabase migration new revert_feature_name
+   # Write SQL to undo changes
+   supabase db push
+   ```
+
+2. **Emergency**: Restore from backup
+   ```powershell
+   # Get connection string from .env.local (SUPABASE_URL + SERVICE_ROLE_KEY)
+   psql "CONNECTION_STRING" -f db\chatbot_full_TIMESTAMP.sql
+   ```
 
 ### Modifying API Routes
 
