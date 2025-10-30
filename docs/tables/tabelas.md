@@ -116,11 +116,14 @@
 | public       | user_profiles     | update_user_profiles_updated_at       | CREATE TRIGGER update_user_profiles_updated_at BEFORE UPDATE ON user_profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()                      | update_updated_at_column        |
 | public       | users             | update_users_updated_at               | CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()                                      | update_updated_at_column        |
 
-# FUNÇÕES
+# TABELAS VAULT
 
 
 
-
+| table_schema | table_name        | columns                                                                                                                                                                                            |
+| ------------ | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| vault        | decrypted_secrets | id uuid, name text, description text, secret text, decrypted_secret text, key_id uuid, nonce bytea, created_at timestamp with time zone, updated_at timestamp with time zone                       |
+| vault        | secrets           | id uuid NOT NULL, name text, description text NOT NULL, secret text NOT NULL, key_id uuid, nonce bytea, created_at timestamp with time zone NOT NULL, updated_at timestamp with time zone NOT NULL |
 
 ## RODAR ESSE COMANDO PARA VER AS TABELAS
 

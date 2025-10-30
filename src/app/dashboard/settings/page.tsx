@@ -815,7 +815,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <Label htmlFor="enable_rag">Habilitar RAG</Label>
-                    <p className="text-xs text-gray-500">Busca em documentos</p>
+                    <p className="text-xs text-gray-500">Busca contexto em documentos enviados (base de conhecimento)</p>
                   </div>
                   <Input
                     type="checkbox"
@@ -835,8 +835,8 @@ export default function SettingsPage() {
                 {/* Enable Tools */}
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label htmlFor="enable_tools">Habilitar Tools</Label>
-                    <p className="text-xs text-gray-500">Function calling</p>
+                    <Label htmlFor="enable_tools">Habilitar Function Calling</Label>
+                    <p className="text-xs text-gray-500">Permite IA executar ações (transferência, agendamento, etc)</p>
                   </div>
                   <Input
                     type="checkbox"
@@ -857,7 +857,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <Label htmlFor="enable_human_handoff">Transferência Humana</Label>
-                    <p className="text-xs text-gray-500">Permite transferir para atendente</p>
+                    <p className="text-xs text-gray-500">Permite IA transferir conversa para atendente humano</p>
                   </div>
                   <Input
                     type="checkbox"
@@ -877,8 +877,8 @@ export default function SettingsPage() {
                 {/* Message Split Enabled */}
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label htmlFor="message_split_enabled">Dividir Mensagens</Label>
-                    <p className="text-xs text-gray-500">Quebra mensagens longas</p>
+                    <Label htmlFor="message_split_enabled">Dividir Mensagens Longas</Label>
+                    <p className="text-xs text-gray-500">Quebra respostas grandes em várias mensagens WhatsApp</p>
                   </div>
                   <Input
                     type="checkbox"

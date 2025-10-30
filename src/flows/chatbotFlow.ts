@@ -233,11 +233,18 @@ export const processChatbotMessage = async (
     })
     logger.logNodeSuccess('7. Save Chat Message (User)', { saved: true })
 
-    // NODE 8: Batch Messages
-    logger.logNodeStart('8. Batch Messages', { phone: parsedMessage.phone })
-    console.log('[chatbotFlow] Waiting for message batching (10s delay)')
-    const batchedContent = await batchMessages(parsedMessage.phone)
-    logger.logNodeSuccess('8. Batch Messages', { contentLength: batchedContent?.length || 0 })
+    // NODE 8: Batch Messages (configurável)
+    let batchedContent: string
+    
+    if (config.settings.messageSplitEnabled) {
+      logger.logNodeStart('8. Batch Messages', { phone: parsedMessage.phone })
+      console.log(`[chatbotFlow] ✅ Message batching enabled - waiting ${config.settings.batchingDelaySeconds}s`)
+      batchedContent = await batchMessages(parsedMessage.phone)
+      logger.logNodeSuccess('8. Batch Messages', { contentLength: batchedContent?.length || 0 })
+    } else {
+      console.log('[chatbotFlow] ⚠️ Message batching disabled - processing immediately')
+      batchedContent = processedContent
+    }
 
     if (!batchedContent || batchedContent.trim().length === 0) {
       console.log('[chatbotFlow] No batched content available, skipping AI processing')
@@ -249,21 +256,40 @@ export const processChatbotMessage = async (
     
     // NODE 9 & 10: Get Chat History + RAG Context (parallel)
     logger.logNodeStart('9. Get Chat History', { phone: parsedMessage.phone })
-    logger.logNodeStart('10. Get RAG Context', { queryLength: batchedContent.length })
     
-    const [chatHistory2, ragContext] = await Promise.all([
-      getChatHistory({
+    // 🔧 RAG configurável: Se desabilitado, pula busca de contexto
+    let chatHistory2: any[]
+    let ragContext: string = ''
+    
+    if (config.settings.enableRAG) {
+      logger.logNodeStart('10. Get RAG Context', { queryLength: batchedContent.length })
+      console.log('[chatbotFlow] 🔍 RAG enabled - fetching context')
+      
+      const [history, rag] = await Promise.all([
+        getChatHistory({
+          phone: parsedMessage.phone,
+          clientId: config.id, // 🔐 Multi-tenant: Filtra mensagens do cliente
+          maxHistory: config.settings.maxChatHistory, // 🔧 Usa config do cliente
+        }),
+        getRAGContext(batchedContent),
+      ])
+      
+      chatHistory2 = history
+      ragContext = rag
+      
+      logger.logNodeSuccess('10. Get RAG Context', { contextLength: ragContext.length })
+      console.log(`[chatbotFlow] Context retrieved - History: ${chatHistory2.length} messages, RAG: ${ragContext.length} chars`)
+    } else {
+      console.log('[chatbotFlow] ⚠️ RAG disabled by client config - skipping context retrieval')
+      chatHistory2 = await getChatHistory({
         phone: parsedMessage.phone,
-        clientId: config.id, // 🔐 Multi-tenant: Filtra mensagens do cliente
-        maxHistory: config.settings.maxChatHistory, // 🔧 Usa config do cliente
-      }),
-      getRAGContext(batchedContent),
-    ])
+        clientId: config.id,
+        maxHistory: config.settings.maxChatHistory,
+      })
+      console.log(`[chatbotFlow] Context retrieved - History: ${chatHistory2.length} messages, RAG: disabled`)
+    }
     
     logger.logNodeSuccess('9. Get Chat History', { messageCount: chatHistory2.length })
-    logger.logNodeSuccess('10. Get RAG Context', { contextLength: ragContext.length })
-
-    console.log(`[chatbotFlow] Context retrieved - History: ${chatHistory2.length} messages, RAG: ${ragContext.length} chars`)
 
     // NODE 11: Generate AI Response (com config do cliente)
     logger.logNodeStart('11. Generate AI Response', { messageLength: batchedContent.length, historyCount: chatHistory2.length })
@@ -316,13 +342,14 @@ export const processChatbotMessage = async (
       console.warn('[chatbotFlow] ⚠️ No usage data to log')
     }
 
-    if (aiResponse.toolCalls && aiResponse.toolCalls.length > 0) {
+    // 🔧 Human Handoff configurável: Se desabilitado, ignora tool calls de transferência
+    if (config.settings.enableHumanHandoff && aiResponse.toolCalls && aiResponse.toolCalls.length > 0) {
       const hasHumanHandoff = aiResponse.toolCalls.some(
         (tool) => tool.function.name === 'transferir_atendimento'
       )
 
       if (hasHumanHandoff) {
-        console.log('[chatbotFlow] Human handoff tool called, initiating transfer')
+        console.log('[chatbotFlow] ✅ Human handoff tool called - initiating transfer')
         await handleHumanHandoff({
           phone: parsedMessage.phone,
           customerName: parsedMessage.name,
@@ -331,6 +358,8 @@ export const processChatbotMessage = async (
         logger.finishExecution('success')
         return { success: true, handedOff: true }
       }
+    } else if (!config.settings.enableHumanHandoff && aiResponse.toolCalls && aiResponse.toolCalls.length > 0) {
+      console.log('[chatbotFlow] ⚠️ Human handoff disabled by client config - ignoring tool call')
     }
 
     if (!aiResponse.content || aiResponse.content.trim().length === 0) {
@@ -348,11 +377,18 @@ export const processChatbotMessage = async (
       clientId: config.id, // 🔐 Multi-tenant: Associa mensagem ao cliente
     })
 
-    // NODE 12: Format Response
-    logger.logNodeStart('12. Format Response', { contentLength: aiResponse.content.length })
-    console.log('[chatbotFlow] Formatting AI response into WhatsApp messages')
-    const formattedMessages = formatResponse(aiResponse.content)
-    logger.logNodeSuccess('12. Format Response', { messageCount: formattedMessages.length })
+    // NODE 12: Format Response (configurável)
+    let formattedMessages: string[]
+    
+    if (config.settings.messageSplitEnabled) {
+      logger.logNodeStart('12. Format Response', { contentLength: aiResponse.content.length })
+      console.log('[chatbotFlow] ✅ Message split enabled - formatting into multiple messages')
+      formattedMessages = formatResponse(aiResponse.content)
+      logger.logNodeSuccess('12. Format Response', { messageCount: formattedMessages.length })
+    } else {
+      console.log('[chatbotFlow] ⚠️ Message split disabled - sending as single message')
+      formattedMessages = [aiResponse.content]
+    }
 
     if (formattedMessages.length === 0) {
       console.log('[chatbotFlow] No formatted messages to send')
