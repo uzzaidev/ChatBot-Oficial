@@ -93,7 +93,7 @@ export const processChatbotMessage = async (
 
     if (parsedMessage.type === 'audio' && parsedMessage.metadata?.id) {
       console.log('[chatbotFlow] NODE 4a: Baixando áudio...')
-      const audioBuffer = await downloadMetaMedia(parsedMessage.metadata.id)
+      const audioBuffer = await downloadMetaMedia(parsedMessage.metadata.id, config.apiKeys.metaAccessToken)
       logger.logNodeSuccess('4a. Download Audio', { size: audioBuffer.length })
 
       console.log('[chatbotFlow] NODE 4b: Transcrevendo áudio...')
@@ -118,7 +118,7 @@ export const processChatbotMessage = async (
 
     } else if (parsedMessage.type === 'image' && parsedMessage.metadata?.id) {
       console.log('[chatbotFlow] NODE 4a: Baixando imagem...')
-      const imageBuffer = await downloadMetaMedia(parsedMessage.metadata.id)
+      const imageBuffer = await downloadMetaMedia(parsedMessage.metadata.id, config.apiKeys.metaAccessToken)
       logger.logNodeSuccess('4a. Download Image', { size: imageBuffer.length })
 
       console.log('[chatbotFlow] NODE 4b: Analisando imagem com GPT-4o Vision...')
@@ -146,7 +146,7 @@ export const processChatbotMessage = async (
 
     } else if (parsedMessage.type === 'document' && parsedMessage.metadata?.id) {
       console.log('[chatbotFlow] NODE 4a: Baixando documento...')
-      const documentBuffer = await downloadMetaMedia(parsedMessage.metadata.id)
+      const documentBuffer = await downloadMetaMedia(parsedMessage.metadata.id, config.apiKeys.metaAccessToken)
       logger.logNodeSuccess('4a. Download Document', { size: documentBuffer.length, filename: parsedMessage.metadata.filename })
 
       console.log('[chatbotFlow] NODE 4b: Analisando documento...')

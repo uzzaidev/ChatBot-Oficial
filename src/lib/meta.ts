@@ -30,9 +30,16 @@ const createMetaApiClient = (accessToken?: string) => {
   })
 }
 
-export const downloadMedia = async (mediaId: string): Promise<Buffer> => {
+/**
+ * 🔐 Download de mídia usando config dinâmica do cliente
+ *
+ * @param mediaId - ID da mídia no Meta
+ * @param accessToken - Token opcional (do config do cliente)
+ * @returns Buffer com o conteúdo da mídia
+ */
+export const downloadMedia = async (mediaId: string, accessToken?: string): Promise<Buffer> => {
   try {
-    const client = createMetaApiClient()
+    const client = createMetaApiClient(accessToken)
 
     const mediaUrlResponse = await client.get(`/${mediaId}`)
     const mediaUrl = mediaUrlResponse.data?.url
