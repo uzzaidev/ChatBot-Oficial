@@ -5,6 +5,10 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { LogOut } from 'lucide-react'
 
+interface LogoutButtonProps {
+  isCollapsed?: boolean
+}
+
 /**
  * LogoutButton - Client Component
  *
@@ -14,7 +18,7 @@ import { LogOut } from 'lucide-react'
  *
  * Usado no layout do dashboard
  */
-export function LogoutButton() {
+export function LogoutButton({ isCollapsed = false }: LogoutButtonProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
 
@@ -50,10 +54,11 @@ export function LogoutButton() {
       disabled={loading}
       variant="outline"
       size="sm"
-      className="w-full justify-start gap-2"
+      className={isCollapsed ? "w-full justify-center" : "w-full justify-start gap-2"}
+      title={isCollapsed ? (loading ? 'Saindo...' : 'Sair') : undefined}
     >
       <LogOut className="h-4 w-4" />
-      {loading ? 'Saindo...' : 'Sair'}
+      {!isCollapsed && (loading ? 'Saindo...' : 'Sair')}
     </Button>
   )
 }
