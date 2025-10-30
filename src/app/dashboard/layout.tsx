@@ -1,9 +1,6 @@
-import { MessageSquare, LayoutDashboard, LogOut, Settings, BarChart3 } from 'lucide-react'
-import Link from 'next/link'
-import { Separator } from '@/components/ui/separator'
 import { getCurrentUser } from '@/lib/supabase-server'
-import { LogoutButton } from '@/components/LogoutButton'
 import { AuthMonitor } from '@/components/AuthMonitor'
+import { DashboardLayoutClient } from '@/components/DashboardLayoutClient'
 
 /**
  * Dashboard Layout - Server Component
@@ -14,6 +11,7 @@ import { AuthMonitor } from '@/components/AuthMonitor'
  * - Busca dados do usuário autenticado
  * - Mostra nome/email do usuário
  * - Botão de logout
+ * - Responsivo com sidebar colapsável (desktop) e menu mobile
  */
 export default async function DashboardLayout({
   children,
@@ -27,87 +25,14 @@ export default async function DashboardLayout({
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuário'
 
   return (
-    <div className="flex min-h-screen">
+    <>
       {/* Monitor de autenticação - redireciona para login se token expirar */}
       <AuthMonitor />
-
-      <aside className="w-64 border-r bg-gray-50 p-6">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-blue-600 flex items-center gap-2">
-            <MessageSquare className="h-6 w-6" />
-            ChatBot
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Dashboard WhatsApp
-          </p>
-        </div>
-
-        <Separator className="mb-6" />
-
-        <nav className="space-y-2">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <LayoutDashboard className="h-5 w-5" />
-            <span className="font-medium">Dashboard</span>
-          </Link>
-
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <MessageSquare className="h-5 w-5" />
-            <span className="font-medium">Conversas</span>
-          </Link>
-
-          <Link
-            href="/dashboard/analytics"
-            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <BarChart3 className="h-5 w-5" />
-            <span className="font-medium">Analytics</span>
-          </Link>
-
-          <Link
-            href="/dashboard/settings"
-            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <Settings className="h-5 w-5" />
-            <span className="font-medium">Configurações</span>
-          </Link>
-        </nav>
-
-        <Separator className="my-6" />
-
-        {/* User Info & Logout */}
-        <div className="space-y-4">
-          <div className="text-sm">
-            <p className="text-muted-foreground">Conectado como:</p>
-            <p className="font-medium truncate" title={user?.email || ''}>
-              {userName}
-            </p>
-            {user?.email && (
-              <p className="text-xs text-muted-foreground truncate" title={user.email}>
-                {user.email}
-              </p>
-            )}
-          </div>
-
-          <LogoutButton />
-        </div>
-
-        <Separator className="my-6" />
-
-        <div className="text-xs text-muted-foreground">
-          <p>Versão 1.0.0 - Phase 3</p>
-          <p className="mt-1">Autenticação Ativa ✅</p>
-        </div>
-      </aside>
-
-      <main className="flex-1 p-8">
+      
+      <DashboardLayoutClient userName={userName} userEmail={user?.email}>
         {children}
-      </main>
-    </div>
+      </DashboardLayoutClient>
+    </>
   )
 }
+
