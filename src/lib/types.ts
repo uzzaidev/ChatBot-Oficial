@@ -366,6 +366,76 @@ export interface ChatMessage {
  *
  * Por enquanto, usamos tipo genérico
  */
+/**
+ * 🔐 Phase 4: Admin Dashboard Types
+ */
+export type UserRole = 'admin' | 'client_admin' | 'user'
+
+export type InviteStatus = 'pending' | 'accepted' | 'expired' | 'revoked'
+
+export interface UserProfile {
+  id: string
+  client_id: string
+  email: string
+  full_name: string | null
+  role: UserRole
+  permissions: Record<string, any>
+  is_active: boolean
+  phone: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface UserInvite {
+  id: string
+  client_id: string
+  invited_by_user_id: string
+  email: string
+  role: Exclude<UserRole, 'admin'> // Cannot invite as admin
+  invite_token: string
+  status: InviteStatus
+  expires_at: string
+  accepted_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface UserProfileWithInviter extends UserProfile {
+  client_name?: string
+  invited_by?: {
+    id: string
+    email: string
+    full_name: string | null
+  }
+}
+
+export interface CreateUserRequest {
+  email: string
+  full_name?: string
+  role: Exclude<UserRole, 'admin'>
+  phone?: string
+  permissions?: Record<string, any>
+}
+
+export interface UpdateUserRequest {
+  full_name?: string
+  role?: Exclude<UserRole, 'admin'>
+  phone?: string
+  permissions?: Record<string, any>
+  is_active?: boolean
+}
+
+export interface CreateInviteRequest {
+  email: string
+  role: Exclude<UserRole, 'admin'>
+}
+
+export interface AcceptInviteRequest {
+  token: string
+  full_name?: string
+  phone?: string
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -375,23 +445,29 @@ export interface Database {
         Update: Partial<Omit<Client, 'id' | 'created_at' | 'updated_at'>>
       }
       user_profiles: {
-        Row: {
-          id: string
-          client_id: string
-          email: string
-          full_name: string | null
-          created_at: string
-          updated_at: string
-        }
+        Row: UserProfile
         Insert: {
           id: string
           client_id: string
           email: string
           full_name?: string | null
+          role?: UserRole
+          permissions?: Record<string, any>
+          is_active?: boolean
+          phone?: string | null
         }
         Update: {
           full_name?: string | null
+          role?: UserRole
+          permissions?: Record<string, any>
+          is_active?: boolean
+          phone?: string | null
         }
+      }
+      user_invites: {
+        Row: UserInvite
+        Insert: Omit<UserInvite, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Pick<UserInvite, 'status' | 'accepted_at'>>
       }
       conversations: {
         Row: Conversation
@@ -412,6 +488,22 @@ export interface Database {
     Views: {}
     Functions: {
       get_user_client_id: {
+        Args: {}
+        Returns: string
+      }
+      get_current_user_role: {
+        Args: {}
+        Returns: UserRole
+      }
+      user_has_role: {
+        Args: { required_role: UserRole }
+        Returns: boolean
+      }
+      user_is_admin: {
+        Args: {}
+        Returns: boolean
+      }
+      get_current_user_client_id: {
         Args: {}
         Returns: string
       }

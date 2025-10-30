@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { createBrowserClient } from '@supabase/ssr'
+import { createBrowserClient, createServerClient as createSSRServerClient } from '@supabase/ssr'
 
 const getSupabaseUrl = (): string => {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -25,24 +25,64 @@ const getSupabaseServiceRoleKey = (): string => {
   return key
 }
 
-// Singleton global do cliente Supabase (reutilizado em toda a execução)
-let serverClientInstance: ReturnType<typeof createClient> | null = null
+/**
+ * createServerClient - Para API routes que precisam LER a sessão do usuário
+ * Usa cookies para manter a autenticação do browser
+ */
+export const createServerClient = () => {
+  // Import dinâmico para evitar erro em client components
+  const { cookies } = require('next/headers')
+  const cookieStore = cookies()
 
-// Reset forçado da conexão (útil no início de cada workflow)
-export const resetServerClient = () => {
-  console.log('[Supabase] 🔄 Reset forçado do cliente')
-  serverClientInstance = null
+  return createSSRServerClient(
+    getSupabaseUrl(),
+    getSupabaseAnonKey(),
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+        set(name: string, value: string, options: any) {
+          try {
+            cookieStore.set({ name, value, ...options })
+          } catch (error) {
+            // Cookies podem não ser settable em alguns contextos (middleware, etc)
+          }
+        },
+        remove(name: string, options: any) {
+          try {
+            cookieStore.set({ name, value: '', ...options })
+          } catch (error) {
+            // Ignore
+          }
+        },
+      },
+    }
+  )
 }
 
-export const createServerClient = () => {
+/**
+ * createServiceRoleClient - Para operações administrativas SEM autenticação de usuário
+ * Usa service role key (bypass RLS)
+ */
+// Singleton global do cliente Supabase (reutilizado em toda a execução)
+let serviceRoleClientInstance: ReturnType<typeof createClient> | null = null
+
+// Reset forçado da conexão (útil no início de cada workflow)
+export const resetServiceRoleClient = () => {
+  console.log('[Supabase] 🔄 Reset forçado do cliente service role')
+  serviceRoleClientInstance = null
+}
+
+export const createServiceRoleClient = () => {
   // Reutiliza instância se já existe
-  if (serverClientInstance) {
-    console.log('[Supabase] ♻️ Reutilizando cliente existente')
-    return serverClientInstance
+  if (serviceRoleClientInstance) {
+    console.log('[Supabase] ♻️ Reutilizando cliente service role existente')
+    return serviceRoleClientInstance
   }
 
-  console.log('[Supabase] 🆕 Criando novo cliente')
-  serverClientInstance = createClient(getSupabaseUrl(), getSupabaseServiceRoleKey(), {
+  console.log('[Supabase] 🆕 Criando novo cliente service role')
+  serviceRoleClientInstance = createClient(getSupabaseUrl(), getSupabaseServiceRoleKey(), {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
@@ -68,7 +108,7 @@ export const createServerClient = () => {
     },
   })
 
-  return serverClientInstance
+  return serviceRoleClientInstance
 }
 
 export const createClientBrowser = () => {

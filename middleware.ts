@@ -114,7 +114,7 @@ export async function middleware(request: NextRequest) {
     })
   }
 
-  // Admin-only routes: /admin/* (futuro)
+  // Admin-only routes: /admin/*
   if (request.nextUrl.pathname.startsWith('/admin')) {
     if (!user) {
       const loginUrl = new URL('/login', request.url)
@@ -123,16 +123,36 @@ export async function middleware(request: NextRequest) {
 
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('role')
+      .select('role, is_active, client_id')
       .eq('id', user.id)
       .single()
 
-    if (profile?.role !== 'admin') {
-      // Não é admin - redirecionar para dashboard
-      console.warn('[middleware] Acesso negado a /admin - role:', profile?.role)
+    // Verificar se tem role de admin e está ativo
+    console.log('[middleware] 🔐 Admin check:', {
+      hasProfile: !!profile,
+      role: profile?.role,
+      isActive: profile?.is_active,
+      isAdminRole: profile ? ['admin', 'client_admin'].includes(profile.role as string) : false,
+      path: request.nextUrl.pathname
+    })
+
+    if (!profile || !['admin', 'client_admin'].includes(profile.role as string) || !profile.is_active) {
+      // Não é admin ou está desativado - redirecionar para dashboard
+      console.warn('[middleware] ❌ Acesso negado a /admin - role:', profile?.role, 'is_active:', profile?.is_active)
       const dashboardUrl = new URL('/dashboard', request.url)
       return NextResponse.redirect(dashboardUrl)
     }
+
+    // Injetar role e client_id nos headers para uso nas páginas admin
+    response.headers.set('x-user-role', profile.role)
+    response.headers.set('x-user-client-id', profile.client_id)
+    response.headers.set('x-user-is-active', String(profile.is_active))
+
+    console.log('[middleware] ✅ Acesso admin autorizado:', {
+      user: user.email,
+      role: profile.role,
+      path: request.nextUrl.pathname,
+    })
   }
 
   return response
