@@ -26,7 +26,11 @@ interface NavItemProps {
 
 const NavItem = ({ href, icon, label, isCollapsed, onClick }: NavItemProps) => {
   const pathname = usePathname()
-  const isActive = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
+  // For exact match on /dashboard, only highlight if label matches to avoid duplicates
+  const isExactDashboard = href === '/dashboard' && pathname === '/dashboard'
+  const isActive = isExactDashboard 
+    ? label === 'Dashboard' // Only highlight the "Dashboard" item, not "Conversas"
+    : pathname.startsWith(href) && href !== '/dashboard'
 
   return (
     <Link
