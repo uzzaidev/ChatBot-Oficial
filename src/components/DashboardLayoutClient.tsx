@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
@@ -20,6 +21,7 @@ interface DashboardLayoutClientProps {
  * - Estado do sidebar (collapsed/expanded no desktop)
  * - Sheet mobile (hamburger menu)
  * - Responsividade
+ * - Oculta-se automaticamente em rotas de conversas
  */
 export function DashboardLayoutClient({ 
   userName, 
@@ -28,6 +30,15 @@ export function DashboardLayoutClient({
 }: DashboardLayoutClientProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
+  const pathname = usePathname()
+
+  // Se estiver em qualquer rota de conversas, renderiza apenas children
+  // (as páginas de conversas têm seu próprio layout/sidebar)
+  const isConversationsRoute = pathname.startsWith('/dashboard/conversations')
+
+  if (isConversationsRoute) {
+    return <>{children}</>
+  }
 
   return (
     <div className="flex min-h-screen">
