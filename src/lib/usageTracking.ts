@@ -279,13 +279,14 @@ export const logWhisperUsage = async (
     clientId,
     conversationId,
     phone,
-    source: 'whisper',
+    source: 'openai', // Whisper é uma API da OpenAI
     model: 'whisper-1',
     promptTokens: estimatedTokens,
     completionTokens: 0,
     totalTokens: estimatedTokens,
     metadata: {
       duration_seconds: durationSeconds,
+      api_type: 'whisper', // Identificar que é Whisper no metadata
     },
   })
 }
