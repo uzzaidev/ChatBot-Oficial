@@ -25,14 +25,26 @@ export const getOpenAIClient = (): OpenAI => {
   return openaiClient
 }
 
-export const transcribeAudio = async (audioBuffer: Buffer): Promise<{
+export const transcribeAudio = async (
+  audioBuffer: Buffer,
+  apiKey?: string
+): Promise<{
   text: string
   usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number }
   model: string
   durationSeconds?: number
 }> => {
   try {
-    const client = getOpenAIClient()
+    // 🔐 Criar cliente OpenAI (dinâmico ou cached)
+    let client: OpenAI
+    
+    if (apiKey) {
+      // Se apiKey fornecida, criar novo client (não cachear)
+      client = new OpenAI({ apiKey })
+    } else {
+      // Fallback: usar client cacheado do env
+      client = getOpenAIClient()
+    }
 
     const uint8Array = new Uint8Array(audioBuffer)
     const blob = new Blob([uint8Array], { type: 'audio/ogg' })
@@ -77,9 +89,20 @@ export const transcribeAudio = async (audioBuffer: Buffer): Promise<{
   }
 }
 
-export const analyzeImage = async (imageUrl: string, prompt: string): Promise<string> => {
+export const analyzeImage = async (
+  imageUrl: string,
+  prompt: string,
+  apiKey?: string
+): Promise<string> => {
   try {
-    const client = getOpenAIClient()
+    // 🔐 Criar cliente OpenAI (dinâmico ou cached)
+    let client: OpenAI
+    
+    if (apiKey) {
+      client = new OpenAI({ apiKey })
+    } else {
+      client = getOpenAIClient()
+    }
 
     const response = await client.chat.completions.create({
       model: 'gpt-4o',
@@ -115,13 +138,25 @@ export const analyzeImage = async (imageUrl: string, prompt: string): Promise<st
   }
 }
 
-export const analyzeImageFromBuffer = async (imageBuffer: Buffer, prompt: string, mimeType: string = 'image/jpeg'): Promise<{
-  content: string
+export const analyzeImageFromBuffer = async (
+  imageBuffer: Buffer,
+  prompt: string,
+  mimeType: string = 'image/jpeg',
+  apiKey?: string
+): Promise<{
+  text: string
   usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number }
   model: string
 }> => {
   try {
-    const client = getOpenAIClient()
+    // 🔐 Criar cliente OpenAI (dinâmico ou cached)
+    let client: OpenAI
+    
+    if (apiKey) {
+      client = new OpenAI({ apiKey })
+    } else {
+      client = getOpenAIClient()
+    }
 
     // Converter buffer para base64
     const base64Image = imageBuffer.toString('base64')
@@ -166,7 +201,7 @@ export const analyzeImageFromBuffer = async (imageBuffer: Buffer, prompt: string
     console.log('[GPT-4o Vision] Usage data:', usage)
 
     return {
-      content,
+      text: content,
       usage,
       model: 'gpt-4o'
     }
@@ -176,13 +211,23 @@ export const analyzeImageFromBuffer = async (imageBuffer: Buffer, prompt: string
   }
 }
 
-export const generateEmbedding = async (text: string): Promise<{
+export const generateEmbedding = async (
+  text: string,
+  apiKey?: string
+): Promise<{
   embedding: number[]
   usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number }
   model: string
 }> => {
   try {
-    const client = getOpenAIClient()
+    // 🔐 Criar cliente OpenAI (dinâmico ou cached)
+    let client: OpenAI
+    
+    if (apiKey) {
+      client = new OpenAI({ apiKey })
+    } else {
+      client = getOpenAIClient()
+    }
 
     const response = await client.embeddings.create({
       model: 'text-embedding-3-small',
@@ -229,13 +274,24 @@ export const extractTextFromPDF = async (pdfBuffer: Buffer): Promise<string> => 
   }
 }
 
-export const summarizePDFContent = async (pdfText: string, filename?: string): Promise<{
+export const summarizePDFContent = async (
+  pdfText: string,
+  filename?: string,
+  apiKey?: string
+): Promise<{
   content: string
   usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number }
   model: string
 }> => {
   try {
-    const client = getOpenAIClient()
+    // 🔐 Criar cliente OpenAI (dinâmico ou cached)
+    let client: OpenAI
+    
+    if (apiKey) {
+      client = new OpenAI({ apiKey })
+    } else {
+      client = getOpenAIClient()
+    }
 
     const prompt = `Você recebeu um documento PDF${filename ? ` chamado "${filename}"` : ''}.
 Analise o conteúdo e forneça um resumo detalhado em português, incluindo:

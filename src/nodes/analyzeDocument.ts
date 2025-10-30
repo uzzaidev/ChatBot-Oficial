@@ -3,7 +3,8 @@ import { extractTextFromPDF, summarizePDFContent } from '@/lib/openai'
 export const analyzeDocument = async (
   documentBuffer: Buffer,
   mimeType: string,
-  filename?: string
+  filename?: string,
+  apiKey?: string
 ): Promise<{
   content: string
   usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number }
@@ -21,7 +22,7 @@ export const analyzeDocument = async (
         }
       }
 
-      const result = await summarizePDFContent(pdfText, filename)
+      const result = await summarizePDFContent(pdfText, filename, apiKey)
       return {
         content: `📄 Documento recebido${filename ? ` (${filename})` : ''}:\n\n${result.content}`,
         usage: result.usage,

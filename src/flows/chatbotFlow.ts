@@ -97,7 +97,7 @@ export const processChatbotMessage = async (
       logger.logNodeSuccess('4a. Download Audio', { size: audioBuffer.length })
 
       console.log('[chatbotFlow] NODE 4b: Transcrevendo áudio...')
-      const transcriptionResult = await transcribeAudio(audioBuffer)
+      const transcriptionResult = await transcribeAudio(audioBuffer, config.apiKeys.openaiApiKey)
       processedContent = transcriptionResult.text
       logger.logNodeSuccess('4b. Transcribe Audio', { transcription: processedContent.substring(0, 100) })
       console.log(`[chatbotFlow] 🎤 Áudio transcrito: ${processedContent}`)
@@ -122,10 +122,10 @@ export const processChatbotMessage = async (
       logger.logNodeSuccess('4a. Download Image', { size: imageBuffer.length })
 
       console.log('[chatbotFlow] NODE 4b: Analisando imagem com GPT-4o Vision...')
-      const visionResult = await analyzeImage(imageBuffer, parsedMessage.metadata.mimeType || 'image/jpeg')
+      const visionResult = await analyzeImage(imageBuffer, parsedMessage.metadata.mimeType || 'image/jpeg', config.apiKeys.openaiApiKey)
 
       // Passar apenas a descrição da IA (a legenda será adicionada pelo normalizeMessage)
-      processedContent = visionResult.content
+      processedContent = visionResult.text
 
       logger.logNodeSuccess('4b. Analyze Image', { description: processedContent.substring(0, 100) })
       console.log(`[chatbotFlow] 🖼️ Imagem analisada: ${processedContent}`)
@@ -153,7 +153,8 @@ export const processChatbotMessage = async (
       const documentResult = await analyzeDocument(
         documentBuffer,
         parsedMessage.metadata.mimeType,
-        parsedMessage.metadata.filename
+        parsedMessage.metadata.filename,
+        config.apiKeys.openaiApiKey
       )
 
       processedContent = documentResult.content

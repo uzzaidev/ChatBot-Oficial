@@ -914,8 +914,8 @@ function generateTempPassword(): string {
 - [ ] Página de knowledge base (listar documentos)
 - [ ] Upload de documentos RAG
 - [ ] Gerenciar equipe (convidar usuários)
-- [ ] Página de analytics (mensagens, custos)
-- [ ] Implementar `usage_logs` tracking completo
+- [X] Página de analytics (mensagens, custos)
+- [x] Implementar `usage_logs` tracking completo
 
 ---
 
