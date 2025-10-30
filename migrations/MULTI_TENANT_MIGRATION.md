@@ -347,23 +347,133 @@ Sistema com autenticação:
 
 ---
 
-### ⏳ FASE 4: Admin Dashboard (PLANEJADA)
+### ✅ FASE 4: Admin Dashboard (CONCLUÍDA)
 
 **Objetivo**: Interface de gerenciamento para criar e gerenciar clientes
 
-**Status**: 🔴 NÃO INICIADA
+**Status**: ✅ CONCLUÍDA
 
-#### Pendências
+#### Implementado
 
-- [ ] Criar layout admin (`/app/admin/layout.tsx`)
-- [ ] Página de listagem de clientes
-- [ ] Formulário de criação de cliente (com Vault)
-- [ ] Página de edição de cliente
-- [ ] Página de configuração de prompts
-- [ ] Página de usuários do cliente
-- [ ] Implementar permissões (admin vs client_admin)
-- [ ] Criar endpoint `/api/admin/clients` (CRUD)
-- [ ] Tela de onboarding (wizard)
+##### Database & Permissions
+- ✅ Migration `008_phase4_admin_roles.sql` executada
+- ✅ Tabela `user_profiles` atualizada com:
+  - Campo `role` (admin | client_admin | user)
+  - Campo `permissions` (JSONB - 63 permissões granulares)
+  - Campo `is_active` (controle de ativação)
+  - Campo `phone` (telefone do usuário)
+- ✅ Tabela `user_invites` criada:
+  - Tokens seguros (UUID)
+  - Expiração de 7 dias
+  - Status tracking (pending | accepted | expired | revoked)
+- ✅ RLS policies configuradas (temporariamente desabilitadas)
+- ✅ Usuário admin promovido (Luis Fernando Boff - role='admin')
+
+##### Backend API
+- ✅ `/api/admin/users` - List/Create users
+  - GET: Lista usuários com role verification
+  - POST: Cria usuário via `supabaseAdmin.auth.admin.createUser()`
+  - Rollback automático em caso de erro
+  - Client_id isolation (client_admin vê só seu tenant)
+  - Super admin vê todos os clientes com `client_name`
+- ✅ `/api/admin/users/[id]` - Get/Update/Delete user
+  - GET: Detalhes do usuário
+  - PATCH: Atualiza perfil e permissões
+  - DELETE: Hard delete com `supabaseAdmin.auth.admin.deleteUser()`
+- ✅ `/api/admin/invites` - List/Create invites
+  - GET: Lista convites com informação do criador
+  - POST: Cria convite com token seguro (7-day expiration)
+  - RLS issue resolvido (queries separadas)
+- ✅ `/api/admin/invites/[id]` - Update/Delete invite
+  - PATCH: Revoga ou atualiza convite
+  - DELETE: Remove convite permanentemente
+- ✅ Hybrid Supabase client architecture:
+  - `createServerClient()` - Cookie-based sessions (@supabase/ssr)
+  - `createServiceRoleClient()` - Admin operations bypassing RLS
+- ✅ Logging completo com emojis (🔍👤📋🔐✅❌)
+
+##### Frontend Admin
+- ✅ `/app/admin/layout.tsx` - Admin layout com sidebar
+  - Navegação: Dashboard, Usuários, Convites, Configurações
+  - Logout button
+  - User info display
+- ✅ `/app/admin/page.tsx` - Dashboard homepage
+  - 4 cards de estatísticas:
+    - Total de Usuários
+    - **Clientes/Tenants** (NEW - conta únicos)
+    - Usuários Ativos
+    - Convites Pendentes
+  - Quick actions (Criar Usuário, Criar Convite)
+- ✅ `/app/admin/users/page.tsx` - Users list
+  - Tabela completa com todas as informações
+  - **Cliente/Tenant column** (conditional - só para super admin)
+  - Mostra `client_name` + abbreviated `client_id`
+  - Role detection automática (super admin vs client admin)
+  - Badges coloridos para roles e status
+  - Ações: Editar, Deletar
+- ✅ `/app/admin/users/new/page.tsx` - Create user form
+  - Campos: nome, email, role, telefone, senha
+  - Validação de senha (min 6 chars)
+  - Select de roles (admin | client_admin | user)
+  - Permissões pré-configuradas por role
+- ✅ `/app/admin/users/[id]/page.tsx` - Edit user
+  - Formulário completo de edição
+  - Toggle de status (ativar/desativar)
+  - Permissões granulares (63 switches)
+  - Grouped permissions por categoria
+- ✅ `/app/admin/invites/page.tsx` - Invites management
+  - Tabela com todos os convites
+  - Dialog para criar novo convite
+  - Badges de status (pending | accepted | expired | revoked)
+  - Ações: Revogar, Deletar
+  - Copy invite link (implementação futura)
+
+##### Navigation & UX
+- ✅ Botão "Painel Admin" no dashboard principal (conditional)
+  - Só aparece para admin e client_admin ativos
+  - Settings icon + outline variant
+  - Link direto para `/admin`
+- ✅ Botão "Voltar ao Dashboard" no admin panel
+  - Presente no sidebar do admin layout
+  - Permite navegação bidirecional
+- ✅ Role detection client-side:
+  - `DashboardClient.tsx` checa role via API
+  - Conditional rendering baseado em `isAdmin` state
+
+##### Middleware & Security
+- ✅ `middleware.ts` enhanced com admin checks
+  - Verifica role para rotas `/admin/*`
+  - Apenas admin e client_admin ativos podem acessar
+  - Logs detalhados com emoji markers
+  - Injeta `x-user-role` header
+- ✅ API routes com dupla verificação:
+  - Session verification via `createServerClient()`
+  - Admin operations via `createServiceRoleClient()`
+  - Role-based access control em cada endpoint
+
+##### Type Safety
+- ✅ `src/lib/types.ts` atualizado com:
+  - `UserRole` type
+  - `UserProfile` interface (role, permissions, is_active, phone)
+  - `UserInvite` interface
+  - `CreateUserRequest`, `UpdateUserRequest` types
+  - `CreateInviteRequest` type
+  - Type safety em todos os componentes
+
+##### Documentation
+- ✅ `PERMISSIONS_MATRIX.md` criado
+  - 63 permissões documentadas
+  - 9 categorias (Users, Conversations, Analytics, etc.)
+  - Visual tables com descrições
+  - Permissões padrão por role
+
+#### Pendências (Opcionais)
+
+- [ ] Accept invite flow frontend (`/auth/accept-invite/[token]`)
+- [ ] Email integration para envio de convites
+- [ ] Página de gestão de clientes (criar novos tenants)
+- [ ] Bulk user operations
+- [ ] Auditoria de ações admin (logs)
 
 ---
 
@@ -889,16 +999,33 @@ function generateTempPassword(): string {
 - [x] Testar proteção de rotas
 - [x] Sistema funcionando em produção
 
-### ⏳ FASE 4: Admin Dashboard
+### ✅ FASE 4: Admin Dashboard
 
-- [ ] Criar layout admin (`/app/admin/layout.tsx`)
-- [ ] Página de listagem de clientes
-- [ ] Formulário de criação de cliente (com Vault)
-- [ ] Página de edição de cliente
-- [ ] Página de configuração de prompts
-- [ ] Página de usuários do cliente
-- [ ] Implementar permissões (admin vs client_admin)
-- [ ] Criar endpoint `/api/admin/clients` (CRUD)
+- [x] Criar layout admin (`/app/admin/layout.tsx`)
+- [x] Criar middleware de proteção com role check
+- [x] Criar migration com user_profiles (role, permissions, is_active, phone)
+- [x] Criar migration com user_invites (token, status, expiration)
+- [x] Promover primeiro usuário a admin
+- [x] Criar tipos TypeScript (UserRole, UserProfile, UserInvite)
+- [x] Criar API `/api/admin/users` (GET/POST)
+- [x] Criar API `/api/admin/users/[id]` (GET/PATCH/DELETE)
+- [x] Criar API `/api/admin/invites` (GET/POST)
+- [x] Criar API `/api/admin/invites/[id]` (PATCH/DELETE)
+- [x] Refatorar createServerClient para usar cookies (@supabase/ssr)
+- [x] Criar createServiceRoleClient para admin operations
+- [x] Resolver RLS issues (separated queries)
+- [x] Página admin homepage com stats (4 cards + tenant count)
+- [x] Página de listagem de usuários com multi-tenant visibility
+- [x] Formulário de criação de usuário
+- [x] Página de edição de usuário (com 63 permissions switches)
+- [x] Página de gestão de convites (com Dialog)
+- [x] Implementar permissões (admin vs client_admin)
+- [x] Adicionar botão "Painel Admin" no dashboard (conditional)
+- [x] Adicionar coluna "Cliente/Tenant" na lista de usuários (super admin)
+- [x] Criar documentação PERMISSIONS_MATRIX.md
+- [ ] Accept invite flow frontend (opcional)
+- [ ] Email integration (opcional)
+- [ ] Página de gestão de clientes/tenants (futuro)
 
 ### 🚧 FASE 5: Client Dashboard Enhancements
 
@@ -910,87 +1037,82 @@ function generateTempPassword(): string {
 - [x] Página de settings - Configurações do Agent (8 settings avançados)
 - [x] Password revalidation para edições sensíveis
 - [x] Webhook URL display
-- [ ] 🔄 **Dynamic Provider Selection** (ver `DYNAMIC_PROVIDER_SELECTION.md`)
+- [x] Página de analytics (mensagens, custos, gráficos)
+- [ ] 🔄 **Dynamic Provider Selection** (PRÓXIMO - ver `DYNAMIC_PROVIDER_SELECTION.md`)
 - [ ] Página de knowledge base (listar documentos)
 - [ ] Upload de documentos RAG
-- [ ] Gerenciar equipe (convidar usuários)
-- [X] Página de analytics (mensagens, custos)
-- [x] Implementar `usage_logs` tracking completo
+- [ ] Implementar `usage_logs` tracking completo (custos de API)
+- [ ] Export de dados (conversas, analytics)
 
 ---
 
 ## Próximos Passos Imediatos
 
-### 🎯 Sprint Atual: FASE 3 - Autenticação
+### 🎯 Sprint Atual: FASE 5 - Dynamic Provider Selection
 
-**Meta**: Implementar login page e substituir `DEFAULT_CLIENT_ID` por autenticação
+**Meta**: Permitir cliente escolher entre OpenAI ou Groq como modelo principal
 
-#### Passo 1: Database Setup (1-2h)
+Ver documento detalhado: `DYNAMIC_PROVIDER_SELECTION.md`
 
-```bash
-# Executar SQL no Supabase SQL Editor
-# migrations/007_auth_setup.sql
-```
+#### Resumo da Implementação
 
-- [ ] Criar tabela `user_profiles`
-- [ ] Criar trigger `handle_new_user()`
-- [ ] Configurar RLS policies
+1. **Database** (15min)
+   - Adicionar campo `preferred_provider` em `clients` table
+   - Valores: 'groq' | 'openai' | 'auto'
 
-#### Passo 2: Supabase Auth Config (30min)
+2. **Backend** (1-2h)
+   - Criar `lib/ai-provider.ts` com factory pattern
+   - Adaptar `generateAIResponse` para usar provider dinâmico
+   - Manter fallback entre providers
 
-- [ ] Dashboard → Authentication → Providers → Email (habilitar)
-- [ ] Site URL: `http://localhost:3000` (dev) + `https://chat.luisfboff.com` (prod)
-- [ ] Redirect URLs: Adicionar ambas
+3. **Frontend** (1h)
+   - Adicionar select no settings page
+   - UI para escolher provider preferido
+   - Mostrar modelo atual em uso
 
-#### Passo 3: Install Dependencies (5min)
+4. **Testing** (30min)
+   - Testar switch entre providers
+   - Validar fallback automático
+   - Verificar logs de provider usado
 
-```bash
-npm install @supabase/ssr @supabase/auth-helpers-nextjs
-```
-
-#### Passo 4: Create Login Page (1-2h)
-
-- [ ] Criar `app/(auth)/login/page.tsx`
-- [ ] Criar `lib/supabase-browser.ts`
-- [ ] Testar login com usuário teste
-
-#### Passo 5: Middleware (1h)
-
-- [ ] Criar `middleware.ts`
-- [ ] Proteger `/dashboard/*`
-- [ ] Testar redirecionamento
-
-#### Passo 6: Adapt Dashboard (2-3h)
-
-- [ ] Criar `getClientIdFromSession()` helper
-- [ ] Modificar `dashboard/page.tsx` para usar session
-- [ ] Modificar `dashboard/conversations/[phone]/page.tsx`
-- [ ] Adicionar botão de logout
-
-#### Passo 7: Create First User (30min)
-
-```sql
--- Criar primeiro usuário via SQL
--- Email: luisfboff@hotmail.com
--- Client ID: b21b314f-c49a-467d-94b3-a21ed4412227
-```
-
-#### Passo 8: Test (1h)
-
-- [ ] Fazer login
-- [ ] Verificar dashboard carregando dados corretos
-- [ ] Verificar isolamento de dados
-- [ ] Fazer logout
-- [ ] Verificar redirecionamento
+**Estimativa Total**: 3-4 horas
 
 ---
 
-**Estimativa Total FASE 3**: 8-12 horas de desenvolvimento
+### 📋 Backlog (Futuras Fases)
+
+#### Knowledge Base Management
+- Upload de documentos (PDF, TXT, DOCX)
+- Listagem de documentos embeddings
+- Delete de documentos do vector store
+- Reprocessamento de embeddings
+
+#### Advanced Analytics
+- Cost tracking por API (OpenAI vs Groq)
+- Relatórios de uso por período
+- Export de dados (CSV, JSON)
+- Webhooks de alertas (uso excessivo)
+
+#### Multi-tenant Admin
+- Página de gestão de clientes/tenants
+- Onboarding wizard para novos clientes
+- Billing integration (Stripe)
+- Usage limits por tenant
+
+#### Team Collaboration
+- Accept invite flow completo
+- Email notifications (SendGrid/Resend)
+- Team member management
+- Audit logs de ações
+
+---
+
+**Estimativa Fase 5 Completa**: 15-20 horas adicionais
 
 ---
 
 **Autor**: Claude + Luis Fernando Boff
 **Data Início**: 2025-01-27
-**Última Atualização**: 2025-10-28
-**Versão**: 2.0
-**Status**: 🚧 FASE 3 em andamento (Autenticação)
+**Última Atualização**: 2025-10-30
+**Versão**: 3.0
+**Status**: ✅ FASE 4 concluída | 🚧 FASE 5 em andamento (Dynamic Provider Selection próximo)

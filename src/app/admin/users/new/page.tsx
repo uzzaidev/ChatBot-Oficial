@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -18,21 +18,89 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast'
 import type { CreateUserRequest } from '@/lib/types'
 
+interface Client {
+  id: string
+  name: string
+  slug: string
+  status: string
+}
+
 export default function NewUserPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
+  const [loadingClients, setLoadingClients] = useState(true)
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null)
+  const [currentClientId, setCurrentClientId] = useState<string | null>(null)
+  const [currentClientName, setCurrentClientName] = useState<string>('')
+  const [clients, setClients] = useState<Client[]>([])
+  const [showPassword, setShowPassword] = useState(false)
+  
   const [formData, setFormData] = useState<CreateUserRequest>({
     email: '',
+    password: '',
     full_name: '',
     role: 'user',
     phone: '',
+    client_id: undefined,
     permissions: {},
   })
+
+  // Buscar role do usuário atual e lista de clients
+  useEffect(() => {
+    const fetchUserAndClients = async () => {
+      try {
+        setLoadingClients(true)
+
+        // Buscar clients
+        const clientsResponse = await fetch('/api/admin/clients?status=active')
+        const clientsData = await clientsResponse.json()
+
+        if (clientsResponse.ok && clientsData.clients) {
+          setClients(clientsData.clients)
+
+          // Se há apenas 1 client, é client_admin (vê apenas o próprio)
+          // Se há múltiplos clients, é super admin
+          const isSuperAdmin = clientsData.clients.length > 1
+
+          if (isSuperAdmin) {
+            setCurrentUserRole('admin')
+          } else if (clientsData.clients.length === 1) {
+            setCurrentUserRole('client_admin')
+            setCurrentClientId(clientsData.clients[0].id)
+            setCurrentClientName(clientsData.clients[0].name)
+            // Pré-selecionar o client_id do client_admin
+            setFormData(prev => ({ ...prev, client_id: clientsData.clients[0].id }))
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching clients:', err)
+        toast({
+          title: 'Erro ao carregar dados',
+          description: 'Não foi possível carregar a lista de clientes.',
+          variant: 'destructive',
+        })
+      } finally {
+        setLoadingClients(false)
+      }
+    }
+
+    fetchUserAndClients()
+  }, [toast])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    // Validação de senha
+    if (formData.password.length < 6) {
+      toast({
+        title: 'Senha muito curta',
+        description: 'A senha deve ter no mínimo 6 caracteres.',
+        variant: 'destructive',
+      })
+      return
+    }
+
     try {
       setLoading(true)
 
@@ -50,7 +118,7 @@ export default function NewUserPage() {
 
       toast({
         title: 'Usuário criado com sucesso!',
-        description: `${formData.email} foi adicionado à equipe.`,
+        description: `${formData.email} foi adicionado à equipe. Senha inicial definida.`,
       })
 
       router.push('/admin/users')
@@ -85,11 +153,61 @@ export default function NewUserPage() {
           <CardHeader>
             <CardTitle>Informações do Usuário</CardTitle>
             <CardDescription>
-              Preencha os dados do novo usuário. Um email de confirmação será enviado.
+              Preencha os dados do novo usuário. Uma senha inicial será definida.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Client/Tenant - Conditional rendering */}
+              {!loadingClients && (
+                <div className="space-y-2">
+                  <Label htmlFor="client_id">
+                    Cliente/Tenant *
+                    {currentUserRole === 'admin' && (
+                      <span className="text-sm font-normal text-gray-500 ml-2">
+                        (Super admin pode escolher)
+                      </span>
+                    )}
+                  </Label>
+                  
+                  {currentUserRole === 'admin' ? (
+                    // Super admin: select dropdown
+                    <Select
+                      value={formData.client_id}
+                      onValueChange={(value) => setFormData({ ...formData, client_id: value })}
+                      required
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o cliente/tenant" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clients.map((client) => (
+                          <SelectItem key={client.id} value={client.id}>
+                            {client.name} ({client.slug})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    // Client admin: read-only display
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="text"
+                        value={currentClientName}
+                        disabled
+                        className="bg-gray-50"
+                      />
+                      <span className="text-sm text-gray-500">(seu tenant)</span>
+                    </div>
+                  )}
+                  <p className="text-sm text-gray-500">
+                    {currentUserRole === 'admin'
+                      ? 'Escolha para qual cliente/tenant este usuário pertencerá'
+                      : 'Novos usuários serão criados no seu tenant'}
+                  </p>
+                </div>
+              )}
+
               {/* Email */}
               <div className="space-y-2">
                 <Label htmlFor="email">Email *</Label>
@@ -101,6 +219,37 @@ export default function NewUserPage() {
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
                 />
+              </div>
+
+              {/* Password */}
+              <div className="space-y-2">
+                <Label htmlFor="password">Senha Inicial *</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Mínimo 6 caracteres"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    required
+                    minLength={6}
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+                <p className="text-sm text-gray-500">
+                  O usuário poderá alterar esta senha após o primeiro login
+                </p>
               </div>
 
               {/* Full Name */}
@@ -144,14 +293,14 @@ export default function NewUserPage() {
                 </Select>
                 <p className="text-sm text-gray-500">
                   {formData.role === 'client_admin'
-                    ? 'Pode gerenciar usuários e configurações'
+                    ? 'Pode gerenciar usuários e configurações do tenant'
                     : 'Acesso padrão ao sistema'}
                 </p>
               </div>
 
               {/* Actions */}
               <div className="flex gap-3 pt-4">
-                <Button type="submit" disabled={loading}>
+                <Button type="submit" disabled={loading || loadingClients}>
                   {loading ? 'Criando...' : 'Criar Usuário'}
                 </Button>
                 <Link href="/admin/users">

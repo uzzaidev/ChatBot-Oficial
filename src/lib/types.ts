@@ -411,9 +411,11 @@ export interface UserProfileWithInviter extends UserProfile {
 
 export interface CreateUserRequest {
   email: string
+  password: string // Senha inicial definida pelo admin
   full_name?: string
   role: Exclude<UserRole, 'admin'>
   phone?: string
+  client_id?: string // Opcional - apenas super admin pode definir
   permissions?: Record<string, any>
 }
 
