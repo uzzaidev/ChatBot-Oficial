@@ -6,19 +6,32 @@ Sistema de chatbot de WhatsApp com IA, migrando de n8n para Next.js com arquitet
 
 **✅ PRODUÇÃO ATIVA** - Sistema funcionando em https://chat.luisfboff.com
 
-**Fase Atual: Next.js Full-Stack (Migração completa)**
+**Fase Atual: Phase 4 - Produção Multi-Tenant Completa** 🎉
 
-- ✅ Webhook Meta WhatsApp totalmente funcional
-- ✅ Processamento completo de mensagens (texto, áudio, imagem)
+**Core Features**:
+- ✅ Webhook Meta WhatsApp multi-tenant (`/api/webhook/[clientId]`)
+- ✅ Processamento completo de mensagens (texto, áudio, imagem, documento)
 - ✅ Sistema de batching Redis (evita respostas duplicadas)
-- ✅ Integração com Groq (Llama 3.3 70B) para respostas
-- ✅ RAG com Supabase Vector Store
+- ✅ Integração com Groq (Llama 3.3 70B) e OpenAI (GPT-4o)
+- ✅ RAG com Supabase Vector Store (pgvector)
 - ✅ Transcrição de áudio (OpenAI Whisper)
 - ✅ Análise de imagem (GPT-4o Vision)
 - ✅ Histórico de conversas persistido
 - ✅ Suporte a tool calls (sub-agentes, transferência humana)
+
+**Security & Multi-Tenant**:
+- ✅ **Supabase Vault**: API keys criptografadas (zero secrets em código)
+- ✅ **Autenticação**: Supabase Auth + middleware de proteção
+- ✅ **RBAC**: Roles (admin, client_admin, user) com permissões granulares
+- ✅ **Multi-tenant**: Isolamento completo por `client_id`
+- ✅ **Admin Panel**: Gerenciamento de clientes, usuários e convites
+
+**Dashboard**:
 - ✅ Dashboard com notificações em tempo real
-- ⚠️ Dashboard ainda em desenvolvimento (melhorias contínuas)
+- ✅ Settings page (configuração Vault por cliente)
+- ✅ Analytics (métricas e custos)
+- ✅ Conversations (histórico completo)
+- ✅ Auto-seleção de cliente baseado no usuário logado
 
 ---
 
@@ -29,14 +42,16 @@ Sistema de chatbot de WhatsApp com IA, migrando de n8n para Next.js com arquitet
 - **Framework**: Next.js 14 (App Router) - TypeScript
 - **Deploy**: Vercel (Serverless Functions)
 - **Banco de Dados**: Supabase PostgreSQL (via `@supabase/supabase-js`)
+- **Secrets Management**: Supabase Vault (API keys criptografadas)
 - **Cache/Queue**: Redis (Upstash)
 - **IA/LLM**:
-  - Groq (Llama 3.3 70B Versatile) - Chat
+  - Groq (Llama 3.3 70B Versatile) - Chat principal
+  - OpenAI (GPT-4o) - Alternativa para chat + análise de imagem
   - OpenAI (Whisper) - Transcrição de áudio
-  - OpenAI (GPT-4o) - Análise de imagem
   - OpenAI (text-embedding-3-small) - Embeddings para RAG
 - **Estilo**: Tailwind CSS + shadcn/ui
 - **WhatsApp API**: Meta WhatsApp Business Cloud API
+- **Arquitetura**: Multi-tenant com isolamento por `client_id`
 
 ### Estrutura de Diretórios
 
@@ -44,39 +59,44 @@ Sistema de chatbot de WhatsApp com IA, migrando de n8n para Next.js com arquitet
 src/
 ├── app/
 │   ├── api/
-│   │   ├── webhook/route.ts          # ⚡ WEBHOOK PRINCIPAL (recebe msgs da Meta)
+│   │   ├── webhook/
+│   │   │   ├── [clientId]/route.ts   # ⚡ WEBHOOK MULTI-TENANT (principal)
+│   │   │   └── route.ts               # ⚠️ DEPRECATED (retorna 410 Gone)
 │   │   ├── conversations/route.ts     # API conversas (dashboard)
 │   │   ├── messages/[phone]/route.ts  # API mensagens por telefone
 │   │   └── debug/                     # Endpoints de debug
-│   └── dashboard/                     # UI Dashboard (em desenvolvimento)
+│   └── dashboard/
+│       ├── page.tsx                   # Dashboard principal
+│       ├── settings/                  # ⚙️ Configuração Vault (API keys)
+│       └── conversations/             # Visualizar conversas
 │
 ├── flows/
-│   └── chatbotFlow.ts                 # 🔥 ORQUESTRAÇÃO PRINCIPAL (12 nodes)
+│   └── chatbotFlow.ts                 # 🔥 ORQUESTRAÇÃO PRINCIPAL (13 nodes)
 │
-├── nodes/                             # 🧩 Funções atômicas (12 nodes)
+├── nodes/                             # 🧩 Funções atômicas (13 nodes)
 │   ├── filterStatusUpdates.ts         # [1] Filtra status updates
 │   ├── parseMessage.ts                # [2] Parse payload Meta
 │   ├── checkOrCreateCustomer.ts       # [3] Upsert cliente
-│   ├── downloadMetaMedia.ts           # [4a] Download mídia da Meta
-│   ├── transcribeAudio.ts             # [4b] Whisper transcrição
-│   ├── analyzeImage.ts                # [4c] GPT-4o visão
-│   ├── normalizeMessage.ts            # [5] Normaliza para formato comum
+│   ├── downloadMetaMedia.ts           # [4] Download mídia da Meta
+│   ├── normalizeMessage.ts            # [5] Normaliza (áudio→texto, img→texto)
 │   ├── pushToRedis.ts                 # [6] Push para fila Redis
-│   ├── batchMessages.ts               # [7] Batch msgs (10s delay)
-│   ├── getChatHistory.ts              # [8] Busca histórico PostgreSQL
-│   ├── getRAGContext.ts               # [9] Vector search Supabase
-│   ├── generateAIResponse.ts          # [10] Groq Llama 3.3 70B
-│   ├── formatResponse.ts              # [11] Split em msgs WhatsApp
-│   ├── sendWhatsAppMessage.ts         # [12] Envia via Meta API
-│   ├── saveChatMessage.ts             # Salva msg no histórico
-│   └── handleHumanHandoff.ts          # Transferência para humano
+│   ├── saveChatMessage.ts             # [7] Salva msg no histórico
+│   ├── batchMessages.ts               # [8] Batch msgs (10s delay)
+│   ├── getChatHistory.ts              # [9] Busca histórico PostgreSQL
+│   ├── getRAGContext.ts               # [10] Vector search Supabase
+│   ├── generateAIResponse.ts          # [11] Groq/OpenAI gera resposta
+│   ├── formatResponse.ts              # [12] Split em msgs WhatsApp
+│   ├── sendWhatsAppMessage.ts         # [13] Envia via Meta API
+│   └── handleHumanHandoff.ts          # Tool: Transferência para humano
 │
 └── lib/
-    ├── config.ts                      # Configurações centralizadas
-    ├── supabase.ts                    # Supabase client (service role)
-    ├── postgres.ts                    # PostgreSQL pool (direct)
+    ├── config.ts                      # Multi-tenant config (Vault)
+    ├── vault.ts                       # Supabase Vault helpers
+    ├── supabase.ts                    # Supabase client factory
     ├── redis.ts                       # Redis client (Upstash)
-    ├── openai.ts                      # OpenAI client
+    ├── groq.ts                        # Groq SDK
+    ├── openai.ts                      # OpenAI SDK
+    ├── meta.ts                        # WhatsApp Business API
     └── types.ts                       # TypeScript types
 ```
 
@@ -141,7 +161,11 @@ cd db
 - `chatbot_data_TIMESTAMP.sql` - Apenas dados
 - `auth_full_TIMESTAMP.sql` - Usuários Supabase (⚠️ contém senhas hasheadas)
 
+**⚠️ Segurança**: Backups SQL são automaticamente ignorados pelo Git (`.gitignore`)
+
 **📖 Documentação completa**: [`db/MIGRATION_WORKFLOW.md`](db/MIGRATION_WORKFLOW.md)
+
+**Outras tabelas**:
 - `messages` - Histórico de mensagens
 - `usage_logs` - Tracking de uso de APIs
 - `pricing_config` - Configuração de preços personalizados
@@ -155,7 +179,7 @@ cd db
 ### 1. Pré-requisitos
 
 - Node.js 18+ instalado
-- Conta Supabase (PostgreSQL + Vector Store)
+- Conta Supabase (PostgreSQL + Vector Store + Vault)
 - Conta Redis (Upstash recomendado)
 - Conta OpenAI com créditos
 - Conta Groq com API key
@@ -169,76 +193,107 @@ cd chatbot-v2
 npm install
 ```
 
-### 3. Configurar Variáveis de Ambiente
+### 3. Configurar Banco de Dados
 
-Copie `.env.example` para `.env.local`:
+Execute as migrations no Supabase:
 
 ```bash
-cp .env.example .env.local
+# Via CLI (recomendado)
+supabase db push
+
+# Ou manualmente no SQL Editor:
+# https://app.supabase.com/project/_/sql
+# Execute cada arquivo em supabase/migrations/ em ordem
 ```
 
-**Preencha todas as variáveis:**
+### 4. Configurar Secrets (Supabase Vault)
+
+**NOVO em Phase 3**: API keys não vão mais em `.env.local`!
+
+**Configuração via Dashboard**:
+1. Acesse: `https://chat.luisfboff.com/dashboard/settings`
+2. Configure para cada cliente:
+   - Meta Access Token
+   - Meta Verify Token
+   - Meta Phone Number ID
+   - OpenAI API Key
+   - Groq API Key
+   - Redis URL
+
+**Secrets são criptografados no Supabase Vault** (pgsodium)
+
+**Para desenvolvimento local** (opcional):
+
+Crie `.env.local` com APENAS variáveis públicas:
 
 ```env
-# =====================================================
-# WEBHOOK (SEMPRE PRODUÇÃO)
-# =====================================================
-WEBHOOK_BASE_URL=https://chat.luisfboff.com
-META_VERIFY_TOKEN=seu_token_verificacao_meta
-
-# =====================================================
-# SUPABASE
-# =====================================================
+# Supabase (públicas)
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
-SUPABASE_SERVICE_ROLE_KEY=eyJ...
+SUPABASE_SERVICE_ROLE_KEY=eyJ...  # Service role para server-side
 
-# =====================================================
-# POSTGRESQL (Direct Connection)
-# =====================================================
-POSTGRES_URL_NON_POOLING=postgresql://postgres.xxx:senha@aws-0-sa-east-1.pooler.supabase.com:5432/postgres
+# PostgreSQL (direct connection para chat history)
+DATABASE_URL=postgresql://postgres.xxx:senha@aws-0-sa-east-1.pooler.supabase.com:5432/postgres
 
-# =====================================================
-# EXTERNAL SERVICES
-# =====================================================
-REDIS_URL=redis://default:senha@region.upstash.io:6379
-OPENAI_API_KEY=sk-...
-GROQ_API_KEY=gsk_...
-META_ACCESS_TOKEN=EAA...
-META_PHONE_NUMBER_ID=899639703222013
-GMAIL_USER=seu@email.com
-GMAIL_PASSWORD=senha_app_gmail
+# Webhook base URL (pode ser localhost em dev)
+WEBHOOK_BASE_URL=https://chat.luisfboff.com
 ```
+
+**⚠️ IMPORTANTE**: API keys de terceiros (OpenAI, Groq, Meta, Redis) NÃO vão em `.env.local`. Use o dashboard `/settings`.
 
 **📖 Guia completo**: Consulte [CONFIGURAR_ENV.md](./CONFIGURAR_ENV.md)
 
-### 4. Configurar Banco de Dados
+### 5. Criar Primeiro Usuário Admin
 
-Execute as migrations no Supabase SQL Editor:
+**Via API** (development):
 
 ```bash
-# 1. Acesse: https://app.supabase.com/project/_/sql
-# 2. Execute cada migration em ordem:
-migrations/001_initial_schema.sql
-migrations/002_add_indexes.sql
-migrations/003_performance_indexes.sql
-migrations/004_rename_clientes_table.sql  # Renomeia "Clientes WhatsApp" → clientes_whatsapp
+# Registrar usuário admin
+curl -X POST http://localhost:3000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "admin@example.com",
+    "password": "sua-senha-segura",
+    "fullName": "Admin User",
+    "clientId": "UUID-do-cliente-em-clients-table"
+  }'
 ```
 
-**Tabelas principais:**
-- `clientes_whatsapp` - Clientes (telefone, nome, status)
-- `n8n_chat_histories` - Histórico de mensagens (JSON format)
-- `documents` - Vector store para RAG
+**Via Supabase Dashboard** (production):
 
-### 5. Configurar Webhook da Meta
+1. Acesse: Authentication → Users → Add User
+2. Após criar usuário, execute SQL:
+
+```sql
+-- Criar profile com role admin
+INSERT INTO public.user_profiles (id, client_id, email, full_name, role, is_active)
+VALUES (
+  'UUID-do-usuario-auth',
+  'UUID-do-cliente',
+  'admin@example.com',
+  'Admin User',
+  'admin',
+  true
+);
+```
+
+**Login**: Acesse `https://chat.luisfboff.com/login`
+
+### 6. Configurar Webhook da Meta (Multi-Tenant)
+
+**NOVO**: Cada cliente tem seu próprio webhook URL!
 
 No Meta Developer Dashboard:
 
 1. Acesse: https://developers.facebook.com/apps
 2. WhatsApp → Configuration → Edit
-3. **Callback URL**: `https://chat.luisfboff.com/api/webhook`
-4. **Verify Token**: O mesmo valor de `META_VERIFY_TOKEN` no `.env.local`
+3. **Callback URL**: `https://chat.luisfboff.com/api/webhook/{CLIENT_ID}`
+   - Substitua `{CLIENT_ID}` pelo UUID do cliente em `clients` table
+   - Exemplo: `https://chat.luisfboff.com/api/webhook/550e8400-e29b-41d4-a716-446655440000`
+4. **Verify Token**: Configure no Dashboard Settings (criptografado no Vault)
 5. **Subscribe to**: `messages`
+
+**⚠️ DEPRECATED**: `/api/webhook` (sem clientId) retorna 410 Gone
 
 ### 6. Executar em Desenvolvimento
 
@@ -258,25 +313,34 @@ npm run dev
 Quando uma mensagem chega no WhatsApp:
 
 ```
-[1] Meta envia POST para /api/webhook
+[1] Meta envia POST para /api/webhook/{clientId}
      ↓
-[2] Webhook chama processChatbotMessage(payload)
+[2] Webhook valida clientId, carrega config do Vault
      ↓
-[3] chatbotFlow.ts executa 12 nodes em sequência:
+[3] Webhook chama processChatbotMessage(payload, config)
+     ↓
+[4] chatbotFlow.ts executa 13 nodes em sequência:
 
-     NODE 1: filterStatusUpdates     → Remove status updates (delivered, read)
-     NODE 2: parseMessage             → Extrai phone, name, type, content
-     NODE 3: checkOrCreateCustomer    → Upsert na tabela clientes_whatsapp
-     NODE 4: downloadMetaMedia        → Download + transcreve/analisa (se áudio/imagem)
-     NODE 5: normalizeMessage         → Normaliza formato
-     NODE 6: pushToRedis              → Push para fila Redis
-     NODE 7: batchMessages            → Aguarda 10s, agrupa mensagens
-     NODE 8: getChatHistory           → Busca últimas 15 msgs do histórico
-     NODE 9: getRAGContext            → Vector search no conhecimento
-     NODE 10: generateAIResponse      → Groq Llama 3.3 70B gera resposta
-     NODE 11: formatResponse          → Remove tool calls, split em msgs
-     NODE 12: sendWhatsAppMessage     → Envia via Meta API
+     NODE 1: filterStatusUpdates      → Remove status updates (delivered, read)
+     NODE 2: parseMessage              → Extrai phone, name, type, content
+     NODE 3: checkOrCreateCustomer     → Upsert na tabela clientes_whatsapp
+     NODE 4: downloadMetaMedia         → Download mídia (se áudio/imagem/doc)
+     NODE 5: normalizeMessage          → Transcreve áudio / analisa imagem
+     NODE 6: pushToRedis               → Push para fila Redis
+     NODE 7: saveChatMessage           → Salva mensagem no histórico
+     NODE 8: batchMessages             → Aguarda 10s, agrupa mensagens
+     NODE 9: getChatHistory            → Busca últimas 15 msgs (PostgreSQL)
+     NODE 10: getRAGContext            → Vector search (pgvector)
+     NODE 11: generateAIResponse       → Groq/OpenAI gera resposta
+     NODE 12: formatResponse           → Remove tool calls, split em msgs
+     NODE 13: sendWhatsAppMessage      → Envia via Meta API
 ```
+
+**Recursos avançados**:
+- **Batching Redis**: Agrupa msgs enviadas em <10s (evita respostas duplicadas)
+- **RAG Context**: Injeta conhecimento via vector search
+- **Tool Calls**: Suporte a sub-agentes e transferência humana
+- **Multi-message Split**: Respostas longas divididas em msgs naturais
 
 **Consulte [WORKFLOW-LOGIC.md](./WORKFLOW-LOGIC.md)** para detalhes de cada node.
 
@@ -514,15 +578,160 @@ Vercel faz deploy automático.
 
 ---
 
-## 🎯 Próximos Passos
+## 🔐 Autenticação & RBAC
 
-- [x] Dashboard funcional (visualizar conversas em tempo real)
-- [x] Notificações em tempo real de novas mensagens
-- [ ] Autenticação (NextAuth.js)
-- [ ] Multi-tenant UI (seletor de clientes)
-- [ ] Dashboard de custos (OpenAI + Groq + Meta)
-- [ ] Configuração de webhooks via UI
-- [ ] Migração completa de n8n → Next.js (100%)
+**Sistema de Autenticação Completo** (Phase 4):
+
+### Autenticação (Supabase Auth)
+
+✅ **Login/Registro**: Páginas em `/login` e `/register`
+✅ **Session Management**: Refresh automático de tokens
+✅ **Middleware Protection**: Rotas protegidas automaticamente
+✅ **Logout**: Limpeza completa de cookies e session
+
+**Rotas protegidas**:
+- `/dashboard/*` - Requer autenticação
+- `/admin/*` - Requer autenticação + role admin
+
+### RBAC (Role-Based Access Control)
+
+**Roles disponíveis**:
+- **`admin`**: Acesso total (super admin)
+- **`client_admin`**: Admin de um cliente específico
+- **`user`**: Usuário padrão (acesso limitado)
+
+**Tabela de Permissões**:
+
+| Funcionalidade | admin | client_admin | user |
+|----------------|-------|--------------|------|
+| Ver conversas próprias | ✅ | ✅ | ✅ |
+| Ver analytics próprias | ✅ | ✅ | ✅ |
+| Configurar Vault (próprio client) | ✅ | ✅ | ❌ |
+| Gerenciar usuários (próprio client) | ✅ | ✅ | ❌ |
+| Criar convites | ✅ | ✅ | ❌ |
+| Ver todos os clientes | ✅ | ❌ | ❌ |
+| Criar novos clientes | ✅ | ❌ | ❌ |
+| Gerenciar qualquer usuário | ✅ | ❌ | ❌ |
+
+**RLS Policies**:
+- Todas as queries filtram por `client_id` automaticamente
+- Usuários só veem dados do próprio cliente
+- Admins (`admin` role) podem ver todos os clientes
+
+### Admin Panel
+
+**Endpoints disponíveis**:
+- `GET /api/admin/clients` - Listar todos os clientes
+- `POST /api/admin/clients` - Criar novo cliente
+- `GET /api/admin/users` - Listar usuários do cliente
+- `POST /api/admin/users` - Criar novo usuário
+- `GET /api/admin/invites` - Listar convites
+- `POST /api/admin/invites` - Criar convite
+
+**UI Admin** (planejado para Phase 5):
+- Dashboard `/admin` com interface visual
+- Gerenciamento visual de clientes
+- Gerenciamento visual de usuários
+
+---
+
+## 🔐 Supabase Vault - Secrets Management
+
+**Arquitetura de Segurança**:
+
+Em vez de armazenar API keys em `.env` ou hardcoded, este projeto usa **Supabase Vault** (pgsodium) para criptografar secrets no banco de dados.
+
+### Como Funciona
+
+1. **Configuração via Dashboard**: `/dashboard/settings`
+2. **Secrets criptografados**: Armazenados em `vault.secrets` (pgsodium)
+3. **Descriptografia automática**: Apenas service role pode descriptografar
+4. **Isolamento por cliente**: Cada `client_id` tem suas próprias keys
+
+### Estrutura de Secrets
+
+Cada cliente (`clients` table) tem:
+```typescript
+{
+  metaAccessToken: string      // Criptografado no Vault
+  metaVerifyToken: string       // Criptografado no Vault
+  metaPhoneNumberId: string
+  openaiApiKey: string          // Criptografado no Vault
+  groqApiKey: string            // Criptografado no Vault
+  redisUrl: string              // Criptografado no Vault
+}
+```
+
+### Vantagens
+
+✅ **Zero secrets em código**: Não precisa commitar `.env`
+✅ **Multi-tenant nativo**: Cada cliente tem suas keys
+✅ **Auditável**: Logs de acesso a secrets
+✅ **Rotação fácil**: Atualizar via UI, sem redeploy
+✅ **Seguro**: Criptografia pgsodium (industry-standard)
+
+**Consulte**: `src/lib/vault.ts` e `src/lib/config.ts`
+
+---
+
+## 🎯 Status de Implementação
+
+**✅ FASE 4 CONCLUÍDA** - Sistema Multi-Tenant SaaS Completo:
+
+**Core Chatbot**:
+- [x] Webhook multi-tenant (`/api/webhook/[clientId]`)
+- [x] Processamento de mensagens (texto, áudio, imagem, documento)
+- [x] Batching Redis (evita respostas duplicadas)
+- [x] RAG com vector search (pgvector)
+- [x] Tool calls (sub-agentes, transferência humana)
+- [x] Multi-message splitting (respostas naturais)
+
+**Security & Multi-Tenant**:
+- [x] Supabase Vault (secrets criptografadas)
+- [x] Autenticação (Supabase Auth)
+- [x] RBAC (roles: admin, client_admin, user)
+- [x] Middleware de proteção de rotas
+- [x] Isolamento por client_id
+- [x] Admin Panel (gerenciar clientes/usuários/convites)
+
+**Dashboard**:
+- [x] Notificações em tempo real (Supabase Realtime)
+- [x] Métricas e analytics
+- [x] Settings (configuração Vault)
+- [x] Conversations (histórico completo)
+- [x] Auto-seleção de cliente (user_profiles)
+
+---
+
+## 🚀 Próximos Passos (Phase 5 - Melhorias)
+
+**Performance & Escalabilidade**:
+- [ ] Queue system para processamento assíncrono (Upstash/Vercel Queue)
+- [ ] Cache de respostas frequentes (Redis)
+- [ ] Otimização de queries (índices compostos)
+- [ ] CDN para assets estáticos
+
+**Features Avançadas**:
+- [ ] API pública com rate limiting
+- [ ] Webhooks customizáveis (clientes recebem eventos)
+- [ ] Templates de mensagens personalizáveis
+- [ ] Agendamento de mensagens
+- [ ] Relatórios automatizados (PDF/Excel)
+- [ ] Integração com CRM (Pipedrive, HubSpot)
+
+**UX Improvements**:
+- [ ] Mobile app (React Native)
+- [ ] Tema dark mode
+- [ ] Busca avançada (filtros, tags)
+- [ ] Exportação de conversas
+- [ ] Notas internas (anotações em conversas)
+
+**AI Enhancements**:
+- [ ] Fine-tuning de modelos personalizados
+- [ ] A/B testing de prompts
+- [ ] Análise de sentimento
+- [ ] Sugestões automáticas de respostas
+- [ ] Detecção de idioma automática
 
 ---
 

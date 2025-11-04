@@ -32,7 +32,9 @@
       "Bash(curl:*)",
       "Bash(npx shadcn-ui@latest add:*)",
       "Bash(npx shadcn@latest add:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(backup-complete.bat)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []
