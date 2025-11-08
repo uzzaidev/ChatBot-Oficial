@@ -58,12 +58,22 @@ export default function BotConfigurationManager() {
 
   const fetchConfigs = async () => {
     setLoading(true)
+    console.log('[BotConfigurationManager] 🔍 Fetching configurations...')
     try {
       const response = await fetch('/api/config')
+      console.log('[BotConfigurationManager] 🔍 Response status:', response.status)
+      
       if (!response.ok) {
+        const errorText = await response.text()
+        console.error('[BotConfigurationManager] ❌ Response not OK:', errorText)
         throw new Error('Failed to fetch configurations')
       }
       const data = await response.json()
+      console.log('[BotConfigurationManager] 🔍 Data received:', {
+        configCount: data.configs?.length || 0,
+        clientId: data.clientId,
+        firstConfig: data.configs?.[0]
+      })
       
       // Group configs by category
       const grouped: ConfigsByCategory = {
@@ -73,17 +83,32 @@ export default function BotConfigurationManager() {
         personality: [],
       }
 
-      data.configs.forEach((config: BotConfig) => {
-        const category = config.category as keyof ConfigsByCategory
-        if (category && grouped[category]) {
-          grouped[category].push(config)
-        }
+      if (data.configs && Array.isArray(data.configs)) {
+        data.configs.forEach((config: BotConfig) => {
+          const category = config.category as keyof ConfigsByCategory
+          console.log('[BotConfigurationManager] 🔍 Processing config:', {
+            key: config.config_key,
+            category: config.category,
+            hasCategory: !!category,
+            categoryExists: category && !!grouped[category]
+          })
+          if (category && grouped[category]) {
+            grouped[category].push(config)
+          }
+        })
+      }
+
+      console.log('[BotConfigurationManager] 🔍 Grouped configs:', {
+        prompts: grouped.prompts.length,
+        rules: grouped.rules.length,
+        thresholds: grouped.thresholds.length,
+        personality: grouped.personality.length
       })
 
       setConfigs(grouped)
     } catch (error) {
-      console.error('Error fetching configs:', error)
-      showNotification('error', 'Failed to load configurations')
+      console.error('[BotConfigurationManager] ❌ Error fetching configs:', error)
+      showNotification('error', 'Falha ao carregar configurações')
     } finally {
       setLoading(false)
     }
@@ -117,18 +142,18 @@ export default function BotConfigurationManager() {
         throw new Error('Failed to save configuration')
       }
 
-      showNotification('success', 'Configuration saved successfully')
+      showNotification('success', 'Configuração salva com sucesso')
       setEditingKey(null)
       setEditValue(null)
       fetchConfigs() // Reload configs
     } catch (error) {
       console.error('Error saving config:', error)
-      showNotification('error', 'Failed to save configuration')
+      showNotification('error', 'Falha ao salvar configuração')
     }
   }
 
   const resetConfig = async (configKey: string) => {
-    if (!confirm(`Reset "${configKey}" to default value?`)) {
+    if (!confirm(`Restaurar "${configKey}" para o valor padrão?`)) {
       return
     }
 
@@ -141,11 +166,11 @@ export default function BotConfigurationManager() {
         throw new Error('Failed to reset configuration')
       }
 
-      showNotification('success', 'Configuration reset to default')
+      showNotification('success', 'Configuração restaurada para o padrão')
       fetchConfigs() // Reload configs
     } catch (error) {
       console.error('Error resetting config:', error)
-      showNotification('error', 'Failed to reset configuration')
+      showNotification('error', 'Falha ao restaurar configuração')
     }
   }
 
@@ -246,7 +271,7 @@ export default function BotConfigurationManager() {
             <div className="flex items-center gap-2">
               {isCustomized && (
                 <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                  Custom
+                  Personalizado
                 </span>
               )}
               {isEditing ? (
@@ -272,7 +297,7 @@ export default function BotConfigurationManager() {
                       size="sm"
                       variant="ghost"
                       onClick={() => resetConfig(config.config_key)}
-                      title="Reset to default"
+                      title="Restaurar padrão"
                     >
                       <RotateCcw className="h-4 w-4" />
                     </Button>
@@ -299,7 +324,7 @@ export default function BotConfigurationManager() {
         {categoryConfigs.length === 0 ? (
           <Alert>
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>No configurations found in this category.</AlertDescription>
+            <AlertDescription>Nenhuma configuração encontrada nesta categoria.</AlertDescription>
           </Alert>
         ) : (
           categoryConfigs.map(renderConfigItem)
@@ -312,8 +337,8 @@ export default function BotConfigurationManager() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Bot Configurations</CardTitle>
-          <CardDescription>Loading configurations...</CardDescription>
+          <CardTitle>Configurações do Bot</CardTitle>
+          <CardDescription>Carregando configurações...</CardDescription>
         </CardHeader>
       </Card>
     )
@@ -322,10 +347,10 @@ export default function BotConfigurationManager() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Bot Configurations</CardTitle>
+        <CardTitle>Configurações do Bot</CardTitle>
         <CardDescription>
-          Customize prompts, rules, thresholds, and personality settings for your bot.
-          Changes apply immediately without requiring a deployment.
+          Personalize prompts, regras, limites e configurações de personalidade do seu bot.
+          As alterações são aplicadas imediatamente sem necessidade de deploy.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -338,40 +363,40 @@ export default function BotConfigurationManager() {
         <Tabs defaultValue="prompts" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="prompts">Prompts</TabsTrigger>
-            <TabsTrigger value="rules">Rules</TabsTrigger>
-            <TabsTrigger value="thresholds">Thresholds</TabsTrigger>
-            <TabsTrigger value="personality">Personality</TabsTrigger>
+            <TabsTrigger value="rules">Regras</TabsTrigger>
+            <TabsTrigger value="thresholds">Limites</TabsTrigger>
+            <TabsTrigger value="personality">Personalidade</TabsTrigger>
           </TabsList>
 
           <TabsContent value="prompts" className="mt-6">
             {renderCategory(
               'prompts',
-              'Prompt Configurations',
-              'System prompts used by different AI agents (intent classifier, entity extractor, etc.)'
+              'Configurações de Prompts',
+              'Prompts de sistema usados por diferentes agentes de IA (classificador de intenção, extrator de entidades, etc.)'
             )}
           </TabsContent>
 
           <TabsContent value="rules" className="mt-6">
             {renderCategory(
               'rules',
-              'Behavior Rules',
-              'Boolean flags and arrays that control bot behavior (use LLM, enable RAG, etc.)'
+              'Regras de Comportamento',
+              'Flags booleanas e arrays que controlam o comportamento do bot (usar LLM, ativar RAG, etc.)'
             )}
           </TabsContent>
 
           <TabsContent value="thresholds" className="mt-6">
             {renderCategory(
               'thresholds',
-              'Numeric Thresholds',
-              'Numeric parameters that control timing, similarity, and limits'
+              'Limites Numéricos',
+              'Parâmetros numéricos que controlam tempo, similaridade e limites'
             )}
           </TabsContent>
 
           <TabsContent value="personality" className="mt-6">
             {renderCategory(
               'personality',
-              'Personality Configuration',
-              'Complex configuration defining bot personality, tone, and response style'
+              'Configuração de Personalidade',
+              'Configuração complexa definindo personalidade, tom e estilo de resposta do bot'
             )}
           </TabsContent>
         </Tabs>

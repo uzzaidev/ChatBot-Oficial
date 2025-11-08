@@ -42,9 +42,19 @@ export async function GET(request: NextRequest) {
     // Por enquanto, usando hardcoded para desenvolvimento
     const clientId = process.env.DEFAULT_CLIENT_ID || 'DEVELOPMENT_MODE'
 
-    console.log(`[GET /api/config] Fetching configs for client: ${clientId}, category: ${category || 'all'}`)
+    console.log(`[GET /api/config] 🔍 DEBUG - Fetching configs`)
+    console.log(`[GET /api/config] 🔍 DEBUG - Client ID: ${clientId}`)
+    console.log(`[GET /api/config] 🔍 DEBUG - Category filter: ${category || 'all'}`)
+    console.log(`[GET /api/config] 🔍 DEBUG - Environment: ${process.env.NODE_ENV}`)
 
     const configs = await listBotConfigs(clientId, category)
+
+    console.log(`[GET /api/config] 🔍 DEBUG - Configs returned: ${configs.length}`)
+    console.log(`[GET /api/config] 🔍 DEBUG - First 3 configs:`, configs.slice(0, 3).map(c => ({
+      key: c.config_key,
+      category: c.category,
+      is_default: c.is_default
+    })))
 
     return NextResponse.json({
       configs,
@@ -53,7 +63,8 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error('[GET /api/config] Error:', errorMessage)
+    console.error('[GET /api/config] ❌ Error:', errorMessage)
+    console.error('[GET /api/config] ❌ Stack:', error instanceof Error ? error.stack : 'No stack')
 
     return NextResponse.json(
       { error: 'Failed to fetch configurations', details: errorMessage },
