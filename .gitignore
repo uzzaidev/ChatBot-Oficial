@@ -36,8 +36,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+
 # database backups (keep out of version control)
 db/*.sql
 db/backups/
+db/backup/
 
 006_setup_default_client.sql

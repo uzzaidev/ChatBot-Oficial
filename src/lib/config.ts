@@ -296,3 +296,308 @@ export const getClientConfigWithFallback = async (
     'and configure all credentials in /dashboard/settings'
   )
 }
+
+// ============================================================================
+// 🎛️ BOT CONFIGURATIONS (Modular Settings System)
+// ============================================================================
+
+/**
+ * Interface para configuração do bot (tabela bot_configurations)
+ */
+export interface BotConfig {
+  id: string
+  client_id: string | null
+  config_key: string
+  config_value: any
+  is_default: boolean
+  description?: string
+  category?: string
+  created_at: string
+  updated_at: string
+}
+
+/**
+ * Cache em memória para configurações do bot
+ * Renovado automaticamente a cada 5 minutos
+ */
+const botConfigCache = new Map<string, { value: any; expiresAt: number }>()
+const BOT_CONFIG_CACHE_TTL = 5 * 60 * 1000 // 5 minutos
+
+/**
+ * Busca UMA configuração específica do cliente no banco
+ * Se o cliente não customizou, retorna a configuração padrão
+ *
+ * @param clientId - UUID do cliente
+ * @param configKey - Chave no formato 'namespace:key' (ex: 'intent_classifier:prompt')
+ * @returns Valor da configuração ou null se não encontrado
+ *
+ * @example
+ * const prompt = await getBotConfig(clientId, 'intent_classifier:prompt')
+ * const useLLM = await getBotConfig(clientId, 'intent_classifier:use_llm')
+ */
+export const getBotConfig = async (
+  clientId: string,
+  configKey: string
+): Promise<any> => {
+  const cacheKey = `${clientId}:${configKey}`
+
+  // Verificar cache
+  const cached = botConfigCache.get(cacheKey)
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.value
+  }
+
+  try {
+    const supabase = createServerClient()
+
+    // Buscar configuração do cliente OU default
+    // Ordem: cliente (is_default=false) tem prioridade sobre default (is_default=true)
+    const { data, error } = await supabase
+      .from('bot_configurations')
+      .select('config_value, is_default')
+      .eq('config_key', configKey)
+      .or(`client_id.eq.${clientId},is_default.eq.true`)
+      .order('is_default', { ascending: true }) // false (cliente) vem primeiro
+      .limit(1)
+      .single()
+
+    if (error) {
+      console.warn(`[getBotConfig] Config não encontrada: ${configKey}`, error.message)
+      return null
+    }
+
+    if (!data) {
+      console.warn(`[getBotConfig] Config não encontrada: ${configKey}`)
+      return null
+    }
+
+    // Cachear resultado
+    botConfigCache.set(cacheKey, {
+      value: data.config_value,
+      expiresAt: Date.now() + BOT_CONFIG_CACHE_TTL
+    })
+
+    return data.config_value
+  } catch (error) {
+    console.error(`[getBotConfig] Erro ao buscar config ${configKey}:`, error)
+    return null
+  }
+}
+
+/**
+ * Busca MÚLTIPLAS configurações de uma vez (mais eficiente que múltiplas chamadas)
+ *
+ * @param clientId - UUID do cliente
+ * @param configKeys - Array de chaves (ex: ['intent_classifier:prompt', 'personality:config'])
+ * @returns Map<configKey, configValue>
+ *
+ * @example
+ * const configs = await getBotConfigs(clientId, [
+ *   'intent_classifier:prompt',
+ *   'intent_classifier:use_llm',
+ *   'personality:config'
+ * ])
+ * const prompt = configs.get('intent_classifier:prompt')
+ */
+export const getBotConfigs = async (
+  clientId: string,
+  configKeys: string[]
+): Promise<Map<string, any>> => {
+  try {
+    const supabase = createServerClient()
+
+    const { data, error } = await supabase
+      .from('bot_configurations')
+      .select('config_key, config_value, is_default')
+      .in('config_key', configKeys)
+      .or(`client_id.eq.${clientId},is_default.eq.true`)
+
+    if (error || !data) {
+      console.error('[getBotConfigs] Erro ao buscar configs:', error)
+      return new Map()
+    }
+
+    // Priorizar configs do cliente sobre defaults
+    const configMap = new Map<string, any>()
+
+    // Primeiro adicionar defaults
+    data.filter(c => c.is_default).forEach(c => {
+      configMap.set(c.config_key, c.config_value)
+    })
+
+    // Depois sobrescrever com configs do cliente (se existir)
+    data.filter(c => !c.is_default).forEach(c => {
+      configMap.set(c.config_key, c.config_value)
+
+      // Cachear também
+      const cacheKey = `${clientId}:${c.config_key}`
+      botConfigCache.set(cacheKey, {
+        value: c.config_value,
+        expiresAt: Date.now() + BOT_CONFIG_CACHE_TTL
+      })
+    })
+
+    return configMap
+  } catch (error) {
+    console.error('[getBotConfigs] Erro:', error)
+    return new Map()
+  }
+}
+
+/**
+ * Salva/atualiza UMA configuração do cliente
+ *
+ * @param clientId - UUID do cliente
+ * @param configKey - Chave no formato 'namespace:key'
+ * @param configValue - Valor (pode ser string, number, boolean, object, array)
+ * @param metadata - Metadados opcionais (description, category)
+ *
+ * @example
+ * await setBotConfig(clientId, 'intent_classifier:use_llm', true, {
+ *   description: 'Usar LLM para classificar intenção',
+ *   category: 'rules'
+ * })
+ */
+export const setBotConfig = async (
+  clientId: string,
+  configKey: string,
+  configValue: any,
+  metadata?: { description?: string; category?: string }
+): Promise<void> => {
+  try {
+    const supabase = createServerClient()
+
+    const { error } = await supabase
+      .from('bot_configurations')
+      .upsert({
+        client_id: clientId,
+        config_key: configKey,
+        config_value: configValue,
+        description: metadata?.description,
+        category: metadata?.category,
+        is_default: false,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'client_id,config_key'
+      })
+
+    if (error) {
+      throw new Error(`Erro ao salvar config: ${error.message}`)
+    }
+
+    // Limpar cache
+    const cacheKey = `${clientId}:${configKey}`
+    botConfigCache.delete(cacheKey)
+
+    console.log(`[setBotConfig] ✅ Config salva: ${configKey}`)
+  } catch (error) {
+    console.error(`[setBotConfig] Erro ao salvar ${configKey}:`, error)
+    throw error
+  }
+}
+
+/**
+ * Reseta UMA configuração para o padrão (deleta customização do cliente)
+ *
+ * @param clientId - UUID do cliente
+ * @param configKey - Chave da configuração a resetar
+ *
+ * @example
+ * await resetBotConfig(clientId, 'intent_classifier:prompt')
+ * // Agora o cliente volta a usar o prompt padrão
+ */
+export const resetBotConfig = async (
+  clientId: string,
+  configKey: string
+): Promise<void> => {
+  try {
+    const supabase = createServerClient()
+
+    const { error } = await supabase
+      .from('bot_configurations')
+      .delete()
+      .eq('client_id', clientId)
+      .eq('config_key', configKey)
+      .eq('is_default', false) // Só deleta custom, não default
+
+    if (error) {
+      throw new Error(`Erro ao resetar config: ${error.message}`)
+    }
+
+    // Limpar cache
+    const cacheKey = `${clientId}:${configKey}`
+    botConfigCache.delete(cacheKey)
+
+    console.log(`[resetBotConfig] ✅ Config resetada: ${configKey}`)
+  } catch (error) {
+    console.error(`[resetBotConfig] Erro ao resetar ${configKey}:`, error)
+    throw error
+  }
+}
+
+/**
+ * Lista TODAS as configurações do cliente (custom + defaults)
+ * Útil para exibir no dashboard
+ *
+ * @param clientId - UUID do cliente
+ * @param category - Filtrar por categoria (opcional)
+ * @returns Array de configurações com informações completas
+ *
+ * @example
+ * const configs = await listBotConfigs(clientId, 'prompts')
+ * // Retorna todas as configs da categoria 'prompts'
+ */
+export const listBotConfigs = async (
+  clientId: string,
+  category?: string
+): Promise<BotConfig[]> => {
+  try {
+    const supabase = createServerClient()
+
+    let query = supabase
+      .from('bot_configurations')
+      .select('*')
+      .or(`client_id.eq.${clientId},is_default.eq.true`)
+
+    if (category) {
+      query = query.eq('category', category)
+    }
+
+    const { data, error } = await query.order('config_key')
+
+    if (error) {
+      throw new Error(`Erro ao listar configs: ${error.message}`)
+    }
+
+    if (!data) {
+      return []
+    }
+
+    // Deduplicar: se cliente tem custom, remover default
+    const configMap = new Map<string, BotConfig>()
+
+    // Primeiro adicionar defaults
+    data.filter(c => c.is_default).forEach(c => {
+      configMap.set(c.config_key, c as BotConfig)
+    })
+
+    // Depois sobrescrever com customs
+    data.filter(c => !c.is_default && c.client_id === clientId).forEach(c => {
+      configMap.set(c.config_key, c as BotConfig)
+    })
+
+    return Array.from(configMap.values())
+  } catch (error) {
+    console.error('[listBotConfigs] Erro:', error)
+    return []
+  }
+}
+
+/**
+ * Limpa todo o cache de configurações
+ * Útil para forçar reload após mudanças massivas
+ */
+export const clearBotConfigCache = (): void => {
+  botConfigCache.clear()
+  console.log('[clearBotConfigCache] ✅ Cache limpo')
+}
