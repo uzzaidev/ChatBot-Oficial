@@ -163,8 +163,8 @@ const calculateWordSimilarity = (text1: string, textArray: string[]): number => 
     )
 
     // Jaccard similarity: intersection / union
-    const intersection = new Set([...words1].filter((w) => words2.has(w)))
-    const union = new Set([...words1, ...words2])
+    const intersection = new Set(Array.from(words1).filter((w) => words2.has(w)))
+    const union = new Set([...Array.from(words1), ...Array.from(words2)])
 
     if (union.size === 0) continue
 
