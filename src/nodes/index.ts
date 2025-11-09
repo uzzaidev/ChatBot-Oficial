@@ -22,10 +22,14 @@ export { handleHumanHandoff } from './handleHumanHandoff'
 export type { HandleHumanHandoffInput } from './handleHumanHandoff'
 export { saveChatMessage } from './saveChatMessage'
 
-// 🔧 Phase 1-3: New configuration-driven nodes
+// 🔧 Phase 1-3: Configuration-driven nodes
 export { checkContinuity } from './checkContinuity'
 export type { CheckContinuityInput, CheckContinuityOutput } from './checkContinuity'
 export { classifyIntent } from './classifyIntent'
 export type { ClassifyIntentInput, ClassifyIntentOutput } from './classifyIntent'
 export { detectRepetition } from './detectRepetition'
 export type { DetectRepetitionInput, DetectRepetitionOutput } from './detectRepetition'
+
+// 🔧 RAG: Document processing with semantic chunking
+export { processDocumentWithChunking, deleteDocuments, listDocuments } from './processDocumentWithChunking'
+export type { ProcessDocumentInput, ProcessDocumentOutput } from './processDocumentWithChunking'
