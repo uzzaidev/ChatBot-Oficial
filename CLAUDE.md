@@ -2,12 +2,110 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## How to Use This Document
+
+**Before starting any task:**
+1. Read "Project Overview" (understand current state)
+2. Check "Quick Reference" (find relevant entry points)
+3. Read "Database Schema Reference" if touching database
+
+**When implementing features:**
+- Check "Code Patterns" for style guidelines
+- Review "Architecture Overview" for system design
+- Consult "Critical Technical Decisions" to avoid known pitfalls
+
+**When debugging:**
+- Start with "Common Issues - Quick Lookup"
+- Then "Common Errors" section
+- Finally "Debugging Webhook Issues"
+
+**When modifying database:**
+- **ALWAYS** check `docs/tables/tabelas.md` first
+- Follow `db/MIGRATION_WORKFLOW.md`
+- Review "Database Migrations & Schema Changes"
+
+---
+
 ## Project Overview
 
 WhatsApp SaaS chatbot system with AI-powered conversations through WhatsApp Business API. Built with Next.js 14, TypeScript, and serverless architecture.
 
-**Current State**: Phase 2.5 - Full Next.js implementation with node-based workflow architecture
-**Tech Stack**: Next.js 14 (App Router), TypeScript, Supabase (PostgreSQL), Redis, Groq (Llama 3.3 70B), OpenAI (Whisper, GPT-4o Vision)
+**Current State**: ✅ **Phase 4 Complete** - Production Multi-Tenant SaaS with full RBAC, Auth, and Supabase Vault
+**Tech Stack**: Next.js 14 (App Router), TypeScript, Supabase (PostgreSQL + Vault), Redis, Groq (Llama 3.3 70B), OpenAI (Whisper, GPT-4o Vision)
+
+**Migration History:**
+- **Phase 1:** n8n workflow only
+- **Phase 2:** Next.js dashboard (read-only)
+- **Phase 2.5:** Node-based architecture in Next.js (replaced n8n)
+- **Phase 3:** Supabase Vault + Multi-tenant webhooks
+- **Phase 4:** ✅ COMPLETE - RBAC, Auth, Admin Panel, Real-time notifications
+
+---
+
+## Quick Reference for Common Tasks
+
+### Starting Development
+```bash
+npm install              # ALWAYS run first
+npm run dev              # Start dev server (localhost:3000)
+```
+
+**Prerequisites:**
+- Create `.env.local` from `.env.example`
+- Check `docs/tables/tabelas.md` before any database work
+- Run migrations in Supabase if first time (`supabase db push`)
+
+### Key Entry Points
+
+| Task | File(s) |
+|------|---------|
+| **Webhook Entry** | `src/app/api/webhook/[clientId]/route.ts` |
+| **Main Orchestrator** | `src/flows/chatbotFlow.ts` (13-node pipeline) |
+| **Node Functions** | `src/nodes/*` (atomic, pure functions) |
+| **Multi-tenant Config** | `src/lib/config.ts` (Vault integration) |
+| **AI Prompts** | `src/nodes/generateAIResponse.ts`, `formatResponse.ts` |
+| **Database Schema** | `docs/tables/tabelas.md` |
+| **Migrations** | `supabase/migrations/*`, `db/MIGRATION_WORKFLOW.md` |
+
+### Common Commands
+
+```bash
+# Development
+npm run dev              # Start dev server
+npm run build            # Production build (may fail with Google Fonts in restricted networks)
+npm run lint             # Run ESLint
+npx tsc --noEmit         # Type checking (informational - pre-existing errors exist)
+
+# Database
+supabase migration new <name>    # Create new migration
+supabase db push                 # Apply migrations to production
+supabase db diff                 # Show diff between local and remote
+
+# Backup
+cd db
+.\backup-complete.bat           # Backup public + auth schemas
+.\backup-postgres.bat           # Backup application data only
+.\backup-auth.bat               # Backup Supabase Auth users only
+```
+
+---
+
+## Common Issues - Quick Lookup
+
+| Error Message / Symptom | Likely Cause | Fix Location |
+|------------------------|--------------|--------------|
+| "Missing NEXT_PUBLIC_SUPABASE_URL" | No `.env.local` file | Create from `.env.example`, restart dev server |
+| "column 'type' does not exist" | Using `type` as column instead of JSON field | See Critical Decision #4 |
+| "No overload matches this call" | Table name with space | See Critical Decision #3 |
+| "NODE 3 freezing" / Query hangs | Using `pg` in serverless | See Critical Decision #1 |
+| "Token verification failed" | Wrong `META_VERIFY_TOKEN` | Check `.env.local` matches Meta Dashboard |
+| Messages with `<function=...>` | Tool calls not stripped | See Critical Decision #5 |
+| "Redis connection failed" | Redis not running | Start Redis or check `REDIS_URL` (flow continues gracefully) |
+| "Failed to send WhatsApp message" | Invalid Meta token or phone ID | Check `META_ACCESS_TOKEN`, `META_PHONE_NUMBER_ID` |
+| TypeScript errors in IDE | Pre-existing errors (7 errors) | Only fix if modifying affected files |
+| Build fails with Google Fonts | Network restrictions | Expected in sandboxed environments (comment out in `layout.tsx`) |
+
+---
 
 ## Development Commands
 
@@ -31,15 +129,17 @@ npx tsc --noEmit
 
 **CRITICAL**: Create `.env.local` from `.env.example` before running dev server. Missing environment variables will cause build failures.
 
+---
+
 ## Architecture Overview
 
 ### Node-Based Message Processing Pipeline
 
-The system uses a **flow orchestration pattern** where individual nodes (pure functions) are composed into a complete message processing pipeline. This architecture was designed for future migration from n8n but is now fully implemented in Next.js.
+The system uses a **flow orchestration pattern** where individual nodes (pure functions) are composed into a complete message processing pipeline. This architecture replaced the previous n8n workflow.
 
 **Flow**: `src/flows/chatbotFlow.ts` - Main orchestrator that chains 13 nodes sequentially
 **Nodes**: `src/nodes/*` - Atomic, reusable functions (one responsibility each)
-**API Endpoint**: `/api/webhook` receives WhatsApp Cloud API webhooks from Meta
+**API Endpoint**: `/api/webhook/[clientId]` - Multi-tenant webhook receiver (Meta WhatsApp)
 
 ### Message Processing Flow (13 Nodes)
 
@@ -51,7 +151,7 @@ WhatsApp → Webhook → chatbotFlow → 13 Nodes → WhatsApp Response
 
 1. **Filter Status Updates** - Ignores delivery receipts, only processes messages
 2. **Parse Message** - Extracts phone, name, content, type from Meta payload
-3. **Check/Create Customer** - Upserts customer in `Clientes WhatsApp` table
+3. **Check/Create Customer** - Upserts customer in `clientes_whatsapp` table
 4. **Download Media** - Fetches audio/image from Meta API (if not text)
 5. **Normalize Message** - Converts all message types to text (Whisper for audio, GPT-4o Vision for images)
 6. **Push to Redis** - Adds message to Redis list keyed by phone number
@@ -129,16 +229,16 @@ git commit -m "feat: add feature_name to database"
 -- supabase/migrations/20251030_add_media_url_to_messages.sql
 
 -- Add column for media attachments
-ALTER TABLE public.messages 
+ALTER TABLE public.messages
 ADD COLUMN media_url TEXT;
 
 -- Index for filtering media messages
-CREATE INDEX idx_messages_media_url 
-ON public.messages(media_url) 
+CREATE INDEX idx_messages_media_url
+ON public.messages(media_url)
 WHERE media_url IS NOT NULL;
 
 -- Documentation
-COMMENT ON COLUMN public.messages.media_url 
+COMMENT ON COLUMN public.messages.media_url
 IS 'URL do arquivo de mídia (imagem, áudio, vídeo, documento)';
 ```
 
@@ -232,70 +332,77 @@ When `transferir_atendimento` tool is called:
 4. Send email via Gmail to luisfboff@hotmail.com
 5. Stop bot responses (future messages skip AI processing)
 
+---
+
 ## Directory Structure
 
 ```
 src/
 ├── app/
 │   ├── api/
-│   │   ├── webhook/route.ts          # Main entry: Meta webhook receiver
-│   │   ├── conversations/route.ts    # Dashboard: List conversations
-│   │   ├── messages/[phone]/route.ts # Dashboard: Fetch messages
-│   │   ├── commands/                 # Dashboard actions (send message, transfer)
-│   │   ├── debug/                    # Debug endpoints (logs, env, executions)
-│   │   └── test/                     # Node testing endpoints
-│   ├── dashboard/                    # React dashboard UI
-│   │   ├── page.tsx                  # Main dashboard (metrics, conversation list)
-│   │   ├── conversations/[phone]/    # Conversation detail view
-│   │   ├── workflow/                 # Workflow execution viewer
-│   │   └── debug/                    # Debug dashboard (env vars, logs)
-│   ├── layout.tsx                    # Root layout (Google Fonts)
-│   └── globals.css                   # Tailwind CSS
+│   │   ├── webhook/
+│   │   │   ├── [clientId]/route.ts   # ⚡ WEBHOOK MULTI-TENANT (principal)
+│   │   │   └── route.ts               # ⚠️ DEPRECATED (retorna 410 Gone)
+│   │   ├── conversations/route.ts     # Dashboard: List conversations
+│   │   ├── messages/[phone]/route.ts  # Dashboard: Fetch messages
+│   │   ├── commands/                  # Dashboard actions (send message, transfer)
+│   │   ├── debug/                     # Debug endpoints (logs, env, executions)
+│   │   └── test/                      # Node testing endpoints
+│   ├── dashboard/                     # React dashboard UI
+│   │   ├── page.tsx                   # Main dashboard (metrics, conversation list)
+│   │   ├── conversations/[phone]/     # Conversation detail view
+│   │   ├── workflow/                  # Workflow execution viewer
+│   │   ├── settings/                  # ⚙️ Configuração Vault (API keys)
+│   │   └── debug/                     # Debug dashboard (env vars, logs)
+│   ├── layout.tsx                     # Root layout (Google Fonts)
+│   └── globals.css                    # Tailwind CSS
 ├── flows/
-│   └── chatbotFlow.ts                # Main orchestrator (13-node pipeline)
-├── nodes/                            # Atomic functions (one per node)
-│   ├── filterStatusUpdates.ts
-│   ├── parseMessage.ts
-│   ├── checkOrCreateCustomer.ts
-│   ├── downloadMetaMedia.ts
-│   ├── transcribeAudio.ts
-│   ├── analyzeImage.ts
-│   ├── normalizeMessage.ts
-│   ├── pushToRedis.ts
-│   ├── batchMessages.ts
-│   ├── getChatHistory.ts
-│   ├── getRAGContext.ts
-│   ├── generateAIResponse.ts
-│   ├── formatResponse.ts
-│   ├── sendWhatsAppMessage.ts
-│   ├── handleHumanHandoff.ts
-│   ├── saveChatMessage.ts
-│   └── index.ts                      # Barrel export
+│   └── chatbotFlow.ts                 # 🔥 Main orchestrator (13-node pipeline)
+├── nodes/                             # 🧩 Atomic functions (one per node)
+│   ├── filterStatusUpdates.ts         # [1] Filtra status updates
+│   ├── parseMessage.ts                # [2] Parse payload Meta
+│   ├── checkOrCreateCustomer.ts       # [3] Upsert cliente
+│   ├── downloadMetaMedia.ts           # [4] Download mídia
+│   ├── normalizeMessage.ts            # [5] Normaliza (áudio→texto, img→texto)
+│   ├── pushToRedis.ts                 # [6] Push para fila Redis
+│   ├── saveChatMessage.ts             # [7] Salva msg no histórico
+│   ├── batchMessages.ts               # [8] Batch msgs (10s delay)
+│   ├── getChatHistory.ts              # [9] Busca histórico PostgreSQL
+│   ├── getRAGContext.ts               # [10] Vector search Supabase
+│   ├── generateAIResponse.ts          # [11] Groq/OpenAI gera resposta
+│   ├── formatResponse.ts              # [12] Split em msgs WhatsApp
+│   ├── sendWhatsAppMessage.ts         # [13] Envia via Meta API
+│   ├── handleHumanHandoff.ts          # Tool: Transferência para humano
+│   └── index.ts                       # Barrel export
 ├── lib/
-│   ├── supabase.ts                   # Supabase client factory
-│   ├── postgres.ts                   # Direct PostgreSQL connection
-│   ├── redis.ts                      # Redis client
-│   ├── groq.ts                       # Groq SDK client
-│   ├── openai.ts                     # OpenAI SDK client
-│   ├── meta.ts                       # WhatsApp Business API helpers
-│   ├── gmail.ts                      # Gmail API (human handoff emails)
-│   ├── logger.ts                     # Execution logger (in-memory)
-│   ├── webhookCache.ts               # In-memory webhook message cache
-│   ├── types.ts                      # TypeScript type definitions
-│   └── utils.ts                      # Utility functions (cn, etc.)
+│   ├── config.ts                      # Multi-tenant config (Vault)
+│   ├── vault.ts                       # Supabase Vault helpers
+│   ├── supabase.ts                    # Supabase client factory
+│   ├── postgres.ts                    # Direct PostgreSQL connection
+│   ├── redis.ts                       # Redis client
+│   ├── groq.ts                        # Groq SDK client
+│   ├── openai.ts                      # OpenAI SDK client
+│   ├── meta.ts                        # WhatsApp Business API helpers
+│   ├── gmail.ts                       # Gmail API (human handoff emails)
+│   ├── logger.ts                      # Execution logger (in-memory)
+│   ├── webhookCache.ts                # In-memory webhook message cache
+│   ├── types.ts                       # TypeScript type definitions
+│   └── utils.ts                       # Utility functions (cn, etc.)
 ├── components/
-│   ├── ui/                           # shadcn/ui components (DON'T edit directly)
+│   ├── ui/                            # shadcn/ui components (DON'T edit directly)
 │   ├── ConversationList.tsx
 │   ├── ConversationDetail.tsx
 │   ├── MessageBubble.tsx
 │   ├── MetricsDashboard.tsx
 │   └── SendMessageForm.tsx
 └── hooks/
-    ├── useConversations.ts           # Fetch conversation list (polling)
-    ├── useMessages.ts                # Fetch messages for phone number
-    ├── useRealtimeMessages.ts        # Supabase realtime subscriptions
-    └── use-toast.ts                  # Toast notifications
+    ├── useConversations.ts            # Fetch conversation list (polling)
+    ├── useMessages.ts                 # Fetch messages for phone number
+    ├── useRealtimeMessages.ts         # Supabase realtime subscriptions
+    └── use-toast.ts                   # Toast notifications
 ```
+
+---
 
 ## Key Configuration
 
@@ -346,11 +453,15 @@ GMAIL_APP_PASSWORD=app_password_here
 - `n8n_chat_histories` - Chat memory (used by node 9)
 - `documents` - Vector store (used by node 10)
 
-**New tables for Phase 3** (not yet used):
+**New tables for Phase 3/4** (actively used):
 - `clients` - Multi-tenant configuration
+- `user_profiles` - User profiles with RBAC
 - `conversations` - Conversation state tracking
 - `messages` - Message history with metadata
 - `usage_logs` - Cost tracking (OpenAI tokens, Meta messages)
+- `pricing_config` - Custom pricing per client
+
+---
 
 ## Important Concepts
 
@@ -400,18 +511,22 @@ Customer `status` in `Clientes WhatsApp`:
 
 **Check in Node 3**: If status = "human", skip entire pipeline (return early)
 
-### Multi-Tenant Architecture (Planned, Not Implemented)
+### Multi-Tenant Architecture
 
-**Current**: Single client (hardcoded config in env vars)
-**Phase 3 Goal**: Multiple clients with unique configs
-
-Pattern:
+**Current**: Fully implemented in Phase 3/4
+**Pattern**:
 ```typescript
 const config = await getClientConfig(clientId)
-// Use config.META_ACCESS_TOKEN instead of process.env.META_ACCESS_TOKEN
+// Use config.metaAccessToken instead of process.env.META_ACCESS_TOKEN
 ```
 
-**Not yet implemented**: Client selector, per-client webhook URLs, database-stored tokens
+**Implementation**:
+- Client-specific webhook URLs: `/api/webhook/[clientId]`
+- Secrets stored in Supabase Vault (encrypted)
+- RLS policies enforce data isolation
+- Settings UI at `/dashboard/settings`
+
+---
 
 ## 📊 Database Schema Reference
 
@@ -453,9 +568,19 @@ completion_price DECIMAL
 
 ---
 
-## ⚠️ Critical Technical Decisions & Fixes
+## ⚠️ Critical Technical Decisions & Fixes - Summary
 
 This section documents important problems encountered and their solutions. **READ THIS BEFORE MODIFYING DATABASE OR WEBHOOK CODE**.
+
+| Issue | Solution | Key File(s) | Section |
+|-------|----------|-------------|---------|
+| Serverless connection pooling | Use Supabase client, not `pg` | `checkOrCreateCustomer.ts:78` | #1 |
+| Webhook hanging | Must `await` processing | `webhook/route.ts:107` | #2 |
+| Table name with spaces | Renamed + VIEW for compatibility | `migrations/004_*` | #3 |
+| Column `type` not found | JSON field, not column | `saveChatMessage.ts`, `getChatHistory.ts` | #4 |
+| Tool calls in messages | Strip with regex | `formatResponse.ts:7-10` | #5 |
+| Localhost webhooks | Always use production URL | `.env.local` | #6 |
+| Token confusion | ACCESS vs VERIFY are different | Multiple files | #7 |
 
 ### 1. Serverless Connection Pooling (NODE 3 Fix)
 
@@ -627,6 +752,8 @@ META_VERIFY_TOKEN=my-secret-token-123  # YOU create this (any random string)
 
 **Rule**: These are DIFFERENT tokens with DIFFERENT purposes. Don't confuse them.
 
+---
+
 ## Code Patterns
 
 ### Node Function Signature
@@ -716,6 +843,8 @@ function processMessage(message) {
   return result
 }
 ```
+
+---
 
 ## Testing & Debugging
 
@@ -810,6 +939,8 @@ http://localhost:3000/dashboard/workflow
 - Don't prevent dev server or build from working
 - Only fix if modifying affected files
 
+---
+
 ## Development Workflow
 
 ### Adding a New Node
@@ -853,47 +984,68 @@ npx shadcn@latest add button  # Re-generates component
 
 To customize: Create wrapper component in `src/components/`
 
+---
+
 ## Known Limitations
 
-1. **No multi-tenant support** - Single client only (env vars)
-2. **Diagnostic subagent tool not implemented** - Defined but no execution loop
-3. **No cost tracking** - `usage_logs` table exists but not populated
-4. **No conversation state management** - `conversations` table not used yet
-5. **Google Fonts build failure** - In restricted networks, build fails (font fetch)
-6. **No authentication** - Dashboard is publicly accessible
-7. **Polling instead of webhooks** - Dashboard uses 10s polling (not Supabase realtime everywhere)
+1. **Diagnostic subagent tool not implemented** - Defined but no execution loop
+2. **Google Fonts build failure** - In restricted networks, build fails (font fetch)
+3. **Polling for some features** - Dashboard uses 10s polling in addition to Supabase realtime
+
+---
 
 ## Migration Notes
 
-### From n8n (IA.json)
+### Migration History
 
-This Next.js implementation **replaces** the n8n workflow. Key differences:
-
-- **n8n**: Visual workflow editor, no code
-- **Next.js**: TypeScript functions, full control
+**Phase 1:** n8n workflow only (legacy)
+**Phase 2:** Next.js dashboard (read-only, n8n still processing)
+**Phase 2.5:** Node-based architecture in Next.js (replaced n8n completely)
+**Phase 3:** Supabase Vault + Multi-tenant webhooks
+**Phase 4:** ✅ COMPLETE - RBAC, Auth, Admin Panel, Real-time notifications
 
 **Migration status**:
-- ✅ All 13 nodes migrated
+- ✅ All 13 nodes migrated from n8n
 - ✅ Redis batching implemented
 - ✅ RAG context retrieval
 - ✅ Human handoff flow
 - ✅ Multi-message formatting
 - ✅ Media processing (audio, image)
+- ✅ Multi-tenant config with Vault
+- ✅ RBAC and authentication
 - ⏳ Diagnostic subagent (defined, not executed)
-- ❌ Multi-tenant config (Phase 3)
 
-### To Phase 3 (Full Multi-Tenant SaaS)
+### Phase 5 Roadmap (Future Enhancements)
 
-**Remaining work**:
+**Performance & Scalability**:
+- Queue system for async processing (Upstash/Vercel Queue)
+- Response caching (Redis)
+- Query optimization (composite indexes)
+- CDN for static assets
 
-1. Implement `getClientConfig(clientId)` pattern
-2. Move tokens from env vars to database (`clients` table)
-3. Add authentication (NextAuth.js)
-4. Per-client webhook URLs: `/api/webhook/[clientId]`
-5. Client selector UI in dashboard
-6. Cost tracking (populate `usage_logs`)
-7. Conversation state management (use `conversations`, `messages` tables)
-8. Queue system for long tasks (Upstash/Vercel Queue)
+**Features**:
+- Public API with rate limiting
+- Custom webhooks for clients
+- Message templates
+- Scheduled messages
+- Automated reports (PDF/Excel)
+- CRM integration (Pipedrive, HubSpot)
+
+**UX**:
+- Mobile app (React Native)
+- Dark mode
+- Advanced search (filters, tags)
+- Conversation export
+- Internal notes
+
+**AI**:
+- Fine-tuned custom models
+- A/B testing for prompts
+- Sentiment analysis
+- Auto-suggestions
+- Language detection
+
+---
 
 ## External Services
 
@@ -917,7 +1069,8 @@ This Next.js implementation **replaces** the n8n workflow. Key differences:
 **Supabase**:
 - PostgreSQL database
 - Vector search (pgvector)
-- Realtime subscriptions (dashboard only)
+- Realtime subscriptions (dashboard)
+- Vault (encrypted secrets)
 
 **Redis**:
 - Message batching
@@ -927,18 +1080,24 @@ This Next.js implementation **replaces** the n8n workflow. Key differences:
 - Human handoff email notifications
 - Uses App Password (not OAuth)
 
+---
+
 ## Language
 
 All user-facing content (prompts, messages, UI) is in **Portuguese (Brazilian)**.
 All code, comments, and technical documentation is in **English**.
 
+---
+
 ## Key Files Reference
 
 - `src/flows/chatbotFlow.ts` - Main orchestrator (start here to understand flow)
-- `src/app/api/webhook/route.ts` - Webhook entry point
+- `src/app/api/webhook/[clientId]/route.ts` - Multi-tenant webhook entry point
 - `src/nodes/generateAIResponse.ts` - AI agent configuration (prompts, tools)
+- `src/lib/config.ts` - Multi-tenant config with Vault integration
 - `src/lib/types.ts` - All TypeScript types
+- `docs/tables/tabelas.md` - Complete database schema reference
+- `db/MIGRATION_WORKFLOW.md` - Migration guide with examples
 - `.env.example` - Required environment variables
-- `migration.sql` - Database schema
 - `README.md` - User documentation
 - `.github/copilot-instructions.md` - Build/validation steps
