@@ -92,9 +92,19 @@ export async function GET(
       
       if (relatedConfigs && relatedConfigs.length > 0) {
         // Merge all related configs into the main config object
+        // Handle both direct values and nested objects
         relatedConfigs.forEach((item) => {
-          if (item.config_value && typeof item.config_value === 'object') {
-            config = { ...config, ...item.config_value }
+          if (item.config_value) {
+            if (typeof item.config_value === 'object' && !Array.isArray(item.config_value)) {
+              // It's an object - merge all its keys
+              config = { ...config, ...item.config_value }
+            } else {
+              // It's a primitive value - extract the key name from config_key
+              // e.g., 'model:temperature' -> 'temperature'
+              const keyParts = item.config_key.split(':')
+              const fieldName = keyParts[keyParts.length - 1]
+              config[fieldName] = item.config_value
+            }
           }
         })
       }
