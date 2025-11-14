@@ -213,6 +213,41 @@ export default function FlowArchitectureManager() {
     })
   }, [])
 
+  // Fetch node configurations from backend
+  const fetchNodeConfig = useCallback(async (nodeId: string) => {
+    const node = nodes.find((n) => n.id === nodeId)
+    if (!node || !node.hasConfig || !node.configKey) return
+    
+    setLoading(true)
+    try {
+      const response = await fetch(`/api/flow/nodes/${nodeId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setNodeConfig(data.config || { enabled: node.enabled })
+      } else {
+        setNodeConfig({ enabled: node.enabled })
+      }
+    } catch (error) {
+      console.error('Error fetching node config:', error)
+      setNodeConfig({ enabled: node.enabled })
+    } finally {
+      setLoading(false)
+    }
+  }, [nodes])
+
+  // Handle node click
+  const handleNodeClick = useCallback((nodeId: string) => {
+    const node = nodes.find((n) => n.id === nodeId)
+    if (node) {
+      setSelectedNode(node)
+      if (node.hasConfig) {
+        fetchNodeConfig(nodeId)
+      } else {
+        setNodeConfig({ enabled: node.enabled })
+      }
+    }
+  }, [nodes, fetchNodeConfig])
+
   // Generate Mermaid diagram
   const generateMermaidDiagram = useCallback(() => {
     const enabledNodes = nodes.filter((node) => node.enabled)
@@ -269,10 +304,11 @@ export default function FlowArchitectureManager() {
       if (svg) {
         const nodeElements = svg.querySelectorAll('.node')
         nodeElements.forEach((nodeEl) => {
+          const htmlElement = nodeEl as HTMLElement
           const nodeId = nodeEl.id?.replace(/^flowchart-/, '').replace(/-\d+$/, '')
           if (nodeId) {
-            nodeEl.style.cursor = 'pointer'
-            nodeEl.addEventListener('click', () => handleNodeClick(nodeId))
+            htmlElement.style.cursor = 'pointer'
+            htmlElement.addEventListener('click', () => handleNodeClick(nodeId))
           }
         })
       }
@@ -285,41 +321,6 @@ export default function FlowArchitectureManager() {
   useEffect(() => {
     renderDiagram()
   }, [renderDiagram])
-
-  // Fetch node configurations from backend
-  const fetchNodeConfig = useCallback(async (nodeId: string) => {
-    const node = nodes.find((n) => n.id === nodeId)
-    if (!node || !node.hasConfig || !node.configKey) return
-    
-    setLoading(true)
-    try {
-      const response = await fetch(`/api/flow/nodes/${nodeId}`)
-      if (response.ok) {
-        const data = await response.json()
-        setNodeConfig(data.config || { enabled: node.enabled })
-      } else {
-        setNodeConfig({ enabled: node.enabled })
-      }
-    } catch (error) {
-      console.error('Error fetching node config:', error)
-      setNodeConfig({ enabled: node.enabled })
-    } finally {
-      setLoading(false)
-    }
-  }, [nodes])
-
-  // Handle node click
-  const handleNodeClick = useCallback((nodeId: string) => {
-    const node = nodes.find((n) => n.id === nodeId)
-    if (node) {
-      setSelectedNode(node)
-      if (node.hasConfig) {
-        fetchNodeConfig(nodeId)
-      } else {
-        setNodeConfig({ enabled: node.enabled })
-      }
-    }
-  }, [nodes, fetchNodeConfig])
 
   // Toggle node enabled/disabled
   const toggleNodeEnabled = async (nodeId: string, enabled: boolean) => {
