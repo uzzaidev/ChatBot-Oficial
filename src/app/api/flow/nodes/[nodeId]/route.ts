@@ -79,6 +79,26 @@ export async function GET(
         config = { ...config, ...configData.config_value }
       }
     }
+    
+    // Also fetch ALL bot_configurations for this client that might be related to this node
+    // This ensures we show all editable fields even if they're in different config keys
+    const relatedConfigKeys = getRelatedConfigKeys(nodeId)
+    if (relatedConfigKeys.length > 0) {
+      const { data: relatedConfigs } = await supabase
+        .from('bot_configurations')
+        .select('config_key, config_value')
+        .eq('client_id', clientId)
+        .in('config_key', relatedConfigKeys)
+      
+      if (relatedConfigs && relatedConfigs.length > 0) {
+        // Merge all related configs into the main config object
+        relatedConfigs.forEach((item) => {
+          if (item.config_value && typeof item.config_value === 'object') {
+            config = { ...config, ...item.config_value }
+          }
+        })
+      }
+    }
 
     return NextResponse.json({
       nodeId,
@@ -212,11 +232,62 @@ export async function PATCH(
   }
 }
 
+// Helper function to get related config keys for a node
+function getRelatedConfigKeys(nodeId: string): string[] {
+  // Map nodes to their related configuration keys
+  // This allows fetching all relevant configs for display in the UI
+  const relatedKeysMap: Record<string, string[]> = {
+    generate_response: [
+      'personality:config',
+      'personality:system_prompt',
+      'personality:formatter_prompt',
+      'model:primary_model_provider',
+      'model:groq_model',
+      'model:openai_model',
+      'model:temperature',
+      'model:max_tokens',
+    ],
+    classify_intent: [
+      'intent_classifier:use_llm',
+      'intent_classifier:prompt',
+      'intent_classifier:intents',
+    ],
+    detect_repetition: [
+      'repetition_detector:similarity_threshold',
+      'repetition_detector:enabled',
+    ],
+    check_continuity: [
+      'continuity:new_conversation_threshold_hours',
+      'continuity:enabled',
+    ],
+    get_chat_history: [
+      'chat_history:max_messages',
+      'chat_history:enabled',
+    ],
+    get_rag_context: [
+      'rag:enabled',
+      'rag:similarity_threshold',
+      'rag:max_results',
+    ],
+    process_media: [
+      'media_processing:config',
+      'media_processing:enabled',
+    ],
+    batch_messages: [
+      'batching:delay_seconds',
+      'batching:enabled',
+    ],
+  }
+  
+  return relatedKeysMap[nodeId] || []
+}
+
 // Helper function to determine category from config key
 function getCategoryFromKey(configKey: string): string {
   if (configKey.includes('prompt')) return 'prompts'
   if (configKey.includes('threshold') || configKey.includes('max_') || configKey.includes('delay')) return 'thresholds'
   if (configKey.includes('personality')) return 'personality'
+  if (configKey.includes('model')) return 'personality'
   if (configKey.includes('use_') || configKey.includes('enabled')) return 'rules'
   return 'rules'
 }
