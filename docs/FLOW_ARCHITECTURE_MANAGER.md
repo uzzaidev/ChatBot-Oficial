@@ -1,5 +1,7 @@
 # 🎛️ Flow Architecture Manager - Visual Interface Documentation
 
+> **Deployment Status**: Ready for testing on Vercel
+
 ## Overview
 
 The Flow Architecture Manager is an interactive visual interface for managing the complete multi-agent chatbot processing pipeline. It provides a Mermaid-based flowchart that shows all nodes (agents) in the system, their connections, and allows click-to-configure interactions.
