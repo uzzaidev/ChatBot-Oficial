@@ -1,50 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
+import { createRouteHandlerClient } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
-
-/**
- * Create authenticated Supabase client
- */
-async function createAuthenticatedClient(request: NextRequest) {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      auth: {
-        persistSession: false,
-      },
-    }
-  )
-
-  // Get the auth token from cookies
-  const cookieStore = cookies()
-  const authToken = cookieStore.get('sb-access-token')?.value || 
-                    cookieStore.get('supabase-auth-token')?.value
-
-  if (authToken) {
-    const { data: { user } } = await supabase.auth.getUser(authToken)
-    return { supabase, user }
-  }
-
-  // Try to get user from the service role client
-  const { data: { user } } = await supabase.auth.getUser()
-  return { supabase, user }
-}
-
-/**
- * Get client_id for the authenticated user
- */
-async function getClientId(supabase: any, userId: string): Promise<string | null> {
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('client_id')
-    .eq('id', userId)
-    .single()
-
-  return profile?.client_id || null
-}
 
 /**
  * GET /api/flow/nodes/[nodeId]
@@ -56,16 +13,27 @@ export async function GET(
 ) {
   try {
     const { nodeId } = params
-    const { supabase, user } = await createAuthenticatedClient(request)
+    const supabase = createRouteHandlerClient()
 
-    if (!user) {
+    // Authenticate user
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
 
-    const clientId = await getClientId(supabase, user.id)
-    if (!clientId) {
+    // Get client_id from user_profiles
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('client_id')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError || !profile?.client_id) {
       return NextResponse.json({ error: 'Client not found' }, { status: 404 })
     }
+
+    const clientId = profile.client_id
 
     // Map nodeId to config_key
     const configKeyMap: Record<string, string> = {
