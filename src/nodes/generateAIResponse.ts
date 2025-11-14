@@ -117,16 +117,19 @@ export interface GenerateAIResponseInput {
   ragContext: string
   customerName: string
   config: ClientConfig // 🔐 Config dinâmica do cliente
+  greetingInstruction?: string // 🔧 Phase 1: Continuity greeting instruction
 }
 
 /**
  * 🔐 Gera resposta da IA usando config dinâmica do cliente
  *
  * Usa systemPrompt e groqApiKey do config do cliente do Vault
+ * 
+ * 🔧 Phase 1: Injects continuity greeting instruction if provided
  */
 export const generateAIResponse = async (input: GenerateAIResponseInput): Promise<AIResponse> => {
   try {
-    const { message, chatHistory, ragContext, customerName, config } = input
+    const { message, chatHistory, ragContext, customerName, config, greetingInstruction } = input
 
     // Usar systemPrompt do config do cliente (ou fallback)
     const systemPrompt = config.prompts.systemPrompt || DEFAULT_SYSTEM_PROMPT
@@ -153,6 +156,15 @@ export const generateAIResponse = async (input: GenerateAIResponseInput): Promis
         content: dateTimeInfo,
       },
     ]
+
+    // 🔧 Phase 1: Add continuity greeting instruction if provided
+    if (greetingInstruction && greetingInstruction.trim().length > 0) {
+      messages.push({
+        role: 'system',
+        content: `IMPORTANTE - Contexto da conversa: ${greetingInstruction}`,
+      })
+      console.log('[generateAIResponse] 👋 Added continuity greeting instruction')
+    }
 
     if (ragContext && ragContext.trim().length > 0) {
       messages.push({

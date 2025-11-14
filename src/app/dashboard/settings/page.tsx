@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import BotConfigurationManager from '@/components/BotConfigurationManager'
 
 /**
  * Settings Page - Configurações do Usuário
@@ -22,6 +23,7 @@ import {
  * Seções:
  * 1. Perfil do Usuário - visualizar/editar nome, email, telefone, alterar senha
  * 2. Variáveis de Ambiente - gerenciar credenciais do Vault (Meta, OpenAI, Groq)
+ * 3. Bot Configurations - gerenciar configurações modulares do bot
  *
  * IMPORTANTE: Edição de variáveis requer revalidação de senha
  */
@@ -1224,6 +1226,9 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Seção 5: Bot Configurations */}
+        <BotConfigurationManager />
       </div>
 
       {/* Modal de Revalidação de Senha */}

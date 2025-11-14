@@ -242,6 +242,27 @@ VALUES
   true,
   'Threshold mínimo de similaridade para incluir documento (0-1). Padrão: 0.50',
   'thresholds'
+),
+(
+  'rag:chunk_size',
+  '500'::jsonb,
+  true,
+  'Tamanho máximo de cada chunk em tokens. Recomendado: 400-600 para text-embedding-3-small',
+  'thresholds'
+),
+(
+  'rag:chunk_overlap_percentage',
+  '20'::jsonb,
+  true,
+  'Percentual de overlap entre chunks (0-100). Recomendado: 15-20% para boa continuidade',
+  'thresholds'
+),
+(
+  'rag:embedding_model',
+  '"text-embedding-3-small"'::jsonb,
+  true,
+  'Modelo OpenAI para gerar embeddings. Opções: text-embedding-3-small, text-embedding-3-large',
+  'rules'
 );
 
 -- ========================================
