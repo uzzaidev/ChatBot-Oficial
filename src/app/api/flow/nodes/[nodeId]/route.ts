@@ -107,16 +107,27 @@ export async function PATCH(
     const body = await request.json()
     const { enabled, config } = body
 
-    const { supabase, user } = await createAuthenticatedClient(request)
+    const supabase = createRouteHandlerClient()
 
-    if (!user) {
+    // Authenticate user
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
 
-    const clientId = await getClientId(supabase, user.id)
-    if (!clientId) {
+    // Get client_id from user_profiles
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('client_id')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError || !profile?.client_id) {
       return NextResponse.json({ error: 'Client not found' }, { status: 404 })
     }
+
+    const clientId = profile.client_id
 
     // Map nodeId to config_key
     const configKeyMap: Record<string, string> = {
