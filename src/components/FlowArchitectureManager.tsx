@@ -263,13 +263,10 @@ export default function FlowArchitectureManager() {
     // Add nodes
     enabledNodes.forEach((node) => {
       const nodeLabel = node.hasConfig 
-        ? `${node.name}\\n⚙️ Configurável`
+        ? `${node.name}<br/>⚙️ Configurável`
         : node.name
       diagram += `  ${node.id}["${nodeLabel}"]\n`
       diagram += `  class ${node.id} ${node.category}\n`
-      
-      // Add click event
-      diagram += `  click ${node.id} call handleNodeClick('${node.id}')\n`
     })
     
     diagram += '\n'
@@ -296,26 +293,84 @@ export default function FlowArchitectureManager() {
     const diagram = generateMermaidDiagram()
     
     try {
-      mermaidRef.current.innerHTML = diagram
-      await mermaid.contentLoaded()
+      // Clear previous content
+      mermaidRef.current.innerHTML = ''
+      
+      // Create a unique ID for this render
+      const id = `mermaid-${Date.now()}`
+      
+      // Render the diagram
+      const { svg } = await mermaid.render(id, diagram)
+      mermaidRef.current.innerHTML = svg
       
       // Add click handlers after render
-      const svg = mermaidRef.current.querySelector('svg')
-      if (svg) {
-        const nodeElements = svg.querySelectorAll('.node')
+      const svgElement = mermaidRef.current.querySelector('svg')
+      if (svgElement) {
+        // Find all node elements - Mermaid uses different classes for nodes
+        const nodeElements = svgElement.querySelectorAll('.node, [class*="flowchart-"]')
+        
         nodeElements.forEach((nodeEl) => {
           const htmlElement = nodeEl as HTMLElement
-          const nodeId = nodeEl.id?.replace(/^flowchart-/, '').replace(/-\d+$/, '')
-          if (nodeId) {
+          
+          // Try to extract node ID from various possible formats
+          let nodeId = ''
+          
+          // Method 1: Check if the element has a data attribute or ID
+          if (htmlElement.id) {
+            // Mermaid might use format like "flowchart-filter_status-123"
+            const match = htmlElement.id.match(/flowchart-([a-z_]+)-\d+/)
+            if (match) {
+              nodeId = match[1]
+            }
+          }
+          
+          // Method 2: Check parent g element
+          if (!nodeId && htmlElement.closest('.nodes')) {
+            const parentG = htmlElement.closest('g')
+            if (parentG?.id) {
+              const match = parentG.id.match(/flowchart-([a-z_]+)-\d+/)
+              if (match) {
+                nodeId = match[1]
+              }
+            }
+          }
+          
+          // Method 3: Try to find from the label text
+          if (!nodeId) {
+            const labelEl = htmlElement.querySelector('.label, text')
+            if (labelEl) {
+              const labelText = labelEl.textContent || ''
+              // Try to match with our known nodes
+              const matchingNode = nodes.find((n) => 
+                labelText.includes(n.name)
+              )
+              if (matchingNode) {
+                nodeId = matchingNode.id
+              }
+            }
+          }
+          
+          if (nodeId && nodes.find((n) => n.id === nodeId)) {
             htmlElement.style.cursor = 'pointer'
-            htmlElement.addEventListener('click', () => handleNodeClick(nodeId))
+            htmlElement.addEventListener('click', (e) => {
+              e.stopPropagation()
+              handleNodeClick(nodeId)
+            })
+            
+            // Add hover effect
+            htmlElement.addEventListener('mouseenter', () => {
+              htmlElement.style.opacity = '0.8'
+            })
+            htmlElement.addEventListener('mouseleave', () => {
+              htmlElement.style.opacity = '1'
+            })
           }
         })
       }
     } catch (error) {
       console.error('Error rendering Mermaid diagram:', error)
     }
-  }, [generateMermaidDiagram, handleNodeClick])
+  }, [generateMermaidDiagram, handleNodeClick, nodes])
 
   // Render diagram on mount and when nodes change
   useEffect(() => {
