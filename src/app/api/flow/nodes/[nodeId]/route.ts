@@ -1,12 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { cookies } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+/**
+ * Create authenticated Supabase client
+ */
+async function createAuthenticatedClient(request: NextRequest) {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: {
+        persistSession: false,
+      },
+    }
+  )
+
+  // Get the auth token from cookies
+  const cookieStore = cookies()
+  const authToken = cookieStore.get('sb-access-token')?.value || 
+                    cookieStore.get('supabase-auth-token')?.value
+
+  if (authToken) {
+    const { data: { user } } = await supabase.auth.getUser(authToken)
+    return { supabase, user }
+  }
+
+  // Try to get user from the service role client
+  const { data: { user } } = await supabase.auth.getUser()
+  return { supabase, user }
+}
+
+/**
+ * Get client_id for the authenticated user
+ */
+async function getClientId(supabase: any, userId: string): Promise<string | null> {
+  const { data: profile } = await supabase
+    .from('user_profiles')
+    .select('client_id')
+    .eq('id', userId)
+    .single()
+
+  return profile?.client_id || null
+}
 
 /**
  * GET /api/flow/nodes/[nodeId]
@@ -18,9 +56,16 @@ export async function GET(
 ) {
   try {
     const { nodeId } = params
+    const { supabase, user } = await createAuthenticatedClient(request)
 
-    // For now, use a hardcoded client_id (will be replaced with auth in production)
-    const DEFAULT_CLIENT_ID = '00000000-0000-0000-0000-000000000000'
+    if (!user) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+    }
+
+    const clientId = await getClientId(supabase, user.id)
+    if (!clientId) {
+      return NextResponse.json({ error: 'Client not found' }, { status: 404 })
+    }
 
     // Map nodeId to config_key
     const configKeyMap: Record<string, string> = {
@@ -35,44 +80,42 @@ export async function GET(
     }
 
     const configKey = configKeyMap[nodeId]
-    if (!configKey) {
-      return NextResponse.json(
-        { error: 'Invalid node ID or node has no configuration' },
-        { status: 400 }
-      )
-    }
+    
+    // Also check for node enabled state
+    const enabledConfigKey = `flow:node_enabled:${nodeId}`
+    
+    let config: any = { enabled: true }
 
-    // Fetch configuration from bot_configurations table
-    const { data, error } = await supabase
+    // Fetch node enabled state
+    const { data: enabledData } = await supabase
       .from('bot_configurations')
-      .select('*')
-      .eq('client_id', DEFAULT_CLIENT_ID)
-      .eq('config_key', configKey)
+      .select('config_value')
+      .eq('client_id', clientId)
+      .eq('config_key', enabledConfigKey)
       .single()
 
-    if (error && error.code !== 'PGRST116') {
-      console.error('[flow/nodes] Error fetching config:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    if (enabledData) {
+      config.enabled = enabledData.config_value?.enabled !== false
     }
 
-    // If no config found, return default
-    if (!data) {
-      return NextResponse.json({
-        nodeId,
-        configKey,
-        config: {
-          enabled: true,
-        },
-      })
+    // Fetch node configuration if it exists
+    if (configKey) {
+      const { data: configData } = await supabase
+        .from('bot_configurations')
+        .select('config_value')
+        .eq('client_id', clientId)
+        .eq('config_key', configKey)
+        .single()
+
+      if (configData) {
+        config = { ...config, ...configData.config_value }
+      }
     }
 
     return NextResponse.json({
       nodeId,
-      configKey,
-      config: {
-        enabled: true,
-        ...data.config_value,
-      },
+      configKey: configKey || enabledConfigKey,
+      config,
     })
   } catch (error: any) {
     console.error('[flow/nodes] Unexpected error:', error)
@@ -96,8 +139,16 @@ export async function PATCH(
     const body = await request.json()
     const { enabled, config } = body
 
-    // For now, use a hardcoded client_id
-    const DEFAULT_CLIENT_ID = '00000000-0000-0000-0000-000000000000'
+    const { supabase, user } = await createAuthenticatedClient(request)
+
+    if (!user) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+    }
+
+    const clientId = await getClientId(supabase, user.id)
+    if (!clientId) {
+      return NextResponse.json({ error: 'Client not found' }, { status: 404 })
+    }
 
     // Map nodeId to config_key
     const configKeyMap: Record<string, string> = {
@@ -112,56 +163,66 @@ export async function PATCH(
     }
 
     const configKey = configKeyMap[nodeId]
-    if (!configKey) {
-      return NextResponse.json(
-        { error: 'Invalid node ID or node has no configuration' },
-        { status: 400 }
-      )
+
+    // Handle enabled/disabled state
+    if (enabled !== undefined) {
+      const enabledConfigKey = `flow:node_enabled:${nodeId}`
+      
+      const { error: enabledError } = await supabase
+        .from('bot_configurations')
+        .upsert(
+          {
+            client_id: clientId,
+            config_key: enabledConfigKey,
+            config_value: { enabled },
+            is_default: false,
+            category: 'rules',
+            description: `Node enabled state for ${nodeId}`,
+          },
+          {
+            onConflict: 'client_id,config_key',
+          }
+        )
+
+      if (enabledError) {
+        console.error('[flow/nodes] Error updating enabled state:', enabledError)
+        return NextResponse.json({ error: enabledError.message }, { status: 500 })
+      }
     }
 
-    // If only updating enabled status, create a simple config
-    if (enabled !== undefined && !config) {
-      // For simple enable/disable, we store in a separate table or use metadata
-      // For now, just return success
-      return NextResponse.json({
-        success: true,
-        message: `Node ${enabled ? 'enabled' : 'disabled'}`,
-      })
-    }
+    // Handle configuration updates
+    if (config && configKey) {
+      const configValue = {
+        ...config,
+      }
 
-    // Update or insert configuration
-    const configValue = {
-      ...config,
-      enabled: enabled !== undefined ? enabled : true,
-    }
+      const { error: configError } = await supabase
+        .from('bot_configurations')
+        .upsert(
+          {
+            client_id: clientId,
+            config_key: configKey,
+            config_value: configValue,
+            is_default: false,
+            category: getCategoryFromKey(configKey),
+            description: `Configuration for ${nodeId}`,
+          },
+          {
+            onConflict: 'client_id,config_key',
+          }
+        )
 
-    const { data, error } = await supabase
-      .from('bot_configurations')
-      .upsert(
-        {
-          client_id: DEFAULT_CLIENT_ID,
-          config_key: configKey,
-          config_value: configValue,
-          is_default: false,
-          category: getCategoryFromKey(configKey),
-          description: `Configuration for ${nodeId}`,
-        },
-        {
-          onConflict: 'client_id,config_key',
-        }
-      )
-      .select()
-      .single()
-
-    if (error) {
-      console.error('[flow/nodes] Error upserting config:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      if (configError) {
+        console.error('[flow/nodes] Error upserting config:', configError)
+        return NextResponse.json({ error: configError.message }, { status: 500 })
+      }
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Configuration updated',
-      data,
+      message: enabled !== undefined 
+        ? `Node ${enabled ? 'enabled' : 'disabled'}` 
+        : 'Configuration updated',
     })
   } catch (error: any) {
     console.error('[flow/nodes] Unexpected error:', error)

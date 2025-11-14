@@ -213,6 +213,44 @@ export default function FlowArchitectureManager() {
     })
   }, [])
 
+  // Load node enabled states from database on mount
+  useEffect(() => {
+    const loadNodeStates = async () => {
+      try {
+        // Fetch enabled state for all nodes
+        const promises = FLOW_NODES.map(async (node) => {
+          try {
+            const response = await fetch(`/api/flow/nodes/${node.id}`)
+            if (response.ok) {
+              const data = await response.json()
+              return {
+                nodeId: node.id,
+                enabled: data.config?.enabled !== false,
+              }
+            }
+          } catch (error) {
+            console.error(`Error fetching state for ${node.id}:`, error)
+          }
+          return { nodeId: node.id, enabled: true }
+        })
+
+        const results = await Promise.all(promises)
+        
+        // Update nodes with fetched states
+        setNodes((prev) =>
+          prev.map((node) => {
+            const result = results.find((r) => r.nodeId === node.id)
+            return result ? { ...node, enabled: result.enabled } : node
+          })
+        )
+      } catch (error) {
+        console.error('Error loading node states:', error)
+      }
+    }
+
+    loadNodeStates()
+  }, [])
+
   // Fetch node configurations from backend
   const fetchNodeConfig = useCallback(async (nodeId: string) => {
     const node = nodes.find((n) => n.id === nodeId)
@@ -250,34 +288,41 @@ export default function FlowArchitectureManager() {
 
   // Generate Mermaid diagram
   const generateMermaidDiagram = useCallback(() => {
-    const enabledNodes = nodes.filter((node) => node.enabled)
-    
+    // Show ALL nodes, not just enabled ones
     let diagram = 'graph TD\n'
     diagram += '  classDef preprocessing fill:#dbeafe,stroke:#3b82f6,stroke-width:2px\n'
     diagram += '  classDef analysis fill:#fef3c7,stroke:#f59e0b,stroke-width:2px\n'
     diagram += '  classDef generation fill:#d1fae5,stroke:#10b981,stroke-width:2px\n'
     diagram += '  classDef output fill:#fecaca,stroke:#ef4444,stroke-width:2px\n'
     diagram += '  classDef auxiliary fill:#e9d5ff,stroke:#a855f7,stroke-width:2px\n'
-    diagram += '  classDef disabled fill:#f3f4f6,stroke:#9ca3af,stroke-width:1px,stroke-dasharray: 5 5\n\n'
+    diagram += '  classDef disabled fill:#f3f4f6,stroke:#9ca3af,stroke-width:2px,stroke-dasharray: 5 5\n'
+    diagram += '  linkStyle default stroke:#cbd5e1,stroke-width:2px\n\n'
     
-    // Add nodes
-    enabledNodes.forEach((node) => {
+    // Add ALL nodes (enabled and disabled)
+    nodes.forEach((node) => {
       const nodeLabel = node.hasConfig 
         ? `${node.name}<br/>⚙️ Configurável`
         : node.name
       diagram += `  ${node.id}["${nodeLabel}"]\n`
-      diagram += `  class ${node.id} ${node.category}\n`
+      // Apply disabled class if node is disabled, otherwise use category class
+      diagram += `  class ${node.id} ${node.enabled ? node.category : 'disabled'}\n`
     })
     
     diagram += '\n'
     
-    // Add edges (connections)
-    enabledNodes.forEach((node) => {
+    // Add ALL edges (connections), but style them differently if nodes are disabled
+    let linkIndex = 0
+    nodes.forEach((node) => {
       if (node.dependencies) {
         node.dependencies.forEach((depId) => {
-          const depNode = enabledNodes.find((n) => n.id === depId)
+          const depNode = nodes.find((n) => n.id === depId)
           if (depNode) {
             diagram += `  ${depId} --> ${node.id}\n`
+            // If either node in the connection is disabled, style the link as dashed/gray
+            if (!node.enabled || !depNode.enabled) {
+              diagram += `  linkStyle ${linkIndex} stroke:#d1d5db,stroke-width:2px,stroke-dasharray:5\n`
+            }
+            linkIndex++
           }
         })
       }
