@@ -11,6 +11,13 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Save, RefreshCw, AlertCircle, CheckCircle, Maximize2 } from 'lucide-react'
 import mermaid from 'mermaid'
 
@@ -463,11 +470,18 @@ export default function FlowArchitectureManager() {
       })
       
       if (response.ok) {
+        // Update nodes list
         setNodes((prev) =>
           prev.map((node) =>
             node.id === nodeId ? { ...node, enabled } : node
           )
         )
+        
+        // Update selected node immediately for UI feedback
+        setSelectedNode((prev) =>
+          prev && prev.id === nodeId ? { ...prev, enabled } : prev
+        )
+        
         setNotification({
           type: 'success',
           message: `Node ${enabled ? 'ativado' : 'desativado'} com sucesso!`,
@@ -731,6 +745,76 @@ export default function FlowArchitectureManager() {
                         </div>
                       )
                     } else if (typeof value === 'string') {
+                      // Check if this should be a select dropdown
+                      const isModelProvider = key.toLowerCase().includes('provider')
+                      const isModel = key.toLowerCase().includes('model') && !key.toLowerCase().includes('provider')
+                      
+                      if (isModelProvider) {
+                        // Model provider selection (groq, openai)
+                        return (
+                          <div key={key} className="space-y-2">
+                            <Label htmlFor={key} className="capitalize">
+                              {key.replace(/_/g, ' ')}
+                            </Label>
+                            <Select
+                              value={value}
+                              onValueChange={(newValue) =>
+                                setNodeConfig({ ...nodeConfig, [key]: newValue })
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="groq">Groq (Fast)</SelectItem>
+                                <SelectItem value="openai">OpenAI (GPT)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )
+                      } else if (isModel) {
+                        // Model selection - show appropriate models based on provider
+                        const provider = nodeConfig.primary_model_provider || nodeConfig.provider || 'groq'
+                        const groqModels = [
+                          'llama-3.3-70b-versatile',
+                          'llama-3.1-70b-versatile',
+                          'llama-3.1-8b-instant',
+                          'mixtral-8x7b-32768',
+                        ]
+                        const openaiModels = [
+                          'gpt-4o',
+                          'gpt-4o-mini',
+                          'gpt-4-turbo',
+                          'gpt-3.5-turbo',
+                        ]
+                        const models = provider === 'openai' ? openaiModels : groqModels
+                        
+                        return (
+                          <div key={key} className="space-y-2">
+                            <Label htmlFor={key} className="capitalize">
+                              {key.replace(/_/g, ' ')}
+                            </Label>
+                            <Select
+                              value={value}
+                              onValueChange={(newValue) =>
+                                setNodeConfig({ ...nodeConfig, [key]: newValue })
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {models.map((model) => (
+                                  <SelectItem key={model} value={model}>
+                                    {model}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )
+                      }
+                      
                       // Short string - use regular input
                       return (
                         <div key={key} className="space-y-2">
