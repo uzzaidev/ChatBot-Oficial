@@ -24,6 +24,7 @@ interface FlowNode {
   enabled: boolean
   hasConfig: boolean // Whether this node has editable configuration
   dependencies?: string[] // Node IDs that this node depends on
+  optionalDependencies?: string[] // Alternative paths if primary dependency is disabled
 }
 
 interface NodeConfig {
@@ -105,6 +106,7 @@ const FLOW_NODES: FlowNode[] = [
     hasConfig: true,
     configKey: 'chat_history:max_messages',
     dependencies: ['batch_messages'],
+    optionalDependencies: ['normalize_message'], // Bypass if batch is disabled
   },
   {
     id: 'get_rag_context',
@@ -115,6 +117,7 @@ const FLOW_NODES: FlowNode[] = [
     hasConfig: true,
     configKey: 'rag:enabled',
     dependencies: ['batch_messages'],
+    optionalDependencies: ['normalize_message'], // Bypass if batch is disabled
   },
   
   // Auxiliary Agents (9.5, 9.6)
@@ -310,19 +313,46 @@ export default function FlowArchitectureManager() {
     
     diagram += '\n'
     
-    // Add ALL edges (connections), but style them differently if nodes are disabled
+    // Add ALL edges (connections), including bypass routes
     let linkIndex = 0
     nodes.forEach((node) => {
       if (node.dependencies) {
         node.dependencies.forEach((depId) => {
           const depNode = nodes.find((n) => n.id === depId)
           if (depNode) {
+            // Check if we should use the bypass route instead
+            const useBypass = !depNode.enabled && node.optionalDependencies
+            
+            if (useBypass) {
+              // Don't draw this connection, will draw bypass instead
+              return
+            }
+            
             diagram += `  ${depId} --> ${node.id}\n`
             // If either node in the connection is disabled, style the link as dashed/gray
             if (!node.enabled || !depNode.enabled) {
               diagram += `  linkStyle ${linkIndex} stroke:#d1d5db,stroke-width:2px,stroke-dasharray:5\n`
             }
             linkIndex++
+          }
+        })
+      }
+      
+      // Add bypass/optional dependencies if primary dependency is disabled
+      if (node.optionalDependencies && node.dependencies) {
+        node.dependencies.forEach((depId) => {
+          const depNode = nodes.find((n) => n.id === depId)
+          // If primary dependency is disabled, use optional/bypass route
+          if (depNode && !depNode.enabled) {
+            node.optionalDependencies.forEach((optDepId) => {
+              const optDepNode = nodes.find((n) => n.id === optDepId)
+              if (optDepNode) {
+                diagram += `  ${optDepId} -.-> ${node.id}\n` // Dotted line for bypass
+                // Style bypass route
+                diagram += `  linkStyle ${linkIndex} stroke:#fbbf24,stroke-width:2px,stroke-dasharray:3\n`
+                linkIndex++
+              }
+            })
           }
         })
       }
@@ -615,87 +645,157 @@ export default function FlowArchitectureManager() {
                 <div className="space-y-4 border-t pt-4">
                   <h3 className="font-semibold">Configurações</h3>
                   
-                  {/* Dynamic configuration fields based on node type */}
-                  {selectedNode.configKey?.includes('prompt') && (
-                    <div className="space-y-2">
-                      <Label htmlFor="prompt">Prompt</Label>
-                      <Textarea
-                        id="prompt"
-                        value={nodeConfig.prompt || ''}
-                        onChange={(e) =>
-                          setNodeConfig({ ...nodeConfig, prompt: e.target.value })
-                        }
-                        rows={6}
-                        className="font-mono text-sm"
-                        placeholder="Digite o prompt do agente..."
-                      />
+                  {/* Show config key for reference */}
+                  {selectedNode.configKey && (
+                    <div className="text-xs text-muted-foreground bg-gray-50 p-2 rounded font-mono">
+                      Config Key: {selectedNode.configKey}
                     </div>
                   )}
-
-                  {selectedNode.configKey === 'personality:config' && (
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="temperature">Temperatura</Label>
-                        <Input
-                          id="temperature"
-                          type="number"
-                          min="0"
-                          max="2"
-                          step="0.1"
-                          value={nodeConfig.temperature || 0.7}
-                          onChange={(e) =>
-                            setNodeConfig({
-                              ...nodeConfig,
-                              temperature: parseFloat(e.target.value),
-                            })
-                          }
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Criatividade do modelo (0.0 = determinístico, 2.0 = muito criativo)
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedNode.configKey?.includes('threshold') && (
-                    <div className="space-y-2">
-                      <Label htmlFor="threshold">Threshold</Label>
-                      <Input
-                        id="threshold"
-                        type="number"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                        value={nodeConfig.threshold || 0.7}
-                        onChange={(e) =>
-                          setNodeConfig({
-                            ...nodeConfig,
-                            threshold: parseFloat(e.target.value),
-                          })
-                        }
-                      />
-                    </div>
-                  )}
-
-                  {selectedNode.configKey === 'intent_classifier:use_llm' && (
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="space-y-1">
-                        <Label htmlFor="use_llm" className="text-base">
-                          Usar LLM para Classificação
-                        </Label>
-                        <p className="text-sm text-muted-foreground">
-                          Se desativado, usa regex simples
-                        </p>
-                      </div>
-                      <Switch
-                        id="use_llm"
-                        checked={nodeConfig.use_llm || false}
-                        onCheckedChange={(checked) =>
-                          setNodeConfig({ ...nodeConfig, use_llm: checked })
-                        }
-                      />
-                    </div>
-                  )}
+                  
+                  {/* Dynamic fields - render all config properties */}
+                  {Object.keys(nodeConfig).filter(key => key !== 'enabled').map((key) => {
+                    const value = nodeConfig[key]
+                    
+                    // Handle different types of values
+                    if (typeof value === 'string' && value.length > 100) {
+                      // Large text - use textarea (like prompts)
+                      return (
+                        <div key={key} className="space-y-2">
+                          <Label htmlFor={key} className="capitalize">
+                            {key.replace(/_/g, ' ')}
+                          </Label>
+                          <Textarea
+                            id={key}
+                            value={value}
+                            onChange={(e) =>
+                              setNodeConfig({ ...nodeConfig, [key]: e.target.value })
+                            }
+                            rows={6}
+                            className="font-mono text-sm"
+                          />
+                        </div>
+                      )
+                    } else if (typeof value === 'boolean') {
+                      // Boolean - use switch
+                      return (
+                        <div key={key} className="flex items-center justify-between p-4 border rounded-lg">
+                          <div className="space-y-1">
+                            <Label htmlFor={key} className="text-base capitalize">
+                              {key.replace(/_/g, ' ')}
+                            </Label>
+                          </div>
+                          <Switch
+                            id={key}
+                            checked={value}
+                            onCheckedChange={(checked) =>
+                              setNodeConfig({ ...nodeConfig, [key]: checked })
+                            }
+                          />
+                        </div>
+                      )
+                    } else if (typeof value === 'number') {
+                      // Number - use input with appropriate ranges
+                      const isTemperature = key.toLowerCase().includes('temperature')
+                      const isThreshold = key.toLowerCase().includes('threshold') || 
+                                         key.toLowerCase().includes('similarity')
+                      
+                      return (
+                        <div key={key} className="space-y-2">
+                          <Label htmlFor={key} className="capitalize">
+                            {key.replace(/_/g, ' ')}
+                          </Label>
+                          <Input
+                            id={key}
+                            type="number"
+                            min={isTemperature ? 0 : isThreshold ? 0 : undefined}
+                            max={isTemperature ? 2 : isThreshold ? 1 : undefined}
+                            step={isTemperature || isThreshold ? 0.1 : 1}
+                            value={value}
+                            onChange={(e) =>
+                              setNodeConfig({
+                                ...nodeConfig,
+                                [key]: parseFloat(e.target.value),
+                              })
+                            }
+                          />
+                          {isTemperature && (
+                            <p className="text-xs text-muted-foreground">
+                              0.0 = determinístico, 2.0 = muito criativo
+                            </p>
+                          )}
+                          {isThreshold && (
+                            <p className="text-xs text-muted-foreground">
+                              0.0 = mínimo, 1.0 = máximo
+                            </p>
+                          )}
+                        </div>
+                      )
+                    } else if (typeof value === 'string') {
+                      // Short string - use regular input
+                      return (
+                        <div key={key} className="space-y-2">
+                          <Label htmlFor={key} className="capitalize">
+                            {key.replace(/_/g, ' ')}
+                          </Label>
+                          <Input
+                            id={key}
+                            value={value}
+                            onChange={(e) =>
+                              setNodeConfig({ ...nodeConfig, [key]: e.target.value })
+                            }
+                          />
+                        </div>
+                      )
+                    } else if (Array.isArray(value)) {
+                      // Array - show as JSON textarea
+                      return (
+                        <div key={key} className="space-y-2">
+                          <Label htmlFor={key} className="capitalize">
+                            {key.replace(/_/g, ' ')} (JSON Array)
+                          </Label>
+                          <Textarea
+                            id={key}
+                            value={JSON.stringify(value, null, 2)}
+                            onChange={(e) => {
+                              try {
+                                const parsed = JSON.parse(e.target.value)
+                                setNodeConfig({ ...nodeConfig, [key]: parsed })
+                              } catch (err) {
+                                // Invalid JSON, don't update
+                              }
+                            }}
+                            rows={4}
+                            className="font-mono text-sm"
+                          />
+                        </div>
+                      )
+                    } else if (typeof value === 'object' && value !== null) {
+                      // Object - show as JSON textarea
+                      return (
+                        <div key={key} className="space-y-2">
+                          <Label htmlFor={key} className="capitalize">
+                            {key.replace(/_/g, ' ')} (JSON Object)
+                          </Label>
+                          <Textarea
+                            id={key}
+                            value={JSON.stringify(value, null, 2)}
+                            onChange={(e) => {
+                              try {
+                                const parsed = JSON.parse(e.target.value)
+                                setNodeConfig({ ...nodeConfig, [key]: parsed })
+                              } catch (err) {
+                                // Invalid JSON, don't update
+                              }
+                            }}
+                            rows={6}
+                            className="font-mono text-sm"
+                          />
+                        </div>
+                      )
+                    }
+                    
+                    return null
+                  })}
 
                   {/* Save Button */}
                   <Button
