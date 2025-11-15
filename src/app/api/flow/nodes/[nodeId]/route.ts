@@ -66,47 +66,76 @@ export async function GET(
       config.enabled = enabledData.config_value?.enabled !== false
     }
 
-    // Fetch node configuration if it exists
-    if (configKey) {
-      const { data: configData } = await supabase
-        .from('bot_configurations')
-        .select('config_value')
-        .eq('client_id', clientId)
-        .eq('config_key', configKey)
+    // Special handling for generate_response node - fetch from clients table
+    if (nodeId === 'generate_response') {
+      // Fetch agent configuration from clients table (same as settings page)
+      const { data: clientData } = await supabase
+        .from('clients')
+        .select('system_prompt, formatter_prompt, openai_model, groq_model, primary_model_provider, settings')
+        .eq('id', clientId)
         .single()
-
-      if (configData) {
-        config = { ...config, ...configData.config_value }
-      }
-    }
-    
-    // Also fetch ALL bot_configurations for this client that might be related to this node
-    // This ensures we show all editable fields even if they're in different config keys
-    const relatedConfigKeys = getRelatedConfigKeys(nodeId)
-    if (relatedConfigKeys.length > 0) {
-      const { data: relatedConfigs } = await supabase
-        .from('bot_configurations')
-        .select('config_key, config_value')
-        .eq('client_id', clientId)
-        .in('config_key', relatedConfigKeys)
       
-      if (relatedConfigs && relatedConfigs.length > 0) {
-        // Merge all related configs into the main config object
-        // Handle both direct values and nested objects
-        relatedConfigs.forEach((item) => {
-          if (item.config_value) {
-            if (typeof item.config_value === 'object' && !Array.isArray(item.config_value)) {
-              // It's an object - merge all its keys
-              config = { ...config, ...item.config_value }
-            } else {
-              // It's a primitive value - extract the key name from config_key
-              // e.g., 'model:temperature' -> 'temperature'
-              const keyParts = item.config_key.split(':')
-              const fieldName = keyParts[keyParts.length - 1]
-              config[fieldName] = item.config_value
-            }
+      if (clientData) {
+        // Merge all client fields into config
+        config.system_prompt = clientData.system_prompt || ''
+        config.formatter_prompt = clientData.formatter_prompt || ''
+        config.openai_model = clientData.openai_model || 'gpt-4o'
+        config.groq_model = clientData.groq_model || 'llama-3.3-70b-versatile'
+        config.primary_model_provider = clientData.primary_model_provider || 'groq'
+        
+        // Also extract temperature and max_tokens from settings if available
+        if (clientData.settings) {
+          if (clientData.settings.temperature !== undefined) {
+            config.temperature = clientData.settings.temperature
           }
-        })
+          if (clientData.settings.max_tokens !== undefined) {
+            config.max_tokens = clientData.settings.max_tokens
+          }
+        }
+      }
+    } else {
+      // For other nodes, fetch from bot_configurations
+      if (configKey) {
+        const { data: configData } = await supabase
+          .from('bot_configurations')
+          .select('config_value')
+          .eq('client_id', clientId)
+          .eq('config_key', configKey)
+          .single()
+
+        if (configData) {
+          config = { ...config, ...configData.config_value }
+        }
+      }
+      
+      // Also fetch ALL bot_configurations for this client that might be related to this node
+      // This ensures we show all editable fields even if they're in different config keys
+      const relatedConfigKeys = getRelatedConfigKeys(nodeId)
+      if (relatedConfigKeys.length > 0) {
+        const { data: relatedConfigs } = await supabase
+          .from('bot_configurations')
+          .select('config_key, config_value')
+          .eq('client_id', clientId)
+          .in('config_key', relatedConfigKeys)
+        
+        if (relatedConfigs && relatedConfigs.length > 0) {
+          // Merge all related configs into the main config object
+          // Handle both direct values and nested objects
+          relatedConfigs.forEach((item) => {
+            if (item.config_value) {
+              if (typeof item.config_value === 'object' && !Array.isArray(item.config_value)) {
+                // It's an object - merge all its keys
+                config = { ...config, ...item.config_value }
+              } else {
+                // It's a primitive value - extract the key name from config_key
+                // e.g., 'model:temperature' -> 'temperature'
+                const keyParts = item.config_key.split(':')
+                const fieldName = keyParts[keyParts.length - 1]
+                config[fieldName] = item.config_value
+              }
+            }
+          })
+        }
       }
     }
 
@@ -200,30 +229,70 @@ export async function PATCH(
     }
 
     // Handle configuration updates
-    if (config && configKey) {
-      const configValue = {
-        ...config,
-      }
+    if (config) {
+      if (nodeId === 'generate_response') {
+        // Special handling for generate_response - save to clients table
+        const updateData: any = { updated_at: new Date().toISOString() }
+        
+        if (config.system_prompt !== undefined) updateData.system_prompt = config.system_prompt
+        if (config.formatter_prompt !== undefined) updateData.formatter_prompt = config.formatter_prompt
+        if (config.openai_model !== undefined) updateData.openai_model = config.openai_model
+        if (config.groq_model !== undefined) updateData.groq_model = config.groq_model
+        if (config.primary_model_provider !== undefined) updateData.primary_model_provider = config.primary_model_provider
+        
+        // Update settings object with temperature and max_tokens
+        if (config.temperature !== undefined || config.max_tokens !== undefined) {
+          // First fetch current settings
+          const { data: currentClient } = await supabase
+            .from('clients')
+            .select('settings')
+            .eq('id', clientId)
+            .single()
+          
+          const currentSettings = currentClient?.settings || {}
+          const newSettings = { ...currentSettings }
+          
+          if (config.temperature !== undefined) newSettings.temperature = config.temperature
+          if (config.max_tokens !== undefined) newSettings.max_tokens = config.max_tokens
+          
+          updateData.settings = newSettings
+        }
+        
+        const { error: clientError } = await supabase
+          .from('clients')
+          .update(updateData)
+          .eq('id', clientId)
+        
+        if (clientError) {
+          console.error('[flow/nodes] Error updating client:', clientError)
+          return NextResponse.json({ error: clientError.message }, { status: 500 })
+        }
+      } else if (configKey) {
+        // For other nodes, save to bot_configurations
+        const configValue = {
+          ...config,
+        }
 
-      const { error: configError } = await supabase
-        .from('bot_configurations')
-        .upsert(
-          {
-            client_id: clientId,
-            config_key: configKey,
-            config_value: configValue,
-            is_default: false,
-            category: getCategoryFromKey(configKey),
-            description: `Configuration for ${nodeId}`,
-          },
-          {
-            onConflict: 'client_id,config_key',
-          }
-        )
+        const { error: configError } = await supabase
+          .from('bot_configurations')
+          .upsert(
+            {
+              client_id: clientId,
+              config_key: configKey,
+              config_value: configValue,
+              is_default: false,
+              category: getCategoryFromKey(configKey),
+              description: `Configuration for ${nodeId}`,
+            },
+            {
+              onConflict: 'client_id,config_key',
+            }
+          )
 
-      if (configError) {
-        console.error('[flow/nodes] Error upserting config:', configError)
-        return NextResponse.json({ error: configError.message }, { status: 500 })
+        if (configError) {
+          console.error('[flow/nodes] Error upserting config:', configError)
+          return NextResponse.json({ error: configError.message }, { status: 500 })
+        }
       }
     }
 
