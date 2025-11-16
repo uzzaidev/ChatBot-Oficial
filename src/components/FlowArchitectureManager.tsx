@@ -126,7 +126,7 @@ const FLOW_NODES: FlowNode[] = [
     dependencies: ['batch_messages'],
     optionalDependencies: ['normalize_message'], // Bypass if batch is disabled
   },
-  
+
   // Auxiliary Agents (9.5, 9.6)
   {
     id: 'check_continuity',
@@ -137,6 +137,7 @@ const FLOW_NODES: FlowNode[] = [
     hasConfig: true,
     configKey: 'continuity:new_conversation_threshold_hours',
     dependencies: ['get_chat_history'],
+    optionalDependencies: ['batch_messages', 'normalize_message'], // Bypass if history is disabled
   },
   {
     id: 'classify_intent',
@@ -147,6 +148,7 @@ const FLOW_NODES: FlowNode[] = [
     hasConfig: true,
     configKey: 'intent_classifier:use_llm',
     dependencies: ['batch_messages'],
+    optionalDependencies: ['normalize_message'], // Bypass if batch is disabled
   },
   
   // Generation Node (11)
@@ -159,8 +161,9 @@ const FLOW_NODES: FlowNode[] = [
     hasConfig: true,
     configKey: 'personality:config',
     dependencies: ['check_continuity', 'classify_intent', 'get_rag_context'],
+    optionalDependencies: ['batch_messages', 'normalize_message'], // Ultimate bypass if all analysis disabled
   },
-  
+
   // Post-Processing Nodes (11.5, 11.6)
   {
     id: 'detect_repetition',
@@ -172,7 +175,7 @@ const FLOW_NODES: FlowNode[] = [
     configKey: 'repetition_detector:similarity_threshold',
     dependencies: ['generate_response'],
   },
-  
+
   // Output Nodes (12-14)
   {
     id: 'format_response',
@@ -182,6 +185,7 @@ const FLOW_NODES: FlowNode[] = [
     enabled: true,
     hasConfig: false,
     dependencies: ['detect_repetition'],
+    optionalDependencies: ['generate_response'], // Bypass if repetition detection is disabled
   },
   {
     id: 'send_whatsapp',
@@ -205,8 +209,33 @@ export default function FlowArchitectureManager() {
     message: string
   } | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
-  
+
   const mermaidRef = useRef<HTMLDivElement>(null)
+
+  // Calculate active bypass routes
+  const activeBypassRoutes = nodes.filter((node) => {
+    if (!node.dependencies || !node.optionalDependencies) return false
+    // Check if any primary dependency is disabled
+    return node.dependencies.some((depId) => {
+      const depNode = nodes.find((n) => n.id === depId)
+      return depNode && !depNode.enabled
+    })
+  }).map((node) => {
+    const disabledDeps = node.dependencies!.filter((depId) => {
+      const depNode = nodes.find((n) => n.id === depId)
+      return depNode && !depNode.enabled
+    })
+    const activeBypasses = node.optionalDependencies!.filter((optDepId) => {
+      const optDepNode = nodes.find((n) => n.id === optDepId)
+      return optDepNode && optDepNode.enabled
+    })
+
+    return {
+      node: node.name,
+      disabledDeps: disabledDeps.map((id) => nodes.find((n) => n.id === id)?.name || id),
+      activeBypasses: activeBypasses.map((id) => nodes.find((n) => n.id === id)?.name || id),
+    }
+  })
 
   // Initialize Mermaid
   useEffect(() => {
@@ -307,19 +336,19 @@ export default function FlowArchitectureManager() {
     diagram += '  classDef auxiliary fill:#e9d5ff,stroke:#a855f7,stroke-width:2px\n'
     diagram += '  classDef disabled fill:#f3f4f6,stroke:#9ca3af,stroke-width:2px,stroke-dasharray: 5 5\n'
     diagram += '  linkStyle default stroke:#cbd5e1,stroke-width:2px\n\n'
-    
+
     // Add ALL nodes (enabled and disabled)
     nodes.forEach((node) => {
-      const nodeLabel = node.hasConfig 
+      const nodeLabel = node.hasConfig
         ? `${node.name}<br/>⚙️ Configurável`
         : node.name
       diagram += `  ${node.id}["${nodeLabel}"]\n`
       // Apply disabled class if node is disabled, otherwise use category class
       diagram += `  class ${node.id} ${node.enabled ? node.category : 'disabled'}\n`
     })
-    
+
     diagram += '\n'
-    
+
     // Add ALL edges (connections), including bypass routes
     let linkIndex = 0
     nodes.forEach((node) => {
@@ -329,12 +358,12 @@ export default function FlowArchitectureManager() {
           if (depNode) {
             // Check if we should use the bypass route instead
             const useBypass = !depNode.enabled && node.optionalDependencies
-            
+
             if (useBypass) {
               // Don't draw this connection, will draw bypass instead
               return
             }
-            
+
             diagram += `  ${depId} --> ${node.id}\n`
             // If either node in the connection is disabled, style the link as dashed/gray
             if (!node.enabled || !depNode.enabled) {
@@ -344,7 +373,7 @@ export default function FlowArchitectureManager() {
           }
         })
       }
-      
+
       // Add bypass/optional dependencies if primary dependency is disabled
       if (node.optionalDependencies && node.dependencies) {
         node.dependencies.forEach((depId) => {
@@ -353,10 +382,10 @@ export default function FlowArchitectureManager() {
           if (depNode && !depNode.enabled) {
             node.optionalDependencies.forEach((optDepId) => {
               const optDepNode = nodes.find((n) => n.id === optDepId)
-              if (optDepNode) {
+              if (optDepNode && optDepNode.enabled) {
                 diagram += `  ${optDepId} -.-> ${node.id}\n` // Dotted line for bypass
-                // Style bypass route
-                diagram += `  linkStyle ${linkIndex} stroke:#fbbf24,stroke-width:2px,stroke-dasharray:3\n`
+                // Style bypass route (orange/amber for active bypass)
+                diagram += `  linkStyle ${linkIndex} stroke:#f97316,stroke-width:3px,stroke-dasharray:3\n`
                 linkIndex++
               }
             })
@@ -364,7 +393,7 @@ export default function FlowArchitectureManager() {
         })
       }
     })
-    
+
     return diagram
   }, [nodes])
 
@@ -586,22 +615,76 @@ export default function FlowArchitectureManager() {
         )}
 
         {/* Legend */}
-        <div className="flex flex-wrap gap-2 text-xs">
-          <Badge className="bg-blue-100 text-blue-800 border-blue-300">
-            Preprocessing
-          </Badge>
-          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
-            Analysis
-          </Badge>
-          <Badge className="bg-purple-100 text-purple-800 border-purple-300">
-            Auxiliary Agents
-          </Badge>
-          <Badge className="bg-green-100 text-green-800 border-green-300">
-            Generation
-          </Badge>
-          <Badge className="bg-red-100 text-red-800 border-red-300">
-            Output
-          </Badge>
+        <div className="space-y-3">
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground mb-2">Categorias de Nodes:</p>
+            <div className="flex flex-wrap gap-2 text-xs">
+              <Badge className="bg-blue-100 text-blue-800 border-blue-300">
+                Preprocessing
+              </Badge>
+              <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
+                Analysis
+              </Badge>
+              <Badge className="bg-purple-100 text-purple-800 border-purple-300">
+                Auxiliary Agents
+              </Badge>
+              <Badge className="bg-green-100 text-green-800 border-green-300">
+                Generation
+              </Badge>
+              <Badge className="bg-red-100 text-red-800 border-red-300">
+                Output
+              </Badge>
+              <Badge className="bg-gray-100 text-gray-600 border-gray-300 border-dashed">
+                Desabilitado
+              </Badge>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground mb-2">Tipos de Conexão:</p>
+            <div className="flex flex-wrap gap-3 text-xs">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-0.5 bg-gray-400" />
+                <span className="text-muted-foreground">Conexão normal</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-0.5 bg-gray-300 border-t border-dashed" />
+                <span className="text-muted-foreground">Conexão desabilitada</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-0.5 bg-orange-500 border-t-2 border-dashed border-orange-500" />
+                <span className="text-orange-600 font-medium">Rota de Bypass Ativa</span>
+              </div>
+            </div>
+          </div>
+
+          <Alert className="bg-orange-50 border-orange-200">
+            <AlertCircle className="h-4 w-4 text-orange-600" />
+            <AlertDescription className="text-xs">
+              <strong>Rotas de Bypass:</strong> Quando um node é desabilitado, o fluxo automaticamente usa uma rota alternativa (bypass) para o próximo node ativo.
+              As linhas pontilhadas laranjas mostram quais caminhos alternativos serão seguidos.
+            </AlertDescription>
+          </Alert>
+
+          {/* Active Bypass Routes Indicator */}
+          {activeBypassRoutes.length > 0 && (
+            <Alert className="bg-orange-100 border-orange-300">
+              <AlertCircle className="h-4 w-4 text-orange-700" />
+              <AlertDescription>
+                <strong className="text-orange-900">Rotas de Bypass Ativas:</strong>
+                <ul className="mt-2 space-y-1 text-xs">
+                  {activeBypassRoutes.map((route, idx) => (
+                    <li key={idx} className="text-orange-800">
+                      <strong>{route.node}</strong> está usando bypass de{' '}
+                      <span className="line-through text-gray-500">{route.disabledDeps.join(', ')}</span>
+                      {' → '}
+                      <span className="font-semibold text-orange-600">{route.activeBypasses.join(', ')}</span>
+                    </li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          )}
         </div>
 
         {/* Mermaid Diagram */}
