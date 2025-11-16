@@ -358,19 +358,44 @@ export const processChatbotMessage = async (
       
       if (repetitionCheck.isRepetition) {
         console.log(`[chatbotFlow] ⚠️ Repetition detected (${(repetitionCheck.similarityScore! * 100).toFixed(1)}% similar) - regenerating with variation`)
+        const originalResponse = aiResponse.content
         
         // Regenerate with anti-repetition instruction
-        logger.logNodeStart('11.6. Regenerate with Variation', {})
-        const variationInstruction = continuityInfo.greetingInstruction + 
-          '\n\nIMPORTANTE: Varie sua resposta. Não repita exatamente o que você já disse nas mensagens anteriores. Use palavras diferentes e uma abordagem ligeiramente distinta.'
+        logger.logNodeStart('11.6. Regenerate with Variation', {
+          originalResponsePreview: originalResponse.substring(0, 150) + '...'
+        })
+        
+        // Create a stronger variation instruction
+        const variationInstruction = (continuityInfo.greetingInstruction || '') + 
+          '\n\n🔴 ALERTA CRÍTICO DE REPETIÇÃO: Você DEVE criar uma resposta COMPLETAMENTE DIFERENTE da anterior. ' +
+          'Sua resposta anterior foi muito similar às respostas passadas. ' +
+          'REQUISITOS OBRIGATÓRIOS:\n' +
+          '1. Use palavras e frases DIFERENTES\n' +
+          '2. Mude a ESTRUTURA da resposta (ordem das ideias, número de parágrafos)\n' +
+          '3. Varie o ESTILO (mais formal/informal, mais direta/explicativa)\n' +
+          '4. Se possível, aborde o assunto por um ÂNGULO DIFERENTE\n' +
+          '5. NÃO copie frases ou expressões que você já usou recentemente'
         
         const variedResponse = await generateAIResponse({
           message: batchedContent,
           chatHistory: chatHistory2,
           ragContext,
           customerName: parsedMessage.name,
-          config,
+          config: {
+            ...config,
+            settings: {
+              ...config.settings,
+              temperature: Math.min(1.0, (config.settings.temperature || 0.7) + 0.3) // Increase temperature for more variation
+            }
+          },
           greetingInstruction: variationInstruction,
+        })
+        
+        // Check if the regenerated response is still too similar
+        const newSimilarity = await detectRepetition({
+          phone: parsedMessage.phone,
+          clientId: config.id,
+          proposedResponse: variedResponse.content || '',
         })
         
         // Use the varied response
@@ -378,9 +403,19 @@ export const processChatbotMessage = async (
         aiResponse.toolCalls = variedResponse.toolCalls
         
         logger.logNodeSuccess('11.6. Regenerate with Variation', {
+          originalLength: originalResponse.length,
           newLength: variedResponse.content?.length || 0,
+          originalPreview: originalResponse.substring(0, 100),
+          newPreview: (variedResponse.content || '').substring(0, 100),
+          newSimilarity: newSimilarity.similarityScore,
+          stillRepetitive: newSimilarity.isRepetition
         })
-        console.log('[chatbotFlow] ✅ Response regenerated with variation')
+        
+        if (newSimilarity.isRepetition) {
+          console.log(`[chatbotFlow] ⚠️ WARNING: Regenerated response is still repetitive (${(newSimilarity.similarityScore! * 100).toFixed(1)}% similar)`)
+        } else {
+          console.log(`[chatbotFlow] ✅ Response successfully varied (${(newSimilarity.similarityScore! * 100).toFixed(1)}% similar)`)
+        }
       } else {
         console.log('[chatbotFlow] ✅ No repetition detected, using original response')
       }
@@ -457,16 +492,23 @@ export const processChatbotMessage = async (
     })
 
     // NODE 12: Format Response (configurável)
+    logger.logNodeStart('12. Format Response', { contentLength: aiResponse.content.length })
     let formattedMessages: string[]
     
     if (config.settings.messageSplitEnabled) {
-      logger.logNodeStart('12. Format Response', { contentLength: aiResponse.content.length })
       console.log('[chatbotFlow] ✅ Message split enabled - formatting into multiple messages')
       formattedMessages = formatResponse(aiResponse.content)
-      logger.logNodeSuccess('12. Format Response', { messageCount: formattedMessages.length })
+      logger.logNodeSuccess('12. Format Response', { 
+        messageCount: formattedMessages.length,
+        messages: formattedMessages.map((msg, idx) => `[${idx + 1}]: ${msg.substring(0, 100)}...`)
+      })
     } else {
       console.log('[chatbotFlow] ⚠️ Message split disabled - sending as single message')
       formattedMessages = [aiResponse.content]
+      logger.logNodeSuccess('12. Format Response', { 
+        messageCount: 1,
+        messages: [`[1]: ${aiResponse.content.substring(0, 100)}...`]
+      })
     }
 
     if (formattedMessages.length === 0) {
