@@ -89,9 +89,17 @@ export default function BackendMonitorPage() {
             }
           })
           
-          return Array.from(merged.values()).sort(
-            (a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
-          )
+          return Array.from(merged.values())
+            .filter(exec => {
+              // Filter out incomplete executions (those with only _END or only _START)
+              const hasStart = exec.logs.some(log => log.node_name === '_START')
+              const hasOtherNodes = exec.logs.some(log => log.node_name !== '_START' && log.node_name !== '_END')
+              // Keep execution if it has _START and at least one other node, or if it has multiple nodes
+              return (hasStart && hasOtherNodes) || exec.logs.length > 2
+            })
+            .sort(
+              (a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
+            )
         })
         
         setLastUpdate(data.timestamp)
