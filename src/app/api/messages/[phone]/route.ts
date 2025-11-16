@@ -87,45 +87,51 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const dataReversed = (data || []).reverse()
 
     // Transformar dados do n8n_chat_histories para formato Message
-    const messages: Message[] = dataReversed.map((item: any, index: number) => {
-      // O n8n_chat_histories salva message como JSON:
-      // { "type": "human" | "ai", "content": "...", "additional_kwargs": {}, "response_metadata": {} }
+    const messages: Message[] = dataReversed
+      .map((item: any, index: number) => {
+        // O n8n_chat_histories salva message como JSON:
+        // { "type": "human" | "ai", "content": "...", "additional_kwargs": {}, "response_metadata": {} }
 
-      let messageData: any
+        let messageData: any
 
-      // Parse o JSON da coluna message
-      if (typeof item.message === 'string') {
-        try {
-          messageData = JSON.parse(item.message)
-        } catch {
-          // Fallback se não for JSON válido (mensagens antigas)
-          messageData = { type: 'ai', content: item.message }
+        // Parse o JSON da coluna message
+        if (typeof item.message === 'string') {
+          try {
+            messageData = JSON.parse(item.message)
+          } catch {
+            // Fallback se não for JSON válido (mensagens antigas)
+            messageData = { type: 'ai', content: item.message }
+          }
+        } else {
+          messageData = item.message || {}
         }
-      } else {
-        messageData = item.message || {}
-      }
 
-      // Extrair type e content do JSON
-      const messageType = messageData.type || 'ai'  // 'human' ou 'ai'
-      const messageContent = messageData.content || ''
+        // Extrair type e content do JSON
+        const messageType = messageData.type || 'ai'  // 'human' ou 'ai'
+        const messageContent = messageData.content || ''
 
-      // Limpar tags de function calls
-      const cleanedContent = cleanMessageContent(messageContent)
+        // Limpar tags de function calls
+        const cleanedContent = cleanMessageContent(messageContent)
 
-      return {
-        id: item.id?.toString() || `msg-${index}`,
-        client_id: clientId,
-        conversation_id: String(phone),
-        phone: String(phone),
-        name: messageType === 'human' ? 'Cliente' : 'Bot',
-        content: cleanedContent,
-        type: 'text' as const,
-        direction: messageType === 'human' ? ('incoming' as const) : ('outgoing' as const),
-        status: 'sent' as const,
-        timestamp: item.created_at || new Date().toISOString(),
-        metadata: null,
-      }
-    })
+        return {
+          id: item.id?.toString() || `msg-${index}`,
+          client_id: clientId,
+          conversation_id: String(phone),
+          phone: String(phone),
+          name: messageType === 'human' ? 'Cliente' : 'Bot',
+          content: cleanedContent,
+          type: 'text' as const,
+          direction: messageType === 'human' ? ('incoming' as const) : ('outgoing' as const),
+          status: 'sent' as const,
+          timestamp: item.created_at || new Date().toISOString(),
+          metadata: null,
+        }
+      })
+      .filter((message) => {
+        // Filter out messages with empty content after cleaning
+        // This removes messages that contained only function call tags
+        return message.content.trim().length > 0
+      })
 
     return NextResponse.json({
       messages,
