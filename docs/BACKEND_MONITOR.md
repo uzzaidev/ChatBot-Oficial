@@ -4,12 +4,16 @@
 
 The Backend Monitor is a new dashboard page that provides real-time visualization of message flow through the chatbot system, displayed in a terminal-style interface. This allows developers and administrators to debug and understand how messages are processed through each node in the workflow.
 
+**Latest Update:** Improved status detection, WhatsApp status indicators, and missing output warnings (commit 7f89b0a)
+
 ## 🎯 Purpose
 
 - **Debug in Production**: Monitor message flow without accessing server logs or terminal
 - **Real-Time Visibility**: See exactly where messages are in the processing pipeline
 - **Parallel Execution Tracking**: Monitor multiple concurrent message flows simultaneously
 - **Detailed Tracing**: View input/output data for each node execution with timestamps
+- **WhatsApp Status Tracking**: Monitor message delivery status (sent/delivered/read/failed)
+- **Missing Data Detection**: Identify when nodes don't log output data
 - **User-Friendly**: Terminal-style output that's familiar to developers but accessible via browser
 
 ## 🔗 Access
@@ -34,6 +38,7 @@ Or click **"Backend Monitor"** in the dashboard navigation (Terminal icon 🖥�
 Shows all active message processing executions:
 - **Execution ID** (first 8 characters)
 - **Status badge** (success/error/running)
+- **STATUS badge** (purple, for WhatsApp status updates)
 - **Number of nodes executed**
 - **Start timestamp**
 - **Phone number** (if available in metadata)
@@ -82,6 +87,27 @@ Displays the complete flow trace for selected execution:
     "message": "Olá, preciso de ajuda!",
     "history": [...]
   }
+⚠ OUTPUT: (dados não registrados pelo node)
+
+[14:30:45.500] ✓ Filter Status Updates (5ms) 📱 DELIVERED
+→ INPUT:
+  {
+    "entry": [{
+      "changes": [{
+        "value": {
+          "statuses": [{"status": "delivered", ...}]
+        }
+      }]
+    }]
+  }
+  }
+
+[14:30:45.201] ✓ generateAIResponse (142ms)
+→ INPUT:
+  {
+    "message": "Olá, preciso de ajuda!",
+    "history": [...]
+  }
 ← OUTPUT:
   {
     "response": "Olá! Como posso ajudá-lo?",
@@ -118,9 +144,40 @@ For each node execution, you see:
    - ⋯ Running
 3. **Node Name** - e.g., parseMessage, generateAIResponse, sendWhatsApp
 4. **Duration** - Execution time in milliseconds
-5. **Input Data** - JSON data received by the node
-6. **Output Data** - JSON data produced by the node
-7. **Error Details** - Full error object if node failed
+5. **WhatsApp Status Badge** - 📱 SENT/DELIVERED/READ/FAILED (purple badge)
+6. **Input Data** - JSON data received by the node
+7. **Output Data** - JSON data produced by the node
+8. **Missing Output Warning** - ⚠ When node succeeds but doesn't log output
+9. **Error Details** - Full error object if node failed
+
+### WhatsApp Status Badges
+
+When a node processes a WhatsApp status update, it displays a purple badge:
+- 📱 **SENT** - Message was sent to WhatsApp
+- 📱 **DELIVERED** - Message was delivered to recipient's device
+- 📱 **READ** - Message was read by recipient
+- 📱 **FAILED** - Message failed to send
+
+These status updates are also marked with a "STATUS" badge in the sidebar for easy identification.
+
+### Missing Output Warning
+
+When a node completes successfully but didn't log output data, you'll see:
+```
+⚠ OUTPUT: (dados não registrados pelo node)
+```
+
+This indicates the n8n workflow needs to be updated to log the node's output using `logger.logNodeSuccess(nodeName, outputData)`.
+
+### Execution Status Detection
+
+The system intelligently determines execution status:
+1. If any node has an error → Status: **ERROR**
+2. If `_END` node exists → Uses its status
+3. If all non-system nodes completed → Status: **SUCCESS**
+4. Otherwise → Status: **RUNNING**
+
+This prevents false "running" status for completed executions.
 
 ## 🔍 Use Cases
 
