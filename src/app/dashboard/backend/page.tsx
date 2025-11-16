@@ -58,9 +58,35 @@ export default function BackendMonitorPage() {
           // Add existing executions
           prev.forEach(exec => merged.set(exec.execution_id, exec))
           
-          // Update with new data
-          data.executions.forEach((exec: Execution) => {
-            merged.set(exec.execution_id, exec)
+          // Update with new data - merge logs properly
+          data.executions.forEach((newExec: Execution) => {
+            const existing = merged.get(newExec.execution_id)
+            
+            if (existing) {
+              // Merge logs - create a map of logs by ID to avoid duplicates
+              const logMap = new Map<number, any>()
+              
+              // Add existing logs
+              existing.logs.forEach(log => logMap.set(log.id, log))
+              
+              // Add/update with new logs
+              newExec.logs.forEach(log => logMap.set(log.id, log))
+              
+              // Sort logs by timestamp
+              const mergedLogs = Array.from(logMap.values()).sort(
+                (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+              )
+              
+              // Update execution with merged logs and latest metadata
+              merged.set(newExec.execution_id, {
+                ...newExec,
+                logs: mergedLogs,
+                node_count: mergedLogs.length,
+              })
+            } else {
+              // New execution, just add it
+              merged.set(newExec.execution_id, newExec)
+            }
           })
           
           return Array.from(merged.values()).sort(
