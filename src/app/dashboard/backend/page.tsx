@@ -29,6 +29,8 @@ interface Execution {
   node_count: number
 }
 
+type StatusFilterType = 'all' | 'message' | 'sent' | 'delivered' | 'read' | 'failed'
+
 export default function BackendMonitorPage() {
   const [executions, setExecutions] = useState<Execution[]>([])
   const [selectedExecution, setSelectedExecution] = useState<string | null>(null)
@@ -36,6 +38,7 @@ export default function BackendMonitorPage() {
   const [lastUpdate, setLastUpdate] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [autoScroll, setAutoScroll] = useState(true)
+  const [statusFilter, setStatusFilter] = useState<StatusFilterType>('all')
 
   // Função para buscar logs
   const fetchLogs = useCallback(async () => {
@@ -137,6 +140,31 @@ export default function BackendMonitorPage() {
       return status
     }
     return null
+  }
+
+  // Extrai status do WhatsApp de uma execução inteira
+  const getExecutionWhatsAppStatus = (execution: Execution): StatusFilterType => {
+    // Procura por status do WhatsApp nos logs
+    for (const log of execution.logs) {
+      const status = extractWhatsAppStatus(log)
+      if (status) {
+        return status as StatusFilterType
+      }
+    }
+    // Se não tem status, é uma mensagem recebida
+    return 'message'
+  }
+
+  // Filtra execuções baseado no status selecionado
+  const filteredExecutions = executions.filter(exec => {
+    if (statusFilter === 'all') return true
+    return getExecutionWhatsAppStatus(exec) === statusFilter
+  })
+
+  // Conta execuções por tipo
+  const getStatusCount = (status: StatusFilterType): number => {
+    if (status === 'all') return executions.length
+    return executions.filter(exec => getExecutionWhatsAppStatus(exec) === status).length
   }
 
   const renderTerminalLog = (log: ExecutionLog) => {
@@ -246,20 +274,97 @@ export default function BackendMonitorPage() {
           </CardContent>
         </Card>
       ) : (
+        <>
+          {/* Status Filter Tabs */}
+          <Card className="mb-4">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Button
+                  onClick={() => setStatusFilter('all')}
+                  variant={statusFilter === 'all' ? 'default' : 'outline'}
+                  size="sm"
+                  className="gap-2"
+                >
+                  🌐 Todas
+                  <Badge variant="secondary" className="ml-1">
+                    {getStatusCount('all')}
+                  </Badge>
+                </Button>
+                <Button
+                  onClick={() => setStatusFilter('message')}
+                  variant={statusFilter === 'message' ? 'default' : 'outline'}
+                  size="sm"
+                  className="gap-2"
+                >
+                  📨 Mensagens Recebidas
+                  <Badge variant="secondary" className="ml-1">
+                    {getStatusCount('message')}
+                  </Badge>
+                </Button>
+                <Button
+                  onClick={() => setStatusFilter('sent')}
+                  variant={statusFilter === 'sent' ? 'default' : 'outline'}
+                  size="sm"
+                  className="gap-2"
+                >
+                  📤 Enviadas
+                  <Badge variant="secondary" className="ml-1">
+                    {getStatusCount('sent')}
+                  </Badge>
+                </Button>
+                <Button
+                  onClick={() => setStatusFilter('delivered')}
+                  variant={statusFilter === 'delivered' ? 'default' : 'outline'}
+                  size="sm"
+                  className="gap-2"
+                >
+                  ✅ Entregues
+                  <Badge variant="secondary" className="ml-1">
+                    {getStatusCount('delivered')}
+                  </Badge>
+                </Button>
+                <Button
+                  onClick={() => setStatusFilter('read')}
+                  variant={statusFilter === 'read' ? 'default' : 'outline'}
+                  size="sm"
+                  className="gap-2"
+                >
+                  👁️ Lidas
+                  <Badge variant="secondary" className="ml-1">
+                    {getStatusCount('read')}
+                  </Badge>
+                </Button>
+                <Button
+                  onClick={() => setStatusFilter('failed')}
+                  variant={statusFilter === 'failed' ? 'default' : 'outline'}
+                  size="sm"
+                  className="gap-2"
+                >
+                  ❌ Falhas
+                  <Badge variant="secondary" className="ml-1">
+                    {getStatusCount('failed')}
+                  </Badge>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
         <div className="grid grid-cols-4 gap-4">
           {/* Sidebar - Lista de Execuções */}
           <Card className="col-span-1">
             <CardHeader>
               <CardTitle className="text-sm">Execuções Ativas</CardTitle>
               <CardDescription className="text-xs">
-                {executions.length} execução(ões)
+                {filteredExecutions.length} de {executions.length} execução(ões)
               </CardDescription>
             </CardHeader>
             <CardContent className="p-2">
               <ScrollArea className="h-[700px]">
                 <div className="space-y-2">
-                  {executions.map((exec) => {
+                  {filteredExecutions.map((exec) => {
                     const isStatusUpdate = exec.metadata?.is_status_update
+                    const whatsappStatus = getExecutionWhatsAppStatus(exec)
+                    
                     return (
                       <button
                         key={exec.execution_id}
@@ -275,9 +380,29 @@ export default function BackendMonitorPage() {
                             <Badge className={getStatusBadge(exec.status)} variant="default">
                               {exec.status}
                             </Badge>
-                            {isStatusUpdate && (
+                            {whatsappStatus === 'message' && (
+                              <span className="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                                MSG
+                              </span>
+                            )}
+                            {whatsappStatus === 'sent' && (
+                              <span className="text-xs px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300">
+                                SENT
+                              </span>
+                            )}
+                            {whatsappStatus === 'delivered' && (
+                              <span className="text-xs px-1.5 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+                                DELIVERED
+                              </span>
+                            )}
+                            {whatsappStatus === 'read' && (
                               <span className="text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
-                                STATUS
+                                READ
+                              </span>
+                            )}
+                            {whatsappStatus === 'failed' && (
+                              <span className="text-xs px-1.5 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">
+                                FAILED
                               </span>
                             )}
                           </div>
@@ -389,6 +514,7 @@ export default function BackendMonitorPage() {
             </CardContent>
           </Card>
         </div>
+        </>
       )}
     </div>
   )
