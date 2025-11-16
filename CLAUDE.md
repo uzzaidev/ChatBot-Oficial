@@ -60,7 +60,8 @@ npm run dev              # Start dev server (localhost:3000)
 | Task | File(s) |
 |------|---------|
 | **Webhook Entry** | `src/app/api/webhook/[clientId]/route.ts` |
-| **Main Orchestrator** | `src/flows/chatbotFlow.ts` (13-node pipeline) |
+| **Main Orchestrator** | `src/flows/chatbotFlow.ts` (14-node pipeline) |
+| **Flow Visualization** | `/dashboard/flow-architecture` (Interactive Mermaid diagram) |
 | **Node Functions** | `src/nodes/*` (atomic, pure functions) |
 | **Multi-tenant Config** | `src/lib/config.ts` (Vault integration) |
 | **AI Prompts** | `src/nodes/generateAIResponse.ts`, `formatResponse.ts` |
@@ -352,12 +353,13 @@ src/
 │   │   ├── page.tsx                   # Main dashboard (metrics, conversation list)
 │   │   ├── conversations/[phone]/     # Conversation detail view
 │   │   ├── workflow/                  # Workflow execution viewer
+│   │   ├── flow-architecture/         # 🎛️ Flow Architecture Manager (Mermaid diagram)
 │   │   ├── settings/                  # ⚙️ Configuração Vault (API keys)
 │   │   └── debug/                     # Debug dashboard (env vars, logs)
 │   ├── layout.tsx                     # Root layout (Google Fonts)
 │   └── globals.css                    # Tailwind CSS
 ├── flows/
-│   └── chatbotFlow.ts                 # 🔥 Main orchestrator (13-node pipeline)
+│   └── chatbotFlow.ts                 # 🔥 Main orchestrator (14-node pipeline)
 ├── nodes/                             # 🧩 Atomic functions (one per node)
 │   ├── filterStatusUpdates.ts         # [1] Filtra status updates
 │   ├── parseMessage.ts                # [2] Parse payload Meta
@@ -390,6 +392,7 @@ src/
 │   └── utils.ts                       # Utility functions (cn, etc.)
 ├── components/
 │   ├── ui/                            # shadcn/ui components (DON'T edit directly)
+│   ├── FlowArchitectureManager.tsx   # 🎛️ Interactive Mermaid flow diagram (click-to-configure)
 │   ├── ConversationList.tsx
 │   ├── ConversationDetail.tsx
 │   ├── MessageBubble.tsx
@@ -456,6 +459,7 @@ GMAIL_APP_PASSWORD=app_password_here
 **New tables for Phase 3/4** (actively used):
 - `clients` - Multi-tenant configuration
 - `user_profiles` - User profiles with RBAC
+- `bot_configurations` - Node configurations (prompts, temperature, thresholds, enable/disable)
 - `conversations` - Conversation state tracking
 - `messages` - Message history with metadata
 - `usage_logs` - Cost tracking (OpenAI tokens, Meta messages)
@@ -525,6 +529,100 @@ const config = await getClientConfig(clientId)
 - Secrets stored in Supabase Vault (encrypted)
 - RLS policies enforce data isolation
 - Settings UI at `/dashboard/settings`
+
+### Flow Architecture Manager (Interactive Visual Interface)
+
+**Status**: ✅ **PRODUCTION - FULLY ACTIVE**
+
+The Flow Architecture Manager is an interactive visual interface for managing the complete chatbot processing pipeline. It uses **Mermaid.js** to render a dynamic flowchart showing all 14 nodes and their connections.
+
+**Key Features**:
+
+1. **Interactive Mermaid Diagram**
+   - Visual representation of the complete 14-node pipeline
+   - Color-coded by category: Preprocessing (Blue), Analysis (Yellow), Auxiliary (Purple), Generation (Green), Output (Red)
+   - Click any node to open configuration panel
+   - Real-time visual feedback (disabled nodes shown in gray with dashed borders)
+
+2. **Click-to-Configure**
+   - Click on any node with ⚙️ icon to edit its configuration
+   - Dynamically rendered fields based on config type (string, number, boolean, arrays, objects)
+   - Model provider selection (Groq/OpenAI)
+   - Temperature, max_tokens, prompts, thresholds
+
+3. **Enable/Disable Nodes**
+   - Toggle switch to enable/disable nodes
+   - Visual feedback: disabled nodes appear gray with dashed borders
+   - Bypass routes shown with dotted yellow lines when primary dependency is disabled
+
+4. **Persistence & Multi-Tenant**
+   - All configurations saved to `bot_configurations` table
+   - Tenant-isolated (client_id)
+   - Changes take effect immediately in chatflow
+
+**Access**: Navigate to `/dashboard/flow-architecture`
+
+**How It Works**:
+
+The system is **100% integrated** with the production chatflow:
+
+- Nodes like `checkContinuity`, `classifyIntent`, `detectRepetition`, `getChatHistory`, and `generateAIResponse` read configurations from `bot_configurations` table in real-time
+- Any changes made in Flow Architecture Manager affect the bot's behavior immediately
+- The chatflow is fully migrated from n8n to Next.js (`src/flows/chatbotFlow.ts`)
+
+**Node Configuration Mapping**:
+
+| Node ID | Config Key | Description |
+|---------|-----------|-------------|
+| `process_media` | `media_processing:config` | Media processing settings |
+| `batch_messages` | `batching:delay_seconds` | Batching delay in seconds |
+| `get_chat_history` | `chat_history:max_messages` | Maximum history messages |
+| `get_rag_context` | `rag:enabled` | Enable RAG context retrieval |
+| `check_continuity` | `continuity:new_conversation_threshold_hours` | New conversation threshold |
+| `classify_intent` | `intent_classifier:use_llm` | Use LLM for classification |
+| `generate_response` | `personality:config` | Main personality/prompt config |
+| `detect_repetition` | `repetition_detector:similarity_threshold` | Repetition threshold |
+
+**Files**:
+- Component: `src/components/FlowArchitectureManager.tsx`
+- Page: `src/app/dashboard/flow-architecture/page.tsx`
+- API: `src/app/api/flow/nodes/[nodeId]/route.ts` (GET/PATCH)
+- Docs: `docs/FLOW_ARCHITECTURE_MANAGER.md`, `docs/FLOW_ARCHITECTURE_STATUS.md`
+
+**Example Usage**:
+
+1. Navigate to `/dashboard/flow-architecture`
+2. Click on "Generate AI Response" node
+3. Edit system prompt, change model provider from Groq to OpenAI
+4. Adjust temperature from 0.7 to 0.9
+5. Click "Salvar Configurações"
+6. Next WhatsApp message will use new configuration
+
+**Visual Features**:
+- Fullscreen mode for better visualization
+- Automatic diagram refresh when nodes are enabled/disabled
+- Success/error notifications
+- Legend showing node categories
+- Hover effects on clickable nodes
+
+**Database Schema** (`bot_configurations`):
+
+```sql
+CREATE TABLE bot_configurations (
+  id UUID PRIMARY KEY,
+  client_id UUID REFERENCES clients(id),
+  config_key TEXT NOT NULL,          -- e.g., 'personality:config'
+  config_value JSONB NOT NULL,       -- flexible JSON configuration
+  is_default BOOLEAN DEFAULT false,
+  description TEXT,
+  category TEXT,                     -- 'prompts', 'rules', 'thresholds', 'personality'
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(client_id, config_key)
+);
+```
+
+**See**: `docs/FLOW_ARCHITECTURE_MANAGER.md` for complete documentation and usage examples.
 
 ---
 
@@ -1005,7 +1103,7 @@ To customize: Create wrapper component in `src/components/`
 **Phase 4:** ✅ COMPLETE - RBAC, Auth, Admin Panel, Real-time notifications
 
 **Migration status**:
-- ✅ All 13 nodes migrated from n8n
+- ✅ All 14 nodes migrated from n8n
 - ✅ Redis batching implemented
 - ✅ RAG context retrieval
 - ✅ Human handoff flow
@@ -1013,6 +1111,7 @@ To customize: Create wrapper component in `src/components/`
 - ✅ Media processing (audio, image)
 - ✅ Multi-tenant config with Vault
 - ✅ RBAC and authentication
+- ✅ Flow Architecture Manager (Interactive Mermaid diagram with click-to-configure)
 - ⏳ Diagnostic subagent (defined, not executed)
 
 ### Phase 5 Roadmap (Future Enhancements)

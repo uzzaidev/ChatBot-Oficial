@@ -95,6 +95,8 @@ export async function GET(
       }
     } else {
       // For other nodes, fetch from bot_configurations
+
+      // 1. Fetch primary config key
       if (configKey) {
         const { data: configData } = await supabase
           .from('bot_configurations')
@@ -103,12 +105,22 @@ export async function GET(
           .eq('config_key', configKey)
           .single()
 
-        if (configData) {
-          config = { ...config, ...configData.config_value }
+        if (configData && configData.config_value !== null) {
+          // Handle primitive values (number, boolean, string) vs objects
+          if (typeof configData.config_value === 'object' && !Array.isArray(configData.config_value)) {
+            // Already an object - merge all its keys
+            config = { ...config, ...configData.config_value }
+          } else {
+            // Primitive value - extract field name from config_key
+            // e.g., 'chat_history:max_messages' -> 'max_messages'
+            const keyParts = configKey.split(':')
+            const fieldName = keyParts[keyParts.length - 1]
+            config[fieldName] = configData.config_value
+          }
         }
       }
-      
-      // Also fetch ALL bot_configurations for this client that might be related to this node
+
+      // 2. Fetch ALL related configs for this node
       // This ensures we show all editable fields even if they're in different config keys
       const relatedConfigKeys = getRelatedConfigKeys(nodeId)
       if (relatedConfigKeys.length > 0) {
@@ -117,18 +129,17 @@ export async function GET(
           .select('config_key, config_value')
           .eq('client_id', clientId)
           .in('config_key', relatedConfigKeys)
-        
+
         if (relatedConfigs && relatedConfigs.length > 0) {
           // Merge all related configs into the main config object
-          // Handle both direct values and nested objects
           relatedConfigs.forEach((item) => {
-            if (item.config_value) {
+            if (item.config_value !== null) {
               if (typeof item.config_value === 'object' && !Array.isArray(item.config_value)) {
                 // It's an object - merge all its keys
                 config = { ...config, ...item.config_value }
               } else {
                 // It's a primitive value - extract the key name from config_key
-                // e.g., 'model:temperature' -> 'temperature'
+                // e.g., 'continuity:new_conversation_threshold_hours' -> 'new_conversation_threshold_hours'
                 const keyParts = item.config_key.split(':')
                 const fieldName = keyParts[keyParts.length - 1]
                 config[fieldName] = item.config_value
@@ -330,13 +341,18 @@ function getRelatedConfigKeys(nodeId: string): string[] {
       'intent_classifier:use_llm',
       'intent_classifier:prompt',
       'intent_classifier:intents',
+      'intent_classifier:temperature',
     ],
     detect_repetition: [
       'repetition_detector:similarity_threshold',
+      'repetition_detector:use_embeddings',
+      'repetition_detector:check_last_n_responses',
       'repetition_detector:enabled',
     ],
     check_continuity: [
       'continuity:new_conversation_threshold_hours',
+      'continuity:greeting_for_new_customer',
+      'continuity:greeting_for_returning_customer',
       'continuity:enabled',
     ],
     get_chat_history: [
@@ -357,8 +373,60 @@ function getRelatedConfigKeys(nodeId: string): string[] {
       'batching:enabled',
     ],
   }
-  
+
   return relatedKeysMap[nodeId] || []
+}
+
+// Helper function to get default config values for a node (when no data in DB)
+function getDefaultConfig(nodeId: string): Record<string, any> {
+  const defaults: Record<string, Record<string, any>> = {
+    check_continuity: {
+      new_conversation_threshold_hours: 24,
+      greeting_for_new_customer: 'Seja acolhedor e apresente o profissional brevemente. Esta é a PRIMEIRA interação com este cliente.',
+      greeting_for_returning_customer: 'Continue de onde parou. NÃO se apresente novamente. O cliente já te conhece e vocês têm histórico de conversa.',
+    },
+    classify_intent: {
+      use_llm: true,
+      temperature: 0.1,
+      prompt: {
+        system: 'Você é um classificador de intenções. Analise a mensagem do usuário e identifique a intenção principal.',
+        temperature: 0.1,
+        max_tokens: 10,
+      },
+      intents: [
+        { key: 'saudacao', label: 'Saudação', description: 'Cliente cumprimentando ou iniciando conversa' },
+        { key: 'duvida_tecnica', label: 'Dúvida Técnica', description: 'Perguntas sobre como algo funciona' },
+        { key: 'orcamento', label: 'Orçamento', description: 'Solicitação de preço ou cotação' },
+        { key: 'agendamento', label: 'Agendamento', description: 'Marcar reunião ou horário' },
+        { key: 'reclamacao', label: 'Reclamação', description: 'Insatisfação ou problema' },
+        { key: 'agradecimento', label: 'Agradecimento', description: 'Gratidão pelo atendimento' },
+        { key: 'despedida', label: 'Despedida', description: 'Finalização de conversa' },
+        { key: 'transferencia', label: 'Transferência', description: 'Quer falar com humano' },
+        { key: 'outro', label: 'Outro', description: 'Intenção não identificada' },
+      ],
+    },
+    detect_repetition: {
+      similarity_threshold: 0.70,
+      check_last_n_responses: 3,
+      use_embeddings: false,
+    },
+    get_chat_history: {
+      max_messages: 15,
+    },
+    batch_messages: {
+      delay_seconds: 10,
+    },
+    get_rag_context: {
+      enabled: true,
+      similarity_threshold: 0.7,
+      max_results: 5,
+    },
+    process_media: {
+      enabled: true,
+    },
+  }
+
+  return defaults[nodeId] || {}
 }
 
 // Helper function to determine category from config key

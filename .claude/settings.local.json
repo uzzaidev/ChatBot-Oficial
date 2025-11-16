@@ -34,7 +34,8 @@
       "Bash(npx shadcn@latest add:*)",
       "Bash(mkdir:*)",
       "Bash(backup-complete.bat)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "mcp__byterover-mcp__byterover-retrieve-knowledge"
     ],
     "deny": [],
     "ask": []

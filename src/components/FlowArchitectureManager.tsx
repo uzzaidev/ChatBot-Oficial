@@ -265,7 +265,7 @@ export default function FlowArchitectureManager() {
   const fetchNodeConfig = useCallback(async (nodeId: string) => {
     const node = nodes.find((n) => n.id === nodeId)
     if (!node || !node.hasConfig || !node.configKey) return
-    
+
     setLoading(true)
     try {
       const response = await fetch(`/api/flow/nodes/${nodeId}`)
@@ -658,25 +658,175 @@ export default function FlowArchitectureManager() {
               {selectedNode.hasConfig && nodeConfig && selectedNode.enabled && (
                 <div className="space-y-4 border-t pt-4">
                   <h3 className="font-semibold">Configurações</h3>
-                  
-                  {/* Show config key for reference */}
-                  {selectedNode.configKey && (
-                    <div className="text-xs text-muted-foreground bg-gray-50 p-2 rounded font-mono">
-                      Config Key: {selectedNode.configKey}
-                    </div>
-                  )}
-                  
+
                   {/* Dynamic fields - render all config properties */}
-                  {Object.keys(nodeConfig).filter(key => key !== 'enabled').map((key) => {
-                    const value = nodeConfig[key]
-                    
+                  {(() => {
+                    // Get field order (custom for each node type)
+                    const getFieldOrder = (nodeId: string, keys: string[]): string[] => {
+                      const orderMap: Record<string, string[]> = {
+                        generate_response: [
+                          'primary_model_provider',
+                          'model', // Synthetic field (not in original config)
+                          'temperature',
+                          'max_tokens',
+                          'system_prompt',
+                          'formatter_prompt',
+                        ],
+                        check_continuity: [
+                          'new_conversation_threshold_hours',
+                          'greeting_for_new_customer',
+                          'greeting_for_returning_customer',
+                        ],
+                        classify_intent: [
+                          'use_llm',
+                          'temperature',
+                          'prompt',
+                          'intents',
+                        ],
+                        detect_repetition: [
+                          'similarity_threshold',
+                          'check_last_n_responses',
+                          'use_embeddings',
+                        ],
+                        get_chat_history: [
+                          'max_messages',
+                        ],
+                        batch_messages: [
+                          'delay_seconds',
+                        ],
+                        get_rag_context: [
+                          'enabled',
+                          'similarity_threshold',
+                          'max_results',
+                        ],
+                      }
+
+                      const order = orderMap[nodeId]
+                      if (!order) return keys
+
+                      // For generate_response, filter out groq_model and openai_model
+                      if (nodeId === 'generate_response') {
+                        const remaining = keys.filter(k => !order.includes(k) && k !== 'groq_model' && k !== 'openai_model')
+                        return [...order.filter(k => k === 'model' || keys.includes(k)), ...remaining]
+                      }
+
+                      // For other nodes, filter order to only include existing keys, then add remaining
+                      const existing = order.filter(k => keys.includes(k))
+                      const remaining = keys.filter(k => !order.includes(k))
+                      return [...existing, ...remaining]
+                    }
+
+                    // Get friendly field label in Portuguese
+                    const getFieldLabel = (key: string, nodeId: string): string => {
+                      const labelMap: Record<string, string> = {
+                        // Check Continuity
+                        'new_conversation_threshold_hours': 'Threshold de Nova Conversa (Horas)',
+                        'greeting_for_new_customer': 'Saudação - Novo Cliente',
+                        'greeting_for_returning_customer': 'Saudação - Cliente Retornando',
+
+                        // Classify Intent
+                        'use_llm': 'Usar LLM para Classificação',
+                        'intents': 'Intenções Suportadas (JSON)',
+
+                        // Detect Repetition
+                        'similarity_threshold': 'Threshold de Similaridade',
+                        'check_last_n_responses': 'Verificar Últimas N Respostas',
+                        'use_embeddings': 'Usar Embeddings (OpenAI)',
+
+                        // Chat History
+                        'max_messages': 'Máximo de Mensagens no Histórico',
+
+                        // Batch Messages
+                        'delay_seconds': 'Delay de Batching (Segundos)',
+
+                        // RAG Context
+                        'enabled': 'Habilitado',
+                        'max_results': 'Máximo de Resultados',
+
+                        // Common fields
+                        'temperature': 'Temperature (Criatividade)',
+                        'max_tokens': 'Máximo de Tokens',
+                        'system_prompt': 'System Prompt',
+                        'formatter_prompt': 'Formatter Prompt',
+                        'prompt': 'Prompt do Classificador',
+                      }
+
+                      return labelMap[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+                    }
+
+                    const allKeys = Object.keys(nodeConfig).filter(key => key !== 'enabled')
+                    const orderedKeys = getFieldOrder(selectedNode?.id || '', allKeys)
+
+                    return orderedKeys.map((key) => {
+                      // Handle synthetic "model" field for generate_response
+                      if (key === 'model' && selectedNode?.id === 'generate_response') {
+                        const provider = nodeConfig.primary_model_provider || 'groq'
+                        const currentModel = provider === 'openai'
+                          ? nodeConfig.openai_model || 'gpt-4o'
+                          : nodeConfig.groq_model || 'llama-3.3-70b-versatile'
+
+                        const groqModels = [
+                          'llama-3.3-70b-versatile',
+                          'llama-3.1-70b-versatile',
+                          'llama-3.1-8b-instant',
+                          'mixtral-8x7b-32768',
+                        ]
+                        const openaiModels = [
+                          'gpt-4o',
+                          'gpt-4o-mini',
+                          'gpt-4-turbo',
+                          'gpt-3.5-turbo',
+                        ]
+                        const models = provider === 'openai' ? openaiModels : groqModels
+
+                        return (
+                          <div key="model" className="space-y-2">
+                            <Label htmlFor="model" className="capitalize">
+                              Model ({provider === 'openai' ? 'OpenAI' : 'Groq'})
+                            </Label>
+                            <Select
+                              value={currentModel}
+                              onValueChange={(newValue) => {
+                                // Update the correct model field based on provider
+                                if (provider === 'openai') {
+                                  setNodeConfig({ ...nodeConfig, openai_model: newValue })
+                                } else {
+                                  setNodeConfig({ ...nodeConfig, groq_model: newValue })
+                                }
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {models.map((model) => (
+                                  <SelectItem key={model} value={model}>
+                                    {model}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground">
+                              Modelos disponíveis para {provider === 'openai' ? 'OpenAI' : 'Groq'}
+                            </p>
+                          </div>
+                        )
+                      }
+
+                      // Skip groq_model and openai_model (handled by synthetic "model" field)
+                      if (key === 'groq_model' || key === 'openai_model') {
+                        return null
+                      }
+
+                      const value = nodeConfig[key]
+
                     // Handle different types of values
                     if (typeof value === 'string' && value.length > 100) {
                       // Large text - use textarea (like prompts)
                       return (
                         <div key={key} className="space-y-2">
-                          <Label htmlFor={key} className="capitalize">
-                            {key.replace(/_/g, ' ')}
+                          <Label htmlFor={key}>
+                            {getFieldLabel(key, selectedNode?.id || '')}
                           </Label>
                           <Textarea
                             id={key}
@@ -694,8 +844,8 @@ export default function FlowArchitectureManager() {
                       return (
                         <div key={key} className="flex items-center justify-between p-4 border rounded-lg">
                           <div className="space-y-1">
-                            <Label htmlFor={key} className="text-base capitalize">
-                              {key.replace(/_/g, ' ')}
+                            <Label htmlFor={key} className="text-base">
+                              {getFieldLabel(key, selectedNode?.id || '')}
                             </Label>
                           </div>
                           <Switch
@@ -712,11 +862,11 @@ export default function FlowArchitectureManager() {
                       const isTemperature = key.toLowerCase().includes('temperature')
                       const isThreshold = key.toLowerCase().includes('threshold') || 
                                          key.toLowerCase().includes('similarity')
-                      
+
                       return (
                         <div key={key} className="space-y-2">
-                          <Label htmlFor={key} className="capitalize">
-                            {key.replace(/_/g, ' ')}
+                          <Label htmlFor={key}>
+                            {getFieldLabel(key, selectedNode?.id || '')}
                           </Label>
                           <Input
                             id={key}
@@ -758,18 +908,34 @@ export default function FlowArchitectureManager() {
                             </Label>
                             <Select
                               value={value}
-                              onValueChange={(newValue) =>
-                                setNodeConfig({ ...nodeConfig, [key]: newValue })
-                              }
+                              onValueChange={(newValue) => {
+                                const newConfig = { ...nodeConfig, [key]: newValue }
+
+                                // Smart model switching: if changing provider, set default model for that provider
+                                if (selectedNode?.id === 'generate_response') {
+                                  if (newValue === 'openai' && !nodeConfig.openai_model) {
+                                    newConfig.openai_model = 'gpt-4o'
+                                  } else if (newValue === 'groq' && !nodeConfig.groq_model) {
+                                    newConfig.groq_model = 'llama-3.3-70b-versatile'
+                                  }
+                                }
+
+                                setNodeConfig(newConfig)
+                              }}
                             >
                               <SelectTrigger>
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="groq">Groq (Fast)</SelectItem>
+                                <SelectItem value="groq">Groq (Fast & Free)</SelectItem>
                                 <SelectItem value="openai">OpenAI (GPT)</SelectItem>
                               </SelectContent>
                             </Select>
+                            <p className="text-xs text-muted-foreground">
+                              {value === 'groq'
+                                ? 'Modelos rápidos e gratuitos da Groq'
+                                : 'Modelos premium da OpenAI (GPT-4, GPT-4o)'}
+                            </p>
                           </div>
                         )
                       } else if (isModel) {
@@ -818,8 +984,8 @@ export default function FlowArchitectureManager() {
                       // Short string - use regular input
                       return (
                         <div key={key} className="space-y-2">
-                          <Label htmlFor={key} className="capitalize">
-                            {key.replace(/_/g, ' ')}
+                          <Label htmlFor={key}>
+                            {getFieldLabel(key, selectedNode?.id || '')}
                           </Label>
                           <Input
                             id={key}
@@ -834,8 +1000,8 @@ export default function FlowArchitectureManager() {
                       // Array - show as JSON textarea
                       return (
                         <div key={key} className="space-y-2">
-                          <Label htmlFor={key} className="capitalize">
-                            {key.replace(/_/g, ' ')} (JSON Array)
+                          <Label htmlFor={key}>
+                            {getFieldLabel(key, selectedNode?.id || '')}
                           </Label>
                           <Textarea
                             id={key}
@@ -857,8 +1023,8 @@ export default function FlowArchitectureManager() {
                       // Object - show as JSON textarea
                       return (
                         <div key={key} className="space-y-2">
-                          <Label htmlFor={key} className="capitalize">
-                            {key.replace(/_/g, ' ')} (JSON Object)
+                          <Label htmlFor={key}>
+                            {getFieldLabel(key, selectedNode?.id || '')}
                           </Label>
                           <Textarea
                             id={key}
@@ -877,9 +1043,10 @@ export default function FlowArchitectureManager() {
                         </div>
                       )
                     }
-                    
+
                     return null
-                  })}
+                  })
+                  })()}
 
                   {/* Save Button */}
                   <Button
