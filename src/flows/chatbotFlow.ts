@@ -492,10 +492,10 @@ export const processChatbotMessage = async (
     })
 
     // NODE 12: Format Response (configurável)
+    logger.logNodeStart('12. Format Response', { contentLength: aiResponse.content.length })
     let formattedMessages: string[]
     
     if (config.settings.messageSplitEnabled) {
-      logger.logNodeStart('12. Format Response', { contentLength: aiResponse.content.length })
       console.log('[chatbotFlow] ✅ Message split enabled - formatting into multiple messages')
       formattedMessages = formatResponse(aiResponse.content)
       logger.logNodeSuccess('12. Format Response', { 
