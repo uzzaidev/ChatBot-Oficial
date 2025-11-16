@@ -289,7 +289,8 @@ export default function DebugDashboardPage({
             }`}>
               {directResult.includes('sucesso') ? <CheckCircle className="h-4 w-4 flex-shrink-0 mt-0.5" /> : <XCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />}
               <div>
-              {directResult}
+                {directResult}
+              </div>
             </div>
           )}
         </CardContent>
