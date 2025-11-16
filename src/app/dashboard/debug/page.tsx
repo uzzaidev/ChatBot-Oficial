@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Phone, Settings, Search, CheckCircle, XCircle, AlertTriangle } from 'lucide-react'
 
 interface ExecutionLog {
   id: number
@@ -179,13 +180,13 @@ export default function DebugDashboardPage({
       const data = await response.json()
       
       if (data.success) {
-        setDirectResult(`✅ Mensagem enviada com sucesso!\nID: ${data.message_id}`)
+        setDirectResult(`Mensagem enviada com sucesso!\nID: ${data.message_id}`)
       } else {
-        setDirectResult(`❌ Erro: ${data.error}\n${data.details}`)
+        setDirectResult(`Erro: ${data.error}\n${data.details}`)
       }
     } catch (error: any) {
       console.error('Error sending direct WhatsApp:', error)
-      setDirectResult(`❌ Erro de rede: ${error.message}`)
+      setDirectResult(`Erro de rede: ${error.message}`)
     } finally {
       setSendingDirect(false)
     }
@@ -263,25 +264,31 @@ export default function DebugDashboardPage({
               onClick={sendDirectWhatsApp} 
               disabled={sendingDirect}
               variant="default"
+              className="gap-2"
             >
-              {sendingDirect ? 'Enviando...' : '📱 Enviar Direto (WhatsApp apenas)'}
+              <Phone className="h-4 w-4" />
+              {sendingDirect ? 'Enviando...' : 'Enviar Direto (WhatsApp apenas)'}
             </Button>
             
             <Button 
               onClick={sendTestMessage} 
               disabled={sendingTest}
               variant="outline"
+              className="gap-2"
             >
-              {sendingTest ? 'Processando...' : '⚙️ Processar Fluxo Completo'}
+              <Settings className="h-4 w-4" />
+              {sendingTest ? 'Processando...' : 'Processar Fluxo Completo'}
             </Button>
           </div>
 
           {directResult && (
-            <div className={`p-3 rounded-lg text-sm font-mono whitespace-pre-wrap ${
-              directResult.startsWith('✅') 
+            <div className={`p-3 rounded-lg text-sm font-mono whitespace-pre-wrap flex items-start gap-2 ${
+              directResult.includes('sucesso') 
                 ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300' 
                 : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'
             }`}>
+              {directResult.includes('sucesso') ? <CheckCircle className="h-4 w-4 flex-shrink-0 mt-0.5" /> : <XCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />}
+              <div>
               {directResult}
             </div>
           )}
@@ -368,21 +375,29 @@ export default function DebugDashboardPage({
             {/* Análise Automática */}
             {selectedExecution && logs.length > 0 && (
               <div className="p-4 rounded-lg bg-muted">
-                <h4 className="font-semibold mb-2">🔍 Diagnóstico Automático:</h4>
+                <h4 className="font-semibold mb-2 flex items-center gap-2">
+                  <Search className="h-4 w-4" />
+                  Diagnóstico Automático:
+                </h4>
                 <div className="space-y-2 text-sm">
                   {logs.filter(log => log.status === 'success').length === 0 && (
-                    <p className="text-red-500">
-                      ❌ <strong>NENHUM NODE EXECUTOU!</strong> O webhook pode não estar sendo chamado.
+                    <p className="text-red-500 flex items-start gap-2">
+                      <XCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                      <span><strong>NENHUM NODE EXECUTOU!</strong> O webhook pode não estar sendo chamado.</span>
                     </p>
                   )}
                   {logs.filter(log => log.status === 'success').length > 0 && logs.filter(log => log.status === 'success').length < 5 && (
-                    <p className="text-orange-500">
-                      ⚠️ Workflow iniciou mas travou no node <strong>{logs.find(log => log.status === 'error')?.node_name || 'desconhecido'}</strong>
+                    <p className="text-orange-500 flex items-start gap-2">
+                      <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                      <span>Workflow iniciou mas travou no node <strong>{logs.find(log => log.status === 'error')?.node_name || 'desconhecido'}</strong></span>
                     </p>
                   )}
                   {logs.filter(log => log.status === 'error').length > 0 && (
                     <div className="text-red-500">
-                      <p className="font-semibold">❌ Erros encontrados:</p>
+                      <p className="font-semibold flex items-center gap-2">
+                        <XCircle className="h-4 w-4" />
+                        Erros encontrados:
+                      </p>
                       <ul className="list-disc list-inside ml-4">
                         {logs.filter(log => log.status === 'error').map(log => (
                           <li key={log.id}>
@@ -393,8 +408,9 @@ export default function DebugDashboardPage({
                     </div>
                   )}
                   {logs.filter(log => log.status === 'success').length === 12 && (
-                    <p className="text-green-500">
-                      ✅ <strong>WORKFLOW COMPLETO!</strong> Todos os 12 nodes executaram com sucesso.
+                    <p className="text-green-500 flex items-start gap-2">
+                      <CheckCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                      <span><strong>WORKFLOW COMPLETO!</strong> Todos os 12 nodes executaram com sucesso.</span>
                     </p>
                   )}
                   <p className="text-muted-foreground mt-2">
@@ -440,8 +456,9 @@ export default function DebugDashboardPage({
                 <p className="text-xs text-muted-foreground">
                   Envie uma mensagem do WhatsApp para o bot
                 </p>
-                <Button onClick={forceRefreshMessages} variant="outline" size="sm" className="mt-4">
-                  🔍 Verificar Novamente
+                <Button onClick={forceRefreshMessages} variant="outline" size="sm" className="mt-4 gap-2">
+                  <Search className="h-4 w-4" />
+                  Verificar Novamente
                 </Button>
               </div>
             ) : (
@@ -464,8 +481,9 @@ export default function DebugDashboardPage({
                         {formatTimestamp(msg.timestamp)}
                       </span>
                     </div>
-                    <p className="text-xs font-mono text-muted-foreground mb-1">
-                      📱 {msg.from}
+                    <p className="text-xs font-mono text-muted-foreground mb-1 flex items-center gap-1">
+                      <Phone className="h-3 w-3" />
+                      {msg.from}
                     </p>
                     <p className="text-sm">{msg.content}</p>
                     {msg.raw && (
@@ -523,8 +541,9 @@ export default function DebugDashboardPage({
                         {formatTimestamp(exec.started_at)}
                       </p>
                       {exec.metadata?.from && (
-                        <p className="text-xs font-medium mt-1">
-                          📱 {exec.metadata.from}
+                        <p className="text-xs font-medium mt-1 flex items-center gap-1">
+                          <Phone className="h-3 w-3" />
+                          {exec.metadata.from}
                         </p>
                       )}
                     </button>
@@ -609,8 +628,9 @@ export default function DebugDashboardPage({
                           {/* Error */}
                           {log.error && (
                             <div className="mb-2">
-                              <p className="text-xs font-medium text-red-500 mb-1">
-                                ❌ Error:
+                              <p className="text-xs font-medium text-red-500 mb-1 flex items-center gap-1">
+                                <XCircle className="h-3 w-3" />
+                                Error:
                               </p>
                               <pre className="text-xs bg-red-50 dark:bg-red-900/20 p-2 rounded overflow-x-auto text-red-600 dark:text-red-400">
                                 {JSON.stringify(log.error, null, 2)}

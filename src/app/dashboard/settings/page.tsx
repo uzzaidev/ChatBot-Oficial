@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Eye, EyeOff, Save, Lock, Copy, Check, Bot } from 'lucide-react'
+import { Eye, EyeOff, Save, Lock, Copy, Check, Bot, CheckCircle, XCircle, AlertTriangle, Rocket, MessageCircle, Mic } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
@@ -396,7 +396,7 @@ export default function SettingsPage() {
         })
         setNotification({ 
           type: 'success', 
-          message: `✅ Modelo testado com sucesso! Latência: ${data.latency_ms}ms` 
+          message: `Modelo testado com sucesso! Latência: ${data.latency_ms}ms` 
         })
       } else {
         setTestResult({
@@ -405,7 +405,7 @@ export default function SettingsPage() {
         })
         setNotification({ 
           type: 'error', 
-          message: `❌ ${data.message || data.error}` 
+          message: `${data.message || data.error}` 
         })
       }
     } catch (error) {
@@ -662,19 +662,25 @@ export default function SettingsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="groq">
-                    <div className="flex flex-col items-start">
-                      <span className="font-semibold">🚀 Groq (Llama) - Recomendado</span>
-                      <span className="text-xs text-gray-500">
-                        Rápido (~1000 tokens/s) • Econômico (~$0.60/1M tokens)
-                      </span>
+                    <div className="flex items-center gap-2">
+                      <Rocket className="h-4 w-4 flex-shrink-0" />
+                      <div className="flex flex-col items-start">
+                        <span className="font-semibold">Groq (Llama) - Recomendado</span>
+                        <span className="text-xs text-gray-500">
+                          Rápido (~1000 tokens/s) • Econômico (~$0.60/1M tokens)
+                        </span>
+                      </div>
                     </div>
                   </SelectItem>
                   <SelectItem value="openai">
-                    <div className="flex flex-col items-start">
-                      <span className="font-semibold">🧠 OpenAI (GPT-4o)</span>
-                      <span className="text-xs text-gray-500">
-                        Mais inteligente • Mais lento • Mais caro (~$5/1M tokens)
-                      </span>
+                    <div className="flex items-center gap-2">
+                      <Bot className="h-4 w-4 flex-shrink-0" />
+                      <div className="flex flex-col items-start">
+                        <span className="font-semibold">OpenAI (GPT-4o)</span>
+                        <span className="text-xs text-gray-500">
+                          Mais inteligente • Mais lento • Mais caro (~$5/1M tokens)
+                        </span>
+                      </div>
                     </div>
                   </SelectItem>
                 </SelectContent>
@@ -682,16 +688,22 @@ export default function SettingsPage() {
               
               {/* Alertas de custo */}
               {agentConfig.primary_model_provider === 'openai' && (
-                <div className="mt-3 text-xs bg-yellow-50 border border-yellow-200 p-3 rounded">
-                  ⚠️ <strong>Custo estimado:</strong> GPT-4o é ~8x mais caro que Groq.
-                  Para 100k mensagens/mês, pode custar $500+ vs $60 com Groq.
+                <div className="mt-3 text-xs bg-yellow-50 border border-yellow-200 p-3 rounded flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <strong>Custo estimado:</strong> GPT-4o é ~8x mais caro que Groq.
+                    Para 100k mensagens/mês, pode custar $500+ vs $60 com Groq.
+                  </div>
                 </div>
               )}
               
               {agentConfig.primary_model_provider === 'groq' && (
-                <div className="mt-3 text-xs bg-green-50 border border-green-200 p-3 rounded">
-                  ✅ <strong>Econômico:</strong> Llama 3.3 70B oferece ótima qualidade
-                  com custo muito baixo (~$0.60/1M tokens).
+                <div className="mt-3 text-xs bg-green-50 border border-green-200 p-3 rounded flex items-start gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <strong>Econômico:</strong> Llama 3.3 70B oferece ótima qualidade
+                    com custo muito baixo (~$0.60/1M tokens).
+                  </div>
                 </div>
               )}
 
@@ -719,12 +731,13 @@ export default function SettingsPage() {
 
               {/* Resultado do teste */}
               {testResult && (
-                <div className={`mt-3 text-xs p-3 rounded ${
+                <div className={`mt-3 text-xs p-3 rounded flex items-start gap-2 ${
                   testResult.success 
                     ? 'bg-green-50 border border-green-200 text-green-800' 
                     : 'bg-red-50 border border-red-200 text-red-800'
                 }`}>
-                  {testResult.success ? '✅' : '❌'} {testResult.message}
+                  {testResult.success ? <CheckCircle className="h-4 w-4 flex-shrink-0 mt-0.5" /> : <XCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />}
+                  <span>{testResult.message}</span>
                 </div>
               )}
             </div>
@@ -766,10 +779,22 @@ export default function SettingsPage() {
                   <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo (Econômico)</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
                 {agentConfig.primary_model_provider === 'openai' 
-                  ? '💬 Conversação + 🎤 Mídia (transcrição, imagens, PDFs)'
-                  : '🎤 Apenas para: Transcrição de áudio, análise de imagens e documentos'
+                  ? (
+                    <>
+                      <MessageCircle className="h-3 w-3" />
+                      Conversação + 
+                      <Mic className="h-3 w-3 ml-1" />
+                      Mídia (transcrição, imagens, PDFs)
+                    </>
+                  )
+                  : (
+                    <>
+                      <Mic className="h-3 w-3" />
+                      Apenas para: Transcrição de áudio, análise de imagens e documentos
+                    </>
+                  )
                 }
               </p>
             </div>
@@ -801,9 +826,14 @@ export default function SettingsPage() {
                   <SelectItem value="mixtral-8x7b-32768">Mixtral 8x7B</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
                 {agentConfig.primary_model_provider === 'groq'
-                  ? '💬 Usado para: Respostas de texto do agente (conversação principal)'
+                  ? (
+                    <>
+                      <MessageCircle className="h-3 w-3" />
+                      Usado para: Respostas de texto do agente (conversação principal)
+                    </>
+                  )
                   : '(Não está sendo usado no momento)'
                 }
               </p>

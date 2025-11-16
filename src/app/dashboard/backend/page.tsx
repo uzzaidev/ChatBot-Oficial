@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
+import { Check, X, Loader2, Phone, CheckCheck, Eye, AlertTriangle } from 'lucide-react'
 
 interface ExecutionLog {
   id: number
@@ -202,7 +203,11 @@ export default function BackendMonitorPage() {
   }
 
   const renderTerminalLog = (log: ExecutionLog) => {
-    const statusIcon = log.status === 'success' ? '✓' : log.status === 'error' ? '✗' : '⋯'
+    const statusIcon = log.status === 'success' 
+      ? <Check className="h-3 w-3" /> 
+      : log.status === 'error' 
+      ? <X className="h-3 w-3" /> 
+      : <Loader2 className="h-3 w-3 animate-spin" />
     const statusColor = getStatusColor(log.status)
     
     // Detecta status update do WhatsApp
@@ -218,8 +223,9 @@ export default function BackendMonitorPage() {
             <span className="text-gray-400">({log.duration_ms}ms)</span>
           )}
           {whatsappStatus && (
-            <span className="ml-2 px-2 py-0.5 rounded text-xs bg-purple-600 text-white">
-              📱 {whatsappStatus.toUpperCase()}
+            <span className="ml-2 px-2 py-0.5 rounded text-xs bg-purple-600 text-white flex items-center gap-1">
+              <Phone className="h-3 w-3" />
+              {whatsappStatus.toUpperCase()}
             </span>
           )}
         </div>
@@ -244,15 +250,19 @@ export default function BackendMonitorPage() {
 
         {/* Aviso quando output está faltando mas node teve sucesso */}
         {!log.output_data && !log.error && log.status === 'success' && log.node_name !== '_START' && log.node_name !== '_END' && (
-          <div className="ml-8 mt-1 text-yellow-300">
-            <span className="text-gray-400">⚠ OUTPUT: </span>
+          <div className="ml-8 mt-1 text-yellow-300 flex items-center gap-1">
+            <AlertTriangle className="h-3 w-3 text-gray-400" />
+            <span className="text-gray-400">OUTPUT: </span>
             <span className="text-yellow-400 italic">(dados não registrados pelo node)</span>
           </div>
         )}
 
         {log.error && (
           <div className="ml-8 mt-1 text-red-300">
-            <span className="text-gray-400">✗ ERROR:</span>
+            <span className="text-gray-400 flex items-center gap-1">
+              <X className="h-3 w-3" />
+              ERROR:
+            </span>
             <pre className="ml-4 text-red-400 whitespace-pre-wrap break-all">
               {formatJSON(log.error)}
             </pre>
@@ -352,7 +362,8 @@ export default function BackendMonitorPage() {
                   size="sm"
                   className="gap-2"
                 >
-                  ✅ Entregues
+                  <CheckCheck className="h-4 w-4" />
+                  Entregues
                   <Badge variant="secondary" className="ml-1">
                     {getStatusCount('delivered')}
                   </Badge>
@@ -363,7 +374,8 @@ export default function BackendMonitorPage() {
                   size="sm"
                   className="gap-2"
                 >
-                  👁️ Lidas
+                  <Eye className="h-4 w-4" />
+                  Lidas
                   <Badge variant="secondary" className="ml-1">
                     {getStatusCount('read')}
                   </Badge>
@@ -374,7 +386,8 @@ export default function BackendMonitorPage() {
                   size="sm"
                   className="gap-2"
                 >
-                  ❌ Falhas
+                  <X className="h-4 w-4" />
+                  Falhas
                   <Badge variant="secondary" className="ml-1">
                     {getStatusCount('failed')}
                   </Badge>
@@ -451,8 +464,9 @@ export default function BackendMonitorPage() {
                           {formatTimestamp(exec.started_at)}
                         </p>
                         {exec.metadata?.from && (
-                          <p className="text-xs font-medium mt-1 truncate">
-                            📱 {exec.metadata.from}
+                          <p className="text-xs font-medium mt-1 truncate flex items-center gap-1">
+                            <Phone className="h-3 w-3" />
+                            {exec.metadata.from}
                           </p>
                         )}
                       </button>

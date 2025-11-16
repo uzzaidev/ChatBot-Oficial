@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Save, RefreshCw, AlertCircle, CheckCircle, Maximize2 } from 'lucide-react'
+import { Save, RefreshCw, AlertCircle, CheckCircle, Maximize2, Settings } from 'lucide-react'
 import mermaid from 'mermaid'
 
 // Define node types based on CHATBOT_FLOW_ARCHITECTURE.md
@@ -368,7 +368,7 @@ export default function FlowArchitectureManager() {
     // Add ALL nodes (enabled and disabled)
     nodes.forEach((node) => {
       const nodeLabel = node.hasConfig
-        ? `${node.name}<br/>⚙️ Configurável`
+        ? `${node.name}<br/>[Config]`
         : node.name
       diagram += `  ${node.id}["${nodeLabel}"]\n`
       // Apply disabled class if node is disabled, otherwise use category class
@@ -749,9 +749,11 @@ export default function FlowArchitectureManager() {
         {/* Instructions */}
         <Alert>
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Como usar:</strong> Clique em qualquer nó do fluxograma para ver/editar suas configurações.
-            Nós com ⚙️ possuem configurações editáveis (prompts, temperatura, thresholds, etc).
+          <AlertDescription className="flex items-start gap-2">
+            <div>
+              <strong>Como usar:</strong> Clique em qualquer nó do fluxograma para ver/editar suas configurações.
+              Nós com <Settings className="h-3 w-3 inline" /> [Config] possuem configurações editáveis (prompts, temperatura, thresholds, etc).
+            </div>
           </AlertDescription>
         </Alert>
       </CardContent>
