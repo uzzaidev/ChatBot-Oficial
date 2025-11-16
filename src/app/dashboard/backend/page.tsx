@@ -128,9 +128,23 @@ export default function BackendMonitorPage() {
     return JSON.stringify(data, null, 2)
   }
 
+  // Extrai informação de status do WhatsApp se disponível
+  const extractWhatsAppStatus = (log: ExecutionLog): string | null => {
+    // Verifica se tem status no input_data
+    const statuses = log.input_data?.entry?.[0]?.changes?.[0]?.value?.statuses
+    if (statuses && statuses.length > 0) {
+      const status = statuses[0].status // sent, delivered, read, failed
+      return status
+    }
+    return null
+  }
+
   const renderTerminalLog = (log: ExecutionLog) => {
     const statusIcon = log.status === 'success' ? '✓' : log.status === 'error' ? '✗' : '⋯'
     const statusColor = getStatusColor(log.status)
+    
+    // Detecta status update do WhatsApp
+    const whatsappStatus = extractWhatsAppStatus(log)
 
     return (
       <div key={log.id} className="font-mono text-xs mb-2">
@@ -140,6 +154,11 @@ export default function BackendMonitorPage() {
           <span className="font-bold">{log.node_name}</span>
           {log.duration_ms && (
             <span className="text-gray-400">({log.duration_ms}ms)</span>
+          )}
+          {whatsappStatus && (
+            <span className="ml-2 px-2 py-0.5 rounded text-xs bg-purple-600 text-white">
+              📱 {whatsappStatus.toUpperCase()}
+            </span>
           )}
         </div>
 
@@ -158,6 +177,14 @@ export default function BackendMonitorPage() {
             <pre className="ml-4 text-gray-300 whitespace-pre-wrap break-all">
               {formatJSON(log.output_data)}
             </pre>
+          </div>
+        )}
+
+        {/* Aviso quando output está faltando mas node teve sucesso */}
+        {!log.output_data && !log.error && log.status === 'success' && log.node_name !== '_START' && log.node_name !== '_END' && (
+          <div className="ml-8 mt-1 text-yellow-300">
+            <span className="text-gray-400">⚠ OUTPUT: </span>
+            <span className="text-yellow-400 italic">(dados não registrados pelo node)</span>
           </div>
         )}
 
@@ -231,37 +258,47 @@ export default function BackendMonitorPage() {
             <CardContent className="p-2">
               <ScrollArea className="h-[700px]">
                 <div className="space-y-2">
-                  {executions.map((exec) => (
-                    <button
-                      key={exec.execution_id}
-                      onClick={() => setSelectedExecution(exec.execution_id)}
-                      className={`w-full text-left p-2 rounded-lg border transition-colors ${
-                        selectedExecution === exec.execution_id
-                          ? 'border-primary bg-primary/10'
-                          : 'border-border hover:bg-muted'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <Badge className={getStatusBadge(exec.status)} variant="default">
-                          {exec.status}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {exec.node_count} nodes
-                        </span>
-                      </div>
-                      <p className="text-xs font-mono text-muted-foreground truncate">
-                        {exec.execution_id.slice(0, 8)}...
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {formatTimestamp(exec.started_at)}
-                      </p>
-                      {exec.metadata?.from && (
-                        <p className="text-xs font-medium mt-1 truncate">
-                          📱 {exec.metadata.from}
+                  {executions.map((exec) => {
+                    const isStatusUpdate = exec.metadata?.is_status_update
+                    return (
+                      <button
+                        key={exec.execution_id}
+                        onClick={() => setSelectedExecution(exec.execution_id)}
+                        className={`w-full text-left p-2 rounded-lg border transition-colors ${
+                          selectedExecution === exec.execution_id
+                            ? 'border-primary bg-primary/10'
+                            : 'border-border hover:bg-muted'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-1">
+                            <Badge className={getStatusBadge(exec.status)} variant="default">
+                              {exec.status}
+                            </Badge>
+                            {isStatusUpdate && (
+                              <span className="text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+                                STATUS
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {exec.node_count} nodes
+                          </span>
+                        </div>
+                        <p className="text-xs font-mono text-muted-foreground truncate">
+                          {exec.execution_id.slice(0, 8)}...
                         </p>
-                      )}
-                    </button>
-                  ))}
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {formatTimestamp(exec.started_at)}
+                        </p>
+                        {exec.metadata?.from && (
+                          <p className="text-xs font-medium mt-1 truncate">
+                            📱 {exec.metadata.from}
+                          </p>
+                        )}
+                      </button>
+                    )
+                  })}
                 </div>
               </ScrollArea>
             </CardContent>

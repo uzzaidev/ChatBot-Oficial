@@ -57,13 +57,43 @@ export async function GET(request: NextRequest) {
       const lastLog = logs[logs.length - 1]
       const hasError = logs.some(l => l.status === 'error')
       
+      // Procura pelo node _END para determinar status final
+      const endLog = logs.find(l => l.node_name === '_END')
+      
+      // Determina o status da execução:
+      // 1. Se tem erro, é 'error'
+      // 2. Se tem _END node, usa o status dele
+      // 3. Se todos os nodes (exceto _START) são success, é 'success'
+      // 4. Caso contrário, é 'running'
+      let finalStatus: 'running' | 'success' | 'error' = 'running'
+      
+      if (hasError) {
+        finalStatus = 'error'
+      } else if (endLog) {
+        finalStatus = endLog.status
+      } else {
+        // Verifica se todos os nodes (exceto _START e _END) completaram com sucesso
+        const nonSystemLogs = logs.filter(l => l.node_name !== '_START' && l.node_name !== '_END')
+        const allSuccess = nonSystemLogs.length > 0 && nonSystemLogs.every(l => l.status === 'success')
+        if (allSuccess) {
+          finalStatus = 'success'
+        }
+      }
+      
+      // Detecta tipo de mensagem (status update vs mensagem normal)
+      const isStatusUpdate = firstLog.metadata?.message_type === 'status_update' ||
+                            firstLog.input_data?.entry?.[0]?.changes?.[0]?.value?.statuses
+      
       return {
         execution_id,
         logs,
         started_at: firstLog.timestamp,
         last_update: lastLog.timestamp,
-        status: hasError ? 'error' : lastLog.status,
-        metadata: firstLog.metadata || {},
+        status: finalStatus,
+        metadata: {
+          ...firstLog.metadata,
+          is_status_update: isStatusUpdate,
+        },
         node_count: logs.length,
       }
     })
