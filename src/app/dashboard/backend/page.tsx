@@ -36,77 +36,39 @@ export default function BackendMonitorPage() {
   const [executions, setExecutions] = useState<Execution[]>([])
   const [selectedExecution, setSelectedExecution] = useState<string | null>(null)
   const [autoRefresh, setAutoRefresh] = useState(true)
-  const [lastUpdate, setLastUpdate] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [autoScroll, setAutoScroll] = useState(true)
   const [statusFilter, setStatusFilter] = useState<StatusFilterType>('all')
 
-  // Função para buscar logs
+  // Função para buscar logs - sempre busca os últimos 500 logs do Supabase
   const fetchLogs = useCallback(async () => {
     try {
-      const url = lastUpdate 
-        ? `/api/backend/stream?limit=500&since=${lastUpdate}`
-        : '/api/backend/stream?limit=500'
+      // Sempre busca os últimos 500 logs, sem filtro 'since'
+      // Isso garante que após refresh da página, todos os logs apareçam
+      const url = '/api/backend/stream?limit=500'
       
       const response = await fetch(url)
       const data = await response.json()
 
       if (data.success && data.executions) {
-        setExecutions(prev => {
-          // Merge new executions with existing ones
-          const merged = new Map<string, Execution>()
-          
-          // Add existing executions
-          prev.forEach(exec => merged.set(exec.execution_id, exec))
-          
-          // Update with new data - merge logs properly
-          data.executions.forEach((newExec: Execution) => {
-            const existing = merged.get(newExec.execution_id)
-            
-            if (existing) {
-              // Merge logs - create a map of logs by ID to avoid duplicates
-              const logMap = new Map<number, any>()
-              
-              // Add existing logs
-              existing.logs.forEach(log => logMap.set(log.id, log))
-              
-              // Add/update with new logs
-              newExec.logs.forEach(log => logMap.set(log.id, log))
-              
-              // Sort logs by timestamp
-              const mergedLogs = Array.from(logMap.values()).sort(
-                (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-              )
-              
-              // Update execution with merged logs and latest metadata
-              merged.set(newExec.execution_id, {
-                ...newExec,
-                logs: mergedLogs,
-                node_count: mergedLogs.length,
-              })
-            } else {
-              // New execution, just add it
-              merged.set(newExec.execution_id, newExec)
-            }
-          })
-          
-          return Array.from(merged.values())
-            .sort(
-              (a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
-            )
-        })
+        // Substitui completamente as execuções ao invés de fazer merge
+        // Isso garante que sempre mostramos o estado atual do banco
+        const sortedExecutions = data.executions.sort(
+          (a: Execution, b: Execution) => 
+            new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
+        )
         
-        setLastUpdate(data.timestamp)
+        setExecutions(sortedExecutions)
         
         // Auto-select first execution if none selected
-        if (!selectedExecution && data.executions.length > 0) {
-          setSelectedExecution(data.executions[0].execution_id)
+        if (!selectedExecution && sortedExecutions.length > 0) {
+          setSelectedExecution(sortedExecutions[0].execution_id)
         }
       }
     } catch (error) {
       console.error('Error fetching logs:', error)
     }
-  }, [lastUpdate, selectedExecution])
+  }, [selectedExecution])
 
   // Auto-refresh
   useEffect(() => {
