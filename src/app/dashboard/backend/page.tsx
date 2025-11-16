@@ -45,8 +45,8 @@ export default function BackendMonitorPage() {
   const fetchLogs = useCallback(async () => {
     try {
       const url = lastUpdate 
-        ? `/api/backend/stream?limit=50&since=${lastUpdate}`
-        : '/api/backend/stream?limit=50'
+        ? `/api/backend/stream?limit=500&since=${lastUpdate}`
+        : '/api/backend/stream?limit=500'
       
       const response = await fetch(url)
       const data = await response.json()
