@@ -18,6 +18,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { processChatbotMessage } from '@/flows/chatbotFlow'
 import { addWebhookMessage } from '@/lib/webhookCache'
 import { getClientConfig } from '@/lib/config'
+import { setWithExpiry, get } from '@/lib/redis'
 
 export const dynamic = 'force-dynamic'
 
@@ -201,6 +202,8 @@ export async function POST(
     console.log(`  Plan: ${config.status}`)
 
     // 3. Extrair mensagem e adicionar ao cache
+    let messageId: string | null = null
+    
     try {
       const entry = body.entry?.[0]
       const change = entry?.changes?.[0]
@@ -209,9 +212,10 @@ export async function POST(
 
       if (message) {
         const contact = value?.contacts?.[0]
+        messageId = message.id || `msg-${Date.now()}`
 
         const webhookMessage = {
-          id: message.id || `msg-${Date.now()}`,
+          id: messageId,
           timestamp: new Date().toISOString(),
           from: message.from,
           name: contact?.profile?.name || 'Unknown',
@@ -231,7 +235,32 @@ export async function POST(
       console.error(`[WEBHOOK/${clientId}] Erro ao extrair mensagem:`, parseError)
     }
 
-    // 4. Processar mensagem com config do cliente
+    // 4. Deduplication check - prevent processing duplicate messages
+    if (messageId) {
+      const dedupeKey = `processed:${clientId}:${messageId}`
+      
+      try {
+        const alreadyProcessed = await get(dedupeKey)
+        
+        if (alreadyProcessed) {
+          console.log(`[WEBHOOK/${clientId}] ⚠️ MENSAGEM DUPLICADA DETECTADA!`)
+          console.log(`  Message ID: ${messageId}`)
+          console.log(`  Já processada em: ${alreadyProcessed}`)
+          console.log(`  Ignorando processamento...`)
+          return new NextResponse('DUPLICATE_MESSAGE_IGNORED', { status: 200 })
+        }
+        
+        // Mark message as being processed (valid for 24 hours)
+        await setWithExpiry(dedupeKey, new Date().toISOString(), 86400) // 24 hours
+        console.log(`[WEBHOOK/${clientId}] ✅ Mensagem marcada como processada`)
+      } catch (redisError) {
+        // If Redis fails, log but continue processing (graceful degradation)
+        console.error(`[WEBHOOK/${clientId}] ⚠️ Erro no Redis deduplication:`, redisError)
+        console.log(`[WEBHOOK/${clientId}] Continuando processamento sem deduplicação...`)
+      }
+    }
+
+    // 5. Processar mensagem com config do cliente
     console.log(`[WEBHOOK/${clientId}] ⚡ Processando chatbot flow...`)
 
     try {
