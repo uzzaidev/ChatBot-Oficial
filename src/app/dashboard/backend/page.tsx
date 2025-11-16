@@ -5,7 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
-import { Check, X, Loader2, Phone, CheckCheck, Eye, AlertTriangle } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Check, X, Loader2, Phone, CheckCheck, Eye, AlertTriangle, Search, Globe, Mail, Send } from 'lucide-react'
 
 interface ExecutionLog {
   id: number
@@ -39,6 +40,7 @@ export default function BackendMonitorPage() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [autoScroll, setAutoScroll] = useState(true)
   const [statusFilter, setStatusFilter] = useState<StatusFilterType>('all')
+  const [phoneFilter, setPhoneFilter] = useState<string>('')
 
   // Função para buscar logs - sempre busca os últimos 500 logs do Supabase
   const fetchLogs = useCallback(async () => {
@@ -145,10 +147,20 @@ export default function BackendMonitorPage() {
     return 'message'
   }
 
-  // Filtra execuções baseado no status selecionado
+  // Filtra execuções baseado no status e telefone selecionados
   const filteredExecutions = executions.filter(exec => {
-    if (statusFilter === 'all') return true
-    return getExecutionWhatsAppStatus(exec) === statusFilter
+    // Filtro de status
+    if (statusFilter !== 'all' && getExecutionWhatsAppStatus(exec) !== statusFilter) {
+      return false
+    }
+    
+    // Filtro de telefone/cliente
+    if (phoneFilter.trim()) {
+      const phone = exec.metadata?.from || ''
+      return phone.includes(phoneFilter.trim())
+    }
+    
+    return true
   })
 
   // Conta execuções por tipo
@@ -274,6 +286,39 @@ export default function BackendMonitorPage() {
         </Card>
       ) : (
         <>
+          {/* Phone Filter */}
+          <Card className="mb-4">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <Phone className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                <div className="flex-1 max-w-md">
+                  <Input
+                    type="text"
+                    placeholder="Filtrar por telefone/cliente (ex: 5554999250023)"
+                    value={phoneFilter}
+                    onChange={(e) => setPhoneFilter(e.target.value)}
+                    className="w-full"
+                  />
+                  {phoneFilter && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Mostrando apenas: {phoneFilter}
+                    </p>
+                  )}
+                </div>
+                {phoneFilter && (
+                  <Button
+                    onClick={() => setPhoneFilter('')}
+                    variant="ghost"
+                    size="sm"
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Limpar
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Status Filter Tabs */}
           <Card className="mb-4">
             <CardContent className="pt-6">
@@ -284,7 +329,8 @@ export default function BackendMonitorPage() {
                   size="sm"
                   className="gap-2"
                 >
-                  🌐 Todas
+                  <Globe className="h-4 w-4" />
+                  Todas
                   <Badge variant="secondary" className="ml-1">
                     {getStatusCount('all')}
                   </Badge>
@@ -295,7 +341,8 @@ export default function BackendMonitorPage() {
                   size="sm"
                   className="gap-2"
                 >
-                  📨 Mensagens Recebidas
+                  <Mail className="h-4 w-4" />
+                  Mensagens Recebidas
                   <Badge variant="secondary" className="ml-1">
                     {getStatusCount('message')}
                   </Badge>
@@ -306,7 +353,8 @@ export default function BackendMonitorPage() {
                   size="sm"
                   className="gap-2"
                 >
-                  📤 Enviadas
+                  <Send className="h-4 w-4" />
+                  Enviadas
                   <Badge variant="secondary" className="ml-1">
                     {getStatusCount('sent')}
                   </Badge>
