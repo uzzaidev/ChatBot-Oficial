@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Check, X, Loader2, Phone, CheckCheck, Eye, AlertTriangle, Search, Globe, Mail, Send } from 'lucide-react'
+import { Check, X, Loader2, Phone, CheckCheck, Eye, AlertTriangle, Search, Globe, Mail, Send, ScrollText, RefreshCw, Pause, RotateCw } from 'lucide-react'
 
 interface ExecutionLog {
   id: number
@@ -156,8 +156,45 @@ export default function BackendMonitorPage() {
     
     // Filtro de telefone/cliente
     if (phoneFilter.trim()) {
-      const phone = exec.metadata?.from || ''
-      return phone.includes(phoneFilter.trim())
+      const searchTerm = phoneFilter.trim()
+      
+      // Busca o telefone em vários lugares possíveis
+      // 1. metadata.from (se existir)
+      const metadataPhone = exec.metadata?.from || ''
+      if (metadataPhone.includes(searchTerm)) {
+        return true
+      }
+      
+      // 2. Busca nos logs (input_data de qualquer node pode conter o telefone)
+      const hasPhoneInLogs = exec.logs.some(log => {
+        // Verifica input_data
+        const inputData = log.input_data
+        if (inputData) {
+          // WhatsApp webhook structure: entry[].changes[].value.messages[].from ou contacts[].wa_id
+          const messages = inputData.entry?.[0]?.changes?.[0]?.value?.messages
+          const contacts = inputData.entry?.[0]?.changes?.[0]?.value?.contacts
+          
+          if (messages && messages.length > 0) {
+            const from = messages[0].from || ''
+            if (from.includes(searchTerm)) return true
+          }
+          
+          if (contacts && contacts.length > 0) {
+            const waId = contacts[0].wa_id || ''
+            if (waId.includes(searchTerm)) return true
+          }
+          
+          // Verifica status updates
+          const statuses = inputData.entry?.[0]?.changes?.[0]?.value?.statuses
+          if (statuses && statuses.length > 0) {
+            const recipientId = statuses[0].recipient_id || ''
+            if (recipientId.includes(searchTerm)) return true
+          }
+        }
+        return false
+      })
+      
+      return hasPhoneInLogs
     }
     
     return true
@@ -168,6 +205,46 @@ export default function BackendMonitorPage() {
     if (status === 'all') return executions.length
     return executions.filter(exec => getExecutionWhatsAppStatus(exec) === status).length
   }
+
+  // Extrai números de telefone únicos de todas as execuções
+  const getUniquePhoneNumbers = (): string[] => {
+    const phones = new Set<string>()
+    
+    executions.forEach(exec => {
+      // Busca em metadata
+      if (exec.metadata?.from) {
+        phones.add(exec.metadata.from)
+      }
+      
+      // Busca nos logs
+      exec.logs.forEach(log => {
+        const inputData = log.input_data
+        if (inputData) {
+          // Messages
+          const messages = inputData.entry?.[0]?.changes?.[0]?.value?.messages
+          if (messages && messages.length > 0 && messages[0].from) {
+            phones.add(messages[0].from)
+          }
+          
+          // Contacts
+          const contacts = inputData.entry?.[0]?.changes?.[0]?.value?.contacts
+          if (contacts && contacts.length > 0 && contacts[0].wa_id) {
+            phones.add(contacts[0].wa_id)
+          }
+          
+          // Status updates
+          const statuses = inputData.entry?.[0]?.changes?.[0]?.value?.statuses
+          if (statuses && statuses.length > 0 && statuses[0].recipient_id) {
+            phones.add(statuses[0].recipient_id)
+          }
+        }
+      })
+    })
+    
+    return Array.from(phones).filter(p => p.length > 0).sort()
+  }
+
+  const uniquePhones = getUniquePhoneNumbers()
 
   const renderTerminalLog = (log: ExecutionLog) => {
     const statusIcon = log.status === 'success' 
@@ -255,18 +332,23 @@ export default function BackendMonitorPage() {
             onClick={() => setAutoScroll(!autoScroll)}
             variant={autoScroll ? 'default' : 'outline'}
             size="sm"
+            className="gap-2"
           >
-            {autoScroll ? '📜 Auto-scroll ON' : '📜 Auto-scroll OFF'}
+            <ScrollText className="h-4 w-4" />
+            {autoScroll ? 'Auto-scroll ON' : 'Auto-scroll OFF'}
           </Button>
           <Button
             onClick={() => setAutoRefresh(!autoRefresh)}
             variant={autoRefresh ? 'default' : 'outline'}
             size="sm"
+            className="gap-2"
           >
-            {autoRefresh ? '🔄 Live' : '⏸️ Pausado'}
+            {autoRefresh ? <RefreshCw className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+            {autoRefresh ? 'Live' : 'Pausado'}
           </Button>
-          <Button onClick={() => fetchLogs()} variant="outline" size="sm">
-            🔃 Atualizar
+          <Button onClick={() => fetchLogs()} variant="outline" size="sm" className="gap-2">
+            <RotateCw className="h-4 w-4" />
+            Atualizar
           </Button>
         </div>
       </div>
@@ -297,11 +379,22 @@ export default function BackendMonitorPage() {
                     placeholder="Filtrar por telefone/cliente (ex: 5554999250023)"
                     value={phoneFilter}
                     onChange={(e) => setPhoneFilter(e.target.value)}
+                    list="phone-numbers"
                     className="w-full"
                   />
+                  <datalist id="phone-numbers">
+                    {uniquePhones.map(phone => (
+                      <option key={phone} value={phone} />
+                    ))}
+                  </datalist>
                   {phoneFilter && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      Mostrando apenas: {phoneFilter}
+                      Mostrando apenas: {phoneFilter} ({filteredExecutions.length} execuções)
+                    </p>
+                  )}
+                  {uniquePhones.length > 0 && !phoneFilter && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {uniquePhones.length} telefone(s) disponível(is) - comece a digitar ou clique na seta
                     </p>
                   )}
                 </div>
