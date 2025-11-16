@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { XCircle } from 'lucide-react'
 
 // Definição dos nodes do fluxo em ordem
 const WORKFLOW_NODES = [
@@ -726,8 +727,9 @@ export default function WorkflowDebugPage() {
                 {/* Error */}
                 {execution.error && (
                   <div>
-                    <p className="text-xs font-medium text-red-500 mb-1">
-                      ❌ Error:
+                    <p className="text-xs font-medium text-red-500 mb-1 flex items-center gap-1">
+                      <XCircle className="h-3 w-3" />
+                      Error:
                     </p>
                     <div className="text-xs bg-red-50 dark:bg-red-950 p-2 rounded text-red-600 dark:text-red-400">
                       {execution.error}

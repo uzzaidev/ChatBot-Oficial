@@ -1,6 +1,6 @@
 'use client'
 
-import { MessageSquare, LayoutDashboard, Settings, BarChart3, ChevronLeft, ChevronRight, GitBranch, Terminal } from 'lucide-react'
+import { MessageSquare, LayoutDashboard, Settings, BarChart3, ChevronLeft, ChevronRight, GitBranch, Terminal, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Separator } from '@/components/ui/separator'
@@ -154,7 +154,10 @@ export function DashboardNavigation({
         {!isCollapsed && (
           <>
             <p>Versão 1.0.0 - Phase 3</p>
-            <p className="mt-1">Autenticação Ativa ✅</p>
+            <p className="mt-1 flex items-center gap-1">
+              <CheckCircle className="h-3 w-3 text-green-500" />
+              Autenticação Ativa
+            </p>
           </>
         )}
       </div>

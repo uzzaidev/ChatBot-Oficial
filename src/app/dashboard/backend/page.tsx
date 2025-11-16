@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Check, X, Loader2, Phone, CheckCheck, Eye, AlertTriangle, Search, Globe, Mail, Send, ScrollText, RefreshCw, Pause, RotateCw } from 'lucide-react'
 
 interface ExecutionLog {
   id: number
@@ -35,84 +37,40 @@ export default function BackendMonitorPage() {
   const [executions, setExecutions] = useState<Execution[]>([])
   const [selectedExecution, setSelectedExecution] = useState<string | null>(null)
   const [autoRefresh, setAutoRefresh] = useState(true)
-  const [lastUpdate, setLastUpdate] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [autoScroll, setAutoScroll] = useState(true)
   const [statusFilter, setStatusFilter] = useState<StatusFilterType>('all')
+  const [phoneFilter, setPhoneFilter] = useState<string>('')
 
-  // Função para buscar logs
+  // Função para buscar logs - sempre busca os últimos 500 logs do Supabase
   const fetchLogs = useCallback(async () => {
     try {
-      const url = lastUpdate 
-        ? `/api/backend/stream?limit=50&since=${lastUpdate}`
-        : '/api/backend/stream?limit=50'
+      // Sempre busca os últimos 500 logs, sem filtro 'since'
+      // Isso garante que após refresh da página, todos os logs apareçam
+      const url = '/api/backend/stream?limit=500'
       
       const response = await fetch(url)
       const data = await response.json()
 
       if (data.success && data.executions) {
-        setExecutions(prev => {
-          // Merge new executions with existing ones
-          const merged = new Map<string, Execution>()
-          
-          // Add existing executions
-          prev.forEach(exec => merged.set(exec.execution_id, exec))
-          
-          // Update with new data - merge logs properly
-          data.executions.forEach((newExec: Execution) => {
-            const existing = merged.get(newExec.execution_id)
-            
-            if (existing) {
-              // Merge logs - create a map of logs by ID to avoid duplicates
-              const logMap = new Map<number, any>()
-              
-              // Add existing logs
-              existing.logs.forEach(log => logMap.set(log.id, log))
-              
-              // Add/update with new logs
-              newExec.logs.forEach(log => logMap.set(log.id, log))
-              
-              // Sort logs by timestamp
-              const mergedLogs = Array.from(logMap.values()).sort(
-                (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-              )
-              
-              // Update execution with merged logs and latest metadata
-              merged.set(newExec.execution_id, {
-                ...newExec,
-                logs: mergedLogs,
-                node_count: mergedLogs.length,
-              })
-            } else {
-              // New execution, just add it
-              merged.set(newExec.execution_id, newExec)
-            }
-          })
-          
-          return Array.from(merged.values())
-            .filter(exec => {
-              // Filter out incomplete executions (those with only _END or only _START)
-              const hasStart = exec.logs.some(log => log.node_name === '_START')
-              const hasOtherNodes = exec.logs.some(log => log.node_name !== '_START' && log.node_name !== '_END')
-              // Keep execution if it has _START and at least one other node, or if it has multiple nodes
-              return (hasStart && hasOtherNodes) || exec.logs.length > 2
-            })
-            .sort(
-              (a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
-            )
-        })
+        // Substitui completamente as execuções ao invés de fazer merge
+        // Isso garante que sempre mostramos o estado atual do banco
+        const sortedExecutions = data.executions.sort(
+          (a: Execution, b: Execution) => 
+            new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
+        )
         
-        setLastUpdate(data.timestamp)
+        setExecutions(sortedExecutions)
         
         // Auto-select first execution if none selected
-        if (!selectedExecution && data.executions.length > 0) {
-          setSelectedExecution(data.executions[0].execution_id)
+        if (!selectedExecution && sortedExecutions.length > 0) {
+          setSelectedExecution(sortedExecutions[0].execution_id)
         }
       }
     } catch (error) {
       console.error('Error fetching logs:', error)
     }
-  }, [lastUpdate, selectedExecution])
+  }, [selectedExecution])
 
   // Auto-refresh
   useEffect(() => {
@@ -189,10 +147,57 @@ export default function BackendMonitorPage() {
     return 'message'
   }
 
-  // Filtra execuções baseado no status selecionado
+  // Filtra execuções baseado no status e telefone selecionados
   const filteredExecutions = executions.filter(exec => {
-    if (statusFilter === 'all') return true
-    return getExecutionWhatsAppStatus(exec) === statusFilter
+    // Filtro de status
+    if (statusFilter !== 'all' && getExecutionWhatsAppStatus(exec) !== statusFilter) {
+      return false
+    }
+    
+    // Filtro de telefone/cliente
+    if (phoneFilter.trim()) {
+      const searchTerm = phoneFilter.trim()
+      
+      // Busca o telefone em vários lugares possíveis
+      // 1. metadata.from (se existir)
+      const metadataPhone = exec.metadata?.from || ''
+      if (metadataPhone.includes(searchTerm)) {
+        return true
+      }
+      
+      // 2. Busca nos logs (input_data de qualquer node pode conter o telefone)
+      const hasPhoneInLogs = exec.logs.some(log => {
+        // Verifica input_data
+        const inputData = log.input_data
+        if (inputData) {
+          // WhatsApp webhook structure: entry[].changes[].value.messages[].from ou contacts[].wa_id
+          const messages = inputData.entry?.[0]?.changes?.[0]?.value?.messages
+          const contacts = inputData.entry?.[0]?.changes?.[0]?.value?.contacts
+          
+          if (messages && messages.length > 0) {
+            const from = messages[0].from || ''
+            if (from.includes(searchTerm)) return true
+          }
+          
+          if (contacts && contacts.length > 0) {
+            const waId = contacts[0].wa_id || ''
+            if (waId.includes(searchTerm)) return true
+          }
+          
+          // Verifica status updates
+          const statuses = inputData.entry?.[0]?.changes?.[0]?.value?.statuses
+          if (statuses && statuses.length > 0) {
+            const recipientId = statuses[0].recipient_id || ''
+            if (recipientId.includes(searchTerm)) return true
+          }
+        }
+        return false
+      })
+      
+      return hasPhoneInLogs
+    }
+    
+    return true
   })
 
   // Conta execuções por tipo
@@ -201,8 +206,52 @@ export default function BackendMonitorPage() {
     return executions.filter(exec => getExecutionWhatsAppStatus(exec) === status).length
   }
 
+  // Extrai números de telefone únicos de todas as execuções
+  const getUniquePhoneNumbers = (): string[] => {
+    const phones = new Set<string>()
+    
+    executions.forEach(exec => {
+      // Busca em metadata
+      if (exec.metadata?.from) {
+        phones.add(exec.metadata.from)
+      }
+      
+      // Busca nos logs
+      exec.logs.forEach(log => {
+        const inputData = log.input_data
+        if (inputData) {
+          // Messages
+          const messages = inputData.entry?.[0]?.changes?.[0]?.value?.messages
+          if (messages && messages.length > 0 && messages[0].from) {
+            phones.add(messages[0].from)
+          }
+          
+          // Contacts
+          const contacts = inputData.entry?.[0]?.changes?.[0]?.value?.contacts
+          if (contacts && contacts.length > 0 && contacts[0].wa_id) {
+            phones.add(contacts[0].wa_id)
+          }
+          
+          // Status updates
+          const statuses = inputData.entry?.[0]?.changes?.[0]?.value?.statuses
+          if (statuses && statuses.length > 0 && statuses[0].recipient_id) {
+            phones.add(statuses[0].recipient_id)
+          }
+        }
+      })
+    })
+    
+    return Array.from(phones).filter(p => p.length > 0).sort()
+  }
+
+  const uniquePhones = getUniquePhoneNumbers()
+
   const renderTerminalLog = (log: ExecutionLog) => {
-    const statusIcon = log.status === 'success' ? '✓' : log.status === 'error' ? '✗' : '⋯'
+    const statusIcon = log.status === 'success' 
+      ? <Check className="h-3 w-3" /> 
+      : log.status === 'error' 
+      ? <X className="h-3 w-3" /> 
+      : <Loader2 className="h-3 w-3 animate-spin" />
     const statusColor = getStatusColor(log.status)
     
     // Detecta status update do WhatsApp
@@ -218,8 +267,9 @@ export default function BackendMonitorPage() {
             <span className="text-gray-400">({log.duration_ms}ms)</span>
           )}
           {whatsappStatus && (
-            <span className="ml-2 px-2 py-0.5 rounded text-xs bg-purple-600 text-white">
-              📱 {whatsappStatus.toUpperCase()}
+            <span className="ml-2 px-2 py-0.5 rounded text-xs bg-purple-600 text-white flex items-center gap-1">
+              <Phone className="h-3 w-3" />
+              {whatsappStatus.toUpperCase()}
             </span>
           )}
         </div>
@@ -244,15 +294,19 @@ export default function BackendMonitorPage() {
 
         {/* Aviso quando output está faltando mas node teve sucesso */}
         {!log.output_data && !log.error && log.status === 'success' && log.node_name !== '_START' && log.node_name !== '_END' && (
-          <div className="ml-8 mt-1 text-yellow-300">
-            <span className="text-gray-400">⚠ OUTPUT: </span>
+          <div className="ml-8 mt-1 text-yellow-300 flex items-center gap-1">
+            <AlertTriangle className="h-3 w-3 text-gray-400" />
+            <span className="text-gray-400">OUTPUT: </span>
             <span className="text-yellow-400 italic">(dados não registrados pelo node)</span>
           </div>
         )}
 
         {log.error && (
           <div className="ml-8 mt-1 text-red-300">
-            <span className="text-gray-400">✗ ERROR:</span>
+            <span className="text-gray-400 flex items-center gap-1">
+              <X className="h-3 w-3" />
+              ERROR:
+            </span>
             <pre className="ml-4 text-red-400 whitespace-pre-wrap break-all">
               {formatJSON(log.error)}
             </pre>
@@ -278,18 +332,23 @@ export default function BackendMonitorPage() {
             onClick={() => setAutoScroll(!autoScroll)}
             variant={autoScroll ? 'default' : 'outline'}
             size="sm"
+            className="gap-2"
           >
-            {autoScroll ? '📜 Auto-scroll ON' : '📜 Auto-scroll OFF'}
+            <ScrollText className="h-4 w-4" />
+            {autoScroll ? 'Auto-scroll ON' : 'Auto-scroll OFF'}
           </Button>
           <Button
             onClick={() => setAutoRefresh(!autoRefresh)}
             variant={autoRefresh ? 'default' : 'outline'}
             size="sm"
+            className="gap-2"
           >
-            {autoRefresh ? '🔄 Live' : '⏸️ Pausado'}
+            {autoRefresh ? <RefreshCw className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+            {autoRefresh ? 'Live' : 'Pausado'}
           </Button>
-          <Button onClick={() => fetchLogs()} variant="outline" size="sm">
-            🔃 Atualizar
+          <Button onClick={() => fetchLogs()} variant="outline" size="sm" className="gap-2">
+            <RotateCw className="h-4 w-4" />
+            Atualizar
           </Button>
         </div>
       </div>
@@ -309,6 +368,50 @@ export default function BackendMonitorPage() {
         </Card>
       ) : (
         <>
+          {/* Phone Filter */}
+          <Card className="mb-4">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <Phone className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                <div className="flex-1 max-w-md">
+                  <Input
+                    type="text"
+                    placeholder="Filtrar por telefone/cliente (ex: 5554999250023)"
+                    value={phoneFilter}
+                    onChange={(e) => setPhoneFilter(e.target.value)}
+                    list="phone-numbers"
+                    className="w-full"
+                  />
+                  <datalist id="phone-numbers">
+                    {uniquePhones.map(phone => (
+                      <option key={phone} value={phone} />
+                    ))}
+                  </datalist>
+                  {phoneFilter && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Mostrando apenas: {phoneFilter} ({filteredExecutions.length} execuções)
+                    </p>
+                  )}
+                  {uniquePhones.length > 0 && !phoneFilter && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {uniquePhones.length} telefone(s) disponível(is) - comece a digitar ou clique na seta
+                    </p>
+                  )}
+                </div>
+                {phoneFilter && (
+                  <Button
+                    onClick={() => setPhoneFilter('')}
+                    variant="ghost"
+                    size="sm"
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Limpar
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Status Filter Tabs */}
           <Card className="mb-4">
             <CardContent className="pt-6">
@@ -319,7 +422,8 @@ export default function BackendMonitorPage() {
                   size="sm"
                   className="gap-2"
                 >
-                  🌐 Todas
+                  <Globe className="h-4 w-4" />
+                  Todas
                   <Badge variant="secondary" className="ml-1">
                     {getStatusCount('all')}
                   </Badge>
@@ -330,7 +434,8 @@ export default function BackendMonitorPage() {
                   size="sm"
                   className="gap-2"
                 >
-                  📨 Mensagens Recebidas
+                  <Mail className="h-4 w-4" />
+                  Mensagens Recebidas
                   <Badge variant="secondary" className="ml-1">
                     {getStatusCount('message')}
                   </Badge>
@@ -341,7 +446,8 @@ export default function BackendMonitorPage() {
                   size="sm"
                   className="gap-2"
                 >
-                  📤 Enviadas
+                  <Send className="h-4 w-4" />
+                  Enviadas
                   <Badge variant="secondary" className="ml-1">
                     {getStatusCount('sent')}
                   </Badge>
@@ -352,7 +458,8 @@ export default function BackendMonitorPage() {
                   size="sm"
                   className="gap-2"
                 >
-                  ✅ Entregues
+                  <CheckCheck className="h-4 w-4" />
+                  Entregues
                   <Badge variant="secondary" className="ml-1">
                     {getStatusCount('delivered')}
                   </Badge>
@@ -363,7 +470,8 @@ export default function BackendMonitorPage() {
                   size="sm"
                   className="gap-2"
                 >
-                  👁️ Lidas
+                  <Eye className="h-4 w-4" />
+                  Lidas
                   <Badge variant="secondary" className="ml-1">
                     {getStatusCount('read')}
                   </Badge>
@@ -374,7 +482,8 @@ export default function BackendMonitorPage() {
                   size="sm"
                   className="gap-2"
                 >
-                  ❌ Falhas
+                  <X className="h-4 w-4" />
+                  Falhas
                   <Badge variant="secondary" className="ml-1">
                     {getStatusCount('failed')}
                   </Badge>
@@ -451,8 +560,9 @@ export default function BackendMonitorPage() {
                           {formatTimestamp(exec.started_at)}
                         </p>
                         {exec.metadata?.from && (
-                          <p className="text-xs font-medium mt-1 truncate">
-                            📱 {exec.metadata.from}
+                          <p className="text-xs font-medium mt-1 truncate flex items-center gap-1">
+                            <Phone className="h-3 w-3" />
+                            {exec.metadata.from}
                           </p>
                         )}
                       </button>
