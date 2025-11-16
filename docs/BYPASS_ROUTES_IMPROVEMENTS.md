@@ -11,6 +11,41 @@ O usuário identificou que o diagrama de fluxo mostrava linhas pontilhadas quand
 
 ## ✅ Melhorias Implementadas
 
+### 0. **🔧 CORREÇÃO CRÍTICA: Bypass Inativo Fica Cinza**
+
+**Problema identificado pelo usuário:**
+Quando você desabilita um bypass target, a linha laranja antiga permanecia, quando deveria voltar a cinza.
+
+**Exemplo:**
+1. Desabilita `batch_messages` → Cria bypass laranja para `normalize_message` ✅
+2. Desabilita `normalize_message` também → A linha antiga **ainda ficava laranja** ❌
+
+**Solução implementada:**
+```typescript
+if (optDepNode) {
+  diagram += `  ${optDepId} -.-> ${node.id}\n`
+
+  // Estilo baseado no estado do nó de destino
+  if (optDepNode.enabled) {
+    // Bypass ATIVO: laranja grosso
+    diagram += `  linkStyle ${linkIndex} stroke:#f97316,stroke-width:3px,stroke-dasharray:3\n`
+  } else {
+    // Bypass INATIVO: cinza pontilhado (target desabilitado)
+    diagram += `  linkStyle ${linkIndex} stroke:#d1d5db,stroke-width:2px,stroke-dasharray:5\n`
+  }
+}
+```
+
+**Resultado:**
+- ✅ Apenas bypasses com **destino habilitado** aparecem em laranja
+- ✅ Bypasses com **destino desabilitado** aparecem em cinza (inativo)
+- ✅ Feedback visual claro sobre qual rota está REALMENTE ativa
+
+**Melhoria adicional: Limpeza agressiva do DOM**
+Adicionada remoção completa do SVG anterior + delay de 10ms para garantir que não há cache visual.
+
+---
+
 ### 1. **Mapeamento Completo de Rotas de Bypass**
 
 Adicionado `optionalDependencies` a nodes que faltavam:

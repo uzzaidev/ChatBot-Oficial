@@ -93,6 +93,24 @@ const FLOW_NODES: FlowNode[] = [
     dependencies: ['process_media'],
   },
   {
+    id: 'push_to_redis',
+    name: 'Push to Redis',
+    description: 'Envia mensagem para fila Redis',
+    category: 'preprocessing',
+    enabled: true,
+    hasConfig: false,
+    dependencies: ['normalize_message'],
+  },
+  {
+    id: 'save_user_message',
+    name: 'Save User Message',
+    description: 'Salva mensagem do usuário no histórico',
+    category: 'preprocessing',
+    enabled: true,
+    hasConfig: false,
+    dependencies: ['push_to_redis'],
+  },
+  {
     id: 'batch_messages',
     name: 'Batch Messages',
     description: 'Agrupa mensagens sequenciais',
@@ -100,7 +118,7 @@ const FLOW_NODES: FlowNode[] = [
     enabled: true,
     hasConfig: true,
     configKey: 'batching:delay_seconds',
-    dependencies: ['normalize_message'],
+    dependencies: ['save_user_message'],
   },
   
   // Analysis Nodes (9-10)
@@ -113,7 +131,7 @@ const FLOW_NODES: FlowNode[] = [
     hasConfig: true,
     configKey: 'chat_history:max_messages',
     dependencies: ['batch_messages'],
-    optionalDependencies: ['normalize_message'], // Bypass if batch is disabled
+    optionalDependencies: ['save_user_message'], // Bypass if batch is disabled
   },
   {
     id: 'get_rag_context',
@@ -124,7 +142,7 @@ const FLOW_NODES: FlowNode[] = [
     hasConfig: true,
     configKey: 'rag:enabled',
     dependencies: ['batch_messages'],
-    optionalDependencies: ['normalize_message'], // Bypass if batch is disabled
+    optionalDependencies: ['save_user_message'], // Bypass if batch is disabled
   },
 
   // Auxiliary Agents (9.5, 9.6)
@@ -137,7 +155,7 @@ const FLOW_NODES: FlowNode[] = [
     hasConfig: true,
     configKey: 'continuity:new_conversation_threshold_hours',
     dependencies: ['get_chat_history'],
-    optionalDependencies: ['batch_messages', 'normalize_message'], // Bypass if history is disabled
+    optionalDependencies: ['batch_messages', 'save_user_message'], // Bypass if history is disabled
   },
   {
     id: 'classify_intent',
@@ -148,7 +166,7 @@ const FLOW_NODES: FlowNode[] = [
     hasConfig: true,
     configKey: 'intent_classifier:use_llm',
     dependencies: ['batch_messages'],
-    optionalDependencies: ['normalize_message'], // Bypass if batch is disabled
+    optionalDependencies: ['save_user_message'], // Bypass if batch is disabled
   },
   
   // Generation Node (11)
@@ -161,7 +179,7 @@ const FLOW_NODES: FlowNode[] = [
     hasConfig: true,
     configKey: 'personality:config',
     dependencies: ['check_continuity', 'classify_intent', 'get_rag_context'],
-    optionalDependencies: ['batch_messages', 'normalize_message'], // Ultimate bypass if all analysis disabled
+    optionalDependencies: ['batch_messages', 'save_user_message'], // Ultimate bypass if all analysis disabled
   },
 
   // Post-Processing Nodes (11.5, 11.6)
@@ -175,6 +193,16 @@ const FLOW_NODES: FlowNode[] = [
     configKey: 'repetition_detector:similarity_threshold',
     dependencies: ['generate_response'],
   },
+  {
+    id: 'save_ai_message',
+    name: 'Save AI Message',
+    description: 'Salva resposta da IA no histórico',
+    category: 'auxiliary',
+    enabled: true,
+    hasConfig: false,
+    dependencies: ['detect_repetition'],
+    optionalDependencies: ['generate_response'], // Bypass if repetition disabled
+  },
 
   // Output Nodes (12-14)
   {
@@ -184,8 +212,8 @@ const FLOW_NODES: FlowNode[] = [
     category: 'output',
     enabled: true,
     hasConfig: false,
-    dependencies: ['detect_repetition'],
-    optionalDependencies: ['generate_response'], // Bypass if repetition detection is disabled
+    dependencies: ['save_ai_message'],
+    optionalDependencies: ['generate_response'], // Bypass if save disabled
   },
   {
     id: 'send_whatsapp',
@@ -378,17 +406,35 @@ export default function FlowArchitectureManager() {
       if (node.optionalDependencies && node.dependencies) {
         node.dependencies.forEach((depId) => {
           const depNode = nodes.find((n) => n.id === depId)
-          // If primary dependency is disabled, use optional/bypass route
+          // If primary dependency is disabled, show bypass routes
           if (depNode && !depNode.enabled) {
-            node.optionalDependencies.forEach((optDepId) => {
+            // CASCADE LOGIC: Find first active bypass (waterfall)
+            let foundActiveBypass = false
+
+            for (const optDepId of node.optionalDependencies) {
               const optDepNode = nodes.find((n) => n.id === optDepId)
-              if (optDepNode && optDepNode.enabled) {
+
+              if (!optDepNode) continue
+
+              // If we haven't found an active bypass yet
+              if (!foundActiveBypass) {
                 diagram += `  ${optDepId} -.-> ${node.id}\n` // Dotted line for bypass
-                // Style bypass route (orange/amber for active bypass)
-                diagram += `  linkStyle ${linkIndex} stroke:#f97316,stroke-width:3px,stroke-dasharray:3\n`
+
+                if (optDepNode.enabled) {
+                  // ACTIVE bypass route: thick orange
+                  diagram += `  linkStyle ${linkIndex} stroke:#f97316,stroke-width:3px,stroke-dasharray:3\n`
+                  foundActiveBypass = true // Stop here - only show first active bypass
+                } else {
+                  // INACTIVE bypass route (target disabled): gray dashed
+                  diagram += `  linkStyle ${linkIndex} stroke:#d1d5db,stroke-width:2px,stroke-dasharray:5\n`
+                  // Continue to next optionalDependency (cascade to next)
+                }
                 linkIndex++
               }
-            })
+
+              // If active bypass found, stop (don't draw additional bypasses)
+              if (foundActiveBypass) break
+            }
           }
         })
       }
@@ -400,16 +446,21 @@ export default function FlowArchitectureManager() {
   // Render Mermaid diagram
   const renderDiagram = useCallback(async () => {
     if (!mermaidRef.current) return
-    
+
     const diagram = generateMermaidDiagram()
-    
+
     try {
-      // Clear previous content
-      mermaidRef.current.innerHTML = ''
-      
+      // Clear previous content completely (remove all child nodes)
+      while (mermaidRef.current.firstChild) {
+        mermaidRef.current.removeChild(mermaidRef.current.firstChild)
+      }
+
+      // Force a small delay to ensure DOM is cleared
+      await new Promise(resolve => setTimeout(resolve, 10))
+
       // Create a unique ID for this render
-      const id = `mermaid-${Date.now()}`
-      
+      const id = `mermaid-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+
       // Render the diagram
       const { svg } = await mermaid.render(id, diagram)
       mermaidRef.current.innerHTML = svg
