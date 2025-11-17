@@ -94,7 +94,7 @@ export function Plans() {
                     'w-full rounded-full',
                     plan.highlighted 
                       ? 'bg-mint-500 hover:bg-mint-600 shadow-glow text-white' 
-                      : 'border-brand-blue-500 text-brand-blue-300 hover:bg-brand-blue-500/10'
+                      : 'bg-white border-silver-300 text-erie-black-900 hover:bg-silver-100'
                   )}
                 >
                   {plan.cta}
