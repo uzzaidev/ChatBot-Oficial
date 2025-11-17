@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backend Monitor - Responsive Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        .terminal {
+            background: #000;
+            color: #22c55e;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900">
+    <div class="container mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6">
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Backend Monitor</h1>
+                <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+                    Monitoramento em tempo real do fluxo de mensagens - Estilo terminal
+                </p>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+                <button class="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm flex items-center gap-2">
+                    <span class="hidden sm:inline">Auto-scroll ON</span>
+                    <span class="sm:hidden">Scroll</span>
+                </button>
+                <button class="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm">
+                    <span class="hidden sm:inline">Live</span>
+                    <span class="sm:hidden">●</span>
+                </button>
+                <button class="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300">
+                    <span class="hidden sm:inline">Atualizar</span>
+                    <span class="sm:hidden">↻</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Phone Filter -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                <span class="text-gray-600 dark:text-gray-400">📱</span>
+                <div class="flex-1 w-full sm:max-w-md">
+                    <input type="text" 
+                           placeholder="Filtrar por telefone/cliente" 
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
+                    <p class="text-xs text-gray-500 mt-1 hidden sm:block">
+                        3 telefone(s) disponível(is) - comece a digitar
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Filters -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+            <div class="flex items-center gap-2 flex-wrap">
+                <button class="px-2 sm:px-3 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg text-xs sm:text-sm flex items-center gap-1">
+                    🌐 <span class="hidden sm:inline">Todas</span> <span class="ml-1 bg-white/20 px-1.5 rounded">12</span>
+                </button>
+                <button class="px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-xs sm:text-sm flex items-center gap-1 text-gray-700 dark:text-gray-300">
+                    ✉️ <span class="hidden sm:inline">Mensagens</span><span class="sm:hidden">MSG</span> <span class="ml-1 bg-gray-200 dark:bg-gray-700 px-1.5 rounded">8</span>
+                </button>
+                <button class="px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-xs sm:text-sm flex items-center gap-1 text-gray-700 dark:text-gray-300">
+                    📤 <span class="hidden sm:inline">Enviadas</span><span class="sm:hidden">ENV</span> <span class="ml-1 bg-gray-200 dark:bg-gray-700 px-1.5 rounded">5</span>
+                </button>
+                <button class="px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-xs sm:text-sm flex items-center gap-1 text-gray-700 dark:text-gray-300">
+                    ✓✓ <span class="hidden sm:inline">Entregues</span><span class="sm:hidden">ENT</span> <span class="ml-1 bg-gray-200 dark:bg-gray-700 px-1.5 rounded">3</span>
+                </button>
+                <button class="px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-xs sm:text-sm flex items-center gap-1 text-gray-700 dark:text-gray-300">
+                    👁️ <span class="hidden sm:inline">Lidas</span><span class="sm:hidden">LID</span> <span class="ml-1 bg-gray-200 dark:bg-gray-700 px-1.5 rounded">2</span>
+                </button>
+                <button class="px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-xs sm:text-sm flex items-center gap-1 text-gray-700 dark:text-gray-300">
+                    ❌ <span class="hidden sm:inline">Falhas</span><span class="sm:hidden">ERR</span> <span class="ml-1 bg-gray-200 dark:bg-gray-700 px-1.5 rounded">0</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+            <!-- Sidebar -->
+            <div class="lg:col-span-1 bg-white dark:bg-gray-800 rounded-lg shadow">
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="text-sm font-bold text-gray-900 dark:text-white">Execuções Ativas</h3>
+                    <p class="text-xs text-gray-600 dark:text-gray-400">12 de 12 execução(ões)</p>
+                </div>
+                <div class="p-2 overflow-auto" style="height: 300px;">
+                    <!-- Execution Items -->
+                    <div class="space-y-2">
+                        <div class="p-2 border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-xs px-2 py-0.5 bg-green-500 text-white rounded">success</span>
+                                <span class="text-xs text-gray-600 dark:text-gray-400">15 nodes</span>
+                            </div>
+                            <p class="text-xs font-mono text-gray-700 dark:text-gray-300">abc12345...</p>
+                            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">14:30:45.123</p>
+                            <p class="text-xs font-medium mt-1 flex items-center gap-1">📱 5554999250023</p>
+                        </div>
+                        <div class="p-2 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-xs px-2 py-0.5 bg-green-500 text-white rounded">success</span>
+                                <span class="text-xs text-gray-600 dark:text-gray-400">12 nodes</span>
+                            </div>
+                            <p class="text-xs font-mono text-gray-700 dark:text-gray-300">def67890...</p>
+                            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">14:29:30.456</p>
+                        </div>
+                        <div class="p-2 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-xs px-2 py-0.5 bg-yellow-500 text-white rounded">running</span>
+                                <span class="text-xs text-gray-600 dark:text-gray-400">8 nodes</span>
+                            </div>
+                            <p class="text-xs font-mono text-gray-700 dark:text-gray-300">ghi34567...</p>
+                            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">14:28:15.789</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Terminal -->
+            <div class="lg:col-span-3 bg-white dark:bg-gray-800 rounded-lg shadow">
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                        <div>
+                            <h3 class="text-sm font-mono font-bold text-gray-900 dark:text-white">Terminal Output</h3>
+                            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Execution ID: abc12345...</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs px-2 py-0.5 bg-green-500 text-white rounded">success</span>
+                            <span class="text-xs text-gray-600 dark:text-gray-400 hidden sm:inline">15 nodes executados</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="terminal p-2 sm:p-4 rounded-lg overflow-auto" style="min-height: 400px; max-height: 700px; height: 50vh;">
+                    <!-- Terminal Header -->
+                    <div class="mb-4 pb-2 border-b border-gray-700">
+                        <div class="text-xs text-gray-400 hidden sm:block">╔════════════════════════════════════════════════════════════════╗</div>
+                        <div class="text-xs text-gray-400"><span class="hidden sm:inline">║ </span>CHATBOT BACKEND MONITOR - MESSAGE FLOW TRACE</div>
+                        <div class="text-xs text-gray-400"><span class="hidden sm:inline">║ </span>Execution: abc12345abc12345...</div>
+                        <div class="text-xs text-gray-400 hidden sm:block">║ Started: 17/11/2025 14:30:45</div>
+                        <div class="text-xs text-gray-400"><span class="hidden sm:inline">║ </span>Phone: 5554999250023</div>
+                        <div class="text-xs text-gray-400 hidden sm:block">╚════════════════════════════════════════════════════════════════╝</div>
+                    </div>
+
+                    <!-- Log entries -->
+                    <div class="space-y-2 font-mono">
+                        <div class="text-xs sm:text-sm">
+                            <div class="flex items-start gap-1 sm:gap-2 text-green-400 flex-wrap">
+                                <span class="text-gray-500 text-[10px] sm:text-xs">[14:30:45.123]</span>
+                                <span>✓</span>
+                                <span class="font-bold break-all">WhatsApp_Webhook_Handler</span>
+                                <span class="text-gray-400 text-[10px] sm:text-xs">(142ms)</span>
+                            </div>
+                            <div class="ml-4 sm:ml-8 mt-1 text-blue-300">
+                                <span class="text-gray-400">→ INPUT:</span>
+                                <pre class="ml-2 sm:ml-4 text-gray-300 text-[10px] sm:text-xs break-all">{"message": "Olá", "from": "5554999250023"}</pre>
+                            </div>
+                        </div>
+
+                        <div class="text-xs sm:text-sm">
+                            <div class="flex items-start gap-1 sm:gap-2 text-green-400 flex-wrap">
+                                <span class="text-gray-500 text-[10px] sm:text-xs">[14:30:45.265]</span>
+                                <span>✓</span>
+                                <span class="font-bold break-all">AI_Response_Generator</span>
+                                <span class="text-gray-400 text-[10px] sm:text-xs">(523ms)</span>
+                            </div>
+                            <div class="ml-4 sm:ml-8 mt-1 text-green-300">
+                                <span class="text-gray-400">← OUTPUT:</span>
+                                <pre class="ml-2 sm:ml-4 text-gray-300 text-[10px] sm:text-xs break-all">{"response": "Olá! Como posso ajudar?"}</pre>
+                            </div>
+                        </div>
+
+                        <div class="text-xs sm:text-sm">
+                            <div class="flex items-start gap-1 sm:gap-2 text-green-400 flex-wrap">
+                                <span class="text-gray-500 text-[10px] sm:text-xs">[14:30:45.788]</span>
+                                <span>✓</span>
+                                <span class="font-bold break-all">WhatsApp_Send_Message</span>
+                                <span class="text-gray-400 text-[10px] sm:text-xs">(234ms)</span>
+                                <span class="ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs bg-purple-600 text-white flex items-center gap-1">
+                                    📱 SENT
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="mt-4 pt-2 border-t border-gray-700">
+                        <div class="text-xs text-gray-400 hidden sm:block">─────────────────────────────────────────────────────────────────</div>
+                        <div class="text-xs text-gray-400">End of execution log - Status: success</div>
+                        <div class="text-xs text-yellow-400 animate-pulse">● Monitoring live...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mt-8">
+            <h2 class="text-lg font-bold text-blue-900 dark:text-blue-100 mb-2">📱 Teste a Responsividade</h2>
+            <p class="text-sm text-blue-800 dark:text-blue-200 mb-2">
+                Redimensione a janela do navegador ou use as ferramentas de desenvolvedor (F12) para testar diferentes tamanhos de tela:
+            </p>
+            <ul class="text-sm text-blue-800 dark:text-blue-200 space-y-1 ml-4">
+                <li>• <strong>Mobile (&lt;640px)</strong>: Grid de 1 coluna, textos abreviados, botões compactos</li>
+                <li>• <strong>Tablet (640px-1024px)</strong>: Layout intermediário</li>
+                <li>• <strong>Desktop (≥1024px)</strong>: Grid de 4 colunas (sidebar + terminal lado a lado)</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Add dark mode toggle
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+</body>
+</html>
