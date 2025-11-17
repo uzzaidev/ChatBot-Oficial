@@ -35,16 +35,6 @@ interface NodeConfig {
   [key: string]: any
 }
 
-interface NodeConfig {
-  enabled: boolean
-  prompt?: string
-  temperature?: number
-  threshold?: number
-  use_llm?: boolean
-  intents?: string[]
-  [key: string]: any
-}
-
 export default function FlowArchitectureManager() {
   const [nodes, setNodes] = useState<FlowNode[]>(FLOW_METADATA)
   const [selectedNode, setSelectedNode] = useState<FlowNode | null>(null)
