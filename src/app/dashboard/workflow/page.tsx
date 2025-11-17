@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { XCircle } from 'lucide-react'
+import { XCircle, Play, RotateCcw, Loader2, FastForward, Inbox, Info, Timer, Download, Upload } from 'lucide-react'
 
 // Definição dos nodes do fluxo em ordem
 const WORKFLOW_NODES = [
@@ -573,19 +573,21 @@ export default function WorkflowDebugPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold">Workflow Debugger</h1>
           <p className="text-muted-foreground">
             Execute cada node individualmente para testar o fluxo completo
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={executeAll} variant="default">
-            ▶️ Executar Tudo
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={executeAll} variant="default" className="gap-2">
+            <Play className="w-4 h-4" />
+            Executar Tudo
           </Button>
-          <Button onClick={resetAllNodes} variant="outline">
-            🔄 Reset All
+          <Button onClick={resetAllNodes} variant="outline" className="gap-2">
+            <RotateCcw className="w-4 h-4" />
+            Reset All
           </Button>
         </div>
       </div>
@@ -593,7 +595,10 @@ export default function WorkflowDebugPage() {
       {/* Webhook Payload Inicial */}
       <Card>
         <CardHeader>
-          <CardTitle>📩 Webhook Payload (Input Inicial)</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Inbox className="w-5 h-5" />
+            Webhook Payload (Input Inicial)
+          </CardTitle>
           <CardDescription>
             Mensagem recebida do WhatsApp via webhook
           </CardDescription>
@@ -634,15 +639,25 @@ export default function WorkflowDebugPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 {/* Botões de ação */}
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button
                     onClick={() => executeNode(node.id)}
                     disabled={execution.status === 'running'}
                     size="sm"
                     variant="default"
-                    className="flex-1"
+                    className="flex-1 min-w-[120px] gap-2"
                   >
-                    {execution.status === 'running' ? '⏳ Executando...' : '▶️ Executar'}
+                    {execution.status === 'running' ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Executando...
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-4 h-4" />
+                        Executar
+                      </>
+                    )}
                   </Button>
                   {node.optional && (
                     <Button
@@ -650,23 +665,26 @@ export default function WorkflowDebugPage() {
                       size="sm"
                       variant="outline"
                       title="Pular este node (não aplicável)"
+                      className="gap-2"
                     >
-                      ⏭️
+                      <FastForward className="w-4 h-4" />
                     </Button>
                   )}
                   <Button
                     onClick={() => resetNode(node.id)}
                     size="sm"
                     variant="outline"
+                    className="gap-2"
                   >
-                    🔄
+                    <RotateCcw className="w-4 h-4" />
                   </Button>
                 </div>
 
                 {/* Info/Metadata */}
                 {execution.metadata?.info && (
-                  <div className="text-xs text-muted-foreground italic">
-                    ℹ️ {execution.metadata.info}
+                  <div className="text-xs text-muted-foreground italic flex items-center gap-1">
+                    <Info className="w-3 h-3" />
+                    {execution.metadata.info}
                   </div>
                 )}
 
@@ -691,16 +709,18 @@ export default function WorkflowDebugPage() {
 
                 {/* Status e duração */}
                 {execution.duration && (
-                  <div className="text-xs text-muted-foreground">
-                    ⏱️ Duração: {execution.duration}ms
+                  <div className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Timer className="w-3 h-3" />
+                    Duração: {execution.duration}ms
                   </div>
                 )}
 
                 {/* Input Data */}
                 {execution.input && (
                   <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-1">
-                      📥 Input:
+                    <p className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1">
+                      <Download className="w-3 h-3" />
+                      Input:
                     </p>
                     <ScrollArea className="h-32 w-full">
                       <pre className="text-xs bg-blue-50 dark:bg-blue-950 p-2 rounded">
@@ -713,8 +733,9 @@ export default function WorkflowDebugPage() {
                 {/* Output Data */}
                 {execution.output && (
                   <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-1">
-                      📤 Output:
+                    <p className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1">
+                      <Upload className="w-3 h-3" />
+                      Output:
                     </p>
                     <ScrollArea className="h-32 w-full">
                       <pre className="text-xs bg-green-50 dark:bg-green-950 p-2 rounded">
