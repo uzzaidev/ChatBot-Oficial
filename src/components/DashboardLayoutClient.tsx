@@ -42,10 +42,10 @@ export function DashboardLayoutClient({
 
   return (
     <div className="flex min-h-screen">
-      {/* Desktop Sidebar - Hidden on mobile */}
+      {/* Desktop Sidebar - Fixed position, always visible */}
       <aside 
         className={cn(
-          "hidden md:block border-r bg-gray-50 p-6 transition-all duration-300",
+          "hidden md:flex flex-col fixed left-0 top-0 h-screen border-r bg-gray-50 p-6 transition-all duration-300 overflow-y-auto",
           isCollapsed ? "w-20" : "w-64"
         )}
       >
@@ -57,8 +57,14 @@ export function DashboardLayoutClient({
         />
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0">
+      {/* Main Content - Add left margin to account for fixed sidebar */}
+      <main 
+        className={cn(
+          "flex-1 flex flex-col min-w-0 transition-all duration-300",
+          "md:ml-64",
+          isCollapsed && "md:ml-20"
+        )}
+      >
         {/* Mobile Header */}
         <div className="md:hidden sticky top-0 z-10 bg-white border-b p-4 flex items-center gap-3">
           <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
