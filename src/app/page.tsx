@@ -1,31 +1,23 @@
-import { redirect } from 'next/navigation'
-import { getCurrentUser } from '@/lib/supabase-server'
-
-// Marcar como rota dinâmica (não pode ser estática porque usa cookies)
-export const dynamic = 'force-dynamic'
+import { Hero } from '@/components/landing/Hero'
+import { Highlights } from '@/components/landing/Highlights'
+import { Plans } from '@/components/landing/Plans'
+import { Security } from '@/components/landing/Security'
+import { FinalCTA } from '@/components/landing/FinalCTA'
 
 /**
- * Home Page - Server Component
- *
- * FASE 3: Agora redireciona para login se não autenticado
- *
- * Lógica:
- * - Se usuário autenticado → /dashboard
- * - Se não autenticado → /login
- * - Se erro → /login
+ * Landing Page - Shows UzzApp portal introduction before login
+ * 
+ * This is a simple static page that introduces the platform.
+ * Users can navigate to /login or /register from here.
  */
-export default async function HomePage() {
-  try {
-    const user = await getCurrentUser()
-
-    if (user) {
-      redirect('/dashboard')
-    } else {
-      redirect('/login')
-    }
-  } catch (error) {
-    // Se houver erro ao buscar usuário, redirecionar para login
-    console.error('[HomePage] Erro ao verificar autenticação:', error)
-    redirect('/login')
-  }
+export default function LandingPage() {
+  return (
+    <main className="min-h-screen bg-background">
+      <Hero />
+      <Highlights />
+      <Plans />
+      <Security />
+      <FinalCTA />
+    </main>
+  )
 }

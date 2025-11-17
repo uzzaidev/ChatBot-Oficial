@@ -52,6 +52,20 @@ const config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Landing page brand colors
+        mint: {
+          200: '#86efac',
+          300: '#4ade80',
+          500: '#22c55e',
+        },
+        azure: {
+          500: '#3b82f6',
+        },
+        gold: {
+          300: '#fbbf24',
+          400: '#f59e0b',
+        },
+        surface: 'rgba(0, 0, 0, 0.2)',
       },
       borderRadius: {
         lg: "var(--radius)",
