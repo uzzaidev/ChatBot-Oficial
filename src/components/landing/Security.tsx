@@ -28,11 +28,11 @@ const securityItems = [
 
 export function Security() {
   return (
-    <section className="bg-ink-900/95 py-20">
+    <section className="bg-white py-20 border-t border-silver-200">
       <div className={cn(designTokens.container.lg, 'grid gap-12 px-6 lg:grid-cols-[1.1fr,0.9fr]')}>
         <div className="space-y-6">
-          <h2 className={designTokens.typography.h2}>Segurança e governança integradas</h2>
-          <p className={designTokens.typography.body}>
+          <h2 className={cn(designTokens.typography.h2, "text-erie-black-900")}>Segurança e governança integradas</h2>
+          <p className={cn(designTokens.typography.body, "text-erie-black-700")}>
             O UzzApp foi desenhado para ser um SaaS multi-tenant seguro desde o primeiro acesso. Cada
             camada reforça compliance, rastreabilidade e confiabilidade operacional.
           </p>
@@ -43,25 +43,37 @@ export function Security() {
               return (
                 <Card
                   key={title}
-                  className="flex h-full flex-col gap-2 border border-azure-500/20 bg-surface/80 p-4 shadow-glow"
+                  className="flex h-full flex-col gap-2 border border-brand-blue-300/30 bg-white hover:border-brand-blue-400/50 transition-all p-4 shadow-md hover:shadow-glow-blue"
                   aria-labelledby={headingId}
                 >
-                  <Icon className="h-5 w-5 text-mint-200" aria-hidden />
-                  <h3 id={headingId} className="text-sm font-semibold text-foreground">{title}</h3>
-                  <p className="text-sm text-foreground/70">{description}</p>
+                  <Icon className="h-5 w-5 text-brand-blue-600" aria-hidden />
+                  <h3 id={headingId} className="text-sm font-semibold text-erie-black-900">{title}</h3>
+                  <p className="text-sm text-erie-black-600">{description}</p>
                 </Card>
               );
             })}
           </div>
         </div>
 
-        <Card className="flex flex-col gap-4 border border-mint-500/20 bg-surface/80 p-6 shadow-glow">
-          <h3 className="text-lg font-semibold text-foreground">Checklist de implementação</h3>
-          <ul className="space-y-3 text-sm text-foreground/70">
-            <li>• Configurar variáveis de ambiente com as chaves do Supabase.</li>
-            <li>• Executar as migrations em <code>supabase/migrations</code>.</li>
-            <li>• Revisar convites de usuários e roles no painel de admin.</li>
-            <li>• Ativar monitoramento via dashboard para métricas de uso.</li>
+        <Card className="flex flex-col gap-4 border border-mint-300/30 bg-mint-50/50 p-6 shadow-lg">
+          <h3 className="text-lg font-semibold text-erie-black-900">Checklist de implementação</h3>
+          <ul className="space-y-3 text-sm text-erie-black-700">
+            <li className="flex items-start gap-2">
+              <span className="text-mint-600 font-bold">•</span>
+              <span>Configurar variáveis de ambiente com as chaves do Supabase.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-mint-600 font-bold">•</span>
+              <span>Executar as migrations em <code className="bg-erie-black-100 px-1 rounded text-xs">supabase/migrations</code>.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-mint-600 font-bold">•</span>
+              <span>Revisar convites de usuários e roles no painel de admin.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-mint-600 font-bold">•</span>
+              <span>Ativar monitoramento via dashboard para métricas de uso.</span>
+            </li>
           </ul>
         </Card>
       </div>
