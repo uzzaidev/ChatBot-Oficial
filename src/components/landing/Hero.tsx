@@ -37,7 +37,7 @@ export function Hero() {
           </Link>
           <Link
             href="/register"
-            className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-full border-silver-300 text-silver-200 hover:bg-silver-200/10')}
+            className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-full border-silver-300 bg-white text-erie-black-900 hover:bg-silver-100')}
           >
             Criar conta para meu time
           </Link>

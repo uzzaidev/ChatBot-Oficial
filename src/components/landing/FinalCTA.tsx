@@ -20,7 +20,7 @@ export function FinalCTA() {
           </Link>
           <Link
             href="/register"
-            className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-full border-brand-blue-400 text-brand-blue-300 hover:bg-brand-blue-500/10')}
+            className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-full border-silver-300 bg-white text-erie-black-900 hover:bg-silver-100')}
           >
             Registrar um novo tenant
           </Link>
