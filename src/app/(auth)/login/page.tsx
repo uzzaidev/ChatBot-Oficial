@@ -86,14 +86,14 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-erie-black-900 via-erie-black-800 to-erie-black-900">
+      <div className="bg-white p-8 rounded-lg shadow-2xl w-full max-w-md border border-silver-200">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Chatbot Dashboard
+          <h1 className="text-3xl font-bold text-erie-black-900 mb-2">
+            UzzApp Dashboard
           </h1>
-          <p className="text-gray-600">
+          <p className="text-erie-black-600">
             Faça login para acessar o sistema
           </p>
         </div>
@@ -111,7 +111,7 @@ export default function LoginPage() {
           <div>
             <label
               htmlFor="email"
-              className="block text-sm font-medium text-gray-700 mb-2"
+              className="block text-sm font-medium text-erie-black-700 mb-2"
             >
               Email
             </label>
@@ -121,7 +121,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="w-full px-4 py-2 border border-silver-300 rounded-lg focus:ring-2 focus:ring-mint-500 focus:border-mint-500 disabled:bg-silver-100 disabled:cursor-not-allowed"
               placeholder="seu@email.com"
               autoComplete="email"
               required
@@ -132,7 +132,7 @@ export default function LoginPage() {
           <div>
             <label
               htmlFor="password"
-              className="block text-sm font-medium text-gray-700 mb-2"
+              className="block text-sm font-medium text-erie-black-700 mb-2"
             >
               Senha
             </label>
@@ -142,7 +142,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="w-full px-4 py-2 border border-silver-300 rounded-lg focus:ring-2 focus:ring-mint-500 focus:border-mint-500 disabled:bg-silver-100 disabled:cursor-not-allowed"
               placeholder="••••••••"
               autoComplete="current-password"
               required
@@ -153,19 +153,19 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed"
+            className="w-full bg-mint-500 hover:bg-mint-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:bg-mint-300 disabled:cursor-not-allowed shadow-glow"
           >
             {loading ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
 
         {/* Footer */}
-        <div className="mt-6 text-center text-sm text-gray-600">
+        <div className="mt-6 text-center text-sm text-erie-black-600">
           <p>
             Não tem uma conta?{' '}
             <Link
               href="/register"
-              className="text-blue-600 hover:text-blue-700 font-medium hover:underline"
+              className="text-mint-600 hover:text-mint-700 font-medium hover:underline"
             >
               Crie uma conta
             </Link>

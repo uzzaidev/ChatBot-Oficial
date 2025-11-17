@@ -44,15 +44,15 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
   return (
     <div className="fixed inset-0 flex overflow-hidden bg-white">
       {/* Sidebar com Lista de Conversas - Sempre visível em desktop */}
-      <div className="w-full lg:w-96 border-r border-gray-200 flex flex-col bg-white">
+      <div className="w-full lg:w-96 border-r border-silver-200 flex flex-col bg-white">
         {/* Header da Sidebar */}
-        <div className="bg-secondary p-4 flex items-center justify-between">
+        <div className="bg-mint-600 p-4 flex items-center justify-between shadow-md">
           <div className="flex items-center gap-3">
             <MessageCircle className="h-6 w-6 text-white" />
             <h2 className="text-white font-semibold text-lg">Conversas</h2>
           </div>
           <Link href="/dashboard">
-            <Button variant="ghost" size="sm" className="text-white hover:bg-secondary-foreground/10">
+            <Button variant="ghost" size="sm" className="text-white hover:bg-mint-700">
               <LayoutDashboard className="h-4 w-4" />
             </Button>
           </Link>
@@ -70,13 +70,13 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
       </div>
 
       {/* Área Central - Mensagem para selecionar conversa (visível apenas em lg+) */}
-      <div className="hidden lg:flex flex-1 items-center justify-center whatsapp-bg">
+      <div className="hidden lg:flex flex-1 items-center justify-center bg-silver-50">
         <div className="text-center">
-          <MessageCircle className="h-20 w-20 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-600 mb-2">
+          <MessageCircle className="h-20 w-20 text-silver-300 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-erie-black-700 mb-2">
             Nenhuma conversa selecionada
           </h3>
-          <p className="text-gray-500">
+          <p className="text-erie-black-500">
             Selecione uma conversa à esquerda para começar
           </p>
         </div>

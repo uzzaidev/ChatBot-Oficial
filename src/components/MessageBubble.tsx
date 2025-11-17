@@ -19,13 +19,13 @@ export const MessageBubble = ({ message }: MessageBubbleProps) => {
     switch (message.status) {
       case 'sent':
       case 'delivered':
-        return <CheckCheck className={cn(iconClass, 'text-gray-400')} />
+        return <CheckCheck className={cn(iconClass, 'text-silver-400')} />
       case 'read':
-        return <CheckCheck className={cn(iconClass, 'text-blue-500')} />
+        return <CheckCheck className={cn(iconClass, 'text-brand-blue-600')} />
       case 'failed':
         return <XCircle className={cn(iconClass, 'text-red-500')} />
       case 'queued':
-        return <Clock className={cn(iconClass, 'text-gray-400')} />
+        return <Clock className={cn(iconClass, 'text-silver-400')} />
       default:
         return null
     }
@@ -86,8 +86,8 @@ export const MessageBubble = ({ message }: MessageBubbleProps) => {
         className={cn(
           'flex flex-col max-w-[65%] rounded-lg px-3 py-2 shadow-sm',
           isOutgoing
-            ? 'message-outgoing text-gray-900 rounded-br-none'
-            : 'message-incoming text-gray-900 rounded-bl-none'
+            ? 'bg-mint-100 text-erie-black-900 rounded-br-none border border-mint-200'
+            : 'bg-white text-erie-black-900 rounded-bl-none border border-silver-200'
         )}
       >
         <div className="mb-1">{renderMessageContent()}</div>
@@ -95,7 +95,7 @@ export const MessageBubble = ({ message }: MessageBubbleProps) => {
         <div
           className={cn(
             'flex items-center justify-end gap-1 text-xs mt-1',
-            'text-gray-500'
+            'text-erie-black-500'
           )}
         >
           <span>{formatTime(message.timestamp)}</span>

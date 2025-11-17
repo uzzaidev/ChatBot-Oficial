@@ -5,31 +5,31 @@ import { cn } from '@/lib/utils'
 
 export function FinalCTA() {
   return (
-    <section className="relative overflow-hidden py-20">
-      <div className="absolute inset-0 -z-10 bg-gradient-blue opacity-70 blur-[200px]" />
+    <section className="relative overflow-hidden py-20 bg-gradient-to-br from-erie-black-900 via-erie-black-800 to-erie-black-900">
+      <div className="absolute inset-0 -z-10 bg-gradient-blue opacity-40 blur-[200px]" />
       <div className={cn(designTokens.container.lg, 'relative z-10 space-y-8 px-6 text-center')}>
-        <h2 className={designTokens.typography.h2}>Pronto para entrar no UzzApp?</h2>
-        <p className={designTokens.typography.body}>
+        <h2 className={cn(designTokens.typography.h2, "text-white")}>Pronto para entrar no UzzApp?</h2>
+        <p className={cn(designTokens.typography.body, "text-silver-300")}>
           Faça login para continuar acompanhando as operações ou crie um acesso para a sua equipe.
         </p>
         <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
           <Link href="/login">
-            <Button variant="default" size="lg" className="rounded-full">
+            <Button variant="default" size="lg" className="rounded-full bg-mint-500 hover:bg-mint-600 shadow-glow">
               Acessar minha conta
             </Button>
           </Link>
           <Link
             href="/register"
-            className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-full')}
+            className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-full border-silver-300 bg-white text-erie-black-900 hover:bg-silver-100')}
           >
             Registrar um novo tenant
           </Link>
         </div>
-        <div className="flex flex-col items-center gap-2 text-sm text-foreground/70">
+        <div className="flex flex-col items-center gap-2 text-sm text-silver-400">
           <span>Precisa de ajuda com convites, billing ou migração?</span>
           <a
             href="mailto:suporte@uzzai.dev"
-            className="text-mint-300 transition-colors hover:text-mint-200"
+            className="text-mint-400 transition-colors hover:text-mint-300 font-medium"
           >
             suporte@uzzai.dev
           </a>

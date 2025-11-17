@@ -55,13 +55,13 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
   const SidebarContent = () => (
     <>
       {/* Header da Sidebar */}
-      <div className="bg-secondary p-4 flex items-center justify-between">
+      <div className="bg-mint-600 p-4 flex items-center justify-between shadow-md">
         <div className="flex items-center gap-3">
           <MessageCircle className="h-6 w-6 text-white" />
           <h2 className="text-white font-semibold text-lg">ChatBot</h2>
         </div>
         <Link href="/dashboard">
-          <Button variant="ghost" size="sm" className="text-white hover:bg-secondary-foreground/10">
+          <Button variant="ghost" size="sm" className="text-white hover:bg-mint-700">
             <LayoutDashboard className="h-4 w-4" />
           </Button>
         </Link>
@@ -82,7 +82,7 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
   return (
     <div className="fixed inset-0 flex overflow-hidden bg-white">
       {/* Sidebar Desktop - Oculta em mobile (< lg) */}
-      <div className="hidden lg:flex w-96 border-r border-gray-200 flex-col bg-white">
+      <div className="hidden lg:flex w-96 border-r border-silver-200 flex-col bg-white">
         <SidebarContent />
       </div>
 
@@ -100,7 +100,7 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
         {conversation ? (
           <>
             {/* Header do Chat */}
-            <div className="bg-muted p-3 flex items-center gap-3 border-b border-gray-200">
+            <div className="bg-silver-100 p-3 flex items-center gap-3 border-b border-silver-200">
               {/* Botão Menu (Mobile) */}
               <Button
                 variant="ghost"
@@ -112,21 +112,21 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
               </Button>
 
               <Avatar className="h-10 w-10">
-                <AvatarFallback className="bg-primary text-white">
+                <AvatarFallback className="bg-mint-500 text-white">
                   {getInitials(conversation.name || '')}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-foreground truncate">{conversation.name}</h3>
-                <p className="text-xs text-muted-foreground truncate">{conversation.phone}</p>
+                <h3 className="font-semibold text-erie-black-900 truncate">{conversation.name}</h3>
+                <p className="text-xs text-erie-black-600 truncate">{conversation.phone}</p>
               </div>
 
               {/* Badge de Status */}
               <div className="flex items-center gap-2">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  conversation.status === 'bot' ? 'bg-blue-100 text-blue-700' :
-                  conversation.status === 'human' ? 'bg-green-100 text-green-700' :
-                  'bg-gray-100 text-gray-700'
+                <span className={`px-2 py-1 rounded-full text-xs font-medium border ${
+                  conversation.status === 'bot' ? 'bg-mint-100 text-mint-800 border-mint-200' :
+                  conversation.status === 'human' ? 'bg-brand-blue-100 text-brand-blue-800 border-brand-blue-200' :
+                  'bg-silver-100 text-erie-black-700 border-silver-300'
                 }`}>
                   {conversation.status === 'bot' ? 'Bot' : conversation.status === 'human' ? 'Humano' : conversation.status}
                 </span>
@@ -134,7 +134,7 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
             </div>
 
             {/* Área de Mensagens */}
-            <div className="flex-1 overflow-hidden whatsapp-bg">
+            <div className="flex-1 overflow-hidden bg-silver-50">
               <ConversationDetail
                 phone={phone}
                 clientId={clientId}
@@ -143,7 +143,7 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
             </div>
 
             {/* Footer - Input de Mensagem */}
-            <div className="bg-muted p-3 border-t border-gray-200">
+            <div className="bg-silver-100 p-3 border-t border-silver-200">
               <SendMessageForm
                 phone={phone}
                 clientId={clientId}
@@ -151,13 +151,13 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center whatsapp-bg">
+          <div className="flex-1 flex items-center justify-center bg-silver-50">
             <div className="text-center">
-              <MessageCircle className="h-20 w-20 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-600 mb-2">
+              <MessageCircle className="h-20 w-20 text-silver-300 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-erie-black-700 mb-2">
                 Nenhuma conversa selecionada
               </h3>
-              <p className="text-gray-500">
+              <p className="text-erie-black-500">
                 Selecione uma conversa na lateral para começar
               </p>
             </div>
