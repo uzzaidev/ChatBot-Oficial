@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Save, RefreshCw, AlertCircle, CheckCircle, Maximize2, Settings } from 'lucide-react'
+import { Save, RefreshCw, AlertCircle, CheckCircle, Maximize2, Settings, Sliders } from 'lucide-react'
 import mermaid from 'mermaid'
 
 // Define node types based on CHATBOT_FLOW_ARCHITECTURE.md
@@ -620,17 +620,18 @@ export default function FlowArchitectureManager() {
   return (
     <Card className={isFullscreen ? 'fixed inset-0 z-50 rounded-none' : ''}>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
           <div>
             <CardTitle className="flex items-center gap-2">
-              🎛️ Arquitetura do Fluxo de Processamento
+              <Sliders className="w-5 h-5" />
+              Arquitetura do Fluxo de Processamento
             </CardTitle>
             <CardDescription>
               Visualize e configure todos os nós (nodes) do seu chatbot multiagente.
               Clique em um nó para editar suas configurações.
             </CardDescription>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
               size="sm"
