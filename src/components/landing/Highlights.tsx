@@ -5,24 +5,24 @@ import { cn } from '@/lib/utils'
 
 const highlights = [
   {
-    title: 'Acesso multi-tenant',
-    description: 'Gerencie diversos clientes e squads em um único painel com isolamento seguro.',
-    icon: Users,
-  },
-  {
-    title: 'Status em tempo real',
-    description: 'Siga conversas, filas e indicadores operacionais sem sair do dashboard.',
+    title: 'Acompanhamento em tempo real',
+    description: 'Monitore conversas, filas e indicadores operacionais em tempo real. Transparência total do fluxo de atendimento.',
     icon: BarChart3,
   },
   {
-    title: 'Convites e permissões',
-    description: 'Convide colaboradores com poucos cliques e defina papéis conforme o time.',
-    icon: KeyRound,
+    title: 'Agentes customizáveis por conta',
+    description: 'Configure inteligência artificial personalizada para cada cliente com contexto e comportamento específicos.',
+    icon: Users,
   },
   {
-    title: 'Segurança por padrão',
-    description: 'Supabase Auth, RLS e auditoria completa garantem conformidade e rastreabilidade.',
+    title: 'Segurança e transparência',
+    description: 'Supabase Auth, RLS e auditoria completa. Cada ação rastreada para máxima confiabilidade.',
     icon: ShieldCheck,
+  },
+  {
+    title: 'Controle granular de acesso',
+    description: 'Convide colaboradores e defina permissões específicas. Isolamento multi-tenant garantido.',
+    icon: KeyRound,
   },
 ]
 
