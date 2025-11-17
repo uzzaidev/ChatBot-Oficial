@@ -23,6 +23,8 @@ import { detectRepetition } from '@/nodes/detectRepetition'
 import { createExecutionLogger } from '@/lib/logger'
 import { setWithExpiry } from '@/lib/redis'
 import { logOpenAIUsage, logGroqUsage, logWhisperUsage } from '@/lib/usageTracking'
+// 🔄 Flow synchronization - Option 4 (Hybrid)
+import { getAllNodeStates, shouldExecuteNode } from '@/lib/flowHelpers'
 
 export interface ChatbotFlowResult {
   success: boolean
@@ -54,7 +56,12 @@ export const processChatbotMessage = async (
   try {
     console.log(`[chatbotFlow][${executionId}] Starting message processing`)
 
-    // NODE 1: Filter Status Updates
+    // 🔄 FLOW SYNC: Fetch all node enabled states for this client
+    console.log('[chatbotFlow] 🔄 Fetching node states from database...')
+    const nodeStates = await getAllNodeStates(config.id)
+    console.log(`[chatbotFlow] 🔄 Node states loaded: ${nodeStates.size} nodes`)
+
+    // NODE 1: Filter Status Updates (always executes - not configurable)
     console.log('[chatbotFlow] NODE 1: Iniciando Filter Status Updates...')
     logger.logNodeStart('1. Filter Status Updates', payload)
     const filteredPayload = filterStatusUpdates(payload)
@@ -89,58 +96,61 @@ export const processChatbotMessage = async (
 
     console.log('[chatbotFlow] Processing message content based on type')
 
-    // NODE 4: Process Media (audio/image/document)
-    console.log('[chatbotFlow] NODE 4: Verificando tipo de mensagem...')
-    logger.logNodeStart('4. Process Media', { type: parsedMessage.type })
-
+    // NODE 4: Process Media (audio/image/document) - configurable
     let processedContent: string | undefined
+    
+    const shouldProcessMedia = shouldExecuteNode('process_media', nodeStates)
+    
+    if (shouldProcessMedia && (parsedMessage.type === 'audio' || parsedMessage.type === 'image' || parsedMessage.type === 'document') && parsedMessage.metadata?.id) {
+      console.log('[chatbotFlow] NODE 4: Verificando tipo de mensagem...')
+      logger.logNodeStart('4. Process Media', { type: parsedMessage.type })
 
-    if (parsedMessage.type === 'audio' && parsedMessage.metadata?.id) {
-      console.log('[chatbotFlow] NODE 4a: Baixando áudio...')
-      const audioBuffer = await downloadMetaMedia(parsedMessage.metadata.id, config.apiKeys.metaAccessToken)
-      logger.logNodeSuccess('4a. Download Audio', { size: audioBuffer.length })
+      if (parsedMessage.type === 'audio' && parsedMessage.metadata?.id) {
+        console.log('[chatbotFlow] NODE 4a: Baixando áudio...')
+        const audioBuffer = await downloadMetaMedia(parsedMessage.metadata.id, config.apiKeys.metaAccessToken)
+        logger.logNodeSuccess('4a. Download Audio', { size: audioBuffer.length })
 
-      console.log('[chatbotFlow] NODE 4b: Transcrevendo áudio...')
-      const transcriptionResult = await transcribeAudio(audioBuffer, config.apiKeys.openaiApiKey)
-      processedContent = transcriptionResult.text
-      logger.logNodeSuccess('4b. Transcribe Audio', { transcription: processedContent.substring(0, 100) })
-      console.log(`[chatbotFlow] 🎤 Áudio transcrito: ${processedContent}`)
+        console.log('[chatbotFlow] NODE 4b: Transcrevendo áudio...')
+        const transcriptionResult = await transcribeAudio(audioBuffer, config.apiKeys.openaiApiKey)
+        processedContent = transcriptionResult.text
+        logger.logNodeSuccess('4b. Transcribe Audio', { transcription: processedContent.substring(0, 100) })
+        console.log(`[chatbotFlow] 🎤 Áudio transcrito: ${processedContent}`)
 
-      // 📊 Registrar uso de Whisper
-      try {
-        await logWhisperUsage(
-          config.id,
-          undefined,
-          parsedMessage.phone,
-          transcriptionResult.durationSeconds || 0,
-          transcriptionResult.usage.total_tokens
-        )
-        console.log('[chatbotFlow] ✅ Whisper usage logged')
-      } catch (usageError) {
-        console.error('[chatbotFlow] ❌ Failed to log Whisper usage:', usageError)
-      }
+        // 📊 Registrar uso de Whisper
+        try {
+          await logWhisperUsage(
+            config.id,
+            undefined,
+            parsedMessage.phone,
+            transcriptionResult.durationSeconds || 0,
+            transcriptionResult.usage.total_tokens
+          )
+          console.log('[chatbotFlow] ✅ Whisper usage logged')
+        } catch (usageError) {
+          console.error('[chatbotFlow] ❌ Failed to log Whisper usage:', usageError)
+        }
 
-    } else if (parsedMessage.type === 'image' && parsedMessage.metadata?.id) {
-      console.log('[chatbotFlow] NODE 4a: Baixando imagem...')
-      const imageBuffer = await downloadMetaMedia(parsedMessage.metadata.id, config.apiKeys.metaAccessToken)
-      logger.logNodeSuccess('4a. Download Image', { size: imageBuffer.length })
+      } else if (parsedMessage.type === 'image' && parsedMessage.metadata?.id) {
+        console.log('[chatbotFlow] NODE 4a: Baixando imagem...')
+        const imageBuffer = await downloadMetaMedia(parsedMessage.metadata.id, config.apiKeys.metaAccessToken)
+        logger.logNodeSuccess('4a. Download Image', { size: imageBuffer.length })
 
-      console.log('[chatbotFlow] NODE 4b: Analisando imagem com GPT-4o Vision...')
-      const visionResult = await analyzeImage(imageBuffer, parsedMessage.metadata.mimeType || 'image/jpeg', config.apiKeys.openaiApiKey)
+        console.log('[chatbotFlow] NODE 4b: Analisando imagem com GPT-4o Vision...')
+        const visionResult = await analyzeImage(imageBuffer, parsedMessage.metadata.mimeType || 'image/jpeg', config.apiKeys.openaiApiKey)
 
-      // Passar apenas a descrição da IA (a legenda será adicionada pelo normalizeMessage)
-      processedContent = visionResult.text
+        // Passar apenas a descrição da IA (a legenda será adicionada pelo normalizeMessage)
+        processedContent = visionResult.text
 
-      logger.logNodeSuccess('4b. Analyze Image', { description: processedContent.substring(0, 100) })
-      console.log(`[chatbotFlow] 🖼️ Imagem analisada: ${processedContent}`)
+        logger.logNodeSuccess('4b. Analyze Image', { description: processedContent.substring(0, 100) })
+        console.log(`[chatbotFlow] 🖼️ Imagem analisada: ${processedContent}`)
 
-      // 📊 Registrar uso de GPT-4o Vision
-      try {
-        await logOpenAIUsage(
-          config.id,
-          undefined,
-          parsedMessage.phone,
-          visionResult.model,
+        // 📊 Registrar uso de GPT-4o Vision
+        try {
+          await logOpenAIUsage(
+            config.id,
+            undefined,
+            parsedMessage.phone,
+            visionResult.model,
           visionResult.usage
         )
         console.log('[chatbotFlow] ✅ GPT-4o Vision usage logged')
@@ -148,40 +158,43 @@ export const processChatbotMessage = async (
         console.error('[chatbotFlow] ❌ Failed to log Vision usage:', usageError)
       }
 
-    } else if (parsedMessage.type === 'document' && parsedMessage.metadata?.id) {
-      console.log('[chatbotFlow] NODE 4a: Baixando documento...')
-      const documentBuffer = await downloadMetaMedia(parsedMessage.metadata.id, config.apiKeys.metaAccessToken)
-      logger.logNodeSuccess('4a. Download Document', { size: documentBuffer.length, filename: parsedMessage.metadata.filename })
+      } else if (parsedMessage.type === 'document' && parsedMessage.metadata?.id) {
+        console.log('[chatbotFlow] NODE 4a: Baixando documento...')
+        const documentBuffer = await downloadMetaMedia(parsedMessage.metadata.id, config.apiKeys.metaAccessToken)
+        logger.logNodeSuccess('4a. Download Document', { size: documentBuffer.length, filename: parsedMessage.metadata.filename })
 
-      console.log('[chatbotFlow] NODE 4b: Analisando documento...')
-      const documentResult = await analyzeDocument(
-        documentBuffer,
-        parsedMessage.metadata.mimeType,
-        parsedMessage.metadata.filename,
-        config.apiKeys.openaiApiKey
-      )
+        console.log('[chatbotFlow] NODE 4b: Analisando documento...')
+        const documentResult = await analyzeDocument(
+          documentBuffer,
+          parsedMessage.metadata.mimeType,
+          parsedMessage.metadata.filename,
+          config.apiKeys.openaiApiKey
+        )
 
-      processedContent = documentResult.content
+        processedContent = documentResult.content
 
-      logger.logNodeSuccess('4b. Analyze Document', { summary: processedContent.substring(0, 100) })
-      console.log(`[chatbotFlow] 📄 Documento analisado: ${processedContent.substring(0, 200)}...`)
+        logger.logNodeSuccess('4b. Analyze Document', { summary: processedContent.substring(0, 100) })
+        console.log(`[chatbotFlow] 📄 Documento analisado: ${processedContent.substring(0, 200)}...`)
 
-      // 📊 Registrar uso de GPT-4o PDF (se houver usage data)
-      if (documentResult.usage && documentResult.model) {
-        try {
-          await logOpenAIUsage(
-            config.id,
-            undefined,
-            parsedMessage.phone,
-            documentResult.model,
-            documentResult.usage
-          )
-          console.log('[chatbotFlow] ✅ GPT-4o PDF usage logged')
-        } catch (usageError) {
-          console.error('[chatbotFlow] ❌ Failed to log PDF usage:', usageError)
+        // 📊 Registrar uso de GPT-4o PDF (se houver usage data)
+        if (documentResult.usage && documentResult.model) {
+          try {
+            await logOpenAIUsage(
+              config.id,
+              undefined,
+              parsedMessage.phone,
+              documentResult.model,
+              documentResult.usage
+            )
+            console.log('[chatbotFlow] ✅ GPT-4o PDF usage logged')
+          } catch (usageError) {
+            console.error('[chatbotFlow] ❌ Failed to log PDF usage:', usageError)
+          }
         }
       }
-
+    } else if (!shouldProcessMedia) {
+      console.log('[chatbotFlow] NODE 4: ⏭️ Process Media DESABILITADO - pulando...')
+      logger.logNodeSuccess('4. Process Media', { skipped: true, reason: 'node disabled' })
     } else {
       console.log('[chatbotFlow] NODE 4: Mensagem de texto, pulando processamento de mídia')
       logger.logNodeSuccess('4. Process Media', { skipped: true, reason: 'text message' })
@@ -197,24 +210,29 @@ export const processChatbotMessage = async (
     logger.logNodeSuccess('5. Normalize Message', { content: normalizedMessage.content })
     console.log(`[chatbotFlow] NODE 5: ✅ Normalização concluída`)
 
-    // NODE 6: Push to Redis
-    console.log('[chatbotFlow] NODE 6: Tentando push to Redis...')
-    logger.logNodeStart('6. Push to Redis', normalizedMessage)
-    
-    try {
-      await pushToRedis(normalizedMessage)
-      console.log('[chatbotFlow] NODE 6: ✅ Push to Redis concluído com sucesso!')
-      logger.logNodeSuccess('6. Push to Redis', { success: true })
+    // NODE 6: Push to Redis (configurable)
+    if (shouldExecuteNode('push_to_redis', nodeStates)) {
+      console.log('[chatbotFlow] NODE 6: Tentando push to Redis...')
+      logger.logNodeStart('6. Push to Redis', normalizedMessage)
       
-      // Update debounce timestamp (resets the 10s timer)
-      const debounceKey = `debounce:${parsedMessage.phone}`
-      await setWithExpiry(debounceKey, String(Date.now()), 15) // 15s TTL (buffer above 10s delay)
-      console.log(`[chatbotFlow] 🕐 Debounce timer reset for ${parsedMessage.phone}`)
-      
-    } catch (redisError) {
-      console.error('[chatbotFlow] NODE 6: ❌ ERRO NO REDIS!', redisError)
-      logger.logNodeError('6. Push to Redis', redisError)
-      // Continua mesmo com erro Redis (graceful degradation)
+      try {
+        await pushToRedis(normalizedMessage)
+        console.log('[chatbotFlow] NODE 6: ✅ Push to Redis concluído com sucesso!')
+        logger.logNodeSuccess('6. Push to Redis', { success: true })
+        
+        // Update debounce timestamp (resets the 10s timer)
+        const debounceKey = `debounce:${parsedMessage.phone}`
+        await setWithExpiry(debounceKey, String(Date.now()), 15) // 15s TTL (buffer above 10s delay)
+        console.log(`[chatbotFlow] 🕐 Debounce timer reset for ${parsedMessage.phone}`)
+        
+      } catch (redisError) {
+        console.error('[chatbotFlow] NODE 6: ❌ ERRO NO REDIS!', redisError)
+        logger.logNodeError('6. Push to Redis', redisError)
+        // Continua mesmo com erro Redis (graceful degradation)
+      }
+    } else {
+      console.log('[chatbotFlow] NODE 6: ⏭️ Push to Redis DESABILITADO - pulando...')
+      logger.logNodeSuccess('6. Push to Redis', { skipped: true, reason: 'node disabled' })
     }
 
     // NODE 7: Save User Message
@@ -237,17 +255,19 @@ export const processChatbotMessage = async (
     })
     logger.logNodeSuccess('7. Save Chat Message (User)', { saved: true })
 
-    // NODE 8: Batch Messages (configurável)
+    // NODE 8: Batch Messages (configurable - can be disabled)
     let batchedContent: string
     
-    if (config.settings.messageSplitEnabled) {
+    if (shouldExecuteNode('batch_messages', nodeStates) && config.settings.messageSplitEnabled) {
       logger.logNodeStart('8. Batch Messages', { phone: parsedMessage.phone })
       console.log(`[chatbotFlow] ✅ Message batching enabled - waiting ${config.settings.batchingDelaySeconds}s`)
       batchedContent = await batchMessages(parsedMessage.phone)
       logger.logNodeSuccess('8. Batch Messages', { contentLength: batchedContent?.length || 0 })
     } else {
-      console.log('[chatbotFlow] ⚠️ Message batching disabled - processing immediately')
-      batchedContent = processedContent
+      const reason = !shouldExecuteNode('batch_messages', nodeStates) ? 'node disabled' : 'config disabled'
+      console.log(`[chatbotFlow] ⚠️ Message batching disabled (${reason}) - processing immediately`)
+      logger.logNodeSuccess('8. Batch Messages', { skipped: true, reason })
+      batchedContent = normalizedMessage.content
     }
 
     if (!batchedContent || batchedContent.trim().length === 0) {
@@ -256,72 +276,121 @@ export const processChatbotMessage = async (
       return { success: true }
     }
 
-    console.log('[chatbotFlow] Fetching chat history and RAG context in parallel')
+    console.log('[chatbotFlow] Fetching chat history and RAG context')
     
-    // NODE 9 & 10: Get Chat History + RAG Context (parallel)
-    logger.logNodeStart('9. Get Chat History', { phone: parsedMessage.phone })
-    
-    // 🔧 RAG configurável: Se desabilitado, pula busca de contexto
-    let chatHistory2: any[]
+    // NODE 9 & 10: Get Chat History + RAG Context (configurable)
+    let chatHistory2: any[] = []
     let ragContext: string = ''
     
-    if (config.settings.enableRAG) {
-      logger.logNodeStart('10. Get RAG Context', { queryLength: batchedContent.length })
-      console.log('[chatbotFlow] 🔍 RAG enabled - fetching context')
-      
-      const [history, rag] = await Promise.all([
-        getChatHistory({
-          phone: parsedMessage.phone,
-          clientId: config.id, // 🔐 Multi-tenant: Filtra mensagens do cliente
-          maxHistory: config.settings.maxChatHistory, // 🔧 Usa config do cliente
-        }),
-        getRAGContext(batchedContent),
-      ])
-      
-      chatHistory2 = history
-      ragContext = rag
-      
-      logger.logNodeSuccess('10. Get RAG Context', { contextLength: ragContext.length })
-      console.log(`[chatbotFlow] Context retrieved - History: ${chatHistory2.length} messages, RAG: ${ragContext.length} chars`)
-    } else {
-      console.log('[chatbotFlow] ⚠️ RAG disabled by client config - skipping context retrieval')
-      chatHistory2 = await getChatHistory({
-        phone: parsedMessage.phone,
-        clientId: config.id,
-        maxHistory: config.settings.maxChatHistory,
-      })
-      console.log(`[chatbotFlow] Context retrieved - History: ${chatHistory2.length} messages, RAG: disabled`)
+    // Check if we should fetch chat history
+    const shouldGetHistory = shouldExecuteNode('get_chat_history', nodeStates)
+    
+    if (shouldGetHistory) {
+      logger.logNodeStart('9. Get Chat History', { phone: parsedMessage.phone })
     }
     
-    logger.logNodeSuccess('9. Get Chat History', { messageCount: chatHistory2.length })
+    // Check if we should fetch RAG context
+    const shouldGetRAG = shouldExecuteNode('get_rag_context', nodeStates) && config.settings.enableRAG
+    
+    if (shouldGetHistory || shouldGetRAG) {
+      if (shouldGetHistory && shouldGetRAG) {
+        // Both enabled - fetch in parallel
+        logger.logNodeStart('10. Get RAG Context', { queryLength: batchedContent.length })
+        console.log('[chatbotFlow] 🔍 Fetching chat history + RAG context in parallel')
+        
+        const [history, rag] = await Promise.all([
+          getChatHistory({
+            phone: parsedMessage.phone,
+            clientId: config.id,
+            maxHistory: config.settings.maxChatHistory,
+          }),
+          getRAGContext(batchedContent),
+        ])
+        
+        chatHistory2 = history
+        ragContext = rag
+        
+        logger.logNodeSuccess('9. Get Chat History', { messageCount: chatHistory2.length })
+        logger.logNodeSuccess('10. Get RAG Context', { contextLength: ragContext.length })
+        console.log(`[chatbotFlow] ✅ Context retrieved - History: ${chatHistory2.length} messages, RAG: ${ragContext.length} chars`)
+      } else if (shouldGetHistory) {
+        // Only history enabled
+        console.log('[chatbotFlow] 🔍 Fetching chat history only (RAG disabled)')
+        chatHistory2 = await getChatHistory({
+          phone: parsedMessage.phone,
+          clientId: config.id,
+          maxHistory: config.settings.maxChatHistory,
+        })
+        logger.logNodeSuccess('9. Get Chat History', { messageCount: chatHistory2.length })
+        logger.logNodeSuccess('10. Get RAG Context', { skipped: true, reason: 'node disabled or config disabled' })
+        console.log(`[chatbotFlow] ✅ Context retrieved - History: ${chatHistory2.length} messages, RAG: disabled`)
+      } else if (shouldGetRAG) {
+        // Only RAG enabled (rare case)
+        logger.logNodeStart('10. Get RAG Context', { queryLength: batchedContent.length })
+        console.log('[chatbotFlow] 🔍 Fetching RAG context only (history disabled)')
+        ragContext = await getRAGContext(batchedContent)
+        logger.logNodeSuccess('9. Get Chat History', { skipped: true, reason: 'node disabled' })
+        logger.logNodeSuccess('10. Get RAG Context', { contextLength: ragContext.length })
+        console.log(`[chatbotFlow] ✅ Context retrieved - History: disabled, RAG: ${ragContext.length} chars`)
+      }
+    } else {
+      // Both disabled
+      console.log('[chatbotFlow] ⚠️ Both chat history and RAG disabled - proceeding without context')
+      logger.logNodeSuccess('9. Get Chat History', { skipped: true, reason: 'node disabled' })
+      logger.logNodeSuccess('10. Get RAG Context', { skipped: true, reason: 'node disabled or config disabled' })
+    }
 
-    // 🔧 Phase 1: Check Conversation Continuity
-    logger.logNodeStart('9.5. Check Continuity', { phone: parsedMessage.phone })
-    console.log('[chatbotFlow] 🔧 Phase 1: Checking conversation continuity')
-    const continuityInfo = await checkContinuity({
-      phone: parsedMessage.phone,
-      clientId: config.id,
-    })
-    logger.logNodeSuccess('9.5. Check Continuity', {
-      isNew: continuityInfo.isNewConversation,
-      hoursSince: continuityInfo.hoursSinceLastMessage,
-    })
-    console.log(`[chatbotFlow] Continuity: ${continuityInfo.isNewConversation ? 'NEW' : 'CONTINUING'} conversation`)
+    // 🔧 Phase 1: Check Conversation Continuity (configurable)
+    let continuityInfo: any
+    
+    if (shouldExecuteNode('check_continuity', nodeStates)) {
+      logger.logNodeStart('9.5. Check Continuity', { phone: parsedMessage.phone })
+      console.log('[chatbotFlow] 🔧 Phase 1: Checking conversation continuity')
+      continuityInfo = await checkContinuity({
+        phone: parsedMessage.phone,
+        clientId: config.id,
+      })
+      logger.logNodeSuccess('9.5. Check Continuity', {
+        isNew: continuityInfo.isNewConversation,
+        hoursSince: continuityInfo.hoursSinceLastMessage,
+      })
+      console.log(`[chatbotFlow] Continuity: ${continuityInfo.isNewConversation ? 'NEW' : 'CONTINUING'} conversation`)
+    } else {
+      console.log('[chatbotFlow] ⚠️ Check Continuity disabled - using default behavior')
+      logger.logNodeSuccess('9.5. Check Continuity', { skipped: true, reason: 'node disabled' })
+      continuityInfo = {
+        isNewConversation: false,
+        hoursSinceLastMessage: 0,
+        greetingInstruction: '', // No special greeting instruction
+      }
+    }
 
-    // 🔧 Phase 2: Classify User Intent
-    logger.logNodeStart('9.6. Classify Intent', { messageLength: batchedContent.length })
-    console.log('[chatbotFlow] 🔧 Phase 2: Classifying user intent')
-    const intentInfo = await classifyIntent({
-      message: batchedContent,
-      clientId: config.id,
-      groqApiKey: config.apiKeys.groqApiKey,
-    })
-    logger.logNodeSuccess('9.6. Classify Intent', {
-      intent: intentInfo.intent,
-      confidence: intentInfo.confidence,
-      usedLLM: intentInfo.usedLLM,
-    })
-    console.log(`[chatbotFlow] Intent detected: ${intentInfo.intent} (${intentInfo.confidence} confidence, LLM: ${intentInfo.usedLLM})`)
+    // 🔧 Phase 2: Classify User Intent (configurable)
+    let intentInfo: any
+    
+    if (shouldExecuteNode('classify_intent', nodeStates)) {
+      logger.logNodeStart('9.6. Classify Intent', { messageLength: batchedContent.length })
+      console.log('[chatbotFlow] 🔧 Phase 2: Classifying user intent')
+      intentInfo = await classifyIntent({
+        message: batchedContent,
+        clientId: config.id,
+        groqApiKey: config.apiKeys.groqApiKey,
+      })
+      logger.logNodeSuccess('9.6. Classify Intent', {
+        intent: intentInfo.intent,
+        confidence: intentInfo.confidence,
+        usedLLM: intentInfo.usedLLM,
+      })
+      console.log(`[chatbotFlow] Intent detected: ${intentInfo.intent} (${intentInfo.confidence} confidence, LLM: ${intentInfo.usedLLM})`)
+    } else {
+      console.log('[chatbotFlow] ⚠️ Classify Intent disabled - using default behavior')
+      logger.logNodeSuccess('9.6. Classify Intent', { skipped: true, reason: 'node disabled' })
+      intentInfo = {
+        intent: 'outro',
+        confidence: 'medium',
+        usedLLM: false,
+      }
+    }
 
     // NODE 11: Generate AI Response (com config do cliente + greeting instruction)
     logger.logNodeStart('11. Generate AI Response', { messageLength: batchedContent.length, historyCount: chatHistory2.length })
@@ -340,8 +409,8 @@ export const processChatbotMessage = async (
       toolCount: aiResponse.toolCalls?.length || 0
     })
 
-    // 🔧 Phase 3: Detect Repetition and regenerate if needed
-    if (aiResponse.content && aiResponse.content.trim().length > 0) {
+    // 🔧 Phase 3: Detect Repetition and regenerate if needed (configurable)
+    if (shouldExecuteNode('detect_repetition', nodeStates) && aiResponse.content && aiResponse.content.trim().length > 0) {
       logger.logNodeStart('11.5. Detect Repetition', { responseLength: aiResponse.content.length })
       console.log('[chatbotFlow] 🔧 Phase 3: Checking for response repetition')
       
@@ -419,6 +488,9 @@ export const processChatbotMessage = async (
       } else {
         console.log('[chatbotFlow] ✅ No repetition detected, using original response')
       }
+    } else if (!shouldExecuteNode('detect_repetition', nodeStates)) {
+      console.log('[chatbotFlow] ⚠️ Detect Repetition disabled - skipping repetition check')
+      logger.logNodeSuccess('11.5. Detect Repetition', { skipped: true, reason: 'node disabled' })
     }
 
     // 📊 Log usage to database for analytics
