@@ -259,34 +259,34 @@ export default function BackendMonitorPage() {
 
     return (
       <div key={log.id} className="font-mono text-xs mb-2">
-        <div className={`flex items-start gap-2 ${statusColor}`}>
-          <span className="text-gray-500">[{formatTimestamp(log.timestamp)}]</span>
+        <div className={`flex items-start gap-1 sm:gap-2 ${statusColor} flex-wrap`}>
+          <span className="text-gray-500 text-[10px] sm:text-xs">[{formatTimestamp(log.timestamp)}]</span>
           <span className={statusColor}>{statusIcon}</span>
-          <span className="font-bold">{log.node_name}</span>
+          <span className="font-bold break-all">{log.node_name}</span>
           {log.duration_ms && (
-            <span className="text-gray-400">({log.duration_ms}ms)</span>
+            <span className="text-gray-400 text-[10px] sm:text-xs">({log.duration_ms}ms)</span>
           )}
           {whatsappStatus && (
-            <span className="ml-2 px-2 py-0.5 rounded text-xs bg-purple-600 text-white flex items-center gap-1">
-              <Phone className="h-3 w-3" />
+            <span className="ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs bg-purple-600 text-white flex items-center gap-1">
+              <Phone className="h-2 w-2 sm:h-3 sm:w-3" />
               {whatsappStatus.toUpperCase()}
             </span>
           )}
         </div>
 
         {log.input_data && (
-          <div className="ml-8 mt-1 text-blue-300">
+          <div className="ml-4 sm:ml-8 mt-1 text-blue-300">
             <span className="text-gray-400">→ INPUT:</span>
-            <pre className="ml-4 text-gray-300 whitespace-pre-wrap break-all">
+            <pre className="ml-2 sm:ml-4 text-gray-300 whitespace-pre-wrap break-all text-[10px] sm:text-xs">
               {formatJSON(log.input_data)}
             </pre>
           </div>
         )}
 
         {log.output_data && (
-          <div className="ml-8 mt-1 text-green-300">
+          <div className="ml-4 sm:ml-8 mt-1 text-green-300">
             <span className="text-gray-400">← OUTPUT:</span>
-            <pre className="ml-4 text-gray-300 whitespace-pre-wrap break-all">
+            <pre className="ml-2 sm:ml-4 text-gray-300 whitespace-pre-wrap break-all text-[10px] sm:text-xs">
               {formatJSON(log.output_data)}
             </pre>
           </div>
@@ -294,20 +294,20 @@ export default function BackendMonitorPage() {
 
         {/* Aviso quando output está faltando mas node teve sucesso */}
         {!log.output_data && !log.error && log.status === 'success' && log.node_name !== '_START' && log.node_name !== '_END' && (
-          <div className="ml-8 mt-1 text-yellow-300 flex items-center gap-1">
+          <div className="ml-4 sm:ml-8 mt-1 text-yellow-300 flex items-center gap-1">
             <AlertTriangle className="h-3 w-3 text-gray-400" />
-            <span className="text-gray-400">OUTPUT: </span>
-            <span className="text-yellow-400 italic">(dados não registrados pelo node)</span>
+            <span className="text-gray-400 text-[10px] sm:text-xs">OUTPUT: </span>
+            <span className="text-yellow-400 italic text-[10px] sm:text-xs">(dados não registrados pelo node)</span>
           </div>
         )}
 
         {log.error && (
-          <div className="ml-8 mt-1 text-red-300">
+          <div className="ml-4 sm:ml-8 mt-1 text-red-300">
             <span className="text-gray-400 flex items-center gap-1">
               <X className="h-3 w-3" />
               ERROR:
             </span>
-            <pre className="ml-4 text-red-400 whitespace-pre-wrap break-all">
+            <pre className="ml-2 sm:ml-4 text-red-400 whitespace-pre-wrap break-all text-[10px] sm:text-xs">
               {formatJSON(log.error)}
             </pre>
           </div>
@@ -319,15 +319,15 @@ export default function BackendMonitorPage() {
   const selectedExecutionData = executions.find(e => e.execution_id === selectedExecution)
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Backend Monitor</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold">Backend Monitor</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Monitoramento em tempo real do fluxo de mensagens - Estilo terminal
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button
             onClick={() => setAutoScroll(!autoScroll)}
             variant={autoScroll ? 'default' : 'outline'}
@@ -335,7 +335,8 @@ export default function BackendMonitorPage() {
             className="gap-2"
           >
             <ScrollText className="h-4 w-4" />
-            {autoScroll ? 'Auto-scroll ON' : 'Auto-scroll OFF'}
+            <span className="hidden sm:inline">{autoScroll ? 'Auto-scroll ON' : 'Auto-scroll OFF'}</span>
+            <span className="sm:hidden">{autoScroll ? 'Scroll' : 'Scroll'}</span>
           </Button>
           <Button
             onClick={() => setAutoRefresh(!autoRefresh)}
@@ -344,11 +345,11 @@ export default function BackendMonitorPage() {
             className="gap-2"
           >
             {autoRefresh ? <RefreshCw className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-            {autoRefresh ? 'Live' : 'Pausado'}
+            <span className="hidden sm:inline">{autoRefresh ? 'Live' : 'Pausado'}</span>
           </Button>
           <Button onClick={() => fetchLogs()} variant="outline" size="sm" className="gap-2">
             <RotateCw className="h-4 w-4" />
-            Atualizar
+            <span className="hidden sm:inline">Atualizar</span>
           </Button>
         </div>
       </div>
@@ -371,12 +372,12 @@ export default function BackendMonitorPage() {
           {/* Phone Filter */}
           <Card className="mb-4">
             <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                 <Phone className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                <div className="flex-1 max-w-md">
+                <div className="flex-1 w-full sm:max-w-md">
                   <Input
                     type="text"
-                    placeholder="Filtrar por telefone/cliente (ex: 5554999250023)"
+                    placeholder="Filtrar por telefone/cliente"
                     value={phoneFilter}
                     onChange={(e) => setPhoneFilter(e.target.value)}
                     list="phone-numbers"
@@ -393,7 +394,7 @@ export default function BackendMonitorPage() {
                     </p>
                   )}
                   {uniquePhones.length > 0 && !phoneFilter && (
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-muted-foreground mt-1 hidden sm:block">
                       {uniquePhones.length} telefone(s) disponível(is) - comece a digitar ou clique na seta
                     </p>
                   )}
@@ -403,9 +404,10 @@ export default function BackendMonitorPage() {
                     onClick={() => setPhoneFilter('')}
                     variant="ghost"
                     size="sm"
+                    className="self-end sm:self-auto"
                   >
-                    <X className="h-4 w-4 mr-1" />
-                    Limpar
+                    <X className="h-4 w-4 sm:mr-1" />
+                    <span className="hidden sm:inline">Limpar</span>
                   </Button>
                 )}
               </div>
@@ -420,11 +422,11 @@ export default function BackendMonitorPage() {
                   onClick={() => setStatusFilter('all')}
                   variant={statusFilter === 'all' ? 'default' : 'outline'}
                   size="sm"
-                  className="gap-2"
+                  className="gap-1 sm:gap-2 text-xs sm:text-sm"
                 >
-                  <Globe className="h-4 w-4" />
-                  Todas
-                  <Badge variant="secondary" className="ml-1">
+                  <Globe className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Todas</span>
+                  <Badge variant="secondary" className="ml-0.5 sm:ml-1 text-xs">
                     {getStatusCount('all')}
                   </Badge>
                 </Button>
@@ -432,11 +434,12 @@ export default function BackendMonitorPage() {
                   onClick={() => setStatusFilter('message')}
                   variant={statusFilter === 'message' ? 'default' : 'outline'}
                   size="sm"
-                  className="gap-2"
+                  className="gap-1 sm:gap-2 text-xs sm:text-sm"
                 >
-                  <Mail className="h-4 w-4" />
-                  Mensagens Recebidas
-                  <Badge variant="secondary" className="ml-1">
+                  <Mail className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Mensagens</span>
+                  <span className="sm:hidden">MSG</span>
+                  <Badge variant="secondary" className="ml-0.5 sm:ml-1 text-xs">
                     {getStatusCount('message')}
                   </Badge>
                 </Button>
@@ -444,11 +447,12 @@ export default function BackendMonitorPage() {
                   onClick={() => setStatusFilter('sent')}
                   variant={statusFilter === 'sent' ? 'default' : 'outline'}
                   size="sm"
-                  className="gap-2"
+                  className="gap-1 sm:gap-2 text-xs sm:text-sm"
                 >
-                  <Send className="h-4 w-4" />
-                  Enviadas
-                  <Badge variant="secondary" className="ml-1">
+                  <Send className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Enviadas</span>
+                  <span className="sm:hidden">ENV</span>
+                  <Badge variant="secondary" className="ml-0.5 sm:ml-1 text-xs">
                     {getStatusCount('sent')}
                   </Badge>
                 </Button>
@@ -456,11 +460,12 @@ export default function BackendMonitorPage() {
                   onClick={() => setStatusFilter('delivered')}
                   variant={statusFilter === 'delivered' ? 'default' : 'outline'}
                   size="sm"
-                  className="gap-2"
+                  className="gap-1 sm:gap-2 text-xs sm:text-sm"
                 >
-                  <CheckCheck className="h-4 w-4" />
-                  Entregues
-                  <Badge variant="secondary" className="ml-1">
+                  <CheckCheck className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Entregues</span>
+                  <span className="sm:hidden">ENT</span>
+                  <Badge variant="secondary" className="ml-0.5 sm:ml-1 text-xs">
                     {getStatusCount('delivered')}
                   </Badge>
                 </Button>
@@ -468,11 +473,12 @@ export default function BackendMonitorPage() {
                   onClick={() => setStatusFilter('read')}
                   variant={statusFilter === 'read' ? 'default' : 'outline'}
                   size="sm"
-                  className="gap-2"
+                  className="gap-1 sm:gap-2 text-xs sm:text-sm"
                 >
-                  <Eye className="h-4 w-4" />
-                  Lidas
-                  <Badge variant="secondary" className="ml-1">
+                  <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Lidas</span>
+                  <span className="sm:hidden">LID</span>
+                  <Badge variant="secondary" className="ml-0.5 sm:ml-1 text-xs">
                     {getStatusCount('read')}
                   </Badge>
                 </Button>
@@ -480,11 +486,12 @@ export default function BackendMonitorPage() {
                   onClick={() => setStatusFilter('failed')}
                   variant={statusFilter === 'failed' ? 'default' : 'outline'}
                   size="sm"
-                  className="gap-2"
+                  className="gap-1 sm:gap-2 text-xs sm:text-sm"
                 >
-                  <X className="h-4 w-4" />
-                  Falhas
-                  <Badge variant="secondary" className="ml-1">
+                  <X className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Falhas</span>
+                  <span className="sm:hidden">ERR</span>
+                  <Badge variant="secondary" className="ml-0.5 sm:ml-1 text-xs">
                     {getStatusCount('failed')}
                   </Badge>
                 </Button>
@@ -492,9 +499,9 @@ export default function BackendMonitorPage() {
             </CardContent>
           </Card>
 
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           {/* Sidebar - Lista de Execuções */}
-          <Card className="col-span-1">
+          <Card className="lg:col-span-1">
             <CardHeader>
               <CardTitle className="text-sm">Execuções Ativas</CardTitle>
               <CardDescription className="text-xs">
@@ -502,7 +509,7 @@ export default function BackendMonitorPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="p-2">
-              <ScrollArea className="h-[700px]">
+              <ScrollArea className="h-[300px] lg:h-[600px] xl:h-[700px]">
                 <div className="space-y-2">
                   {filteredExecutions.map((exec) => {
                     const isStatusUpdate = exec.metadata?.is_status_update
@@ -574,15 +581,15 @@ export default function BackendMonitorPage() {
           </Card>
 
           {/* Main Terminal Area */}
-          <Card className="col-span-3">
+          <Card className="lg:col-span-3">
             <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                 <div>
                   <CardTitle className="text-sm font-mono">
                     Terminal Output
                   </CardTitle>
                   {selectedExecutionData && (
-                    <CardDescription className="text-xs mt-1">
+                    <CardDescription className="text-xs mt-1 truncate">
                       Execution ID: {selectedExecutionData.execution_id}
                     </CardDescription>
                   )}
@@ -592,7 +599,7 @@ export default function BackendMonitorPage() {
                     <Badge className={getStatusBadge(selectedExecutionData.status)}>
                       {selectedExecutionData.status}
                     </Badge>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-muted-foreground hidden sm:inline">
                       {selectedExecutionData.node_count} nodes executados
                     </span>
                   </div>
@@ -607,29 +614,29 @@ export default function BackendMonitorPage() {
               ) : (
                 <div
                   ref={scrollRef}
-                  className="bg-black text-green-400 p-4 rounded-lg overflow-auto"
-                  style={{ height: '700px' }}
+                  className="bg-black text-green-400 p-2 sm:p-4 rounded-lg overflow-auto text-xs sm:text-sm"
+                  style={{ height: 'calc(100vh - 500px)', minHeight: '400px', maxHeight: '700px' }}
                 >
                   {/* Header */}
                   <div className="mb-4 pb-2 border-b border-gray-700">
-                    <div className="text-xs text-gray-400">
+                    <div className="text-xs text-gray-400 hidden sm:block">
                       ╔════════════════════════════════════════════════════════════════╗
                     </div>
                     <div className="text-xs text-gray-400">
-                      ║ CHATBOT BACKEND MONITOR - MESSAGE FLOW TRACE
+                      <span className="hidden sm:inline">║ </span>CHATBOT BACKEND MONITOR - MESSAGE FLOW TRACE
                     </div>
                     <div className="text-xs text-gray-400">
-                      ║ Execution: {selectedExecutionData.execution_id}
+                      <span className="hidden sm:inline">║ </span>Execution: {selectedExecutionData.execution_id.slice(0, 16)}...
                     </div>
-                    <div className="text-xs text-gray-400">
+                    <div className="text-xs text-gray-400 hidden sm:block">
                       ║ Started: {new Date(selectedExecutionData.started_at).toLocaleString('pt-BR')}
                     </div>
                     {selectedExecutionData.metadata?.from && (
                       <div className="text-xs text-gray-400">
-                        ║ Phone: {selectedExecutionData.metadata.from}
+                        <span className="hidden sm:inline">║ </span>Phone: {selectedExecutionData.metadata.from}
                       </div>
                     )}
-                    <div className="text-xs text-gray-400">
+                    <div className="text-xs text-gray-400 hidden sm:block">
                       ╚════════════════════════════════════════════════════════════════╝
                     </div>
                   </div>
@@ -641,7 +648,7 @@ export default function BackendMonitorPage() {
 
                   {/* Footer */}
                   <div className="mt-4 pt-2 border-t border-gray-700">
-                    <div className="text-xs text-gray-400">
+                    <div className="text-xs text-gray-400 hidden sm:block">
                       ─────────────────────────────────────────────────────────────────
                     </div>
                     <div className="text-xs text-gray-400">
