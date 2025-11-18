@@ -4,23 +4,49 @@ import { createRouteHandlerClient } from '@/lib/supabase-server'
 export const dynamic = 'force-dynamic'
 
 /**
+ * Mascara um secret mostrando apenas os últimos 4 caracteres
+ * SECURITY: Nunca retornar secrets completos via API
+ */
+function maskSecret(secret: string | null | undefined): string {
+  if (!secret || secret.length === 0) {
+    return 'NOT_CONFIGURED'
+  }
+  if (secret === 'CONFIGURE_IN_SETTINGS') {
+    return secret
+  }
+  // Mostrar apenas últimos 4 caracteres
+  if (secret.length <= 4) {
+    return '***'
+  }
+  return '***' + secret.slice(-4)
+}
+
+/**
  * GET /api/vault/secrets
  *
  * Retorna variáveis de ambiente (secrets) do cliente do usuário
  *
- * IMPORTANTE: Retorna valores descriptografados apenas para usuário autenticado do cliente
+ * IMPORTANTE: Retorna valores MASCARADOS (últimos 4 caracteres) para segurança
+ * Para configurar secrets, use PUT /api/vault/secrets
  *
  * Returns:
  * {
  *   client_id: string,
  *   slug: string,
  *   secrets: {
- *     meta_access_token: string,
- *     meta_verify_token: string,
+ *     meta_access_token: string (masked),
+ *     meta_verify_token: string (masked),
  *     meta_phone_number_id: string,
- *     openai_api_key: string,
- *     groq_api_key: string,
+ *     openai_api_key: string (masked),
+ *     groq_api_key: string (masked),
  *     webhook_url: string (construído)
+ *   },
+ *   configured: {
+ *     meta_access_token: boolean,
+ *     meta_verify_token: boolean,
+ *     meta_phone_number_id: boolean,
+ *     openai_api_key: boolean,
+ *     groq_api_key: boolean
  *   }
  * }
  */
@@ -105,16 +131,24 @@ export async function GET() {
     // Construir webhook URL com client_id
     const webhookUrl = `${process.env.WEBHOOK_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://chat.luisfboff.com'}/api/webhook/${client.id}`
 
+    // SECURITY FIX (VULN-009): Retornar secrets mascarados
     return NextResponse.json({
       client_id: client.id,
       slug: client.slug,
       secrets: {
-        meta_access_token: metaAccessToken || '',
-        meta_verify_token: metaVerifyToken || '',
+        meta_access_token: maskSecret(metaAccessToken),
+        meta_verify_token: maskSecret(metaVerifyToken),
         meta_phone_number_id: client.meta_phone_number_id || '',
-        openai_api_key: openaiApiKey || '',
-        groq_api_key: groqApiKey || '',
+        openai_api_key: maskSecret(openaiApiKey),
+        groq_api_key: maskSecret(groqApiKey),
         webhook_url: webhookUrl,
+      },
+      configured: {
+        meta_access_token: !!(metaAccessToken && metaAccessToken.length > 0),
+        meta_verify_token: !!(metaVerifyToken && metaVerifyToken.length > 0),
+        meta_phone_number_id: !!(client.meta_phone_number_id && client.meta_phone_number_id.length > 0),
+        openai_api_key: !!(openaiApiKey && openaiApiKey.length > 0),
+        groq_api_key: !!(groqApiKey && groqApiKey.length > 0),
       },
     })
   } catch (error) {
@@ -253,9 +287,11 @@ export async function PUT(request: NextRequest) {
 
     console.log('[vault/secrets] Secret atualizado:', { key, client_id: clientId })
 
+    // SECURITY FIX (VULN-009): NÃO retornar secret após update
     return NextResponse.json({
       success: true,
       message: 'Secret atualizado com sucesso',
+      key: key,
     })
   } catch (error) {
     console.error('[vault/secrets] Erro:', error)
