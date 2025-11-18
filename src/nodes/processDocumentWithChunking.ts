@@ -140,12 +140,13 @@ export const processDocumentWithChunking = async (
 
     // 3. Gerar embeddings e salvar no vector store
     const supabase = createServiceRoleClient() // Service role bypassa RLS
+    const supabaseAny = supabase as any // TypeScript bypass para tabela documents
     const documentIds: string[] = []
     let totalEmbeddingTokens = 0
 
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i]
-      
+
       console.log(`[ProcessDocument] 🔄 Processing chunk ${i + 1}/${chunks.length}...`)
 
       // Gerar embedding
@@ -153,7 +154,7 @@ export const processDocumentWithChunking = async (
       totalEmbeddingTokens += embeddingResult.usage.total_tokens
 
       // Salvar no vector store
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAny
         .from('documents')
         .insert({
           content: chunk.content,
@@ -245,9 +246,10 @@ export const deleteDocuments = async (filters: {
 
   try {
     const supabase = createServiceRoleClient() // Service role bypassa RLS
+    const supabaseAny = supabase as any // TypeScript bypass para tabela documents
 
     // Construir query com filtros
-    let query = supabase
+    let query = supabaseAny
       .from('documents')
       .delete()
       .eq('client_id', clientId)
@@ -307,9 +309,10 @@ export const listDocuments = async (
 
   try {
     const supabase = createServiceRoleClient() // Service role bypassa RLS
+    const supabaseAny = supabase as any // TypeScript bypass para tabela documents
 
     // Buscar documentos agrupados por filename
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAny
       .from('documents')
       .select('id, metadata, created_at')
       .eq('client_id', clientId)
