@@ -35,7 +35,8 @@
       "Bash(mkdir:*)",
       "Bash(backup-complete.bat)",
       "Bash(ls:*)",
-      "mcp__byterover-mcp__byterover-retrieve-knowledge"
+      "mcp__byterover-mcp__byterover-retrieve-knowledge",
+      "Bash(nul)"
     ],
     "deny": [],
     "ask": []
