@@ -20,19 +20,10 @@ import {
 } from '@/components/ui/select'
 import { Save, RefreshCw, AlertCircle, CheckCircle, Maximize2, Settings, Sliders } from 'lucide-react'
 import mermaid from 'mermaid'
+import { FLOW_METADATA, FlowNodeMetadata } from '@/flows/flowMetadata'
 
-// Define node types based on CHATBOT_FLOW_ARCHITECTURE.md
-interface FlowNode {
-  id: string
-  name: string
-  description: string
-  category: 'preprocessing' | 'analysis' | 'generation' | 'output' | 'auxiliary'
-  configKey?: string // Key in bot_configurations table
-  enabled: boolean
-  hasConfig: boolean // Whether this node has editable configuration
-  dependencies?: string[] // Node IDs that this node depends on
-  optionalDependencies?: string[] // Alternative paths if primary dependency is disabled
-}
+// Alias FlowNodeMetadata as FlowNode for compatibility
+type FlowNode = FlowNodeMetadata
 
 interface NodeConfig {
   enabled: boolean
@@ -44,190 +35,8 @@ interface NodeConfig {
   [key: string]: any
 }
 
-// Flow nodes representing the complete chatbot architecture
-const FLOW_NODES: FlowNode[] = [
-  // Preprocessing Nodes (1-8)
-  {
-    id: 'filter_status',
-    name: 'Filter Status Updates',
-    description: 'Filtra status updates do WhatsApp',
-    category: 'preprocessing',
-    enabled: true,
-    hasConfig: false,
-  },
-  {
-    id: 'parse_message',
-    name: 'Parse Message',
-    description: 'Extrai informações da mensagem',
-    category: 'preprocessing',
-    enabled: true,
-    hasConfig: false,
-    dependencies: ['filter_status'],
-  },
-  {
-    id: 'check_customer',
-    name: 'Check/Create Customer',
-    description: 'Verifica ou cria cliente no banco',
-    category: 'preprocessing',
-    enabled: true,
-    hasConfig: false,
-    dependencies: ['parse_message'],
-  },
-  {
-    id: 'process_media',
-    name: 'Process Media',
-    description: 'Processa áudio/imagem/documento',
-    category: 'preprocessing',
-    enabled: true,
-    hasConfig: true,
-    configKey: 'media_processing:config',
-    dependencies: ['check_customer'],
-  },
-  {
-    id: 'normalize_message',
-    name: 'Normalize Message',
-    description: 'Normaliza conteúdo da mensagem',
-    category: 'preprocessing',
-    enabled: true,
-    hasConfig: false,
-    dependencies: ['process_media'],
-  },
-  {
-    id: 'push_to_redis',
-    name: 'Push to Redis',
-    description: 'Envia mensagem para fila Redis',
-    category: 'preprocessing',
-    enabled: true,
-    hasConfig: false,
-    dependencies: ['normalize_message'],
-  },
-  {
-    id: 'save_user_message',
-    name: 'Save User Message',
-    description: 'Salva mensagem do usuário no histórico',
-    category: 'preprocessing',
-    enabled: true,
-    hasConfig: false,
-    dependencies: ['push_to_redis'],
-  },
-  {
-    id: 'batch_messages',
-    name: 'Batch Messages',
-    description: 'Agrupa mensagens sequenciais',
-    category: 'preprocessing',
-    enabled: true,
-    hasConfig: true,
-    configKey: 'batching:delay_seconds',
-    dependencies: ['save_user_message'],
-  },
-  
-  // Analysis Nodes (9-10)
-  {
-    id: 'get_chat_history',
-    name: 'Get Chat History',
-    description: 'Busca histórico de conversas',
-    category: 'analysis',
-    enabled: true,
-    hasConfig: true,
-    configKey: 'chat_history:max_messages',
-    dependencies: ['batch_messages'],
-    optionalDependencies: ['save_user_message'], // Bypass if batch is disabled
-  },
-  {
-    id: 'get_rag_context',
-    name: 'Get RAG Context',
-    description: 'Busca contexto relevante (vector search)',
-    category: 'analysis',
-    enabled: true,
-    hasConfig: true,
-    configKey: 'rag:enabled',
-    dependencies: ['batch_messages'],
-    optionalDependencies: ['save_user_message'], // Bypass if batch is disabled
-  },
-
-  // Auxiliary Agents (9.5, 9.6)
-  {
-    id: 'check_continuity',
-    name: 'Check Continuity',
-    description: 'Detecta nova conversa vs continuação',
-    category: 'auxiliary',
-    enabled: true,
-    hasConfig: true,
-    configKey: 'continuity:new_conversation_threshold_hours',
-    dependencies: ['get_chat_history'],
-    optionalDependencies: ['batch_messages', 'save_user_message'], // Bypass if history is disabled
-  },
-  {
-    id: 'classify_intent',
-    name: 'Classify Intent',
-    description: 'Classifica intenção do usuário',
-    category: 'auxiliary',
-    enabled: true,
-    hasConfig: true,
-    configKey: 'intent_classifier:use_llm',
-    dependencies: ['batch_messages'],
-    optionalDependencies: ['save_user_message'], // Bypass if batch is disabled
-  },
-  
-  // Generation Node (11)
-  {
-    id: 'generate_response',
-    name: 'Generate AI Response',
-    description: 'Gera resposta com LLM (Groq/OpenAI)',
-    category: 'generation',
-    enabled: true,
-    hasConfig: true,
-    configKey: 'personality:config',
-    dependencies: ['check_continuity', 'classify_intent', 'get_rag_context'],
-    optionalDependencies: ['batch_messages', 'save_user_message'], // Ultimate bypass if all analysis disabled
-  },
-
-  // Post-Processing Nodes (11.5, 11.6)
-  {
-    id: 'detect_repetition',
-    name: 'Detect Repetition',
-    description: 'Detecta respostas repetitivas',
-    category: 'auxiliary',
-    enabled: true,
-    hasConfig: true,
-    configKey: 'repetition_detector:similarity_threshold',
-    dependencies: ['generate_response'],
-  },
-  {
-    id: 'save_ai_message',
-    name: 'Save AI Message',
-    description: 'Salva resposta da IA no histórico',
-    category: 'auxiliary',
-    enabled: true,
-    hasConfig: false,
-    dependencies: ['detect_repetition'],
-    optionalDependencies: ['generate_response'], // Bypass if repetition disabled
-  },
-
-  // Output Nodes (12-14)
-  {
-    id: 'format_response',
-    name: 'Format Response',
-    description: 'Formata resposta para WhatsApp',
-    category: 'output',
-    enabled: true,
-    hasConfig: false,
-    dependencies: ['save_ai_message'],
-    optionalDependencies: ['generate_response'], // Bypass if save disabled
-  },
-  {
-    id: 'send_whatsapp',
-    name: 'Send WhatsApp Message',
-    description: 'Envia mensagem via Meta API',
-    category: 'output',
-    enabled: true,
-    hasConfig: false,
-    dependencies: ['format_response'],
-  },
-]
-
 export default function FlowArchitectureManager() {
-  const [nodes, setNodes] = useState<FlowNode[]>(FLOW_NODES)
+  const [nodes, setNodes] = useState<FlowNode[]>(FLOW_METADATA)
   const [selectedNode, setSelectedNode] = useState<FlowNode | null>(null)
   const [nodeConfig, setNodeConfig] = useState<NodeConfig | null>(null)
   const [loading, setLoading] = useState(false)
@@ -285,7 +94,7 @@ export default function FlowArchitectureManager() {
     const loadNodeStates = async () => {
       try {
         // Fetch enabled state for all nodes
-        const promises = FLOW_NODES.map(async (node) => {
+        const promises = FLOW_METADATA.map(async (node) => {
           try {
             const response = await fetch(`/api/flow/nodes/${node.id}`)
             if (response.ok) {
@@ -769,27 +578,58 @@ export default function FlowArchitectureManager() {
 
           {selectedNode && (
             <div className="space-y-4 py-4">
-              {/* Enable/Disable Toggle */}
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="space-y-1">
-                  <Label htmlFor="enabled" className="text-base font-semibold">
-                    Status do Node
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedNode.enabled
-                      ? 'Node ativo no fluxo de processamento'
-                      : 'Node desativado (não será executado)'}
-                  </p>
-                </div>
-                <Switch
-                  id="enabled"
-                  checked={selectedNode.enabled}
-                  onCheckedChange={(checked) =>
-                    toggleNodeEnabled(selectedNode.id, checked)
-                  }
-                  disabled={saving}
-                />
+              {/* Node Metadata Info */}
+              <div className="flex gap-2 flex-wrap">
+                <Badge variant="outline">
+                  {selectedNode.category === 'preprocessing' && '🔧 Pré-processamento'}
+                  {selectedNode.category === 'analysis' && '🔍 Análise'}
+                  {selectedNode.category === 'generation' && '🤖 Geração'}
+                  {selectedNode.category === 'output' && '📤 Saída'}
+                  {selectedNode.category === 'auxiliary' && '⚙️ Auxiliar'}
+                </Badge>
+                {selectedNode.configurable ? (
+                  <Badge variant="default">✅ Configurável</Badge>
+                ) : (
+                  <Badge variant="secondary">🔒 Sempre Ativo</Badge>
+                )}
+                {selectedNode.bypassable && (
+                  <Badge variant="outline">🔀 Pode ser Ignorado</Badge>
+                )}
               </div>
+
+              {/* Warning for non-configurable nodes */}
+              {!selectedNode.configurable && (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Este node é essencial e não pode ser desabilitado. Ele sempre será executado no fluxo.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* Enable/Disable Toggle (only for configurable nodes) */}
+              {selectedNode.configurable && (
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="space-y-1">
+                    <Label htmlFor="enabled" className="text-base font-semibold">
+                      Status do Node
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedNode.enabled
+                        ? 'Node ativo no fluxo de processamento'
+                        : 'Node desativado (não será executado)'}
+                    </p>
+                  </div>
+                  <Switch
+                    id="enabled"
+                    checked={selectedNode.enabled}
+                    onCheckedChange={(checked) =>
+                      toggleNodeEnabled(selectedNode.id, checked)
+                    }
+                    disabled={saving}
+                  />
+                </div>
+              )}
 
               {/* Configuration Fields (if node has config) */}
               {selectedNode.hasConfig && nodeConfig && selectedNode.enabled && (
