@@ -19,11 +19,14 @@ import { processChatbotMessage } from '@/flows/chatbotFlow'
 import { addWebhookMessage } from '@/lib/webhookCache'
 import { getClientConfig } from '@/lib/config'
 import { setWithExpiry, get } from '@/lib/redis'
+import crypto from 'crypto'
+import { checkRateLimit, webhookVerifyLimiter } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
 /**
  * GET - Webhook verification (Meta)
+ * SECURITY FIX (VULN-002): Rate limited to prevent brute force
  */
 export async function GET(
   request: NextRequest,
@@ -36,6 +39,18 @@ export async function GET(
   console.log('═══════════════════════════════════════════════════════════')
 
   try {
+    // SECURITY FIX (VULN-002): Rate limit webhook verification
+    // Prevent brute force attacks on verify_token
+    const forwarded = request.headers.get('x-forwarded-for')
+    const ip = forwarded ? forwarded.split(',')[0] : request.headers.get('x-real-ip') || 'unknown'
+    const identifier = `webhook-verify:${ip}`
+    
+    const rateLimitResponse = await checkRateLimit(request, webhookVerifyLimiter, identifier)
+    if (rateLimitResponse) {
+      console.error(`[WEBHOOK GET] Rate limit exceeded for IP: ${ip}`)
+      return rateLimitResponse
+    }
+
     const { clientId } = params
     const searchParams = request.nextUrl.searchParams
 
@@ -165,6 +180,8 @@ export async function GET(
 
 /**
  * POST - Webhook message handler (Meta)
+ * 
+ * SECURITY FIX (VULN-012): Valida assinatura HMAC da Meta
  */
 export async function POST(
   request: NextRequest,
@@ -178,10 +195,17 @@ export async function POST(
   console.log('═══════════════════════════════════════════════')
 
   try {
-    // 1. Parse body
-    const body = await request.json()
-    console.log(`[WEBHOOK/${clientId}] Body recebido:`, JSON.stringify(body, null, 2))
+    // SECURITY FIX (VULN-012): Validar assinatura ANTES de processar
+    const signature = request.headers.get('X-Hub-Signature-256')
+    
+    if (!signature) {
+      console.error(`[WEBHOOK/${clientId}] ❌ Assinatura ausente`)
+      return new NextResponse('Missing signature', { status: 403 })
+    }
 
+    // 1. Parse body (precisamos do texto RAW para validar assinatura)
+    const rawBody = await request.text()
+    
     // 2. Buscar config do cliente do Vault
     console.log(`[WEBHOOK/${clientId}] 🔐 Buscando config do cliente...`)
     const config = await getClientConfig(clientId)
@@ -195,6 +219,37 @@ export async function POST(
       console.error(`[WEBHOOK/${clientId}] ❌ Cliente inativo: ${config.status}`)
       return new NextResponse('Client not active', { status: 403 })
     }
+
+    // SECURITY FIX (VULN-012): Validar assinatura HMAC
+    const appSecret = config.apiKeys.metaVerifyToken // Meta usa verify_token como secret
+    
+    if (!appSecret) {
+      console.error(`[WEBHOOK/${clientId}] ❌ App secret não configurado`)
+      return new NextResponse('App secret not configured', { status: 500 })
+    }
+
+    const expectedSignature = 'sha256=' + crypto
+      .createHmac('sha256', appSecret)
+      .update(rawBody)
+      .digest('hex')
+
+    // Usar comparação timing-safe
+    const signatureBuffer = Buffer.from(signature)
+    const expectedBuffer = Buffer.from(expectedSignature)
+    
+    if (signatureBuffer.length !== expectedBuffer.length || 
+        !crypto.timingSafeEqual(signatureBuffer, expectedBuffer)) {
+      console.error(`[WEBHOOK/${clientId}] ❌ ASSINATURA INVÁLIDA!`)
+      console.error(`  Recebido: ${signature.substring(0, 20)}...`)
+      console.error(`  Esperado: ${expectedSignature.substring(0, 20)}...`)
+      return new NextResponse('Invalid signature', { status: 403 })
+    }
+
+    console.log(`[WEBHOOK/${clientId}] ✅ Assinatura válida`)
+
+    // Parse body como JSON agora que validamos
+    const body = JSON.parse(rawBody)
+    console.log(`[WEBHOOK/${clientId}] Body recebido:`, JSON.stringify(body, null, 2))
 
     console.log(`[WEBHOOK/${clientId}] ✅ Config carregado: ${config.name}`)
     console.log(`  Slug: ${config.slug}`)
