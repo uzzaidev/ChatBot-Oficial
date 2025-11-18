@@ -24,7 +24,7 @@ import { createRouteHandlerClient } from '@/lib/supabase-server'
 export interface AuthenticatedContext {
   user: {
     id: string
-    email: string
+    email?: string
     [key: string]: any
   }
   profile: {
