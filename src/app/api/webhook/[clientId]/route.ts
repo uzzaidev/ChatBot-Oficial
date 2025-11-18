@@ -18,7 +18,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { processChatbotMessage } from '@/flows/chatbotFlow'
 import { addWebhookMessage } from '@/lib/webhookCache'
 import { getClientConfig } from '@/lib/config'
-import { setWithExpiry, get } from '@/lib/redis'
+import { checkDuplicateMessage, markMessageAsProcessed } from '@/lib/dedup'
 import crypto from 'crypto'
 import { checkRateLimit, webhookVerifyLimiter } from '@/lib/rate-limit'
 
@@ -296,27 +296,40 @@ export async function POST(
     }
 
     // 4. Deduplication check - prevent processing duplicate messages
+    // VULN-006 FIX: Redis with PostgreSQL fallback
     if (messageId) {
-      const dedupeKey = `processed:${clientId}:${messageId}`
-      
       try {
-        const alreadyProcessed = await get(dedupeKey)
+        const dedupResult = await checkDuplicateMessage(clientId, messageId)
         
-        if (alreadyProcessed) {
+        if (dedupResult.alreadyProcessed) {
           console.log(`[WEBHOOK/${clientId}] ⚠️ MENSAGEM DUPLICADA DETECTADA!`)
           console.log(`  Message ID: ${messageId}`)
-          console.log(`  Já processada em: ${alreadyProcessed}`)
+          console.log(`  Fonte: ${dedupResult.source}`)
           console.log(`  Ignorando processamento...`)
           return new NextResponse('DUPLICATE_MESSAGE_IGNORED', { status: 200 })
         }
         
-        // Mark message as being processed (valid for 24 hours)
-        await setWithExpiry(dedupeKey, new Date().toISOString(), 86400) // 24 hours
-        console.log(`[WEBHOOK/${clientId}] ✅ Mensagem marcada como processada`)
-      } catch (redisError) {
-        // If Redis fails, log but continue processing (graceful degradation)
-        console.error(`[WEBHOOK/${clientId}] ⚠️ Erro no Redis deduplication:`, redisError)
-        console.log(`[WEBHOOK/${clientId}] Continuando processamento sem deduplicação...`)
+        console.log(`[WEBHOOK/${clientId}] ✅ Mensagem não é duplicada (${dedupResult.source})`)
+        
+        // Mark message as being processed (in both Redis and PostgreSQL)
+        const markResult = await markMessageAsProcessed(clientId, messageId, {
+          timestamp: new Date().toISOString(),
+          from: body?.entry?.[0]?.changes?.[0]?.value?.contacts?.[0]?.wa_id
+        })
+        
+        if (markResult.success) {
+          console.log(`[WEBHOOK/${clientId}] ✅ Mensagem marcada como processada (${markResult.source})`)
+          if (markResult.error) {
+            console.warn(`[WEBHOOK/${clientId}] ⚠️ Aviso: ${markResult.error}`)
+          }
+        } else {
+          console.error(`[WEBHOOK/${clientId}] ❌ Falhou ao marcar como processada: ${markResult.error}`)
+          console.log(`[WEBHOOK/${clientId}] ⚠️ Continuando processamento...`)
+        }
+      } catch (dedupError) {
+        // Graceful degradation - se AMBOS Redis e PostgreSQL falharem, continuar
+        console.error(`[WEBHOOK/${clientId}] ⚠️ Erro crítico no sistema de deduplicação:`, dedupError)
+        console.log(`[WEBHOOK/${clientId}] ⚠️ Continuando processamento sem deduplicação...`)
       }
     }
 
