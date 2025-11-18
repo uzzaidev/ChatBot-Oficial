@@ -68,8 +68,10 @@ export async function GET(
     }
 
     if (enabledData && enabledData.config_value) {
-      config.enabled = enabledData.config_value.enabled !== false
-      console.log(`[flow/nodes] ✓ Loaded node ${nodeId} enabled state: ${config.enabled} from database`)
+      // Handle both boolean and string values (defensive programming)
+      const enabledValue = enabledData.config_value.enabled
+      config.enabled = enabledValue === true || enabledValue === 'true'
+      console.log(`[flow/nodes] ✓ Loaded node ${nodeId} enabled state: ${config.enabled} (raw: ${JSON.stringify(enabledValue)}) from database`)
     } else {
       console.log(`[flow/nodes] ℹ No database entry for node ${nodeId}, using default: enabled=true`)
     }
@@ -235,13 +237,16 @@ export async function PATCH(
     if (enabled !== undefined) {
       const enabledConfigKey = `flow:node_enabled:${nodeId}`
       
+      // Ensure enabled is a boolean (defensive programming)
+      const enabledBoolean = Boolean(enabled === true || enabled === 'true')
+      
       const { error: enabledError } = await supabase
         .from('bot_configurations')
         .upsert(
           {
             client_id: clientId,
             config_key: enabledConfigKey,
-            config_value: { enabled },
+            config_value: { enabled: enabledBoolean },
             is_default: false,
             category: 'rules',
             description: `Node enabled state for ${nodeId}`,
@@ -256,7 +261,7 @@ export async function PATCH(
         return NextResponse.json({ error: enabledError.message }, { status: 500 })
       }
       
-      console.log(`[flow/nodes] ✓ Node ${nodeId} enabled state updated to: ${enabled} for client: ${clientId}`)
+      console.log(`[flow/nodes] ✓ Node ${nodeId} enabled state updated to: ${enabledBoolean} (input: ${enabled}) for client: ${clientId}`)
     }
 
     // Handle configuration updates
