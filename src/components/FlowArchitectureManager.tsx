@@ -40,6 +40,7 @@ export default function FlowArchitectureManager() {
   const [selectedNode, setSelectedNode] = useState<FlowNode | null>(null)
   const [nodeConfig, setNodeConfig] = useState<NodeConfig | null>(null)
   const [loading, setLoading] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [notification, setNotification] = useState<{
     type: 'success' | 'error'
@@ -92,6 +93,7 @@ export default function FlowArchitectureManager() {
   // Load node enabled states from database on mount
   useEffect(() => {
     const loadNodeStates = async () => {
+      setInitialLoading(true)
       try {
         // Fetch enabled state for all nodes
         const promises = FLOW_METADATA.map(async (node) => {
@@ -99,9 +101,13 @@ export default function FlowArchitectureManager() {
             const response = await fetch(`/api/flow/nodes/${node.id}`)
             if (response.ok) {
               const data = await response.json()
+              // Match backend logic: explicitly check for true values
+              const enabledValue = data.config?.enabled
+              const computedEnabled = enabledValue === true || enabledValue === 'true'
+              console.log(`[FlowArchitecture] Node ${node.id}: API returned config.enabled=${enabledValue}, computed enabled=${computedEnabled}`)
               return {
                 nodeId: node.id,
-                enabled: data.config?.enabled !== false,
+                enabled: computedEnabled,
               }
             }
           } catch (error) {
@@ -116,11 +122,19 @@ export default function FlowArchitectureManager() {
         setNodes((prev) =>
           prev.map((node) => {
             const result = results.find((r) => r.nodeId === node.id)
-            return result ? { ...node, enabled: result.enabled } : node
+            const updatedNode = result ? { ...node, enabled: result.enabled } : node
+            if (result) {
+              console.log(`[FlowArchitecture] Setting node ${node.id} enabled to: ${result.enabled}`)
+            }
+            return updatedNode
           })
         )
+        
+        console.log('[FlowArchitecture] ✓ Loaded all node states from database')
       } catch (error) {
         console.error('Error loading node states:', error)
+      } finally {
+        setInitialLoading(false)
       }
     }
 
@@ -472,6 +486,16 @@ export default function FlowArchitectureManager() {
               <AlertCircle className="h-4 w-4" />
             )}
             <AlertDescription>{notification.message}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* Initial Loading Indicator */}
+        {initialLoading && (
+          <Alert>
+            <RefreshCw className="h-4 w-4 animate-spin" />
+            <AlertDescription>
+              Carregando estados dos nós do banco de dados...
+            </AlertDescription>
           </Alert>
         )}
 
