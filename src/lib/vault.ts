@@ -140,6 +140,7 @@ export const getSecretsParallel = async (
 export interface ClientSecrets {
   metaAccessToken: string
   metaVerifyToken: string
+  metaAppSecret: string | null // SECURITY FIX (VULN-012): App Secret for HMAC validation
   openaiApiKey: string | null
   groqApiKey: string | null
 }
@@ -156,15 +157,17 @@ export const getClientSecrets = async (
   client: {
     meta_access_token_secret_id: string
     meta_verify_token_secret_id: string
+    meta_app_secret_secret_id?: string | null
     openai_api_key_secret_id?: string | null
     groq_api_key_secret_id?: string | null
   }
 ): Promise<ClientSecrets> => {
   try {
     // Buscar todos os secrets em paralelo para performance
-    const [metaAccessToken, metaVerifyToken, openaiApiKey, groqApiKey] = await getSecretsParallel([
+    const [metaAccessToken, metaVerifyToken, metaAppSecret, openaiApiKey, groqApiKey] = await getSecretsParallel([
       client.meta_access_token_secret_id,
       client.meta_verify_token_secret_id,
+      client.meta_app_secret_secret_id || null,
       client.openai_api_key_secret_id || null,
       client.groq_api_key_secret_id || null,
     ])
@@ -176,6 +179,7 @@ export const getClientSecrets = async (
     return {
       metaAccessToken,
       metaVerifyToken,
+      metaAppSecret,
       openaiApiKey,
       groqApiKey,
     }

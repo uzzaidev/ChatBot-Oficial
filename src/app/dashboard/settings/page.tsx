@@ -49,6 +49,7 @@ export default function SettingsPage() {
   const [secrets, setSecrets] = useState({
     meta_access_token: '',
     meta_verify_token: '',
+    meta_app_secret: '', // SECURITY FIX (VULN-012)
     meta_phone_number_id: '',
     openai_api_key: '',
     groq_api_key: '',
@@ -1116,6 +1117,50 @@ export default function SettingsPage() {
                   <Button
                     onClick={() =>
                       handleUpdateSecret('meta_verify_token', secrets.meta_verify_token)
+                    }
+                    disabled={loadingSecrets}
+                  >
+                    Salvar
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Meta App Secret - SECURITY FIX (VULN-012) */}
+            <div>
+              <Label htmlFor="meta_app_secret">
+                Meta App Secret
+                <span className="text-xs text-muted-foreground ml-2">
+                  (HMAC validation - diferente do Verify Token)
+                </span>
+              </Label>
+              <div className="flex gap-2 mt-2">
+                <div className="relative flex-1">
+                  <Input
+                    id="meta_app_secret"
+                    type={showPasswords['meta_app_secret'] ? 'text' : 'password'}
+                    value={secrets.meta_app_secret}
+                    onChange={(e) =>
+                      setSecrets({ ...secrets, meta_app_secret: e.target.value })
+                    }
+                    disabled={!editingSecrets}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => togglePasswordVisibility('meta_app_secret')}
+                    className="absolute right-2 top-2"
+                  >
+                    {showPasswords['meta_app_secret'] ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+                {editingSecrets && (
+                  <Button
+                    onClick={() =>
+                      handleUpdateSecret('meta_app_secret', secrets.meta_app_secret)
                     }
                     disabled={loadingSecrets}
                   >

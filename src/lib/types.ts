@@ -309,6 +309,7 @@ export interface ClientConfig {
   apiKeys: {
     metaAccessToken: string
     metaVerifyToken: string
+    metaAppSecret: string | null // SECURITY FIX (VULN-012): App Secret for HMAC validation
     metaPhoneNumberId: string
     openaiApiKey: string
     groqApiKey: string

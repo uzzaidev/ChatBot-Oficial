@@ -147,6 +147,7 @@ export const getClientConfig = async (clientId: string): Promise<ClientConfig | 
     const secrets = await getClientSecrets(supabase, {
       meta_access_token_secret_id: client.meta_access_token_secret_id,
       meta_verify_token_secret_id: client.meta_verify_token_secret_id,
+      meta_app_secret_secret_id: client.meta_app_secret_secret_id,
       openai_api_key_secret_id: client.openai_api_key_secret_id,
       groq_api_key_secret_id: client.groq_api_key_secret_id,
     })
@@ -196,6 +197,7 @@ export const getClientConfig = async (clientId: string): Promise<ClientConfig | 
       apiKeys: {
         metaAccessToken: secrets.metaAccessToken,
         metaVerifyToken: secrets.metaVerifyToken,
+        metaAppSecret: secrets.metaAppSecret, // SECURITY FIX (VULN-012): App Secret for HMAC
         metaPhoneNumberId: client.meta_phone_number_id,
         openaiApiKey: finalOpenaiKey,
         groqApiKey: finalGroqKey,

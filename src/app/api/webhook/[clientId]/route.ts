@@ -221,10 +221,15 @@ export async function POST(
     }
 
     // SECURITY FIX (VULN-012): Validar assinatura HMAC
-    const appSecret = config.apiKeys.metaVerifyToken // Meta usa verify_token como secret
-    
+    // IMPORTANTE: App Secret é DIFERENTE do Verify Token!
+    // - metaVerifyToken: usado para verificação GET (hub.verify_token)
+    // - metaAppSecret: usado para validação HMAC (X-Hub-Signature-256)
+    const appSecret = config.apiKeys.metaAppSecret
+
     if (!appSecret) {
       console.error(`[WEBHOOK/${clientId}] ❌ App secret não configurado`)
+      console.error(`  Configure o App Secret em /dashboard/settings`)
+      console.error(`  App Secret ≠ Verify Token (são valores diferentes!)`)
       return new NextResponse('App secret not configured', { status: 500 })
     }
 

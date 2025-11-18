@@ -81,7 +81,7 @@ export async function GET() {
     const { data: client, error: clientError } = await supabase
       .from('clients')
       .select(
-        'id, slug, meta_access_token_secret_id, meta_verify_token_secret_id, meta_phone_number_id, openai_api_key_secret_id, groq_api_key_secret_id'
+        'id, slug, meta_access_token_secret_id, meta_verify_token_secret_id, meta_app_secret_secret_id, meta_phone_number_id, openai_api_key_secret_id, groq_api_key_secret_id'
       )
       .eq('id', clientId)
       .single()
@@ -104,6 +104,13 @@ export async function GET() {
         secret_id: client.meta_verify_token_secret_id,
       }
     )
+
+    // SECURITY FIX (VULN-012): Buscar App Secret (diferente do Verify Token)
+    const { data: metaAppSecret, error: metaAppError } = client.meta_app_secret_secret_id
+      ? await supabase.rpc('get_client_secret', {
+          secret_id: client.meta_app_secret_secret_id,
+        })
+      : { data: '', error: null }
 
     const { data: openaiApiKey, error: openaiError } = client.openai_api_key_secret_id
       ? await supabase.rpc('get_client_secret', {
@@ -138,6 +145,7 @@ export async function GET() {
       secrets: {
         meta_access_token: maskSecret(metaAccessToken),
         meta_verify_token: maskSecret(metaVerifyToken),
+        meta_app_secret: maskSecret(metaAppSecret), // SECURITY FIX (VULN-012)
         meta_phone_number_id: client.meta_phone_number_id || '',
         openai_api_key: maskSecret(openaiApiKey),
         groq_api_key: maskSecret(groqApiKey),
@@ -146,6 +154,7 @@ export async function GET() {
       configured: {
         meta_access_token: !!(metaAccessToken && metaAccessToken.length > 0),
         meta_verify_token: !!(metaVerifyToken && metaVerifyToken.length > 0),
+        meta_app_secret: !!(metaAppSecret && metaAppSecret.length > 0), // SECURITY FIX (VULN-012)
         meta_phone_number_id: !!(client.meta_phone_number_id && client.meta_phone_number_id.length > 0),
         openai_api_key: !!(openaiApiKey && openaiApiKey.length > 0),
         groq_api_key: !!(groqApiKey && groqApiKey.length > 0),
@@ -179,6 +188,7 @@ export async function PUT(request: NextRequest) {
     const validKeys = [
       'meta_access_token',
       'meta_verify_token',
+      'meta_app_secret', // SECURITY FIX (VULN-012)
       'meta_phone_number_id',
       'openai_api_key',
       'groq_api_key',
@@ -232,6 +242,7 @@ export async function PUT(request: NextRequest) {
     const secretIdFieldMap: Record<string, string> = {
       meta_access_token: 'meta_access_token_secret_id',
       meta_verify_token: 'meta_verify_token_secret_id',
+      meta_app_secret: 'meta_app_secret_secret_id', // SECURITY FIX (VULN-012)
       openai_api_key: 'openai_api_key_secret_id',
       groq_api_key: 'groq_api_key_secret_id',
     }
