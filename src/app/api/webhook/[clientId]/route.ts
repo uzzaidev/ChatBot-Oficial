@@ -20,11 +20,13 @@ import { addWebhookMessage } from '@/lib/webhookCache'
 import { getClientConfig } from '@/lib/config'
 import { setWithExpiry, get } from '@/lib/redis'
 import crypto from 'crypto'
+import { checkRateLimit, webhookVerifyLimiter } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
 /**
  * GET - Webhook verification (Meta)
+ * SECURITY FIX (VULN-002): Rate limited to prevent brute force
  */
 export async function GET(
   request: NextRequest,
@@ -37,6 +39,18 @@ export async function GET(
   console.log('═══════════════════════════════════════════════════════════')
 
   try {
+    // SECURITY FIX (VULN-002): Rate limit webhook verification
+    // Prevent brute force attacks on verify_token
+    const forwarded = request.headers.get('x-forwarded-for')
+    const ip = forwarded ? forwarded.split(',')[0] : request.headers.get('x-real-ip') || 'unknown'
+    const identifier = `webhook-verify:${ip}`
+    
+    const rateLimitResponse = await checkRateLimit(request, webhookVerifyLimiter, identifier)
+    if (rateLimitResponse) {
+      console.error(`[WEBHOOK GET] Rate limit exceeded for IP: ${ip}`)
+      return rateLimitResponse
+    }
+
     const { clientId } = params
     const searchParams = request.nextUrl.searchParams
 

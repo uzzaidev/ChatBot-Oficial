@@ -19,6 +19,78 @@ const nextConfig = {
       bodySizeLimit: '2mb',
     },
   },
+  // SECURITY FIX (VULN-011): Configure CORS and security headers
+  async headers() {
+    const isDevelopment = process.env.NODE_ENV === 'development'
+    const allowedOrigins = isDevelopment 
+      ? ['http://localhost:3000', 'http://localhost:3001']
+      : ['https://chat.luisfboff.com']
+
+    return [
+      {
+        // CORS for API routes
+        source: '/api/:path*',
+        headers: [
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: isDevelopment ? '*' : 'https://chat.luisfboff.com',
+          },
+          {
+            key: 'Access-Control-Allow-Methods',
+            value: 'GET,POST,PUT,DELETE,OPTIONS,PATCH',
+          },
+          {
+            key: 'Access-Control-Allow-Headers',
+            value: 'Content-Type, Authorization, X-Requested-With',
+          },
+          {
+            key: 'Access-Control-Allow-Credentials',
+            value: 'true',
+          },
+        ],
+      },
+      {
+        // Webhook-specific CORS (only allow Meta)
+        source: '/api/webhook/:path*',
+        headers: [
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: 'https://graph.facebook.com',
+          },
+          {
+            key: 'Access-Control-Allow-Methods',
+            value: 'GET,POST',
+          },
+        ],
+      },
+      {
+        // Security headers for all routes
+        source: '/:path*',
+        headers: [
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=()',
+          },
+        ],
+      },
+    ]
+  },
 }
 
 module.exports = nextConfig
