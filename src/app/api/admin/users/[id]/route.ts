@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase'
 import type { UpdateUserRequest, UserProfile, UserRole } from '@/lib/types'
 import { logUpdate, logDelete } from '@/lib/audit'
+import { UserUpdateSchema, validatePayload } from '@/lib/schemas'
 
 export const dynamic = 'force-dynamic'
 
@@ -194,13 +195,20 @@ export async function PATCH(
     // Parse request body
     const body: UpdateUserRequest = await request.json()
 
-    // Validações
-    if (body.role && !['client_admin', 'user'].includes(body.role)) {
+    // VULN-013 FIX: Validate input with Zod
+    const validation = validatePayload(UserUpdateSchema, body)
+    if (!validation.success) {
+      console.log('[PATCH /api/admin/users/[id]] ❌ Validation failed:', validation.errors)
       return NextResponse.json(
-        { error: 'Role deve ser "client_admin" ou "user"' },
+        {
+          error: 'Dados inválidos',
+          details: validation.errors
+        },
         { status: 400 }
       )
     }
+
+    const validatedBody = validation.data
 
     // Client admins não podem promover para admin ou editar admins
     if (profile.role === 'client_admin') {
@@ -214,11 +222,11 @@ export async function PATCH(
 
     // Construir objeto de update apenas com campos fornecidos
     const updateData: any = {}
-    if (body.full_name !== undefined) updateData.full_name = body.full_name
-    if (body.role !== undefined) updateData.role = body.role
-    if (body.phone !== undefined) updateData.phone = body.phone
-    if (body.permissions !== undefined) updateData.permissions = body.permissions
-    if (body.is_active !== undefined) updateData.is_active = body.is_active
+    if (validatedBody.full_name !== undefined) updateData.full_name = validatedBody.full_name
+    if (validatedBody.role !== undefined) updateData.role = validatedBody.role
+    if (validatedBody.phone !== undefined) updateData.phone = validatedBody.phone
+    if (validatedBody.permissions !== undefined) updateData.permissions = validatedBody.permissions
+    if (validatedBody.is_active !== undefined) updateData.is_active = validatedBody.is_active
 
     // Atualizar usuário
     const { data: updatedUser, error: updateError } = await (supabase
