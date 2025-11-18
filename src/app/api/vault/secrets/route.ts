@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@/lib/supabase-server'
+import { logUpdate } from '@/lib/audit'
 
 export const dynamic = 'force-dynamic'
 
@@ -265,6 +266,22 @@ export async function PUT(request: NextRequest) {
         )
       }
 
+      // VULN-008 FIX: Log audit event
+      await logUpdate(
+        'config',
+        `${clientId}-meta_phone_number_id`,
+        { meta_phone_number_id: client.meta_phone_number_id },
+        { meta_phone_number_id: value.trim() },
+        {
+          userId: user.id,
+          userEmail: user.email,
+          clientId: clientId,
+          endpoint: '/api/vault/secrets',
+          method: 'PUT',
+          request
+        }
+      )
+
       return NextResponse.json({
         success: true,
         message: 'Phone Number ID atualizado com sucesso',
@@ -297,6 +314,22 @@ export async function PUT(request: NextRequest) {
     }
 
     console.log('[vault/secrets] Secret atualizado:', { key, client_id: clientId })
+
+    // VULN-008 FIX: Log audit event
+    await logUpdate(
+      'secret',
+      `${clientId}-${key}`,
+      { [key]: '***' }, // Não logar valor antigo (já foi redacted)
+      { [key]: '***' }, // Não logar valor novo (redacted)
+      {
+        userId: user.id,
+        userEmail: user.email,
+        clientId: clientId,
+        endpoint: '/api/vault/secrets',
+        method: 'PUT',
+        request
+      }
+    )
 
     // SECURITY FIX (VULN-009): NÃO retornar secret após update
     return NextResponse.json({

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase'
 import type { UpdateUserRequest, UserProfile, UserRole } from '@/lib/types'
+import { logUpdate, logDelete } from '@/lib/audit'
 
 export const dynamic = 'force-dynamic'
 
@@ -235,6 +236,35 @@ export async function PATCH(
       )
     }
 
+    // VULN-008 FIX: Log audit event
+    await logUpdate(
+      'user',
+      userId,
+      {
+        full_name: target.full_name,
+        role: target.role,
+        phone: target.phone,
+        is_active: target.is_active,
+        permissions: target.permissions
+      },
+      {
+        full_name: updatedUser.full_name,
+        role: updatedUser.role,
+        phone: updatedUser.phone,
+        is_active: updatedUser.is_active,
+        permissions: updatedUser.permissions
+      },
+      {
+        userId: user.id,
+        userEmail: user.email,
+        userRole: profile.role,
+        clientId: target.client_id,
+        endpoint: `/api/admin/users/${userId}`,
+        method: 'PATCH',
+        request
+      }
+    )
+
     return NextResponse.json({
       user: updatedUser as UserProfile,
       message: 'Usuário atualizado com sucesso'
@@ -361,6 +391,27 @@ export async function DELETE(
         )
       }
 
+      // VULN-008 FIX: Log audit event for hard delete
+      await logDelete(
+        'user',
+        userId,
+        {
+          email: target.email,
+          role: target.role,
+          client_id: target.client_id,
+          delete_type: 'hard'
+        },
+        {
+          userId: user.id,
+          userEmail: user.email,
+          userRole: profile.role,
+          clientId: target.client_id,
+          endpoint: `/api/admin/users/${userId}?hard=true`,
+          method: 'DELETE',
+          request
+        }
+      )
+
       // Deletar profile (cascade automático)
       return NextResponse.json({
         message: 'Usuário removido permanentemente'
@@ -379,6 +430,23 @@ export async function DELETE(
           { status: 500 }
         )
       }
+
+      // VULN-008 FIX: Log audit event for soft delete
+      await logUpdate(
+        'user',
+        userId,
+        { is_active: true },
+        { is_active: false },
+        {
+          userId: user.id,
+          userEmail: user.email,
+          userRole: profile.role,
+          clientId: target.client_id,
+          endpoint: `/api/admin/users/${userId}`,
+          method: 'DELETE',
+          request
+        }
+      )
 
       return NextResponse.json({
         message: 'Usuário desativado com sucesso'

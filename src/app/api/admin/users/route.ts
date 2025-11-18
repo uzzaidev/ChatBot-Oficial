@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase'
 import type { CreateUserRequest, UserProfile, UserRole } from '@/lib/types'
+import { logCreate } from '@/lib/audit'
 
 export const dynamic = 'force-dynamic'
 
@@ -399,6 +400,27 @@ export async function POST(request: NextRequest) {
       role: createdProfile.role,
       clientId: createdProfile.client_id
     })
+
+    // VULN-008 FIX: Log audit event
+    await logCreate(
+      'user',
+      createdProfile.id,
+      {
+        email: createdProfile.email,
+        role: createdProfile.role,
+        full_name: createdProfile.full_name,
+        client_id: createdProfile.client_id
+      },
+      {
+        userId: user.id,
+        userEmail: user.email,
+        userRole: profile.role,
+        clientId: targetClientId,
+        endpoint: '/api/admin/users',
+        method: 'POST',
+        request
+      }
+    )
 
     return NextResponse.json({
       user: createdProfile as UserProfile,
