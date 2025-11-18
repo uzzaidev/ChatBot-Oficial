@@ -34,10 +34,14 @@ export const useConversations = ({
   const [total, setTotal] = useState(0)
   const [lastUpdatePhone, setLastUpdatePhone] = useState<string | null>(null)
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const isInitialLoadRef = useRef(true)
 
-  const fetchConversations = useCallback(async () => {
+  const fetchConversations = useCallback(async (isRealtimeUpdate = false) => {
     try {
-      setLoading(true)
+      // Only show loading state on initial load, not on realtime updates
+      if (!isRealtimeUpdate) {
+        setLoading(true)
+      }
       setError(null)
 
       // 🔐 SECURITY: No longer send client_id as query param
@@ -61,12 +65,20 @@ export const useConversations = ({
       const data = await response.json()
       setConversations(data.conversations || [])
       setTotal(data.total || 0)
+      
+      // Mark initial load as complete
+      if (isInitialLoadRef.current) {
+        isInitialLoadRef.current = false
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido'
       setError(errorMessage)
       console.error('Erro ao buscar conversas:', err)
     } finally {
-      setLoading(false)
+      // Only clear loading state if it was set (initial load or manual refresh)
+      if (!isRealtimeUpdate) {
+        setLoading(false)
+      }
     }
   }, [status, limit, offset]) // Removed clientId from dependencies since it's not used in API call
 
@@ -76,7 +88,8 @@ export const useConversations = ({
       clearTimeout(fetchTimeoutRef.current)
     }
     fetchTimeoutRef.current = setTimeout(() => {
-      fetchConversations()
+      // Pass true to indicate this is a realtime update (no loading state)
+      fetchConversations(true)
     }, delay)
   }, [fetchConversations])
 

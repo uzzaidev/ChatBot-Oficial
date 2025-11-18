@@ -71,7 +71,7 @@ export function DashboardClient({ clientId }: DashboardClientProps) {
   const { conversations, loading, lastUpdatePhone: pollingLastUpdate } = useConversations({
     clientId,
     limit: 50,
-    refreshInterval: 10000,
+    refreshInterval: 0, // Disabled polling - use realtime only to prevent flickering
     enableRealtime: true,
   })
 
