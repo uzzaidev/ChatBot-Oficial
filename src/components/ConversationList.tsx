@@ -77,7 +77,7 @@ export const ConversationList = ({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <span className="text-muted-foreground">Carregando...</span>
+        <span className="text-erie-black-600">Carregando...</span>
       </div>
     )
   }
@@ -85,8 +85,8 @@ export const ConversationList = ({
   if (conversations.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-8 text-center px-4">
-        <MessageCircle className="h-12 w-12 text-gray-300 mb-4" />
-        <span className="text-muted-foreground">
+        <MessageCircle className="h-12 w-12 text-silver-300 mb-4" />
+        <span className="text-erie-black-600">
           Nenhuma conversa encontrada
         </span>
       </div>
@@ -100,25 +100,25 @@ export const ConversationList = ({
         const hasUnread = unreadConversations.has(conversation.phone)
         const isRecentlyUpdated = recentlyUpdated === conversation.phone
         const statusColor = conversation.status === 'bot'
-          ? 'bg-green-100 text-green-800'
+          ? 'bg-mint-100 text-mint-800 border-mint-200'
           : conversation.status === 'waiting'
-          ? 'bg-yellow-100 text-yellow-800'
-          : 'bg-blue-100 text-blue-800'
+          ? 'bg-gold-100 text-gold-800 border-gold-200'
+          : 'bg-brand-blue-100 text-brand-blue-800 border-brand-blue-200'
 
         return (
           <div
             key={conversation.id}
             className={cn(
-              "flex items-center gap-3 p-3 cursor-pointer transition-colors duration-300 border-b border-gray-100",
-              isActive ? "bg-gray-100" : "hover:bg-gray-50",
-              hasUnread && !isActive && "bg-blue-50",
+              "flex items-center gap-3 p-3 cursor-pointer transition-colors duration-300 border-b border-silver-200",
+              isActive ? "bg-mint-50" : "hover:bg-silver-50",
+              hasUnread && !isActive && "bg-brand-blue-50",
               isRecentlyUpdated && "animate-pulse"
             )}
             onClick={() => handleConversationClick(conversation.phone)}
           >
             {/* Avatar */}
             <Avatar className="h-12 w-12 flex-shrink-0">
-              <AvatarFallback className="bg-primary text-white text-sm">
+              <AvatarFallback className="bg-mint-500 text-white text-sm">
                 {getInitials(conversation.name || 'Sem nome')}
               </AvatarFallback>
             </Avatar>
@@ -127,20 +127,20 @@ export const ConversationList = ({
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-1">
                 <span className={cn(
-                  "font-semibold text-sm truncate text-gray-900",
+                  "font-semibold text-sm truncate text-erie-black-900",
                   hasUnread && !isActive && "font-bold"
                 )}>
                   {conversation.name}
                 </span>
-                <span className="text-xs text-gray-500 ml-2 flex-shrink-0">
+                <span className="text-xs text-erie-black-500 ml-2 flex-shrink-0">
                   {formatDateTime(conversation.last_update)}
                 </span>
               </div>
 
               <div className="flex items-center justify-between">
                 <p className={cn(
-                  "text-xs text-gray-600 truncate flex-1",
-                  hasUnread && !isActive && "font-semibold text-gray-900"
+                  "text-xs text-erie-black-600 truncate flex-1",
+                  hasUnread && !isActive && "font-semibold text-erie-black-900"
                 )}>
                   {conversation.last_message
                     ? truncateText(conversation.last_message, 35)
@@ -150,7 +150,7 @@ export const ConversationList = ({
 
                 {/* Badge de Status (pequeno) */}
                 <Badge
-                  className={cn("ml-2 text-[10px] px-1.5 py-0 h-5", statusColor)}
+                  className={cn("ml-2 text-[10px] px-1.5 py-0 h-5 border", statusColor)}
                   variant="secondary"
                 >
                   {conversation.status === 'bot' ? 'Bot' : conversation.status === 'waiting' ? 'Aguardando' : 'Humano'}
@@ -160,7 +160,7 @@ export const ConversationList = ({
 
             {/* Indicador de mensagens não lidas */}
             {hasUnread && !isActive && (
-              <div className="bg-primary text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-semibold flex-shrink-0">
+              <div className="bg-mint-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-semibold flex-shrink-0">
                 •
               </div>
             )}

@@ -71,7 +71,7 @@ export function DashboardClient({ clientId }: DashboardClientProps) {
   const { conversations, loading, lastUpdatePhone: pollingLastUpdate } = useConversations({
     clientId,
     limit: 50,
-    refreshInterval: 10000,
+    refreshInterval: 0, // Disabled polling - use realtime only to prevent flickering
     enableRealtime: true,
   })
 
@@ -125,18 +125,18 @@ export function DashboardClient({ clientId }: DashboardClientProps) {
   }, [conversations, loading])
 
   return (
-    <div className="space-y-6 md:space-y-8 p-4 md:p-6 lg:p-8">
+    <div className="space-y-6 md:space-y-8 p-4 md:p-6 lg:p-8 bg-silver-50 min-h-screen">
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-sm md:text-base text-muted-foreground">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-erie-black-900">Dashboard</h1>
+          <p className="text-sm md:text-base text-erie-black-600">
             Visão geral das conversas WhatsApp
           </p>
         </div>
         
         {!checkingAdmin && isAdmin && (
           <Link href="/admin">
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button variant="outline" size="sm" className="gap-2 border-mint-400 text-mint-700 hover:bg-mint-50">
               <Settings className="h-4 w-4" />
               <span className="hidden sm:inline">Painel Admin</span>
             </Button>
@@ -144,7 +144,7 @@ export function DashboardClient({ clientId }: DashboardClientProps) {
         )}
       </div>
 
-      <Separator />
+      <Separator className="bg-silver-200" />
 
       <MetricsDashboard metrics={metrics} loading={metricsLoading} />
 
