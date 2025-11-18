@@ -55,15 +55,23 @@ export async function GET(
     let config: any = { enabled: true }
 
     // Fetch node enabled state
-    const { data: enabledData } = await supabase
+    const { data: enabledData, error: enabledFetchError } = await supabase
       .from('bot_configurations')
       .select('config_value')
       .eq('client_id', clientId)
       .eq('config_key', enabledConfigKey)
       .single()
 
-    if (enabledData) {
-      config.enabled = enabledData.config_value?.enabled !== false
+    // If there's an error AND it's not just "not found", log it
+    if (enabledFetchError && enabledFetchError.code !== 'PGRST116') {
+      console.error('[flow/nodes] Error fetching enabled state:', enabledFetchError)
+    }
+
+    if (enabledData && enabledData.config_value) {
+      config.enabled = enabledData.config_value.enabled !== false
+      console.log(`[flow/nodes] ✓ Loaded node ${nodeId} enabled state: ${config.enabled} from database`)
+    } else {
+      console.log(`[flow/nodes] ℹ No database entry for node ${nodeId}, using default: enabled=true`)
     }
 
     // Special handling for generate_response node - fetch from clients table
@@ -98,12 +106,17 @@ export async function GET(
 
       // 1. Fetch primary config key
       if (configKey) {
-        const { data: configData } = await supabase
+        const { data: configData, error: configFetchError } = await supabase
           .from('bot_configurations')
           .select('config_value')
           .eq('client_id', clientId)
           .eq('config_key', configKey)
           .single()
+
+        // Log errors except "not found"
+        if (configFetchError && configFetchError.code !== 'PGRST116') {
+          console.error('[flow/nodes] Error fetching config:', configFetchError)
+        }
 
         if (configData && configData.config_value !== null) {
           // Handle primitive values (number, boolean, string) vs objects
@@ -124,11 +137,16 @@ export async function GET(
       // This ensures we show all editable fields even if they're in different config keys
       const relatedConfigKeys = getRelatedConfigKeys(nodeId)
       if (relatedConfigKeys.length > 0) {
-        const { data: relatedConfigs } = await supabase
+        const { data: relatedConfigs, error: relatedFetchError } = await supabase
           .from('bot_configurations')
           .select('config_key, config_value')
           .eq('client_id', clientId)
           .in('config_key', relatedConfigKeys)
+
+        // Log errors (not using .single() so no "not found" code)
+        if (relatedFetchError) {
+          console.error('[flow/nodes] Error fetching related configs:', relatedFetchError)
+        }
 
         if (relatedConfigs && relatedConfigs.length > 0) {
           // Merge all related configs into the main config object
@@ -237,6 +255,8 @@ export async function PATCH(
         console.error('[flow/nodes] Error updating enabled state:', enabledError)
         return NextResponse.json({ error: enabledError.message }, { status: 500 })
       }
+      
+      console.log(`[flow/nodes] ✓ Node ${nodeId} enabled state updated to: ${enabled} for client: ${clientId}`)
     }
 
     // Handle configuration updates
