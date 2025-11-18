@@ -18,7 +18,7 @@
 
 import { semanticChunkText, chunkDocumentForRAG, getChunkingStats, type ChunkingConfig } from '@/lib/chunking'
 import { generateEmbedding } from '@/lib/openai'
-import { createServerClient } from '@/lib/supabase'
+import { createServiceRoleClient } from '@/lib/supabase'
 import { getBotConfigs } from '@/lib/config'
 
 export interface ProcessDocumentInput {
@@ -139,7 +139,7 @@ export const processDocumentWithChunking = async (
     console.log(`[ProcessDocument] 📊 Stats:`, stats)
 
     // 3. Gerar embeddings e salvar no vector store
-    const supabase = createServerClient()
+    const supabase = createServiceRoleClient() // Service role bypassa RLS
     const documentIds: string[] = []
     let totalEmbeddingTokens = 0
 
@@ -244,7 +244,7 @@ export const deleteDocuments = async (filters: {
   console.log(`[DeleteDocuments] 🗑️ Deleting with filters:`, filters)
 
   try {
-    const supabase = createServerClient()
+    const supabase = createServiceRoleClient() // Service role bypassa RLS
 
     // Construir query com filtros
     let query = supabase
@@ -306,7 +306,7 @@ export const listDocuments = async (
   console.log(`[ListDocuments] 📋 Listing for client: ${clientId}`)
 
   try {
-    const supabase = createServerClient()
+    const supabase = createServiceRoleClient() // Service role bypassa RLS
 
     // Buscar documentos agrupados por filename
     const { data, error } = await supabase

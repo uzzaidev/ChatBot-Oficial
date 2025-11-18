@@ -1,5 +1,5 @@
 import { CustomerRecord, ConversationStatus } from '@/lib/types'
-import { createServerClient } from '@/lib/supabase'
+import { createServiceRoleClient } from '@/lib/supabase'
 
 export interface CheckOrCreateCustomerInput {
   phone: string
@@ -24,7 +24,7 @@ interface ClienteWhatsAppData {
  * Se a migration ainda não foi rodada, a VIEW "Clientes WhatsApp" vai redirecionar
  */
 const upsertClienteWhatsApp = async (
-  supabase: ReturnType<typeof createServerClient>,
+  supabase: ReturnType<typeof createServiceRoleClient>,
   phone: string,
   name: string,
   clientId: string // 🔐 Multi-tenant: ID do cliente (obrigatório após migration 005)
@@ -80,8 +80,8 @@ export const checkOrCreateCustomer = async (
     console.log('[checkOrCreateCustomer] 🔐 Client ID:', clientId)
     console.log('[checkOrCreateCustomer] ⏱️  Timestamp:', new Date().toISOString())
 
-    // Cria cliente Supabase (usa service_role para bypass de RLS)
-    const supabase = createServerClient()
+    // Cria cliente Supabase com SERVICE ROLE (bypassa RLS - fix VULN-007)
+    const supabase = createServiceRoleClient()
 
     // UPSERT usando helper function (bypass de tipos do TypeScript)
     console.log('[checkOrCreateCustomer] 🚀 Executando UPSERT via Supabase...')
