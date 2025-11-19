@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase'
 import type { UpdateUserRequest, UserProfile, UserRole } from '@/lib/types'
+import { logUpdate, logDelete } from '@/lib/audit'
+import { UserUpdateSchema, validatePayload } from '@/lib/schemas'
+import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
 
@@ -193,13 +196,20 @@ export async function PATCH(
     // Parse request body
     const body: UpdateUserRequest = await request.json()
 
-    // Validações
-    if (body.role && !['client_admin', 'user'].includes(body.role)) {
+    // VULN-013 FIX: Validate input with Zod
+    const validation = validatePayload(UserUpdateSchema, body)
+    if (validation.success === false) {
+      console.log('[PATCH /api/admin/users/[id]] ❌ Validation failed:', validation.errors)
       return NextResponse.json(
-        { error: 'Role deve ser "client_admin" ou "user"' },
+        {
+          error: 'Dados inválidos',
+          details: validation.errors
+        },
         { status: 400 }
       )
     }
+
+    const validatedBody = validation.data as z.infer<typeof UserUpdateSchema>
 
     // Client admins não podem promover para admin ou editar admins
     if (profile.role === 'client_admin') {
@@ -213,11 +223,11 @@ export async function PATCH(
 
     // Construir objeto de update apenas com campos fornecidos
     const updateData: any = {}
-    if (body.full_name !== undefined) updateData.full_name = body.full_name
-    if (body.role !== undefined) updateData.role = body.role
-    if (body.phone !== undefined) updateData.phone = body.phone
-    if (body.permissions !== undefined) updateData.permissions = body.permissions
-    if (body.is_active !== undefined) updateData.is_active = body.is_active
+    if (validatedBody.full_name !== undefined) updateData.full_name = validatedBody.full_name
+    if (validatedBody.role !== undefined) updateData.role = validatedBody.role
+    if (validatedBody.phone !== undefined) updateData.phone = validatedBody.phone
+    if (validatedBody.permissions !== undefined) updateData.permissions = validatedBody.permissions
+    if (validatedBody.is_active !== undefined) updateData.is_active = validatedBody.is_active
 
     // Atualizar usuário
     const { data: updatedUser, error: updateError } = await (supabase
@@ -234,6 +244,35 @@ export async function PATCH(
         { status: 500 }
       )
     }
+
+    // VULN-008 FIX: Log audit event
+    await logUpdate(
+      'user',
+      userId,
+      {
+        full_name: target.full_name,
+        role: target.role,
+        phone: target.phone,
+        is_active: target.is_active,
+        permissions: target.permissions
+      },
+      {
+        full_name: updatedUser.full_name,
+        role: updatedUser.role,
+        phone: updatedUser.phone,
+        is_active: updatedUser.is_active,
+        permissions: updatedUser.permissions
+      },
+      {
+        userId: user.id,
+        userEmail: user.email,
+        userRole: profile.role,
+        clientId: target.client_id,
+        endpoint: `/api/admin/users/${userId}`,
+        method: 'PATCH',
+        request
+      }
+    )
 
     return NextResponse.json({
       user: updatedUser as UserProfile,
@@ -361,6 +400,27 @@ export async function DELETE(
         )
       }
 
+      // VULN-008 FIX: Log audit event for hard delete
+      await logDelete(
+        'user',
+        userId,
+        {
+          email: target.email,
+          role: target.role,
+          client_id: target.client_id,
+          delete_type: 'hard'
+        },
+        {
+          userId: user.id,
+          userEmail: user.email,
+          userRole: profile.role,
+          clientId: target.client_id,
+          endpoint: `/api/admin/users/${userId}?hard=true`,
+          method: 'DELETE',
+          request
+        }
+      )
+
       // Deletar profile (cascade automático)
       return NextResponse.json({
         message: 'Usuário removido permanentemente'
@@ -379,6 +439,23 @@ export async function DELETE(
           { status: 500 }
         )
       }
+
+      // VULN-008 FIX: Log audit event for soft delete
+      await logUpdate(
+        'user',
+        userId,
+        { is_active: true },
+        { is_active: false },
+        {
+          userId: user.id,
+          userEmail: user.email,
+          userRole: profile.role,
+          clientId: target.client_id,
+          endpoint: `/api/admin/users/${userId}`,
+          method: 'DELETE',
+          request
+        }
+      )
 
       return NextResponse.json({
         message: 'Usuário desativado com sucesso'

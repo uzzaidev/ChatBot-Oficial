@@ -88,7 +88,7 @@ importers:
         version: 7.0.10
       openai:
         specifier: ^6.7.0
-        version: 6.9.0(ws@8.18.3)
+        version: 6.9.0(ws@8.18.3)(zod@4.1.12)
       pdf-parse:
         specifier: ^2.4.5
         version: 2.4.5
@@ -116,6 +116,9 @@ importers:
       tailwindcss-animate:
         specifier: ^1.0.7
         version: 1.0.7(tailwindcss@3.4.18)
+      zod:
+        specifier: ^4.1.12
+        version: 4.1.12
     devDependencies:
       '@types/node':
         specifier: ^22.18.12
@@ -8875,6 +8878,9 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
 
+  zod@4.1.12:
+    resolution: {integrity: sha512-JInaHOamG8pt5+Ey8kGmdcAcg3OL9reK8ltczgHTAwNhMys/6ThXHityHxVV2p3fkw/c+MAvBHFVYHFZDmjMCQ==}
+
 snapshots:
 
   '@alloc/quick-lru@5.2.0': {}
@@ -16173,7 +16179,9 @@ snapshots:
       pretty-format: 24.9.0
       throat: 4.1.0
     transitivePeerDependencies:
+      - bufferutil
       - supports-color
+      - utf-8-validate
 
   jest-leak-detector@24.9.0:
     dependencies:
@@ -17211,9 +17219,10 @@ snapshots:
       is-docker: 2.2.1
       is-wsl: 2.2.0
 
-  openai@6.9.0(ws@8.18.3):
+  openai@6.9.0(ws@8.18.3)(zod@4.1.12):
     optionalDependencies:
       ws: 8.18.3
+      zod: 4.1.12
 
   opn@5.5.0:
     dependencies:
@@ -20236,3 +20245,5 @@ snapshots:
       yargs-parser: 13.1.2
 
   yocto-queue@0.1.0: {}
+
+  zod@4.1.12: {}

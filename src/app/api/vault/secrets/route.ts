@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@/lib/supabase-server'
+import { logUpdate } from '@/lib/audit'
+import { SecretUpdateSchema, validatePayload } from '@/lib/schemas'
+import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
 
@@ -183,24 +186,21 @@ export async function GET() {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const { key, value } = body
 
-    const validKeys = [
-      'meta_access_token',
-      'meta_verify_token',
-      'meta_app_secret', // SECURITY FIX (VULN-012)
-      'meta_phone_number_id',
-      'openai_api_key',
-      'groq_api_key',
-    ]
-
-    if (!key || !validKeys.includes(key)) {
-      return NextResponse.json({ error: 'Key inválida' }, { status: 400 })
+    // VULN-013 FIX: Validate input with Zod
+    const validation = validatePayload(SecretUpdateSchema, body)
+    if (validation.success === false) {
+      console.log('[PUT /api/vault/secrets] ❌ Validation failed:', validation.errors)
+      return NextResponse.json(
+        {
+          error: 'Dados inválidos',
+          details: validation.errors
+        },
+        { status: 400 }
+      )
     }
 
-    if (!value || value.trim().length === 0) {
-      return NextResponse.json({ error: 'Value não pode ser vazio' }, { status: 400 })
-    }
+    const { key, value } = validation.data as z.infer<typeof SecretUpdateSchema>
 
     const supabase = createRouteHandlerClient()
 
@@ -252,7 +252,7 @@ export async function PUT(request: NextRequest) {
       const { error: updateError } = await supabase
         .from('clients')
         .update({
-          meta_phone_number_id: value.trim(),
+          meta_phone_number_id: value,
           updated_at: new Date().toISOString(),
         })
         .eq('id', clientId)
@@ -264,6 +264,22 @@ export async function PUT(request: NextRequest) {
           { status: 500 }
         )
       }
+
+      // VULN-008 FIX: Log audit event
+      await logUpdate(
+        'config',
+        `${clientId}-meta_phone_number_id`,
+        { meta_phone_number_id: client.meta_phone_number_id },
+        { meta_phone_number_id: value },
+        {
+          userId: user.id,
+          userEmail: user.email,
+          clientId: clientId,
+          endpoint: '/api/vault/secrets',
+          method: 'PUT',
+          request
+        }
+      )
 
       return NextResponse.json({
         success: true,
@@ -285,7 +301,7 @@ export async function PUT(request: NextRequest) {
     // Atualizar secret no Vault
     const { error: vaultError } = await supabase.rpc('update_client_secret', {
       secret_id: secretId,
-      new_secret_value: value.trim(),
+      new_secret_value: value,
     })
 
     if (vaultError) {
@@ -297,6 +313,22 @@ export async function PUT(request: NextRequest) {
     }
 
     console.log('[vault/secrets] Secret atualizado:', { key, client_id: clientId })
+
+    // VULN-008 FIX: Log audit event
+    await logUpdate(
+      'secret',
+      `${clientId}-${key}`,
+      { [key]: '***' }, // Não logar valor antigo (já foi redacted)
+      { [key]: '***' }, // Não logar valor novo (redacted)
+      {
+        userId: user.id,
+        userEmail: user.email,
+        clientId: clientId,
+        endpoint: '/api/vault/secrets',
+        method: 'PUT',
+        request
+      }
+    )
 
     // SECURITY FIX (VULN-009): NÃO retornar secret após update
     return NextResponse.json({

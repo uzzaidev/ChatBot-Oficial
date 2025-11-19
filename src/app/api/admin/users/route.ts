@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase'
 import type { CreateUserRequest, UserProfile, UserRole } from '@/lib/types'
+import { logCreate } from '@/lib/audit'
+import { UserCreateSchema, validatePayload } from '@/lib/schemas'
+import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
 
@@ -241,57 +244,43 @@ export async function POST(request: NextRequest) {
     // Parse request body
     const body: CreateUserRequest = await request.json()
 
+    // VULN-013 FIX: Validate input with Zod
+    const validation = validatePayload(UserCreateSchema, body)
+    if (validation.success === false) {
+      console.log('[POST /api/admin/users] ❌ Validation failed:', validation.errors)
+      return NextResponse.json(
+        {
+          error: 'Dados inválidos',
+          details: validation.errors
+        },
+        { status: 400 }
+      )
+    }
+
+    const validatedBody = validation.data as z.infer<typeof UserCreateSchema>
+
     console.log('[POST /api/admin/users] 📋 Request body:', {
-      email: body.email,
-      role: body.role,
-      hasPassword: !!body.password,
-      requestedClientId: body.client_id,
+      email: validatedBody.email,
+      role: validatedBody.role,
+      hasPassword: !!validatedBody.password,
+      requestedClientId: validatedBody.client_id,
       currentUserRole: profile.role
     })
-
-    // Validação básica
-    if (!body.email || typeof body.email !== 'string') {
-      return NextResponse.json(
-        { error: 'Email é obrigatório e deve ser uma string' },
-        { status: 400 }
-      )
-    }
-
-    if (!body.password || typeof body.password !== 'string') {
-      return NextResponse.json(
-        { error: 'Senha é obrigatória' },
-        { status: 400 }
-      )
-    }
-
-    if (body.password.length < 6) {
-      return NextResponse.json(
-        { error: 'Senha deve ter no mínimo 6 caracteres' },
-        { status: 400 }
-      )
-    }
-
-    if (!body.role || !['client_admin', 'user'].includes(body.role)) {
-      return NextResponse.json(
-        { error: 'Role deve ser "client_admin" ou "user"' },
-        { status: 400 }
-      )
-    }
 
     // Determinar client_id do novo usuário
     let targetClientId = profile.client_id // Default: mesmo client do criador
 
     // Super admin pode escolher qualquer client_id
-    if (profile.role === 'admin' && body.client_id) {
+    if (profile.role === 'admin' && validatedBody.client_id) {
       // Validar se o client_id existe
       const { data: targetClient, error: clientError } = await supabase
         .from('clients')
         .select('id, name, status')
-        .eq('id', body.client_id)
+        .eq('id', validatedBody.client_id)
         .single()
 
       if (clientError || !targetClient) {
-        console.log('[POST /api/admin/users] ❌ Invalid client_id:', body.client_id)
+        console.log('[POST /api/admin/users] ❌ Invalid client_id:', validatedBody.client_id)
         return NextResponse.json(
           { error: 'Cliente/Tenant não encontrado' },
           { status: 400 }
@@ -299,19 +288,19 @@ export async function POST(request: NextRequest) {
       }
 
       if (targetClient.status !== 'active') {
-        console.log('[POST /api/admin/users] ❌ Client inactive:', body.client_id)
+        console.log('[POST /api/admin/users] ❌ Client inactive:', validatedBody.client_id)
         return NextResponse.json(
           { error: 'Cliente/Tenant está inativo' },
           { status: 400 }
         )
       }
 
-      targetClientId = body.client_id
+      targetClientId = validatedBody.client_id
       console.log('[POST /api/admin/users] ✅ Super admin creating user for client:', {
         clientId: targetClientId,
         clientName: targetClient.name
       })
-    } else if (profile.role === 'client_admin' && body.client_id && body.client_id !== profile.client_id) {
+    } else if (profile.role === 'client_admin' && validatedBody.client_id && validatedBody.client_id !== profile.client_id) {
       // Client admin tentando criar usuário em outro tenant - NEGADO
       console.log('[POST /api/admin/users] ❌ Client admin trying to create user in different tenant')
       return NextResponse.json(
@@ -324,11 +313,11 @@ export async function POST(request: NextRequest) {
     const { data: existingUser } = await supabase
       .from('user_profiles')
       .select('id, email')
-      .eq('email', body.email.toLowerCase().trim())
+      .eq('email', validatedBody.email)
       .single()
 
     if (existingUser) {
-      console.log('[POST /api/admin/users] ❌ Email already exists:', body.email)
+      console.log('[POST /api/admin/users] ❌ Email already exists:', validatedBody.email)
       return NextResponse.json(
         { error: 'Email já cadastrado' },
         { status: 409 }
@@ -338,12 +327,12 @@ export async function POST(request: NextRequest) {
     // Criar usuário no auth (Supabase Auth) com senha definida
     console.log('[POST /api/admin/users] 🔐 Creating auth user...')
     const { data: authUser, error: createAuthError } = await supabaseAdmin.auth.admin.createUser({
-      email: body.email.toLowerCase().trim(),
-      password: body.password, // Senha definida pelo admin
+      email: validatedBody.email,
+      password: validatedBody.password, // Senha definida pelo admin
       email_confirm: true, // Auto-confirmar email
       user_metadata: {
-        full_name: body.full_name,
-        role: body.role,
+        full_name: validatedBody.full_name,
+        role: validatedBody.role,
         client_id: targetClientId
       }
     })
@@ -365,12 +354,12 @@ export async function POST(request: NextRequest) {
     const newUserProfile: any = {
       id: authUser.user.id,
       client_id: targetClientId,
-      email: body.email.toLowerCase().trim(),
-      full_name: body.full_name || null,
-      role: body.role,
-      permissions: body.permissions || {},
+      email: validatedBody.email,
+      full_name: validatedBody.full_name || null,
+      role: validatedBody.role,
+      permissions: validatedBody.permissions || {},
       is_active: true,
-      phone: body.phone || null
+      phone: validatedBody.phone || null
     }
 
     console.log('[POST /api/admin/users] 📝 Creating user profile...')
@@ -399,6 +388,27 @@ export async function POST(request: NextRequest) {
       role: createdProfile.role,
       clientId: createdProfile.client_id
     })
+
+    // VULN-008 FIX: Log audit event
+    await logCreate(
+      'user',
+      createdProfile.id,
+      {
+        email: createdProfile.email,
+        role: createdProfile.role,
+        full_name: createdProfile.full_name,
+        client_id: createdProfile.client_id
+      },
+      {
+        userId: user.id,
+        userEmail: user.email,
+        userRole: profile.role,
+        clientId: targetClientId,
+        endpoint: '/api/admin/users',
+        method: 'POST',
+        request
+      }
+    )
 
     return NextResponse.json({
       user: createdProfile as UserProfile,
