@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@/lib/supabase-server'
 import { logUpdate } from '@/lib/audit'
 import { SecretUpdateSchema, validatePayload } from '@/lib/schemas'
+import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
 
@@ -188,7 +189,7 @@ export async function PUT(request: NextRequest) {
 
     // VULN-013 FIX: Validate input with Zod
     const validation = validatePayload(SecretUpdateSchema, body)
-    if (!validation.success) {
+    if (validation.success === false) {
       console.log('[PUT /api/vault/secrets] ❌ Validation failed:', validation.errors)
       return NextResponse.json(
         {
@@ -199,7 +200,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const { key, value } = validation.data
+    const { key, value } = validation.data as z.infer<typeof SecretUpdateSchema>
 
     const supabase = createRouteHandlerClient()
 

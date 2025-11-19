@@ -3,6 +3,7 @@ import { createServerClient, createServiceRoleClient } from '@/lib/supabase'
 import type { CreateUserRequest, UserProfile, UserRole } from '@/lib/types'
 import { logCreate } from '@/lib/audit'
 import { UserCreateSchema, validatePayload } from '@/lib/schemas'
+import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
 
@@ -245,7 +246,7 @@ export async function POST(request: NextRequest) {
 
     // VULN-013 FIX: Validate input with Zod
     const validation = validatePayload(UserCreateSchema, body)
-    if (!validation.success) {
+    if (validation.success === false) {
       console.log('[POST /api/admin/users] ❌ Validation failed:', validation.errors)
       return NextResponse.json(
         {
@@ -256,7 +257,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const validatedBody = validation.data
+    const validatedBody = validation.data as z.infer<typeof UserCreateSchema>
 
     console.log('[POST /api/admin/users] 📋 Request body:', {
       email: validatedBody.email,

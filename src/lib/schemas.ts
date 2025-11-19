@@ -38,7 +38,7 @@ export const UserCreateSchema = z.object({
   
   role: z
     .enum(['client_admin', 'user'], {
-      errorMap: () => ({ message: 'Role deve ser "client_admin" ou "user"' })
+      message: 'Role deve ser "client_admin" ou "user"'
     }),
   
   phone: z
@@ -53,7 +53,7 @@ export const UserCreateSchema = z.object({
     .optional(),
   
   permissions: z
-    .record(z.any())
+    .record(z.string(), z.any())
     .optional()
     .default({})
 })
@@ -73,7 +73,7 @@ export const UserUpdateSchema = z.object({
   
   role: z
     .enum(['client_admin', 'user'], {
-      errorMap: () => ({ message: 'Role deve ser "client_admin" ou "user"' })
+      message: 'Role deve ser "client_admin" ou "user"'
     })
     .optional(),
   
@@ -84,7 +84,7 @@ export const UserUpdateSchema = z.object({
     .nullable(),
   
   permissions: z
-    .record(z.any())
+    .record(z.string(), z.any())
     .optional(),
   
   is_active: z
@@ -110,7 +110,7 @@ export const SecretUpdateSchema = z.object({
     'openai_api_key',
     'groq_api_key'
   ], {
-    errorMap: () => ({ message: 'Key inválida' })
+    message: 'Key inválida'
   }),
   
   value: z
@@ -157,12 +157,12 @@ export const ClientConfigSchema = z.object({
   
   status: z
     .enum(['active', 'inactive', 'suspended'], {
-      errorMap: () => ({ message: 'Status inválido' })
+      message: 'Status inválido'
     })
     .optional(),
   
   settings: z
-    .record(z.any())
+    .record(z.string(), z.any())
     .optional()
 })
 
@@ -176,7 +176,7 @@ export type ClientConfigInput = z.infer<typeof ClientConfigSchema>
  * Schema para sistema de IA (providers)
  */
 export const AIProviderSchema = z.enum(['openai', 'groq'], {
-  errorMap: () => ({ message: 'Provider deve ser "openai" ou "groq"' })
+  message: 'Provider deve ser "openai" ou "groq"'
 })
 
 /**
@@ -306,7 +306,7 @@ export const BotConfigSchema = z.object({
     .default(true),
   
   metadata: z
-    .record(z.any())
+    .record(z.string(), z.any())
     .optional()
     .default({})
 })
@@ -340,7 +340,7 @@ export const FlowNodeSchema = z.object({
     .trim(),
   
   config: z
-    .record(z.any())
+    .record(z.string(), z.any())
     .optional()
     .default({}),
   
@@ -459,7 +459,7 @@ export function validatePayload<T>(
     return { success: true, data: validated }
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const errors = error.errors.map(err => {
+      const errors = error.issues.map(err => {
         const field = err.path.join('.')
         return `${field}: ${err.message}`
       })
@@ -479,7 +479,7 @@ export function validateOrRespond<T>(
 ): T | Response {
   const result = validatePayload(schema, payload)
   
-  if (!result.success) {
+  if (result.success === false) {
     return new Response(
       JSON.stringify({
         error: 'Payload inválido',

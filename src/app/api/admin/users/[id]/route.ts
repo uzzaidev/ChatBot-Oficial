@@ -3,6 +3,7 @@ import { createServerClient, createServiceRoleClient } from '@/lib/supabase'
 import type { UpdateUserRequest, UserProfile, UserRole } from '@/lib/types'
 import { logUpdate, logDelete } from '@/lib/audit'
 import { UserUpdateSchema, validatePayload } from '@/lib/schemas'
+import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
 
@@ -197,7 +198,7 @@ export async function PATCH(
 
     // VULN-013 FIX: Validate input with Zod
     const validation = validatePayload(UserUpdateSchema, body)
-    if (!validation.success) {
+    if (validation.success === false) {
       console.log('[PATCH /api/admin/users/[id]] ❌ Validation failed:', validation.errors)
       return NextResponse.json(
         {
@@ -208,7 +209,7 @@ export async function PATCH(
       )
     }
 
-    const validatedBody = validation.data
+    const validatedBody = validation.data as z.infer<typeof UserUpdateSchema>
 
     // Client admins não podem promover para admin ou editar admins
     if (profile.role === 'client_admin') {
