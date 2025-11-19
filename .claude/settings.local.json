@@ -36,7 +36,8 @@
       "Bash(backup-complete.bat)",
       "Bash(ls:*)",
       "mcp__byterover-mcp__byterover-retrieve-knowledge",
-      "Bash(nul)"
+      "Bash(nul)",
+      "mcp__byterover-mcp__byterover-store-knowledge"
     ],
     "deny": [],
     "ask": []
