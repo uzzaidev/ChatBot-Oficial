@@ -34,6 +34,7 @@ export async function GET(
     }
 
     const clientId = profile.client_id
+    console.log(`[flow/nodes] GET request for node ${nodeId} by client_id: ${clientId}`)
 
     // Map nodeId to config_key
     const configKeyMap: Record<string, string> = {
@@ -55,15 +56,36 @@ export async function GET(
     let config: any = { enabled: true }
 
     // Fetch node enabled state
-    const { data: enabledData } = await supabase
+    console.log(`[flow/nodes] Querying: client_id=${clientId}, config_key=${enabledConfigKey}`)
+    const { data: enabledData, error: enabledFetchError } = await supabase
       .from('bot_configurations')
       .select('config_value')
       .eq('client_id', clientId)
       .eq('config_key', enabledConfigKey)
       .single()
 
-    if (enabledData) {
-      config.enabled = enabledData.config_value?.enabled !== false
+    // Log all errors, including "not found"
+    if (enabledFetchError) {
+      if (enabledFetchError.code === 'PGRST116') {
+        console.log(`[flow/nodes] ℹ No database entry for node ${nodeId} (PGRST116 - not found)`)
+      } else {
+        console.error('[flow/nodes] ❌ Error fetching enabled state:', {
+          code: enabledFetchError.code,
+          message: enabledFetchError.message,
+          details: enabledFetchError.details,
+          hint: enabledFetchError.hint
+        })
+      }
+    }
+
+    if (enabledData && enabledData.config_value) {
+      // Handle both boolean and string values (defensive programming)
+      const enabledValue = enabledData.config_value.enabled
+      config.enabled = enabledValue === true || enabledValue === 'true'
+      console.log(`[flow/nodes] ✓ Loaded node ${nodeId} enabled state: ${config.enabled} (raw: ${JSON.stringify(enabledValue)}) from database`)
+    } else if (!enabledFetchError) {
+      // Data was returned but config_value is null/undefined
+      console.log(`[flow/nodes] ⚠️ Node ${nodeId} data returned but config_value is ${enabledData?.config_value === null ? 'null' : 'undefined'}`)
     }
 
     // Special handling for generate_response node - fetch from clients table
@@ -98,12 +120,17 @@ export async function GET(
 
       // 1. Fetch primary config key
       if (configKey) {
-        const { data: configData } = await supabase
+        const { data: configData, error: configFetchError } = await supabase
           .from('bot_configurations')
           .select('config_value')
           .eq('client_id', clientId)
           .eq('config_key', configKey)
           .single()
+
+        // Log errors except "not found"
+        if (configFetchError && configFetchError.code !== 'PGRST116') {
+          console.error('[flow/nodes] Error fetching config:', configFetchError)
+        }
 
         if (configData && configData.config_value !== null) {
           // Handle primitive values (number, boolean, string) vs objects
@@ -124,11 +151,16 @@ export async function GET(
       // This ensures we show all editable fields even if they're in different config keys
       const relatedConfigKeys = getRelatedConfigKeys(nodeId)
       if (relatedConfigKeys.length > 0) {
-        const { data: relatedConfigs } = await supabase
+        const { data: relatedConfigs, error: relatedFetchError } = await supabase
           .from('bot_configurations')
           .select('config_key, config_value')
           .eq('client_id', clientId)
           .in('config_key', relatedConfigKeys)
+
+        // Log errors (not using .single() so no "not found" code)
+        if (relatedFetchError) {
+          console.error('[flow/nodes] Error fetching related configs:', relatedFetchError)
+        }
 
         if (relatedConfigs && relatedConfigs.length > 0) {
           // Merge all related configs into the main config object
@@ -217,13 +249,16 @@ export async function PATCH(
     if (enabled !== undefined) {
       const enabledConfigKey = `flow:node_enabled:${nodeId}`
       
+      // Ensure enabled is a boolean (defensive programming)
+      const enabledBoolean = Boolean(enabled === true || enabled === 'true')
+      
       const { error: enabledError } = await supabase
         .from('bot_configurations')
         .upsert(
           {
             client_id: clientId,
             config_key: enabledConfigKey,
-            config_value: { enabled },
+            config_value: { enabled: enabledBoolean },
             is_default: false,
             category: 'rules',
             description: `Node enabled state for ${nodeId}`,
@@ -237,6 +272,8 @@ export async function PATCH(
         console.error('[flow/nodes] Error updating enabled state:', enabledError)
         return NextResponse.json({ error: enabledError.message }, { status: 500 })
       }
+      
+      console.log(`[flow/nodes] ✓ Node ${nodeId} enabled state updated to: ${enabledBoolean} (input: ${enabled}) for client: ${clientId}`)
     }
 
     // Handle configuration updates
