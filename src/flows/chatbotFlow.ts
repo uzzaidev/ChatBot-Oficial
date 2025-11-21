@@ -47,11 +47,11 @@ export const processChatbotMessage = async (
   console.log('🚀 [chatbotFlow] Starting message processing')
   
   const logger = createExecutionLogger()
-  
+
   const executionId = logger.startExecution({
     source: 'chatbotFlow',
     payload_from: payload.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from,
-  })
+  }, config.id) // ⚡ Multi-tenant: passa client_id para isolamento de logs
 
   try {
     console.log(`[chatbotFlow][${executionId}] Starting message processing`)

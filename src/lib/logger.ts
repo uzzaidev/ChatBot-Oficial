@@ -13,11 +13,13 @@ export interface ExecutionContext {
   status: 'running' | 'success' | 'error'
   timestamp: string
   metadata?: Record<string, any>
+  client_id?: string // UUID do cliente (tenant) para isolamento multi-tenant
 }
 
 class ExecutionLogger {
   private supabase: ReturnType<typeof createClient> | null = null
   private executionId: string | null = null
+  private clientId: string | null = null // ⚡ Tenant ID for multi-tenant isolation
 
   constructor() {
     // Initialize Supabase client only in server context
@@ -32,9 +34,11 @@ class ExecutionLogger {
   }
 
   // Inicia uma nova execução e retorna o ID
-  startExecution(metadata?: Record<string, any>): string {
+  // ⚡ MULTI-TENANT: clientId é obrigatório para isolamento por tenant
+  startExecution(metadata?: Record<string, any>, clientId?: string): string {
     this.executionId = crypto.randomUUID()
-    
+    this.clientId = clientId || null
+
     if (this.supabase) {
       // @ts-ignore - execution_logs table might not exist until migration is run
       this.supabase.from('execution_logs').insert({
@@ -43,6 +47,7 @@ class ExecutionLogger {
         status: 'running',
         timestamp: new Date().toISOString(),
         metadata: metadata || {},
+        client_id: this.clientId, // ⚡ Tenant isolation
       }).then()
     }
 
@@ -64,6 +69,7 @@ class ExecutionLogger {
       status: 'running',
       timestamp: new Date().toISOString(),
       metadata: { start_time: startTime },
+      client_id: this.clientId, // ⚡ Tenant isolation
     // @ts-ignore
     }).then(result => {
       if (result.error) {
@@ -167,6 +173,7 @@ class ExecutionLogger {
       node_name: '_END',
       status,
       timestamp: new Date().toISOString(),
+      client_id: this.clientId, // ⚡ Tenant isolation
     // @ts-ignore
     }).then(result => {
       if (result.error) {

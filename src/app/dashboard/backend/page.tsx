@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Check, X, Loader2, Phone, CheckCheck, Eye, AlertTriangle, Search, Globe, Mail, Send, ScrollText, RefreshCw, Pause, RotateCw } from 'lucide-react'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 interface ExecutionLog {
   id: number
@@ -41,15 +42,29 @@ export default function BackendMonitorPage() {
   const [autoScroll, setAutoScroll] = useState(true)
   const [statusFilter, setStatusFilter] = useState<StatusFilterType>('all')
   const [phoneFilter, setPhoneFilter] = useState<string>('')
+  const supabase = createClientComponentClient() // ⚡ Para autenticação multi-tenant
 
   // Função para buscar logs - sempre busca os últimos 500 logs do Supabase
   const fetchLogs = useCallback(async () => {
     try {
+      // ⚡ MULTI-TENANT: Obter token de autenticação para RLS
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (!session) {
+        console.error('[BackendMonitor] User not authenticated')
+        return
+      }
+
       // Sempre busca os últimos 500 logs, sem filtro 'since'
       // Isso garante que após refresh da página, todos os logs apareçam
       const url = '/api/backend/stream?limit=500'
-      
-      const response = await fetch(url)
+
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`, // ⚡ RLS ativo
+          'Content-Type': 'application/json'
+        }
+      })
       const data = await response.json()
 
       if (data.success && data.executions) {
@@ -70,7 +85,7 @@ export default function BackendMonitorPage() {
     } catch (error) {
       console.error('Error fetching logs:', error)
     }
-  }, [selectedExecution])
+  }, [selectedExecution, supabase])
 
   // Auto-refresh
   useEffect(() => {
