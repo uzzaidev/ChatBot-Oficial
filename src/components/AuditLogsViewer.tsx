@@ -120,7 +120,8 @@ export default function AuditLogsViewer({
     if (value === 'all' || !value) {
       delete newFilters[key]
     } else {
-      newFilters[key] = value as any
+      // Type assertion is safe here because value matches the union types in AuditLogsFilters
+      (newFilters as any)[key] = value
     }
 
     setFilters(newFilters)

@@ -12,7 +12,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createBrowserClient } from '@/lib/supabase-browser'
 
 export interface AuditLog {
   id: string
@@ -85,7 +85,7 @@ export function useAuditLogs(options: UseAuditLogsOptions = {}): UseAuditLogsRes
   const [error, setError] = useState<string | null>(null)
   const [filters, setFilters] = useState<AuditLogsFilters>(initialFilters)
 
-  const supabase = createClientComponentClient()
+  const supabase = createBrowserClient()
 
   /**
    * Busca audit logs do backend
