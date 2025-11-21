@@ -6,6 +6,13 @@
 -- Data: 2025-01-28
 -- ============================================================================
 
+-- ============================================================================
+-- PARTE 0: Habilitar Extensões Necessárias
+-- ============================================================================
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE EXTENSION IF NOT EXISTS "pg_trgm";
+
 -- Configurar search_path para incluir vault e public
 SET search_path TO public, vault;
 
@@ -109,7 +116,7 @@ DROP TABLE IF EXISTS clients CASCADE;
 -- 2.3: Criar tabela clients
 CREATE TABLE clients (
   -- Identificação
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   slug TEXT UNIQUE NOT NULL,
 
@@ -156,23 +163,38 @@ CREATE TABLE clients (
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   created_by UUID,
 
+  -- 🎯 AI Provider Selection (added after initial deployment)
+  primary_model_provider TEXT DEFAULT 'groq' NOT NULL,
+
+  -- 🔐 Meta App Secret (SECURITY: HMAC signature validation - VULN-012 fix)
+  meta_app_secret_secret_id UUID,
+
   -- Constraints
   CONSTRAINT valid_status CHECK (status IN ('active', 'suspended', 'trial', 'cancelled')),
-  CONSTRAINT valid_plan CHECK (plan IN ('free', 'pro', 'enterprise'))
+  CONSTRAINT valid_plan CHECK (plan IN ('free', 'pro', 'enterprise')),
+  CONSTRAINT clients_primary_model_provider_check CHECK (primary_model_provider IN ('openai', 'groq'))
 );
 
--- 2.4: Índices
+-- 2.4: Comments nas colunas
+COMMENT ON COLUMN clients.primary_model_provider IS
+'AI provider usado para conversação principal. openai=GPT-4o (caro, inteligente), groq=Llama (rápido, econômico)';
+
+COMMENT ON COLUMN clients.meta_app_secret_secret_id IS
+'Reference to Vault secret containing Meta App Secret (used for HMAC signature validation).
+DIFFERENT from meta_verify_token_secret_id (used for webhook verification).';
+
+-- 2.5: Índices
 CREATE UNIQUE INDEX idx_clients_slug ON clients(slug);
 CREATE INDEX idx_clients_status ON clients(status) WHERE status = 'active';
 
--- 2.5: Trigger para updated_at
+-- 2.6: Trigger para updated_at
 DROP TRIGGER IF EXISTS update_clients_updated_at ON clients;
 CREATE TRIGGER update_clients_updated_at
   BEFORE UPDATE ON clients
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- 2.6: View para facilitar leitura de secrets (apenas service role)
+-- 2.7: View para facilitar leitura de secrets (apenas service role)
 CREATE OR REPLACE VIEW client_secrets_decrypted AS
 SELECT
   c.id as client_id,
