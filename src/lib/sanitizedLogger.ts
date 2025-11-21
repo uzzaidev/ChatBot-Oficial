@@ -310,7 +310,7 @@ export function errorSafe(message: string, data?: any, context?: string) {
 // EXPORTS
 // ================================================================
 
-export default {
+const sanitizedLoggerModule = {
   sanitize,
   logSafe,
   debugSafe,
@@ -318,3 +318,5 @@ export default {
   warnSafe,
   errorSafe
 }
+
+export default sanitizedLoggerModule

@@ -436,7 +436,7 @@ export async function withAuditTracking<T>(
 // EXPORTS
 // ================================================================
 
-export default {
+const auditModule = {
   logAuditEvent,
   logCreate,
   logUpdate,
@@ -444,3 +444,5 @@ export default {
   logFailure,
   withAuditTracking
 }
+
+export default auditModule

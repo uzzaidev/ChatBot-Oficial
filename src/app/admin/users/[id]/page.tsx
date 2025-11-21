@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Trash2 } from 'lucide-react'
@@ -27,11 +27,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
   const [user, setUser] = useState<UserProfile | null>(null)
   const [formData, setFormData] = useState<UpdateUserRequest>({})
 
-  useEffect(() => {
-    fetchUser()
-  }, [params.id])
-
-  const fetchUser = async () => {
+  const fetchUser = useCallback(async () => {
     try {
       const response = await fetch(`/api/admin/users/${params.id}`)
       const data = await response.json()
@@ -58,7 +54,11 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [params.id, toast, router])
+
+  useEffect(() => {
+    fetchUser()
+  }, [fetchUser])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

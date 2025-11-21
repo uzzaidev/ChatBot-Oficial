@@ -314,9 +314,8 @@ export const listDocuments = async (
     // Buscar documentos agrupados por filename
     const { data, error } = await supabaseAny
       .from('documents')
-      .select('id, metadata, created_at')
+      .select('id, metadata')
       .eq('client_id', clientId)
-      .order('created_at', { ascending: false })
       .limit(filters?.limit || 100)
 
     if (error) {
@@ -328,14 +327,14 @@ export const listDocuments = async (
 
     data?.forEach((row: any) => {
       const filename = row.metadata?.filename || 'unnamed'
-      
+
       if (!documentsMap.has(filename)) {
         documentsMap.set(filename, {
           id: row.id,
           filename,
           documentType: row.metadata?.documentType || 'unknown',
           chunkCount: 0,
-          uploadedAt: row.metadata?.uploadedAt || row.created_at,
+          uploadedAt: row.metadata?.uploadedAt || new Date().toISOString(),
           uploadedBy: row.metadata?.uploadedBy || 'unknown'
         })
       }

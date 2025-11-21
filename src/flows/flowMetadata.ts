@@ -143,7 +143,7 @@ export const FLOW_METADATA: FlowNodeMetadata[] = [
   {
     id: 'get_rag_context',
     name: 'Get RAG Context',
-    description: 'Busca contexto relevante (vector search)',
+    description: '✅ ACTIVE - Busca documentos similares via vector search (pgvector, cosine similarity > 0.8). Upload em /dashboard/knowledge',
     category: 'analysis',
     enabled: true,
     hasConfig: true,

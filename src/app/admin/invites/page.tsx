@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Mail, Copy, Check, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -36,11 +36,7 @@ export default function AdminInvitesPage() {
     role: 'user',
   })
 
-  useEffect(() => {
-    fetchInvites()
-  }, [])
-
-  const fetchInvites = async () => {
+  const fetchInvites = useCallback(async () => {
     try {
       setLoading(true)
       const response = await fetch('/api/admin/invites')
@@ -60,7 +56,11 @@ export default function AdminInvitesPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [toast])
+
+  useEffect(() => {
+    fetchInvites()
+  }, [fetchInvites])
 
   const handleCreateInvite = async () => {
     try {

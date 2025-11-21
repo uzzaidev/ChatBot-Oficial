@@ -304,7 +304,11 @@ export const processChatbotMessage = async (
             clientId: config.id,
             maxHistory: config.settings.maxChatHistory,
           }),
-          getRAGContext(batchedContent),
+          getRAGContext({
+            query: batchedContent,
+            clientId: config.id,
+            openaiApiKey: config.apiKeys.openaiApiKey,
+          }),
         ])
         
         chatHistory2 = history
@@ -328,7 +332,11 @@ export const processChatbotMessage = async (
         // Only RAG enabled (rare case)
         logger.logNodeStart('10. Get RAG Context', { queryLength: batchedContent.length })
         console.log('[chatbotFlow] 🔍 Fetching RAG context only (history disabled)')
-        ragContext = await getRAGContext(batchedContent)
+        ragContext = await getRAGContext({
+          query: batchedContent,
+          clientId: config.id,
+          openaiApiKey: config.apiKeys.openaiApiKey,
+        })
         logger.logNodeSuccess('9. Get Chat History', { skipped: true, reason: 'node disabled' })
         logger.logNodeSuccess('10. Get RAG Context', { contextLength: ragContext.length })
         console.log(`[chatbotFlow] ✅ Context retrieved - History: disabled, RAG: ${ragContext.length} chars`)

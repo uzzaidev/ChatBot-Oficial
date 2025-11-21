@@ -88,6 +88,10 @@ export async function GET(
       console.log(`[flow/nodes] ⚠️ Node ${nodeId} data returned but config_value is ${enabledData?.config_value === null ? 'null' : 'undefined'}`)
     }
 
+    // Apply default configuration for this node
+    const defaults = getDefaultConfig(nodeId)
+    config = { ...defaults, ...config }
+
     // Special handling for generate_response node - fetch from clients table
     if (nodeId === 'generate_response') {
       // Fetch agent configuration from clients table (same as settings page)
@@ -96,7 +100,7 @@ export async function GET(
         .select('system_prompt, formatter_prompt, openai_model, groq_model, primary_model_provider, settings')
         .eq('id', clientId)
         .single()
-      
+
       if (clientData) {
         // Merge all client fields into config
         config.system_prompt = clientData.system_prompt || ''
@@ -104,7 +108,7 @@ export async function GET(
         config.openai_model = clientData.openai_model || 'gpt-4o'
         config.groq_model = clientData.groq_model || 'llama-3.3-70b-versatile'
         config.primary_model_provider = clientData.primary_model_provider || 'groq'
-        
+
         // Also extract temperature and max_tokens from settings if available
         if (clientData.settings) {
           if (clientData.settings.temperature !== undefined) {
@@ -315,31 +319,51 @@ export async function PATCH(
           console.error('[flow/nodes] Error updating client:', clientError)
           return NextResponse.json({ error: clientError.message }, { status: 500 })
         }
-      } else if (configKey) {
-        // For other nodes, save to bot_configurations
-        const configValue = {
-          ...config,
+      } else {
+        // For other nodes, save each field to its own config_key
+        const relatedConfigKeys = getRelatedConfigKeys(nodeId)
+
+        // Map field names to their config keys
+        // e.g., 'similarity_threshold' -> 'rag:similarity_threshold'
+        const fieldToKeyMap: Record<string, string> = {}
+        relatedConfigKeys.forEach(key => {
+          const parts = key.split(':')
+          const fieldName = parts[parts.length - 1]
+          fieldToKeyMap[fieldName] = key
+        })
+
+        // Save each config field separately
+        const upsertPromises = []
+        for (const [fieldName, value] of Object.entries(config)) {
+          const configKeyForField = fieldToKeyMap[fieldName]
+
+          if (configKeyForField) {
+            console.log(`[flow/nodes] Saving ${fieldName}=${value} to ${configKeyForField}`)
+
+            upsertPromises.push(
+              supabase.from('bot_configurations').upsert(
+                {
+                  client_id: clientId,
+                  config_key: configKeyForField,
+                  config_value: value,
+                  is_default: false,
+                  category: getCategoryFromKey(configKeyForField),
+                  description: `Configuration for ${nodeId} - ${fieldName}`,
+                },
+                {
+                  onConflict: 'client_id,config_key',
+                }
+              )
+            )
+          }
         }
 
-        const { error: configError } = await supabase
-          .from('bot_configurations')
-          .upsert(
-            {
-              client_id: clientId,
-              config_key: configKey,
-              config_value: configValue,
-              is_default: false,
-              category: getCategoryFromKey(configKey),
-              description: `Configuration for ${nodeId}`,
-            },
-            {
-              onConflict: 'client_id,config_key',
-            }
-          )
+        const results = await Promise.all(upsertPromises)
+        const errors = results.filter(r => r.error).map(r => r.error)
 
-        if (configError) {
-          console.error('[flow/nodes] Error upserting config:', configError)
-          return NextResponse.json({ error: configError.message }, { status: 500 })
+        if (errors.length > 0) {
+          console.error('[flow/nodes] Errors upserting configs:', errors)
+          return NextResponse.json({ error: errors[0]?.message }, { status: 500 })
         }
       }
     }

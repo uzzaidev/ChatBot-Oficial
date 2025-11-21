@@ -65,8 +65,54 @@ npm run dev              # Start dev server (localhost:3000)
 | **Node Functions** | `src/nodes/*` (atomic, pure functions) |
 | **Multi-tenant Config** | `src/lib/config.ts` (Vault integration) |
 | **AI Prompts** | `src/nodes/generateAIResponse.ts`, `formatResponse.ts` |
+| **RAG Knowledge Base** | `/dashboard/knowledge` (Upload documents for AI context) |
 | **Database Schema** | `docs/tables/tabelas.md` |
 | **Migrations** | `supabase/migrations/*`, `db/MIGRATION_WORKFLOW.md` |
+
+### RAG System (Knowledge Base)
+
+**Status**: ✅ **ACTIVE** - Fully implemented and functional
+
+The RAG (Retrieval-Augmented Generation) system allows clients to upload documents (PDFs, TXTs) that the chatbot can use to answer domain-specific questions.
+
+**How it works**:
+1. Client uploads document via `/dashboard/knowledge`
+2. Document is processed with semantic chunking (500 tokens, 20% overlap)
+3. Embeddings generated using OpenAI text-embedding-3-small (1536 dimensions)
+4. Chunks stored in `documents` table with pgvector
+5. When user asks question, system searches similar chunks (cosine similarity > 0.8)
+6. Top 5 relevant chunks injected into AI prompt as context
+
+**Key files**:
+- **Upload UI**: `src/app/dashboard/knowledge/page.tsx`
+- **API Upload**: `src/app/api/documents/upload/route.ts`
+- **API List**: `src/app/api/documents/route.ts`
+- **API Delete**: `src/app/api/documents/[filename]/route.ts`
+- **RAG Context Retrieval**: `src/nodes/getRAGContext.ts`
+- **Document Processing**: `src/nodes/processDocumentWithChunking.ts`
+- **SQL Function**: `migrations/20251121_create_match_documents_function.sql`
+
+**Usage**:
+```bash
+# Navigate to dashboard
+http://localhost:3000/dashboard/knowledge
+
+# Upload PDF or TXT file (max 10MB)
+# Documents are automatically processed and available immediately
+
+# To query documents from code:
+const context = await getRAGContext({
+  query: "What is the warranty policy?",
+  clientId: "client-uuid",
+  openaiApiKey: "sk-..."
+})
+```
+
+**Important notes**:
+- Requires migration `20251121_create_match_documents_function.sql` applied to Supabase
+- Requires pgvector extension enabled in Supabase
+- Documents are multi-tenant isolated (client_id)
+- Cost: ~$0.02 per 1M tokens for embeddings
 
 ### Common Commands
 

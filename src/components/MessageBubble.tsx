@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { cn, formatTime } from '@/lib/utils'
 import type { Message } from '@/lib/types'
 import { CheckCheck, Clock, XCircle } from 'lucide-react'
@@ -50,10 +51,13 @@ export const MessageBubble = ({ message }: MessageBubbleProps) => {
           <div className="flex flex-col gap-2">
             <span className="text-sm">Imagem</span>
             {message.metadata?.url ? (
-              <img
+              <Image
                 src={message.metadata.url as string}
                 alt="Imagem enviada"
-                className="max-w-xs rounded-lg"
+                width={300}
+                height={300}
+                className="max-w-xs rounded-lg object-cover"
+                unoptimized
               />
             ) : null}
             {trimmedContent && (

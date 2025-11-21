@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { UserPlus, Search, Filter } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -30,11 +30,7 @@ export default function AdminUsersPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchUsers()
-  }, [roleFilter, statusFilter, searchQuery])
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -52,7 +48,7 @@ export default function AdminUsersPage() {
       }
 
       setUsers(data.users || [])
-      
+
       // Detectar role do usuário atual (super admin vê coluna de client)
       if (data.users && data.users.length > 0) {
         // Se algum usuário tem client_name, significa que é super admin
@@ -65,7 +61,11 @@ export default function AdminUsersPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [roleFilter, statusFilter, searchQuery])
+
+  useEffect(() => {
+    fetchUsers()
+  }, [fetchUsers])
 
   const getRoleBadge = (role: string) => {
     const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -51,12 +51,12 @@ export default function BotConfigurationManager() {
     message: string
   } | null>(null)
 
-  // Fetch configurations on mount
-  useEffect(() => {
-    fetchConfigs()
+  const showNotification = useCallback((type: 'success' | 'error', message: string) => {
+    setNotification({ type, message })
+    setTimeout(() => setNotification(null), 5000)
   }, [])
 
-  const fetchConfigs = async () => {
+  const fetchConfigs = useCallback(async () => {
     setLoading(true)
     console.log('[BotConfigurationManager] 🔍 Fetching configurations...')
     try {
@@ -112,7 +112,12 @@ export default function BotConfigurationManager() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [showNotification])
+
+  // Fetch configurations on mount
+  useEffect(() => {
+    fetchConfigs()
+  }, [fetchConfigs])
 
   const startEditing = (config: BotConfig) => {
     setEditingKey(config.config_key)
@@ -172,11 +177,6 @@ export default function BotConfigurationManager() {
       console.error('Error resetting config:', error)
       showNotification('error', 'Falha ao restaurar configuração')
     }
-  }
-
-  const showNotification = (type: 'success' | 'error', message: string) => {
-    setNotification({ type, message })
-    setTimeout(() => setNotification(null), 5000)
   }
 
   const renderConfigValue = (config: BotConfig) => {

@@ -354,9 +354,11 @@ export async function getDedupStats(clientId?: string) {
 // EXPORTS
 // ================================================================
 
-export default {
+const dedupModule = {
   checkDuplicateMessage,
   markMessageAsProcessed,
   cleanupOldRecords,
   getDedupStats
 }
+
+export default dedupModule
