@@ -17,7 +17,6 @@ export interface HandleHumanHandoffInput {
 export const handleHumanHandoff = async (input: HandleHumanHandoffInput): Promise<void> => {
   const { phone, customerName, config, reason } = input
 
-  console.log(`[handleHumanHandoff] 📞 Transferring ${phone} to human agent`)
 
   try {
     // Atualizar status do cliente para 'human' (CRÍTICO - deve sempre funcionar)
@@ -26,7 +25,6 @@ export const handleHumanHandoff = async (input: HandleHumanHandoffInput): Promis
       ['Transferido', phone]
     )
 
-    console.log(`[handleHumanHandoff] ✅ Customer status updated to 'Transferido'`)
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     console.error(`[handleHumanHandoff] ❌ Failed to update customer status: ${errorMessage}`)
@@ -40,8 +38,6 @@ export const handleHumanHandoff = async (input: HandleHumanHandoffInput): Promis
     const hasGmailConfig = notificationEmail && process.env.GMAIL_APP_PASSWORD
 
     if (!hasGmailConfig) {
-      console.warn(`[handleHumanHandoff] ⚠️ Gmail not configured - skipping email notification`)
-      console.warn(`[handleHumanHandoff] 💡 To enable email notifications, set GMAIL_USER and GMAIL_APP_PASSWORD`)
       return
     }
 
@@ -60,11 +56,9 @@ Por favor, entre em contato o mais breve possível.`
       emailBody.replace(/\n/g, '<br>')
     )
 
-    console.log(`[handleHumanHandoff] ✅ Notification email sent to ${notificationEmail}`)
   } catch (emailError) {
     const emailErrorMessage = emailError instanceof Error ? emailError.message : 'Unknown error'
     console.error(`[handleHumanHandoff] ⚠️ Failed to send email notification: ${emailErrorMessage}`)
-    console.warn(`[handleHumanHandoff] ℹ️ Handoff completed but email notification failed`)
     // NÃO lança erro - handoff deve continuar mesmo se email falhar
   }
 }

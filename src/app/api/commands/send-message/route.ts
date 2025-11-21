@@ -25,7 +25,6 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now()
 
   try {
-    console.log('[SEND-MESSAGE API] 🚀 Iniciando envio de mensagem manual')
 
     // 🔐 FASE 3: Obter client_id da sessão do usuário autenticado
     const clientId = await getClientIdFromSession()
@@ -38,22 +37,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log(`[SEND-MESSAGE API] 🔐 Client ID from session: ${clientId}`)
 
     const body = (await request.json()) as SendMessageRequest
     const { phone, content } = body
 
     // Validação
     if (!phone || !content) {
-      console.warn('[SEND-MESSAGE API] ⚠️ Validação falhou: phone ou content faltando')
       return NextResponse.json(
         { error: 'phone e content são obrigatórios' },
         { status: 400 }
       )
     }
 
-    console.log(`[SEND-MESSAGE API] 📱 Phone: ${phone}`)
-    console.log(`[SEND-MESSAGE API] 💬 Content: ${content.substring(0, 50)}...`)
 
     // Buscar config do cliente autenticado
     const { getClientConfig } = await import('@/lib/config')
@@ -65,7 +60,6 @@ export async function POST(request: NextRequest) {
     }
 
     // NODE 12: Envia mensagem via WhatsApp
-    console.log('[SEND-MESSAGE API] 📤 Chamando sendWhatsAppMessage node...')
     const messageIds = await sendWhatsAppMessage({
       phone,
       messages: [content], // Array com uma mensagem
@@ -73,11 +67,8 @@ export async function POST(request: NextRequest) {
     })
 
     const duration = Date.now() - startTime
-    console.log(`[SEND-MESSAGE API] ✅ Mensagem enviada via WhatsApp em ${duration}ms`)
-    console.log(`[SEND-MESSAGE API] 📨 Message IDs: ${messageIds.join(', ')}`)
 
     // Salvar no histórico com type: 'ai'
-    console.log('[SEND-MESSAGE API] 💾 Salvando mensagem no histórico...')
     await saveChatMessage({
       phone,
       message: content,
@@ -86,7 +77,6 @@ export async function POST(request: NextRequest) {
     })
 
     const totalDuration = Date.now() - startTime
-    console.log(`[SEND-MESSAGE API] ✅ SUCESSO TOTAL em ${totalDuration}ms`)
 
     return NextResponse.json({
       success: true,

@@ -41,20 +41,12 @@ export async function GET(request: NextRequest) {
 
     const supabase = createServerClient()
 
-    console.log(`[GET /api/config] 🔍 DEBUG - Fetching configs`)
-    console.log(`[GET /api/config] 🔍 DEBUG - Category filter: ${category || 'all'}`)
 
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
-    console.log('[GET /api/config] 👤 Auth check:', {
-      userId: user?.id,
-      email: user?.email,
-      hasError: !!authError
-    })
 
     if (authError || !user) {
-      console.log('[GET /api/config] ❌ Authentication failed - returning empty configs')
       return NextResponse.json({
         configs: [],
         count: 0,
@@ -70,27 +62,12 @@ export async function GET(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    console.log('[GET /api/config] 📋 Profile check:', {
-      hasProfile: !!userProfile,
-      clientId: userProfile?.client_id,
-      hasError: !!profileError
-    })
 
     // Use client_id from profile, or fallback to default behavior
     const clientId = userProfile?.client_id || process.env.DEFAULT_CLIENT_ID || 'NO_CLIENT_ID'
 
-    console.log(`[GET /api/config] 🔍 DEBUG - Using Client ID: ${clientId}`)
-    console.log(`[GET /api/config] 🔍 DEBUG - Environment: ${process.env.NODE_ENV}`)
 
     const configs = await listBotConfigs(clientId, category)
-
-    console.log(`[GET /api/config] 🔍 DEBUG - Configs returned: ${configs.length}`)
-    console.log(`[GET /api/config] 🔍 DEBUG - First 3 configs:`, configs.slice(0, 3).map(c => ({
-      key: c.config_key,
-      category: c.category,
-      is_default: c.is_default,
-      client_id: c.client_id
-    })))
 
     return NextResponse.json({
       configs,
@@ -162,7 +139,6 @@ export async function PUT(request: NextRequest) {
 
     const clientId = userProfile?.client_id || process.env.DEFAULT_CLIENT_ID || 'NO_CLIENT_ID'
 
-    console.log(`[PUT /api/config] Updating config: ${config_key} for client: ${clientId}`)
 
     await setBotConfig(clientId, config_key, config_value, {
       description,
@@ -227,7 +203,6 @@ export async function DELETE(request: NextRequest) {
 
     const clientId = userProfile?.client_id || process.env.DEFAULT_CLIENT_ID || 'NO_CLIENT_ID'
 
-    console.log(`[DELETE /api/config] Resetting config: ${configKey} for client: ${clientId}`)
 
     await resetBotConfig(clientId, configKey)
 

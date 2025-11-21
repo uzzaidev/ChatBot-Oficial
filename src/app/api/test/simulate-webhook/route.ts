@@ -64,7 +64,6 @@ export async function POST(request: NextRequest) {
       ],
     }
 
-    console.log('🔔 Simulando webhook do Meta:', metaPayload)
 
     // Envia para o próprio webhook
     const webhookUrl = `${request.nextUrl.origin}/api/webhook`

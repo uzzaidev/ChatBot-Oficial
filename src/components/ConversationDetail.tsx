@@ -30,7 +30,6 @@ export const ConversationDetail = ({
 
   // Clear realtime messages when phone changes
   useEffect(() => {
-    console.log('[ConversationDetail] Phone changed, clearing realtime messages')
     setRealtimeMessages([])
   }, [phone])
 
@@ -47,29 +46,21 @@ export const ConversationDetail = ({
       return acc
     }, [] as Message[])
 
-    console.log('[ConversationDetail] Combined messages:', {
-      fetchedCount: fetchedMessages.length,
-      realtimeCount: realtimeMessages.length,
-      totalUnique: uniqueMessages.length
-    })
 
     return uniqueMessages
   }, [fetchedMessages, realtimeMessages])
 
   // Stable callback for handling new messages
   const handleNewMessage = useCallback((newMessage: Message) => {
-    console.log('[ConversationDetail] New realtime message received:', newMessage.id)
 
     // Add message optimistically to avoid refetch
     setRealtimeMessages(prev => {
       // Check if message already exists in realtime messages
       const exists = prev.some(msg => msg.id === newMessage.id)
       if (exists) {
-        console.log('[ConversationDetail] Message already exists in realtime, skipping')
         return prev
       }
 
-      console.log('[ConversationDetail] Adding new message to realtime array')
       return [...prev, newMessage]
     })
 
@@ -105,13 +96,6 @@ export const ConversationDetail = ({
   }
 
   // Log para debug
-  console.log('[ConversationDetail] Rendering with:', {
-    phone,
-    loading,
-    messageCount: messages.length,
-    fetchedCount: fetchedMessages.length,
-    realtimeCount: realtimeMessages.length
-  })
 
   return (
     <div className="flex flex-col h-full">

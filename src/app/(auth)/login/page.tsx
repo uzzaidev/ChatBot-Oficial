@@ -61,7 +61,6 @@ export default function LoginPage() {
         return
       }
 
-      console.log('[Login] Usuário autenticado:', data.user.email)
 
       // Verificar se usuário tem profile com client_id
       const profileResponse = await fetch('/api/auth/verify-profile')
@@ -73,7 +72,6 @@ export default function LoginPage() {
         return
       }
 
-      console.log('[Login] Profile verificado, client_id:', profileData.client_id)
 
       // Redirect para dashboard
       router.push('/dashboard')

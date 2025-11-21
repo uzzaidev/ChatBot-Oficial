@@ -185,7 +185,6 @@ export async function checkDuplicateMessage(
   const redisResult = await checkProcessedRedis(dedupKey)
   
   if (redisResult === true) {
-    console.log(`[DEDUP] ✅ Mensagem já processada (Redis): ${messageId}`)
     return {
       alreadyProcessed: true,
       source: 'redis'
@@ -201,12 +200,10 @@ export async function checkDuplicateMessage(
   }
   
   // 2. Redis falhou (null) - tentar PostgreSQL
-  console.warn(`[DEDUP] ⚠️ Redis falhou, tentando PostgreSQL...`)
   
   const pgResult = await checkProcessedPostgres(clientId, messageId)
   
   if (pgResult) {
-    console.log(`[DEDUP] ✅ Mensagem já processada (PostgreSQL): ${messageId}`)
     return {
       alreadyProcessed: true,
       source: 'postgresql'
@@ -251,7 +248,6 @@ export async function markMessageAsProcessed(
   ])
   
   if (redisSuccess && pgSuccess) {
-    console.log(`[DEDUP] ✅ Marcado como processado (Redis + PG): ${messageId}`)
     return {
       success: true,
       source: 'both'
@@ -259,7 +255,6 @@ export async function markMessageAsProcessed(
   }
   
   if (redisSuccess) {
-    console.warn(`[DEDUP] ⚠️ Marcado apenas em Redis (PG falhou): ${messageId}`)
     return {
       success: true,
       source: 'redis',
@@ -268,7 +263,6 @@ export async function markMessageAsProcessed(
   }
   
   if (pgSuccess) {
-    console.warn(`[DEDUP] ⚠️ Marcado apenas em PostgreSQL (Redis falhou): ${messageId}`)
     return {
       success: true,
       source: 'postgresql',
@@ -308,7 +302,6 @@ export async function cleanupOldRecords(retentionHours: number = 24): Promise<nu
     }
     
     const deletedCount = typeof data === 'number' ? data : 0
-    console.log(`[DEDUP/CLEANUP] ✅ Cleanup concluído: ${deletedCount} registros deletados`)
     
     return deletedCount
   } catch (error) {

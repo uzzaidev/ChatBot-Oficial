@@ -21,9 +21,6 @@ export const getChatHistory = async (input: GetChatHistoryInput): Promise<ChatMe
       maxHistory = configValue !== null ? Number(configValue) : 30
     }
 
-    console.log('[getChatHistory] 📚 Fetching chat history for:', phone)
-    console.log('[getChatHistory] 🔐 Client ID:', clientId)
-    console.log('[getChatHistory] 📊 Max history (from config):', maxHistory)
 
     // OTIMIZAÇÃO: Query usa índice idx_chat_histories_session_created
     // NOTA: A coluna 'type' não existe - extraímos o type do JSON 'message'
@@ -40,7 +37,6 @@ export const getChatHistory = async (input: GetChatHistoryInput): Promise<ChatMe
     const duration = Date.now() - startTime
 
     if (!result.rows || result.rows.length === 0) {
-      console.log(`[getChatHistory] ℹ️ No history found (${duration}ms)`)
       return []
     }
 
@@ -54,7 +50,6 @@ export const getChatHistory = async (input: GetChatHistoryInput): Promise<ChatMe
             ? JSON.parse(record.message)
             : record.message
         } catch (error) {
-          console.warn(`[getChatHistory] Failed to parse message JSON:`, error)
           parsedMessage = { type: 'human', content: record.message }
         }
 
@@ -65,11 +60,9 @@ export const getChatHistory = async (input: GetChatHistoryInput): Promise<ChatMe
         }
       })
 
-    console.log(`[getChatHistory] ✅ Retrieved ${chatMessages.length} messages in ${duration}ms`)
     
     // Alerta se query for lenta
     if (duration > 1000) {
-      console.warn(`[getChatHistory] ⚠️ SLOW QUERY: ${duration}ms for phone ${phone}`)
     }
     
     return chatMessages

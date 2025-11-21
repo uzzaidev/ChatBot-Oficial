@@ -83,10 +83,8 @@ export function DashboardClient({ clientId }: DashboardClientProps) {
 
   useEffect(() => {
     if (realtimeLastUpdate) {
-      console.log('[Dashboard] Atualização via Realtime Global:', realtimeLastUpdate)
       setLastUpdatePhone(realtimeLastUpdate)
     } else if (pollingLastUpdate) {
-      console.log('[Dashboard] Atualização via Polling:', pollingLastUpdate)
       setLastUpdatePhone(pollingLastUpdate)
     }
   }, [realtimeLastUpdate, pollingLastUpdate])

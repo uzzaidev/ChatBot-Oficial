@@ -163,7 +163,6 @@ export const generateAIResponse = async (input: GenerateAIResponseInput): Promis
         role: 'system',
         content: `IMPORTANTE - Contexto da conversa: ${greetingInstruction}`,
       })
-      console.log('[generateAIResponse] 👋 Added continuity greeting instruction')
     }
 
     if (ragContext && ragContext.trim().length > 0) {
@@ -183,7 +182,6 @@ export const generateAIResponse = async (input: GenerateAIResponseInput): Promis
           msg.content.trim().length > 0
         
         if (!isValid) {
-          console.warn('[generateAIResponse] Invalid message in chatHistory:', msg)
         }
         
         return isValid
@@ -203,16 +201,10 @@ export const generateAIResponse = async (input: GenerateAIResponseInput): Promis
     })
 
     // Log para debug
-    console.log('[generateAIResponse] Final messages array:', {
-      totalMessages: messages.length,
-      messageRoles: messages.map((m, i) => `${i}: ${m.role}`),
-      allContentsAreStrings: messages.every((m) => typeof m.content === 'string'),
-    })
 
     const tools = [HUMAN_HANDOFF_TOOL_DEFINITION]
 
     // 🔐 Escolher provider dinamicamente baseado na config do cliente
-    console.log(`[generateAIResponse] Using provider: ${config.primaryProvider}`)
     
     if (config.primaryProvider === 'openai') {
       // Usar OpenAI Chat Completion

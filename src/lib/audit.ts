@@ -235,7 +235,6 @@ export async function logAuditEvent(
       console.error('[AUDIT] ❌ Erro ao inserir log:', error)
       // Não lançar erro - não queremos quebrar operação principal por falha de audit
     } else {
-      console.log(`[AUDIT] ✅ ${entry.action} ${entry.resourceType} (${entry.status})`)
     }
   } catch (error) {
     console.error('[AUDIT] ❌ Exceção ao logar audit event:', error)

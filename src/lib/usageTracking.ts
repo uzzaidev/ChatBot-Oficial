@@ -45,7 +45,6 @@ const getPricingFromDatabase = async (
       }
     }
   } catch (error) {
-    console.warn('[UsageTracking] Failed to fetch pricing from database:', error)
   }
 
   // Return default pricing if not found in database
@@ -169,15 +168,6 @@ export const logUsage = async (params: LogUsageParams): Promise<void> => {
       ]
     )
 
-    console.log(
-      `[UsageTracking] Logged ${source} usage:`,
-      {
-        phone,
-        model,
-        tokens: totalTokens,
-        cost: `$${cost.toFixed(6)}`,
-      }
-    )
   } catch (error) {
     // Don't throw error - usage tracking failure shouldn't break the flow
     console.error('[UsageTracking] Failed to log usage:', error)

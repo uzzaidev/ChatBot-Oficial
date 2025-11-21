@@ -30,10 +30,6 @@ export const detectRepetition = async (input: DetectRepetitionInput): Promise<De
   try {
     const { phone, clientId, proposedResponse } = input
 
-    console.log('[detectRepetition] 🔍 Checking for repetition')
-    console.log('[detectRepetition] 📱 Phone:', phone)
-    console.log('[detectRepetition] 🔐 Client ID:', clientId)
-    console.log('[detectRepetition] 💬 Proposed response:', proposedResponse.substring(0, 100) + '...')
 
     // 1. Fetch configurations
     const configs = await getBotConfigs(clientId, [
@@ -50,9 +46,6 @@ export const detectRepetition = async (input: DetectRepetitionInput): Promise<De
       ? Number(configs.get('repetition_detector:check_last_n_responses'))
       : 3
 
-    console.log('[detectRepetition] 🤖 Use embeddings:', useEmbeddings)
-    console.log('[detectRepetition] 📊 Similarity threshold:', similarityThreshold)
-    console.log('[detectRepetition] 🔢 Check last N responses:', checkLastN)
 
     // 2. Get recent bot responses from chat history
     const result = await query<any>(
@@ -65,7 +58,6 @@ export const detectRepetition = async (input: DetectRepetitionInput): Promise<De
     )
 
     if (!result.rows || result.rows.length === 0) {
-      console.log('[detectRepetition] 📭 No history found - no repetition possible')
       return {
         isRepetition: false,
         similarityScore: null,
@@ -89,7 +81,6 @@ export const detectRepetition = async (input: DetectRepetitionInput): Promise<De
     }
 
     if (aiResponses.length === 0) {
-      console.log('[detectRepetition] 📭 No AI responses found in history')
       return {
         isRepetition: false,
         similarityScore: null,
@@ -97,7 +88,6 @@ export const detectRepetition = async (input: DetectRepetitionInput): Promise<De
       }
     }
 
-    console.log(`[detectRepetition] 📚 Found ${aiResponses.length} recent AI responses`)
 
     // 4. Check similarity
     let maxSimilarity = 0
@@ -106,7 +96,6 @@ export const detectRepetition = async (input: DetectRepetitionInput): Promise<De
     if (useEmbeddings) {
       // TODO: Implement embedding-based similarity when OpenAI embeddings are available
       // For now, fall back to word-based comparison
-      console.log('[detectRepetition] ⚠️  Embeddings not yet implemented, using word comparison')
       maxSimilarity = calculateWordSimilarity(proposedResponse, aiResponses)
       isRepetition = maxSimilarity >= similarityThreshold
     } else {
@@ -117,8 +106,6 @@ export const detectRepetition = async (input: DetectRepetitionInput): Promise<De
 
     const duration = Date.now() - startTime
 
-    console.log(`[detectRepetition] 📊 Max similarity: ${(maxSimilarity * 100).toFixed(1)}%`)
-    console.log(`[detectRepetition] ${isRepetition ? '⚠️  REPETITION DETECTED' : '✅ No repetition'} (${duration}ms)`)
 
     return {
       isRepetition,

@@ -67,13 +67,6 @@ export async function POST(request: NextRequest) {
       : ''
 
     // Executa o node
-    console.log('[AI Response Test] Input validation:', {
-      messageType: typeof message,
-      messageLength: message.length,
-      chatHistoryLength: chatHistory.length,
-      ragContextLength: ragContext.length,
-      customerName: input.customerName || 'Cliente',
-    })
 
     // Buscar config do cliente especificado
     const { getClientConfig } = await import('@/lib/config')

@@ -26,7 +26,6 @@ export default async function DashboardPage() {
     throw new Error('Client ID não encontrado. Faça login novamente.')
   }
 
-  console.log('[DashboardPage] Renderizando dashboard para client:', clientId)
 
   return <DashboardClient clientId={clientId} />
 }

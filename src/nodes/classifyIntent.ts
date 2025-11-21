@@ -30,8 +30,6 @@ export const classifyIntent = async (input: ClassifyIntentInput): Promise<Classi
   try {
     const { message, clientId, groqApiKey } = input
 
-    console.log('[classifyIntent] 🎯 Classifying intent for message:', message.substring(0, 50) + '...')
-    console.log('[classifyIntent] 🔐 Client ID:', clientId)
 
     // 1. Fetch configurations
     const configs = await getBotConfigs(clientId, [
@@ -44,13 +42,11 @@ export const classifyIntent = async (input: ClassifyIntentInput): Promise<Classi
     const promptConfig = configs.get('intent_classifier:prompt')
     const intentsConfig = configs.get('intent_classifier:intents')
 
-    console.log('[classifyIntent] 🤖 Using LLM:', useLLM)
 
     // 2. If LLM is disabled, use regex-based classification
     if (!useLLM) {
       const intent = classifyWithRegex(message, intentsConfig)
       const duration = Date.now() - startTime
-      console.log(`[classifyIntent] ✅ Classified with regex: ${intent} (${duration}ms)`)
       
       return {
         intent,
@@ -98,7 +94,6 @@ export const classifyIntent = async (input: ClassifyIntentInput): Promise<Classi
     const intent = response.content.trim().toLowerCase()
     const duration = Date.now() - startTime
 
-    console.log(`[classifyIntent] ✅ Classified with LLM: ${intent} (${duration}ms)`)
 
     return {
       intent,

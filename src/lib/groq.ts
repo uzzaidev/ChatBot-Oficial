@@ -113,7 +113,6 @@ export const generateChatCompletion = async (
         }
       : undefined
 
-    console.log('[Groq] Usage data:', usage)
 
     return {
       content,

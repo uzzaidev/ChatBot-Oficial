@@ -73,11 +73,9 @@ class ExecutionLogger {
     // @ts-ignore
     }).then(result => {
       if (result.error) {
-        console.warn(`[Logger] Failed to log node start for ${nodeName}:`, result.error.message)
       }
     // @ts-ignore
     }).catch((err: any) => {
-      console.warn(`[Logger] Exception logging node start:`, err)
     })
   }
 
@@ -103,11 +101,9 @@ class ExecutionLogger {
       // @ts-ignore
       .then(result => {
         if (result.error) {
-          console.warn(`[Logger] Failed to log node success for ${nodeName}:`, result.error.message)
         }
       // @ts-ignore
       }).catch((err: any) => {
-        console.warn(`[Logger] Exception logging node success:`, err)
       })
   }
 
@@ -134,11 +130,9 @@ class ExecutionLogger {
       // @ts-ignore
       .then(result => {
         if (result.error) {
-          console.warn(`[Logger] Failed to log node error for ${nodeName}:`, result.error.message)
         }
       // @ts-ignore
       }).catch((err: any) => {
-        console.warn(`[Logger] Exception logging node error:`, err)
       })
   }
 
@@ -177,11 +171,9 @@ class ExecutionLogger {
     // @ts-ignore
     }).then(result => {
       if (result.error) {
-        console.warn(`[Logger] Failed to finish execution:`, result.error.message)
       }
     // @ts-ignore
     }).catch((err: any) => {
-      console.warn(`[Logger] Exception finishing execution:`, err)
     })
   }
 

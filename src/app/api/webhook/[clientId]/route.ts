@@ -34,9 +34,6 @@ export async function GET(
 ) {
   const timestamp = new Date().toISOString()
 
-  console.log('═══════════════════════════════════════════════════════════')
-  console.log(`🔍 [WEBHOOK GET] CHAMADA RECEBIDA - ${timestamp}`)
-  console.log('═══════════════════════════════════════════════════════════')
 
   try {
     // SECURITY FIX (VULN-002): Rate limit webhook verification
@@ -55,38 +52,24 @@ export async function GET(
     const searchParams = request.nextUrl.searchParams
 
     // Log 1: Informações da requisição
-    console.log('📍 [STEP 1] INFORMAÇÕES DA REQUISIÇÃO:')
-    console.log(`  URL completa: ${request.url}`)
-    console.log(`  Method: ${request.method}`)
-    console.log(`  Client ID extraído da URL: ${clientId}`)
 
     // Log 2: Headers recebidos
-    console.log('\n📋 [STEP 2] HEADERS RECEBIDOS:')
     const headers: Record<string, string> = {}
     request.headers.forEach((value, key) => {
       headers[key] = value
     })
-    console.log(JSON.stringify(headers, null, 2))
 
     // Log 3: Query parameters
     const mode = searchParams.get('hub.mode')
     const token = searchParams.get('hub.verify_token')
     const challenge = searchParams.get('hub.challenge')
 
-    console.log('\n🔑 [STEP 3] QUERY PARAMETERS:')
-    console.log(`  hub.mode: ${mode}`)
-    console.log(`  hub.verify_token: ${token}`)
-    console.log(`  hub.challenge: ${challenge}`)
 
     // Mostrar TODOS os query params
-    console.log('\n  Todos os query params:')
     searchParams.forEach((value, key) => {
-      console.log(`    ${key}: ${value}`)
     })
 
     // Log 4: Buscar config do cliente
-    console.log('\n🔐 [STEP 4] BUSCANDO CONFIG DO VAULT:')
-    console.log(`  Client ID: ${clientId}`)
 
     const config = await getClientConfig(clientId)
 
@@ -97,10 +80,6 @@ export async function GET(
       return new NextResponse('Client not found', { status: 404 })
     }
 
-    console.log('✅ Config carregado do Vault:')
-    console.log(`  Nome: ${config.name}`)
-    console.log(`  Slug: ${config.slug}`)
-    console.log(`  Status: ${config.status}`)
 
     if (config.status !== 'active') {
       console.error('\n❌ [ERRO] Cliente não está ativo')
@@ -110,29 +89,16 @@ export async function GET(
     }
 
     // Log 5: Validar verify token
-    console.log('\n🔒 [STEP 5] VALIDAÇÃO DO VERIFY TOKEN:')
     const expectedToken = config.apiKeys.metaVerifyToken
 
-    console.log(`  Mode recebido: "${mode}"`)
-    console.log(`  Mode esperado: "subscribe"`)
-    console.log(`  Mode válido: ${mode === 'subscribe' ? '✅' : '❌'}`)
-    console.log(`\n  Token recebido: "${token}"`)
-    console.log(`  Token esperado: "${expectedToken}"`)
-    console.log(`  Token válido: ${token === expectedToken ? '✅' : '❌'}`)
 
     // Comparação character-by-character se tokens não batem
     if (token !== expectedToken) {
-      console.log('\n⚠️  TOKENS NÃO BATEM - Análise detalhada:')
-      console.log(`  Length recebido: ${token?.length || 0}`)
-      console.log(`  Length esperado: ${expectedToken.length}`)
 
       if (token && expectedToken) {
         const minLen = Math.min(token.length, expectedToken.length)
         for (let i = 0; i < minLen; i++) {
           if (token[i] !== expectedToken[i]) {
-            console.log(`  Primeira diferença no char ${i}:`)
-            console.log(`    Recebido: "${token[i]}" (code: ${token.charCodeAt(i)})`)
-            console.log(`    Esperado: "${expectedToken[i]}" (code: ${expectedToken.charCodeAt(i)})`)
             break
           }
         }
@@ -141,11 +107,6 @@ export async function GET(
 
     // Log 6: Decisão final
     if (mode === 'subscribe' && token === expectedToken) {
-      console.log('\n✅ [STEP 6] VERIFICAÇÃO BEM-SUCEDIDA!')
-      console.log(`  Cliente: ${config.name}`)
-      console.log(`  Challenge retornado: ${challenge}`)
-      console.log(`  Status HTTP: 200`)
-      console.log('═══════════════════════════════════════════════════════════\n')
 
       return new NextResponse(challenge, { status: 200 })
     } else {
@@ -189,10 +150,6 @@ export async function POST(
 ) {
   const { clientId } = params
 
-  console.log('═══════════════════════════════════════════════')
-  console.log(`🚀 [WEBHOOK/${clientId}] POST INICIADO`)
-  console.log('Timestamp:', new Date().toISOString())
-  console.log('═══════════════════════════════════════════════')
 
   try {
     // SECURITY FIX (VULN-012): Validar assinatura ANTES de processar
@@ -207,7 +164,6 @@ export async function POST(
     const rawBody = await request.text()
     
     // 2. Buscar config do cliente do Vault
-    console.log(`[WEBHOOK/${clientId}] 🔐 Buscando config do cliente...`)
     const config = await getClientConfig(clientId)
 
     if (!config) {
@@ -250,16 +206,10 @@ export async function POST(
       return new NextResponse('Invalid signature', { status: 403 })
     }
 
-    console.log(`[WEBHOOK/${clientId}] ✅ Assinatura válida`)
 
     // Parse body como JSON agora que validamos
     const body = JSON.parse(rawBody)
-    console.log(`[WEBHOOK/${clientId}] Body recebido:`, JSON.stringify(body, null, 2))
 
-    console.log(`[WEBHOOK/${clientId}] ✅ Config carregado: ${config.name}`)
-    console.log(`  Slug: ${config.slug}`)
-    console.log(`  Status: ${config.status}`)
-    console.log(`  Plan: ${config.status}`)
 
     // 3. Extrair mensagem e adicionar ao cache
     let messageId: string | null = null
@@ -289,7 +239,6 @@ export async function POST(
         }
 
         addWebhookMessage(webhookMessage)
-        console.log(`[WEBHOOK/${clientId}] 📥 Mensagem capturada: ${webhookMessage.from}`)
       }
     } catch (parseError) {
       console.error(`[WEBHOOK/${clientId}] Erro ao extrair mensagem:`, parseError)
@@ -302,14 +251,9 @@ export async function POST(
         const dedupResult = await checkDuplicateMessage(clientId, messageId)
         
         if (dedupResult.alreadyProcessed) {
-          console.log(`[WEBHOOK/${clientId}] ⚠️ MENSAGEM DUPLICADA DETECTADA!`)
-          console.log(`  Message ID: ${messageId}`)
-          console.log(`  Fonte: ${dedupResult.source}`)
-          console.log(`  Ignorando processamento...`)
           return new NextResponse('DUPLICATE_MESSAGE_IGNORED', { status: 200 })
         }
         
-        console.log(`[WEBHOOK/${clientId}] ✅ Mensagem não é duplicada (${dedupResult.source})`)
         
         // Mark message as being processed (in both Redis and PostgreSQL)
         const markResult = await markMessageAsProcessed(clientId, messageId, {
@@ -318,29 +262,21 @@ export async function POST(
         })
         
         if (markResult.success) {
-          console.log(`[WEBHOOK/${clientId}] ✅ Mensagem marcada como processada (${markResult.source})`)
           if (markResult.error) {
-            console.warn(`[WEBHOOK/${clientId}] ⚠️ Aviso: ${markResult.error}`)
           }
         } else {
           console.error(`[WEBHOOK/${clientId}] ❌ Falhou ao marcar como processada: ${markResult.error}`)
-          console.log(`[WEBHOOK/${clientId}] ⚠️ Continuando processamento...`)
         }
       } catch (dedupError) {
         // Graceful degradation - se AMBOS Redis e PostgreSQL falharem, continuar
         console.error(`[WEBHOOK/${clientId}] ⚠️ Erro crítico no sistema de deduplicação:`, dedupError)
-        console.log(`[WEBHOOK/${clientId}] ⚠️ Continuando processamento sem deduplicação...`)
       }
     }
 
     // 5. Processar mensagem com config do cliente
-    console.log(`[WEBHOOK/${clientId}] ⚡ Processando chatbot flow...`)
 
     try {
       const result = await processChatbotMessage(body, config)
-      console.log(`[WEBHOOK/${clientId}] ✅ Processamento concluído!`)
-      console.log(`  Mensagens enviadas: ${result.messagesSent || 0}`)
-      console.log(`  Handoff: ${result.handedOff ? 'Sim' : 'Não'}`)
     } catch (flowError) {
       console.error(`[WEBHOOK/${clientId}] ❌ Erro no flow:`, flowError)
       // Continua e retorna 200 (Meta requer isso)

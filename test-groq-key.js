@@ -19,14 +19,14 @@ async function testGroqKey() {
     const data = await response.json()
 
     if (response.ok) {
-      console.log('✅ Groq API Key VÁLIDA!')
-      console.log('Resposta:', data.choices[0].message.content)
+      
+      
     } else {
-      console.log('❌ Groq API Key INVÁLIDA!')
-      console.log('Erro:', data)
+      
+      
     }
   } catch (error) {
-    console.log('❌ Erro na requisição:', error.message)
+    
   }
 }
 

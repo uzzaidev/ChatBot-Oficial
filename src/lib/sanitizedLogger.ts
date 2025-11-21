@@ -265,16 +265,12 @@ export function logSafe(message: string, data?: any, options: LogOptions = {}) {
       break
     case 'info':
       if (logData !== undefined) {
-        console.log(`${prefix}${sanitizedMessage}`, logData)
       } else {
-        console.log(`${prefix}${sanitizedMessage}`)
       }
       break
     case 'warn':
       if (logData !== undefined) {
-        console.warn(`${prefix}${sanitizedMessage}`, logData)
       } else {
-        console.warn(`${prefix}${sanitizedMessage}`)
       }
       break
     case 'error':

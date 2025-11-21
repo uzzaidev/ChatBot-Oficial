@@ -15,7 +15,6 @@ export const useGlobalRealtimeNotifications = () => {
     let channel: RealtimeChannel
 
     const setupGlobalSubscription = async () => {
-      console.log('[GlobalRealtime] Iniciando monitoramento global de mensagens...')
 
       channel = supabase
         .channel('global-chat-histories')
@@ -28,7 +27,6 @@ export const useGlobalRealtimeNotifications = () => {
             // SEM filtro - monitora TODAS as mensagens
           },
           (payload) => {
-            console.log('🔔 [GlobalRealtime] Nova mensagem detectada:', payload)
 
             const item = payload.new as any
 
@@ -36,20 +34,16 @@ export const useGlobalRealtimeNotifications = () => {
             const phone = item.session_id
 
             if (phone) {
-              console.log('📱 [GlobalRealtime] Atualizando lastUpdatePhone:', phone)
               setLastUpdatePhone(phone)
             }
           }
         )
         .subscribe((status) => {
-          console.log('[GlobalRealtime] Status:', status)
 
           if (status === 'SUBSCRIBED') {
             setIsConnected(true)
-            console.log('✅ Conectado ao Realtime Global')
           } else if (status === 'CLOSED') {
             setIsConnected(false)
-            console.log('❌ Desconectado do Realtime Global')
           } else if (status === 'CHANNEL_ERROR') {
             console.error('❌ ERRO no canal Realtime Global')
           }
@@ -60,7 +54,6 @@ export const useGlobalRealtimeNotifications = () => {
 
     return () => {
       if (channel) {
-        console.log('[GlobalRealtime] Limpando subscription global')
         supabase.removeChannel(channel)
         setIsConnected(false)
       }

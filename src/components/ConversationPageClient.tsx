@@ -41,10 +41,8 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
 
   useEffect(() => {
     if (realtimeLastUpdate) {
-      console.log('[ConversationPage] Atualização via Realtime Global:', realtimeLastUpdate)
       setLastUpdatePhone(realtimeLastUpdate)
     } else if (pollingLastUpdate) {
-      console.log('[ConversationPage] Atualização via Polling:', pollingLastUpdate)
       setLastUpdatePhone(pollingLastUpdate)
     }
   }, [realtimeLastUpdate, pollingLastUpdate])

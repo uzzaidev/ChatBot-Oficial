@@ -33,10 +33,8 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
 
   useEffect(() => {
     if (realtimeLastUpdate) {
-      console.log('[ConversationsIndex] Atualização via Realtime Global:', realtimeLastUpdate)
       setLastUpdatePhone(realtimeLastUpdate)
     } else if (pollingLastUpdate) {
-      console.log('[ConversationsIndex] Atualização via Polling:', pollingLastUpdate)
       setLastUpdatePhone(pollingLastUpdate)
     }
   }, [realtimeLastUpdate, pollingLastUpdate])

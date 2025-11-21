@@ -55,8 +55,6 @@ export async function DELETE(
 
     // 3. Decode filename (URL-encoded)
     const decodedFilename = decodeURIComponent(filename)
-    console.log(`[DeleteDocument] 🗑️ Deleting document: ${decodedFilename}`)
-    console.log(`[DeleteDocument] Client ID: ${clientId}`)
 
     // 4. Delete all chunks of this document
     const deletedCount = await deleteDocuments({
@@ -71,7 +69,6 @@ export async function DELETE(
       )
     }
 
-    console.log(`[DeleteDocument] ✅ Deleted ${deletedCount} chunks`)
 
     // 5. Return success
     return NextResponse.json({

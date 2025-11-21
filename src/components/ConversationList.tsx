@@ -33,7 +33,6 @@ export const ConversationList = ({
   // Track new messages for conversations not currently open
   useEffect(() => {
     if (lastUpdatePhone && lastUpdatePhone !== currentPhone) {
-      console.log('[ConversationList] Nova mensagem de:', lastUpdatePhone, 'Conversa atual:', currentPhone)
       setUnreadConversations(prev => new Set(prev).add(lastUpdatePhone))
       
       // Add visual pulse animation with cleanup

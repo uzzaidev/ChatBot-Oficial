@@ -34,7 +34,6 @@ export async function GET(
     }
 
     const clientId = profile.client_id
-    console.log(`[flow/nodes] GET request for node ${nodeId} by client_id: ${clientId}`)
 
     // Map nodeId to config_key
     const configKeyMap: Record<string, string> = {
@@ -56,7 +55,6 @@ export async function GET(
     let config: any = { enabled: true }
 
     // Fetch node enabled state
-    console.log(`[flow/nodes] Querying: client_id=${clientId}, config_key=${enabledConfigKey}`)
     const { data: enabledData, error: enabledFetchError } = await supabase
       .from('bot_configurations')
       .select('config_value')
@@ -67,7 +65,6 @@ export async function GET(
     // Log all errors, including "not found"
     if (enabledFetchError) {
       if (enabledFetchError.code === 'PGRST116') {
-        console.log(`[flow/nodes] ℹ No database entry for node ${nodeId} (PGRST116 - not found)`)
       } else {
         console.error('[flow/nodes] ❌ Error fetching enabled state:', {
           code: enabledFetchError.code,
@@ -82,10 +79,8 @@ export async function GET(
       // Handle both boolean and string values (defensive programming)
       const enabledValue = enabledData.config_value.enabled
       config.enabled = enabledValue === true || enabledValue === 'true'
-      console.log(`[flow/nodes] ✓ Loaded node ${nodeId} enabled state: ${config.enabled} (raw: ${JSON.stringify(enabledValue)}) from database`)
     } else if (!enabledFetchError) {
       // Data was returned but config_value is null/undefined
-      console.log(`[flow/nodes] ⚠️ Node ${nodeId} data returned but config_value is ${enabledData?.config_value === null ? 'null' : 'undefined'}`)
     }
 
     // Apply default configuration for this node
@@ -277,7 +272,6 @@ export async function PATCH(
         return NextResponse.json({ error: enabledError.message }, { status: 500 })
       }
       
-      console.log(`[flow/nodes] ✓ Node ${nodeId} enabled state updated to: ${enabledBoolean} (input: ${enabled}) for client: ${clientId}`)
     }
 
     // Handle configuration updates
@@ -338,7 +332,6 @@ export async function PATCH(
           const configKeyForField = fieldToKeyMap[fieldName]
 
           if (configKeyForField) {
-            console.log(`[flow/nodes] Saving ${fieldName}=${value} to ${configKeyForField}`)
 
             upsertPromises.push(
               supabase.from('bot_configurations').upsert(

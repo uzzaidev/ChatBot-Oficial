@@ -43,7 +43,6 @@ export const useRealtimeMessages = ({
             filter: `session_id=eq.${phone}`,
           },
           (payload) => {
-            console.log('🔔 [Realtime] Nova mensagem recebida:', payload)
             
             // Transformar dados do n8n para formato Message
             const item = payload.new as any
@@ -86,7 +85,6 @@ export const useRealtimeMessages = ({
               metadata: null,
             }
             
-            console.log('📨 [Realtime] Mensagem processada:', newMessage)
             
             if (onNewMessageRef.current) {
               onNewMessageRef.current(newMessage)
@@ -94,14 +92,11 @@ export const useRealtimeMessages = ({
           }
         )
         .subscribe((status) => {
-          console.log('[useRealtimeMessages] Status:', status, 'para telefone:', phone)
           
           if (status === 'SUBSCRIBED') {
             setIsConnected(true)
-            console.log('✅ Conectado ao Realtime para', phone)
           } else if (status === 'CLOSED') {
             setIsConnected(false)
-            console.log('❌ Desconectado do Realtime')
           } else if (status === 'CHANNEL_ERROR') {
             console.error('❌ ERRO no canal Realtime - Verifique se a replicação está habilitada no Supabase!')
           }

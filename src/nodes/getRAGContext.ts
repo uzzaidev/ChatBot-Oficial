@@ -35,11 +35,6 @@ export const getRAGContext = async (input: GetRAGContextInput): Promise<string> 
       maxResults = configValue !== null ? Number(configValue) : 5
     }
 
-    console.log(`[getRAGContext] 🔍 Searching for relevant documents...`)
-    console.log(`[getRAGContext] Query: "${query.substring(0, 100)}..."`)
-    console.log(`[getRAGContext] Client ID: ${clientId}`)
-    console.log(`[getRAGContext] ⚙️ Similarity threshold (from config): ${similarityThreshold}`)
-    console.log(`[getRAGContext] ⚙️ Max results (from config): ${maxResults}`)
 
     // Gerar embedding da query
     const embeddingResult = await generateEmbedding(query, openaiApiKey)
@@ -59,22 +54,18 @@ export const getRAGContext = async (input: GetRAGContextInput): Promise<string> 
     }
 
     if (!data || data.length === 0) {
-      console.log(`[getRAGContext] ℹ️ No relevant documents found (threshold: ${similarityThreshold})`)
       return ''
     }
 
     const documents = data as MatchedDocument[]
-    console.log(`[getRAGContext] ✅ Found ${documents.length} relevant documents`)
     documents.forEach((doc, i) => {
       const preview = doc.content.substring(0, 80)
-      console.log(`[getRAGContext]   ${i + 1}. Similarity: ${doc.similarity.toFixed(3)} | "${preview}..."`)
     })
 
     const concatenatedContent = documents
       .map((doc, i) => `[Documento ${i + 1} - Relevância: ${(doc.similarity * 100).toFixed(1)}%]\n${doc.content}`)
       .join('\n\n---\n\n')
 
-    console.log(`[getRAGContext] 📄 Returning ${concatenatedContent.length} chars of context`)
 
     return concatenatedContent
   } catch (error) {

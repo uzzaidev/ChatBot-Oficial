@@ -49,7 +49,6 @@ export const getPool = (): Pool => {
     return pool
   }
 
-  console.log('[Postgres] 🆕 Creating new connection pool')
 
   // OTIMIZAÇÃO: Configurações otimizadas para Supabase Pooler
   pool = new Pool({
@@ -75,11 +74,9 @@ export const getPool = (): Pool => {
 
   // NOVO: Log quando pool conecta/desconecta (útil para debugging)
   pool.on('connect', () => {
-    console.log('[Postgres] ✅ New client connected to pool')
   })
 
   pool.on('remove', () => {
-    console.log('[Postgres] ⚠️ Client removed from pool')
   })
 
   return pool
@@ -106,7 +103,6 @@ const validateConnection = async (testPool: Pool): Promise<boolean> => {
     await client.query('SELECT 1')
     return true
   } catch (error) {
-    console.warn('[Postgres] ⚠️ Connection validation failed:', error instanceof Error ? error.message : error)
     return false
   } finally {
     if (client) {
@@ -121,7 +117,6 @@ const validateConnection = async (testPool: Pool): Promise<boolean> => {
  */
 const recreatePool = async (): Promise<void> => {
   if (pool) {
-    console.log('[Postgres] ♻️ Forcing pool recreation due to connection error...')
     // NÃO chamamos pool.end() - apenas descartamos a referência
     // O garbage collector vai limpar quando não houver mais referências
     pool = null
@@ -141,13 +136,11 @@ export const query = async <T = any>(
 
     try {
       if (attempt > 0) {
-        console.log(`[Postgres] 🔄 Retry attempt ${attempt}/${maxRetries}`)
         
         // On retry, validate connection health and recreate pool if needed
         const currentPool = getPool()
         const isHealthy = await validateConnection(currentPool)
         if (!isHealthy) {
-          console.log('[Postgres] ♻️ Connection unhealthy, forcing pool recreation...')
           await recreatePool()
         }
         
@@ -160,30 +153,22 @@ export const query = async <T = any>(
 
       // Log detalhado para debugging
       const queryPreview = text.replace(/\s+/g, ' ').substring(0, 100)
-      console.log(`[Postgres] 🔍 Query (attempt ${attempt + 1}/${maxRetries + 1}): ${queryPreview}...`)
-      console.log(`[Postgres] 📊 Pool status: { total: ${currentPool.totalCount}, idle: ${currentPool.idleCount}, waiting: ${currentPool.waitingCount} }`)
-      console.log(`[Postgres] ⏱️  Timestamp: ${new Date().toISOString()}`)
 
       if (currentPool.waitingCount > 0) {
-        console.warn(`[Postgres] ⚠️  WARNING: ${currentPool.waitingCount} clients waiting for connection!`)
       }
 
-      console.log(`[Postgres] 🚀 Executando query...`)
 
       // Execute query directly - PostgreSQL handles timeout via statement_timeout
       // Removed client-side timeout to avoid premature failures in serverless cold starts
       const result = await currentPool.query<T>(text, params)
 
-      console.log(`[Postgres] ✅ Query executada com sucesso!`)
       
       const duration = Date.now() - start
       
       // OTIMIZAÇÃO: Log com métricas de performance
-      console.log(`[Postgres] ✅ Query OK (${duration}ms) - ${result.rowCount} rows`)
       
       // Alerta se query for lenta
       if (duration > 3000) {
-        console.warn(`[Postgres] ⚠️ SLOW QUERY WARNING: ${duration}ms`)
       }
       
       return result
@@ -215,7 +200,6 @@ export const query = async <T = any>(
         errorMessage.includes('ECONNRESET')
       
       if (isConnectionError && attempt < maxRetries) {
-        console.log('[Postgres] ♻️ Forcing pool recreation due to connection error')
         await recreatePool()
       }
     }
@@ -233,7 +217,6 @@ export const getClient = async (): Promise<PoolClient> => {
 // Fechar pool (útil APENAS para testes - NÃO usar em produção)
 export const closePool = async (): Promise<void> => {
   if (pool) {
-    console.log('[Postgres] 🔒 Fechando connection pool (TEST ONLY)')
     await pool.end()
     pool = null
     poolCreatedAt = null

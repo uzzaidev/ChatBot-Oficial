@@ -23,7 +23,6 @@ export default async function AnalyticsPage() {
     throw new Error('Client ID não encontrado. Faça login novamente.')
   }
 
-  console.log('[AnalyticsPage] Renderizando analytics para client:', clientId)
 
   return <AnalyticsClient clientId={clientId} />
 }

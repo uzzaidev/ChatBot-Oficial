@@ -127,7 +127,6 @@ export const useConversations = ({
           table: 'Clientes WhatsApp',
         },
         () => {
-          console.log('[Realtime] Mudança detectada em Clientes WhatsApp')
           // Delay de 500ms para garantir que mensagem foi salva primeiro
           debouncedFetch(500)
         }
@@ -141,7 +140,6 @@ export const useConversations = ({
           table: 'n8n_chat_histories',
         },
         (payload) => {
-          console.log('[Realtime] Nova mensagem detectada em n8n_chat_histories')
           // Extract phone from session_id
           const sessionId = (payload.new as any)?.session_id
           if (sessionId) {

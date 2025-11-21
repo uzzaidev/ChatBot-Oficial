@@ -24,25 +24,21 @@ export const AuthMonitor = () => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('[AuthMonitor] Auth state changed:', event)
 
       // Eventos que indicam que usuário deve fazer login novamente
       if (event === 'SIGNED_OUT') {
-        console.log('[AuthMonitor] Usuário deslogado, redirecionando para /login')
         router.push('/login')
         router.refresh()
       }
 
       // Se token foi renovado mas não há sessão, redirecionar
       if (event === 'TOKEN_REFRESHED' && !session) {
-        console.log('[AuthMonitor] Token renovado mas sem sessão, redirecionando para /login')
         router.push('/login')
         router.refresh()
       }
 
       // Se token expirou e não conseguiu renovar
       if (event === 'TOKEN_REFRESHED' && session) {
-        console.log('[AuthMonitor] Token renovado com sucesso')
       }
     })
 
@@ -54,7 +50,6 @@ export const AuthMonitor = () => {
       } = await supabase.auth.getSession()
 
       if (error || !session) {
-        console.log('[AuthMonitor] Sessão inválida na verificação inicial')
         router.push('/login')
         router.refresh()
       }

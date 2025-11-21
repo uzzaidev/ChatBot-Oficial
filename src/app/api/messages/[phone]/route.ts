@@ -33,8 +33,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    console.log('[API Messages] =====================================')
-    console.log('[API Messages] Fetching messages for phone:', phone, 'client:', clientId)
 
     // Debug: Query direta via PostgreSQL para comparar
     try {
@@ -44,7 +42,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
          AND (client_id = $2 OR client_id IS NULL)`,
         [phone, clientId]
       )
-      console.log('[API Messages] PostgreSQL direct count:', pgResult.rows[0]?.count)
     } catch (pgError) {
       console.error('[API Messages] PostgreSQL count error:', pgError)
     }
@@ -53,7 +50,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // 🔐 SECURITY: Filter messages by authenticated user's client_id
     // Buscar TODAS as mensagens via PostgreSQL direto (sem limite)
     // Motivo: Supabase pode ter limites de paginação que não queremos
-    console.log('[API Messages] Fetching via PostgreSQL (no limits)...')
 
     const pgMessages = await query<any>(
       `SELECT id, session_id, message, created_at
@@ -64,24 +60,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       [phone, clientId]
     )
 
-    console.log('[API Messages] PostgreSQL returned', pgMessages.rows.length, 'messages')
 
     const data = pgMessages.rows
     const error = null
-
-    // Debug: Mostrar primeira e última mensagem (ordem DESC)
-    if (data && data.length > 0) {
-      console.log('[API Messages] Newest message (first in result):', {
-        id: data[0].id,
-        created_at: data[0].created_at
-      })
-      console.log('[API Messages] Oldest message (last in result):', {
-        id: data[data.length - 1].id,
-        created_at: data[data.length - 1].created_at
-      })
-    }
-
-    console.log('[API Messages] =====================================')
 
     // Reverter ordem para exibir antigas primeiro (como esperado pela UI)
     const dataReversed = (data || []).reverse()

@@ -58,9 +58,7 @@ export async function GET(request: NextRequest) {
     const documentType = searchParams.get('documentType') || undefined
     const limit = parseInt(searchParams.get('limit') || '100', 10)
 
-    console.log(`[ListDocuments] 📋 Fetching documents for client: ${clientId}`)
     if (documentType) {
-      console.log(`[ListDocuments] 🔍 Filter: documentType=${documentType}`)
     }
 
     // 4. Fetch documents
@@ -69,7 +67,6 @@ export async function GET(request: NextRequest) {
       limit,
     })
 
-    console.log(`[ListDocuments] ✅ Found ${documents.length} documents`)
 
     // 5. Return documents
     return NextResponse.json({

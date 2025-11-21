@@ -55,19 +55,10 @@ export async function GET(req: NextRequest) {
  */
 export async function POST(req: NextRequest) {
   // LOG CRÍTICO: Este deve SEMPRE aparecer quando webhook é chamado
-  console.log('═══════════════════════════════════════════════')
-  console.log('🚀🚀🚀 [WEBHOOK POST] FUNÇÃO INICIADA! 🚀🚀🚀')
-  console.log('Timestamp:', new Date().toISOString())
-  console.log('URL:', req.url)
-  console.log('Method:', req.method)
-  console.log('═══════════════════════════════════════════════')
   
   try {
-    console.log('[WEBHOOK] Tentando parsear body...')
     const body = await req.json();
-    console.log('[WEBHOOK] ✅ Body parseado com sucesso!')
 
-    console.log("📩 Webhook recebido:", JSON.stringify(body, null, 2));
 
     // Extrai informações da mensagem para exibir no dashboard
     try {
@@ -76,11 +67,6 @@ export async function POST(req: NextRequest) {
       const value = change?.value
       const message = value?.messages?.[0]
       
-      console.log('🔍 Extraindo mensagem...')
-      console.log('  entry:', entry ? '✅' : '❌')
-      console.log('  change:', change ? '✅' : '❌')
-      console.log('  value:', value ? '✅' : '❌')
-      console.log('  message:', message ? '✅' : '❌')
       
       if (message) {
         const contact = value?.contacts?.[0]
@@ -98,20 +84,16 @@ export async function POST(req: NextRequest) {
           raw: body
         }
         
-        console.log('✅ Mensagem extraída:', webhookMessage)
         
         // Adiciona ao cache em memória
         addWebhookMessage(webhookMessage)
         
-        console.log(`📥 Mensagem capturada e adicionada ao cache: ${webhookMessage.from} - ${webhookMessage.content}`)
       } else {
-        console.log('⚠️ Nenhuma mensagem encontrada no payload (pode ser status update)')
       }
     } catch (parseError) {
       console.error('❌ Erro ao extrair dados da mensagem:', parseError)
     }
 
-    console.log('[WEBHOOK] ✅ Extração concluída, agora vai processar chatbot flow...')
 
     // ⚠️ DEPRECATED: Este webhook legacy (/api/webhook) não é mais suportado
     //

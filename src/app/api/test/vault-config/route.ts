@@ -28,7 +28,6 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log('[vault-config] Testing config for client:', clientId)
 
     // 2. Buscar config
     const config = await getClientConfig(clientId)

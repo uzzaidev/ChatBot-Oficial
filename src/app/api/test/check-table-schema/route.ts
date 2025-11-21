@@ -11,7 +11,6 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(request: NextRequest) {
   try {
-    console.log('[check-table-schema] 🔍 Verificando schema da tabela...')
 
     // 1. Verificar estrutura da tabela via pg direto
     const schemaResult = await query<any>(`
@@ -25,7 +24,6 @@ export async function GET(request: NextRequest) {
       ORDER BY ordinal_position
     `)
 
-    console.log(`[check-table-schema] ✅ Colunas encontradas: ${schemaResult.rows.length}`)
 
     // 2. Verificar constraints (especialmente UNIQUE em telefone)
     const constraintsResult = await query<any>(`
@@ -40,7 +38,6 @@ export async function GET(request: NextRequest) {
       WHERE tc.table_name = 'Clientes WhatsApp'
     `)
 
-    console.log(`[check-table-schema] ✅ Constraints encontradas: ${constraintsResult.rows.length}`)
 
     // 3. Verificar RLS (Row Level Security)
     const rlsResult = await query<any>(`
@@ -60,7 +57,6 @@ export async function GET(request: NextRequest) {
       .select('telefone, nome, status')
       .limit(5)
 
-    console.log('[check-table-schema] ✅ Teste de SELECT via Supabase:', testError ? 'FALHOU' : 'OK')
 
     // 5. Contar registros
     const countResult = await query<any>(`

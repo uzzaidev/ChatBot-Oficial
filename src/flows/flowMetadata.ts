@@ -327,6 +327,5 @@ export function validateMetadata(): { valid: boolean; errors: string[] } {
 if (process.env.NODE_ENV === 'development') {
   const validation = validateMetadata()
   if (!validation.valid) {
-    console.warn('⚠️ Flow metadata validation errors:', validation.errors)
   }
 }

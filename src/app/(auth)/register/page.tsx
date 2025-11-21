@@ -76,11 +76,9 @@ export default function RegisterPage() {
         return
       }
 
-      console.log('[Register] Conta criada com sucesso:', data)
 
       // Se recebeu sessão, fazer login automático
       if (data.session) {
-        console.log('[Register] Fazendo login automático...')
 
         // Importar createBrowserClient dinamicamente
         const { createBrowserClient } = await import('@supabase/ssr')

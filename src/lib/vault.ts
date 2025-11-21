@@ -43,7 +43,6 @@ export const createSecret = async (
       throw new Error('No secret ID returned from Vault')
     }
 
-    console.log(`[createSecret] ✅ Secret created: ${secretName} (ID: ${data})`)
     return data
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -108,7 +107,6 @@ export const updateSecret = async (
       throw new Error(`Failed to update secret: ${error.message}`)
     }
 
-    console.log(`[updateSecret] ✅ Secret updated: ${secretId}`)
     return data === true
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'

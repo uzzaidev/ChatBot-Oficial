@@ -24,7 +24,6 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50')
     const offset = parseInt(searchParams.get('offset') || '0')
 
-    console.log('[API /conversations] 🚀 Fetching conversations with optimized query for client:', clientId)
 
     // 🔐 SECURITY: Filter by authenticated user's client_id
     // OTIMIZAÇÃO: Uma única query SQL com JOINs e agregações
@@ -100,7 +99,6 @@ export async function GET(request: NextRequest) {
     })
 
     const duration = Date.now() - startTime
-    console.log(`[API /conversations] ✅ Query completed in ${duration}ms - ${conversations.length} conversations`)
 
     return NextResponse.json({
       conversations,

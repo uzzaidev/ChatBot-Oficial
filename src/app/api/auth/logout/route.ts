@@ -24,7 +24,6 @@ export async function POST() {
       )
     }
 
-    console.log('[logout] ✅ Logout realizado com sucesso')
 
     return NextResponse.json({ success: true })
   } catch (error) {

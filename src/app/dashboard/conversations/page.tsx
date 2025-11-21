@@ -18,7 +18,6 @@ export default async function ConversationsIndexPage() {
     throw new Error('Client ID não encontrado. Faça login novamente.')
   }
 
-  console.log('[ConversationsIndexPage] Renderizando lista de conversas para client:', clientId)
 
   return <ConversationsIndexClient clientId={clientId} />
 }

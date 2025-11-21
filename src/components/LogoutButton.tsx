@@ -33,7 +33,6 @@ export function LogoutButton({ isCollapsed = false }: LogoutButtonProps) {
       const data = await response.json()
 
       if (data.success) {
-        console.log('[LogoutButton] Logout realizado com sucesso')
         router.push('/login')
         router.refresh()
       } else {

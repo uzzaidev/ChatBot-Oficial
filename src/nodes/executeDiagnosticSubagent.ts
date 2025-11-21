@@ -30,7 +30,6 @@ export interface DiagnosticResult {
 
 export const executeDiagnosticSubagent = async (userMessage: string): Promise<DiagnosticResult> => {
   try {
-    console.log('[executeDiagnosticSubagent] Analisando mensagem:', userMessage)
 
     const messages: ChatMessage[] = [
       {
@@ -58,7 +57,6 @@ export const executeDiagnosticSubagent = async (userMessage: string): Promise<Di
       normalizedArea = 'INDEFINIDO'
     }
 
-    console.log('[executeDiagnosticSubagent] Área identificada:', normalizedArea)
 
     return {
       area: normalizedArea,

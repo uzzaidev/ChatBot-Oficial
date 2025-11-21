@@ -190,7 +190,6 @@ export async function PUT(request: NextRequest) {
     // VULN-013 FIX: Validate input with Zod
     const validation = validatePayload(SecretUpdateSchema, body)
     if (validation.success === false) {
-      console.log('[PUT /api/vault/secrets] ❌ Validation failed:', validation.errors)
       return NextResponse.json(
         {
           error: 'Dados inválidos',
@@ -312,7 +311,6 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    console.log('[vault/secrets] Secret atualizado:', { key, client_id: clientId })
 
     // VULN-008 FIX: Log audit event
     await logUpdate(

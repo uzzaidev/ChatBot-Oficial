@@ -143,7 +143,6 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    console.log('[client/config] ✅ Configurações atualizadas:', { client_id: clientId })
 
     return NextResponse.json({
       success: true,

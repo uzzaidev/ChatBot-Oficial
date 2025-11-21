@@ -26,20 +26,12 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = createServerClient()
 
-    console.log('[GET /api/admin/users] 🔍 Starting request...')
 
     // Verificar autenticação
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
-    console.log('[GET /api/admin/users] 👤 Auth check:', {
-      userId: user?.id,
-      email: user?.email,
-      hasError: !!authError,
-      errorMessage: authError?.message
-    })
 
     if (authError || !user) {
-      console.log('[GET /api/admin/users] ❌ Authentication failed')
       return NextResponse.json(
         { error: 'Não autenticado' },
         { status: 401 }
@@ -53,15 +45,8 @@ export async function GET(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    console.log('[GET /api/admin/users] 📋 Profile check:', {
-      hasProfile: !!currentUserProfile,
-      profile: currentUserProfile,
-      hasError: !!profileError,
-      errorMessage: profileError?.message
-    })
 
     if (profileError || !currentUserProfile) {
-      console.log('[GET /api/admin/users] ❌ Profile not found')
       return NextResponse.json(
         { error: 'Perfil de usuário não encontrado' },
         { status: 404 }
@@ -70,15 +55,9 @@ export async function GET(request: NextRequest) {
 
     const profile = currentUserProfile as CurrentUserProfile
 
-    console.log('[GET /api/admin/users] 🔐 Role check:', {
-      role: profile.role,
-      isActive: profile.is_active,
-      isAdmin: ['admin', 'client_admin'].includes(profile.role)
-    })
 
     // Verificar se é admin
     if (!['admin', 'client_admin'].includes(profile.role)) {
-      console.log('[GET /api/admin/users] ❌ Access denied - insufficient role')
       return NextResponse.json(
         { error: 'Acesso negado. Apenas administradores podem acessar esta rota.' },
         { status: 403 }
@@ -87,7 +66,6 @@ export async function GET(request: NextRequest) {
 
     // Verificar se está ativo
     if (!profile.is_active) {
-      console.log('[GET /api/admin/users] ❌ Access denied - user inactive')
       return NextResponse.json(
         { error: 'Conta desativada' },
         { status: 403 }
@@ -188,12 +166,10 @@ export async function POST(request: NextRequest) {
     const supabase = createServerClient()
     const supabaseAdmin = createServiceRoleClient()
 
-    console.log('[POST /api/admin/users] 🔍 Starting user creation...')
 
     // Verificar autenticação
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      console.log('[POST /api/admin/users] ❌ Authentication failed')
       return NextResponse.json(
         { error: 'Não autenticado' },
         { status: 401 }
@@ -207,14 +183,8 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    console.log('[POST /api/admin/users] 👤 Current user:', {
-      userId: user.id,
-      email: user.email,
-      profile: currentUserProfile
-    })
 
     if (profileError || !currentUserProfile) {
-      console.log('[POST /api/admin/users] ❌ Profile not found')
       return NextResponse.json(
         { error: 'Perfil de usuário não encontrado' },
         { status: 404 }
@@ -225,7 +195,6 @@ export async function POST(request: NextRequest) {
 
     // Verificar se é admin
     if (!['admin', 'client_admin'].includes(profile.role)) {
-      console.log('[POST /api/admin/users] ❌ Access denied - insufficient role')
       return NextResponse.json(
         { error: 'Acesso negado. Apenas administradores podem criar usuários.' },
         { status: 403 }
@@ -234,7 +203,6 @@ export async function POST(request: NextRequest) {
 
     // Verificar se está ativo
     if (!profile.is_active) {
-      console.log('[POST /api/admin/users] ❌ Access denied - user inactive')
       return NextResponse.json(
         { error: 'Conta desativada' },
         { status: 403 }
@@ -247,7 +215,6 @@ export async function POST(request: NextRequest) {
     // VULN-013 FIX: Validate input with Zod
     const validation = validatePayload(UserCreateSchema, body)
     if (validation.success === false) {
-      console.log('[POST /api/admin/users] ❌ Validation failed:', validation.errors)
       return NextResponse.json(
         {
           error: 'Dados inválidos',
@@ -259,13 +226,6 @@ export async function POST(request: NextRequest) {
 
     const validatedBody = validation.data as z.infer<typeof UserCreateSchema>
 
-    console.log('[POST /api/admin/users] 📋 Request body:', {
-      email: validatedBody.email,
-      role: validatedBody.role,
-      hasPassword: !!validatedBody.password,
-      requestedClientId: validatedBody.client_id,
-      currentUserRole: profile.role
-    })
 
     // Determinar client_id do novo usuário
     let targetClientId = profile.client_id // Default: mesmo client do criador
@@ -280,7 +240,6 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (clientError || !targetClient) {
-        console.log('[POST /api/admin/users] ❌ Invalid client_id:', validatedBody.client_id)
         return NextResponse.json(
           { error: 'Cliente/Tenant não encontrado' },
           { status: 400 }
@@ -288,7 +247,6 @@ export async function POST(request: NextRequest) {
       }
 
       if (targetClient.status !== 'active') {
-        console.log('[POST /api/admin/users] ❌ Client inactive:', validatedBody.client_id)
         return NextResponse.json(
           { error: 'Cliente/Tenant está inativo' },
           { status: 400 }
@@ -296,13 +254,8 @@ export async function POST(request: NextRequest) {
       }
 
       targetClientId = validatedBody.client_id
-      console.log('[POST /api/admin/users] ✅ Super admin creating user for client:', {
-        clientId: targetClientId,
-        clientName: targetClient.name
-      })
     } else if (profile.role === 'client_admin' && validatedBody.client_id && validatedBody.client_id !== profile.client_id) {
       // Client admin tentando criar usuário em outro tenant - NEGADO
-      console.log('[POST /api/admin/users] ❌ Client admin trying to create user in different tenant')
       return NextResponse.json(
         { error: 'Você só pode criar usuários no seu próprio tenant' },
         { status: 403 }
@@ -317,7 +270,6 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (existingUser) {
-      console.log('[POST /api/admin/users] ❌ Email already exists:', validatedBody.email)
       return NextResponse.json(
         { error: 'Email já cadastrado' },
         { status: 409 }
@@ -325,7 +277,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Criar usuário no auth (Supabase Auth) com senha definida
-    console.log('[POST /api/admin/users] 🔐 Creating auth user...')
     const { data: authUser, error: createAuthError } = await supabaseAdmin.auth.admin.createUser({
       email: validatedBody.email,
       password: validatedBody.password, // Senha definida pelo admin
@@ -345,10 +296,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('[POST /api/admin/users] ✅ Auth user created:', {
-      authUserId: authUser.user.id,
-      email: authUser.user.email
-    })
 
     // Criar perfil de usuário
     const newUserProfile: any = {
@@ -362,7 +309,6 @@ export async function POST(request: NextRequest) {
       phone: validatedBody.phone || null
     }
 
-    console.log('[POST /api/admin/users] 📝 Creating user profile...')
     const { data: createdProfile, error: profileCreateError } = await supabase
       .from('user_profiles')
       .insert(newUserProfile)
@@ -373,7 +319,6 @@ export async function POST(request: NextRequest) {
       console.error('[POST /api/admin/users] ❌ Error creating user profile:', profileCreateError)
       
       // Rollback: deletar usuário do auth se falhar ao criar profile
-      console.log('[POST /api/admin/users] 🔄 Rolling back auth user creation...')
       await supabaseAdmin.auth.admin.deleteUser(authUser.user.id)
       
       return NextResponse.json(
@@ -382,12 +327,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('[POST /api/admin/users] ✅ User created successfully:', {
-      userId: createdProfile.id,
-      email: createdProfile.email,
-      role: createdProfile.role,
-      clientId: createdProfile.client_id
-    })
 
     // VULN-008 FIX: Log audit event
     await logCreate(

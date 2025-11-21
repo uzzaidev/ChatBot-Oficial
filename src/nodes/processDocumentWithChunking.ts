@@ -102,9 +102,6 @@ export const processDocumentWithChunking = async (
 ): Promise<ProcessDocumentOutput> => {
   const { text, clientId, metadata, openaiApiKey } = input
 
-  console.log(`[ProcessDocument] 🔍 Starting for client: ${clientId}`)
-  console.log(`[ProcessDocument] 📄 Document: ${metadata.filename || 'unnamed'}`)
-  console.log(`[ProcessDocument] 📏 Text length: ${text.length} chars`)
 
   try {
     // 1. Buscar configurações de chunking
@@ -118,7 +115,6 @@ export const processDocumentWithChunking = async (
     const overlapPercentage = Number(configs['rag:chunk_overlap_percentage']) || 20
     const embeddingModel = String(configs['rag:embedding_model']) || 'text-embedding-3-small'
 
-    console.log(`[ProcessDocument] ⚙️ Config: chunk_size=${chunkSize}, overlap=${overlapPercentage}%`)
 
     // 2. Dividir documento em chunks semânticos
     const chunkingConfig: ChunkingConfig = {
@@ -132,11 +128,9 @@ export const processDocumentWithChunking = async (
       uploadedAt: new Date()
     })
 
-    console.log(`[ProcessDocument] 📦 Created ${chunks.length} chunks`)
 
     // Calcular estatísticas
     const stats = getChunkingStats(chunks)
-    console.log(`[ProcessDocument] 📊 Stats:`, stats)
 
     // 3. Gerar embeddings e salvar no vector store
     const supabase = createServiceRoleClient() // Service role bypassa RLS
@@ -147,7 +141,6 @@ export const processDocumentWithChunking = async (
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i]
 
-      console.log(`[ProcessDocument] 🔄 Processing chunk ${i + 1}/${chunks.length}...`)
 
       // Gerar embedding
       const embeddingResult = await generateEmbedding(chunk.content, openaiApiKey)
@@ -176,7 +169,6 @@ export const processDocumentWithChunking = async (
 
       // Log progresso a cada 10 chunks
       if ((i + 1) % 10 === 0) {
-        console.log(`[ProcessDocument] ✅ Processed ${i + 1}/${chunks.length} chunks`)
       }
     }
 
@@ -184,9 +176,6 @@ export const processDocumentWithChunking = async (
     // text-embedding-3-small: $0.02 por 1M tokens
     const totalCost = (totalEmbeddingTokens / 1_000_000) * 0.02
 
-    console.log(`[ProcessDocument] ✅ Success!`)
-    console.log(`[ProcessDocument] 💾 Saved ${documentIds.length} chunks to vector store`)
-    console.log(`[ProcessDocument] 💰 Cost: $${totalCost.toFixed(4)} (${totalEmbeddingTokens} tokens)`)
 
     return {
       chunksCreated: chunks.length,
@@ -242,7 +231,6 @@ export const deleteDocuments = async (filters: {
 }): Promise<number> => {
   const { clientId, filename, documentType, source } = filters
 
-  console.log(`[DeleteDocuments] 🗑️ Deleting with filters:`, filters)
 
   try {
     const supabase = createServiceRoleClient() // Service role bypassa RLS
@@ -271,7 +259,6 @@ export const deleteDocuments = async (filters: {
     }
 
     const deletedCount = data?.length || 0
-    console.log(`[DeleteDocuments] ✅ Deleted ${deletedCount} documents`)
 
     return deletedCount
   } catch (error) {
@@ -305,7 +292,6 @@ export const listDocuments = async (
   uploadedAt: string
   uploadedBy: string
 }>> => {
-  console.log(`[ListDocuments] 📋 Listing for client: ${clientId}`)
 
   try {
     const supabase = createServiceRoleClient() // Service role bypassa RLS
@@ -344,7 +330,6 @@ export const listDocuments = async (
     })
 
     const documents = Array.from(documentsMap.values())
-    console.log(`[ListDocuments] ✅ Found ${documents.length} documents`)
 
     return documents
   } catch (error) {

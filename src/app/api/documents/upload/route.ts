@@ -96,7 +96,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log(`[Upload] 📄 Processing file: ${file.name} (${file.type}, ${file.size} bytes)`)
 
     // 5. Extract text from file
     let text: string
@@ -106,17 +105,14 @@ export async function POST(request: NextRequest) {
       const buffer = Buffer.from(await file.arrayBuffer())
       const pdfData = await pdfParse(buffer)
       text = pdfData.text
-      console.log(`[Upload] 📋 Extracted ${pdfData.numpages} pages, ${text.length} chars`)
     } else if (file.type.startsWith('image/')) {
       // Image OCR extraction
-      console.log(`[Upload] 🖼️ Processing image with OCR...`)
       const buffer = Buffer.from(await file.arrayBuffer())
 
       // Create Tesseract worker
       const worker = await createWorker('por', 1, {
         logger: (m) => {
           if (m.status === 'recognizing text') {
-            console.log(`[Upload] OCR Progress: ${Math.round(m.progress * 100)}%`)
           }
         }
       })
@@ -124,14 +120,12 @@ export async function POST(request: NextRequest) {
       try {
         const { data } = await worker.recognize(buffer)
         text = data.text
-        console.log(`[Upload] ✅ OCR completed: ${text.length} chars, confidence: ${data.confidence}%`)
       } finally {
         await worker.terminate()
       }
     } else {
       // text/plain
       text = await file.text()
-      console.log(`[Upload] 📋 Read ${text.length} chars from TXT file`)
     }
 
     if (!text || text.trim().length === 0) {
@@ -158,7 +152,6 @@ export async function POST(request: NextRequest) {
     }
 
     // 7. Process document with chunking
-    console.log(`[Upload] 🔧 Processing document with chunking...`)
     const result = await processDocumentWithChunking({
       text,
       clientId,
@@ -173,9 +166,6 @@ export async function POST(request: NextRequest) {
       openaiApiKey,
     })
 
-    console.log(`[Upload] ✅ Document processed successfully!`)
-    console.log(`[Upload] 📦 Created ${result.chunksCreated} chunks`)
-    console.log(`[Upload] 💰 Cost: $${result.usage.totalCost.toFixed(4)}`)
 
     // 8. Return success response
     return NextResponse.json({

@@ -70,18 +70,15 @@ let serviceRoleClientInstance: ReturnType<typeof createClient> | null = null
 
 // Reset forçado da conexão (útil no início de cada workflow)
 export const resetServiceRoleClient = () => {
-  console.log('[Supabase] 🔄 Reset forçado do cliente service role')
   serviceRoleClientInstance = null
 }
 
 export const createServiceRoleClient = () => {
   // Reutiliza instância se já existe
   if (serviceRoleClientInstance) {
-    console.log('[Supabase] ♻️ Reutilizando cliente service role existente')
     return serviceRoleClientInstance
   }
 
-  console.log('[Supabase] 🆕 Criando novo cliente service role')
   serviceRoleClientInstance = createClient(getSupabaseUrl(), getSupabaseServiceRoleKey(), {
     auth: {
       persistSession: false,

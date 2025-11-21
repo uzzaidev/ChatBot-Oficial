@@ -29,7 +29,6 @@ export async function GET() {
       )
     }
 
-    console.log('[verify-profile] Verificando profile para:', user.email)
 
     // 2. Buscar user_profile
     const { data: profile, error: profileError } = await supabase
@@ -83,11 +82,6 @@ export async function GET() {
       )
     }
 
-    console.log('[verify-profile] ✅ Profile válido:', {
-      user: user.email,
-      client_id: profile.client_id,
-      client_name: client.name,
-    })
 
     return NextResponse.json({
       success: true,

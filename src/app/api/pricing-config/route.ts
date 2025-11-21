@@ -124,12 +124,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('[PricingConfig] Updated:', {
-      provider,
-      model,
-      prompt_price,
-      completion_price,
-    })
 
     return NextResponse.json({
       message: 'Configuração salva com sucesso',
@@ -195,7 +189,6 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    console.log('[PricingConfig] Deleted:', { provider, model })
 
     return NextResponse.json({
       message: 'Configuração resetada para padrão',

@@ -22,20 +22,12 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = createServerClient()
 
-    console.log('[GET /api/admin/invites] 🔍 Starting request...')
 
     // Verificar autenticação
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
-    console.log('[GET /api/admin/invites] 👤 Auth check:', {
-      userId: user?.id,
-      email: user?.email,
-      hasError: !!authError,
-      errorMessage: authError?.message
-    })
 
     if (authError || !user) {
-      console.log('[GET /api/admin/invites] ❌ Authentication failed')
       return NextResponse.json(
         { error: 'Não autenticado' },
         { status: 401 }
@@ -49,15 +41,8 @@ export async function GET(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    console.log('[GET /api/admin/invites] 📋 Profile check:', {
-      hasProfile: !!currentUserProfile,
-      profile: currentUserProfile,
-      hasError: !!profileError,
-      errorMessage: profileError?.message
-    })
 
     if (profileError || !currentUserProfile) {
-      console.log('[GET /api/admin/invites] ❌ Profile not found')
       return NextResponse.json(
         { error: 'Perfil de usuário não encontrado' },
         { status: 404 }
@@ -66,15 +51,9 @@ export async function GET(request: NextRequest) {
 
     const profile = currentUserProfile as CurrentUserProfile
 
-    console.log('[GET /api/admin/invites] 🔐 Role check:', {
-      role: profile.role,
-      isActive: profile.is_active,
-      isAdmin: ['admin', 'client_admin'].includes(profile.role)
-    })
 
     // Verificar se é admin
     if (!['admin', 'client_admin'].includes(profile.role)) {
-      console.log('[GET /api/admin/invites] ❌ Access denied - insufficient role')
       return NextResponse.json(
         { error: 'Acesso negado' },
         { status: 403 }

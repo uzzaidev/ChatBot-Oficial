@@ -228,12 +228,6 @@ export function withAdminAuth(handler: AuthenticatedHandler) {
         )
       }
 
-      console.log('[withAdminAuth] ✅ Admin access granted:', {
-        user_id: user.id,
-        email: user.email,
-        role: profile.role,
-        pathname,
-      })
 
       // 5. Call handler with authenticated admin context
       return handler(

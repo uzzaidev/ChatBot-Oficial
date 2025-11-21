@@ -75,7 +75,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('[password] Senha atualizada para:', user.email)
 
     return NextResponse.json({
       success: true,

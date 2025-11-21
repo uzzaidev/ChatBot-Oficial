@@ -26,7 +26,6 @@ export async function isNodeEnabled(clientId: string, nodeId: string): Promise<b
   
   // If node doesn't exist in metadata, return false (safety)
   if (!metadata) {
-    console.warn(`[flowHelpers] Node '${nodeId}' not found in metadata`)
     return false
   }
   
@@ -204,7 +203,6 @@ export function shouldExecuteNode(
   const metadata = getNodeMetadata(nodeId)
   
   if (!metadata) {
-    console.warn(`[flowHelpers] Node '${nodeId}' not found in metadata`)
     return false
   }
   

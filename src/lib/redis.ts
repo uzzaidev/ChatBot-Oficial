@@ -24,7 +24,6 @@ export const getRedisClient = async (): Promise<RedisClient> => {
     const url = new URL(redisUrl)
     const useSSL = url.protocol === 'rediss:'
     
-    console.log(`[Redis] Connecting to ${url.hostname}:${url.port} (SSL: ${useSSL})`)
 
     const clientConfig: any = {
       url: redisUrl,
@@ -45,17 +44,14 @@ export const getRedisClient = async (): Promise<RedisClient> => {
     })
 
     client.on('connect', () => {
-      console.log('[Redis] ✅ Connected successfully')
     })
 
     client.on('reconnecting', () => {
-      console.log('[Redis] 🔄 Reconnecting...')
     })
 
     await client.connect()
     redisClient = client
 
-    console.log('[Redis] ✅ Client ready')
     return client
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'

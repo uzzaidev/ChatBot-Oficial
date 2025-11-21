@@ -31,8 +31,8 @@ const testMessages = [
 ]
 
 async function sendTestMessage(message) {
-  console.log(`\n📤 Enviando mensagem de teste: ${message.from}`)
-  console.log(`   Texto: "${message.text}"`)
+  
+  
   
   try {
     const response = await fetch(`${API_URL}/api/test/send-message`, {
@@ -46,10 +46,10 @@ async function sendTestMessage(message) {
     const data = await response.json()
 
     if (data.success) {
-      console.log(`   ✅ Sucesso!`)
-      console.log(`   🔗 Ver no dashboard: ${API_URL}/dashboard/debug`)
+      
+      
     } else {
-      console.log(`   ❌ Erro: ${data.error}`)
+      
     }
 
     return data
@@ -60,11 +60,11 @@ async function sendTestMessage(message) {
 }
 
 async function main() {
-  console.log('🧪 Teste do Debug Dashboard')
-  console.log('═══════════════════════════════════════')
-  console.log(`📍 API URL: ${API_URL}`)
-  console.log(`📊 Dashboard: ${API_URL}/dashboard/debug`)
-  console.log('═══════════════════════════════════════')
+  
+  
+  
+  
+  
 
   for (const message of testMessages) {
     await sendTestMessage(message)
@@ -72,9 +72,9 @@ async function main() {
     await new Promise(resolve => setTimeout(resolve, 1000))
   }
 
-  console.log('\n✨ Testes concluídos!')
-  console.log(`\n🔗 Acesse o dashboard: ${API_URL}/dashboard/debug`)
-  console.log('   Para ver as execuções em tempo real\n')
+  
+  
+  
 }
 
 main().catch(console.error)

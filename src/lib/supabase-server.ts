@@ -151,10 +151,6 @@ export const getClientIdFromSession = async (): Promise<string | null> => {
 
   // 4. FALLBACK: Se profile não existe, tentar criar automaticamente
   // Isso pode acontecer se o trigger handle_new_user() falhou
-  console.warn('[getClientIdFromSession] Profile não encontrado, tentando criar automaticamente...')
-  console.warn(`  User ID: ${user.id}`)
-  console.warn(`  Email: ${user.email}`)
-  console.warn(`  Error: ${error?.message || 'Profile not found'}`)
 
   // Verificar se user_metadata tem client_id
   const metadataClientId = user.user_metadata?.client_id
@@ -169,7 +165,6 @@ export const getClientIdFromSession = async (): Promise<string | null> => {
   }
 
   // Tentar criar profile manualmente
-  console.log('[getClientIdFromSession] Criando user_profile automaticamente...')
   const { data: newProfile, error: createError } = await supabase
     .from('user_profiles')
     .insert({
@@ -186,7 +181,6 @@ export const getClientIdFromSession = async (): Promise<string | null> => {
     return null
   }
 
-  console.log('[getClientIdFromSession] ✅ Profile criado com sucesso!')
   return newProfile.client_id
 }
 

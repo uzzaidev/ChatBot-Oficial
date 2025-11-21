@@ -141,7 +141,6 @@ export const getClientConfig = async (clientId: string): Promise<ClientConfig | 
       return null
     }
 
-    console.log(`[getClientConfig] Fetching config for client: ${client.name} (${client.slug})`)
 
     // 2. Descriptografar secrets do Vault em paralelo
     const secrets = await getClientSecrets(supabase, {
@@ -223,7 +222,6 @@ export const getClientConfig = async (clientId: string): Promise<ClientConfig | 
       notificationEmail: client.notification_email || undefined,
     }
 
-    console.log('[getClientConfig] ✅ Config loaded successfully')
     return config
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -364,12 +362,10 @@ export const getBotConfig = async (
       .single()
 
     if (error) {
-      console.warn(`[getBotConfig] Config não encontrada: ${configKey}`, error.message)
       return null
     }
 
     if (!data) {
-      console.warn(`[getBotConfig] Config não encontrada: ${configKey}`)
       return null
     }
 
@@ -491,7 +487,6 @@ export const setBotConfig = async (
     const cacheKey = `${clientId}:${configKey}`
     botConfigCache.delete(cacheKey)
 
-    console.log(`[setBotConfig] ✅ Config salva: ${configKey}`)
   } catch (error) {
     console.error(`[setBotConfig] Erro ao salvar ${configKey}:`, error)
     throw error
@@ -530,7 +525,6 @@ export const resetBotConfig = async (
     const cacheKey = `${clientId}:${configKey}`
     botConfigCache.delete(cacheKey)
 
-    console.log(`[resetBotConfig] ✅ Config resetada: ${configKey}`)
   } catch (error) {
     console.error(`[resetBotConfig] Erro ao resetar ${configKey}:`, error)
     throw error
@@ -601,5 +595,4 @@ export const listBotConfigs = async (
  */
 export const clearBotConfigCache = (): void => {
   botConfigCache.clear()
-  console.log('[clearBotConfigCache] ✅ Cache limpo')
 }

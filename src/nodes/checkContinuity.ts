@@ -27,14 +27,11 @@ export const checkContinuity = async (input: CheckContinuityInput): Promise<Chec
   try {
     const { phone, clientId } = input
 
-    console.log('[checkContinuity] 🔍 Checking conversation continuity for:', phone)
-    console.log('[checkContinuity] 🔐 Client ID:', clientId)
 
     // 1. Fetch threshold configuration from database
     const thresholdHours = await getBotConfig(clientId, 'continuity:new_conversation_threshold_hours')
     const thresholdValue = thresholdHours !== null ? Number(thresholdHours) : 24 // Default 24 hours
 
-    console.log('[checkContinuity] ⏱️  Threshold:', thresholdValue, 'hours')
 
     // 2. Get last message timestamp from chat history
     const result = await query<any>(
@@ -61,10 +58,7 @@ export const checkContinuity = async (input: CheckContinuityInput): Promise<Chec
 
       isNewConversation = hoursSinceLastMessage > thresholdValue
 
-      console.log('[checkContinuity] 📊 Hours since last message:', hoursSinceLastMessage.toFixed(2))
-      console.log('[checkContinuity] 🆕 Is new conversation:', isNewConversation)
     } else {
-      console.log('[checkContinuity] 📭 No previous messages found - new customer')
     }
 
     // 4. Get appropriate greeting instruction from configuration
@@ -79,8 +73,6 @@ export const checkContinuity = async (input: CheckContinuityInput): Promise<Chec
           ? 'Seja acolhedor e apresente o profissional brevemente. Esta é a PRIMEIRA interação.'
           : 'Continue de onde parou. NÃO se apresente novamente. O cliente já te conhece.')
 
-    console.log('[checkContinuity] 👋 Greeting instruction:', finalGreeting.substring(0, 100) + '...')
-    console.log(`[checkContinuity] ✅ Completed in ${duration}ms`)
 
     return {
       isNewConversation,

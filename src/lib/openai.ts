@@ -66,12 +66,6 @@ export const transcribeAudio = async (
     // 1000 tokens por minuto de áudio (estimativa rough)
     const estimatedTokens = Math.ceil((estimatedDurationSeconds / 60) * 1000)
 
-    console.log('[Whisper] Transcription completed:', {
-      audioSizeKB: Math.ceil(audioBuffer.length / 1024),
-      estimatedDuration: estimatedDurationSeconds,
-      estimatedTokens,
-      textLength: transcription.text.length
-    })
 
     return {
       text: transcription.text,
@@ -198,7 +192,6 @@ export const analyzeImageFromBuffer = async (
         }
       : { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }
 
-    console.log('[GPT-4o Vision] Usage data:', usage)
 
     return {
       text: content,
@@ -248,7 +241,6 @@ export const generateEmbedding = async (
         }
       : { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }
 
-    console.log('[OpenAI Embeddings] Usage data:', usage)
 
     return {
       embedding,
@@ -327,7 +319,6 @@ ${pdfText.substring(0, 12000)}`
         }
       : { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }
 
-    console.log('[GPT-4o PDF] Usage data:', usage)
 
     return {
       content,
@@ -431,7 +422,6 @@ export const generateChatCompletionOpenAI = async (
         }
       : undefined
 
-    console.log('[OpenAI] Usage data:', usage)
 
     // 7. Retornar no formato AIResponse (igual ao Groq)
     return {

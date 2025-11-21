@@ -11,17 +11,10 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = createServerClient()
 
-    console.log('[GET /api/debug/my-profile] 🔍 Starting debug...')
 
     // Verificar autenticação
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
-    console.log('[GET /api/debug/my-profile] 👤 Auth check:', {
-      userId: user?.id,
-      email: user?.email,
-      hasError: !!authError,
-      errorMessage: authError?.message
-    })
 
     if (authError || !user) {
       return NextResponse.json({
@@ -38,12 +31,6 @@ export async function GET(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    console.log('[GET /api/debug/my-profile] 📋 Profile query result:', {
-      hasProfile: !!profile,
-      profile: profile,
-      hasError: !!profileError,
-      errorMessage: profileError?.message
-    })
 
     if (profileError) {
       return NextResponse.json({

@@ -58,10 +58,8 @@ export default function BotConfigurationManager() {
 
   const fetchConfigs = useCallback(async () => {
     setLoading(true)
-    console.log('[BotConfigurationManager] 🔍 Fetching configurations...')
     try {
       const response = await fetch('/api/config')
-      console.log('[BotConfigurationManager] 🔍 Response status:', response.status)
       
       if (!response.ok) {
         const errorText = await response.text()
@@ -69,11 +67,6 @@ export default function BotConfigurationManager() {
         throw new Error('Failed to fetch configurations')
       }
       const data = await response.json()
-      console.log('[BotConfigurationManager] 🔍 Data received:', {
-        configCount: data.configs?.length || 0,
-        clientId: data.clientId,
-        firstConfig: data.configs?.[0]
-      })
       
       // Group configs by category
       const grouped: ConfigsByCategory = {
@@ -86,24 +79,12 @@ export default function BotConfigurationManager() {
       if (data.configs && Array.isArray(data.configs)) {
         data.configs.forEach((config: BotConfig) => {
           const category = config.category as keyof ConfigsByCategory
-          console.log('[BotConfigurationManager] 🔍 Processing config:', {
-            key: config.config_key,
-            category: config.category,
-            hasCategory: !!category,
-            categoryExists: category && !!grouped[category]
-          })
           if (category && grouped[category]) {
             grouped[category].push(config)
           }
         })
       }
 
-      console.log('[BotConfigurationManager] 🔍 Grouped configs:', {
-        prompts: grouped.prompts.length,
-        rules: grouped.rules.length,
-        thresholds: grouped.thresholds.length,
-        personality: grouped.personality.length
-      })
 
       setConfigs(grouped)
     } catch (error) {

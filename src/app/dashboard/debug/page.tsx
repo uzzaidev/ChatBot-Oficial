@@ -82,7 +82,6 @@ export default function DebugDashboardPage({
       try {
         const response = await fetch('/api/webhook/received?limit=10')
         const data = await response.json()
-        console.log('📥 Mensagens recebidas da API:', data)
         setReceivedMessages(data.messages || [])
       } catch (error) {
         console.error('Error fetching received messages:', error)
@@ -100,13 +99,11 @@ export default function DebugDashboardPage({
     try {
       const response = await fetch('/api/webhook/received')
       const data = await response.json()
-      console.log('🔄 Force refresh - Mensagens:', data)
       setReceivedMessages(data.messages || [])
       
       // Também verifica o cache diretamente
       const cacheResponse = await fetch('/api/test/webhook-cache')
       const cacheData = await cacheResponse.json()
-      console.log('🗄️ Cache direto:', cacheData)
     } catch (error) {
       console.error('Error force refreshing:', error)
     }

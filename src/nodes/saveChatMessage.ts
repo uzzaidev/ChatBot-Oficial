@@ -29,11 +29,9 @@ export const saveChatMessage = async (input: SaveChatMessageInput): Promise<void
     )
 
     const duration = Date.now() - startTime
-    console.log(`[saveChatMessage] ✅ Saved ${type} message for ${phone} in ${duration}ms`)
     
     // Alerta se INSERT for lento
     if (duration > 500) {
-      console.warn(`[saveChatMessage] ⚠️ SLOW INSERT: ${duration}ms`)
     }
   } catch (error) {
     const duration = Date.now() - startTime

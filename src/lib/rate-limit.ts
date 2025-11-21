@@ -33,7 +33,6 @@ try {
       token: process.env.UPSTASH_REDIS_REST_TOKEN,
     })
   } else {
-    console.warn('[rate-limit] Upstash credentials not configured - rate limiting disabled')
   }
 } catch (error) {
   console.error('[rate-limit] Failed to initialize Redis:', error)
@@ -127,11 +126,6 @@ export async function checkRateLimit(
     }
 
     if (!success) {
-      console.warn('[rate-limit] Rate limit exceeded:', {
-        identifier: id,
-        limit,
-        reset: new Date(reset).toISOString(),
-      })
 
       return NextResponse.json(
         {

@@ -74,17 +74,11 @@ export const checkOrCreateCustomer = async (
       throw new Error('clientId is required - DEFAULT_CLIENT_ID is no longer used')
     }
 
-    console.log('[checkOrCreateCustomer] 🔍 INICIANDO UPSERT (via Supabase)')
-    console.log('[checkOrCreateCustomer] 📱 Phone:', phone)
-    console.log('[checkOrCreateCustomer] 👤 Name:', name)
-    console.log('[checkOrCreateCustomer] 🔐 Client ID:', clientId)
-    console.log('[checkOrCreateCustomer] ⏱️  Timestamp:', new Date().toISOString())
 
     // Cria cliente Supabase com SERVICE ROLE (bypassa RLS - fix VULN-007)
     const supabase = createServiceRoleClient()
 
     // UPSERT usando helper function (bypass de tipos do TypeScript)
-    console.log('[checkOrCreateCustomer] 🚀 Executando UPSERT via Supabase...')
 
     const { data, error } = await upsertClienteWhatsApp(supabase, phone, name, clientId)
 
@@ -99,12 +93,6 @@ export const checkOrCreateCustomer = async (
       throw new Error('No data returned from upsert')
     }
 
-    console.log(`[checkOrCreateCustomer] ✅ UPSERT SUCESSO em ${duration}ms`)
-    console.log(`[checkOrCreateCustomer] ✅ Customer data:`, {
-      telefone: data.telefone,
-      nome: data.nome,
-      status: data.status
-    })
 
     return {
       id: String(data.telefone),

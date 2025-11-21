@@ -14,13 +14,11 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = createServerClient()
 
-    console.log('[GET /api/admin/clients] 🔍 Starting request...')
 
     // Verificar autenticação
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     if (authError || !user) {
-      console.log('[GET /api/admin/clients] ❌ Authentication failed')
       return NextResponse.json(
         { error: 'Não autenticado' },
         { status: 401 }
@@ -35,14 +33,12 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (profileError || !currentUserProfile) {
-      console.log('[GET /api/admin/clients] ❌ Profile not found')
       return NextResponse.json(
         { error: 'Perfil de usuário não encontrado' },
         { status: 404 }
       )
     }
 
-    console.log('[GET /api/admin/clients] 👤 User role:', currentUserProfile.role)
 
     // Apenas super admin pode listar todos os clients
     // Client admin pode ver apenas o próprio client
@@ -73,7 +69,6 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log('[GET /api/admin/clients] ✅ Found clients:', clients?.length || 0)
 
     return NextResponse.json({
       clients: clients || [],

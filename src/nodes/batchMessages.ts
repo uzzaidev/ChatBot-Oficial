@@ -24,7 +24,6 @@ export const batchMessages = async (phone: string): Promise<string> => {
 
       // If less than 10s since last message, skip processing (timer was reset)
       if (timeSinceLastMessage < BATCH_DELAY_MS) {
-        console.log(`[Debounce] Skipping batch for ${phone} - new message received (${timeSinceLastMessage}ms ago)`)
         return ''
       }
     }

@@ -104,7 +104,6 @@ export default function FlowArchitectureManager() {
               // Match backend logic: explicitly check for true values
               const enabledValue = data.config?.enabled
               const computedEnabled = enabledValue === true || enabledValue === 'true'
-              console.log(`[FlowArchitecture] Node ${node.id}: API returned config.enabled=${enabledValue}, computed enabled=${computedEnabled}`)
               return {
                 nodeId: node.id,
                 enabled: computedEnabled,
@@ -124,13 +123,11 @@ export default function FlowArchitectureManager() {
             const result = results.find((r) => r.nodeId === node.id)
             const updatedNode = result ? { ...node, enabled: result.enabled } : node
             if (result) {
-              console.log(`[FlowArchitecture] Setting node ${node.id} enabled to: ${result.enabled}`)
             }
             return updatedNode
           })
         )
         
-        console.log('[FlowArchitecture] ✓ Loaded all node states from database')
       } catch (error) {
         console.error('Error loading node states:', error)
       } finally {

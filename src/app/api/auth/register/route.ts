@@ -45,7 +45,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('[register] Iniciando registro:', { email, companyName })
 
     // Usar Service Role Key para operações administrativas (criar usuários e vault secrets)
     const supabase = createServiceRoleClient()
@@ -75,7 +74,6 @@ export async function POST(request: NextRequest) {
       slug = `${baseSlug}-${slugSuffix++}`
     }
 
-    console.log('[register] Slug gerado:', slug)
 
     // ========================================
     // 2. Criar secrets vazios no Vault
@@ -141,12 +139,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('[register] Secrets criados no Vault:', {
-      meta_access_token: metaAccessTokenSecretData,
-      meta_verify_token: metaVerifyTokenSecretData,
-      openai_api_key: openaiApiKeySecretData,
-      groq_api_key: groqApiKeySecretData,
-    })
 
     // ========================================
     // 3. Criar client na tabela clients
@@ -183,7 +175,6 @@ export async function POST(request: NextRequest) {
 
     const clientId = newClient.id
 
-    console.log('[register] Client criado:', { client_id: clientId, slug })
 
     // ========================================
     // 4. Criar usuário no Supabase Auth
@@ -217,13 +208,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('[register] Usuário criado:', authData.user.id)
 
     // ========================================
     // 5. Criar user_profile SEMPRE manualmente
     // ========================================
     // Não depender de trigger que pode falhar
-    console.log('[register] Criando user_profile...')
     
     const { error: manualProfileError } = await (supabase as any)
       .from('user_profiles')
@@ -247,12 +236,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('[register] ✅ Registro completo:', {
-      user_id: authData.user.id,
-      client_id: clientId,
-      email,
-      slug,
-    })
 
     // ========================================
     // 6. Fazer login automático após registro
@@ -264,10 +247,8 @@ export async function POST(request: NextRequest) {
     })
 
     if (sessionError) {
-      console.warn('[register] Não foi possível fazer login automático:', sessionError)
       // Não é erro crítico - usuário pode fazer login manualmente
     } else {
-      console.log('[register] ✅ Login automático realizado')
     }
 
     return NextResponse.json({

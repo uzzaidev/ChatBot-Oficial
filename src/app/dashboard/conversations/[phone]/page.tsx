@@ -30,7 +30,6 @@ export default async function ConversationPage({ params }: ConversationPageProps
     throw new Error('Client ID não encontrado. Faça login novamente.')
   }
 
-  console.log('[ConversationPage] Renderizando conversa:', { phone, clientId })
 
   return <ConversationPageClient phone={phone} clientId={clientId} />
 }

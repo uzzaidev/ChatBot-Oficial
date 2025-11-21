@@ -199,7 +199,6 @@ export async function PATCH(
     // VULN-013 FIX: Validate input with Zod
     const validation = validatePayload(UserUpdateSchema, body)
     if (validation.success === false) {
-      console.log('[PATCH /api/admin/users/[id]] ❌ Validation failed:', validation.errors)
       return NextResponse.json(
         {
           error: 'Dados inválidos',

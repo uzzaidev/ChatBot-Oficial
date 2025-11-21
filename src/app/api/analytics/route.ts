@@ -31,7 +31,6 @@ export async function GET(request: NextRequest) {
     const days = parseInt(searchParams.get('days') || '30')
     const type = searchParams.get('type') || 'all'
 
-    console.log('[API /analytics] Fetching analytics for client:', clientId, { days, type })
 
     const analytics: Record<string, unknown> = {}
 
@@ -92,7 +91,6 @@ export async function GET(request: NextRequest) {
     }
 
     const duration = Date.now() - startTime
-    console.log(`[API /analytics] ✅ Analytics fetched in ${duration}ms`)
 
     return NextResponse.json({
       analytics,

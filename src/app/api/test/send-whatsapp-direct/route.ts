@@ -25,13 +25,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log(`[TEST DIRECT] Sending WhatsApp message to ${body.phone}`)
-    console.log(`[TEST DIRECT] Message: "${body.message}"`)
 
     // Envia direto pro WhatsApp (sem passar por nenhum node)
     const result = await sendTextMessage(body.phone, body.message)
 
-    console.log(`[TEST DIRECT] ✅ Message sent! ID: ${result.messageId}`)
 
     return NextResponse.json({
       success: true,
