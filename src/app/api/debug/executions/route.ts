@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
 
 /**
  * GET /api/debug/executions
- * Lista todas as execuções com seus logs
+ * Lista execuções isoladas por tenant (client_id)
  * Query params:
  * - execution_id?: filtrar por execução específica
  * - limit?: número de execuções (padrão: 50)
+ *
+ * Multi-tenant security: ✅ RLS ativo
  */
 export async function GET(request: NextRequest) {
   try {
@@ -16,7 +18,53 @@ export async function GET(request: NextRequest) {
     const executionId = searchParams.get('execution_id')
     const limit = parseInt(searchParams.get('limit') || '50')
 
-    const supabase = createServerClient()
+    // ================================================================
+    // SECURITY: Usar client autenticado (não service role)
+    // RLS policies aplicam isolamento automático por client_id
+    // ================================================================
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return NextResponse.json(
+        { error: 'Supabase configuration missing' },
+        { status: 500 }
+      )
+    }
+
+    // Criar cliente autenticado (RLS ativo)
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      },
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
+
+    // Verificar autenticação
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Invalid or expired token' },
+        { status: 401 }
+      )
+    }
 
     if (executionId) {
       // Retorna logs de uma execução específica
