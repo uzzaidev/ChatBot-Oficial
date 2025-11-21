@@ -3,7 +3,7 @@ REM =============================================
 REM SCRIPT DE BACKUP COMPLETO - PostgreSQL (Supabase)
 REM Schemas: public + auth
 REM =============================================
-@REM cd db; ./backup-complete.bat
+@REM 
 
 REM Adicionar PostgreSQL ao PATH (usa versão 18 - compatível com servidor 17.6)
 set PATH=C:\Program Files\PostgreSQL\18\bin;%PATH%
