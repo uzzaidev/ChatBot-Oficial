@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { createServiceRoleClient } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,8 +47,8 @@ export async function POST(request: NextRequest) {
 
     console.log('[register] Iniciando registro:', { email, companyName })
 
-    // Usar Service Role Key para operações administrativas (criar usuários)
-    const supabase = createServerClient()
+    // Usar Service Role Key para operações administrativas (criar usuários e vault secrets)
+    const supabase = createServiceRoleClient()
 
     // ========================================
     // 1. Gerar slug único para o cliente

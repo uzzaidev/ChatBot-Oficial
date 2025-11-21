@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Check, X, Loader2, Phone, CheckCheck, Eye, AlertTriangle, Search, Globe, Mail, Send, ScrollText, RefreshCw, Pause, RotateCw } from 'lucide-react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createBrowserClient } from '@/lib/supabase-browser'
 
 interface ExecutionLog {
   id: number
@@ -42,7 +42,7 @@ export default function BackendMonitorPage() {
   const [autoScroll, setAutoScroll] = useState(true)
   const [statusFilter, setStatusFilter] = useState<StatusFilterType>('all')
   const [phoneFilter, setPhoneFilter] = useState<string>('')
-  const supabase = createClientComponentClient() // ⚡ Para autenticação multi-tenant
+  const supabase = createBrowserClient() // ⚡ Para autenticação multi-tenant
 
   // Função para buscar logs - sempre busca os últimos 500 logs do Supabase
   const fetchLogs = useCallback(async () => {
