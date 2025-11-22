@@ -120,43 +120,20 @@ const attemptConnection = async (redisUrl: string, useSSL: boolean): Promise<Red
   const client = createClient(clientConfig)
 
   client.on('error', (error) => {
-    console.error('[Redis] ❌ ERRO DETECTADO:', {
-      message: error.message,
-      stack: error.stack,
-      code: (error as any).code,
-      errno: (error as any).errno,
-      syscall: (error as any).syscall,
-      address: (error as any).address,
-      port: (error as any).port,
-    })
+    console.error('[Redis] Erro:', error.message)
     // Se erro crítico, reseta cliente global
     if (error.message.includes('Max reconnection attempts reached')) {
-      console.error('[Redis] ⚠️ Resetando cliente global após atingir limite de tentativas')
       redisClient = null
     }
   })
 
   client.on('connect', () => {
-    const protocol = useSSL ? '🔒 SSL/TLS' : '⚠️ TCP (não criptografado)'
-    console.log(`[Redis] ✅ Conectado com sucesso (${protocol})`)
-    console.log(`[Redis] 🔗 Host: ${url.hostname}:${url.port}`)
-    console.log(`[Redis] 📊 Status:`, client.isOpen ? 'OPEN' : 'CLOSED')
+    const protocol = useSSL ? 'SSL/TLS' : 'TCP'
+    console.log(`[Redis] Conectado (${protocol}) - ${url.hostname}`)
   })
 
   client.on('reconnecting', () => {
-    console.warn('[Redis] 🔄 RECONECTANDO - Conexão perdida, tentando restabelecer...')
-    console.warn(`[Redis] 📊 Status do cliente:`, {
-      isOpen: client.isOpen,
-      isReady: client.isReady,
-    })
-  })
-
-  client.on('end', () => {
-    console.warn('[Redis] 🔌 Conexão encerrada')
-  })
-
-  client.on('ready', () => {
-    console.log('[Redis] ✅ Cliente pronto para receber comandos')
+    console.warn('[Redis] Reconectando...')
   })
 
   await client.connect()
@@ -165,73 +142,59 @@ const attemptConnection = async (redisUrl: string, useSSL: boolean): Promise<Red
 
 export const lpushMessage = async (key: string, value: string): Promise<number> => {
   try {
-    console.log('[Redis] 📤 LPUSH ->', { key, valueLength: value.length, preview: value.substring(0, 100) })
     const client = await getRedisClient()
     const result = await client.lPush(key, value)
-    const numResult = typeof result === 'number' ? result : parseInt(String(result))
-    console.log('[Redis] ✅ LPUSH <- Sucesso:', { key, listLength: numResult })
-    return numResult
+    return typeof result === 'number' ? result : parseInt(String(result))
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error('[Redis] ❌ LPUSH FALHOU:', { key, error: errorMessage })
+    console.error('[Redis] LPUSH falhou:', errorMessage)
     throw new Error(`Failed to push message to Redis list: ${errorMessage}`)
   }
 }
 
 export const lrangeMessages = async (key: string, start: number, stop: number): Promise<string[]> => {
   try {
-    console.log('[Redis] 📥 LRANGE ->', { key, start, stop })
     const client = await getRedisClient()
     const result = await client.lRange(key, start, stop)
-    const messages = result.map(item => String(item))
-    console.log('[Redis] ✅ LRANGE <- Sucesso:', { key, count: messages.length })
-    return messages
+    return result.map(item => String(item))
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error('[Redis] ❌ LRANGE FALHOU:', { key, error: errorMessage })
+    console.error('[Redis] LRANGE falhou:', errorMessage)
     throw new Error(`Failed to retrieve messages from Redis list: ${errorMessage}`)
   }
 }
 
 export const deleteKey = async (key: string): Promise<number> => {
   try {
-    console.log('[Redis] 🗑️ DEL ->', { key })
     const client = await getRedisClient()
     const result = await client.del(key)
-    const numResult = typeof result === 'number' ? result : parseInt(String(result))
-    console.log('[Redis] ✅ DEL <- Sucesso:', { key, deletedCount: numResult })
-    return numResult
+    return typeof result === 'number' ? result : parseInt(String(result))
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error('[Redis] ❌ DEL FALHOU:', { key, error: errorMessage })
+    console.error('[Redis] DEL falhou:', errorMessage)
     throw new Error(`Failed to delete key from Redis: ${errorMessage}`)
   }
 }
 
 export const setWithExpiry = async (key: string, value: string, expirySeconds: number): Promise<void> => {
   try {
-    console.log('[Redis] ⏱️ SETEX ->', { key, expirySeconds, valueLength: value.length })
     const client = await getRedisClient()
     await client.setEx(key, expirySeconds, value)
-    console.log('[Redis] ✅ SETEX <- Sucesso:', { key, expirySeconds })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error('[Redis] ❌ SETEX FALHOU:', { key, error: errorMessage })
+    console.error('[Redis] SETEX falhou:', errorMessage)
     throw new Error(`Failed to set key with expiry in Redis: ${errorMessage}`)
   }
 }
 
 export const get = async (key: string): Promise<string | null> => {
   try {
-    console.log('[Redis] 🔍 GET ->', { key })
     const client = await getRedisClient()
     const result = await client.get(key)
-    const value = result ? String(result) : null
-    console.log('[Redis] ✅ GET <- Sucesso:', { key, found: value !== null, valueLength: value?.length })
-    return value
+    return result ? String(result) : null
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error('[Redis] ❌ GET FALHOU:', { key, error: errorMessage })
+    console.error('[Redis] GET falhou:', errorMessage)
     throw new Error(`Failed to get key from Redis: ${errorMessage}`)
   }
 }

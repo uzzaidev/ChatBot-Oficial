@@ -1,4 +1,4 @@
-export type ConversationStatus = 'bot' | 'waiting' | 'human'
+export type ConversationStatus = 'bot' | 'humano' | 'transferido'
 
 export type MessageType = 'text' | 'audio' | 'image' | 'document' | 'video'
 

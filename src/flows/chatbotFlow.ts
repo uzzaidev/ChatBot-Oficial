@@ -1,6 +1,7 @@
 import { WhatsAppWebhookPayload, ParsedMessage, ClientConfig } from '@/lib/types'
 import { filterStatusUpdates } from '@/nodes/filterStatusUpdates'
 import { parseMessage } from '@/nodes/parseMessage'
+import { checkHumanHandoffStatus } from '@/nodes/checkHumanHandoffStatus'
 import { checkOrCreateCustomer } from '@/nodes/checkOrCreateCustomer'
 import { downloadMetaMedia } from '@/nodes/downloadMetaMedia'
 import { transcribeAudio } from '@/nodes/transcribeAudio'
@@ -72,19 +73,46 @@ export const processChatbotMessage = async (
     const parsedMessage = parseMessage(filteredPayload)
     logger.logNodeSuccess('2. Parse Message', { phone: parsedMessage.phone, type: parsedMessage.type })
 
-    // NODE 3: Check/Create Customer
-    logger.logNodeStart('3. Check/Create Customer', { phone: parsedMessage.phone, name: parsedMessage.name })
+    // NODE 3: Check Human Handoff Status
+    logger.logNodeStart('3. Check Human Handoff Status', { phone: parsedMessage.phone })
+    const handoffCheck = await checkHumanHandoffStatus({
+      phone: parsedMessage.phone,
+      clientId: config.id
+    })
+    logger.logNodeSuccess('3. Check Human Handoff Status', handoffCheck)
+
+    // Se está em atendimento humano, para o processamento do bot
+    if (handoffCheck.skipBot) {
+      // NODE 3.1: Bot Processing Skipped
+      logger.logNodeSuccess('3.1. Bot Processing Skipped', {
+        reason: handoffCheck.reason,
+        status: handoffCheck.customerStatus,
+        messageWillBeSaved: true,
+        botWillNotRespond: true
+      })
+      logger.finishExecution('success')
+
+      // Salvar mensagem do usuário no histórico mesmo sem responder
+      await saveChatMessage({
+        phone: parsedMessage.phone,
+        message: parsedMessage.content,
+        type: 'user',
+        clientId: config.id
+      })
+
+      return {
+        success: true
+      }
+    }
+
+    // NODE 4: Check/Create Customer
+    logger.logNodeStart('4. Check/Create Customer', { phone: parsedMessage.phone, name: parsedMessage.name })
     const customer = await checkOrCreateCustomer({
       phone: parsedMessage.phone,
       name: parsedMessage.name,
       clientId: config.id, // 🔐 Multi-tenant: Associa customer ao cliente
     })
-    logger.logNodeSuccess('3. Check/Create Customer', { status: customer.status })
-
-    if (customer.status === 'human') {
-      logger.finishExecution('success')
-      return { success: true, handedOff: true }
-    }
+    logger.logNodeSuccess('4. Check/Create Customer', { status: customer.status })
 
 
     // NODE 4: Process Media (audio/image/document) - configurable
@@ -481,10 +509,20 @@ export const processChatbotMessage = async (
       )
 
       if (hasHumanHandoff) {
+        // NODE 14: Handle Human Handoff
+        logger.logNodeStart('14. Handle Human Handoff', {
+          phone: parsedMessage.phone,
+          customerName: parsedMessage.name
+        })
         await handleHumanHandoff({
           phone: parsedMessage.phone,
           customerName: parsedMessage.name,
           config, // 🔐 Passa config com notificationEmail
+        })
+        logger.logNodeSuccess('14. Handle Human Handoff', {
+          transferred: true,
+          emailSent: true,
+          notificationEmail: config.notificationEmail
         })
         logger.finishExecution('success')
         return { success: true, handedOff: true }
@@ -497,13 +535,18 @@ export const processChatbotMessage = async (
       return { success: true, messagesSent: 0 }
     }
 
-    // Save AI Response (internal step)
+    // NODE 11.7: Save AI Message
+    logger.logNodeStart('11.7. Save AI Message', {
+      phone: parsedMessage.phone,
+      contentLength: aiResponse.content.length
+    })
     await saveChatMessage({
       phone: parsedMessage.phone,
       message: aiResponse.content,
       type: 'ai',
       clientId: config.id, // 🔐 Multi-tenant: Associa mensagem ao cliente
     })
+    logger.logNodeSuccess('11.7. Save AI Message', { saved: true })
 
     // NODE 12: Format Response (configurável)
     logger.logNodeStart('12. Format Response', { contentLength: aiResponse.content.length })

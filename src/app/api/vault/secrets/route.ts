@@ -290,20 +290,7 @@ export async function PUT(request: NextRequest) {
     const secretIdField = secretIdFieldMap[key]
     const secretId = client[secretIdField]
 
-    console.log('[vault/secrets] DEBUG - Salvando secret:', {
-      key,
-      secretIdField,
-      secretId,
-      clientId,
-      hasValue: !!value,
-      valueLength: value?.length
-    })
-
     if (!secretId) {
-      console.log('[vault/secrets] Secret ID não existe, criando novo secret...', {
-        key,
-        secretIdField,
-      })
 
       // CRIAR NOVO SECRET se não existir
       const secretName = `${client.slug}_${key}`
@@ -326,8 +313,6 @@ export async function PUT(request: NextRequest) {
         )
       }
 
-      console.log('[vault/secrets] Secret criado com sucesso:', { newSecretId, key })
-
       // ATUALIZAR client com o novo secret_id
       const { error: updateClientError } = await supabase
         .from('clients')
@@ -347,8 +332,6 @@ export async function PUT(request: NextRequest) {
           { status: 500 }
         )
       }
-
-      console.log('[vault/secrets] Cliente atualizado com novo secret_id')
 
       // VULN-008 FIX: Log audit event
       await logUpdate(
@@ -374,8 +357,6 @@ export async function PUT(request: NextRequest) {
       })
     }
 
-    console.log('[vault/secrets] Usando estratégia DELETE + CREATE para atualizar secret...')
-
     // ESTRATÉGIA: Deletar secret antigo PRIMEIRO, depois criar novo
     // Isso evita erro de "duplicate key" no índice secrets_name_idx
 
@@ -388,8 +369,6 @@ export async function PUT(request: NextRequest) {
 
     const secretName = oldSecret?.name || `${client.slug}_${key}`
     const secretDescription = oldSecret?.description || `${key} for client ${client.name}`
-
-    console.log('[vault/secrets] Secret antigo:', { secretId, name: secretName })
 
     // 2. DELETAR secret antigo PRIMEIRO usando RPC (evita duplicação de nome)
     const { data: deleteResult, error: deleteError } = await supabase.rpc('delete_client_secret', {
@@ -406,8 +385,6 @@ export async function PUT(request: NextRequest) {
         { status: 500 }
       )
     }
-
-    console.log('[vault/secrets] Secret antigo deletado:', { secretId })
 
     // 3. CRIAR novo secret com o valor atualizado (agora o nome está livre)
     const { data: newSecretId, error: createError } = await supabase.rpc('create_client_secret', {
@@ -426,8 +403,6 @@ export async function PUT(request: NextRequest) {
         { status: 500 }
       )
     }
-
-    console.log('[vault/secrets] Novo secret criado:', { newSecretId })
 
     // 4. Atualizar referência na tabela clients
     const { error: updateClientError } = await supabase
@@ -451,28 +426,6 @@ export async function PUT(request: NextRequest) {
         { status: 500 }
       )
     }
-
-    console.log('[vault/secrets] Referência atualizada no cliente')
-
-    // 5. Verificar se o valor foi salvo
-    const { data: verifyValue, error: verifyError } = await supabase.rpc('get_client_secret', {
-      secret_id: newSecretId,
-    })
-
-    console.log('[vault/secrets] Verificação final:', {
-      newSecretId,
-      savedValueLength: verifyValue?.length || 0,
-      originalValueLength: value.length,
-      matches: verifyValue === value,
-      verifyError: verifyError?.message
-    })
-
-    if (verifyValue === value) {
-      console.log('[vault/secrets] ✅ Secret atualizado com sucesso usando DELETE + CREATE')
-    } else {
-      console.error('[vault/secrets] ❌ Secret foi criado mas valor não confere!')
-    }
-
 
     // VULN-008 FIX: Log audit event
     await logUpdate(

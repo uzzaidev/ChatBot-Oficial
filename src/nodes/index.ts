@@ -1,5 +1,7 @@
 export { filterStatusUpdates } from './filterStatusUpdates'
 export { parseMessage } from './parseMessage'
+export { checkHumanHandoffStatus } from './checkHumanHandoffStatus'
+export type { CheckHumanHandoffInput, CheckHumanHandoffOutput } from './checkHumanHandoffStatus'
 export { checkOrCreateCustomer } from './checkOrCreateCustomer'
 export type { CheckOrCreateCustomerInput } from './checkOrCreateCustomer'
 export { downloadMetaMedia } from './downloadMetaMedia'

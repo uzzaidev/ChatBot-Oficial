@@ -96,7 +96,7 @@ export function DashboardClient({ clientId }: DashboardClientProps) {
         (c) => c.status === 'bot'
       ).length
       const waitingHuman = conversations.filter(
-        (c) => c.status === 'waiting' || c.status === 'human'
+        (c) => c.status === 'humano' || c.status === 'transferido'
       ).length
 
       const totalMessages = conversations.reduce(

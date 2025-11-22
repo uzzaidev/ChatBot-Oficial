@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { ConversationDetail } from '@/components/ConversationDetail'
 import { SendMessageForm } from '@/components/SendMessageForm'
+import { StatusToggle } from '@/components/StatusToggle'
 import { useConversations } from '@/hooks/useConversations'
 import { useGlobalRealtimeNotifications } from '@/hooks/useGlobalRealtimeNotifications'
 import { ConversationList } from '@/components/ConversationList'
@@ -98,36 +99,35 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
         {conversation ? (
           <>
             {/* Header do Chat */}
-            <div className="bg-silver-100 p-3 flex items-center gap-3 border-b border-silver-200">
-              {/* Botão Menu (Mobile) */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="lg:hidden"
-                onClick={() => setSidebarOpen(true)}
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
+            <div className="bg-silver-100 p-3 border-b border-silver-200">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                {/* Botão Menu (Mobile) */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="lg:hidden flex-shrink-0"
+                  onClick={() => setSidebarOpen(true)}
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
 
-              <Avatar className="h-10 w-10">
-                <AvatarFallback className="bg-mint-500 text-white">
-                  {getInitials(conversation.name || '')}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-erie-black-900 truncate">{conversation.name}</h3>
-                <p className="text-xs text-erie-black-600 truncate">{conversation.phone}</p>
-              </div>
+                <Avatar className="h-10 w-10 flex-shrink-0">
+                  <AvatarFallback className="bg-mint-500 text-white">
+                    {getInitials(conversation.name || '')}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-erie-black-900 truncate">{conversation.name}</h3>
+                  <p className="text-xs text-erie-black-600 truncate">{conversation.phone}</p>
+                </div>
 
-              {/* Badge de Status */}
-              <div className="flex items-center gap-2">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium border ${
-                  conversation.status === 'bot' ? 'bg-mint-100 text-mint-800 border-mint-200' :
-                  conversation.status === 'human' ? 'bg-brand-blue-100 text-brand-blue-800 border-brand-blue-200' :
-                  'bg-silver-100 text-erie-black-700 border-silver-300'
-                }`}>
-                  {conversation.status === 'bot' ? 'Bot' : conversation.status === 'human' ? 'Humano' : conversation.status}
-                </span>
+                {/* Status Toggle */}
+                <div className="w-full sm:w-auto">
+                  <StatusToggle
+                    phone={phone}
+                    currentStatus={conversation.status}
+                  />
+                </div>
               </div>
             </div>
 

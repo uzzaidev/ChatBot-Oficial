@@ -1,7 +1,7 @@
 'use client'
 
-import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { StatusBadge } from '@/components/StatusBadge'
 import { formatPhone, formatDateTime, getInitials, truncateText } from '@/lib/utils'
 import type { ConversationWithCount } from '@/lib/types'
 import { MessageCircle } from 'lucide-react'
@@ -98,11 +98,6 @@ export const ConversationList = ({
         const isActive = currentPhone === conversation.phone
         const hasUnread = unreadConversations.has(conversation.phone)
         const isRecentlyUpdated = recentlyUpdated === conversation.phone
-        const statusColor = conversation.status === 'bot'
-          ? 'bg-mint-100 text-mint-800 border-mint-200'
-          : conversation.status === 'waiting'
-          ? 'bg-gold-100 text-gold-800 border-gold-200'
-          : 'bg-brand-blue-100 text-brand-blue-800 border-brand-blue-200'
 
         return (
           <div
@@ -148,12 +143,13 @@ export const ConversationList = ({
                 </p>
 
                 {/* Badge de Status (pequeno) */}
-                <Badge
-                  className={cn("ml-2 text-[10px] px-1.5 py-0 h-5 border", statusColor)}
-                  variant="secondary"
-                >
-                  {conversation.status === 'bot' ? 'Bot' : conversation.status === 'waiting' ? 'Aguardando' : 'Humano'}
-                </Badge>
+                <div className="ml-2">
+                  <StatusBadge
+                    status={conversation.status}
+                    showIcon={false}
+                    size="sm"
+                  />
+                </div>
               </div>
             </div>
 

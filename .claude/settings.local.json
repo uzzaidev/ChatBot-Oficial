@@ -38,7 +38,8 @@
       "mcp__byterover-mcp__byterover-retrieve-knowledge",
       "Bash(nul)",
       "mcp__byterover-mcp__byterover-store-knowledge",
-      "Bash(node clean-console-logs.mjs:*)"
+      "Bash(node clean-console-logs.mjs:*)",
+      "mcp__ide__getDiagnostics"
     ],
     "deny": [],
     "ask": []
