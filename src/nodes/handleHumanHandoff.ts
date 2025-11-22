@@ -21,7 +21,7 @@ export const handleHumanHandoff = async (input: HandleHumanHandoffInput): Promis
   try {
     // Atualizar status do cliente para 'human' (CRÍTICO - deve sempre funcionar)
     await query(
-      'UPDATE "Clientes WhatsApp" SET status = $1 WHERE telefone = $2',
+      'UPDATE clientes_whatsapp SET status = $1 WHERE telefone = $2',
       ['Transferido', phone]
     )
 

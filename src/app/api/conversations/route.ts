@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
             ORDER BY h2.created_at DESC 
             LIMIT 1
           ) as last_message_json
-        FROM "Clientes WhatsApp" c
+        FROM clientes_whatsapp c
         LEFT JOIN n8n_chat_histories h ON CAST(c.telefone AS TEXT) = h.session_id
           AND (h.client_id = $1 OR h.client_id IS NULL)
         WHERE EXISTS (
