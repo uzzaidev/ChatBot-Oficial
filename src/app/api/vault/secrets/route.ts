@@ -290,25 +290,185 @@ export async function PUT(request: NextRequest) {
     const secretIdField = secretIdFieldMap[key]
     const secretId = client[secretIdField]
 
+    console.log('[vault/secrets] DEBUG - Salvando secret:', {
+      key,
+      secretIdField,
+      secretId,
+      clientId,
+      hasValue: !!value,
+      valueLength: value?.length
+    })
+
     if (!secretId) {
+      console.log('[vault/secrets] Secret ID não existe, criando novo secret...', {
+        key,
+        secretIdField,
+      })
+
+      // CRIAR NOVO SECRET se não existir
+      const secretName = `${client.slug}_${key}`
+      const secretDescription = `${key} for client ${client.name}`
+
+      const { data: newSecretId, error: createError } = await supabase.rpc('create_client_secret', {
+        secret_value: value,
+        secret_name: secretName,
+        secret_description: secretDescription,
+      })
+
+      if (createError || !newSecretId) {
+        console.error('[vault/secrets] Erro ao criar secret:', createError)
+        return NextResponse.json(
+          {
+            error: 'Erro ao criar secret no Vault',
+            details: createError?.message || 'Nenhum ID retornado'
+          },
+          { status: 500 }
+        )
+      }
+
+      console.log('[vault/secrets] Secret criado com sucesso:', { newSecretId, key })
+
+      // ATUALIZAR client com o novo secret_id
+      const { error: updateClientError } = await supabase
+        .from('clients')
+        .update({
+          [secretIdField]: newSecretId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', clientId)
+
+      if (updateClientError) {
+        console.error('[vault/secrets] Erro ao atualizar client com secret_id:', updateClientError)
+        return NextResponse.json(
+          {
+            error: 'Secret criado mas falhou ao vincular ao cliente',
+            details: updateClientError.message
+          },
+          { status: 500 }
+        )
+      }
+
+      console.log('[vault/secrets] Cliente atualizado com novo secret_id')
+
+      // VULN-008 FIX: Log audit event
+      await logUpdate(
+        'secret',
+        `${clientId}-${key}`,
+        { [key]: null }, // Não existia antes
+        { [key]: '***' }, // Criado agora
+        {
+          userId: user.id,
+          userEmail: user.email,
+          clientId: clientId,
+          endpoint: '/api/vault/secrets',
+          method: 'PUT',
+          request
+        }
+      )
+
+      return NextResponse.json({
+        success: true,
+        message: 'Secret criado com sucesso',
+        key: key,
+        created: true,
+      })
+    }
+
+    console.log('[vault/secrets] Usando estratégia DELETE + CREATE para atualizar secret...')
+
+    // ESTRATÉGIA: Deletar secret antigo e criar um novo
+    // Isso é mais confiável do que vault.update_secret que parece ter bugs
+
+    // 1. Buscar informações do secret antigo
+    const { data: oldSecret } = await supabase
+      .from('vault.secrets')
+      .select('name, description')
+      .eq('id', secretId)
+      .single()
+
+    const secretName = oldSecret?.name || `${client.slug}_${key}`
+    const secretDescription = oldSecret?.description || `${key} for client ${client.name}`
+
+    console.log('[vault/secrets] Secret antigo:', { secretId, name: secretName })
+
+    // 2. Criar novo secret com o valor atualizado
+    const { data: newSecretId, error: createError } = await supabase.rpc('create_client_secret', {
+      secret_value: value,
+      secret_name: secretName,
+      secret_description: secretDescription,
+    })
+
+    if (createError || !newSecretId) {
+      console.error('[vault/secrets] Erro ao criar novo secret:', createError)
       return NextResponse.json(
-        { error: 'Secret ID não encontrado para esta key' },
-        { status: 404 }
+        {
+          error: 'Erro ao criar secret no Vault',
+          details: createError?.message || 'Nenhum ID retornado'
+        },
+        { status: 500 }
       )
     }
 
-    // Atualizar secret no Vault
-    const { error: vaultError } = await supabase.rpc('update_client_secret', {
-      secret_id: secretId,
-      new_secret_value: value,
-    })
+    console.log('[vault/secrets] Novo secret criado:', { newSecretId })
 
-    if (vaultError) {
-      console.error('[vault/secrets] Erro ao atualizar secret no Vault:', vaultError)
+    // 3. Atualizar referência na tabela clients
+    const { error: updateClientError } = await supabase
+      .from('clients')
+      .update({
+        [secretIdField]: newSecretId,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', clientId)
+
+    if (updateClientError) {
+      console.error('[vault/secrets] Erro ao atualizar client com novo secret_id:', updateClientError)
+      // Tentar deletar o novo secret criado para evitar lixo
+      await supabase
+        .from('vault.secrets')
+        .delete()
+        .eq('id', newSecretId)
+
       return NextResponse.json(
-        { error: 'Erro ao atualizar secret no Vault' },
+        {
+          error: 'Erro ao atualizar referência do secret',
+          details: updateClientError.message
+        },
         { status: 500 }
       )
+    }
+
+    console.log('[vault/secrets] Referência atualizada no cliente')
+
+    // 4. Deletar secret antigo
+    const { error: deleteError } = await supabase
+      .from('vault.secrets')
+      .delete()
+      .eq('id', secretId)
+
+    if (deleteError) {
+      console.warn('[vault/secrets] Aviso: Não conseguiu deletar secret antigo (não é crítico):', deleteError)
+      // Não falhar aqui, o importante é que o novo secret foi criado e referenciado
+    } else {
+      console.log('[vault/secrets] Secret antigo deletado:', { secretId })
+    }
+
+    // 5. Verificar se o valor foi salvo
+    const { data: verifyValue, error: verifyError } = await supabase.rpc('get_client_secret', {
+      secret_id: newSecretId,
+    })
+
+    console.log('[vault/secrets] Verificação final:', {
+      newSecretId,
+      savedValueLength: verifyValue?.length || 0,
+      originalValueLength: value.length,
+      matches: verifyValue === value,
+      verifyError: verifyError?.message
+    })
+
+    if (verifyValue === value) {
+      console.log('[vault/secrets] ✅ Secret atualizado com sucesso usando DELETE + CREATE')
+    } else {
+      console.error('[vault/secrets] ❌ Secret foi criado mas valor não confere!')
     }
 
 

@@ -282,6 +282,8 @@ export default function SettingsPage() {
     setLoadingSecrets(true)
     setNotification(null)
 
+    console.log('[settings] Salvando secret:', { key, valueLength: value?.length })
+
     try {
       const response = await fetch('/api/vault/secrets', {
         method: 'PUT',
@@ -291,12 +293,25 @@ export default function SettingsPage() {
 
       const data = await response.json()
 
+      console.log('[settings] Resposta do servidor:', { ok: response.ok, status: response.status, data })
+
       if (response.ok) {
         setNotification({ type: 'success', message: `${key} atualizado com sucesso!` })
+        // Recarregar secrets para mostrar valor atualizado (mascarado)
+        const refreshResponse = await fetch('/api/vault/secrets')
+        const refreshData = await refreshResponse.json()
+        if (refreshResponse.ok) {
+          setSecrets(refreshData.secrets || {})
+        }
       } else {
-        setNotification({ type: 'error', message: data.error || 'Erro ao atualizar variável' })
+        const errorMessage = data.details
+          ? `${data.error}: ${data.details}`
+          : data.error || 'Erro ao atualizar variável'
+        setNotification({ type: 'error', message: errorMessage })
+        console.error('[settings] Erro ao salvar:', { error: data.error, details: data.details })
       }
     } catch (error) {
+      console.error('[settings] Exceção ao salvar:', error)
       setNotification({ type: 'error', message: 'Erro ao atualizar variável' })
     } finally {
       setLoadingSecrets(false)
