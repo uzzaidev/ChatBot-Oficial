@@ -8,8 +8,7 @@
 -- Update all existing status values to lowercase
 UPDATE clientes_whatsapp
 SET status = LOWER(status)
-WHERE status IN ('Bot', 'BOT', 'Humano', 'HUMANO', 'Transferido', 'TRANSFERIDO')
-   OR status != LOWER(status);
+WHERE status != LOWER(status);
 
 -- Add check constraint to enforce lowercase status values
 ALTER TABLE clientes_whatsapp
