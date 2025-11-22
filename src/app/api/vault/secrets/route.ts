@@ -376,10 +376,10 @@ export async function PUT(request: NextRequest) {
 
     console.log('[vault/secrets] Usando estratégia DELETE + CREATE para atualizar secret...')
 
-    // ESTRATÉGIA: Deletar secret antigo e criar um novo
-    // Isso é mais confiável do que vault.update_secret que parece ter bugs
+    // ESTRATÉGIA: Deletar secret antigo PRIMEIRO, depois criar novo
+    // Isso evita erro de "duplicate key" no índice secrets_name_idx
 
-    // 1. Buscar informações do secret antigo
+    // 1. Buscar informações do secret antigo ANTES de deletar
     const { data: oldSecret } = await supabase
       .from('vault.secrets')
       .select('name, description')
@@ -391,7 +391,26 @@ export async function PUT(request: NextRequest) {
 
     console.log('[vault/secrets] Secret antigo:', { secretId, name: secretName })
 
-    // 2. Criar novo secret com o valor atualizado
+    // 2. DELETAR secret antigo PRIMEIRO (evita duplicação de nome)
+    const { error: deleteError } = await supabase
+      .from('vault.secrets')
+      .delete()
+      .eq('id', secretId)
+
+    if (deleteError) {
+      console.error('[vault/secrets] Erro ao deletar secret antigo:', deleteError)
+      return NextResponse.json(
+        {
+          error: 'Erro ao deletar secret antigo',
+          details: deleteError.message
+        },
+        { status: 500 }
+      )
+    }
+
+    console.log('[vault/secrets] Secret antigo deletado:', { secretId })
+
+    // 3. CRIAR novo secret com o valor atualizado (agora o nome está livre)
     const { data: newSecretId, error: createError } = await supabase.rpc('create_client_secret', {
       secret_value: value,
       secret_name: secretName,
@@ -411,7 +430,7 @@ export async function PUT(request: NextRequest) {
 
     console.log('[vault/secrets] Novo secret criado:', { newSecretId })
 
-    // 3. Atualizar referência na tabela clients
+    // 4. Atualizar referência na tabela clients
     const { error: updateClientError } = await supabase
       .from('clients')
       .update({
@@ -438,19 +457,6 @@ export async function PUT(request: NextRequest) {
     }
 
     console.log('[vault/secrets] Referência atualizada no cliente')
-
-    // 4. Deletar secret antigo
-    const { error: deleteError } = await supabase
-      .from('vault.secrets')
-      .delete()
-      .eq('id', secretId)
-
-    if (deleteError) {
-      console.warn('[vault/secrets] Aviso: Não conseguiu deletar secret antigo (não é crítico):', deleteError)
-      // Não falhar aqui, o importante é que o novo secret foi criado e referenciado
-    } else {
-      console.log('[vault/secrets] Secret antigo deletado:', { secretId })
-    }
 
     // 5. Verificar se o valor foi salvo
     const { data: verifyValue, error: verifyError } = await supabase.rpc('get_client_secret', {
