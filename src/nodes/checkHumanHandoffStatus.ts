@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase-server'
+import { createServiceRoleClient } from '@/lib/supabase'
 
 export interface CheckHumanHandoffInput {
   phone: string
@@ -28,7 +28,7 @@ export const checkHumanHandoffStatus = async (
   const { phone, clientId } = input
 
   try {
-    const supabase = createServerClient()
+    const supabase = createServiceRoleClient()
 
     // Buscar status do cliente
     const { data: customer, error } = await supabase
@@ -39,10 +39,20 @@ export const checkHumanHandoffStatus = async (
       .single()
 
     if (error || !customer) {
+      // Log detalhado para debug quando cliente não é encontrado
+      console.log('[checkHumanHandoffStatus] Cliente não encontrado ou erro', {
+        phone,
+        clientId,
+        error: error?.message,
+        errorDetails: error,
+        customerData: customer
+      })
+      
       // Se cliente não existe, será criado depois com status 'bot'
       return {
         skipBot: false,
-        customerStatus: 'bot'
+        customerStatus: 'bot',
+        reason: error ? `Erro ao buscar cliente: ${error.message}` : 'Cliente não existe ainda'
       }
     }
 
