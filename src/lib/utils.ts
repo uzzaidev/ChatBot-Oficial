@@ -91,7 +91,7 @@ export const formatMessageDate = (isoString: string): string => {
   }
   
   // Esta semana (últimos 7 dias) - mostra dia da semana
-  if (diffDays > 1 && diffDays < 7) {
+  if (diffDays > 1 && diffDays <= 7) {
     return date.toLocaleDateString('pt-BR', { weekday: 'long' })
   }
   

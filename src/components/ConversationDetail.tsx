@@ -89,21 +89,24 @@ export const ConversationDetail = ({
 
   // Group messages with date separators
   const messagesWithDates = useMemo(() => {
-    const result: Array<{ type: 'message' | 'date'; data: Message | string }> = []
+    const result: Array<
+      | { type: 'message'; message: Message }
+      | { type: 'date'; date: string }
+    > = []
     
     messages.forEach((message, index) => {
       // Add date separator if this is the first message or day changed
       if (index === 0) {
         result.push({
           type: 'date',
-          data: formatMessageDate(message.timestamp),
+          date: formatMessageDate(message.timestamp),
         })
       } else {
         const prevMessage = messages[index - 1]
         if (!isSameDay(prevMessage.timestamp, message.timestamp)) {
           result.push({
             type: 'date',
-            data: formatMessageDate(message.timestamp),
+            date: formatMessageDate(message.timestamp),
           })
         }
       }
@@ -111,7 +114,7 @@ export const ConversationDetail = ({
       // Add message
       result.push({
         type: 'message',
-        data: message,
+        message: message,
       })
     })
     
@@ -146,10 +149,9 @@ export const ConversationDetail = ({
             <div className="py-3 md:py-4 space-y-2">
               {messagesWithDates.map((item, index) => {
                 if (item.type === 'date') {
-                  return <DateSeparator key={`date-${index}`} date={item.data as string} />
+                  return <DateSeparator key={`date-${index}`} date={item.date} />
                 } else {
-                  const message = item.data as Message
-                  return <MessageBubble key={message.id} message={message} />
+                  return <MessageBubble key={item.message.id} message={item.message} />
                 }
               })}
             </div>
