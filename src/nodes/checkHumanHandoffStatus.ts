@@ -47,13 +47,15 @@ export const checkHumanHandoffStatus = async (
     }
 
     const status = customer.status
+    const statusLower = status?.toLowerCase() || ''
 
     // Se está em atendimento humano, para o bot
-    if (status === 'humano' || status === 'transferido') {
+    // Usar case-insensitive comparison para evitar bugs de capitalização
+    if (statusLower === 'humano' || statusLower === 'transferido') {
       return {
         skipBot: true,
         customerStatus: status,
-        reason: `Conversa em atendimento ${status === 'humano' ? 'humano ativo' : 'aguardando humano'}`
+        reason: `Conversa em atendimento ${statusLower === 'humano' ? 'humano ativo' : 'aguardando humano'}`
       }
     }
 
