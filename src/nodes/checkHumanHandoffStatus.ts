@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase-server'
+import { createServiceRoleClient } from '@/lib/supabase'
 
 export interface CheckHumanHandoffInput {
   phone: string
@@ -28,32 +28,52 @@ export const checkHumanHandoffStatus = async (
   const { phone, clientId } = input
 
   try {
-    const supabase = createServerClient()
+    // 🔐 SECURITY: Use service role client to bypass RLS
+    // This is SAFE because:
+    // 1. Query filters by client_id (tenant isolation maintained)
+    // 2. Only reads status field (no sensitive data exposure)
+    // 3. Node is called from authenticated chatbot flow with validated clientId
+    const supabase = createServiceRoleClient()
 
-    // Buscar status do cliente
-    const { data: customer, error } = await supabase
+    // Cast to 'any' to bypass TypeScript type checking (table not in generated types yet)
+    const supabaseAny = supabase as any
+
+    // Buscar status do cliente - FILTERED BY client_id for tenant isolation
+    const { data: customer, error } = await supabaseAny
       .from('clientes_whatsapp')
       .select('status')
       .eq('telefone', phone)
-      .eq('client_id', clientId)
+      .eq('client_id', clientId) // 🔐 CRITICAL: Tenant isolation filter
       .single()
 
     if (error || !customer) {
+      // Log detalhado para debug quando cliente não é encontrado
+      console.log('[checkHumanHandoffStatus] Cliente não encontrado ou erro', {
+        phone,
+        clientId,
+        error: error?.message,
+        errorDetails: error,
+        customerData: customer
+      })
+      
       // Se cliente não existe, será criado depois com status 'bot'
       return {
         skipBot: false,
-        customerStatus: 'bot'
+        customerStatus: 'bot',
+        reason: error ? `Erro ao buscar cliente: ${error.message}` : 'Cliente não existe ainda'
       }
     }
 
     const status = customer.status
+    const statusLower = status?.toLowerCase() || ''
 
     // Se está em atendimento humano, para o bot
-    if (status === 'humano' || status === 'transferido') {
+    // Usar case-insensitive comparison para evitar bugs de capitalização
+    if (statusLower === 'humano' || statusLower === 'transferido') {
       return {
         skipBot: true,
         customerStatus: status,
-        reason: `Conversa em atendimento ${status === 'humano' ? 'humano ativo' : 'aguardando humano'}`
+        reason: `Conversa em atendimento ${statusLower === 'humano' ? 'humano ativo' : 'aguardando humano'}`
       }
     }
 
