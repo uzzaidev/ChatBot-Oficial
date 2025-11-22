@@ -71,7 +71,7 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
 
       {/* Filtros por Status */}
       <div className="border-b border-silver-200 bg-white">
-        <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as any)}>
+        <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'all' | 'bot' | 'humano' | 'transferido')}>
           <TabsList className="w-full justify-start rounded-none h-auto p-0 bg-transparent">
             <TabsTrigger
               value="all"
