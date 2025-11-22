@@ -94,6 +94,9 @@ export const ConversationDetail = ({
     const scrollElement = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]')
     if (!scrollElement) return
 
+    // Offset to determine when a date separator is "at the top"
+    const STICKY_HEADER_OFFSET = 50
+
     const handleScroll = () => {
       // Find which date section is currently at the top
       const scrollTop = scrollElement.scrollTop
@@ -105,7 +108,7 @@ export const ConversationDetail = ({
         const containerRect = scrollElement.getBoundingClientRect()
         
         // Check if this date separator is near or above the top of the viewport
-        if (rect.top <= containerRect.top + 50) {
+        if (rect.top <= containerRect.top + STICKY_HEADER_OFFSET) {
           currentDate = date
         }
       })
@@ -122,7 +125,7 @@ export const ConversationDetail = ({
     }
   }, [messages])
 
-  // Clear date refs when messages change
+  // Clear date refs when conversation changes
   useEffect(() => {
     dateRefs.current.clear()
   }, [phone])
