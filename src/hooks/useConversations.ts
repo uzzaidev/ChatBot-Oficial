@@ -124,7 +124,7 @@ export const useConversations = ({
         {
           event: '*', // INSERT, UPDATE, DELETE
           schema: 'public',
-          table: 'Clientes WhatsApp',
+          table: 'clientes_whatsapp',
         },
         () => {
           // Delay de 500ms para garantir que mensagem foi salva primeiro
