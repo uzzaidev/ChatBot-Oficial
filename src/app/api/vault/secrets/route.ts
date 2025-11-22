@@ -391,18 +391,17 @@ export async function PUT(request: NextRequest) {
 
     console.log('[vault/secrets] Secret antigo:', { secretId, name: secretName })
 
-    // 2. DELETAR secret antigo PRIMEIRO (evita duplicação de nome)
-    const { error: deleteError } = await supabase
-      .from('vault.secrets')
-      .delete()
-      .eq('id', secretId)
+    // 2. DELETAR secret antigo PRIMEIRO usando RPC (evita duplicação de nome)
+    const { data: deleteResult, error: deleteError } = await supabase.rpc('delete_client_secret', {
+      secret_id: secretId,
+    })
 
-    if (deleteError) {
+    if (deleteError || !deleteResult) {
       console.error('[vault/secrets] Erro ao deletar secret antigo:', deleteError)
       return NextResponse.json(
         {
           error: 'Erro ao deletar secret antigo',
-          details: deleteError.message
+          details: deleteError?.message || 'Função retornou FALSE'
         },
         { status: 500 }
       )
@@ -442,10 +441,7 @@ export async function PUT(request: NextRequest) {
     if (updateClientError) {
       console.error('[vault/secrets] Erro ao atualizar client com novo secret_id:', updateClientError)
       // Tentar deletar o novo secret criado para evitar lixo
-      await supabase
-        .from('vault.secrets')
-        .delete()
-        .eq('id', newSecretId)
+      await supabase.rpc('delete_client_secret', { secret_id: newSecretId })
 
       return NextResponse.json(
         {
