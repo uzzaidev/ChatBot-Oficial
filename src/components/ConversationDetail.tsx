@@ -23,6 +23,8 @@ export const ConversationDetail = ({
 }: ConversationDetailProps) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const [realtimeMessages, setRealtimeMessages] = useState<Message[]>([])
+  const [stickyDate, setStickyDate] = useState<string | null>(null)
+  const dateRefs = useRef<Map<string, HTMLDivElement>>(new Map())
 
   const { messages: fetchedMessages, loading, error, refetch } = useMessages({
     clientId,
@@ -87,6 +89,44 @@ export const ConversationDetail = ({
     }
   }, [messages])
 
+  // Handle scroll to update sticky date header
+  useEffect(() => {
+    const scrollElement = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]')
+    if (!scrollElement) return
+
+    const handleScroll = () => {
+      // Find which date section is currently at the top
+      const scrollTop = scrollElement.scrollTop
+      let currentDate: string | null = null
+
+      // Iterate through date refs to find the visible one
+      dateRefs.current.forEach((element, date) => {
+        const rect = element.getBoundingClientRect()
+        const containerRect = scrollElement.getBoundingClientRect()
+        
+        // Check if this date separator is near or above the top of the viewport
+        if (rect.top <= containerRect.top + 50) {
+          currentDate = date
+        }
+      })
+
+      setStickyDate(currentDate)
+    }
+
+    scrollElement.addEventListener('scroll', handleScroll)
+    // Initial call to set the date
+    handleScroll()
+
+    return () => {
+      scrollElement.removeEventListener('scroll', handleScroll)
+    }
+  }, [messages])
+
+  // Clear date refs when messages change
+  useEffect(() => {
+    dateRefs.current.clear()
+  }, [phone])
+
   // Group messages with date separators
   const messagesWithDates = useMemo(() => {
     const result: Array<
@@ -135,6 +175,15 @@ export const ConversationDetail = ({
 
   return (
     <div className="flex flex-col h-full">
+      {/* Sticky Date Header - WhatsApp style */}
+      {stickyDate && messages.length > 0 && (
+        <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-center pt-2 pointer-events-none">
+          <div className="bg-silver-200/90 text-erie-black-700 text-xs px-3 py-1 rounded-full shadow-md backdrop-blur-sm">
+            {stickyDate}
+          </div>
+        </div>
+      )}
+      
       <div className="flex-1 overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center h-full">
@@ -149,7 +198,18 @@ export const ConversationDetail = ({
             <div className="py-3 md:py-4 space-y-2">
               {messagesWithDates.map((item, index) => {
                 if (item.type === 'date') {
-                  return <DateSeparator key={`date-${index}`} date={item.date} />
+                  return (
+                    <div 
+                      key={`date-${index}`}
+                      ref={(el) => {
+                        if (el) {
+                          dateRefs.current.set(item.date, el)
+                        }
+                      }}
+                    >
+                      <DateSeparator date={item.date} />
+                    </div>
+                  )
                 } else {
                   return <MessageBubble key={item.message.id} message={item.message} />
                 }

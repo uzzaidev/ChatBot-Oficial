@@ -132,7 +132,7 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
             </div>
 
             {/* Área de Mensagens */}
-            <div className="flex-1 overflow-hidden bg-silver-50">
+            <div className="flex-1 overflow-hidden bg-silver-50 relative">
               <ConversationDetail
                 phone={phone}
                 clientId={clientId}
