@@ -61,6 +61,62 @@ export const formatTime = (isoString: string): string => {
   })
 }
 
+/**
+ * Formata a data para exibição como separador de mensagens (estilo WhatsApp)
+ * Exemplos:
+ * - "Hoje"
+ * - "Ontem"
+ * - "Segunda-feira" (se esta semana)
+ * - "24/11/2025" (datas mais antigas)
+ */
+export const formatMessageDate = (isoString: string): string => {
+  const date = new Date(isoString)
+  const now = new Date()
+  
+  // Reseta as horas para comparar apenas as datas
+  const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const nowOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  
+  const diffMs = nowOnly.getTime() - dateOnly.getTime()
+  const diffDays = Math.floor(diffMs / 86400000)
+  
+  // Hoje
+  if (diffDays === 0) {
+    return 'Hoje'
+  }
+  
+  // Ontem
+  if (diffDays === 1) {
+    return 'Ontem'
+  }
+  
+  // Esta semana (últimos 7 dias) - mostra dia da semana
+  if (diffDays > 1 && diffDays <= 7) {
+    return date.toLocaleDateString('pt-BR', { weekday: 'long' })
+  }
+  
+  // Datas mais antigas - mostra data completa
+  return date.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
+}
+
+/**
+ * Verifica se duas datas são do mesmo dia
+ */
+export const isSameDay = (date1: string, date2: string): boolean => {
+  const d1 = new Date(date1)
+  const d2 = new Date(date2)
+  
+  return (
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate()
+  )
+}
+
 export const formatCurrency = (value: number): string => {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
