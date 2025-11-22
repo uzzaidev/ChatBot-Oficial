@@ -131,7 +131,7 @@ export const StatusToggle = ({ phone, currentStatus }: StatusToggleProps) => {
         onValueChange={handleStatusChange}
         disabled={isLoading}
       >
-        <SelectTrigger className="w-[140px] sm:w-[200px] text-xs sm:text-sm">
+        <SelectTrigger className="w-[140px] sm:w-[180px] text-xs sm:text-sm">
           <SelectValue placeholder="Alterar" />
         </SelectTrigger>
         <SelectContent>
@@ -143,12 +143,7 @@ export const StatusToggle = ({ phone, currentStatus }: StatusToggleProps) => {
                 <SelectItem key={key} value={key}>
                   <div className="flex items-center gap-2">
                     <Icon className="h-4 w-4" />
-                    <div className="flex flex-col">
-                      <span className="font-medium">{config.label}</span>
-                      <span className="text-xs text-muted-foreground hidden sm:inline">
-                        {config.description}
-                      </span>
-                    </div>
+                    <span className="font-medium truncate">{config.label}</span>
                   </div>
                 </SelectItem>
               )

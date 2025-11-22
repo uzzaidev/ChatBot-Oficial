@@ -3,10 +3,12 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { MessageBubble } from '@/components/MessageBubble'
+import { DateSeparator } from '@/components/DateSeparator'
 import { useMessages } from '@/hooks/useMessages'
 import { useRealtimeMessages } from '@/hooks/useRealtimeMessages'
 import type { Message } from '@/lib/types'
 import { toast } from '@/hooks/use-toast'
+import { isSameDay, formatMessageDate } from '@/lib/utils'
 
 interface ConversationDetailProps {
   phone: string
@@ -85,6 +87,37 @@ export const ConversationDetail = ({
     }
   }, [messages])
 
+  // Group messages with date separators
+  const messagesWithDates = useMemo(() => {
+    const result: Array<{ type: 'message' | 'date'; data: Message | string }> = []
+    
+    messages.forEach((message, index) => {
+      // Add date separator if this is the first message or day changed
+      if (index === 0) {
+        result.push({
+          type: 'date',
+          data: formatMessageDate(message.timestamp),
+        })
+      } else {
+        const prevMessage = messages[index - 1]
+        if (!isSameDay(prevMessage.timestamp, message.timestamp)) {
+          result.push({
+            type: 'date',
+            data: formatMessageDate(message.timestamp),
+          })
+        }
+      }
+      
+      // Add message
+      result.push({
+        type: 'message',
+        data: message,
+      })
+    })
+    
+    return result
+  }, [messages])
+
   if (error) {
     return (
       <div className="flex items-center justify-center h-full bg-white">
@@ -111,9 +144,14 @@ export const ConversationDetail = ({
         ) : (
           <ScrollArea ref={scrollAreaRef} className="h-full px-2 md:px-4">
             <div className="py-3 md:py-4 space-y-2">
-              {messages.map((message) => (
-                <MessageBubble key={message.id} message={message} />
-              ))}
+              {messagesWithDates.map((item, index) => {
+                if (item.type === 'date') {
+                  return <DateSeparator key={`date-${index}`} date={item.data as string} />
+                } else {
+                  const message = item.data as Message
+                  return <MessageBubble key={message.id} message={message} />
+                }
+              })}
             </div>
           </ScrollArea>
         )}
