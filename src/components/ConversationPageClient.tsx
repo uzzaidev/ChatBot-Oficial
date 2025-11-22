@@ -10,8 +10,9 @@ import { ConversationList } from '@/components/ConversationList'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getInitials } from '@/lib/utils'
-import { MessageCircle, LayoutDashboard, Menu } from 'lucide-react'
+import { MessageCircle, LayoutDashboard, Menu, Bot, User, ArrowRight, List } from 'lucide-react'
 import Link from 'next/link'
 
 interface ConversationPageClientProps {
@@ -28,9 +29,11 @@ interface ConversationPageClientProps {
  */
 export function ConversationPageClient({ phone, clientId }: ConversationPageClientProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [statusFilter, setStatusFilter] = useState<'all' | 'bot' | 'humano' | 'transferido'>('all')
 
   const { conversations, loading, lastUpdatePhone: pollingLastUpdate } = useConversations({
     clientId,
+    status: statusFilter === 'all' ? undefined : statusFilter,
     enableRealtime: true,
   })
 
@@ -57,13 +60,49 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
       <div className="bg-mint-600 p-4 flex items-center justify-between shadow-md">
         <div className="flex items-center gap-3">
           <MessageCircle className="h-6 w-6 text-white" />
-          <h2 className="text-white font-semibold text-lg">ChatBot</h2>
+          <h2 className="text-white font-semibold text-lg">Conversas</h2>
         </div>
         <Link href="/dashboard">
           <Button variant="ghost" size="sm" className="text-white hover:bg-mint-700">
             <LayoutDashboard className="h-4 w-4" />
           </Button>
         </Link>
+      </div>
+
+      {/* Filtros por Status */}
+      <div className="border-b border-silver-200 bg-white">
+        <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as any)}>
+          <TabsList className="w-full justify-start rounded-none h-auto p-0 bg-transparent">
+            <TabsTrigger
+              value="all"
+              className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-mint-600 rounded-none"
+            >
+              <List className="h-4 w-4" />
+              Todas
+            </TabsTrigger>
+            <TabsTrigger
+              value="bot"
+              className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 rounded-none"
+            >
+              <Bot className="h-4 w-4" />
+              Bot
+            </TabsTrigger>
+            <TabsTrigger
+              value="humano"
+              className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-green-600 rounded-none"
+            >
+              <User className="h-4 w-4" />
+              Humano
+            </TabsTrigger>
+            <TabsTrigger
+              value="transferido"
+              className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-orange-600 rounded-none"
+            >
+              <ArrowRight className="h-4 w-4" />
+              Transferido
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       {/* Lista de Conversas */}
