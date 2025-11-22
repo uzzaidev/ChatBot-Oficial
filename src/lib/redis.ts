@@ -12,6 +12,20 @@ const getRequiredEnvVariable = (key: string): string => {
 
 let redisClient: RedisClient | null = null
 
+const isSSLError = (error: Error): boolean => {
+  const sslErrorPatterns = [
+    'ERR_SSL_PACKET_LENGTH_TOO_LONG',
+    'wrong version number',
+    'SSL routines',
+    'EPROTO',
+    'self signed certificate',
+  ]
+  const errorCode = (error as any).code
+  return sslErrorPatterns.some(pattern =>
+    error.message.includes(pattern) || errorCode === pattern
+  )
+}
+
 export const getRedisClient = async (): Promise<RedisClient> => {
   if (redisClient) {
     return redisClient
@@ -22,43 +36,78 @@ export const getRedisClient = async (): Promise<RedisClient> => {
   try {
     // Parse URL to check protocol
     const url = new URL(redisUrl)
-    const useSSL = url.protocol === 'rediss:'
-    
+    const requestedSSL = url.protocol === 'rediss:'
 
-    const clientConfig: any = {
-      url: redisUrl,
-    }
+    // Primeira tentativa: usar protocolo solicitado
+    const client = await attemptConnection(redisUrl, requestedSSL)
+    redisClient = client
+    return client
 
-    // Se usar SSL, adiciona configuração TLS
-    if (useSSL) {
-      clientConfig.socket = {
-        tls: true,
-        rejectUnauthorized: false, // Aceita certificados self-signed
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+
+    // Se falhou com SSL, tentar sem SSL como fallback
+    if (error instanceof Error && isSSLError(error)) {
+      console.warn('[Redis] ⚠️ Falha SSL detectada, tentando conexão sem SSL...')
+
+      try {
+        const fallbackUrl = redisUrl.replace('rediss://', 'redis://')
+        const client = await attemptConnection(fallbackUrl, false)
+        redisClient = client
+
+        console.warn('[Redis] ⚠️ ATENÇÃO: Conectado SEM SSL em produção!')
+        console.warn('[Redis] 🔒 Recomendação: Habilite SSL no Redis Cloud')
+
+        return client
+      } catch (fallbackError) {
+        const fallbackMessage = fallbackError instanceof Error ? fallbackError.message : 'Unknown error'
+        console.error('[Redis] ❌ Fallback também falhou:', fallbackMessage)
+        throw new Error(`Failed to connect to Redis with and without SSL: ${fallbackMessage}`)
       }
     }
 
-    const client = createClient(clientConfig)
-
-    client.on('error', (error) => {
-      console.error('[Redis] Client error:', error)
-    })
-
-    client.on('connect', () => {
-    })
-
-    client.on('reconnecting', () => {
-    })
-
-    await client.connect()
-    redisClient = client
-
-    return client
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     console.error('[Redis] ❌ Connection failed:', errorMessage)
-    console.error('[Redis] URL format:', redisUrl.replace(/:[^:@]+@/, ':****@')) // Hide password
+    console.error('[Redis] URL format:', redisUrl.replace(/:[^:@]+@/, ':****@'))
     throw new Error(`Failed to connect to Redis: ${errorMessage}`)
   }
+}
+
+const attemptConnection = async (redisUrl: string, useSSL: boolean): Promise<RedisClient> => {
+  const url = new URL(redisUrl)
+
+  const clientConfig: any = {
+    url: redisUrl,
+  }
+
+  // Se usar SSL, adiciona configuração TLS otimizada para Redis Cloud
+  if (useSSL) {
+    clientConfig.socket = {
+      tls: true,
+      rejectUnauthorized: false, // Aceita certificados self-signed
+      servername: url.hostname, // SNI (Server Name Indication)
+      minVersion: 'TLSv1.2',
+      maxVersion: 'TLSv1.3',
+    }
+  }
+
+  const client = createClient(clientConfig)
+
+  client.on('error', (error) => {
+    // Não loga erro aqui - será tratado no catch
+  })
+
+  client.on('connect', () => {
+    const protocol = useSSL ? '🔒 SSL/TLS' : '⚠️ TCP (não criptografado)'
+    console.log(`[Redis] ✅ Conectado com sucesso (${protocol})`)
+    console.log(`[Redis] 🔗 Host: ${url.hostname}:${url.port}`)
+  })
+
+  client.on('reconnecting', () => {
+    console.log('[Redis] 🔄 Reconectando...')
+  })
+
+  await client.connect()
+  return client
 }
 
 export const lpushMessage = async (key: string, value: string): Promise<number> => {
