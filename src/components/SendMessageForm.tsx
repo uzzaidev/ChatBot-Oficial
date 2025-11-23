@@ -151,9 +151,9 @@ export const SendMessageForm = ({
         onRemove={onRemoveAttachment}
       />
 
-      <div className="flex items-end gap-2 bg-white rounded-lg p-2">
+      <div className="flex items-end gap-2 bg-white rounded-lg p-2 max-w-full">
         {/* Botão de anexar mídia (+) - esconde quando gravando */}
-        <div className={isRecording ? 'hidden' : ''}>
+        <div className={isRecording ? 'hidden' : 'flex-shrink-0'}>
           <MediaUploadButton
             onFileSelect={onAddAttachment}
           />
@@ -167,7 +167,7 @@ export const SendMessageForm = ({
           onChange={(e) => setContent(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={sending}
-          className={`flex-1 resize-none border-0 bg-white px-3 py-2 text-sm md:text-base focus:outline-none focus:ring-0 rounded-lg max-h-[120px] min-h-[40px] ${isRecording ? 'hidden' : ''}`}
+          className={`flex-1 min-w-0 resize-none border-0 bg-white px-3 py-2 text-sm md:text-base focus:outline-none focus:ring-0 rounded-lg max-h-[120px] min-h-[40px] ${isRecording ? 'hidden' : ''}`}
           rows={1}
         />
 
@@ -183,12 +183,14 @@ export const SendMessageForm = ({
             <Send className="h-4 w-4 md:h-5 md:w-5" />
           </Button>
         ) : (
-          <AudioRecorder
-            phone={phone}
-            clientId={clientId}
-            onAudioSent={onMessageSent}
-            onRecordingChange={setIsRecording}
-          />
+          <div className="flex-1 min-w-0 flex items-end">
+            <AudioRecorder
+              phone={phone}
+              clientId={clientId}
+              onAudioSent={onMessageSent}
+              onRecordingChange={setIsRecording}
+            />
+          </div>
         )}
       </div>
     </div>
