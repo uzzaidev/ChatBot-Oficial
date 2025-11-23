@@ -13,8 +13,8 @@
     - [x] Run `npx cap open android` and test on emulator
     - [x] Android Studio configurado e funcionando
     - [x] App rodando no emulador com sucesso
-    - [ ] Test login flow
-    - [ ] Test chat functionality
+    - [x] Test login flow ✅
+    - [x] Test chat functionality ✅ (corrigido erro de API route)
 - [x] **App Icons & Splash Screens** ✅
     - [x] Install `@capacitor/assets` (v3.0.5)
     - [ ] Generate/update assets for Android/iOS (assets existem, mas podem precisar atualização)
@@ -37,7 +37,7 @@
     - [x] Build testado e funcionando
     - [x] ADB configurado
     - [x] **Testado e funcionando** ✅
-- [ ] **3.3: Push Notifications** 🔄
+- [x] **3.3: Push Notifications** ✅
     - [x] Plugin instalado (`@capacitor/push-notifications`)
     - [x] Código implementado (`src/lib/pushNotifications.ts`)
     - [x] Provider criado (`src/components/PushNotificationsProvider.tsx`)
@@ -45,9 +45,13 @@
     - [x] Permissões Android configuradas (`POST_NOTIFICATIONS`)
     - [x] Dependências Gradle configuradas (`firebase-messaging`)
     - [x] Script SQL criado (`scripts/create-push-tokens-table.sql`)
-    - [ ] **Configurar Firebase** (criar projeto, baixar `google-services.json`)
-    - [ ] **Criar tabela no Supabase** (executar `create-push-tokens-table.sql`)
-    - [ ] **Testar no device físico**
+    - [x] **Firebase configurado** (projeto criado, `google-services.json` adicionado)
+    - [x] **Tabela criada no Supabase** (`push_tokens` criada com sucesso)
+    - [x] **Service Account configurado** (API V1)
+    - [x] **Script de teste criado** (`scripts/test-push-v1.js`)
+    - [x] **Testado e funcionando** ✅
+    - [x] Token registrado e salvo automaticamente
+    - [x] Notificação de teste enviada e recebida com sucesso
 - [ ] **3.4: Biometric Auth** (Optional)
     - Implement FaceID/TouchID login
 
