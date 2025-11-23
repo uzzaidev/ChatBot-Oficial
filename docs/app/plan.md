@@ -14,12 +14,13 @@
     - Run `npx cap open ios` (if on Mac)
     - Test login flow
     - Test chat functionality
-- [ ] **App Icons & Splash Screens**
-    - Install `@capacitor/assets`
-    - Generate assets for Android/iOS
-- [ ] **Environment Variables**
-    - Integrate Doppler or configure `.env` for mobile build
-    - Ensure Supabase keys are correctly loaded
+- [x] **App Icons & Splash Screens** ✅
+    - [x] Install `@capacitor/assets` (v3.0.5)
+    - [ ] Generate/update assets for Android/iOS (assets existem, mas podem precisar atualização)
+- [x] **Environment Variables** ✅
+    - [x] Doppler integrated and configured
+    - [x] Scripts updated for dev/stg/prd environments
+    - [x] Ensure Supabase keys are correctly loaded
 
 ## 🚀 Phase 3: Native Features
 - [ ] **Push Notifications**

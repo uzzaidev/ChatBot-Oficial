@@ -6,11 +6,11 @@ Guia completo para configurar environment variables em builds mobile Capacitor.
 
 - [O Problema](#o-problema)
 - [Soluções Disponíveis](#soluções-disponíveis)
-- [Opção 1: Build-Time Injection (RECOMENDADO)](#opção-1-build-time-injection-recomendado)
-- [Opção 2: Hardcode em capacitor.config.ts](#opção-2-hardcode-em-capacitorconfigts)
-- [Opção 3: Plugin @capacitor/preferences](#opção-3-plugin-capacitorpreferences)
+- [Opção 1: Doppler (RECOMENDADO - Implementado)](#opção-1-doppler-recomendado---implementado)
+- [Opção 2: Build-Time Injection com dotenv-cli (Alternativa)](#opção-2-build-time-injection-com-dotenv-cli-alternativa)
+- [Opção 3: Hardcode em capacitor.config.ts](#opção-3-hardcode-em-capacitorconfigts)
+- [Opção 4: Plugin @capacitor/preferences](#opção-4-plugin-capacitorpreferences)
 - [Variáveis Necessárias](#variáveis-necessárias)
-- [Plano Futuro: Doppler](#plano-futuro-doppler)
 - [Boas Práticas](#boas-práticas)
 - [Verificação](#verificação)
 - [Troubleshooting](#troubleshooting)
@@ -50,15 +50,104 @@ console.log(process.env.NEXT_PUBLIC_SUPABASE_URL)
 
 ## Soluções Disponíveis
 
-| Solução | Complexidade | Segurança | Recomendado |
-|---------|--------------|-----------|-------------|
-| **Opção 1: Build-Time Injection** | Média | ⭐⭐⭐ | ✅ Sim (melhor) |
-| **Opção 2: Hardcode em config** | Baixa | ⭐ | ⚠️ Apenas não-secretas |
-| **Opção 3: Plugin Preferences** | Alta | ⭐⭐ | 🔄 Para runtime dinâmico |
+| Solução | Complexidade | Segurança | Status |
+|---------|--------------|-----------|--------|
+| **Opção 1: Doppler** | Média | ⭐⭐⭐ | ✅ Implementado (RECOMENDADO) |
+| **Opção 2: dotenv-cli** | Média | ⭐⭐⭐ | ⚠️ Alternativa/Fallback |
+| **Opção 3: Hardcode em config** | Baixa | ⭐ | ⚠️ Apenas não-secretas |
+| **Opção 4: Plugin Preferences** | Alta | ⭐⭐ | 🔄 Para runtime dinâmico |
 
 ---
 
-## Opção 1: Build-Time Injection (RECOMENDADO)
+## Opção 1: Doppler (RECOMENDADO - Implementado)
+
+**Status**: ✅ Implementado e Ativo
+
+[Doppler](https://www.doppler.com/) é a plataforma de gerenciamento de secrets **atualmente utilizada** no projeto para:
+- Centralizar environment variables (dev, staging, production)
+- Rotacionar secrets automaticamente
+- Sincronizar variáveis entre equipe
+- Eliminar arquivos `.env` locais
+
+### Scripts Atuais (package.json)
+
+O projeto **já usa Doppler** nos scripts de build:
+
+```json
+{
+  "scripts": {
+    "build:mobile": "doppler run --config dev -- cross-env CAPACITOR_BUILD=true next build",
+    "build:mobile:stg": "doppler run --config stg -- cross-env CAPACITOR_BUILD=true next build",
+    "build:mobile:prd": "doppler run --config prd -- cross-env CAPACITOR_BUILD=true next build"
+  }
+}
+```
+
+### Como Usar
+
+**Build desenvolvimento:**
+```bash
+npm run build:mobile
+```
+
+**Build staging:**
+```bash
+npm run build:mobile:stg
+```
+
+**Build produção:**
+```bash
+npm run build:mobile:prd
+```
+
+### Setup Doppler (Primeira Vez)
+
+1. **Instalar Doppler CLI:**
+   ```bash
+   # Windows (PowerShell como Admin)
+   iwr https://cli.doppler.com/install.ps1 | iex
+
+   # macOS/Linux
+   brew install dopplerhq/cli/doppler
+   ```
+
+2. **Autenticar:**
+   ```bash
+   doppler login
+   ```
+
+3. **Configurar projeto:**
+   ```bash
+   cd C:\Users\pedro\OneDrive\Área de Trabalho\ChatBot-Oficial\ChatBot-Oficial
+   doppler setup
+   # Selecionar projeto: chatbot-oficial
+   # Configs disponíveis: dev, stg, prd
+   ```
+
+4. **Verificar variáveis:**
+   ```bash
+   doppler secrets
+   # Deve mostrar todas as variáveis (NEXT_PUBLIC_SUPABASE_URL, etc.)
+   ```
+
+### Vantagens
+
+- ✅ Variáveis centralizadas (sem arquivos `.env` locais)
+- ✅ Rotação automática de secrets
+- ✅ Sincronização entre equipe
+- ✅ Suporte a múltiplos ambientes (dev, stg, prd)
+- ✅ Integração CI/CD fácil
+
+### Desvantagens
+
+- ⚠️ Requer conta Doppler (gratuita para projetos pequenos)
+- ⚠️ Requer CLI instalado localmente
+
+---
+
+## Opção 2: Build-Time Injection com dotenv-cli (Alternativa)
+
+**Quando usar:** Se você **não tem acesso ao Doppler** (ex: desenvolvedor externo, testes locais).
 
 Injetar variáveis durante o build Next.js usando `dotenv-cli`.
 
@@ -186,7 +275,7 @@ export default function Home() {
 
 ---
 
-## Opção 2: Hardcode em capacitor.config.ts
+## Opção 3: Hardcode em capacitor.config.ts
 
 Para variáveis **não-secretas** (ex: `APP_NAME`, `APP_VERSION`).
 
@@ -236,7 +325,7 @@ console.log(config.appId) // 'com.chatbot.app'
 
 ---
 
-## Opção 3: Plugin @capacitor/preferences
+## Opção 4: Plugin @capacitor/preferences
 
 Armazenar variáveis em runtime usando storage nativo.
 
@@ -379,47 +468,37 @@ export const useSupabaseClient = () => {
 
 ---
 
-## 🚀 Plano Futuro: Doppler
+### Alternativa: `.env.mobile` (Fallback Local)
 
-**Status**: Planejado (não implementado ainda)
+Se você **não tem acesso ao Doppler** (ex: desenvolvedor externo, testes locais), pode usar `.env.mobile`:
 
-[Doppler](https://www.doppler.com/) é uma plataforma de gerenciamento de secrets que será integrada no futuro para:
-- Centralizar environment variables (dev, staging, production)
-- Rotacionar secrets automaticamente
-- Sincronizar variáveis entre equipe
-- Eliminar arquivos `.env` locais
-
-### Quando Implementado
-
-**Build CI/CD usará Doppler CLI:**
+**1. Criar arquivo:**
 ```bash
-# Em vez de:
-npm run build:mobile
-
-# Usaremos:
-doppler run -- npm run build:mobile
+cp .env.mobile.example .env.mobile
+# Editar .env.mobile com valores reais
 ```
 
-**Desenvolvedores locais:**
-```bash
-# Doppler injeta variáveis automaticamente
-doppler run -- npm run dev
-doppler run -- npm run build:mobile
+**2. Modificar script temporariamente:**
+```json
+"build:mobile": "dotenv -e .env.mobile -- cross-env CAPACITOR_BUILD=true next build"
 ```
 
-**Sem necessidade de `.env.mobile` local:**
-- Variáveis vêm da nuvem Doppler
-- Diferentes ambientes (dev, staging, prod) isolados
-- Secrets rotacionados centralmente
+**3. Instalar dotenv-cli:**
+```bash
+npm install --save-dev dotenv-cli
+```
 
-### Por Enquanto
+**⚠️ IMPORTANTE:** Não commitar `.env.mobile` (já está no `.gitignore`).
 
-Use a solução **Build-Time Injection com `dotenv-cli`** documentada acima.
+**Quando usar `.env.mobile`:**
+- ✅ Testes locais rápidos
+- ✅ Desenvolvimento offline
+- ✅ Desenvolvedor sem acesso Doppler
 
-**Migração futura será simples:**
-1. Importar `.env.mobile` para Doppler
-2. Atualizar CI/CD para usar `doppler run`
-3. Remover `.env.mobile` do projeto
+**Quando usar Doppler:**
+- ✅ Build CI/CD (GitHub Actions, Vercel)
+- ✅ Deploy produção
+- ✅ Equipe com múltiplos devs
 
 ---
 

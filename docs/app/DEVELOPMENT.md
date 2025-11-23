@@ -74,7 +74,9 @@ npx cap sync
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:mobile": "cross-env CAPACITOR_BUILD=true next build",
+    "build:mobile": "doppler run --config dev -- cross-env CAPACITOR_BUILD=true next build",
+    "build:mobile:stg": "doppler run --config stg -- cross-env CAPACITOR_BUILD=true next build",
+    "build:mobile:prd": "doppler run --config prd -- cross-env CAPACITOR_BUILD=true next build",
     "cap:sync": "npx cap sync",
     "cap:open:android": "npx cap open android",
     "cap:open:ios": "npx cap open ios"
@@ -82,7 +84,10 @@ npx cap sync
 }
 ```
 
-**Nota**: `CAPACITOR_BUILD=true` ativa export estático via `next.config.js`.
+**Notas**:
+- `CAPACITOR_BUILD=true` ativa export estático via `next.config.js`
+- `doppler run --config <env>` injeta environment variables do Doppler
+- Três ambientes disponíveis: `dev`, `stg` (staging), `prd` (produção)
 
 ---
 
