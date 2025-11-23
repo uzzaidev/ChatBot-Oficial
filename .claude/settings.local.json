@@ -42,7 +42,8 @@
       "mcp__ide__getDiagnostics",
       "Bash(echo:*)",
       "Bash(\"C:\\Users\\Luisf\\Documents\\GITHUB\\ChatBot-Oficial\\src\\components\\MessageBubble.tsx\")",
-      "Bash(npx tsx:*)"
+      "Bash(npx tsx:*)",
+      "Bash(npm run build:mobile:*)"
     ],
     "deny": [],
     "ask": []

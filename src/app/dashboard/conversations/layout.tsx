@@ -7,14 +7,12 @@ import { ReactNode } from 'react'
  * Layout específico para páginas de conversas que não usa o sidebar do dashboard.
  * Permite que ConversationPageClient renderize sua própria navegação lateral.
  */
-export default async function ConversationsLayout({
+export default function ConversationsLayout({
   children,
 }: {
   children: ReactNode
 }) {
-  // Garantir autenticação
-  await requireAuth()
-
   // Renderiza apenas o children sem wrapper adicional
+  // Autenticação é feita nas páginas (Client Components)
   return <>{children}</>
 }
