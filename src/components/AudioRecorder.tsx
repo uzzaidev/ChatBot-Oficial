@@ -66,6 +66,7 @@ export const AudioRecorder = ({ phone, clientId, onAudioSent }: AudioRecorderPro
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
           chunksRef.current.push(e.data)
+          console.log(`🎤 [AudioRecorder] Chunk capturado: ${e.data.size} bytes (total: ${chunksRef.current.length} chunks)`)
         }
       }
 
@@ -101,7 +102,9 @@ export const AudioRecorder = ({ phone, clientId, onAudioSent }: AudioRecorderPro
         console.log('📦 [AudioRecorder] Arquivo criado:', {
           name: audioFile.name,
           type: audioFile.type,
-          size: audioFile.size
+          size: audioFile.size,
+          chunks: chunksRef.current.length,
+          totalChunkSize: chunksRef.current.reduce((sum, chunk) => sum + chunk.size, 0)
         })
 
         await uploadAudio(audioFile)
@@ -113,7 +116,9 @@ export const AudioRecorder = ({ phone, clientId, onAudioSent }: AudioRecorderPro
         }
       }
 
-      mediaRecorder.start()
+      // CRITICAL para iOS Safari: timeslice de 100ms garante que dados sejam capturados
+      // Sem isso, iOS só captura no final e pode perder dados
+      mediaRecorder.start(100) // Captura a cada 100ms
       setRecording(true)
     } catch (error) {
       console.error('Erro ao acessar microfone:', error)

@@ -2,6 +2,7 @@
 
 import { X, FileText, Image as ImageIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import Image from 'next/image'
 
 export interface MediaAttachment {
   file: File
@@ -26,10 +27,12 @@ export const MediaPreview = ({ attachments, onRemove }: MediaPreviewProps) => {
         >
           {/* Preview */}
           {attachment.type === 'image' && attachment.preview ? (
-            <img
+            <Image
               src={attachment.preview}
               alt={attachment.file.name}
-              className="w-full h-full object-cover"
+              fill
+              unoptimized
+              className="object-cover"
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center p-2">
