@@ -19,7 +19,6 @@ BEGIN;
 -- ============================================================================
 -- PASSO 1: Criar tabela (SE NÃO EXISTIR)
 -- ============================================================================
--- Criar tabela para armazenar tokens de push
 CREATE TABLE IF NOT EXISTS push_tokens (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -29,29 +28,48 @@ CREATE TABLE IF NOT EXISTS push_tokens (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Índices para performance
+-- ============================================================================
+-- PASSO 2: Criar índices (SE NÃO EXISTIREM)
+-- ============================================================================
+-- Índice para buscar tokens por usuário (performance)
 CREATE INDEX IF NOT EXISTS idx_push_tokens_user_id ON push_tokens(user_id);
+
+-- Índice para buscar por token (performance)
 CREATE INDEX IF NOT EXISTS idx_push_tokens_token ON push_tokens(token);
 
--- RLS (Row Level Security): Permitir usuários lerem apenas seus próprios tokens
+-- ============================================================================
+-- PASSO 3: Habilitar RLS (Row Level Security)
+-- ============================================================================
+-- RLS garante que usuários só vejam seus próprios tokens
 ALTER TABLE push_tokens ENABLE ROW LEVEL SECURITY;
 
--- Policy: Usuários podem ler seus próprios tokens
+-- ============================================================================
+-- PASSO 4: Remover policies antigas (SE EXISTIREM) e criar novas
+-- ============================================================================
+-- Isso garante que não haverá conflito se executar múltiplas vezes
+
+-- Remover policy de SELECT (se existir)
 DROP POLICY IF EXISTS "Users can read own tokens" ON push_tokens;
+
+-- Criar policy de SELECT
 CREATE POLICY "Users can read own tokens"
   ON push_tokens
   FOR SELECT
   USING (auth.uid() = user_id);
 
--- Policy: Usuários podem inserir seus próprios tokens
+-- Remover policy de INSERT (se existir)
 DROP POLICY IF EXISTS "Users can insert own tokens" ON push_tokens;
+
+-- Criar policy de INSERT
 CREATE POLICY "Users can insert own tokens"
   ON push_tokens
   FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
--- Policy: Usuários podem atualizar seus próprios tokens
+-- Remover policy de UPDATE (se existir)
 DROP POLICY IF EXISTS "Users can update own tokens" ON push_tokens;
+
+-- Criar policy de UPDATE
 CREATE POLICY "Users can update own tokens"
   ON push_tokens
   FOR UPDATE
@@ -66,8 +84,26 @@ COMMENT ON COLUMN push_tokens.token IS 'Token FCM (Android) ou APNs (iOS)';
 COMMENT ON COLUMN push_tokens.platform IS 'Plataforma: android ou ios';
 
 -- ============================================================================
--- FIM DO SCRIPT - COMMIT da transação
+-- FIM DO SCRIPT
 -- ============================================================================
 
 COMMIT;
+
+-- ============================================================================
+-- VERIFICAÇÃO (OPCIONAL - Execute separadamente se quiser verificar)
+-- ============================================================================
+-- Descomente as linhas abaixo para verificar se tudo foi criado corretamente:
+-- 
+-- SELECT 
+--   table_name, 
+--   column_name, 
+--   data_type 
+-- FROM information_schema.columns 
+-- WHERE table_name = 'push_tokens';
+-- 
+-- SELECT 
+--   policyname, 
+--   cmd 
+-- FROM pg_policies 
+-- WHERE tablename = 'push_tokens';
 

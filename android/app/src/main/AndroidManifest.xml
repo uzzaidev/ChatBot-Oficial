@@ -30,7 +30,7 @@
                 <data android:scheme="chatbot" />
             </intent-filter>
 
-            <!-- Deep Linking: App Links (https://chat.luisfboff.com) -->
+            <!-- Deep Linking: App Links (https://uzzapp.uzzai.com.br) -->
             <!-- Nota: android:autoVerify="true" requer assetlinks.json no servidor -->
             <!-- Para desenvolvimento, pode testar sem autoVerify -->
             <intent-filter>
@@ -39,7 +39,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:scheme="https"
-                    android:host="chat.luisfboff.com" />
+                    android:host="uzzapp.uzzai.com.br" />
             </intent-filter>
 
         </activity>

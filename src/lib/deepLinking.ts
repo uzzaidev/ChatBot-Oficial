@@ -3,7 +3,7 @@
  * 
  * Permite abrir o app mobile diretamente de URLs:
  * - Custom URL Scheme: chatbot://chat/123
- * - App Links: https://chat.luisfboff.com/chat/123
+ * - App Links: https://uzzapp.uzzai.com.br/chat/123
  */
 
 'use client'
@@ -56,7 +56,7 @@ const handleDeepLink = (url: string) => {
     console.log('[Deep Linking] Processando URL:', url)
 
     // Parse URL
-    // Pode ser: chatbot://chat/123 ou https://chat.luisfboff.com/chat/123
+    // Pode ser: chatbot://chat/123 ou https://uzzapp.uzzai.com.br/chat/123
     const urlObj = new URL(url)
     const path = urlObj.pathname
 

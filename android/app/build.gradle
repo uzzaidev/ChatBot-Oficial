@@ -42,8 +42,12 @@ dependencies {
     implementation project(':capacitor-cordova-android-plugins')
     
     // Push Notifications: Firebase Cloud Messaging
-    // Nota: google-services.json deve estar em android/app/ para funcionar
-    implementation 'com.google.firebase:firebase-messaging:23.4.0'
+    // Importar Firebase BoM (Bill of Materials) para gerenciar versões automaticamente
+    implementation platform('com.google.firebase:firebase-bom:34.6.0')
+    
+    // Firebase Cloud Messaging (Push Notifications)
+    // Nota: Não especificar versão quando usar BoM
+    implementation 'com.google.firebase:firebase-messaging'
 }
 
 apply from: 'capacitor.build.gradle'
