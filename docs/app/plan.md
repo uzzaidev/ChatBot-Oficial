@@ -9,11 +9,12 @@
 - [x] Verify successful build (`npm run build:mobile`)
 
 ## 🧪 Phase 2: Verification & Polish (Current)
-- [ ] **Verify on Simulator/Device**
-    - Run `npx cap open android` and test on emulator
-    - Run `npx cap open ios` (if on Mac)
-    - Test login flow
-    - Test chat functionality
+- [x] **Verify on Simulator/Device** ✅
+    - [x] Run `npx cap open android` and test on emulator
+    - [x] Android Studio configurado e funcionando
+    - [x] App rodando no emulador com sucesso
+    - [ ] Test login flow
+    - [ ] Test chat functionality
 - [x] **App Icons & Splash Screens** ✅
     - [x] Install `@capacitor/assets` (v3.0.5)
     - [ ] Generate/update assets for Android/iOS (assets existem, mas podem precisar atualização)
