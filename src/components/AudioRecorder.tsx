@@ -66,7 +66,6 @@ export const AudioRecorder = ({ phone, clientId, onAudioSent }: AudioRecorderPro
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
           chunksRef.current.push(e.data)
-          console.log(`🎤 [AudioRecorder] Chunk capturado: ${e.data.size} bytes (total: ${chunksRef.current.length} chunks)`)
         }
       }
 
@@ -98,14 +97,6 @@ export const AudioRecorder = ({ phone, clientId, onAudioSent }: AudioRecorderPro
           `audio_${Date.now()}.${extension}`,
           { type: actualMimeType }  // ✅ Usar tipo original do blob
         )
-
-        console.log('📦 [AudioRecorder] Arquivo criado:', {
-          name: audioFile.name,
-          type: audioFile.type,
-          size: audioFile.size,
-          chunks: chunksRef.current.length,
-          totalChunkSize: chunksRef.current.reduce((sum, chunk) => sum + chunk.size, 0)
-        })
 
         await uploadAudio(audioFile)
 
