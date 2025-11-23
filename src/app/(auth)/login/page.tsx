@@ -3,7 +3,7 @@
 import { useState, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { signInWithEmail } from '@/lib/supabase-browser'
+import { signInWithEmail, createBrowserClient } from '@/lib/supabase-browser'
 
 /**
  * Página de Login - Supabase Auth
@@ -61,13 +61,23 @@ export default function LoginPage() {
         return
       }
 
+      // Verificar se usuário tem profile com client_id (mobile-compatible)
+      // No mobile, não podemos usar API routes, então verificamos diretamente via Supabase
+      const supabase = createBrowserClient()
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('client_id, is_active')
+        .eq('id', data.user.id)
+        .single()
 
-      // Verificar se usuário tem profile com client_id
-      const profileResponse = await fetch('/api/auth/verify-profile')
-      const profileData = await profileResponse.json()
-
-      if (!profileData.success) {
+      if (profileError || !profile?.client_id) {
         setError('Usuário sem perfil configurado. Contate o administrador.')
+        setLoading(false)
+        return
+      }
+
+      if (profile.is_active === false) {
+        setError('Conta desativada. Contate o administrador.')
         setLoading(false)
         return
       }
