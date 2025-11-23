@@ -334,8 +334,7 @@ Sistema funcionando 100% em n8n (antes da migração Next.js).
 ## Roadmap - Phase 5 (Futuro) 📋
 
 ### Planejado
-- [ ] Sistema de filas para processamento assíncrono
-- [ ] Webhooks customizados por cliente
+- [ ] Sistema de filas avançado (BullMQ com dashboard e DLQ)
 - [ ] Integração com CRMs (Pipedrive, HubSpot)
 - [ ] Análise de sentimento em mensagens
 - [ ] Dashboard de logs de execução
@@ -344,6 +343,10 @@ Sistema funcionando 100% em n8n (antes da migração Next.js).
 - [ ] Monitoramento de uptime e SLA
 - [ ] Melhorias de UI/UX no dashboard
 - [ ] Suporte a WhatsApp Business oficial (não Cloud API)
+
+### Concluído
+- [✅] Webhooks customizados por cliente (implementado em v1.4.0)
+- [✅] Sistema de filas para processamento assíncrono (Redis batching implementado em v2.0.0)
 
 ---
 
