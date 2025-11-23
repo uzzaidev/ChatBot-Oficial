@@ -32,6 +32,7 @@ export const SendMessageForm = ({
 }: SendMessageFormProps) => {
   const [content, setContent] = useState('')
   const [sending, setSending] = useState(false)
+  const [isRecording, setIsRecording] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Auto-expand textarea like WhatsApp
@@ -151,12 +152,14 @@ export const SendMessageForm = ({
       />
 
       <div className="flex items-end gap-2 bg-white rounded-lg p-2">
-        {/* Botão de anexar mídia (+) */}
-        <MediaUploadButton
-          onFileSelect={onAddAttachment}
-        />
+        {/* Botão de anexar mídia (+) - esconde quando gravando */}
+        <div className={isRecording ? 'hidden' : ''}>
+          <MediaUploadButton
+            onFileSelect={onAddAttachment}
+          />
+        </div>
 
-        {/* Textarea de mensagem */}
+        {/* Textarea de mensagem - esconde quando gravando */}
         <textarea
           ref={textareaRef}
           placeholder="Digite sua mensagem..."
@@ -164,7 +167,7 @@ export const SendMessageForm = ({
           onChange={(e) => setContent(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={sending}
-          className="flex-1 resize-none border-0 bg-white px-3 py-2 text-sm md:text-base focus:outline-none focus:ring-0 rounded-lg max-h-[120px] min-h-[40px]"
+          className={`flex-1 resize-none border-0 bg-white px-3 py-2 text-sm md:text-base focus:outline-none focus:ring-0 rounded-lg max-h-[120px] min-h-[40px] ${isRecording ? 'hidden' : ''}`}
           rows={1}
         />
 
@@ -184,6 +187,7 @@ export const SendMessageForm = ({
             phone={phone}
             clientId={clientId}
             onAudioSent={onMessageSent}
+            onRecordingChange={setIsRecording}
           />
         )}
       </div>

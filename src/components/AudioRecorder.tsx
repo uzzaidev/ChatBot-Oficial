@@ -10,6 +10,7 @@ interface AudioRecorderProps {
   phone: string
   clientId: string
   onAudioSent?: () => void
+  onRecordingChange?: (isRecording: boolean) => void
 }
 
 interface RecordedAudio {
@@ -18,7 +19,7 @@ interface RecordedAudio {
   file: File
 }
 
-export const AudioRecorder = ({ phone, clientId, onAudioSent }: AudioRecorderProps) => {
+export const AudioRecorder = ({ phone, clientId, onAudioSent, onRecordingChange }: AudioRecorderProps) => {
   const [recording, setRecording] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [recordedAudio, setRecordedAudio] = useState<RecordedAudio | null>(null)
@@ -125,6 +126,7 @@ export const AudioRecorder = ({ phone, clientId, onAudioSent }: AudioRecorderPro
       // Sem isso, iOS só captura no final e pode perder dados
       mediaRecorder.start(100) // Captura a cada 100ms
       setRecording(true)
+      onRecordingChange?.(true)
     } catch (error) {
       console.error('Erro ao acessar microfone:', error)
 
@@ -153,6 +155,7 @@ export const AudioRecorder = ({ phone, clientId, onAudioSent }: AudioRecorderPro
     if (mediaRecorderRef.current && recording) {
       mediaRecorderRef.current.stop()
       setRecording(false)
+      onRecordingChange?.(false)
     }
   }
 
@@ -294,7 +297,7 @@ export const AudioRecorder = ({ phone, clientId, onAudioSent }: AudioRecorderPro
   // Se está gravando, mostra visualizer
   if (recording) {
     return (
-      <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-2">
+      <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-2 flex-1 min-w-0 overflow-hidden">
         {/* Visualizador de ondas sonoras */}
         <AudioVisualizer stream={streamRef.current} recording={recording} />
 

@@ -41,7 +41,8 @@
       "Bash(node clean-console-logs.mjs:*)",
       "mcp__ide__getDiagnostics",
       "Bash(echo:*)",
-      "Bash(\"C:\\Users\\Luisf\\Documents\\GITHUB\\ChatBot-Oficial\\src\\components\\MessageBubble.tsx\")"
+      "Bash(\"C:\\Users\\Luisf\\Documents\\GITHUB\\ChatBot-Oficial\\src\\components\\MessageBubble.tsx\")",
+      "Bash(npx tsx:*)"
     ],
     "deny": [],
     "ask": []

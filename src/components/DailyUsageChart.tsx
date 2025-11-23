@@ -19,29 +19,52 @@ interface DailyUsageChartProps {
 }
 
 export function DailyUsageChart({ data, days = 30 }: DailyUsageChartProps) {
+  console.log('[DailyUsageChart] Raw data received:', data.length, 'rows')
+
+  // Sort data by date first (ascending)
+  const sortedData = [...data].sort((a, b) =>
+    new Date(a.date).getTime() - new Date(b.date).getTime()
+  )
+
+  console.log('[DailyUsageChart] Date range:', {
+    oldest: sortedData[0]?.date,
+    newest: sortedData[sortedData.length - 1]?.date
+  })
+
   // Group data by date and aggregate by source
-  const groupedData = data.reduce((acc: Record<string, any>, item) => {
-    const date = new Date(item.date).toLocaleDateString('pt-BR', {
+  const groupedData = sortedData.reduce((acc: Record<string, any>, item) => {
+    const dateObj = new Date(item.date)
+    const dateKey = dateObj.toISOString().split('T')[0] // YYYY-MM-DD for unique key
+    const dateLabel = dateObj.toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: 'short',
     })
-    
-    if (!acc[date]) {
-      acc[date] = { date, OpenAI: 0, Groq: 0, Total: 0 }
+
+    if (!acc[dateKey]) {
+      acc[dateKey] = { date: dateLabel, timestamp: dateObj.getTime(), OpenAI: 0, Groq: 0, Total: 0 }
     }
-    
+
     const tokens = Number(item.total_tokens || 0)
     if (item.source === 'openai') {
-      acc[date].OpenAI += tokens
+      acc[dateKey].OpenAI += tokens
     } else if (item.source === 'groq') {
-      acc[date].Groq += tokens
+      acc[dateKey].Groq += tokens
     }
-    acc[date].Total += tokens
-    
+    acc[dateKey].Total += tokens
+
     return acc
   }, {})
 
-  const chartData = Object.values(groupedData).reverse().slice(0, days)
+  // Convert to array, sort by timestamp descending, take last N days
+  const chartData = Object.values(groupedData)
+    .sort((a: any, b: any) => b.timestamp - a.timestamp)
+    .slice(0, days)
+    .reverse() // Reverse to show oldest first (left to right)
+
+  console.log('[DailyUsageChart] Final chartData:', chartData.map(d => ({
+    date: d.date,
+    total: d.Total
+  })))
 
   return (
     <Card>

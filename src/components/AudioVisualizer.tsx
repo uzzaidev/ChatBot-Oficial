@@ -128,10 +128,10 @@ export const AudioVisualizer = ({ stream, recording }: AudioVisualizerProps) => 
   return (
     <canvas
       ref={canvasRef}
-      width={200}
+      width={250}
       height={40}
-      className="rounded"
-      style={{ width: '200px', height: '40px' }}
+      className="rounded flex-1 min-w-0"
+      style={{ maxWidth: '250px', height: '40px' }}
     />
   )
 }
