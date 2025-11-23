@@ -43,7 +43,9 @@
       "Bash(echo:*)",
       "Bash(\"C:\\Users\\Luisf\\Documents\\GITHUB\\ChatBot-Oficial\\src\\components\\MessageBubble.tsx\")",
       "Bash(npx tsx:*)",
-      "Bash(npm run build:mobile:*)"
+      "Bash(npm run build:mobile:*)",
+      "Bash(npx cap sync:*)",
+      "Bash(findstr:*)"
     ],
     "deny": [],
     "ask": []

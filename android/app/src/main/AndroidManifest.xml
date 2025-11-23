@@ -22,6 +22,26 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Deep Linking: Custom URL Scheme (chatbot://) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="chatbot" />
+            </intent-filter>
+
+            <!-- Deep Linking: App Links (https://chat.luisfboff.com) -->
+            <!-- Nota: android:autoVerify="true" requer assetlinks.json no servidor -->
+            <!-- Para desenvolvimento, pode testar sem autoVerify -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="chat.luisfboff.com" />
+            </intent-filter>
+
         </activity>
 
         <provider
@@ -38,4 +58,6 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Push Notifications: Android 13+ requer permissão explícita -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>

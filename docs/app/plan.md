@@ -23,14 +23,32 @@
     - [x] Scripts updated for dev/stg/prd environments
     - [x] Ensure Supabase keys are correctly loaded
 
-## 🚀 Phase 3: Native Features
-- [ ] **Push Notifications**
-    - Integrate `@capacitor/push-notifications`
-    - Configure Firebase (Android) and APNs (iOS)
-- [ ] **Deep Linking**
-    - Configure App Links / Universal Links
-    - Handle deep links in `App.tsx` or `layout.tsx`
-- [ ] **Biometric Auth** (Optional)
+## 🚀 Phase 3: Native Features (Modular)
+- [ ] **3.1: Melhorar Assets (Ícones/Splash)** 🔄
+    - [ ] Preparar arquivos source (`icon.png`, `splash.png`) - **AGUARDANDO IMAGENS DO USUÁRIO**
+    - [ ] Gerar assets com `@capacitor/assets`
+    - [ ] Testar no emulador/device
+- [x] **3.2: Deep Linking** ✅
+    - [x] Código implementado (`src/lib/deepLinking.ts`)
+    - [x] Provider criado (`src/components/DeepLinkingProvider.tsx`)
+    - [x] AndroidManifest configurado (intent-filters)
+    - [x] Integrado no layout
+    - [x] Plugin `@capacitor/app` instalado
+    - [x] Build testado e funcionando
+    - [x] ADB configurado
+    - [x] **Testado e funcionando** ✅
+- [ ] **3.3: Push Notifications** 🔄
+    - [x] Plugin instalado (`@capacitor/push-notifications`)
+    - [x] Código implementado (`src/lib/pushNotifications.ts`)
+    - [x] Provider criado (`src/components/PushNotificationsProvider.tsx`)
+    - [x] Integrado no layout
+    - [x] Permissões Android configuradas (`POST_NOTIFICATIONS`)
+    - [x] Dependências Gradle configuradas (`firebase-messaging`)
+    - [x] Script SQL criado (`scripts/create-push-tokens-table.sql`)
+    - [ ] **Configurar Firebase** (criar projeto, baixar `google-services.json`)
+    - [ ] **Criar tabela no Supabase** (executar `create-push-tokens-table.sql`)
+    - [ ] **Testar no device físico**
+- [ ] **3.4: Biometric Auth** (Optional)
     - Implement FaceID/TouchID login
 
 ## 🔄 Long-term: Re-integration
