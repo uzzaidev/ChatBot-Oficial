@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { ConversationDetail } from '@/components/ConversationDetail'
 import { SendMessageForm } from '@/components/SendMessageForm'
 import { StatusToggle } from '@/components/StatusToggle'
+import { DragDropZone } from '@/components/DragDropZone'
 import { useConversations } from '@/hooks/useConversations'
 import { useGlobalRealtimeNotifications } from '@/hooks/useGlobalRealtimeNotifications'
 import { ConversationList } from '@/components/ConversationList'
@@ -14,6 +15,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getInitials } from '@/lib/utils'
 import { MessageCircle, LayoutDashboard, Menu, Bot, User, ArrowRight, List } from 'lucide-react'
 import Link from 'next/link'
+import type { MediaAttachment } from '@/components/MediaPreview'
 
 interface ConversationPageClientProps {
   phone: string
@@ -30,12 +32,43 @@ interface ConversationPageClientProps {
 export function ConversationPageClient({ phone, clientId }: ConversationPageClientProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [statusFilter, setStatusFilter] = useState<'all' | 'bot' | 'humano' | 'transferido'>('all')
+  const [attachments, setAttachments] = useState<MediaAttachment[]>([])
 
   const { conversations, loading, lastUpdatePhone: pollingLastUpdate } = useConversations({
     clientId,
     status: statusFilter === 'all' ? undefined : statusFilter,
     enableRealtime: true,
   })
+
+  // Gerenciar anexos de mídia
+  const handleAddAttachment = useCallback((file: File, type: 'image' | 'document') => {
+    const attachment: MediaAttachment = {
+      file,
+      type,
+    }
+
+    // Gerar preview para imagens
+    if (type === 'image') {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setAttachments(prev => [...prev, {
+          ...attachment,
+          preview: e.target?.result as string
+        }])
+      }
+      reader.readAsDataURL(file)
+    } else {
+      setAttachments(prev => [...prev, attachment])
+    }
+  }, [])
+
+  const handleRemoveAttachment = useCallback((index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index))
+  }, [])
+
+  const handleClearAttachments = useCallback(() => {
+    setAttachments([])
+  }, [])
 
   // Hook global para notificações em tempo real
   const { lastUpdatePhone: realtimeLastUpdate } = useGlobalRealtimeNotifications()
@@ -170,13 +203,15 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
               </div>
             </div>
 
-            {/* Área de Mensagens */}
+            {/* Área de Mensagens com Drag & Drop */}
             <div className="flex-1 overflow-hidden bg-silver-50 relative">
-              <ConversationDetail
-                phone={phone}
-                clientId={clientId}
-                conversationName={conversation.name || undefined}
-              />
+              <DragDropZone onFileSelect={handleAddAttachment}>
+                <ConversationDetail
+                  phone={phone}
+                  clientId={clientId}
+                  conversationName={conversation.name || undefined}
+                />
+              </DragDropZone>
             </div>
 
             {/* Footer - Input de Mensagem */}
@@ -184,6 +219,10 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
               <SendMessageForm
                 phone={phone}
                 clientId={clientId}
+                attachments={attachments}
+                onAddAttachment={handleAddAttachment}
+                onRemoveAttachment={handleRemoveAttachment}
+                onClearAttachments={handleClearAttachments}
               />
             </div>
           </>
