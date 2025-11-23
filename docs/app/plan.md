@@ -17,17 +17,18 @@
     - [x] Test chat functionality ✅ (corrigido erro de API route)
 - [x] **App Icons & Splash Screens** ✅
     - [x] Install `@capacitor/assets` (v3.0.5)
-    - [ ] Generate/update assets for Android/iOS (assets existem, mas podem precisar atualização)
+    - [x] Generate/update assets for Android/iOS ✅ (87 assets gerados automaticamente)
 - [x] **Environment Variables** ✅
     - [x] Doppler integrated and configured
     - [x] Scripts updated for dev/stg/prd environments
     - [x] Ensure Supabase keys are correctly loaded
 
 ## 🚀 Phase 3: Native Features (Modular)
-- [ ] **3.1: Melhorar Assets (Ícones/Splash)** 🔄
-    - [ ] Preparar arquivos source (`icon.png`, `splash.png`) - **AGUARDANDO IMAGENS DO USUÁRIO**
-    - [ ] Gerar assets com `@capacitor/assets`
-    - [ ] Testar no emulador/device
+- [x] **3.1: Melhorar Assets (Ícones/Splash)** ✅
+    - [x] Preparar arquivos source (`icon.png`, `splash.png`) - **IMAGENS ORGANIZADAS EM `assets/`**
+    - [x] Gerar assets com `@capacitor/assets` (87 assets gerados)
+    - [x] Sync com Capacitor
+    - [ ] Testar no emulador/device (próximo passo: rebuild e testar)
 - [x] **3.2: Deep Linking** ✅
     - [x] Código implementado (`src/lib/deepLinking.ts`)
     - [x] Provider criado (`src/components/DeepLinkingProvider.tsx`)
