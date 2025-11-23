@@ -4,8 +4,12 @@ import { getClientConfig } from '@/lib/config'
 import { uploadFileToStorage } from '@/lib/storage'
 import { sendWhatsAppImage, sendWhatsAppAudio, sendWhatsAppDocument } from '@/nodes'
 import { saveChatMessage } from '@/nodes/saveChatMessage'
+import { convertAudioToWhatsAppFormat } from '@/lib/audio-converter'
 
 export const dynamic = 'force-dynamic'
+
+// Configurações para suportar conversão de áudio
+export const maxDuration = 30 // 30 segundos para conversão de áudio
 
 /**
  * POST /api/commands/send-media
@@ -68,13 +72,41 @@ export async function POST(request: NextRequest) {
 
     // Converter File para Buffer
     const arrayBuffer = await file.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
+    let buffer = Buffer.from(arrayBuffer)
+    let fileName = file.name
+    let mimeType = file.type
+
+    // Se for áudio, converter para OGG/Opus (formato mais compatível com WhatsApp)
+    if (mediaType === 'audio') {
+      console.log('🔄 [SEND-MEDIA API] Convertendo áudio para OGG/Opus...')
+      try {
+        const converted = await convertAudioToWhatsAppFormat({
+          inputBuffer: buffer,
+          inputFormat: file.name.split('.').pop(), // Extensão original
+          outputFormat: 'ogg',
+        })
+
+        buffer = Buffer.from(converted.buffer)
+        mimeType = converted.mimeType
+        fileName = file.name.replace(/\.[^.]+$/, `.${converted.extension}`)
+
+        console.log('✅ [SEND-MEDIA API] Áudio convertido com sucesso:', {
+          originalSize: arrayBuffer.byteLength,
+          convertedSize: buffer.length,
+          mimeType,
+          fileName,
+        })
+      } catch (conversionError) {
+        console.error('❌ [SEND-MEDIA API] Erro ao converter áudio:', conversionError)
+        throw new Error('Não foi possível converter o áudio para formato compatível')
+      }
+    }
 
     // Upload para Supabase Storage
     const publicUrl = await uploadFileToStorage(
       buffer,
-      file.name,
-      file.type,
+      fileName,
+      mimeType,
       clientId
     )
 

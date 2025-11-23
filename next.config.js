@@ -19,6 +19,17 @@ const nextConfig = {
       bodySizeLimit: '2mb',
     },
   },
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      // Externalizar pacotes FFmpeg para evitar bundling
+      config.externals = config.externals || []
+      config.externals.push({
+        'fluent-ffmpeg': 'commonjs fluent-ffmpeg',
+        '@ffmpeg-installer/ffmpeg': 'commonjs @ffmpeg-installer/ffmpeg',
+      })
+    }
+    return config
+  },
   // SECURITY FIX (VULN-011): Configure CORS and security headers
   async headers() {
     const isDevelopment = process.env.NODE_ENV === 'development'
