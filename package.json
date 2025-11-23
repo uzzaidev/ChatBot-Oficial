@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:mobile": "cross-env CAPACITOR_BUILD=true next build",
+    "build:mobile": "doppler run --config dev -- cross-env CAPACITOR_BUILD=true next build",
+    "build:mobile:stg": "doppler run --config stg -- cross-env CAPACITOR_BUILD=true next build",
+    "build:mobile:prd": "doppler run --config prd -- cross-env CAPACITOR_BUILD=true next build",
     "start": "next start",
     "lint": "next lint",
     "cap:sync": "npx cap sync",
@@ -69,6 +71,7 @@
     "@types/react-dom": "^18",
     "autoprefixer": "^10.4.21",
     "cross-env": "^10.1.0",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^8",
     "eslint-config-next": "14.2.21",
     "postcss": "^8",

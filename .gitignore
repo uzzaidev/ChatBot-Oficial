@@ -29,6 +29,11 @@ yarn-error.log*
 .env*.local
 .env
 
+# environment variables mobile
+.env.mobile
+.env.mobile.*
+!.env.mobile.example
+
 # vercel
 .vercel
 
