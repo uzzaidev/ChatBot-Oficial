@@ -72,6 +72,10 @@ export default function AnalyticsPage() {
     )
   }
 
-  return <AnalyticsClient clientId={clientId} />
+  return (
+    <div className="container mx-auto p-4 md:p-6 lg:p-8">
+      <AnalyticsClient clientId={clientId} />
+    </div>
+  )
 }
 
