@@ -34,7 +34,7 @@ export const ConversationList = ({
   useEffect(() => {
     if (lastUpdatePhone && lastUpdatePhone !== currentPhone) {
       setUnreadConversations(prev => new Set(prev).add(lastUpdatePhone))
-      
+
       // Add visual pulse animation with cleanup
       setRecentlyUpdated(lastUpdatePhone)
       const timer = setTimeout(() => setRecentlyUpdated(null), 2000)
@@ -64,13 +64,13 @@ export const ConversationList = ({
       newSet.delete(phone)
       return newSet
     })
-    
+
     // Notify parent component if callback provided
     if (onConversationOpen) {
       onConversationOpen(phone)
     }
-    
-    router.push(`/dashboard/conversations/${phone}?client_id=${clientId}`)
+
+    router.push(`/dashboard/chat?phone=${phone}&client_id=${clientId}`)
   }
 
   if (loading) {

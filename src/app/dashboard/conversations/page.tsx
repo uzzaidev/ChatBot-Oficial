@@ -1,23 +1,65 @@
-import { getClientIdFromSession, requireAuth } from '@/lib/supabase-server'
+'use client'
+import { useEffect, useState } from 'react'
 import { ConversationsIndexClient } from '@/components/ConversationsIndexClient'
+import { createClientBrowser } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
 
 /**
- * Conversations Index Page - Server Component
+ * Conversations Index Page - Client Component
  *
- * Página que mostra a lista de conversas sem nenhuma conversa específica aberta.
- * Quando o usuário clica em "Conversas" no dashboard, vem para cá.
+ * FASE 3 (Mobile): Convertido para Client Component
  */
-export default async function ConversationsIndexPage() {
-  // Garantir que usuário está autenticado
-  await requireAuth()
+export default function ConversationsIndexPage() {
+  const [clientId, setClientId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
-  // Obter client_id do usuário autenticado
-  const clientId = await getClientIdFromSession()
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const supabase = createClientBrowser()
+        const { data: { user } } = await supabase.auth.getUser()
 
-  if (!clientId) {
-    throw new Error('Client ID não encontrado. Faça login novamente.')
+        if (!user) {
+          router.push('/login')
+          return
+        }
+
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('client_id')
+          .eq('id', user.id)
+          .single()
+
+        if (profile?.client_id) {
+          setClientId(profile.client_id)
+        } else {
+          const metadataClientId = user.user_metadata?.client_id
+          if (metadataClientId) {
+            setClientId(metadataClientId)
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao verificar autenticação:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    checkAuth()
+  }, [router])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-silver-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mint-500"></div>
+      </div>
+    )
   }
 
+  if (!clientId) {
+    return null
+  }
 
   return <ConversationsIndexClient clientId={clientId} />
 }

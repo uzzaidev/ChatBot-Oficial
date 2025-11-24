@@ -1,28 +1,81 @@
-import { getClientIdFromSession, requireAuth } from '@/lib/supabase-server'
-import { AnalyticsClient } from '@/components/AnalyticsClient'
+'use client'
 
 /**
- * Analytics Page - Server Component
+ * Analytics Page
+ *
+ * /dashboard/analytics
+ *
+ * Client Component (Mobile Compatible)
+ * Motivo: Static Export (Capacitor) não suporta Server Components
  * 
- * Dashboard de uso mostrando:
- * - Gráfico de uso diário
- * - Total de tokens por modelo
- * - Custo total do mês
- * - Comparação OpenAI vs Groq
- * - Evolução semanal
- * - Uso por conversa
+ * Usa o componente AnalyticsClient implementado pelo desenvolvedor sênior
  */
-export default async function AnalyticsPage() {
-  // Garantir que usuário está autenticado
-  await requireAuth()
 
-  // Obter client_id do usuário autenticado
-  const clientId = await getClientIdFromSession()
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClientBrowser } from '@/lib/supabase'
+import { AnalyticsClient } from '@/components/AnalyticsClient'
 
-  if (!clientId) {
-    throw new Error('Client ID não encontrado. Faça login novamente.')
+export default function AnalyticsPage() {
+  const [loading, setLoading] = useState(true)
+  const [clientId, setClientId] = useState<string | null>(null)
+  const router = useRouter()
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const supabase = createClientBrowser()
+
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+          router.push('/login')
+          return
+        }
+
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('client_id')
+          .eq('id', user.id)
+          .single()
+
+        if (profile?.client_id) {
+          setClientId(profile.client_id)
+        } else {
+          console.error('[AnalyticsPage] Client ID não encontrado')
+        }
+      } catch (error) {
+        console.error('[AnalyticsPage] Erro ao verificar autenticação:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    checkAuth()
+  }, [router])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-silver-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mint-500"></div>
+      </div>
+    )
   }
 
+  if (!clientId) {
+    return (
+      <div className="container mx-auto p-6 max-w-5xl">
+        <div className="text-center py-8">
+          <p className="text-destructive">Não foi possível carregar analytics. Verifique se você está autenticado.</p>
+        </div>
+      </div>
+    )
+  }
 
-  return <AnalyticsClient clientId={clientId} />
+  return (
+    <div className="container mx-auto p-4 md:p-6 lg:p-8">
+      <AnalyticsClient clientId={clientId} />
+    </div>
+  )
 }
+

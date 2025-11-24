@@ -1,34 +1,44 @@
-import { getCurrentUser } from '@/lib/supabase-server'
+'use client'
+import { useEffect, useState } from 'react'
 import { AuthMonitor } from '@/components/AuthMonitor'
 import { DashboardLayoutClient } from '@/components/DashboardLayoutClient'
+import { createClientBrowser } from '@/lib/supabase'
 
 /**
- * Dashboard Layout - Server Component
+ * Dashboard Layout - Client Component (Mobile Compatible)
  *
- * FASE 3: Agora mostra informações do usuário autenticado
- *
- * Features:
- * - Busca dados do usuário autenticado
- * - Mostra nome/email do usuário
- * - Botão de logout
- * - Responsivo com sidebar colapsável (desktop) e menu mobile
+ * FASE 3 (Mobile): Convertido para Client Component
+ * Motivo: Static Export não suporta Server Components com cookies (getCurrentUser)
  */
-export default async function DashboardLayout({
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  // Buscar usuário autenticado (middleware já validou)
-  const user = await getCurrentUser()
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
-  // Extrair nome do user_metadata ou usar email
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const supabase = createClientBrowser()
+        const { data: { user } } = await supabase.auth.getUser()
+        setUser(user)
+      } catch (error) {
+        console.error('Erro ao buscar usuário:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchUser()
+  }, [])
+
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuário'
 
   return (
     <>
-      {/* Monitor de autenticação - redireciona para login se token expirar */}
       <AuthMonitor />
-      
       <DashboardLayoutClient userName={userName} userEmail={user?.email}>
         {children}
       </DashboardLayoutClient>

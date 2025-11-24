@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 // import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
+import { DeepLinkingProvider } from '@/components/DeepLinkingProvider'
+import { PushNotificationsProvider } from '@/components/PushNotificationsProvider'
 
 // const inter = Inter({ subsets: ['latin'] })
 
@@ -29,7 +31,11 @@ export default function RootLayout({
         {/* If you prefer an ICO file, place it at /public/favicon.ico and the browser will pick it up */}
       </head>
       <body>
-        {children}
+        <DeepLinkingProvider>
+          <PushNotificationsProvider>
+            {children}
+          </PushNotificationsProvider>
+        </DeepLinkingProvider>
         <Toaster />
       </body>
     </html>

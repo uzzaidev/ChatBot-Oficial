@@ -1,31 +1,78 @@
-import { getClientIdFromSession, requireAuth } from '@/lib/supabase-server'
+'use client'
+import { useEffect, useState } from 'react'
 import { DashboardClient } from '@/components/DashboardClient'
+import { createClientBrowser } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
 
 /**
- * Dashboard Page - Server Component
+ * Dashboard Page - Client Component (Mobile Compatible)
  *
- * FASE 3: Agora usa autenticação!
+ * FASE 3 (Mobile): Convertido para Client Component
+ * Motivo: Static Export (Capacitor) não suporta Server Components com async/await
  *
  * Features:
- * - Requer autenticação (middleware + requireAuth)
- * - Obtém client_id do usuário logado (não mais hardcoded)
- * - Passa client_id para componente client
- *
- * Middleware já validou autenticação, mas fazemos double-check
+ * - Autenticação via Client Side (createClientBrowser)
+ * - Redirecionamento se não autenticado
+ * - Loading state enquanto verifica sessão
  */
-export default async function DashboardPage() {
-  // Garantir que usuário está autenticado (double-check após middleware)
-  await requireAuth()
+export default function DashboardPage() {
+  const [clientId, setClientId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
-  // Obter client_id do usuário autenticado
-  const clientId = await getClientIdFromSession()
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const supabase = createClientBrowser()
 
-  if (!clientId) {
-    // Teoricamente impossível chegar aqui (middleware já validou)
-    // mas mantemos por segurança
-    throw new Error('Client ID não encontrado. Faça login novamente.')
+        // 1. Verificar usuário
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+          router.push('/login')
+          return
+        }
+
+        // 2. Buscar client_id do profile
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('client_id')
+          .eq('id', user.id)
+          .single()
+
+        if (profile?.client_id) {
+          setClientId(profile.client_id)
+        } else {
+          // Fallback: tentar pegar do metadata ou erro
+          const metadataClientId = user.user_metadata?.client_id
+          if (metadataClientId) {
+            setClientId(metadataClientId)
+          } else {
+            console.error('Client ID não encontrado')
+            // Opcional: mostrar erro ou redirect
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao verificar autenticação:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    checkAuth()
+  }, [router])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-silver-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mint-500"></div>
+      </div>
+    )
   }
 
+  if (!clientId) {
+    return null // Ou componente de erro
+  }
 
   return <DashboardClient clientId={clientId} />
 }

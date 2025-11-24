@@ -1,6 +1,10 @@
 /** @type {import('next').NextConfig} */
+const isMobileBuild = process.env.CAPACITOR_BUILD === 'true'
+
 const nextConfig = {
+  output: isMobileBuild ? 'export' : undefined,
   images: {
+    unoptimized: isMobileBuild,
     remotePatterns: [
       {
         protocol: 'https',

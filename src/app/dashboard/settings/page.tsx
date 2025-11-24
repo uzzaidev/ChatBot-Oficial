@@ -1,5 +1,22 @@
 'use client'
 
+/**
+ * Settings Page
+ *
+ * /dashboard/settings
+ *
+ * Client Component (Mobile Compatible)
+ * Motivo: Static Export (Capacitor) não suporta Server Components
+ * 
+ * Implementação completa do Settings com:
+ * 1. Perfil do Usuário - visualizar/editar nome, email, telefone, alterar senha
+ * 2. Variáveis de Ambiente - gerenciar credenciais do Vault (Meta, OpenAI, Groq)
+ * 3. Bot Configurations - gerenciar configurações modulares do bot
+ * 
+ * Baseado na implementação do desenvolvedor sênior
+ * IMPORTANTE: Edição de variáveis requer revalidação de senha
+ */
+
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,17 +33,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import BotConfigurationManager from '@/components/BotConfigurationManager'
-
-/**
- * Settings Page - Configurações do Usuário
- *
- * Seções:
- * 1. Perfil do Usuário - visualizar/editar nome, email, telefone, alterar senha
- * 2. Variáveis de Ambiente - gerenciar credenciais do Vault (Meta, OpenAI, Groq)
- * 3. Bot Configurations - gerenciar configurações modulares do bot
- *
- * IMPORTANTE: Edição de variáveis requer revalidação de senha
- */
 export default function SettingsPage() {
   // Estado do perfil
   const [profile, setProfile] = useState({

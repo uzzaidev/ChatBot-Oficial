@@ -1,5 +1,17 @@
 'use client'
 
+/**
+ * Backend Monitor Page
+ *
+ * /dashboard/backend
+ *
+ * Client Component (Mobile Compatible)
+ * Motivo: Static Export (Capacitor) não suporta Server Components
+ * 
+ * Implementação completa do Backend Monitor com terminal-style interface
+ * Baseado na implementação do desenvolvedor sênior
+ */
+
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -34,7 +46,7 @@ interface Execution {
 
 type StatusFilterType = 'all' | 'message' | 'sent' | 'delivered' | 'read' | 'failed'
 
-export default function BackendMonitorPage() {
+export default function BackendPage() {
   const [executions, setExecutions] = useState<Execution[]>([])
   const [selectedExecution, setSelectedExecution] = useState<string | null>(null)
   const [autoRefresh, setAutoRefresh] = useState(true)
@@ -42,12 +54,11 @@ export default function BackendMonitorPage() {
   const [autoScroll, setAutoScroll] = useState(true)
   const [statusFilter, setStatusFilter] = useState<StatusFilterType>('all')
   const [phoneFilter, setPhoneFilter] = useState<string>('')
-  const supabase = createBrowserClient() // ⚡ Para autenticação multi-tenant
+  const supabase = createBrowserClient()
 
   // Função para buscar logs - sempre busca os últimos 500 logs do Supabase
   const fetchLogs = useCallback(async () => {
     try {
-      // ⚡ MULTI-TENANT: Obter token de autenticação para RLS
       const { data: { session } } = await supabase.auth.getSession()
 
       if (!session) {
@@ -55,21 +66,17 @@ export default function BackendMonitorPage() {
         return
       }
 
-      // Sempre busca os últimos 500 logs, sem filtro 'since'
-      // Isso garante que após refresh da página, todos os logs apareçam
       const url = '/api/backend/stream?limit=500'
 
       const response = await fetch(url, {
         headers: {
-          'Authorization': `Bearer ${session.access_token}`, // ⚡ RLS ativo
+          'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json'
         }
       })
       const data = await response.json()
 
       if (data.success && data.executions) {
-        // Substitui completamente as execuções ao invés de fazer merge
-        // Isso garante que sempre mostramos o estado atual do banco
         const sortedExecutions = data.executions.sort(
           (a: Execution, b: Execution) => 
             new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
@@ -77,7 +84,6 @@ export default function BackendMonitorPage() {
         
         setExecutions(sortedExecutions)
         
-        // Auto-select first execution if none selected
         if (!selectedExecution && sortedExecutions.length > 0) {
           setSelectedExecution(sortedExecutions[0].execution_id)
         }
@@ -92,7 +98,7 @@ export default function BackendMonitorPage() {
     fetchLogs()
     
     if (autoRefresh) {
-      const interval = setInterval(fetchLogs, 2000) // Poll every 2 seconds
+      const interval = setInterval(fetchLogs, 2000)
       return () => clearInterval(interval)
     }
   }, [autoRefresh, fetchLogs])
@@ -138,54 +144,39 @@ export default function BackendMonitorPage() {
     return JSON.stringify(data, null, 2)
   }
 
-  // Extrai informação de status do WhatsApp se disponível
   const extractWhatsAppStatus = (log: ExecutionLog): string | null => {
-    // Verifica se tem status no input_data
     const statuses = log.input_data?.entry?.[0]?.changes?.[0]?.value?.statuses
     if (statuses && statuses.length > 0) {
-      const status = statuses[0].status // sent, delivered, read, failed
-      return status
+      return statuses[0].status
     }
     return null
   }
 
-  // Extrai status do WhatsApp de uma execução inteira
   const getExecutionWhatsAppStatus = (execution: Execution): StatusFilterType => {
-    // Procura por status do WhatsApp nos logs
     for (const log of execution.logs) {
       const status = extractWhatsAppStatus(log)
       if (status) {
         return status as StatusFilterType
       }
     }
-    // Se não tem status, é uma mensagem recebida
     return 'message'
   }
 
-  // Filtra execuções baseado no status e telefone selecionados
   const filteredExecutions = executions.filter(exec => {
-    // Filtro de status
     if (statusFilter !== 'all' && getExecutionWhatsAppStatus(exec) !== statusFilter) {
       return false
     }
     
-    // Filtro de telefone/cliente
     if (phoneFilter.trim()) {
       const searchTerm = phoneFilter.trim()
-      
-      // Busca o telefone em vários lugares possíveis
-      // 1. metadata.from (se existir)
       const metadataPhone = exec.metadata?.from || ''
       if (metadataPhone.includes(searchTerm)) {
         return true
       }
       
-      // 2. Busca nos logs (input_data de qualquer node pode conter o telefone)
       const hasPhoneInLogs = exec.logs.some(log => {
-        // Verifica input_data
         const inputData = log.input_data
         if (inputData) {
-          // WhatsApp webhook structure: entry[].changes[].value.messages[].from ou contacts[].wa_id
           const messages = inputData.entry?.[0]?.changes?.[0]?.value?.messages
           const contacts = inputData.entry?.[0]?.changes?.[0]?.value?.contacts
           
@@ -199,7 +190,6 @@ export default function BackendMonitorPage() {
             if (waId.includes(searchTerm)) return true
           }
           
-          // Verifica status updates
           const statuses = inputData.entry?.[0]?.changes?.[0]?.value?.statuses
           if (statuses && statuses.length > 0) {
             const recipientId = statuses[0].recipient_id || ''
@@ -215,39 +205,32 @@ export default function BackendMonitorPage() {
     return true
   })
 
-  // Conta execuções por tipo
   const getStatusCount = (status: StatusFilterType): number => {
     if (status === 'all') return executions.length
     return executions.filter(exec => getExecutionWhatsAppStatus(exec) === status).length
   }
 
-  // Extrai números de telefone únicos de todas as execuções
   const getUniquePhoneNumbers = (): string[] => {
     const phones = new Set<string>()
     
     executions.forEach(exec => {
-      // Busca em metadata
       if (exec.metadata?.from) {
         phones.add(exec.metadata.from)
       }
       
-      // Busca nos logs
       exec.logs.forEach(log => {
         const inputData = log.input_data
         if (inputData) {
-          // Messages
           const messages = inputData.entry?.[0]?.changes?.[0]?.value?.messages
           if (messages && messages.length > 0 && messages[0].from) {
             phones.add(messages[0].from)
           }
           
-          // Contacts
           const contacts = inputData.entry?.[0]?.changes?.[0]?.value?.contacts
           if (contacts && contacts.length > 0 && contacts[0].wa_id) {
             phones.add(contacts[0].wa_id)
           }
           
-          // Status updates
           const statuses = inputData.entry?.[0]?.changes?.[0]?.value?.statuses
           if (statuses && statuses.length > 0 && statuses[0].recipient_id) {
             phones.add(statuses[0].recipient_id)
@@ -268,8 +251,6 @@ export default function BackendMonitorPage() {
       ? <X className="h-3 w-3" /> 
       : <Loader2 className="h-3 w-3 animate-spin" />
     const statusColor = getStatusColor(log.status)
-    
-    // Detecta status update do WhatsApp
     const whatsappStatus = extractWhatsAppStatus(log)
 
     return (
@@ -307,7 +288,6 @@ export default function BackendMonitorPage() {
           </div>
         )}
 
-        {/* Aviso quando output está faltando mas node teve sucesso */}
         {!log.output_data && !log.error && log.status === 'success' && log.node_name !== '_START' && log.node_name !== '_END' && (
           <div className="ml-4 sm:ml-8 mt-1 text-yellow-300 flex items-center gap-1">
             <AlertTriangle className="h-3 w-3 text-gray-400" />
@@ -351,7 +331,7 @@ export default function BackendMonitorPage() {
           >
             <ScrollText className="h-4 w-4" />
             <span className="hidden sm:inline">{autoScroll ? 'Auto-scroll ON' : 'Auto-scroll OFF'}</span>
-            <span className="sm:hidden">{autoScroll ? 'Scroll' : 'Scroll'}</span>
+            <span className="sm:hidden">Scroll</span>
           </Button>
           <Button
             onClick={() => setAutoRefresh(!autoRefresh)}
@@ -406,11 +386,6 @@ export default function BackendMonitorPage() {
                   {phoneFilter && (
                     <p className="text-xs text-muted-foreground mt-1">
                       Mostrando apenas: {phoneFilter} ({filteredExecutions.length} execuções)
-                    </p>
-                  )}
-                  {uniquePhones.length > 0 && !phoneFilter && (
-                    <p className="text-xs text-muted-foreground mt-1 hidden sm:block">
-                      {uniquePhones.length} telefone(s) disponível(is) - comece a digitar ou clique na seta
                     </p>
                   )}
                 </div>
@@ -527,7 +502,6 @@ export default function BackendMonitorPage() {
               <ScrollArea className="h-[300px] lg:h-[600px] xl:h-[700px]">
                 <div className="space-y-2">
                   {filteredExecutions.map((exec) => {
-                    const isStatusUpdate = exec.metadata?.is_status_update
                     const whatsappStatus = getExecutionWhatsAppStatus(exec)
                     
                     return (
