@@ -13,6 +13,7 @@
  */
 
 import { createServerClient as createSupabaseServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import type { Database } from './types'
 
@@ -145,8 +146,8 @@ export const getClientIdFromSession = async (request?: Request): Promise<string 
 
   let supabase
   if (bearerToken) {
-    // Mobile: criar client com Bearer token
-    supabase = createSupabaseServerClient<Database>(
+    // Mobile: criar client padrão com Bearer token
+    supabase = createClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
