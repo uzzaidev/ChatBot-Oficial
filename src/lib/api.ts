@@ -70,19 +70,32 @@ export async function apiFetch(
   const baseUrl = getApiBaseUrl()
   const url = `${baseUrl}${endpoint}`
 
+  console.log('[API] apiFetch chamado:', endpoint)
+  console.log('[API] isMobile:', Capacitor.isNativePlatform())
+  console.log('[API] baseUrl:', baseUrl)
+
   // Mobile: pegar token de autenticação e incluir no header
   let headers = { ...options?.headers } as Record<string, string>
 
   if (Capacitor.isNativePlatform()) {
-    // Importar dinamicamente para evitar erro no servidor
-    const { createBrowserClient } = await import('@/lib/supabase-browser')
-    const supabase = createBrowserClient()
-    const { data: { session } } = await supabase.auth.getSession()
+    console.log('[API] Mobile detectado - buscando token...')
 
-    if (session?.access_token) {
-      headers['Authorization'] = `Bearer ${session.access_token}`
-    } else {
-      console.warn('[API] Nenhuma sessão ativa no mobile - requisição sem autenticação')
+    try {
+      // Importar dinamicamente para evitar erro no servidor
+      const { createBrowserClient } = await import('@/lib/supabase-browser')
+      const supabase = createBrowserClient()
+      const { data: { session } } = await supabase.auth.getSession()
+
+      console.log('[API] Sessão:', session ? 'EXISTE' : 'NÃO EXISTE')
+
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+        console.log('[API] Token adicionado ao header')
+      } else {
+        console.warn('[API] ❌ Nenhuma sessão ativa no mobile - requisição sem autenticação')
+      }
+    } catch (error) {
+      console.error('[API] ❌ Erro ao buscar sessão:', error)
     }
   }
 
@@ -91,6 +104,9 @@ export async function apiFetch(
     headers,
     credentials: Capacitor.isNativePlatform() ? 'omit' : options?.credentials || 'same-origin',
   }
+
+  console.log('[API] Fazendo requisição para:', url)
+  console.log('[API] Headers:', headers)
 
   return fetch(url, fetchOptions)
 }
