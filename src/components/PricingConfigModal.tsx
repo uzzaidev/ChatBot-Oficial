@@ -56,7 +56,8 @@ export function PricingConfigModal({ open, onOpenChange }: PricingConfigModalPro
   const fetchConfigs = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/pricing-config')
+      const { apiFetch } = await import('@/lib/api')
+      const response = await apiFetch('/api/pricing-config')
       const data = await response.json()
 
       if (!response.ok) {
@@ -79,7 +80,8 @@ export function PricingConfigModal({ open, onOpenChange }: PricingConfigModalPro
     try {
       setLoading(true)
 
-      const response = await fetch('/api/pricing-config', {
+      const { apiFetch } = await import('@/lib/api')
+      const response = await apiFetch('/api/pricing-config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -119,7 +121,8 @@ export function PricingConfigModal({ open, onOpenChange }: PricingConfigModalPro
     try {
       setLoading(true)
 
-      const response = await fetch('/api/pricing-config', {
+      const { apiFetch } = await import('@/lib/api')
+      const response = await apiFetch('/api/pricing-config', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ provider, model }),

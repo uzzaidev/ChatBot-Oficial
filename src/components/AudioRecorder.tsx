@@ -204,7 +204,8 @@ export const AudioRecorder = ({ phone, clientId, onAudioSent, onRecordingChange 
 
       console.log('🔄 [AudioRecorder] Chamando API /api/commands/send-media...')
 
-      const response = await fetch('/api/commands/send-media', {
+      const { apiFetch } = await import('@/lib/api')
+      const response = await apiFetch('/api/commands/send-media', {
         method: 'POST',
         body: formData
       })

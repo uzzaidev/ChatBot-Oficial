@@ -23,7 +23,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
 import { processDocumentWithChunking } from '@/nodes/processDocumentWithChunking'
-import { createWorker } from 'tesseract.js'
+import Tesseract from 'tesseract.js'
 
 // pdf-parse uses CommonJS, need to import this way
 const pdfParse = require('pdf-parse')
@@ -106,23 +106,22 @@ export async function POST(request: NextRequest) {
       const pdfData = await pdfParse(buffer)
       text = pdfData.text
     } else if (file.type.startsWith('image/')) {
-      // Image OCR extraction
+      // Image OCR extraction (without workers for serverless compatibility)
       const buffer = Buffer.from(await file.arrayBuffer())
 
-      // Create Tesseract worker
-      const worker = await createWorker('por', 1, {
-        logger: (m) => {
-          if (m.status === 'recognizing text') {
+      // Use Tesseract.recognize directly without workers
+      const { data } = await Tesseract.recognize(
+        buffer,
+        'por',
+        {
+          logger: (m) => {
+            if (m.status === 'recognizing text') {
+              console.log(`OCR Progress: ${Math.round((m.progress || 0) * 100)}%`)
+            }
           }
         }
-      })
-
-      try {
-        const { data } = await worker.recognize(buffer)
-        text = data.text
-      } finally {
-        await worker.terminate()
-      }
+      )
+      text = data.text
     } else {
       // text/plain
       text = await file.text()

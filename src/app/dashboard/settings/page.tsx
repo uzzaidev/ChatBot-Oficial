@@ -115,7 +115,8 @@ export default function SettingsPage() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await fetch('/api/user/profile')
+        const { apiFetch } = await import('@/lib/api')
+        const response = await apiFetch('/api/user/profile')
         const data = await response.json()
 
         if (response.ok) {
@@ -137,7 +138,8 @@ export default function SettingsPage() {
   useEffect(() => {
     const fetchSecrets = async () => {
       try {
-        const response = await fetch('/api/vault/secrets')
+        const { apiFetch } = await import('@/lib/api')
+        const response = await apiFetch('/api/vault/secrets')
         const data = await response.json()
 
         if (response.ok) {
@@ -155,7 +157,8 @@ export default function SettingsPage() {
   useEffect(() => {
     const fetchAgentConfig = async () => {
       try {
-        const response = await fetch('/api/client/config')
+        const { apiFetch } = await import('@/lib/api')
+        const response = await apiFetch('/api/client/config')
         const data = await response.json()
 
         if (response.ok && data.config) {
@@ -191,7 +194,8 @@ export default function SettingsPage() {
     setNotification(null)
 
     try {
-      const response = await fetch('/api/user/profile', {
+      const { apiFetch } = await import('@/lib/api')
+      const response = await apiFetch('/api/user/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ full_name: profile.full_name }),
@@ -230,7 +234,8 @@ export default function SettingsPage() {
     }
 
     try {
-      const response = await fetch('/api/user/password', {
+      const { apiFetch } = await import('@/lib/api')
+      const response = await apiFetch('/api/user/password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -260,7 +265,8 @@ export default function SettingsPage() {
     setNotification(null)
 
     try {
-      const response = await fetch('/api/user/revalidate-password', {
+      const { apiFetch } = await import('@/lib/api')
+      const response = await apiFetch('/api/user/revalidate-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: revalidationPassword }),
@@ -291,7 +297,8 @@ export default function SettingsPage() {
     console.log('[settings] Salvando secret:', { key, valueLength: value?.length })
 
     try {
-      const response = await fetch('/api/vault/secrets', {
+      const { apiFetch } = await import('@/lib/api')
+      const response = await apiFetch('/api/vault/secrets', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key, value }),
@@ -304,7 +311,7 @@ export default function SettingsPage() {
       if (response.ok) {
         setNotification({ type: 'success', message: `${key} atualizado com sucesso!` })
         // Recarregar secrets para mostrar valor atualizado (mascarado)
-        const refreshResponse = await fetch('/api/vault/secrets')
+        const refreshResponse = await apiFetch('/api/vault/secrets')
         const refreshData = await refreshResponse.json()
         if (refreshResponse.ok) {
           setSecrets(refreshData.secrets || {})
@@ -342,7 +349,8 @@ export default function SettingsPage() {
     setNotification(null)
 
     try {
-      const response = await fetch('/api/user/revalidate-password', {
+      const { apiFetch } = await import('@/lib/api')
+      const response = await apiFetch('/api/user/revalidate-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: agentRevalidationPassword }),
@@ -371,7 +379,8 @@ export default function SettingsPage() {
     setNotification(null)
 
     try {
-      const response = await fetch('/api/client/config', {
+      const { apiFetch } = await import('@/lib/api')
+      const response = await apiFetch('/api/client/config', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(agentConfig),
@@ -402,7 +411,8 @@ export default function SettingsPage() {
       const provider = agentConfig.primary_model_provider
       const model = provider === 'openai' ? agentConfig.openai_model : agentConfig.groq_model
 
-      const response = await fetch('/api/client/test-model', {
+      const { apiFetch } = await import('@/lib/api')
+      const response = await apiFetch('/api/client/test-model', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ provider, model }),

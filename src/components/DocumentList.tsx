@@ -56,7 +56,8 @@ export const DocumentList = ({ refreshTrigger }: DocumentListProps) => {
     setError(null)
 
     try {
-      const response = await fetch('/api/documents')
+      const { apiFetch } = await import('@/lib/api')
+      const response = await apiFetch('/api/documents')
       const data = await response.json()
 
       if (!response.ok) {
@@ -92,8 +93,9 @@ export const DocumentList = ({ refreshTrigger }: DocumentListProps) => {
     setIsDeleting(true)
 
     try {
+      const { apiFetch } = await import('@/lib/api')
       const encodedFilename = encodeURIComponent(documentToDelete.filename)
-      const response = await fetch(`/api/documents/${encodedFilename}`, {
+      const response = await apiFetch(`/api/documents/${encodedFilename}`, {
         method: 'DELETE',
       })
 

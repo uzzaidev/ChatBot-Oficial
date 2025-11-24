@@ -26,7 +26,8 @@ export function LogoutButton({ isCollapsed = false }: LogoutButtonProps) {
     try {
       setLoading(true)
 
-      const response = await fetch('/api/auth/logout', {
+      const { apiFetch } = await import('@/lib/api')
+      const response = await apiFetch('/api/auth/logout', {
         method: 'POST',
       })
 

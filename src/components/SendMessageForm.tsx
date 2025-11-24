@@ -61,6 +61,7 @@ export const SendMessageForm = ({
 
       // Enviar anexos primeiro (se houver)
       if (attachments.length > 0) {
+        const { apiFetch } = await import('@/lib/api')
         for (const attachment of attachments) {
           const formData = new FormData()
           formData.append('phone', phone)
@@ -73,7 +74,7 @@ export const SendMessageForm = ({
             formData.append('caption', content.trim())
           }
 
-          const response = await fetch('/api/commands/send-media', {
+          const response = await apiFetch('/api/commands/send-media', {
             method: 'POST',
             body: formData
           })
@@ -90,7 +91,8 @@ export const SendMessageForm = ({
         }
       } else {
         // Sem anexos, envia só mensagem de texto
-        const response = await fetch('/api/commands/send-message', {
+        const { apiFetch } = await import('@/lib/api')
+        const response = await apiFetch('/api/commands/send-message', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

@@ -78,7 +78,8 @@ export const DocumentUpload = ({ onUploadSuccess }: DocumentUploadProps) => {
       formData.append('file', file)
       formData.append('documentType', 'general')
 
-      const response = await fetch('/api/documents/upload', {
+      const { apiFetch } = await import('@/lib/api')
+      const response = await apiFetch('/api/documents/upload', {
         method: 'POST',
         body: formData,
       })

@@ -59,7 +59,8 @@ export default function BotConfigurationManager() {
   const fetchConfigs = useCallback(async () => {
     setLoading(true)
     try {
-      const response = await fetch('/api/config')
+      const { apiFetch } = await import('@/lib/api')
+      const response = await apiFetch('/api/config')
       
       if (!response.ok) {
         const errorText = await response.text()
@@ -112,7 +113,8 @@ export default function BotConfigurationManager() {
 
   const saveConfig = async (configKey: string, category?: string) => {
     try {
-      const response = await fetch('/api/config', {
+      const { apiFetch } = await import('@/lib/api')
+      const response = await apiFetch('/api/config', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

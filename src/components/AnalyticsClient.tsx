@@ -33,7 +33,6 @@ export function AnalyticsClient({ clientId }: AnalyticsClientProps) {
     days,
     type: 'all',
     refreshInterval: 60000, // Refresh every minute
-    clientId, // Pass clientId for mobile compatibility
   })
 
   if (loading && !analytics) {
