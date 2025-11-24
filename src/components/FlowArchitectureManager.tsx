@@ -21,6 +21,7 @@ import {
 import { Save, RefreshCw, AlertCircle, CheckCircle, Maximize2, Settings, Sliders } from 'lucide-react'
 import mermaid from 'mermaid'
 import { FLOW_METADATA, FlowNodeMetadata } from '@/flows/flowMetadata'
+import { apiFetch } from '@/lib/api'
 
 // Alias FlowNodeMetadata as FlowNode for compatibility
 type FlowNode = FlowNodeMetadata
@@ -98,7 +99,7 @@ export default function FlowArchitectureManager() {
         // Fetch enabled state for all nodes
         const promises = FLOW_METADATA.map(async (node) => {
           try {
-            const response = await fetch(`/api/flow/nodes/${node.id}`)
+            const response = await apiFetch(`/api/flow/nodes/${node.id}`)
             if (response.ok) {
               const data = await response.json()
               // Match backend logic: explicitly check for true values
@@ -145,7 +146,7 @@ export default function FlowArchitectureManager() {
 
     setLoading(true)
     try {
-      const response = await fetch(`/api/flow/nodes/${nodeId}`)
+      const response = await apiFetch(`/api/flow/nodes/${nodeId}`)
       if (response.ok) {
         const data = await response.json()
         setNodeConfig(data.config || { enabled: node.enabled })
@@ -363,7 +364,7 @@ export default function FlowArchitectureManager() {
   const toggleNodeEnabled = async (nodeId: string, enabled: boolean) => {
     setSaving(true)
     try {
-      const response = await fetch(`/api/flow/nodes/${nodeId}`, {
+      const response = await apiFetch(`/api/flow/nodes/${nodeId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled }),
@@ -407,7 +408,7 @@ export default function FlowArchitectureManager() {
     
     setSaving(true)
     try {
-      const response = await fetch(`/api/flow/nodes/${selectedNode.id}`, {
+      const response = await apiFetch(`/api/flow/nodes/${selectedNode.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ config: nodeConfig }),

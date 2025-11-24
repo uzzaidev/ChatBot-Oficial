@@ -13,7 +13,7 @@ export async function GET(
 ) {
   try {
     const { nodeId } = params
-    const supabase = createRouteHandlerClient()
+    const supabase = createRouteHandlerClient(request as any)
 
     // Authenticate user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -208,7 +208,7 @@ export async function PATCH(
     const body = await request.json()
     const { enabled, config } = body
 
-    const supabase = createRouteHandlerClient()
+    const supabase = createRouteHandlerClient(request as any)
 
     // Authenticate user
     const { data: { user }, error: authError } = await supabase.auth.getUser()

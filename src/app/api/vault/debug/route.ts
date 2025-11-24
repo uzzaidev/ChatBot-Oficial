@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
@@ -9,9 +9,9 @@ export const dynamic = 'force-dynamic'
  * Endpoint de debug para verificar se os secret_ids estão configurados corretamente
  * TEMPORARY - apenas para debugging, remover em produção
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient()
+    const supabase = createRouteHandlerClient(request as any)
 
     // Verificar autenticação
     const {

@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { apiFetch } from '@/lib/api'
 
 interface BotConfig {
   id: string
@@ -146,7 +147,7 @@ export default function BotConfigurationManager() {
     }
 
     try {
-      const response = await fetch(`/api/config?key=${encodeURIComponent(configKey)}`, {
+      const response = await apiFetch(`/api/config?key=${encodeURIComponent(configKey)}`, {
         method: 'DELETE',
       })
 

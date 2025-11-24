@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
@@ -10,9 +10,9 @@ export const dynamic = 'force-dynamic'
  *
  * @returns { success: boolean }
  */
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient()
+    const supabase = createRouteHandlerClient(request as any)
 
     const { error } = await supabase.auth.signOut()
 

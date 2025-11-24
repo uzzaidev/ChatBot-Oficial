@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
@@ -15,9 +15,9 @@ export const dynamic = 'force-dynamic'
  *
  * @returns { success: boolean, client_id?: string, error?: string }
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient()
+    const supabase = createRouteHandlerClient(request as any)
 
     // 1. Verificar se usuário está autenticado
     const { data: { user }, error: authError } = await supabase.auth.getUser()
