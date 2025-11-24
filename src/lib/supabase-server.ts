@@ -127,8 +127,40 @@ export const getCurrentUser = async () => {
  *   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
  * }
  */
-export const getClientIdFromSession = async (): Promise<string | null> => {
-  const supabase = createServerClient()
+/**
+ * Extrai token Bearer do header Authorization
+ */
+function getBearerToken(request?: Request): string | null {
+  if (!request) return null
+
+  const authHeader = request.headers.get('authorization')
+  if (!authHeader?.startsWith('Bearer ')) return null
+
+  return authHeader.substring(7)
+}
+
+export const getClientIdFromSession = async (request?: Request): Promise<string | null> => {
+  // Tentar usar Bearer token primeiro (mobile)
+  const bearerToken = getBearerToken(request)
+
+  let supabase
+  if (bearerToken) {
+    // Mobile: criar client com Bearer token
+    supabase = createSupabaseServerClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${bearerToken}`
+          }
+        }
+      }
+    )
+  } else {
+    // Web: usar cookies (padrão)
+    supabase = createServerClient()
+  }
 
   // 1. Obter usuário autenticado
   const { data: { user } } = await supabase.auth.getUser()

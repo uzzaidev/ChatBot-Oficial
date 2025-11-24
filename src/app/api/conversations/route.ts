@@ -7,10 +7,10 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   const startTime = Date.now()
-  
+
   try {
-    // 🔐 SECURITY: Get client_id from authenticated session, not query params
-    const clientId = await getClientIdFromSession()
+    // 🔐 SECURITY: Get client_id from authenticated session (cookies or Bearer token)
+    const clientId = await getClientIdFromSession(request as any)
 
     if (!clientId) {
       return NextResponse.json(
