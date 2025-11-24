@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { apiFetch } from '@/lib/api'
 import type { Message } from '@/lib/types'
 
 interface UseMessagesOptions {
@@ -36,7 +37,7 @@ export const useMessages = ({
         _t: Date.now().toString(), // Cache-busting timestamp
       })
 
-      const response = await fetch(`/api/messages/${phone}?${params.toString()}`, {
+      const response = await apiFetch(`/api/messages/${phone}?${params.toString()}`, {
         cache: 'no-store', // Disable fetch cache
       })
 

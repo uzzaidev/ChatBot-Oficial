@@ -13,6 +13,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createBrowserClient } from '@/lib/supabase-browser'
+import { apiFetch } from '@/lib/api'
 
 export interface AuditLog {
   id: string
@@ -117,12 +118,8 @@ export function useAuditLogs(options: UseAuditLogsOptions = {}): UseAuditLogsRes
 
       const url = `/api/backend/audit-logs?${params.toString()}`
 
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
-        }
       })
 
       if (!response.ok) {

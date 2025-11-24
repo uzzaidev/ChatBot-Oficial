@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Capacitor } from '@capacitor/core'
 import { createClientBrowser } from '@/lib/supabase'
+import { apiFetch } from '@/lib/api'
 import type { ConversationWithCount, ConversationStatus } from '@/lib/types'
 
 interface UseConversationsOptions {
@@ -55,14 +56,8 @@ export const useConversations = ({
         params.append('status', status)
       }
 
-      // Mobile: use production API URL (static export doesn't have API routes)
-      // Web: use relative URL (localhost or production)
-      const isMobile = Capacitor.isNativePlatform()
-      const apiBaseUrl = isMobile
-        ? (process.env.NEXT_PUBLIC_API_URL || 'https://chat.luisfboff.com')
-        : ''
-
-      const response = await fetch(`${apiBaseUrl}/api/conversations?${params.toString()}`)
+      // Use apiFetch que adiciona token de autenticação no mobile
+      const response = await apiFetch(`/api/conversations?${params.toString()}`)
 
       if (!response.ok) {
         const errorData = await response.json()
