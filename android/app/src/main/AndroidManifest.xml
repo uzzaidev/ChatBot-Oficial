@@ -52,4 +52,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Push Notifications: Android 13+ requer permissão explícita -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Biometric Auth: Permissão para usar biometria (FaceID/TouchID/Fingerprint) -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <!-- Fallback para Android < 9 (API 28) -->
+    <uses-permission android:name="android.permission.USE_FINGERPRINT" android:maxSdkVersion="28" />
 </manifest>
