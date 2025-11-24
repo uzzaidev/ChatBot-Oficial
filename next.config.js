@@ -37,9 +37,17 @@ const nextConfig = {
   // SECURITY FIX (VULN-011): Configure CORS and security headers
   async headers() {
     const isDevelopment = process.env.NODE_ENV === 'development'
-    const allowedOrigins = isDevelopment 
+    const allowedOrigins = isDevelopment
       ? ['http://localhost:3000', 'http://localhost:3001']
-      : ['https://chat.luisfboff.com']
+      : [
+          'https://chat.luisfboff.com',
+          'https://uzzapp.uzzai.com.br',
+          // Capacitor mobile origins
+          'https://localhost',
+          'capacitor://localhost',
+          'ionic://localhost',
+          'http://localhost'
+        ]
 
     return [
       {
@@ -48,7 +56,7 @@ const nextConfig = {
         headers: [
           {
             key: 'Access-Control-Allow-Origin',
-            value: isDevelopment ? '*' : 'https://chat.luisfboff.com',
+            value: isDevelopment ? '*' : allowedOrigins.join(', '),
           },
           {
             key: 'Access-Control-Allow-Methods',

@@ -46,7 +46,8 @@
       "Bash(npm run build:mobile:*)",
       "Bash(npx cap sync:*)",
       "Bash(findstr:*)",
-      "Bash(powershell -Command:*)"
+      "Bash(powershell -Command:*)",
+      "Bash(pnpm install:*)"
     ],
     "deny": [],
     "ask": []
