@@ -40,8 +40,8 @@ export default function TermsOfServicePage() {
               1. Aceitação dos Termos
             </h2>
             <p className="text-erie-black-700 leading-relaxed">
-              Ao acessar e usar o aplicativo <strong>UzzApp</strong> (o "Serviço"), operado pela 
-              <strong> Uzz.AI</strong> ("nós", "nosso" ou "empresa"), você concorda em cumprir e 
+              Ao acessar e usar o aplicativo <strong>UzzApp</strong> (o &quot;Serviço&quot;), operado pela 
+              <strong> Uzz.AI</strong> (&quot;nós&quot;, &quot;nosso&quot; ou &quot;empresa&quot;), você concorda em cumprir e 
               estar vinculado aos seguintes termos e condições de uso. Se você não concordar com 
               qualquer parte destes termos, não deve usar nosso Serviço.
             </p>
@@ -155,7 +155,7 @@ export default function TermsOfServicePage() {
               8. Limitação de Responsabilidade
             </h2>
             <p className="text-erie-black-700 leading-relaxed">
-              O Serviço é fornecido "como está" e "conforme disponível". Não garantimos que o Serviço 
+              O Serviço é fornecido &quot;como está&quot; e &quot;conforme disponível&quot;. Não garantimos que o Serviço 
               será ininterrupto, livre de erros ou seguro. Em nenhuma circunstância a Uzz.AI será 
               responsável por quaisquer danos diretos, indiretos, incidentais, especiais ou consequenciais 
               resultantes do uso ou incapacidade de usar o Serviço.

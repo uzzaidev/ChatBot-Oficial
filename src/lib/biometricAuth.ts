@@ -26,9 +26,22 @@ export async function checkBiometricAvailability(): Promise<{
   try {
     const result = await BiometricAuth.checkBiometry()
     
+    // Mapear biometryType para nosso tipo
+    let type: 'face' | 'fingerprint' | 'iris' | 'none' = 'none'
+    if (result.biometryType) {
+      const biometryTypeStr = String(result.biometryType).toLowerCase()
+      if (biometryTypeStr.includes('face')) {
+        type = 'face'
+      } else if (biometryTypeStr.includes('fingerprint') || biometryTypeStr.includes('touch')) {
+        type = 'fingerprint'
+      } else if (biometryTypeStr.includes('iris')) {
+        type = 'iris'
+      }
+    }
+    
     return {
       available: result.isAvailable,
-      type: result.biometryType as 'face' | 'fingerprint' | 'iris' | 'none',
+      type: result.isAvailable ? type : undefined,
     }
   } catch (error) {
     console.error('[Biometric Auth] Erro ao verificar disponibilidade:', error)
@@ -48,15 +61,14 @@ export async function authenticateWithBiometric(): Promise<{
   }
 
   try {
-    const result = await BiometricAuth.authenticate({
+    // API do plugin: authenticate() retorna void, lança erro se falhar
+    await BiometricAuth.authenticate({
       reason: 'Autentique-se para acessar o UzzApp',
-      title: 'Autenticação Biométrica',
-      subtitle: 'Use sua biometria para fazer login',
-      description: 'Toque no sensor ou olhe para a câmera',
-      allowDeviceCredentials: true, // Permite usar PIN/pattern como fallback
+      allowDeviceCredential: true, // Permite usar PIN/pattern como fallback
     })
 
-    return { success: result.succeeded }
+    // Se chegou aqui, autenticação foi bem-sucedida
+    return { success: true }
   } catch (error: any) {
     console.error('[Biometric Auth] Erro na autenticação:', error)
     

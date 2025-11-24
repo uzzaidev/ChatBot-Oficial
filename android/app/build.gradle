@@ -1,5 +1,16 @@
 apply plugin: 'com.android.application'
 
+// ============================================================================
+// Configuração de Signing (Keystore) para Release
+// ============================================================================
+// Carrega propriedades do keystore de release.properties (se existir)
+// Este arquivo NÃO é commitado no git (está no .gitignore)
+def keystorePropertiesFile = rootProject.file("release.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace "com.chatbot.app"
     compileSdk rootProject.ext.compileSdkVersion
@@ -16,8 +27,29 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+
+    // ============================================================================
+    // Signing Configs - Configuração de assinatura para release
+    // ============================================================================
+    signingConfigs {
+        release {
+            // Se release.properties existir, usa as credenciais de lá
+            // Caso contrário, build de release não será assinado (apenas debug)
+            if (keystorePropertiesFile.exists()) {
+                storeFile file(keystoreProperties['storeFile'] ?: 'release.keystore')
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias'] ?: 'chatbot'
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
+
     buildTypes {
         release {
+            // Aplicar signing config apenas se release.properties existir
+            if (keystorePropertiesFile.exists()) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

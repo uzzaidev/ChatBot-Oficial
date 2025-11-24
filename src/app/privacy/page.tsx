@@ -40,8 +40,8 @@ export default function PrivacyPolicyPage() {
               1. Introdução
             </h2>
             <p className="text-erie-black-700 leading-relaxed">
-              A <strong>Uzz.AI</strong> ("nós", "nosso" ou "empresa") opera o aplicativo 
-              <strong> UzzApp</strong> (o "Serviço"). Esta Política de Privacidade descreve 
+              A <strong>Uzz.AI</strong> (&quot;nós&quot;, &quot;nosso&quot; ou &quot;empresa&quot;) opera o aplicativo 
+              <strong> UzzApp</strong> (o &quot;Serviço&quot;). Esta Política de Privacidade descreve 
               como coletamos, usamos, armazenamos e protegemos suas informações pessoais quando 
               você usa nosso aplicativo.
             </p>
@@ -214,7 +214,7 @@ export default function PrivacyPolicyPage() {
             <p className="text-erie-black-700 leading-relaxed">
               Podemos atualizar esta Política de Privacidade periodicamente. Notificaremos você 
               sobre mudanças significativas publicando a nova política nesta página e atualizando 
-              a data de "Última atualização". Recomendamos que você revise esta política 
+              a data de &quot;Última atualização&quot;. Recomendamos que você revise esta política 
               periodicamente.
             </p>
           </section>

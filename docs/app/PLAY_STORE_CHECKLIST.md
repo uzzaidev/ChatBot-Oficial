@@ -27,22 +27,32 @@
 
 ### 🔴 Crítico (Obrigatório para Deploy)
 
-#### 1. Keystore para Signing (15 min)
-- [ ] Gerar keystore de release
-- [ ] Configurar `android/app/build.gradle` com signing config
-- [ ] **Backup seguro do keystore** (IMPORTANTE: se perder, não pode atualizar app!)
+#### 1. Keystore para Signing (15 min) ✅
+- [x] Configurar `android/app/build.gradle` com signing config ✅
+- [x] Adicionar keystore ao .gitignore ✅
+- [x] Criar `release.properties.example` ✅
+- [x] **Gerar keystore de release** ✅
+- [x] **Criar `android/release.properties`** ✅
+- [x] **Criar `KEYSTORE_INFO.txt`** (na raiz do projeto) ✅
+- [ ] **Backup seguro do keystore** (IMPORTANTE: fazer backup agora!)
 
-**Como fazer:**
-```bash
-# Gerar keystore
-keytool -genkey -v -keystore android/app/release.keystore -alias chatbot -keyalg RSA -keysize 2048 -validity 10000
+**Arquivos criados:**
+- `android/app/release.keystore` (2.7 KB)
+- `android/release.properties`
+- `KEYSTORE_INFO.txt` (na raiz - guarde em local seguro!)
 
-# Configurar build.gradle (ver DEPLOY.md)
-```
+**Script criado:** `scripts/generate-keystore.ps1`
 
-#### 2. Build Release AAB (5 min)
-- [ ] Build AAB de release: `cd android && ./gradlew bundleRelease`
-- [ ] Verificar arquivo gerado: `android/app/build/outputs/bundle/release/app-release.aab`
+#### 2. Build Release AAB (5 min) ✅
+- [x] Build AAB de release ✅
+- [x] Verificar arquivo gerado ✅
+
+**AAB gerado:**
+- Localização: `android/app/build/outputs/bundle/release/app-release.aab`
+- Tamanho: **7.48 MB**
+- Data: 2025-11-23 21:37:41
+
+**Script criado:** `scripts/build-release-aab.ps1`
 
 #### 3. Google Play Console Account ($25 - uma vez)
 - [ ] Criar conta: https://play.google.com/console/signup
@@ -243,7 +253,7 @@ keytool -genkey -v -keystore android/app/release.keystore -alias chatbot -keyalg
 
 ---
 
-**Status:** 🟢 ~90% pronto - Faltam keystore, build release e testes finais
+**Status:** 🟢 ~95% pronto - Faltam apenas Play Console account, screenshots e testes finais
 
 **Tempo estimado até deploy:** 3-4 dias (otimista) ou 1-2 semanas (realista)
 

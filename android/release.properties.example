@@ -1,0 +1,23 @@
+# ============================================================================
+# Exemplo de release.properties
+# ============================================================================
+# 
+# INSTRUÇÕES:
+# 1. Copie este arquivo para: android/release.properties
+# 2. Preencha com suas informações reais
+# 3. NÃO commite o arquivo release.properties (já está no .gitignore)
+#
+# ============================================================================
+
+# Caminho do keystore (relativo ao diretório android/)
+storeFile=app/release.keystore
+
+# Senha do keystore (a mesma que você usou ao gerar o keystore)
+storePassword=SUA_SENHA_AQUI
+
+# Alias da chave (geralmente 'chatbot' ou o que você definiu)
+keyAlias=chatbot
+
+# Senha da chave (geralmente a mesma do storePassword)
+keyPassword=SUA_SENHA_AQUI
+
