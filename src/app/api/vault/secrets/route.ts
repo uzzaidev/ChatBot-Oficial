@@ -53,9 +53,9 @@ function maskSecret(secret: string | null | undefined): string {
  *   }
  * }
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient()
+    const supabase = createRouteHandlerClient(request as any)
 
     // Verificar autenticação
     const {
@@ -201,7 +201,7 @@ export async function PUT(request: NextRequest) {
 
     const { key, value } = validation.data as z.infer<typeof SecretUpdateSchema>
 
-    const supabase = createRouteHandlerClient()
+    const supabase = createRouteHandlerClient(request as any)
 
     // Verificar autenticação
     const {

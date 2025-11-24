@@ -75,7 +75,26 @@ export const createServerClient = () => {
  *   return NextResponse.json({ user })
  * }
  */
-export const createRouteHandlerClient = () => {
+export const createRouteHandlerClient = (request?: Request) => {
+  // Check for Bearer token first (mobile)
+  const bearerToken = getBearerToken(request)
+
+  if (bearerToken) {
+    // Mobile: use standard client with Bearer token
+    return createClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${bearerToken}`
+          }
+        }
+      }
+    )
+  }
+
+  // Web: use cookie-based client
   const cookieStore = cookies()
 
   return createSupabaseServerClient<Database>(

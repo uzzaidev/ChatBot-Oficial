@@ -8,9 +8,9 @@ export const dynamic = 'force-dynamic'
  *
  * Retorna configurações do cliente autenticado (system_prompt, formatter_prompt, models)
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient()
+    const supabase = createRouteHandlerClient(request as any)
 
     // Verificar autenticação
     const {
@@ -92,7 +92,7 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json()
     const { system_prompt, formatter_prompt, openai_model, groq_model, primary_model_provider, settings } = body
 
-    const supabase = createRouteHandlerClient()
+    const supabase = createRouteHandlerClient(request as any)
 
     // Verificar autenticação
     const {
