@@ -35,16 +35,15 @@ export const transcribeAudio = async (
   durationSeconds?: number
 }> => {
   try {
-    // 🔐 Criar cliente OpenAI (dinâmico ou cached)
-    let client: OpenAI
-    
-    if (apiKey) {
-      // Se apiKey fornecida, criar novo client (não cachear)
-      client = new OpenAI({ apiKey })
-    } else {
-      // Fallback: usar client cacheado do env
-      client = getOpenAIClient()
+    // 🔐 REQUIRES client-specific OpenAI API key (no fallback to global)
+    if (!apiKey) {
+      throw new Error(
+        'OpenAI API key is required for audio transcription. ' +
+        'Please configure your OpenAI API key in Settings to use this service.'
+      )
     }
+
+    const client = new OpenAI({ apiKey })
 
     const uint8Array = new Uint8Array(audioBuffer)
     const blob = new Blob([uint8Array], { type: 'audio/ogg' })
@@ -143,14 +142,15 @@ export const analyzeImageFromBuffer = async (
   model: string
 }> => {
   try {
-    // 🔐 Criar cliente OpenAI (dinâmico ou cached)
-    let client: OpenAI
-    
-    if (apiKey) {
-      client = new OpenAI({ apiKey })
-    } else {
-      client = getOpenAIClient()
+    // 🔐 REQUIRES client-specific OpenAI API key (no fallback to global)
+    if (!apiKey) {
+      throw new Error(
+        'OpenAI API key is required for image analysis. ' +
+        'Please configure your OpenAI API key in Settings to use this service.'
+      )
     }
+
+    const client = new OpenAI({ apiKey })
 
     // Converter buffer para base64
     const base64Image = imageBuffer.toString('base64')
@@ -213,14 +213,15 @@ export const generateEmbedding = async (
   model: string
 }> => {
   try {
-    // 🔐 Criar cliente OpenAI (dinâmico ou cached)
-    let client: OpenAI
-    
-    if (apiKey) {
-      client = new OpenAI({ apiKey })
-    } else {
-      client = getOpenAIClient()
+    // 🔐 REQUIRES client-specific OpenAI API key (no fallback to global)
+    if (!apiKey) {
+      throw new Error(
+        'OpenAI API key is required for embeddings. ' +
+        'Please configure your OpenAI API key in Settings to use this service.'
+      )
     }
+
+    const client = new OpenAI({ apiKey })
 
     const response = await client.embeddings.create({
       model: 'text-embedding-3-small',
