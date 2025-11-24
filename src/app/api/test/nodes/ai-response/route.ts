@@ -1,0 +1,104 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { generateAIResponse } from '@/nodes/generateAIResponse'
+
+export const dynamic = 'force-dynamic'
+
+/**
+ * POST /api/test/nodes/ai-response
+ * Testa o node generateAIResponse isoladamente
+ * 
+ * FASE 3: Requer clientId no body (não usa mais DEFAULT_CLIENT_ID)
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const { input, clientId } = await request.json()
+
+    if (!clientId) {
+      return NextResponse.json(
+        { 
+          error: 'clientId is required',
+          message: 'Provide clientId in request body. Example: { "clientId": "b21b314f-...", "input": {...} }',
+          note: 'DEFAULT_CLIENT_ID is no longer used. All API routes now require authentication or explicit clientId.',
+        },
+        { status: 400 }
+      )
+    }
+
+    if (!input || !input.message) {
+      return NextResponse.json(
+        { 
+          error: 'Input must contain: message, chatHistory (array), ragContext (string), customerName' 
+        },
+        { status: 400 }
+      )
+    }
+
+    // Valida e sanitiza chatHistory
+    let chatHistory = input.chatHistory || []
+    
+    // Garante que chatHistory é array e cada item tem role e content válidos
+    if (Array.isArray(chatHistory)) {
+      chatHistory = chatHistory.filter((msg: any) => {
+        return msg && 
+               typeof msg === 'object' &&
+               (msg.role === 'user' || msg.role === 'assistant') &&
+               typeof msg.content === 'string' &&
+               msg.content.trim().length > 0
+      })
+    } else {
+      chatHistory = []
+    }
+
+    // Valida message
+    const message = typeof input.message === 'string' 
+      ? input.message.trim() 
+      : String(input.message || '')
+
+    if (!message) {
+      return NextResponse.json(
+        { error: 'Message cannot be empty' },
+        { status: 400 }
+      )
+    }
+
+    // Valida ragContext
+    const ragContext = typeof input.ragContext === 'string'
+      ? input.ragContext
+      : ''
+
+    // Executa o node
+
+    // Buscar config do cliente especificado
+    const { getClientConfig } = await import('@/lib/config')
+    const config = await getClientConfig(clientId)
+
+    if (!config) {
+      return NextResponse.json(
+        { error: `Client config not found for clientId: ${clientId}` }, 
+        { status: 404 }
+      )
+    }
+
+    const output = await generateAIResponse({
+      message,
+      chatHistory,
+      ragContext,
+      customerName: input.customerName || 'Cliente',
+      config, // 🔐 Passa config
+    })
+
+    return NextResponse.json({
+      success: true,
+      output,
+      info: output.content 
+        ? `AI response gerada: ${output.content.substring(0, 50)}...` 
+        : 'AI response vazia',
+    })
+  } catch (error: any) {
+    console.error('[TEST generateAIResponse] Error:', error)
+    return NextResponse.json(
+      { error: error.message, details: error.stack },
+      { status: 500 }
+    )
+  }
+}
