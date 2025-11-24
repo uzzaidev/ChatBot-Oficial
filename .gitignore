@@ -27,6 +27,7 @@ firebase-service-account.json
 # Android Keystore (NÃO COMMITAR - necessário para atualizar app na Play Store)
 android/app/*.keystore
 android/release.properties
+KEYSTORE_INFO.txt
 
 # debug
 npm-debug.log*
