@@ -255,13 +255,12 @@ export const AudioRecorder = ({ phone, clientId, onAudioSent, onRecordingChange 
   // Se há áudio gravado, mostra preview
   if (recordedAudio) {
     return (
-      <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-2">
+      <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-2 w-full max-w-full">
         {/* Player de áudio */}
         <audio
           src={recordedAudio.url}
           controls
-          className="h-10"
-          style={{ width: '180px' }}
+          className="h-10 flex-1 min-w-0 max-w-full"
         />
 
         {/* Botão Cancelar */}
