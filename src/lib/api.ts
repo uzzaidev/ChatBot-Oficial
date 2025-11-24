@@ -70,10 +70,26 @@ export async function apiFetch(
   const baseUrl = getApiBaseUrl()
   const url = `${baseUrl}${endpoint}`
 
-  // Mobile: adiciona credenciais para autenticação funcionar
+  // Mobile: pegar token de autenticação e incluir no header
+  let headers = { ...options?.headers } as Record<string, string>
+
+  if (Capacitor.isNativePlatform()) {
+    // Importar dinamicamente para evitar erro no servidor
+    const { createBrowserClient } = await import('@/lib/supabase-browser')
+    const supabase = createBrowserClient()
+    const { data: { session } } = await supabase.auth.getSession()
+
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`
+    } else {
+      console.warn('[API] Nenhuma sessão ativa no mobile - requisição sem autenticação')
+    }
+  }
+
   const fetchOptions: RequestInit = {
     ...options,
-    credentials: Capacitor.isNativePlatform() ? 'include' : options?.credentials || 'same-origin',
+    headers,
+    credentials: Capacitor.isNativePlatform() ? 'omit' : options?.credentials || 'same-origin',
   }
 
   return fetch(url, fetchOptions)
