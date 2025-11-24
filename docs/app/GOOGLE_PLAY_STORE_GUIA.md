@@ -26,12 +26,45 @@
 **Informações necessárias:**
 - Nome da conta: **Uzz.AI** ou **UzzApp**
 - País: **Brasil**
-- Tipo de conta: **Individual** ou **Organização** (recomendado: Organização)
-- Dados da empresa:
-  - Nome: **Uzz.AI**
-  - Endereço completo
-  - Telefone
-  - Site: **https://www.uzzai.com.br**
+- Tipo de conta: **Individual** ou **Organização**
+
+#### ⚠️ IMPORTANTE: D-U-N-S Number
+
+**Se você escolheu "Organização":**
+- O Google pedirá um **número D-U-N-S** (Dun & Bradstreet Number)
+- É um número de 9 dígitos que identifica sua empresa
+- **Gratuito** para obter, mas pode levar alguns dias
+
+**O que é D-U-N-S?**
+- Número de identificação de negócios internacional
+- Mantido pela Dun & Bradstreet (empresa de dados comerciais)
+- Usado para verificar legitimidade de empresas
+
+**Como obter D-U-N-S (se não tiver):**
+1. Acesse: https://www.dnb.com/duns-number.html
+2. Preencha formulário com dados da empresa
+3. Aguarde aprovação (pode levar 1-5 dias úteis)
+4. Receberá o número por e-mail
+
+**Alternativa: Criar como "Individual"**
+- Se não tiver D-U-N-S ou quiser agilizar:
+- Escolha **"Individual"** em vez de "Organização"
+- Não precisa de D-U-N-S
+- Pode publicar apps normalmente
+- **Desvantagem:** Nome aparece como pessoa física, não empresa
+
+**Recomendação:**
+- Se a empresa **já tem D-U-N-S:** Use "Organização" e digite o número
+- Se **não tem D-U-N-S:** 
+  - **Opção 1:** Solicitar D-U-N-S (gratuito, mas demora alguns dias)
+  - **Opção 2:** Criar como "Individual" para publicar mais rápido
+
+**Dados da empresa (se usar Organização):**
+- Nome: **Uzz.AI**
+- Endereço completo
+- Telefone
+- Site: **https://www.uzzai.com.br**
+- **D-U-N-S Number:** (9 dígitos, se tiver)
 
 ### 1.3. Aceitar Contrato de Desenvolvedor
 - Ler e aceitar os termos
