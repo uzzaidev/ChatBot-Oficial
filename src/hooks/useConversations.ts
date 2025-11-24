@@ -76,7 +76,8 @@ export const useConversations = ({
         .from('clientes_whatsapp')
         .select('*', { count: 'exact' })
         .eq('client_id', finalClientId)
-        .order('updated_at', { ascending: false })
+        // Ordenar por last_update ou created_at (dependendo do que existe na tabela)
+        .order('last_update', { ascending: false, nullsFirst: false })
         .range(offset, offset + limit - 1)
 
       // Aplicar filtro de status se fornecido
