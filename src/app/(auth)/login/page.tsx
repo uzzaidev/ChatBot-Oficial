@@ -1,9 +1,17 @@
 'use client'
 
-import { useState, FormEvent } from 'react'
+import { useState, FormEvent, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { signInWithEmail, createBrowserClient } from '@/lib/supabase-browser'
+import { BiometricAuthButton } from '@/components/BiometricAuthButton'
+import {
+  checkBiometricAvailability,
+  saveBiometricPreference,
+  saveBiometricEmail,
+  getBiometricEmail,
+} from '@/lib/biometricAuth'
+import { Capacitor } from '@capacitor/core'
 
 /**
  * Página de Login - Supabase Auth
@@ -22,6 +30,67 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [biometricAvailable, setBiometricAvailable] = useState(false)
+  const [showBiometricPrompt, setShowBiometricPrompt] = useState(false)
+
+  // Verificar disponibilidade de biometria ao montar componente
+  useEffect(() => {
+    const checkBiometric = async () => {
+      if (Capacitor.isNativePlatform()) {
+        const result = await checkBiometricAvailability()
+        setBiometricAvailable(result.available)
+        
+        // Se biometria disponível e usuário já tem email salvo, tentar restaurar sessão
+        if (result.available) {
+          const savedEmail = getBiometricEmail()
+          if (savedEmail) {
+            setEmail(savedEmail)
+          }
+        }
+      }
+    }
+
+    checkBiometric()
+  }, [])
+
+  // Handler para sucesso na autenticação biométrica
+  const handleBiometricSuccess = async () => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      // Verificar se há sessão válida no Supabase
+      const supabase = createBrowserClient()
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+
+      if (sessionError || !session) {
+        setError('Sessão expirada. Faça login manualmente.')
+        setLoading(false)
+        return
+      }
+
+      // Verificar se usuário tem profile válido
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('client_id, is_active')
+        .eq('id', session.user.id)
+        .single()
+
+      if (profileError || !profile?.client_id || !profile.is_active) {
+        setError('Usuário sem perfil configurado ou inativo. Faça login manualmente.')
+        setLoading(false)
+        return
+      }
+
+      // Sessão válida, redirecionar
+      router.push('/dashboard')
+      router.refresh()
+    } catch (err) {
+      console.error('[Login] Erro ao restaurar sessão:', err)
+      setError('Erro ao restaurar sessão. Faça login manualmente.')
+      setLoading(false)
+    }
+  }
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -82,6 +151,14 @@ export default function LoginPage() {
         return
       }
 
+      // Após login bem-sucedido, perguntar se quer habilitar biometria (se disponível)
+      if (biometricAvailable && Capacitor.isNativePlatform()) {
+        // Salvar email para biometria
+        saveBiometricEmail(email)
+        
+        // Perguntar se quer habilitar biometria (mostrar prompt)
+        setShowBiometricPrompt(true)
+      }
 
       // Redirect para dashboard
       router.push('/dashboard')
@@ -110,6 +187,54 @@ export default function LoginPage() {
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-sm text-red-800">{error}</p>
+          </div>
+        )}
+
+        {/* Biometric Auth Button (se disponível e habilitado) */}
+        {Capacitor.isNativePlatform() && (
+          <BiometricAuthButton
+            onSuccess={handleBiometricSuccess}
+            onError={(err) => setError(err)}
+          />
+        )}
+
+        {/* Divider (se biometria disponível) */}
+        {biometricAvailable && (
+          <div className="mb-6 flex items-center gap-4">
+            <div className="flex-1 border-t border-silver-300"></div>
+            <span className="text-sm text-erie-black-500">ou</span>
+            <div className="flex-1 border-t border-silver-300"></div>
+          </div>
+        )}
+
+        {/* Prompt para habilitar biometria (após primeiro login) */}
+        {showBiometricPrompt && (
+          <div className="mb-6 p-4 bg-mint-50 border border-mint-200 rounded-lg">
+            <p className="text-sm text-mint-800 mb-3">
+              Deseja habilitar login com biometria para acesso rápido?
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  saveBiometricPreference(true)
+                  setShowBiometricPrompt(false)
+                }}
+                className="flex-1 bg-mint-500 hover:bg-mint-600 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors"
+              >
+                Sim, habilitar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  saveBiometricPreference(false)
+                  setShowBiometricPrompt(false)
+                }}
+                className="flex-1 bg-silver-200 hover:bg-silver-300 text-erie-black-700 text-sm font-medium py-2 px-4 rounded-lg transition-colors"
+              >
+                Não, obrigado
+              </button>
+            </div>
           </div>
         )}
 
