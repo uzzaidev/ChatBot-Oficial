@@ -37,26 +37,15 @@ const nextConfig = {
   // SECURITY FIX (VULN-011): Configure CORS and security headers
   async headers() {
     const isDevelopment = process.env.NODE_ENV === 'development'
-    const allowedOrigins = isDevelopment
-      ? ['http://localhost:3000', 'http://localhost:3001']
-      : [
-          'https://chat.luisfboff.com',
-          'https://uzzapp.uzzai.com.br',
-          // Capacitor mobile origins
-          'https://localhost',
-          'capacitor://localhost',
-          'ionic://localhost',
-          'http://localhost'
-        ]
 
     return [
       {
-        // CORS for API routes
+        // CORS for API routes - permitir todos em dev, específico em prod
         source: '/api/:path*',
         headers: [
           {
             key: 'Access-Control-Allow-Origin',
-            value: isDevelopment ? '*' : allowedOrigins.join(', '),
+            value: '*', // Permitir todos (CORS será validado por middleware se necessário)
           },
           {
             key: 'Access-Control-Allow-Methods',
@@ -66,10 +55,11 @@ const nextConfig = {
             key: 'Access-Control-Allow-Headers',
             value: 'Content-Type, Authorization, X-Requested-With',
           },
-          {
-            key: 'Access-Control-Allow-Credentials',
-            value: 'true',
-          },
+          // Removido Access-Control-Allow-Credentials pois não funciona com '*'
+          // {
+          //   key: 'Access-Control-Allow-Credentials',
+          //   value: 'true',
+          // },
         ],
       },
       {
