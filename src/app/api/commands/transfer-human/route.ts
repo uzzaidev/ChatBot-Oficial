@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: NextRequest) {
   try {
     // 🔐 SECURITY: Get client_id from authenticated session, not request body
-    const clientId = await getClientIdFromSession()
+    const clientId = await getClientIdFromSession(request as any)
 
     if (!clientId) {
       return NextResponse.json(

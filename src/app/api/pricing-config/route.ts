@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: NextRequest) {
   try {
     // Get client_id from authenticated session
-    const clientId = await getClientIdFromSession()
+    const clientId = await getClientIdFromSession(request as any)
 
     if (!clientId) {
       return NextResponse.json(
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Get client_id from authenticated session
-    const clientId = await getClientIdFromSession()
+    const clientId = await getClientIdFromSession(request as any)
 
     if (!clientId) {
       return NextResponse.json(
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     // Get client_id from authenticated session
-    const clientId = await getClientIdFromSession()
+    const clientId = await getClientIdFromSession(request as any)
 
     if (!clientId) {
       return NextResponse.json(

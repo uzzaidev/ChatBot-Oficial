@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
   
   try {
     // Get authenticated client_id
-    const clientId = await getClientIdFromSession()
+    const clientId = await getClientIdFromSession(request as any)
 
     if (!clientId) {
       return NextResponse.json(

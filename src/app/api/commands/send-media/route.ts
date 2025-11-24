@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
 
   try {
     // 🔐 Obter client_id da sessão do usuário autenticado
-    const clientId = await getClientIdFromSession()
+    const clientId = await getClientIdFromSession(request as any)
 
     if (!clientId) {
       console.error('[SEND-MEDIA API] ❌ Usuário não autenticado ou sem client_id')

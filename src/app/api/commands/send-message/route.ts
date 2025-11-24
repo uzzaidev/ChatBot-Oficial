@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
   try {
 
     // 🔐 FASE 3: Obter client_id da sessão do usuário autenticado
-    const clientId = await getClientIdFromSession()
+    const clientId = await getClientIdFromSession(request as any)
 
     if (!clientId) {
       console.error('[SEND-MESSAGE API] ❌ Usuário não autenticado ou sem client_id')
