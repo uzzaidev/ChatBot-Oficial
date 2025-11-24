@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Check, X, Loader2, Phone, CheckCheck, Eye, AlertTriangle, Search, Globe, Mail, Send, ScrollText, RefreshCw, Pause, RotateCw } from 'lucide-react'
 import { createBrowserClient } from '@/lib/supabase-browser'
+import { apiFetch } from '@/lib/api'
 
 interface ExecutionLog {
   id: number
@@ -59,21 +60,10 @@ export default function BackendPage() {
   // Função para buscar logs - sempre busca os últimos 500 logs do Supabase
   const fetchLogs = useCallback(async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-
-      if (!session) {
-        console.error('[BackendMonitor] User not authenticated')
-        return
-      }
-
       const url = '/api/backend/stream?limit=500'
 
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
-        }
-      })
+      // apiFetch já adiciona Bearer token automaticamente no mobile
+      const response = await apiFetch(url)
       const data = await response.json()
 
       if (data.success && data.executions) {
@@ -91,7 +81,7 @@ export default function BackendPage() {
     } catch (error) {
       console.error('Error fetching logs:', error)
     }
-  }, [selectedExecution, supabase])
+  }, [selectedExecution])
 
   // Auto-refresh
   useEffect(() => {
