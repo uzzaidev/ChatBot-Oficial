@@ -23,7 +23,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
 import { processDocumentWithChunking } from '@/nodes/processDocumentWithChunking'
-import Tesseract from 'tesseract.js'
+import OpenAI from 'openai'
 
 // pdf-parse uses CommonJS, need to import this way
 const pdfParse = require('pdf-parse')
@@ -39,6 +39,49 @@ const ALLOWED_TYPES = [
   'image/webp',
   'image/jpg'
 ]
+
+/**
+ * Extract text from image using OpenAI Vision API (GPT-4o)
+ * Serverless-compatible, no canvas dependencies
+ * REQUIRES client to have OpenAI API key configured in Vault
+ */
+const extractTextFromImage = async (buffer: Buffer, openaiApiKey: string): Promise<string> => {
+  const openai = new OpenAI({ apiKey: openaiApiKey })
+
+  // Convert buffer to base64
+  const base64Image = buffer.toString('base64')
+  const mimeType = 'image/jpeg' // OpenAI accepts various formats
+
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'text',
+            text: 'Extract all text from this image. Return ONLY the extracted text, nothing else. If there is no text, return "No text found".',
+          },
+          {
+            type: 'image_url',
+            image_url: {
+              url: `data:${mimeType};base64,${base64Image}`,
+            },
+          },
+        ],
+      },
+    ],
+    max_tokens: 4096,
+  })
+
+  const extractedText = response.choices[0]?.message?.content || ''
+
+  if (extractedText === 'No text found' || !extractedText.trim()) {
+    throw new Error('No text found in image')
+  }
+
+  return extractedText
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -106,22 +149,40 @@ export async function POST(request: NextRequest) {
       const pdfData = await pdfParse(buffer)
       text = pdfData.text
     } else if (file.type.startsWith('image/')) {
-      // Image OCR extraction (without workers for serverless compatibility)
-      const buffer = Buffer.from(await file.arrayBuffer())
+      // Get OpenAI key from Vault (REQUIRED for image OCR)
+      const { data: clientConfigTemp } = await supabase
+        .from('clients')
+        .select('openai_api_key_secret_id')
+        .eq('id', clientId)
+        .single()
 
-      // Use Tesseract.recognize directly without workers
-      const { data } = await Tesseract.recognize(
-        buffer,
-        'por',
-        {
-          logger: (m) => {
-            if (m.status === 'recognizing text') {
-              console.log(`OCR Progress: ${Math.round((m.progress || 0) * 100)}%`)
-            }
-          }
-        }
-      )
-      text = data.text
+      if (!clientConfigTemp?.openai_api_key_secret_id) {
+        return NextResponse.json(
+          {
+            error: 'API da OpenAI não configurada. Por favor, configure sua chave da OpenAI em Configurações para usar o serviço de OCR em imagens.'
+          },
+          { status: 400 }
+        )
+      }
+
+      const { data: openaiKeyForOCR } = await supabase.rpc('get_secret', {
+        secret_id: clientConfigTemp.openai_api_key_secret_id
+      })
+
+      if (!openaiKeyForOCR) {
+        return NextResponse.json(
+          {
+            error: 'Erro ao recuperar chave da OpenAI. Por favor, reconfigure sua chave em Configurações.'
+          },
+          { status: 400 }
+        )
+      }
+
+      // Image OCR extraction using OpenAI Vision (serverless-compatible)
+      const buffer = Buffer.from(await file.arrayBuffer())
+      console.log('[Upload] Extracting text from image using OpenAI Vision...')
+      text = await extractTextFromImage(buffer, openaiKeyForOCR)
+      console.log('[Upload] Text extracted successfully from image')
     } else {
       // text/plain
       text = await file.text()
@@ -134,20 +195,33 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 6. Get client config for OpenAI API key
+    // 6. Get client config for OpenAI API key (REQUIRED for embeddings)
     const { data: clientConfig } = await supabase
       .from('clients')
       .select('openai_api_key_secret_id')
       .eq('id', clientId)
       .single()
 
-    // Get OpenAI key from Vault (if exists)
-    let openaiApiKey: string | undefined
-    if (clientConfig?.openai_api_key_secret_id) {
-      const { data: secretData } = await supabase.rpc('get_secret', {
-        secret_id: clientConfig.openai_api_key_secret_id
-      })
-      openaiApiKey = secretData
+    if (!clientConfig?.openai_api_key_secret_id) {
+      return NextResponse.json(
+        {
+          error: 'API da OpenAI não configurada. Por favor, configure sua chave da OpenAI em Configurações para usar o serviço de embeddings.'
+        },
+        { status: 400 }
+      )
+    }
+
+    const { data: openaiApiKey } = await supabase.rpc('get_secret', {
+      secret_id: clientConfig.openai_api_key_secret_id
+    })
+
+    if (!openaiApiKey) {
+      return NextResponse.json(
+        {
+          error: 'Erro ao recuperar chave da OpenAI. Por favor, reconfigure sua chave em Configurações.'
+        },
+        { status: 400 }
+      )
     }
 
     // 7. Process document with chunking
