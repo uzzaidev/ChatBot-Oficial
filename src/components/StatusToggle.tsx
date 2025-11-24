@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { toast } from '@/hooks/use-toast'
 import { Bot, User, ArrowRight, HelpCircle } from 'lucide-react'
 import { LucideIcon } from 'lucide-react'
+import { apiFetch } from '@/lib/api'
 
 interface StatusToggleProps {
   phone: string
@@ -78,7 +79,8 @@ export const StatusToggle = ({ phone, currentStatus }: StatusToggleProps) => {
     setIsLoading(true)
 
     try {
-      const response = await fetch(`/api/customers/${phone}/status`, {
+      // apiFetch já adiciona Bearer token automaticamente no mobile
+      const response = await apiFetch(`/api/customers/${phone}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

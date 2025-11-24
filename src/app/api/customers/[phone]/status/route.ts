@@ -30,7 +30,7 @@ export async function PUT(
     }
 
     // Verificar autenticação
-    const supabase = createRouteHandlerClient()
+    const supabase = createRouteHandlerClient(request as any)
     const {
       data: { user },
       error: authError,
