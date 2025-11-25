@@ -27,14 +27,11 @@ export const ConversationList = ({
   onConversationOpen,
 }: ConversationListProps) => {
   const router = useRouter()
-  const [unreadConversations, setUnreadConversations] = useState<Set<string>>(new Set())
   const [recentlyUpdated, setRecentlyUpdated] = useState<string | null>(null)
 
-  // Track new messages for conversations not currently open
+  // Track recently updated for pulse animation
   useEffect(() => {
     if (lastUpdatePhone && lastUpdatePhone !== currentPhone) {
-      setUnreadConversations(prev => new Set(prev).add(lastUpdatePhone))
-
       // Add visual pulse animation with cleanup
       setRecentlyUpdated(lastUpdatePhone)
       const timer = setTimeout(() => setRecentlyUpdated(null), 2000)
@@ -46,25 +43,7 @@ export const ConversationList = ({
     return undefined
   }, [lastUpdatePhone, currentPhone])
 
-  // Clear unread when conversation becomes active
-  useEffect(() => {
-    if (currentPhone) {
-      setUnreadConversations(prev => {
-        const newSet = new Set(prev)
-        newSet.delete(currentPhone)
-        return newSet
-      })
-    }
-  }, [currentPhone])
-
   const handleConversationClick = (phone: string) => {
-    // Clear unread for this conversation
-    setUnreadConversations(prev => {
-      const newSet = new Set(prev)
-      newSet.delete(phone)
-      return newSet
-    })
-
     // Notify parent component if callback provided
     if (onConversationOpen) {
       onConversationOpen(phone)
@@ -96,8 +75,20 @@ export const ConversationList = ({
     <div>
       {conversations.map((conversation) => {
         const isActive = currentPhone === conversation.phone
-        const hasUnread = unreadConversations.has(conversation.phone)
+        // Usar lastUpdatePhone diretamente - sem estado duplicado!
+        const hasUnread = lastUpdatePhone === conversation.phone && !isActive
         const isRecentlyUpdated = recentlyUpdated === conversation.phone
+
+        // Debug log para conversa específica
+        if (conversation.phone === '61439237584' || conversation.phone === '555499250023') {
+          console.log(`🔍 [ConversationList] Conversa ${conversation.phone}:`, {
+            isActive,
+            hasUnread,
+            isRecentlyUpdated,
+            lastUpdatePhone,
+            currentPhone
+          })
+        }
 
         return (
           <div

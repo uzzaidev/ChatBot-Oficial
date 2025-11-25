@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core'
 import { createClientBrowser } from '@/lib/supabase'
 import { apiFetch } from '@/lib/api'
 import type { ConversationWithCount, ConversationStatus } from '@/lib/types'
+import { useRealtimeConversations, type ConversationUpdate } from './useRealtimeConversations'
 
 interface UseConversationsOptions {
   clientId: string
@@ -20,6 +21,7 @@ interface UseConversationsResult {
   total: number
   refetch: () => Promise<void>
   lastUpdatePhone: string | null
+  markAsRead: (phone: string) => void
 }
 
 export const useConversations = ({
@@ -35,6 +37,7 @@ export const useConversations = ({
   const [error, setError] = useState<string | null>(null)
   const [total, setTotal] = useState(0)
   const [lastUpdatePhone, setLastUpdatePhone] = useState<string | null>(null)
+  const [readConversations, setReadConversations] = useState<Set<string>>(new Set())
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const isInitialLoadRef = useRef(true)
 
@@ -109,60 +112,87 @@ export const useConversations = ({
     }
   }, [refreshInterval, fetchConversations])
 
-  // Realtime subscription for new conversations
+  // Função para marcar conversa como lida
+  const markAsRead = useCallback((phone: string) => {
+    console.log('👁️ [useConversations] Marking conversation as read:', phone)
+    setReadConversations(prev => new Set(prev).add(phone))
+
+    // Se essa conversa era a última atualizada, limpar
+    setLastUpdatePhone(current => current === phone ? null : current)
+  }, [])
+
+  // Realtime subscription for conversations usando novo hook otimizado
+  const handleConversationUpdate = useCallback((update: ConversationUpdate) => {
+    console.log('🔔 [useConversations] Conversation update:', update.eventType, update.conversation)
+
+    // Extrair telefone da conversa atualizada
+    const phone = update.conversation?.telefone?.toString() || null
+    if (phone) {
+      // Só marca como não lida se não estiver no set de lidas
+      setReadConversations(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(phone) // Remove do set de lidas quando recebe nova mensagem
+        return newSet
+      })
+      setLastUpdatePhone(phone)
+    }
+
+    // Refetch conversations com debounce para agrupar múltiplas mudanças
+    if (update.eventType === 'INSERT') {
+      // Nova conversa - delay maior para garantir que mensagem foi salva
+      debouncedFetch(500)
+    } else if (update.eventType === 'UPDATE') {
+      // Conversa atualizada - delay menor
+      debouncedFetch(300)
+    } else if (update.eventType === 'DELETE') {
+      // Conversa deletada - refetch imediato
+      debouncedFetch(100)
+    }
+  }, [debouncedFetch])
+
+  // Hook de realtime com retry, mobile support, etc
+  const { isConnected: realtimeConnected } = useRealtimeConversations({
+    clientId: enableRealtime ? clientId : '',
+    onConversationUpdate: handleConversationUpdate,
+  })
+
+  // Fallback polling APENAS se realtime não conectar (ou FREE tier)
   useEffect(() => {
     if (!enableRealtime) {
-      return
+      return // Realtime desabilitado
     }
 
-    const supabase = createClientBrowser()
+    // Esperar 2s para ver se realtime conecta (reduzido de 3s)
+    const fallbackTimeout = setTimeout(() => {
+      if (!realtimeConnected) {
+        // Polling otimizado a cada 3s
+        const pollInterval = setInterval(() => {
+          fetchConversations(true)
+        }, 3000)
 
-    // Monitorar mudanças em AMBAS as tabelas para garantir que novos clientes apareçam
-    let channel = supabase
-      .channel('conversations-realtime')
-      // Detectar novos clientes
-      .on(
-        'postgres_changes',
-        {
-          event: '*', // INSERT, UPDATE, DELETE
-          schema: 'public',
-          table: 'clientes_whatsapp',
-        },
-        () => {
-          // Delay de 500ms para garantir que mensagem foi salva primeiro
-          debouncedFetch(500)
+        return () => {
+          clearInterval(pollInterval)
         }
-      )
-      // Detectar novas mensagens (para cobrir race condition e novos clientes)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'n8n_chat_histories',
-        },
-        (payload) => {
-          // Extract phone from session_id
-          const sessionId = (payload.new as any)?.session_id
-          if (sessionId) {
-            setLastUpdatePhone(sessionId)
-          }
-          // Delay de 300ms para agrupar múltiplas inserções (user + ai)
-          debouncedFetch(300)
-        }
-      )
-      .subscribe()
+      }
+    }, 2000) // Ativa polling após 2s
 
-    return () => {
-      if (channel) {
-        supabase.removeChannel(channel)
-      }
-      // Limpar timeout pendente
-      if (fetchTimeoutRef.current) {
-        clearTimeout(fetchTimeoutRef.current)
-      }
-    }
-  }, [enableRealtime, debouncedFetch])
+    return () => clearTimeout(fallbackTimeout)
+  }, [enableRealtime, realtimeConnected, fetchConversations])
+
+  // Calcular lastUpdatePhone considerando conversas lidas
+  const effectiveLastUpdatePhone = readConversations.has(lastUpdatePhone || '')
+    ? null
+    : lastUpdatePhone
+
+  // Debug log detalhado
+  console.log('📊 [useConversations] State:', {
+    lastUpdatePhone,
+    effectiveLastUpdatePhone,
+    readConversations: Array.from(readConversations),
+    readCount: readConversations.size,
+    isRead: readConversations.has(lastUpdatePhone || ''),
+    allConversations: conversations.map(c => c.phone)
+  })
 
   return {
     conversations,
@@ -170,6 +200,7 @@ export const useConversations = ({
     error,
     total,
     refetch: fetchConversations,
-    lastUpdatePhone,
+    lastUpdatePhone: effectiveLastUpdatePhone,
+    markAsRead,
   }
 }

@@ -4,7 +4,7 @@ export type MessageType = 'text' | 'audio' | 'image' | 'document' | 'video'
 
 export type MessageDirection = 'incoming' | 'outgoing'
 
-export type MessageStatus = 'sent' | 'delivered' | 'read' | 'failed' | 'queued'
+export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'read' | 'failed' | 'queued'
 
 export type UsageSource = 'openai' | 'meta' | 'groq' | 'whisper'
 

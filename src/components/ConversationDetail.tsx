@@ -14,17 +14,28 @@ interface ConversationDetailProps {
   phone: string
   clientId: string
   conversationName?: string
+  onGetOptimisticCallbacks?: (callbacks: {
+    onOptimisticMessage: (message: Message) => void
+    onMessageError: (tempId: string) => void
+  }) => void
+  onMarkAsRead?: (phone: string) => void
 }
 
 export const ConversationDetail = ({
   phone,
   clientId,
   conversationName,
+  onGetOptimisticCallbacks,
+  onMarkAsRead,
 }: ConversationDetailProps) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const [realtimeMessages, setRealtimeMessages] = useState<Message[]>([])
+  const [optimisticMessages, setOptimisticMessages] = useState<Message[]>([])
   const [stickyDate, setStickyDate] = useState<string | null>(null)
+  const [newMessagesCount, setNewMessagesCount] = useState(0)
+  const [isUserAtBottom, setIsUserAtBottom] = useState(true)
   const dateRefs = useRef<Map<string, HTMLDivElement>>(new Map())
+  const shouldScrollRef = useRef(true)
 
   const { messages: fetchedMessages, loading, error, refetch } = useMessages({
     clientId,
@@ -35,11 +46,14 @@ export const ConversationDetail = ({
   // Clear realtime messages when phone changes
   useEffect(() => {
     setRealtimeMessages([])
+    setOptimisticMessages([])
+    setNewMessagesCount(0)
+    shouldScrollRef.current = true
   }, [phone])
 
-  // Combine fetched messages with realtime messages, removing duplicates
+  // Combine fetched + realtime + optimistic messages, removing duplicates
   const messages = useMemo(() => {
-    const allMessages = [...fetchedMessages, ...realtimeMessages]
+    const allMessages = [...fetchedMessages, ...realtimeMessages, ...optimisticMessages]
 
     // Remove duplicates based on message ID
     const uniqueMessages = allMessages.reduce((acc, message) => {
@@ -50,44 +64,129 @@ export const ConversationDetail = ({
       return acc
     }, [] as Message[])
 
+    // Sort by timestamp
+    uniqueMessages.sort((a, b) =>
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    )
 
     return uniqueMessages
-  }, [fetchedMessages, realtimeMessages])
+  }, [fetchedMessages, realtimeMessages, optimisticMessages])
 
-  // Stable callback for handling new messages
+  // Check if user is at bottom (within 100px)
+  const checkIfUserAtBottom = useCallback(() => {
+    const scrollElement = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]')
+    if (!scrollElement) return false
+
+    const threshold = 100 // 100px do fim
+    const isAtBottom = scrollElement.scrollHeight - scrollElement.scrollTop - scrollElement.clientHeight < threshold
+    setIsUserAtBottom(isAtBottom)
+    return isAtBottom
+  }, [])
+
+  // Scroll to bottom
+  const scrollToBottom = useCallback(() => {
+    const scrollElement = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]')
+    if (scrollElement) {
+      scrollElement.scrollTop = scrollElement.scrollHeight
+      setIsUserAtBottom(true)
+      setNewMessagesCount(0)
+    }
+  }, [])
+
+  // Handle optimistic message (from SendMessageForm)
+  const handleOptimisticMessage = useCallback((message: Message) => {
+    console.log('➕ [ConversationDetail] Adding optimistic message:', message.id)
+    setOptimisticMessages(prev => [...prev, message])
+    shouldScrollRef.current = true // Always scroll for user's own messages
+  }, [])
+
+  // Handle message error (remove optimistic message)
+  const handleMessageError = useCallback((tempId: string) => {
+    console.log('❌ [ConversationDetail] Removing failed optimistic message:', tempId)
+    setOptimisticMessages(prev => prev.filter(msg => msg.id !== tempId))
+  }, [])
+
+  // Stable callback for handling new messages from realtime
   const handleNewMessage = useCallback((newMessage: Message) => {
+    console.log('📨 [ConversationDetail] New realtime message:', newMessage.id)
 
-    // Add message optimistically to avoid refetch
+    // Remove optimistic message if exists (replace with real one)
+    setOptimisticMessages(prev => prev.filter(msg => msg.content !== newMessage.content))
+
+    // Add realtime message
     setRealtimeMessages(prev => {
       // Check if message already exists in realtime messages
       const exists = prev.some(msg => msg.id === newMessage.id)
       if (exists) {
+        console.log('⚠️ [ConversationDetail] Message already exists, skipping')
         return prev
       }
 
       return [...prev, newMessage]
     })
 
-    toast({
-      title: 'Nova mensagem',
-      description: 'Uma nova mensagem foi recebida',
-    })
-  }, [])
+    // Marcar conversa como lida (já que está visualizando)
+    if (onMarkAsRead) {
+      console.log('👁️ [ConversationDetail] Marking as read (message received while open)')
+      onMarkAsRead(phone)
+    }
 
-  useRealtimeMessages({
+    // Se usuário está no fim, scroll automático
+    const isAtBottom = checkIfUserAtBottom()
+    if (isAtBottom) {
+      shouldScrollRef.current = true
+    } else {
+      // Se não está no fim, incrementa contador de novas mensagens
+      setNewMessagesCount(prev => prev + 1)
+      // Não mostra toast se usuário não está no fim (badge é suficiente)
+    }
+  }, [checkIfUserAtBottom, onMarkAsRead, phone])
+
+  // Realtime subscription para novas mensagens (depois do handleNewMessage)
+  const { isConnected: realtimeConnected } = useRealtimeMessages({
     clientId,
     phone,
     onNewMessage: handleNewMessage,
   })
 
+  // Expose optimistic callbacks to parent (after declarations)
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      const scrollElement = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]')
+    if (onGetOptimisticCallbacks) {
+      onGetOptimisticCallbacks({
+        onOptimisticMessage: handleOptimisticMessage,
+        onMessageError: handleMessageError,
+      })
+    }
+  }, [onGetOptimisticCallbacks, handleOptimisticMessage, handleMessageError])
+
+  // Smart scroll - só faz scroll se usuário estava no fim ou se é mensagem própria
+  useEffect(() => {
+    if (shouldScrollRef.current) {
+      const scrollElement = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]')
       if (scrollElement) {
-        scrollElement.scrollTop = scrollElement.scrollHeight
+        // Pequeno delay para garantir que DOM foi atualizado
+        setTimeout(() => {
+          scrollElement.scrollTop = scrollElement.scrollHeight
+          setIsUserAtBottom(true)
+          setNewMessagesCount(0)
+          shouldScrollRef.current = false
+        }, 50)
       }
     }
   }, [messages])
+
+  // Monitor scroll position
+  useEffect(() => {
+    const scrollElement = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]')
+    if (!scrollElement) return
+
+    const handleScroll = () => {
+      checkIfUserAtBottom()
+    }
+
+    scrollElement.addEventListener('scroll', handleScroll)
+    return () => scrollElement.removeEventListener('scroll', handleScroll)
+  }, [checkIfUserAtBottom])
 
   // Handle scroll to update sticky date header
   useEffect(() => {
@@ -174,16 +273,37 @@ export const ConversationDetail = ({
     )
   }
 
-  // Log para debug
-
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative">
       {/* Sticky Date Header - WhatsApp style */}
       {stickyDate && messages.length > 0 && (
         <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-center pt-2 pointer-events-none">
           <div className="bg-silver-200/90 text-erie-black-700 text-xs px-3 py-1 rounded-full shadow-md backdrop-blur-sm">
             {stickyDate}
           </div>
+        </div>
+      )}
+
+      {/* Badge de novas mensagens - WhatsApp style */}
+      {!isUserAtBottom && newMessagesCount > 0 && (
+        <div className="absolute bottom-20 right-4 z-20">
+          <button
+            onClick={scrollToBottom}
+            className="bg-mint-600 hover:bg-mint-700 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 transition-all animate-in slide-in-from-bottom-5"
+          >
+            <span className="text-sm font-medium">
+              {newMessagesCount} nova{newMessagesCount > 1 ? 's' : ''} mensagem{newMessagesCount > 1 ? 's' : ''}
+            </span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
+          </button>
         </div>
       )}
       

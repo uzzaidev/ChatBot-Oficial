@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { ConversationDetail } from '@/components/ConversationDetail'
 import { SendMessageForm } from '@/components/SendMessageForm'
 import { StatusToggle } from '@/components/StatusToggle'
@@ -16,6 +16,7 @@ import { getInitials } from '@/lib/utils'
 import { MessageCircle, LayoutDashboard, Menu, Bot, User, ArrowRight, List } from 'lucide-react'
 import Link from 'next/link'
 import type { MediaAttachment } from '@/components/MediaPreview'
+import type { Message } from '@/lib/types'
 
 interface ConversationPageClientProps {
   phone: string
@@ -34,11 +35,32 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
   const [statusFilter, setStatusFilter] = useState<'all' | 'bot' | 'humano' | 'transferido'>('all')
   const [attachments, setAttachments] = useState<MediaAttachment[]>([])
 
-  const { conversations, loading, lastUpdatePhone: pollingLastUpdate } = useConversations({
+  // Refs para callbacks de optimistic updates
+  const optimisticCallbacksRef = useRef<{
+    onOptimisticMessage: (message: Message) => void
+    onMessageError: (tempId: string) => void
+  } | null>(null)
+
+  // Callback para capturar os callbacks do ConversationDetail
+  const handleGetOptimisticCallbacks = useCallback((callbacks: {
+    onOptimisticMessage: (message: Message) => void
+    onMessageError: (tempId: string) => void
+  }) => {
+    optimisticCallbacksRef.current = callbacks
+  }, [])
+
+  const { conversations, loading, lastUpdatePhone: pollingLastUpdate, markAsRead } = useConversations({
     clientId,
     status: statusFilter === 'all' ? undefined : statusFilter,
     enableRealtime: true,
   })
+
+  // Marcar conversa como lida quando abrir
+  useEffect(() => {
+    if (phone) {
+      markAsRead(phone)
+    }
+  }, [phone, markAsRead])
 
   // Gerenciar anexos de mídia
   const handleAddAttachment = useCallback((file: File, type: 'image' | 'document') => {
@@ -210,6 +232,8 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
                   phone={phone}
                   clientId={clientId}
                   conversationName={conversation.name || undefined}
+                  onGetOptimisticCallbacks={handleGetOptimisticCallbacks}
+                  onMarkAsRead={markAsRead}
                 />
               </DragDropZone>
             </div>
@@ -223,6 +247,8 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
                 onAddAttachment={handleAddAttachment}
                 onRemoveAttachment={handleRemoveAttachment}
                 onClearAttachments={handleClearAttachments}
+                onOptimisticMessage={optimisticCallbacksRef.current?.onOptimisticMessage}
+                onMessageError={optimisticCallbacksRef.current?.onMessageError}
               />
             </div>
           </>

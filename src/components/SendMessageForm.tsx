@@ -7,6 +7,7 @@ import { toast } from '@/hooks/use-toast'
 import { MediaUploadButton } from '@/components/MediaUploadButton'
 import { AudioRecorder } from '@/components/AudioRecorder'
 import { MediaPreview, type MediaAttachment } from '@/components/MediaPreview'
+import type { Message } from '@/lib/types'
 
 const MAX_TEXTAREA_HEIGHT = 120 // Maximum height for textarea expansion (about 5 lines)
 const MIN_TEXTAREA_HEIGHT = 40 // Minimum height for textarea
@@ -19,6 +20,8 @@ interface SendMessageFormProps {
   onAddAttachment: (file: File, type: 'image' | 'document') => void
   onRemoveAttachment: (index: number) => void
   onClearAttachments: () => void
+  onOptimisticMessage?: (message: Message) => void
+  onMessageError?: (tempId: string) => void
 }
 
 export const SendMessageForm = ({
@@ -29,6 +32,8 @@ export const SendMessageForm = ({
   onAddAttachment,
   onRemoveAttachment,
   onClearAttachments,
+  onOptimisticMessage,
+  onMessageError,
 }: SendMessageFormProps) => {
   const [content, setContent] = useState('')
   const [sending, setSending] = useState(false)
@@ -55,6 +60,32 @@ export const SendMessageForm = ({
         variant: 'destructive',
       })
       return
+    }
+
+    // Gerar ID temporário para mensagem otimista
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(7)}`
+
+    // Criar mensagem otimista (só para texto, não para anexos)
+    let optimisticMessage: Message | null = null
+    if (content.trim() && attachments.length === 0) {
+      optimisticMessage = {
+        id: tempId,
+        client_id: clientId,
+        conversation_id: phone,
+        phone: phone,
+        name: 'Você',
+        content: content.trim(),
+        type: 'text',
+        direction: 'outgoing',
+        status: 'sending',
+        timestamp: new Date().toISOString(),
+        metadata: null,
+      }
+
+      // Adicionar mensagem otimisticamente à UI
+      if (onOptimisticMessage) {
+        onOptimisticMessage(optimisticMessage)
+      }
     }
 
     try {
@@ -111,12 +142,16 @@ export const SendMessageForm = ({
         }
       }
 
-      toast({
-        title: 'Sucesso',
-        description: attachments.length > 0
-          ? `${attachments.length} arquivo(s) enviado(s)`
-          : 'Mensagem enviada com sucesso',
-      })
+      // Sucesso - mensagem já está na UI (otimista)
+      // Realtime vai receber a mensagem confirmada do servidor e substituir
+
+      // Mostrar toast apenas para anexos (texto já apareceu otimisticamente)
+      if (attachments.length > 0) {
+        toast({
+          title: 'Sucesso',
+          description: `${attachments.length} arquivo(s) enviado(s)`,
+        })
+      }
 
       // Limpar tudo
       setContent('')
@@ -127,6 +162,12 @@ export const SendMessageForm = ({
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido'
+
+      // Reverter mensagem otimista em caso de erro
+      if (optimisticMessage && onMessageError) {
+        onMessageError(tempId)
+      }
+
       toast({
         title: 'Erro',
         description: errorMessage,

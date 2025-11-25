@@ -1,8 +1,18 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { createClientBrowser } from '@/lib/supabase'
 import { cleanMessageContent } from '@/lib/utils'
 import type { Message } from '@/lib/types'
 import type { RealtimeChannel } from '@supabase/supabase-js'
+import { Capacitor } from '@capacitor/core'
+
+// Imports condicionais para mobile
+let App: any
+let Network: any
+
+if (Capacitor.isNativePlatform()) {
+  App = require('@capacitor/app').App
+  Network = require('@capacitor/network').Network
+}
 
 interface UseRealtimeMessagesOptions {
   clientId: string
@@ -10,6 +20,13 @@ interface UseRealtimeMessagesOptions {
   onNewMessage?: (message: Message) => void
 }
 
+/**
+ * Hook de Realtime usando Broadcast (FREE tier compatible)
+ *
+ * Escuta eventos broadcast enviados por triggers do banco de dados.
+ * Sem retry loops - tenta conectar uma vez, se falhar aceita e para.
+ * Fallback para polling já está implementado em useMessages.
+ */
 export const useRealtimeMessages = ({
   clientId,
   phone,
@@ -17,101 +34,172 @@ export const useRealtimeMessages = ({
 }: UseRealtimeMessagesOptions) => {
   const [isConnected, setIsConnected] = useState(false)
   const onNewMessageRef = useRef(onNewMessage)
+  const channelRef = useRef<RealtimeChannel | null>(null)
+  const hasAttemptedRef = useRef(false)
 
   // Keep the callback ref up to date
   useEffect(() => {
     onNewMessageRef.current = onNewMessage
   }, [onNewMessage])
 
-  useEffect(() => {
-    if (!clientId || !phone) {
-      return
-    }
+  // Setup da subscription - UMA VEZ, sem retry loops
+  const setupRealtimeSubscription = useCallback(() => {
+    if (!clientId || !phone || hasAttemptedRef.current) return
+    hasAttemptedRef.current = true
 
     const supabase = createClientBrowser()
-    let channel: RealtimeChannel
+    const channelName = `messages:${clientId}:${phone}`
 
-    const setupRealtimeSubscription = async () => {
-      channel = supabase
-        .channel(`chat-histories:${clientId}:${phone}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'n8n_chat_histories',
-            filter: `session_id=eq.${phone}`,
-          },
-          (payload) => {
-            
-            // Transformar dados do n8n para formato Message
-            const item = payload.new as any
+    console.log(`📡 [Realtime] Connecting to postgres_changes: ${channelName}`)
 
-            // O n8n_chat_histories salva message como JSON:
-            // { "type": "human" | "ai", "content": "...", "additional_kwargs": {}, "response_metadata": {} }
+    const channel = supabase
+      .channel(channelName, {
+        config: {
+          broadcast: { self: false },
+          private: false,
+        },
+      })
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'n8n_chat_histories',
+          filter: `session_id=eq.${phone}`,
+        },
+        (payload) => {
+          console.log('✅ [Realtime] postgres_changes received:', payload)
+          console.log('📦 [Realtime] Payload structure:', JSON.stringify(payload, null, 2))
 
-            let messageData: any
+          try {
+            const data = payload.new as any
 
-            // Parse o JSON da coluna message
-            if (typeof item.message === 'string') {
-              try {
-                messageData = JSON.parse(item.message)
-              } catch {
-                // Fallback se não for JSON válido
-                messageData = { type: 'ai', content: item.message }
-              }
-            } else {
-              messageData = item.message || {}
+            console.log('🔍 [Realtime] Parsed data:', data)
+
+            // Filter by session_id (phone) - garantir que é a conversa certa
+            if (data.session_id !== phone) {
+              console.log(`⚠️ [Realtime] Message for different session. Expected: ${phone}, Got: ${data.session_id}`)
+              return
             }
 
-            // Extrair type e content do JSON
-            const messageType = messageData.type || 'ai'  // 'human' ou 'ai'
-            const messageContent = messageData.content || ''
+            console.log('✅ [Realtime] Message is for current conversation! Processing...')
 
-            // Limpar tags de function calls
-            const cleanedContent = cleanMessageContent(messageContent)
-
-            const newMessage: Message = {
-              id: item.id?.toString() || `msg-${Date.now()}`,
-              client_id: clientId,
-              conversation_id: String(phone),
-              phone: phone,
-              name: messageType === 'human' ? 'Cliente' : 'Bot',
-              content: cleanedContent,
-              type: 'text',
-              direction: messageType === 'human' ? 'incoming' : 'outgoing',
-              status: 'sent',
-              timestamp: item.created_at || new Date().toISOString(),  // Usar created_at do banco
-              metadata: null,
+          // Parse message JSON
+          let messageData: any
+          if (typeof data.message === 'string') {
+            try {
+              messageData = JSON.parse(data.message)
+            } catch {
+              messageData = { type: 'ai', content: data.message }
             }
-            
-            
-            if (onNewMessageRef.current) {
-              onNewMessageRef.current(newMessage)
-            }
+          } else {
+            messageData = data.message || {}
           }
-        )
-        .subscribe((status) => {
-          
-          if (status === 'SUBSCRIBED') {
-            setIsConnected(true)
-          } else if (status === 'CLOSED') {
-            setIsConnected(false)
-          } else if (status === 'CHANNEL_ERROR') {
-            console.error('❌ ERRO no canal Realtime - Verifique se a replicação está habilitada no Supabase!')
+
+          const messageType = messageData.type || 'ai'
+          const messageContent = messageData.content || ''
+          const cleanedContent = cleanMessageContent(messageContent)
+
+          const newMessage: Message = {
+            id: data.id?.toString() || `msg-${Date.now()}`,
+            client_id: clientId,
+            conversation_id: String(phone),
+            phone: phone,
+            name: messageType === 'human' ? 'Cliente' : 'Bot',
+            content: cleanedContent,
+            type: 'text',
+            direction: messageType === 'human' ? 'incoming' : 'outgoing',
+            status: 'sent',
+            timestamp: data.created_at || new Date().toISOString(),
+            metadata: null,
           }
-        })
-    }
+
+          console.log('📨 [Realtime] New message created:', newMessage)
+
+          if (onNewMessageRef.current) {
+            console.log('📞 [Realtime] Calling onNewMessage callback...')
+            onNewMessageRef.current(newMessage)
+            console.log('✅ [Realtime] Callback executed!')
+          } else {
+            console.warn('⚠️ [Realtime] No callback function registered!')
+          }
+        } catch (error) {
+          console.error('❌ [Realtime] Error processing postgres_changes:', error)
+        }
+      })
+      .subscribe((status, err) => {
+        console.log(`📡 [Realtime] Status: ${status}`, err || '')
+
+        if (status === 'SUBSCRIBED') {
+          setIsConnected(true)
+          console.log('✅ [Realtime] Successfully connected to postgres_changes!')
+        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+          setIsConnected(false)
+          console.warn(`⚠️ [Realtime] Connection ${status}. Using polling fallback.`, err)
+          // Não faz retry - aceita o erro e deixa polling funcionar
+        }
+      })
+
+    channelRef.current = channel
+  }, [clientId, phone])
+
+  // Setup inicial e cleanup
+  useEffect(() => {
+    if (!clientId || !phone) return
 
     setupRealtimeSubscription()
 
     return () => {
+      const channel = channelRef.current
+
       if (channel) {
-        supabase.removeChannel(channel)
+        try {
+          const supabase = createClientBrowser()
+          console.log('🧹 [Realtime] Cleaning up channel')
+          supabase.removeChannel(channel)
+        } catch (e) {
+          // Ignore errors on cleanup
+        }
+        channelRef.current = null
         setIsConnected(false)
+        hasAttemptedRef.current = false
       }
     }
-  }, [clientId, phone])
+  }, [clientId, phone, setupRealtimeSubscription])
+
+  // Mobile: App lifecycle - só reconecta se canal foi fechado
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return
+
+    const appStateListener = App.addListener('appStateChange', (state: { isActive: boolean }) => {
+      if (state.isActive && channelRef.current?.state === 'closed') {
+        console.log('🔄 [Realtime] App resumed, channel was closed. Reconnecting...')
+        hasAttemptedRef.current = false
+        setupRealtimeSubscription()
+      }
+    })
+
+    return () => {
+      appStateListener.then((listener: any) => listener.remove())
+    }
+  }, [setupRealtimeSubscription])
+
+  // Mobile: Network changes - só reconecta se canal foi fechado
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return
+
+    const networkListener = Network.addListener('networkStatusChange', (status: { connected: boolean }) => {
+      if (status.connected && channelRef.current?.state === 'closed') {
+        console.log('🔄 [Realtime] Network reconnected, channel was closed. Reconnecting...')
+        hasAttemptedRef.current = false
+        setupRealtimeSubscription()
+      }
+    })
+
+    return () => {
+      networkListener.then((listener: any) => listener.remove())
+    }
+  }, [setupRealtimeSubscription])
 
   return { isConnected }
 }
