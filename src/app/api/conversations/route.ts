@@ -1,29 +1,28 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/postgres'
-import type { ConversationWithCount } from '@/lib/types'
-import { getClientIdFromSession } from '@/lib/supabase-server'
+import { NextRequest, NextResponse } from "next/server";
+import { query } from "@/lib/postgres";
+import type { ConversationWithCount } from "@/lib/types";
+import { getClientIdFromSession } from "@/lib/supabase-server";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
-  const startTime = Date.now()
+  const startTime = Date.now();
 
   try {
     // 🔐 SECURITY: Get client_id from authenticated session (cookies or Bearer token)
-    const clientId = await getClientIdFromSession(request as any)
+    const clientId = await getClientIdFromSession(request as any);
 
     if (!clientId) {
       return NextResponse.json(
-        { error: 'Unauthorized - authentication required' },
-        { status: 401 }
-      )
+        { error: "Unauthorized - authentication required" },
+        { status: 401 },
+      );
     }
 
-    const searchParams = request.nextUrl.searchParams
-    const status = searchParams.get('status')
-    const limit = parseInt(searchParams.get('limit') || '50')
-    const offset = parseInt(searchParams.get('offset') || '0')
-
+    const searchParams = request.nextUrl.searchParams;
+    const status = searchParams.get("status");
+    const limit = parseInt(searchParams.get("limit") || "50");
+    const offset = parseInt(searchParams.get("offset") || "0");
 
     // 🔐 SECURITY: Filter by authenticated user's client_id
     // OTIMIZAÇÃO: Uma única query SQL com JOINs e agregações
@@ -61,33 +60,38 @@ export async function GET(request: NextRequest) {
           WHERE h3.session_id = CAST(c.telefone AS TEXT)
             AND (h3.client_id = $1 OR h3.client_id IS NULL)
         )
-        ${status ? 'AND c.status = $2' : ''}
+        ${status ? "AND c.status = $2" : ""}
         GROUP BY c.telefone, c.nome, c.status, c.created_at, c.last_read_at
       )
       SELECT * FROM customer_stats
       ORDER BY last_message_time DESC NULLS LAST
-      LIMIT $${status ? '3' : '2'} OFFSET $${status ? '4' : '3'}
-    `
+      LIMIT $${status ? "3" : "2"} OFFSET $${status ? "4" : "3"}
+    `;
 
-    const params = status ? [clientId, status, limit, offset] : [clientId, limit, offset]
-    const result = await query<any>(sqlQuery, params)
+    const params = status
+      ? [clientId, status, limit, offset]
+      : [clientId, limit, offset];
+    const result = await query<any>(sqlQuery, params);
 
     const conversations: ConversationWithCount[] = result.rows.map((row) => {
-      const telefoneStr = String(row.telefone)
-      
+      const telefoneStr = String(row.telefone);
+
       // Parse última mensagem (JSON do LangChain)
-      let lastMessageContent = ''
+      let lastMessageContent = "";
       if (row.last_message_json) {
         try {
-          const msgData = typeof row.last_message_json === 'string'
+          const msgData = typeof row.last_message_json === "string"
             ? JSON.parse(row.last_message_json)
-            : row.last_message_json
-          
+            : row.last_message_json;
+
           // Extrai conteúdo da mensagem (formato LangChain)
-          lastMessageContent = msgData.data?.content || msgData.content || ''
+          lastMessageContent = msgData.data?.content || msgData.content || "";
         } catch (error) {
-          console.error('[API /conversations] Error parsing message JSON:', error)
-          lastMessageContent = ''
+          console.error(
+            "[API /conversations] Error parsing message JSON:",
+            error,
+          );
+          lastMessageContent = "";
         }
       }
 
@@ -95,32 +99,33 @@ export async function GET(request: NextRequest) {
         id: telefoneStr,
         client_id: clientId,
         phone: telefoneStr,
-        name: row.nome || 'Sem nome',
-        status: row.status || 'bot',
+        name: row.nome || "Sem nome",
+        status: row.status || "bot",
         last_message: lastMessageContent.substring(0, 100),
-        last_update: row.last_message_time || row.customer_created_at || new Date().toISOString(),
+        last_update: row.last_message_time || row.customer_created_at ||
+          new Date().toISOString(),
         last_read_at: row.last_read_at || null,
         created_at: row.customer_created_at || new Date().toISOString(),
         message_count: parseInt(row.message_count) || 0,
         unread_count: parseInt(row.unread_count) || 0,
         assigned_to: null,
-      }
-    })
+      };
+    });
 
-    const duration = Date.now() - startTime
+    const duration = Date.now() - startTime;
 
     return NextResponse.json({
       conversations,
       total: conversations.length,
       limit,
       offset,
-    })
+    });
   } catch (error) {
-    const duration = Date.now() - startTime
-    console.error(`[API /conversations] ❌ Error after ${duration}ms:`, error)
+    const duration = Date.now() - startTime;
+    console.error(`[API /conversations] ❌ Error after ${duration}ms:`, error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
-      { status: 500 }
-    )
+      { error: "Erro interno do servidor" },
+      { status: 500 },
+    );
   }
 }

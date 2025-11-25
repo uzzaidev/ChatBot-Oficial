@@ -10,7 +10,7 @@
  * - Mobile: usa URL absoluta de produção (NEXT_PUBLIC_API_URL)
  */
 
-import { Capacitor } from '@capacitor/core'
+import { Capacitor } from "@capacitor/core";
 
 /**
  * Retorna a base URL da API baseado na plataforma
@@ -26,26 +26,26 @@ import { Capacitor } from '@capacitor/core'
  * ```
  */
 export function getApiBaseUrl(): string {
-  const isMobile = Capacitor.isNativePlatform()
+  const isMobile = Capacitor.isNativePlatform();
 
   if (isMobile) {
     // Mobile: usa variável de ambiente (configurável)
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
     if (!apiUrl) {
       console.warn(
-        '[API] NEXT_PUBLIC_API_URL não configurada! Mobile não conseguirá acessar APIs. ' +
-        'Configure em .env.mobile'
-      )
+        "[API] NEXT_PUBLIC_API_URL não configurada! Mobile não conseguirá acessar APIs. " +
+          "Configure em .env.mobile",
+      );
       // Fallback para produção
-      return 'https://uzzapp.uzzai.com.br'
+      return "https://uzzapp.uzzai.com.br";
     }
 
-    return apiUrl
+    return apiUrl;
   }
 
   // Web: usa URL relativa (localhost em dev, domínio em prod)
-  return ''
+  return "";
 }
 
 /**
@@ -65,57 +65,61 @@ export function getApiBaseUrl(): string {
  */
 export async function apiFetch(
   endpoint: string,
-  options?: RequestInit
+  options?: RequestInit,
 ): Promise<Response> {
-  const baseUrl = getApiBaseUrl()
-  const url = `${baseUrl}${endpoint}`
+  const baseUrl = getApiBaseUrl();
+  const url = `${baseUrl}${endpoint}`;
 
-  console.log('[API] apiFetch chamado:', endpoint)
-  console.log('[API] isMobile:', Capacitor.isNativePlatform())
-  console.log('[API] baseUrl:', baseUrl)
+  console.log("[API] apiFetch chamado:", endpoint);
+  console.log("[API] isMobile:", Capacitor.isNativePlatform());
+  console.log("[API] baseUrl:", baseUrl);
 
   // Mobile: pegar token de autenticação e incluir no header
-  let headers = { ...options?.headers } as Record<string, string>
+  let headers = { ...options?.headers } as Record<string, string>;
 
   if (Capacitor.isNativePlatform()) {
-    console.log('[API] Mobile detectado - buscando token...')
+    console.log("[API] Mobile detectado - buscando token...");
 
     try {
       // Importar dinamicamente para evitar erro no servidor
-      const { createBrowserClient } = await import('@/lib/supabase-browser')
-      const supabase = createBrowserClient()
-      const { data: { session } } = await supabase.auth.getSession()
+      const { createBrowserClient } = await import("@/lib/supabase-browser");
+      const supabase = createBrowserClient();
+      const { data: { session } } = await supabase.auth.getSession();
 
-      console.log('[API] Sessão:', session ? 'EXISTE' : 'NÃO EXISTE')
+      console.log("[API] Sessão:", session ? "EXISTE" : "NÃO EXISTE");
 
       if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`
-        console.log('[API] Token adicionado ao header')
+        headers["Authorization"] = `Bearer ${session.access_token}`;
+        console.log("[API] Token adicionado ao header");
       } else {
-        console.warn('[API] ❌ Nenhuma sessão ativa no mobile - requisição sem autenticação')
+        console.warn(
+          "[API] ❌ Nenhuma sessão ativa no mobile - requisição sem autenticação",
+        );
       }
     } catch (error) {
-      console.error('[API] ❌ Erro ao buscar sessão:', error)
+      console.error("[API] ❌ Erro ao buscar sessão:", error);
     }
   }
 
   const fetchOptions: RequestInit = {
     ...options,
     headers,
-    credentials: Capacitor.isNativePlatform() ? 'omit' : options?.credentials || 'same-origin',
-  }
+    credentials: Capacitor.isNativePlatform()
+      ? "omit"
+      : options?.credentials || "same-origin",
+  };
 
-  console.log('[API] Fazendo requisição para:', url)
-  console.log('[API] Headers:', headers)
+  console.log("[API] Fazendo requisição para:", url);
+  console.log("[API] Headers:", headers);
 
-  return fetch(url, fetchOptions)
+  return fetch(url, fetchOptions);
 }
 
 /**
  * Verifica se está rodando em mobile (Capacitor)
  */
 export function isMobilePlatform(): boolean {
-  return Capacitor.isNativePlatform()
+  return Capacitor.isNativePlatform();
 }
 
 /**
@@ -126,7 +130,7 @@ export function getPlatformInfo() {
     isMobile: Capacitor.isNativePlatform(),
     platform: Capacitor.getPlatform(), // 'web', 'ios', 'android'
     apiBaseUrl: getApiBaseUrl(),
-  }
+  };
 }
 
 /**
@@ -143,33 +147,33 @@ export function getPlatformInfo() {
  * ```
  */
 export async function markConversationAsRead(
-  phone: string
+  phone: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log('👁️ [markConversationAsRead] Marking as read:', phone)
+    console.log("👁️ [markConversationAsRead] Marking as read:", phone);
 
-    const response = await apiFetch('/api/conversations/mark-read', {
-      method: 'POST',
+    const response = await apiFetch("/api/conversations/mark-read", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ phone }),
-    })
+    });
 
-    const data = await response.json()
+    const data = await response.json();
 
     if (!response.ok) {
-      console.error('❌ [markConversationAsRead] Error:', data.error)
-      return { success: false, error: data.error }
+      console.error("❌ [markConversationAsRead] Error:", data.error);
+      return { success: false, error: data.error };
     }
 
-    console.log('✅ [markConversationAsRead] Success:', data)
-    return { success: true }
+    console.log("✅ [markConversationAsRead] Success:", data);
+    return { success: true };
   } catch (error) {
-    console.error('❌ [markConversationAsRead] Exception:', error)
+    console.error("❌ [markConversationAsRead] Exception:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    }
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
   }
 }
