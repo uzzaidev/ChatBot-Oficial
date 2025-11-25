@@ -11,6 +11,7 @@ interface AudioRecorderProps {
   clientId: string
   onAudioSent?: () => void
   onRecordingChange?: (isRecording: boolean) => void
+  onAudioRecorded?: (hasAudio: boolean) => void
 }
 
 interface RecordedAudio {
@@ -19,7 +20,7 @@ interface RecordedAudio {
   file: File
 }
 
-export const AudioRecorder = ({ phone, clientId, onAudioSent, onRecordingChange }: AudioRecorderProps) => {
+export const AudioRecorder = ({ phone, clientId, onAudioSent, onRecordingChange, onAudioRecorded }: AudioRecorderProps) => {
   const [recording, setRecording] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [recordedAudio, setRecordedAudio] = useState<RecordedAudio | null>(null)
@@ -114,6 +115,7 @@ export const AudioRecorder = ({ phone, clientId, onAudioSent, onRecordingChange 
           url: audioUrl,
           file: audioFile
         })
+        onAudioRecorded?.(true)
 
         // Parar todas as tracks de áudio
         if (streamRef.current) {
@@ -163,6 +165,7 @@ export const AudioRecorder = ({ phone, clientId, onAudioSent, onRecordingChange 
     if (recordedAudio) {
       URL.revokeObjectURL(recordedAudio.url)
       setRecordedAudio(null)
+      onAudioRecorded?.(false)
     }
   }
 
@@ -171,6 +174,7 @@ export const AudioRecorder = ({ phone, clientId, onAudioSent, onRecordingChange 
       await uploadAudio(recordedAudio.file)
       URL.revokeObjectURL(recordedAudio.url)
       setRecordedAudio(null)
+      onAudioRecorded?.(false)
     }
   }
 
@@ -256,12 +260,13 @@ export const AudioRecorder = ({ phone, clientId, onAudioSent, onRecordingChange 
   // Se há áudio gravado, mostra preview
   if (recordedAudio) {
     return (
-      <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-2 w-full max-w-full">
+      <div className="flex items-center gap-1 bg-mint-50 rounded-lg p-1 flex-1 border border-mint-200">
         {/* Player de áudio */}
         <audio
           src={recordedAudio.url}
           controls
-          className="h-10 flex-1 min-w-0 max-w-full"
+          className="flex-1 min-w-0 max-w-full h-9"
+          style={{ width: '100%' }}
         />
 
         {/* Botão Cancelar */}
@@ -270,10 +275,10 @@ export const AudioRecorder = ({ phone, clientId, onAudioSent, onRecordingChange 
           size="icon"
           onClick={cancelRecording}
           disabled={uploading}
-          className="flex-shrink-0 text-red-500 hover:text-red-600 hover:bg-red-50"
-          title="Cancelar e regravar"
+          className="flex-shrink-0 h-9 w-9 text-red-500 hover:bg-red-50"
+          title="Cancelar"
         >
-          <X className="h-5 w-5" />
+          <X className="h-4 w-4" />
         </Button>
 
         {/* Botão Enviar */}
@@ -281,13 +286,13 @@ export const AudioRecorder = ({ phone, clientId, onAudioSent, onRecordingChange 
           onClick={confirmSend}
           disabled={uploading}
           size="icon"
-          className="h-10 w-10 rounded-full flex-shrink-0 bg-mint-600 hover:bg-mint-700"
-          title="Enviar áudio"
+          className="h-9 w-9 rounded-full flex-shrink-0 bg-mint-600 hover:bg-mint-700"
+          title="Enviar"
         >
           {uploading ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
+            <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <Send className="h-5 w-5" />
+            <Send className="h-4 w-4" />
           )}
         </Button>
       </div>
@@ -297,19 +302,24 @@ export const AudioRecorder = ({ phone, clientId, onAudioSent, onRecordingChange 
   // Se está gravando, mostra visualizer
   if (recording) {
     return (
-      <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-2 flex-1 min-w-0 overflow-hidden">
+      <div className="flex items-center gap-1 bg-red-50 rounded-lg p-1 flex-1 border border-red-200">
+        {/* Ícone pulsante */}
+        <Mic className="h-4 w-4 text-red-500 flex-shrink-0 animate-pulse" />
+
         {/* Visualizador de ondas sonoras */}
-        <AudioVisualizer stream={streamRef.current} recording={recording} />
+        <div className="flex-1 min-w-0 max-w-full overflow-hidden">
+          <AudioVisualizer stream={streamRef.current} recording={recording} />
+        </div>
 
         {/* Botão de parar gravação */}
         <Button
-          variant="ghost"
+          variant="default"
           size="icon"
           onClick={stopRecording}
-          className="flex-shrink-0"
-          title="Parar gravação"
+          className="flex-shrink-0 h-9 w-9 bg-red-500 hover:bg-red-600"
+          title="Parar"
         >
-          <Square className="h-5 w-5 text-red-500 fill-red-500 animate-pulse" />
+          <Square className="h-4 w-4 fill-white" />
         </Button>
       </div>
     )
@@ -317,21 +327,19 @@ export const AudioRecorder = ({ phone, clientId, onAudioSent, onRecordingChange 
 
   // Interface normal (botão de microfone)
   return (
-    <div className="relative">
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={startRecording}
-        disabled={uploading}
-        className="flex-shrink-0"
-        title="Gravar áudio"
-      >
-        {uploading ? (
-          <Loader2 className="h-5 w-5 animate-spin" />
-        ) : (
-          <Mic className="h-5 w-5" />
-        )}
-      </Button>
-    </div>
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={startRecording}
+      disabled={uploading}
+      className="flex-shrink-0 h-10 w-10 md:h-11 md:w-11"
+      title="Gravar áudio"
+    >
+      {uploading ? (
+        <Loader2 className="h-5 w-5 animate-spin" />
+      ) : (
+        <Mic className="h-5 w-5" />
+      )}
+    </Button>
   )
 }

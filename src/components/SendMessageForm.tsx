@@ -33,6 +33,7 @@ export const SendMessageForm = ({
   const [content, setContent] = useState('')
   const [sending, setSending] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
+  const [hasRecordedAudio, setHasRecordedAudio] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Auto-expand textarea like WhatsApp
@@ -153,25 +154,29 @@ export const SendMessageForm = ({
         onRemove={onRemoveAttachment}
       />
 
-      <div className="flex items-end gap-2 bg-white rounded-lg p-2 max-w-full">
-        {/* Botão de anexar mídia (+) - esconde quando gravando */}
-        <div className={isRecording ? 'hidden' : 'flex-shrink-0'}>
-          <MediaUploadButton
-            onFileSelect={onAddAttachment}
-          />
-        </div>
+      <div className="flex items-end gap-2 bg-white rounded-lg p-2 w-full overflow-hidden">
+        {/* Botão de anexar mídia (+) - esconde quando gravando OU tem áudio gravado */}
+        {!isRecording && !hasRecordedAudio && (
+          <div className="flex-shrink-0">
+            <MediaUploadButton
+              onFileSelect={onAddAttachment}
+            />
+          </div>
+        )}
 
-        {/* Textarea de mensagem - esconde quando gravando */}
-        <textarea
-          ref={textareaRef}
-          placeholder="Digite sua mensagem..."
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={sending}
-          className={`flex-1 min-w-0 resize-none border-0 bg-white px-3 py-2 text-sm md:text-base focus:outline-none focus:ring-0 rounded-lg max-h-[120px] min-h-[40px] ${isRecording ? 'hidden' : ''}`}
-          rows={1}
-        />
+        {/* Textarea de mensagem - esconde quando gravando OU tem áudio gravado */}
+        {!isRecording && !hasRecordedAudio && (
+          <textarea
+            ref={textareaRef}
+            placeholder="Digite sua mensagem..."
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={sending}
+            className="flex-1 min-w-0 resize-none border-0 bg-white px-3 py-2 text-sm md:text-base focus:outline-none focus:ring-0 rounded-lg max-h-[120px] min-h-[40px]"
+            rows={1}
+          />
+        )}
 
         {/* Botão de gravar áudio OU enviar mensagem */}
         {hasContentOrAttachments ? (
@@ -185,14 +190,13 @@ export const SendMessageForm = ({
             <Send className="h-4 w-4 md:h-5 md:w-5" />
           </Button>
         ) : (
-          <div className="flex-1 min-w-0 flex items-end">
-            <AudioRecorder
-              phone={phone}
-              clientId={clientId}
-              onAudioSent={onMessageSent}
-              onRecordingChange={setIsRecording}
-            />
-          </div>
+          <AudioRecorder
+            phone={phone}
+            clientId={clientId}
+            onAudioSent={onMessageSent}
+            onRecordingChange={setIsRecording}
+            onAudioRecorded={setHasRecordedAudio}
+          />
         )}
       </div>
     </div>
