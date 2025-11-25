@@ -128,3 +128,48 @@ export function getPlatformInfo() {
     apiBaseUrl: getApiBaseUrl(),
   }
 }
+
+/**
+ * Marca uma conversa como lida (atualiza last_read_at no Supabase)
+ *
+ * @param phone - Número de telefone da conversa
+ * @returns Promise<{ success: boolean, error?: string }>
+ *
+ * @example
+ * ```typescript
+ * import { markConversationAsRead } from '@/lib/api'
+ *
+ * await markConversationAsRead('5511999999999')
+ * ```
+ */
+export async function markConversationAsRead(
+  phone: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    console.log('👁️ [markConversationAsRead] Marking as read:', phone)
+
+    const response = await apiFetch('/api/conversations/mark-read', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ phone }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      console.error('❌ [markConversationAsRead] Error:', data.error)
+      return { success: false, error: data.error }
+    }
+
+    console.log('✅ [markConversationAsRead] Success:', data)
+    return { success: true }
+  } catch (error) {
+    console.error('❌ [markConversationAsRead] Exception:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    }
+  }
+}

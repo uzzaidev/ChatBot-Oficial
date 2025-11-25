@@ -7,14 +7,13 @@ import type { ConversationWithCount } from '@/lib/types'
 import { MessageCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { useState, useEffect } from 'react'
 
 interface ConversationListProps {
   conversations: ConversationWithCount[]
   loading: boolean
   clientId?: string
   currentPhone?: string
-  lastUpdatePhone?: string | null
+  lastUpdatePhone?: string | null // Mantido para animação de pulse
   onConversationOpen?: (phone: string) => void
 }
 
@@ -23,25 +22,10 @@ export const ConversationList = ({
   loading,
   clientId = 'demo-client-id',
   currentPhone,
-  lastUpdatePhone,
+  lastUpdatePhone, // Mantido por compatibilidade mas não usado
   onConversationOpen,
 }: ConversationListProps) => {
   const router = useRouter()
-  const [recentlyUpdated, setRecentlyUpdated] = useState<string | null>(null)
-
-  // Track recently updated for pulse animation
-  useEffect(() => {
-    if (lastUpdatePhone && lastUpdatePhone !== currentPhone) {
-      // Add visual pulse animation with cleanup
-      setRecentlyUpdated(lastUpdatePhone)
-      const timer = setTimeout(() => setRecentlyUpdated(null), 2000)
-      return () => {
-        clearTimeout(timer)
-      }
-    }
-    // No cleanup needed if condition not met
-    return undefined
-  }, [lastUpdatePhone, currentPhone])
 
   const handleConversationClick = (phone: string) => {
     // Notify parent component if callback provided
@@ -75,29 +59,16 @@ export const ConversationList = ({
     <div>
       {conversations.map((conversation) => {
         const isActive = currentPhone === conversation.phone
-        // Usar lastUpdatePhone diretamente - sem estado duplicado!
-        const hasUnread = lastUpdatePhone === conversation.phone && !isActive
-        const isRecentlyUpdated = recentlyUpdated === conversation.phone
-
-        // Debug log para conversa específica
-        if (conversation.phone === '61439237584' || conversation.phone === '555499250023') {
-          console.log(`🔍 [ConversationList] Conversa ${conversation.phone}:`, {
-            isActive,
-            hasUnread,
-            isRecentlyUpdated,
-            lastUpdatePhone,
-            currentPhone
-          })
-        }
+        // Usar unread_count do Supabase (persistente)
+        const hasUnread = (conversation.unread_count ?? 0) > 0 && !isActive
 
         return (
           <div
             key={conversation.id}
             className={cn(
-              "flex items-center gap-3 p-3 cursor-pointer transition-colors duration-300 border-b border-silver-200",
+              "flex items-center gap-3 p-3 cursor-pointer transition-colors duration-200 border-b border-silver-200",
               isActive ? "bg-mint-50" : "hover:bg-silver-50",
-              hasUnread && !isActive && "bg-brand-blue-50",
-              isRecentlyUpdated && "animate-pulse"
+              hasUnread && !isActive && "bg-brand-blue-50"
             )}
             onClick={() => handleConversationClick(conversation.phone)}
           >
@@ -144,10 +115,10 @@ export const ConversationList = ({
               </div>
             </div>
 
-            {/* Indicador de mensagens não lidas */}
+            {/* Indicador de mensagens não lidas - Badge com número */}
             {hasUnread && !isActive && (
-              <div className="bg-mint-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-semibold flex-shrink-0">
-                •
+              <div className="bg-mint-500 text-white text-[10px] rounded-full min-w-[20px] h-5 px-1.5 flex items-center justify-center font-semibold flex-shrink-0">
+                {(conversation.unread_count ?? 0) > 9 ? '9+' : conversation.unread_count}
               </div>
             )}
           </div>

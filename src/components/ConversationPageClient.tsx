@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getInitials } from '@/lib/utils'
+import { markConversationAsRead } from '@/lib/api'
 import { MessageCircle, LayoutDashboard, Menu, Bot, User, ArrowRight, List } from 'lucide-react'
 import Link from 'next/link'
 import type { MediaAttachment } from '@/components/MediaPreview'
@@ -49,7 +50,7 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
     optimisticCallbacksRef.current = callbacks
   }, [])
 
-  const { conversations, loading, lastUpdatePhone: pollingLastUpdate, markAsRead } = useConversations({
+  const { conversations, loading } = useConversations({
     clientId,
     status: statusFilter === 'all' ? undefined : statusFilter,
     enableRealtime: true,
@@ -58,9 +59,17 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
   // Marcar conversa como lida quando abrir
   useEffect(() => {
     if (phone) {
-      markAsRead(phone)
+      console.log('👁️ [ConversationPageClient] Marking conversation as read:', phone)
+      markConversationAsRead(phone).then((result) => {
+        if (result.success) {
+          console.log('✅ [ConversationPageClient] Marked as read successfully')
+          // Realtime vai atualizar automaticamente com unread_count do banco
+        } else {
+          console.error('❌ [ConversationPageClient] Failed to mark as read:', result.error)
+        }
+      })
     }
-  }, [phone, markAsRead])
+  }, [phone])
 
   // Gerenciar anexos de mídia
   const handleAddAttachment = useCallback((file: File, type: 'image' | 'document') => {
@@ -93,18 +102,19 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
   }, [])
 
   // Hook global para notificações em tempo real
-  const { lastUpdatePhone: realtimeLastUpdate } = useGlobalRealtimeNotifications()
+  const { lastUpdatePhone } = useGlobalRealtimeNotifications()
 
-  // Estado combinado - prioriza realtime, mas aceita polling como fallback
-  const [lastUpdatePhone, setLastUpdatePhone] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (realtimeLastUpdate) {
-      setLastUpdatePhone(realtimeLastUpdate)
-    } else if (pollingLastUpdate) {
-      setLastUpdatePhone(pollingLastUpdate)
+  // Callback para marcar como lida (usado pelo ConversationDetail)
+  const handleMarkAsRead = useCallback(async (conversationPhone: string) => {
+    console.log('👁️ [ConversationPageClient] handleMarkAsRead called for:', conversationPhone)
+    const result = await markConversationAsRead(conversationPhone)
+    if (result.success) {
+      console.log('✅ [ConversationPageClient] Marked as read successfully')
+      // Realtime vai atualizar automaticamente com unread_count do banco
+    } else {
+      console.error('❌ [ConversationPageClient] Failed to mark as read:', result.error)
     }
-  }, [realtimeLastUpdate, pollingLastUpdate])
+  }, [])
 
   const conversation = conversations.find((c) => c.phone === phone)
 
@@ -233,7 +243,7 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
                   clientId={clientId}
                   conversationName={conversation.name || undefined}
                   onGetOptimisticCallbacks={handleGetOptimisticCallbacks}
-                  onMarkAsRead={markAsRead}
+                  onMarkAsRead={handleMarkAsRead}
                 />
               </DragDropZone>
             </div>

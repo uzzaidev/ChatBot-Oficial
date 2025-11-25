@@ -24,25 +24,14 @@ interface ConversationsIndexClientProps {
 export function ConversationsIndexClient({ clientId }: ConversationsIndexClientProps) {
   const [statusFilter, setStatusFilter] = useState<'all' | 'bot' | 'humano' | 'transferido'>('all')
 
-  const { conversations, loading, lastUpdatePhone: pollingLastUpdate } = useConversations({
+  const { conversations, loading } = useConversations({
     clientId,
     status: statusFilter === 'all' ? undefined : statusFilter,
     enableRealtime: true,
   })
 
   // Hook global para notificações em tempo real
-  const { lastUpdatePhone: realtimeLastUpdate } = useGlobalRealtimeNotifications()
-
-  // Estado combinado - prioriza realtime, mas aceita polling como fallback
-  const [lastUpdatePhone, setLastUpdatePhone] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (realtimeLastUpdate) {
-      setLastUpdatePhone(realtimeLastUpdate)
-    } else if (pollingLastUpdate) {
-      setLastUpdatePhone(pollingLastUpdate)
-    }
-  }, [realtimeLastUpdate, pollingLastUpdate])
+  const { lastUpdatePhone } = useGlobalRealtimeNotifications()
 
   return (
     <div className="fixed inset-0 flex overflow-hidden bg-white">

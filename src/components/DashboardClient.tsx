@@ -68,7 +68,7 @@ export function DashboardClient({ clientId }: DashboardClientProps) {
     checkAdminRole()
   }, [])
 
-  const { conversations, loading, lastUpdatePhone: pollingLastUpdate } = useConversations({
+  const { conversations, loading } = useConversations({
     clientId,
     limit: 50,
     refreshInterval: 0, // Disabled polling - use realtime only to prevent flickering
@@ -76,18 +76,7 @@ export function DashboardClient({ clientId }: DashboardClientProps) {
   })
 
   // Hook global para notificações em tempo real
-  const { lastUpdatePhone: realtimeLastUpdate } = useGlobalRealtimeNotifications()
-
-  // Estado combinado - prioriza realtime, mas aceita polling como fallback
-  const [lastUpdatePhone, setLastUpdatePhone] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (realtimeLastUpdate) {
-      setLastUpdatePhone(realtimeLastUpdate)
-    } else if (pollingLastUpdate) {
-      setLastUpdatePhone(pollingLastUpdate)
-    }
-  }, [realtimeLastUpdate, pollingLastUpdate])
+  const { lastUpdatePhone } = useGlobalRealtimeNotifications()
 
   useEffect(() => {
     const calculateMetrics = () => {

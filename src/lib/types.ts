@@ -44,6 +44,7 @@ export interface Conversation {
   assigned_to: string | null
   last_message: string | null
   last_update: string
+  last_read_at?: string | null
   created_at: string
 }
 
@@ -74,6 +75,7 @@ export interface UsageLog {
 
 export interface ConversationWithCount extends Conversation {
   message_count: number
+  unread_count?: number
 }
 
 export interface UsageSummary {

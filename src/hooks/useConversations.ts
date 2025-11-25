@@ -20,8 +20,6 @@ interface UseConversationsResult {
   error: string | null
   total: number
   refetch: () => Promise<void>
-  lastUpdatePhone: string | null
-  markAsRead: (phone: string) => void
 }
 
 export const useConversations = ({
@@ -36,8 +34,6 @@ export const useConversations = ({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [total, setTotal] = useState(0)
-  const [lastUpdatePhone, setLastUpdatePhone] = useState<string | null>(null)
-  const [readConversations, setReadConversations] = useState<Set<string>>(new Set())
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const isInitialLoadRef = useRef(true)
 
@@ -112,30 +108,9 @@ export const useConversations = ({
     }
   }, [refreshInterval, fetchConversations])
 
-  // Função para marcar conversa como lida
-  const markAsRead = useCallback((phone: string) => {
-    console.log('👁️ [useConversations] Marking conversation as read:', phone)
-    setReadConversations(prev => new Set(prev).add(phone))
-
-    // Se essa conversa era a última atualizada, limpar
-    setLastUpdatePhone(current => current === phone ? null : current)
-  }, [])
-
   // Realtime subscription for conversations usando novo hook otimizado
   const handleConversationUpdate = useCallback((update: ConversationUpdate) => {
     console.log('🔔 [useConversations] Conversation update:', update.eventType, update.conversation)
-
-    // Extrair telefone da conversa atualizada
-    const phone = update.conversation?.telefone?.toString() || null
-    if (phone) {
-      // Só marca como não lida se não estiver no set de lidas
-      setReadConversations(prev => {
-        const newSet = new Set(prev)
-        newSet.delete(phone) // Remove do set de lidas quando recebe nova mensagem
-        return newSet
-      })
-      setLastUpdatePhone(phone)
-    }
 
     // Refetch conversations com debounce para agrupar múltiplas mudanças
     if (update.eventType === 'INSERT') {
@@ -179,28 +154,11 @@ export const useConversations = ({
     return () => clearTimeout(fallbackTimeout)
   }, [enableRealtime, realtimeConnected, fetchConversations])
 
-  // Calcular lastUpdatePhone considerando conversas lidas
-  const effectiveLastUpdatePhone = readConversations.has(lastUpdatePhone || '')
-    ? null
-    : lastUpdatePhone
-
-  // Debug log detalhado
-  console.log('📊 [useConversations] State:', {
-    lastUpdatePhone,
-    effectiveLastUpdatePhone,
-    readConversations: Array.from(readConversations),
-    readCount: readConversations.size,
-    isRead: readConversations.has(lastUpdatePhone || ''),
-    allConversations: conversations.map(c => c.phone)
-  })
-
   return {
     conversations,
     loading,
     error,
     total,
     refetch: fetchConversations,
-    lastUpdatePhone: effectiveLastUpdatePhone,
-    markAsRead,
   }
 }

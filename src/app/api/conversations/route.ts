@@ -35,8 +35,15 @@ export async function GET(request: NextRequest) {
           c.nome,
           c.status,
           c.created_at as customer_created_at,
+          c.last_read_at,
           COUNT(h.id) as message_count,
           MAX(h.created_at) as last_message_time,
+          -- Count unread messages (messages after last_read_at)
+          COUNT(CASE 
+            WHEN c.last_read_at IS NULL OR h.created_at > c.last_read_at 
+            THEN 1 
+            ELSE NULL 
+          END) as unread_count,
           (
             SELECT h2.message 
             FROM n8n_chat_histories h2 
@@ -55,7 +62,7 @@ export async function GET(request: NextRequest) {
             AND (h3.client_id = $1 OR h3.client_id IS NULL)
         )
         ${status ? 'AND c.status = $2' : ''}
-        GROUP BY c.telefone, c.nome, c.status, c.created_at
+        GROUP BY c.telefone, c.nome, c.status, c.created_at, c.last_read_at
       )
       SELECT * FROM customer_stats
       ORDER BY last_message_time DESC NULLS LAST
@@ -92,8 +99,10 @@ export async function GET(request: NextRequest) {
         status: row.status || 'bot',
         last_message: lastMessageContent.substring(0, 100),
         last_update: row.last_message_time || row.customer_created_at || new Date().toISOString(),
+        last_read_at: row.last_read_at || null,
         created_at: row.customer_created_at || new Date().toISOString(),
         message_count: parseInt(row.message_count) || 0,
+        unread_count: parseInt(row.unread_count) || 0,
         assigned_to: null,
       }
     })
