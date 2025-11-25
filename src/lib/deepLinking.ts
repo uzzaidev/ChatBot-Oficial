@@ -1,15 +1,15 @@
 /**
  * Deep Linking - App Links (Android) e Universal Links (iOS)
- * 
+ *
  * Permite abrir o app mobile diretamente de URLs:
  * - Custom URL Scheme: chatbot://chat/123
  * - App Links: https://uzzapp.uzzai.com.br/chat/123
  */
 
-'use client'
+"use client";
 
-import { App } from '@capacitor/app'
-import { Capacitor } from '@capacitor/core'
+import { App } from "@capacitor/app";
+import { Capacitor } from "@capacitor/core";
 
 /**
  * Inicializa listeners de deep linking
@@ -18,28 +18,28 @@ import { Capacitor } from '@capacitor/core'
 export const initDeepLinking = () => {
   // Apenas em mobile (não funciona na web)
   if (!Capacitor.isNativePlatform()) {
-    return
+    return;
   }
 
   // Listener para app aberto via deep link (quando app já está rodando)
-  App.addListener('appUrlOpen', (data) => {
-    handleDeepLink(data.url)
-  })
+  App.addListener("appUrlOpen", (data) => {
+    handleDeepLink(data.url);
+  });
 
   // Verificar se app foi aberto via deep link no launch (iOS)
   App.getLaunchUrl()
     .then((result) => {
       if (result?.url) {
-        handleDeepLink(result.url)
+        handleDeepLink(result.url);
       }
     })
     .catch((error) => {
       // iOS pode não ter launch URL (normal)
-      if (Capacitor.getPlatform() !== 'ios') {
-        console.error('[Deep Linking] Erro ao obter launch URL:', error)
+      if (Capacitor.getPlatform() !== "ios") {
+        console.error("[Deep Linking] Erro ao obter launch URL:", error);
       }
-    })
-}
+    });
+};
 
 /**
  * Processa deep link e navega para rota apropriada
@@ -48,39 +48,39 @@ const handleDeepLink = (url: string) => {
   try {
     // Parse URL
     // Pode ser: chatbot://chat/123 ou https://uzzapp.uzzai.com.br/chat/123
-    const urlObj = new URL(url)
-    const path = urlObj.pathname
+    const urlObj = new URL(url);
+    const path = urlObj.pathname;
 
     // Rotas suportadas
-    if (path.startsWith('/chat/') || path.startsWith('/dashboard/chat/')) {
+    if (path.startsWith("/chat/") || path.startsWith("/dashboard/chat/")) {
       // Extrair chatId
-      const segments = path.split('/')
-      const chatId = segments[segments.length - 1] || segments[2]
-      
+      const segments = path.split("/");
+      const chatId = segments[segments.length - 1] || segments[2];
+
       if (chatId) {
-        navigateToChat(chatId)
+        navigateToChat(chatId);
       } else {
-        navigateToHome()
+        navigateToHome();
       }
-    } else if (path.startsWith('/invite/')) {
-      const inviteCode = path.split('/')[2]
+    } else if (path.startsWith("/invite/")) {
+      const inviteCode = path.split("/")[2];
       if (inviteCode) {
-        navigateToInvite(inviteCode)
+        navigateToInvite(inviteCode);
       } else {
-        navigateToHome()
+        navigateToHome();
       }
-    } else if (path === '/' || path === '/dashboard') {
-      navigateToHome()
+    } else if (path === "/" || path === "/dashboard") {
+      navigateToHome();
     } else {
       // Rota desconhecida - redirecionar para home
-      navigateToHome()
+      navigateToHome();
     }
   } catch (error) {
-    console.error('[Deep Linking] Erro ao processar deep link:', error)
+    console.error("[Deep Linking] Erro ao processar deep link:", error);
     // Em caso de erro, redirecionar para home
-    navigateToHome()
+    navigateToHome();
   }
-}
+};
 
 /**
  * Navega para tela de chat específico
@@ -88,21 +88,20 @@ const handleDeepLink = (url: string) => {
 const navigateToChat = (chatId: string) => {
   // Usar window.location para garantir navegação completa
   // Next.js router pode não funcionar se app foi aberto via deep link
-  window.location.href = `/dashboard/chat/${chatId}`
-}
+  window.location.href = `/dashboard/chat/${chatId}`;
+};
 
 /**
  * Navega para tela de convite
  */
 const navigateToInvite = (inviteCode: string) => {
-  window.location.href = `/invite/${inviteCode}`
-}
+  window.location.href = `/invite/${inviteCode}`;
+};
 
 /**
  * Navega para home/dashboard
  */
 const navigateToHome = () => {
-  console.log('[Deep Linking] Navegando para home')
-  window.location.href = '/dashboard'
-}
-
+  console.log("[Deep Linking] Navegando para home");
+  window.location.href = "/dashboard";
+};
