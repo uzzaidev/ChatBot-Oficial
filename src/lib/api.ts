@@ -70,27 +70,18 @@ export async function apiFetch(
   const baseUrl = getApiBaseUrl();
   const url = `${baseUrl}${endpoint}`;
 
-  console.log("[API] apiFetch chamado:", endpoint);
-  console.log("[API] isMobile:", Capacitor.isNativePlatform());
-  console.log("[API] baseUrl:", baseUrl);
-
   // Mobile: pegar token de autenticação e incluir no header
   let headers = { ...options?.headers } as Record<string, string>;
 
   if (Capacitor.isNativePlatform()) {
-    console.log("[API] Mobile detectado - buscando token...");
-
     try {
       // Importar dinamicamente para evitar erro no servidor
       const { createBrowserClient } = await import("@/lib/supabase-browser");
       const supabase = createBrowserClient();
       const { data: { session } } = await supabase.auth.getSession();
 
-      console.log("[API] Sessão:", session ? "EXISTE" : "NÃO EXISTE");
-
       if (session?.access_token) {
         headers["Authorization"] = `Bearer ${session.access_token}`;
-        console.log("[API] Token adicionado ao header");
       } else {
         console.warn(
           "[API] ❌ Nenhuma sessão ativa no mobile - requisição sem autenticação",
@@ -108,9 +99,6 @@ export async function apiFetch(
       ? "omit"
       : options?.credentials || "same-origin",
   };
-
-  console.log("[API] Fazendo requisição para:", url);
-  console.log("[API] Headers:", headers);
 
   return fetch(url, fetchOptions);
 }
@@ -150,8 +138,6 @@ export async function markConversationAsRead(
   phone: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log("👁️ [markConversationAsRead] Marking as read:", phone);
-
     const response = await apiFetch("/api/conversations/mark-read", {
       method: "POST",
       headers: {
@@ -167,7 +153,6 @@ export async function markConversationAsRead(
       return { success: false, error: data.error };
     }
 
-    console.log("✅ [markConversationAsRead] Success:", data);
     return { success: true };
   } catch (error) {
     console.error("❌ [markConversationAsRead] Exception:", error);

@@ -18,15 +18,11 @@ import { Capacitor } from '@capacitor/core'
 export const initDeepLinking = () => {
   // Apenas em mobile (não funciona na web)
   if (!Capacitor.isNativePlatform()) {
-    console.log('[Deep Linking] Apenas disponível em mobile')
     return
   }
 
-  console.log('[Deep Linking] Inicializando listeners...')
-
   // Listener para app aberto via deep link (quando app já está rodando)
   App.addListener('appUrlOpen', (data) => {
-    console.log('[Deep Linking] App opened with URL:', data.url)
     handleDeepLink(data.url)
   })
 
@@ -34,15 +30,12 @@ export const initDeepLinking = () => {
   App.getLaunchUrl()
     .then((result) => {
       if (result?.url) {
-        console.log('[Deep Linking] App launched with URL:', result.url)
         handleDeepLink(result.url)
       }
     })
     .catch((error) => {
       // iOS pode não ter launch URL (normal)
-      if (Capacitor.getPlatform() === 'ios') {
-        console.log('[Deep Linking] No launch URL (normal para iOS)')
-      } else {
+      if (Capacitor.getPlatform() !== 'ios') {
         console.error('[Deep Linking] Erro ao obter launch URL:', error)
       }
     })
@@ -53,14 +46,10 @@ export const initDeepLinking = () => {
  */
 const handleDeepLink = (url: string) => {
   try {
-    console.log('[Deep Linking] Processando URL:', url)
-
     // Parse URL
     // Pode ser: chatbot://chat/123 ou https://uzzapp.uzzai.com.br/chat/123
     const urlObj = new URL(url)
     const path = urlObj.pathname
-
-    console.log('[Deep Linking] Path extraído:', path)
 
     // Rotas suportadas
     if (path.startsWith('/chat/') || path.startsWith('/dashboard/chat/')) {
@@ -71,7 +60,6 @@ const handleDeepLink = (url: string) => {
       if (chatId) {
         navigateToChat(chatId)
       } else {
-        console.warn('[Deep Linking] Chat ID não encontrado na URL')
         navigateToHome()
       }
     } else if (path.startsWith('/invite/')) {
@@ -85,7 +73,6 @@ const handleDeepLink = (url: string) => {
       navigateToHome()
     } else {
       // Rota desconhecida - redirecionar para home
-      console.log('[Deep Linking] Rota desconhecida, redirecionando para home')
       navigateToHome()
     }
   } catch (error) {
@@ -99,8 +86,6 @@ const handleDeepLink = (url: string) => {
  * Navega para tela de chat específico
  */
 const navigateToChat = (chatId: string) => {
-  console.log('[Deep Linking] Navegando para chat:', chatId)
-  
   // Usar window.location para garantir navegação completa
   // Next.js router pode não funcionar se app foi aberto via deep link
   window.location.href = `/dashboard/chat/${chatId}`
@@ -110,7 +95,6 @@ const navigateToChat = (chatId: string) => {
  * Navega para tela de convite
  */
 const navigateToInvite = (inviteCode: string) => {
-  console.log('[Deep Linking] Navegando para invite:', inviteCode)
   window.location.href = `/invite/${inviteCode}`
 }
 

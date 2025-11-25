@@ -57,8 +57,6 @@ export const useRealtimeConversations = ({
     const supabase = createClientBrowser()
     const channelName = `conversations:${clientId}`
 
-    console.log(`📡 [Realtime Conversations] Connecting to postgres_changes: ${channelName}`)
-
     const channel = supabase
       .channel(channelName, {
         config: {
@@ -76,8 +74,6 @@ export const useRealtimeConversations = ({
           filter: `client_id=eq.${clientId}`,
         },
         (payload) => {
-          console.log('✅ [Realtime Conversations] clientes_whatsapp changed:', payload)
-
           try {
             const update: ConversationUpdate = {
               eventType: payload.eventType as 'INSERT' | 'UPDATE' | 'DELETE',
@@ -103,8 +99,6 @@ export const useRealtimeConversations = ({
           filter: `client_id=eq.${clientId}`,
         },
         (payload) => {
-          console.log('✅ [Realtime Conversations] New message detected:', payload)
-
           try {
             const data = payload.new as any
             const phone = data.session_id
@@ -129,15 +123,10 @@ export const useRealtimeConversations = ({
         }
       )
       .subscribe((status, err) => {
-        console.log(`📡 [Realtime Conversations] Status: ${status}`, err || '')
-
         if (status === 'SUBSCRIBED') {
           setIsConnected(true)
-          console.log('✅ [Realtime Conversations] Successfully connected to postgres_changes!')
         } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
           setIsConnected(false)
-          console.warn(`⚠️ [Realtime Conversations] Connection ${status}. Using polling fallback.`, err)
-          // Não faz retry - aceita o erro e deixa polling funcionar
         }
       })
 
@@ -156,7 +145,6 @@ export const useRealtimeConversations = ({
       if (channel) {
         try {
           const supabase = createClientBrowser()
-          console.log('🧹 [Realtime Conversations] Cleaning up channel')
           supabase.removeChannel(channel)
         } catch (e) {
           // Ignore errors on cleanup

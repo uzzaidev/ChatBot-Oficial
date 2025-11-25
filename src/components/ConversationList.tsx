@@ -15,6 +15,7 @@ interface ConversationListProps {
   currentPhone?: string
   lastUpdatePhone?: string | null // Mantido para animação de pulse
   onConversationOpen?: (phone: string) => void
+  onConversationClick?: () => void // Callback para fechar sidebar mobile
 }
 
 export const ConversationList = ({
@@ -24,6 +25,7 @@ export const ConversationList = ({
   currentPhone,
   lastUpdatePhone, // Mantido por compatibilidade mas não usado
   onConversationOpen,
+  onConversationClick,
 }: ConversationListProps) => {
   const router = useRouter()
 
@@ -31,6 +33,11 @@ export const ConversationList = ({
     // Notify parent component if callback provided
     if (onConversationOpen) {
       onConversationOpen(phone)
+    }
+
+    // Fechar sidebar mobile se callback fornecido
+    if (onConversationClick) {
+      onConversationClick()
     }
 
     router.push(`/dashboard/chat?phone=${phone}&client_id=${clientId}`)

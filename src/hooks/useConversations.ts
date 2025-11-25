@@ -119,12 +119,6 @@ export const useConversations = ({
 
   // Realtime subscription for conversations usando novo hook otimizado
   const handleConversationUpdate = useCallback((update: ConversationUpdate) => {
-    console.log(
-      "🔔 [useConversations] Conversation update:",
-      update.eventType,
-      update.conversation,
-    );
-
     // Refetch conversations com debounce para agrupar múltiplas mudanças
     if (update.eventType === "INSERT") {
       // Nova conversa - delay maior para garantir que mensagem foi salva

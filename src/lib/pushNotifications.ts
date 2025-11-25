@@ -23,22 +23,16 @@ import { createBrowserClient } from '@/lib/supabase-browser'
 export const initPushNotifications = async () => {
   // Apenas em mobile (não funciona na web)
   if (!Capacitor.isNativePlatform()) {
-    console.log('[Push Notifications] Apenas disponível em mobile')
     return
   }
-
-  console.log('[Push Notifications] Inicializando...')
 
   try {
     // 1. Solicitar permissão (Android 13+)
     const permissionResult = await PushNotifications.requestPermissions()
     
     if (permissionResult.receive === 'granted') {
-      console.log('[Push Notifications] Permissão concedida')
-      
       // 2. Registrar para receber notificações
       await PushNotifications.register()
-      console.log('[Push Notifications] Registrado com sucesso')
     } else {
       console.warn('[Push Notifications] Permissão negada:', permissionResult.receive)
       return
@@ -57,9 +51,7 @@ export const initPushNotifications = async () => {
 const setupListeners = () => {
   // Listener: Token registrado com sucesso
   PushNotifications.addListener('registration', async (token) => {
-    console.log('[Push Notifications] Token registrado:', token.value)
-    
-    // Salvar token no backend (Supabase)
+    // Salvar token no backend(Supabase)
     await saveTokenToBackend(token.value)
   })
 
@@ -70,16 +62,12 @@ const setupListeners = () => {
 
   // Listener: Notificação recebida (app em foreground)
   PushNotifications.addListener('pushNotificationReceived', (notification) => {
-    console.log('[Push Notifications] Notificação recebida (foreground):', notification)
-    
     // Aqui você pode mostrar uma notificação customizada ou atualizar UI
     // Por padrão, Android mostra automaticamente se app está em background
   })
 
   // Listener: Usuário clicou na notificação (app em background ou fechado)
   PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
-    console.log('[Push Notifications] Notificação clicada:', action)
-    
     // Processar ação (ex: navegar para chat específico)
     handleNotificationAction(action)
   })
@@ -135,8 +123,6 @@ const saveTokenToBackend = async (token: string) => {
 
     if (upsertError) {
       console.error('[Push Notifications] Erro ao salvar token:', upsertError)
-    } else {
-      console.log('[Push Notifications] Token salvo com sucesso no backend')
     }
   } catch (error) {
     console.error('[Push Notifications] Erro ao salvar token:', error)
@@ -150,8 +136,6 @@ const handleNotificationAction = (action: any) => {
   try {
     const notification = action.notification
     const data = notification.data || {}
-
-    console.log('[Push Notifications] Processando ação:', data)
 
     // Exemplo: Se notificação tem chat_id, navegar para chat
     if (data.chat_id) {
@@ -177,7 +161,6 @@ const handleNotificationAction = (action: any) => {
 export const removePushNotificationListeners = () => {
   if (Capacitor.isNativePlatform()) {
     PushNotifications.removeAllListeners()
-    console.log('[Push Notifications] Listeners removidos')
   }
 }
 

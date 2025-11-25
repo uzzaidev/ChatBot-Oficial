@@ -5,7 +5,45 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
-## [3.0.0] - 2025-11-22 (Current) ✅ PRODUÇÃO
+## [3.0.1] - 2025-11-25
+
+### 🎉 Minor: Browser Notifications System
+
+Sistema completo de notificações no navegador para novas mensagens.
+
+#### Added
+- **Browser Notifications API** integrada ao dashboard
+- Notificações aparecem apenas para conversas NÃO abertas no momento
+- Sistema de singleton callback para evitar múltiplas instâncias
+- Busca automática do nome do cliente via API
+- Suporte a variações de telefone (com/sem código do país)
+- Formato de notificação: "💬 [Nome do Cliente]" + "Mensagem: [texto]"
+- Tentativa de reprodução de som (sujeito a políticas do navegador)
+- Click na notificação redireciona para a conversa
+
+#### Changed
+- Hook `useGlobalRealtimeNotifications` com padrão singleton para callback global
+- `NotificationManager` busca nome do cliente de forma inteligente (API + fallback Supabase)
+- Refs utilizadas para evitar loops infinitos de useEffect
+
+#### Fixed
+- Sistema de unread messages usando coluna `last_read_at` do banco de dados
+- Removido estado manual de unread count (100% realtime agora)
+- Limpeza completa de console.logs desnecessários de debug
+
+#### Technical Details
+- Singleton pattern: `globalCallback` em nível de módulo
+- Phone matching com 3 variações (55xxx, xxx, 55555xxx)
+- Extração de JSON de mensagens n8n (`{"type":"human","content":"..."}`)
+- Silent: false + embedded base64 audio beep (bloqueado por autoplay policy)
+- Manifest.json criado para identificação PWA
+
+#### Documentation
+- Logs de debug removidos de 4 arquivos principais (useGlobalRealtimeNotifications, NotificationManager, useRealtimeConversations, useRealtimeMessages)
+
+---
+
+## [3.0.0] - 2025-11-22 ✅ PRODUÇÃO
 
 ### 🎉 Major: Phase 4 - RBAC + Auth + Admin Panel
 

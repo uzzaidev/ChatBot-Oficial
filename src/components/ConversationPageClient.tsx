@@ -56,15 +56,14 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
     enableRealtime: true,
   })
 
+  // Calcular total de mensagens não lidas
+  const totalUnreadCount = conversations.reduce((sum, conv) => sum + (conv.unread_count ?? 0), 0)
+
   // Marcar conversa como lida quando abrir
   useEffect(() => {
     if (phone) {
-      console.log('👁️ [ConversationPageClient] Marking conversation as read:', phone)
       markConversationAsRead(phone).then((result) => {
-        if (result.success) {
-          console.log('✅ [ConversationPageClient] Marked as read successfully')
-          // Realtime vai atualizar automaticamente com unread_count do banco
-        } else {
+        if (!result.success) {
           console.error('❌ [ConversationPageClient] Failed to mark as read:', result.error)
         }
       })
@@ -106,12 +105,8 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
 
   // Callback para marcar como lida (usado pelo ConversationDetail)
   const handleMarkAsRead = useCallback(async (conversationPhone: string) => {
-    console.log('👁️ [ConversationPageClient] handleMarkAsRead called for:', conversationPhone)
     const result = await markConversationAsRead(conversationPhone)
-    if (result.success) {
-      console.log('✅ [ConversationPageClient] Marked as read successfully')
-      // Realtime vai atualizar automaticamente com unread_count do banco
-    } else {
+    if (!result.success) {
       console.error('❌ [ConversationPageClient] Failed to mark as read:', result.error)
     }
   }, [])
@@ -137,34 +132,38 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
       {/* Filtros por Status */}
       <div className="border-b border-silver-200 bg-white">
         <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'all' | 'bot' | 'humano' | 'transferido')}>
-          <TabsList className="w-full justify-start rounded-none h-auto p-0 bg-transparent">
+          <TabsList className="w-full justify-start rounded-none h-auto p-0 bg-transparent flex-wrap">
             <TabsTrigger
               value="all"
-              className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-mint-600 rounded-none"
+              className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-mint-600 rounded-none text-xs sm:text-sm px-2 sm:px-3"
             >
-              <List className="h-4 w-4" />
-              Todas
+              <List className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Todas</span>
+              <span className="sm:hidden">Todas</span>
             </TabsTrigger>
             <TabsTrigger
               value="bot"
-              className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 rounded-none"
+              className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 rounded-none text-xs sm:text-sm px-2 sm:px-3"
             >
-              <Bot className="h-4 w-4" />
-              Bot
+              <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Bot</span>
+              <span className="sm:hidden">Bot</span>
             </TabsTrigger>
             <TabsTrigger
               value="humano"
-              className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-green-600 rounded-none"
+              className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-green-600 rounded-none text-xs sm:text-sm px-2 sm:px-3"
             >
-              <User className="h-4 w-4" />
-              Humano
+              <User className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Humano</span>
+              <span className="sm:hidden">Humano</span>
             </TabsTrigger>
             <TabsTrigger
               value="transferido"
-              className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-orange-600 rounded-none"
+              className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-orange-600 rounded-none text-xs sm:text-sm px-2 sm:px-3"
             >
-              <ArrowRight className="h-4 w-4" />
-              Transferido
+              <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Transferido</span>
+              <span className="sm:hidden">Transf.</span>
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -177,6 +176,7 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
           loading={loading}
           currentPhone={phone}
           lastUpdatePhone={lastUpdatePhone}
+          onConversationClick={() => setSidebarOpen(false)}
         />
       </div>
     </>
@@ -209,10 +209,15 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="lg:hidden flex-shrink-0"
+                  className="lg:hidden flex-shrink-0 relative"
                   onClick={() => setSidebarOpen(true)}
                 >
                   <Menu className="h-5 w-5" />
+                  {totalUnreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                      {totalUnreadCount > 9 ? '9+' : totalUnreadCount}
+                    </span>
+                  )}
                 </Button>
 
                 <Avatar className="h-10 w-10 flex-shrink-0">

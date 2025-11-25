@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Settings } from 'lucide-react'
 import { MetricsDashboard } from '@/components/MetricsDashboard'
 import { ConversationList } from '@/components/ConversationList'
+import { NotificationToggle } from '@/components/NotificationManager'
 import { useConversations } from '@/hooks/useConversations'
 import { useGlobalRealtimeNotifications } from '@/hooks/useGlobalRealtimeNotifications'
 import type { DashboardMetrics } from '@/lib/types'
@@ -121,14 +122,18 @@ export function DashboardClient({ clientId }: DashboardClientProps) {
           </p>
         </div>
         
-        {!checkingAdmin && isAdmin && (
-          <Link href="/admin">
-            <Button variant="outline" size="sm" className="gap-2 border-mint-400 text-mint-700 hover:bg-mint-50">
-              <Settings className="h-4 w-4" />
-              <span className="hidden sm:inline">Painel Admin</span>
-            </Button>
-          </Link>
-        )}
+        <div className="flex gap-2">
+          <NotificationToggle />
+          
+          {!checkingAdmin && isAdmin && (
+            <Link href="/admin">
+              <Button variant="outline" size="sm" className="gap-2 border-mint-400 text-mint-700 hover:bg-mint-50">
+                <Settings className="h-4 w-4" />
+                <span className="hidden sm:inline">Painel Admin</span>
+              </Button>
+            </Link>
+          )}
+        </div>
       </div>
 
       <Separator className="bg-silver-200" />

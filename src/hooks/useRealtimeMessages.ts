@@ -50,8 +50,6 @@ export const useRealtimeMessages = ({
     const supabase = createClientBrowser()
     const channelName = `messages:${clientId}:${phone}`
 
-    console.log(`📡 [Realtime] Connecting to postgres_changes: ${channelName}`)
-
     const channel = supabase
       .channel(channelName, {
         config: {
@@ -68,21 +66,13 @@ export const useRealtimeMessages = ({
           filter: `session_id=eq.${phone}`,
         },
         (payload) => {
-          console.log('✅ [Realtime] postgres_changes received:', payload)
-          console.log('📦 [Realtime] Payload structure:', JSON.stringify(payload, null, 2))
-
           try {
             const data = payload.new as any
 
-            console.log('🔍 [Realtime] Parsed data:', data)
-
             // Filter by session_id (phone) - garantir que é a conversa certa
             if (data.session_id !== phone) {
-              console.log(`⚠️ [Realtime] Message for different session. Expected: ${phone}, Got: ${data.session_id}`)
               return
             }
-
-            console.log('✅ [Realtime] Message is for current conversation! Processing...')
 
           // Parse message JSON
           let messageData: any
@@ -114,29 +104,18 @@ export const useRealtimeMessages = ({
             metadata: null,
           }
 
-          console.log('📨 [Realtime] New message created:', newMessage)
-
           if (onNewMessageRef.current) {
-            console.log('📞 [Realtime] Calling onNewMessage callback...')
             onNewMessageRef.current(newMessage)
-            console.log('✅ [Realtime] Callback executed!')
-          } else {
-            console.warn('⚠️ [Realtime] No callback function registered!')
           }
         } catch (error) {
-          console.error('❌ [Realtime] Error processing postgres_changes:', error)
+          console.error('[Realtime] Error processing message:', error)
         }
       })
       .subscribe((status, err) => {
-        console.log(`📡 [Realtime] Status: ${status}`, err || '')
-
         if (status === 'SUBSCRIBED') {
           setIsConnected(true)
-          console.log('✅ [Realtime] Successfully connected to postgres_changes!')
         } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
           setIsConnected(false)
-          console.warn(`⚠️ [Realtime] Connection ${status}. Using polling fallback.`, err)
-          // Não faz retry - aceita o erro e deixa polling funcionar
         }
       })
 
@@ -155,7 +134,6 @@ export const useRealtimeMessages = ({
       if (channel) {
         try {
           const supabase = createClientBrowser()
-          console.log('🧹 [Realtime] Cleaning up channel')
           supabase.removeChannel(channel)
         } catch (e) {
           // Ignore errors on cleanup
