@@ -32,9 +32,9 @@ export function DashboardLayoutClient({
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const pathname = usePathname()
 
-  // Se estiver em qualquer rota de conversas, renderiza apenas children
+  // Se estiver em qualquer rota de conversas ou chat, renderiza apenas children
   // (as páginas de conversas têm seu próprio layout/sidebar)
-  const isConversationsRoute = pathname.startsWith('/dashboard/conversations')
+  const isConversationsRoute = pathname.startsWith('/dashboard/conversations') || pathname.startsWith('/dashboard/chat')
 
   if (isConversationsRoute) {
     return <>{children}</>
