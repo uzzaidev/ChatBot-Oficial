@@ -53,6 +53,9 @@ export const useRealtimeMessages = ({
     if (!clientId || !phone || hasAttemptedRef.current) return;
     hasAttemptedRef.current = true;
 
+    // Mark as reconnecting only after early returns
+    isReconnectingRef.current = true;
+
     const supabase = createClientBrowser();
     const channelName = `messages:${clientId}:${phone}`;
 

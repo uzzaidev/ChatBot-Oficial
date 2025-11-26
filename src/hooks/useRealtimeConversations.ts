@@ -59,6 +59,8 @@ export const useRealtimeConversations = ({
   const setupRealtimeSubscription = useCallback(() => {
     if (!clientId || hasAttemptedRef.current) return;
     hasAttemptedRef.current = true;
+
+    // Mark as reconnecting only after early returns
     isReconnectingRef.current = true;
 
     const supabase = createClientBrowser();

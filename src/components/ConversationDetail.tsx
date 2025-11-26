@@ -220,6 +220,7 @@ export const ConversationDetail = ({
 
   // Combined scroll handler - throttled to prevent mobile freezing
   // Single useEffect with both scroll position and sticky date tracking
+  // Setup once and relies on refs for current data
   useEffect(() => {
     const scrollElement = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]')
     if (!scrollElement) return
@@ -233,7 +234,7 @@ export const ConversationDetail = ({
       const isAtBottom = scrollElement.scrollHeight - scrollElement.scrollTop - scrollElement.clientHeight < threshold
       setIsUserAtBottom(isAtBottom)
 
-      // Update sticky date header
+      // Update sticky date header using refs (always current)
       let currentDate: string | null = null
       const containerRect = scrollElement.getBoundingClientRect()
       
@@ -257,7 +258,31 @@ export const ConversationDetail = ({
     return () => {
       scrollElement.removeEventListener('scroll', throttledScrollHandler)
     }
-  }, [messages.length]) // Only re-attach when message count changes
+  }, []) // Empty deps - handler uses refs which are always current
+
+  // Trigger sticky date update when messages change (for initial render and new messages)
+  useEffect(() => {
+    // Delay to allow DOM to update with new messages
+    const timeout = setTimeout(() => {
+      const scrollElement = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]')
+      if (!scrollElement) return
+
+      const STICKY_HEADER_OFFSET = 50
+      let currentDate: string | null = null
+      const containerRect = scrollElement.getBoundingClientRect()
+      
+      dateRefs.current.forEach((element, date) => {
+        const rect = element.getBoundingClientRect()
+        if (rect.top <= containerRect.top + STICKY_HEADER_OFFSET) {
+          currentDate = date
+        }
+      })
+
+      setStickyDate(currentDate)
+    }, 100)
+
+    return () => clearTimeout(timeout)
+  }, [messages.length])
 
   // Clear date refs when conversation changes
   useEffect(() => {
