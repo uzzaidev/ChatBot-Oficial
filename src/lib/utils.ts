@@ -211,3 +211,38 @@ export const cleanMessageContent = (content: string): string => {
 
   return cleaned
 }
+
+/**
+ * Throttle function - limits how often a function can be called
+ * @param fn - Function to throttle
+ * @param delay - Minimum time between calls in milliseconds
+ * @returns Throttled function
+ * 
+ * @example
+ * const throttledScroll = throttle(() => console.log('scroll'), 100)
+ * element.addEventListener('scroll', throttledScroll)
+ */
+export const throttle = <T extends (...args: unknown[]) => void>(fn: T, delay: number): T => {
+  let lastCall = 0
+  let timeoutId: NodeJS.Timeout | null = null
+  
+  return ((...args: unknown[]) => {
+    const now = Date.now()
+    const remaining = delay - (now - lastCall)
+    
+    if (remaining <= 0) {
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+        timeoutId = null
+      }
+      lastCall = now
+      fn(...args)
+    } else if (!timeoutId) {
+      timeoutId = setTimeout(() => {
+        lastCall = Date.now()
+        timeoutId = null
+        fn(...args)
+      }, remaining)
+    }
+  }) as T
+}

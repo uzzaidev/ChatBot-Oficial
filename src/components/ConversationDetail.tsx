@@ -7,7 +7,7 @@ import { DateSeparator } from '@/components/DateSeparator'
 import { useMessages } from '@/hooks/useMessages'
 import { useRealtimeMessages } from '@/hooks/useRealtimeMessages'
 import type { Message } from '@/lib/types'
-import { isSameDay, formatMessageDate } from '@/lib/utils'
+import { isSameDay, formatMessageDate, throttle } from '@/lib/utils'
 
 interface ConversationDetailProps {
   phone: string
@@ -18,32 +18,6 @@ interface ConversationDetailProps {
     onMessageError: (tempId: string) => void
   }) => void
   onMarkAsRead?: (phone: string) => void
-}
-
-// Throttle utility for scroll handlers - prevents excessive calls on mobile
-const throttle = <T extends (...args: unknown[]) => void>(fn: T, delay: number): T => {
-  let lastCall = 0
-  let timeoutId: NodeJS.Timeout | null = null
-  
-  return ((...args: unknown[]) => {
-    const now = Date.now()
-    const remaining = delay - (now - lastCall)
-    
-    if (remaining <= 0) {
-      if (timeoutId) {
-        clearTimeout(timeoutId)
-        timeoutId = null
-      }
-      lastCall = now
-      fn(...args)
-    } else if (!timeoutId) {
-      timeoutId = setTimeout(() => {
-        lastCall = Date.now()
-        timeoutId = null
-        fn(...args)
-      }, remaining)
-    }
-  }) as T
 }
 
 export const ConversationDetail = ({
