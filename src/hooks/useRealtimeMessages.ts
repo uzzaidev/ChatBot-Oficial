@@ -26,6 +26,10 @@ interface UseRealtimeMessagesOptions {
  * Escuta eventos broadcast enviados por triggers do banco de dados.
  * Sem retry loops - tenta conectar uma vez, se falhar aceita e para.
  * Fallback para polling já está implementado em useMessages.
+ *
+ * Otimizado para mobile:
+ * - Debounce de 500ms para reconexões (evita race conditions)
+ * - Lock de reconexão para evitar chamadas simultâneas
  */
 export const useRealtimeMessages = ({
   clientId,
@@ -36,6 +40,8 @@ export const useRealtimeMessages = ({
   const onNewMessageRef = useRef(onNewMessage);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const hasAttemptedRef = useRef(false);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isReconnectingRef = useRef(false);
 
   // Keep the callback ref up to date
   useEffect(() => {
@@ -113,6 +119,7 @@ export const useRealtimeMessages = ({
         },
       )
       .subscribe((status, err) => {
+        isReconnectingRef.current = false;
         if (status === "SUBSCRIBED") {
           setIsConnected(true);
         } else if (status === "CLOSED" || status === "CHANNEL_ERROR") {
@@ -123,6 +130,31 @@ export const useRealtimeMessages = ({
     channelRef.current = channel;
   }, [clientId, phone]);
 
+  // Debounced reconnection - prevents race conditions on mobile
+  const scheduleReconnect = useCallback(() => {
+    // Already reconnecting or scheduled
+    if (isReconnectingRef.current || reconnectTimeoutRef.current) {
+      return;
+    }
+
+    // Channel is still connected
+    if (channelRef.current?.state !== "closed") {
+      return;
+    }
+
+    // Schedule reconnection with 500ms debounce
+    reconnectTimeoutRef.current = setTimeout(() => {
+      reconnectTimeoutRef.current = null;
+      
+      // Double-check conditions before reconnecting
+      if (!isReconnectingRef.current && channelRef.current?.state === "closed") {
+        console.log("🔄 [Realtime] Reconnecting after debounce...");
+        hasAttemptedRef.current = false;
+        setupRealtimeSubscription();
+      }
+    }, 500);
+  }, [setupRealtimeSubscription]);
+
   // Setup inicial e cleanup
   useEffect(() => {
     if (!clientId || !phone) return;
@@ -130,6 +162,12 @@ export const useRealtimeMessages = ({
     setupRealtimeSubscription();
 
     return () => {
+      // Clear any pending reconnection
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+
       const channel = channelRef.current;
 
       if (channel) {
@@ -142,23 +180,21 @@ export const useRealtimeMessages = ({
         channelRef.current = null;
         setIsConnected(false);
         hasAttemptedRef.current = false;
+        isReconnectingRef.current = false;
       }
     };
   }, [clientId, phone, setupRealtimeSubscription]);
 
-  // Mobile: App lifecycle - só reconecta se canal foi fechado
+  // Mobile: App lifecycle - uses debounced reconnect
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
     const appStateListener = App.addListener(
       "appStateChange",
       (state: { isActive: boolean }) => {
-        if (state.isActive && channelRef.current?.state === "closed") {
-          console.log(
-            "🔄 [Realtime] App resumed, channel was closed. Reconnecting...",
-          );
-          hasAttemptedRef.current = false;
-          setupRealtimeSubscription();
+        if (state.isActive) {
+          console.log("📱 [Realtime] App resumed, scheduling reconnect check...");
+          scheduleReconnect();
         }
       },
     );
@@ -166,21 +202,18 @@ export const useRealtimeMessages = ({
     return () => {
       appStateListener.then((listener: any) => listener.remove());
     };
-  }, [setupRealtimeSubscription]);
+  }, [scheduleReconnect]);
 
-  // Mobile: Network changes - só reconecta se canal foi fechado
+  // Mobile: Network changes - uses debounced reconnect
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
     const networkListener = Network.addListener(
       "networkStatusChange",
       (status: { connected: boolean }) => {
-        if (status.connected && channelRef.current?.state === "closed") {
-          console.log(
-            "🔄 [Realtime] Network reconnected, channel was closed. Reconnecting...",
-          );
-          hasAttemptedRef.current = false;
-          setupRealtimeSubscription();
+        if (status.connected) {
+          console.log("📶 [Realtime] Network connected, scheduling reconnect check...");
+          scheduleReconnect();
         }
       },
     );
@@ -188,7 +221,7 @@ export const useRealtimeMessages = ({
     return () => {
       networkListener.then((listener: any) => listener.remove());
     };
-  }, [setupRealtimeSubscription]);
+  }, [scheduleReconnect]);
 
   return { isConnected };
 };

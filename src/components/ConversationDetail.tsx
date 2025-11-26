@@ -7,7 +7,6 @@ import { DateSeparator } from '@/components/DateSeparator'
 import { useMessages } from '@/hooks/useMessages'
 import { useRealtimeMessages } from '@/hooks/useRealtimeMessages'
 import type { Message } from '@/lib/types'
-import { toast } from '@/hooks/use-toast'
 import { isSameDay, formatMessageDate } from '@/lib/utils'
 
 interface ConversationDetailProps {
@@ -19,6 +18,32 @@ interface ConversationDetailProps {
     onMessageError: (tempId: string) => void
   }) => void
   onMarkAsRead?: (phone: string) => void
+}
+
+// Throttle utility for scroll handlers - prevents excessive calls on mobile
+const throttle = <T extends (...args: unknown[]) => void>(fn: T, delay: number): T => {
+  let lastCall = 0
+  let timeoutId: NodeJS.Timeout | null = null
+  
+  return ((...args: unknown[]) => {
+    const now = Date.now()
+    const remaining = delay - (now - lastCall)
+    
+    if (remaining <= 0) {
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+        timeoutId = null
+      }
+      lastCall = now
+      fn(...args)
+    } else if (!timeoutId) {
+      timeoutId = setTimeout(() => {
+        lastCall = Date.now()
+        timeoutId = null
+        fn(...args)
+      }, remaining)
+    }
+  }) as T
 }
 
 export const ConversationDetail = ({
@@ -36,12 +61,29 @@ export const ConversationDetail = ({
   const [isUserAtBottom, setIsUserAtBottom] = useState(true)
   const dateRefs = useRef<Map<string, HTMLDivElement>>(new Map())
   const shouldScrollRef = useRef(true)
+  const lastFetchedIdsRef = useRef<Set<string>>(new Set())
 
-  const { messages: fetchedMessages, loading, error, refetch } = useMessages({
+  const { messages: fetchedMessages, loading, error } = useMessages({
     clientId,
     phone,
     // Sem polling - vamos depender 100% do realtime
   })
+
+  // Track fetched message IDs to prevent memory accumulation
+  useEffect(() => {
+    const newIds = new Set<string>(fetchedMessages.map(m => m.id))
+    
+    // Clean up realtime messages that are now in fetched messages
+    if (newIds.size > 0 && realtimeMessages.length > 0) {
+      setRealtimeMessages(prev => {
+        const filtered = prev.filter(msg => !newIds.has(msg.id))
+        // Only update if something changed
+        return filtered.length === prev.length ? prev : filtered
+      })
+    }
+    
+    lastFetchedIdsRef.current = newIds
+  }, [fetchedMessages, realtimeMessages.length])
 
   // Clear realtime messages when phone changes
   useEffect(() => {
@@ -49,6 +91,7 @@ export const ConversationDetail = ({
     setOptimisticMessages([])
     setNewMessagesCount(0)
     shouldScrollRef.current = true
+    lastFetchedIdsRef.current.clear()
   }, [phone])
 
   // Combine fetched + realtime + optimistic messages, removing duplicates
@@ -72,16 +115,16 @@ export const ConversationDetail = ({
     return uniqueMessages
   }, [fetchedMessages, realtimeMessages, optimisticMessages])
 
-  // Check if user is at bottom (within 100px)
+  // Check if user is at bottom - uses the state that's updated by scroll handler
   const checkIfUserAtBottom = useCallback(() => {
+    // Also do a fresh check in case state is stale
     const scrollElement = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]')
-    if (!scrollElement) return false
+    if (!scrollElement) return isUserAtBottom
 
     const threshold = 100 // 100px do fim
-    const isAtBottom = scrollElement.scrollHeight - scrollElement.scrollTop - scrollElement.clientHeight < threshold
-    setIsUserAtBottom(isAtBottom)
-    return isAtBottom
-  }, [])
+    const freshIsAtBottom = scrollElement.scrollHeight - scrollElement.scrollTop - scrollElement.clientHeight < threshold
+    return freshIsAtBottom
+  }, [isUserAtBottom])
 
   // Scroll to bottom
   const scrollToBottom = useCallback(() => {
@@ -175,38 +218,27 @@ export const ConversationDetail = ({
     }
   }, [messages])
 
-  // Monitor scroll position
+  // Combined scroll handler - throttled to prevent mobile freezing
+  // Single useEffect with both scroll position and sticky date tracking
   useEffect(() => {
     const scrollElement = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]')
     if (!scrollElement) return
 
-    const handleScroll = () => {
-      checkIfUserAtBottom()
-    }
-
-    scrollElement.addEventListener('scroll', handleScroll)
-    return () => scrollElement.removeEventListener('scroll', handleScroll)
-  }, [checkIfUserAtBottom])
-
-  // Handle scroll to update sticky date header
-  useEffect(() => {
-    const scrollElement = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]')
-    if (!scrollElement) return
-
-    // Offset to determine when a date separator is "at the top"
     const STICKY_HEADER_OFFSET = 50
 
-    const handleScroll = () => {
-      // Find which date section is currently at the top
-      const scrollTop = scrollElement.scrollTop
-      let currentDate: string | null = null
+    // Combined handler for both scroll position and sticky date
+    const handleScrollUpdate = () => {
+      // Check if user is at bottom (within 100px)
+      const threshold = 100
+      const isAtBottom = scrollElement.scrollHeight - scrollElement.scrollTop - scrollElement.clientHeight < threshold
+      setIsUserAtBottom(isAtBottom)
 
-      // Iterate through date refs to find the visible one
+      // Update sticky date header
+      let currentDate: string | null = null
+      const containerRect = scrollElement.getBoundingClientRect()
+      
       dateRefs.current.forEach((element, date) => {
         const rect = element.getBoundingClientRect()
-        const containerRect = scrollElement.getBoundingClientRect()
-        
-        // Check if this date separator is near or above the top of the viewport
         if (rect.top <= containerRect.top + STICKY_HEADER_OFFSET) {
           currentDate = date
         }
@@ -215,14 +247,17 @@ export const ConversationDetail = ({
       setStickyDate(currentDate)
     }
 
-    scrollElement.addEventListener('scroll', handleScroll)
+    // Throttle scroll handler to 100ms - prevents excessive updates on mobile
+    const throttledScrollHandler = throttle(handleScrollUpdate, 100)
+
+    scrollElement.addEventListener('scroll', throttledScrollHandler, { passive: true })
     // Initial call to set the date
-    handleScroll()
+    handleScrollUpdate()
 
     return () => {
-      scrollElement.removeEventListener('scroll', handleScroll)
+      scrollElement.removeEventListener('scroll', throttledScrollHandler)
     }
-  }, [messages])
+  }, [messages.length]) // Only re-attach when message count changes
 
   // Clear date refs when conversation changes
   useEffect(() => {
