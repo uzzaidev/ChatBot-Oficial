@@ -69,21 +69,24 @@ export const ConversationDetail = ({
     // Sem polling - vamos depender 100% do realtime
   })
 
+  // Memoize fetched message IDs for efficient lookup
+  const fetchedMessageIds = useMemo(() => {
+    return new Set<string>(fetchedMessages.map(m => m.id))
+  }, [fetchedMessages])
+
   // Track fetched message IDs to prevent memory accumulation
   useEffect(() => {
-    const newIds = new Set<string>(fetchedMessages.map(m => m.id))
-    
     // Clean up realtime messages that are now in fetched messages
-    if (newIds.size > 0 && realtimeMessages.length > 0) {
+    if (fetchedMessageIds.size > 0 && realtimeMessages.length > 0) {
       setRealtimeMessages(prev => {
-        const filtered = prev.filter(msg => !newIds.has(msg.id))
+        const filtered = prev.filter(msg => !fetchedMessageIds.has(msg.id))
         // Only update if something changed
         return filtered.length === prev.length ? prev : filtered
       })
     }
     
-    lastFetchedIdsRef.current = newIds
-  }, [fetchedMessages, realtimeMessages.length])
+    lastFetchedIdsRef.current = fetchedMessageIds
+  }, [fetchedMessageIds, realtimeMessages.length])
 
   // Clear realtime messages when phone changes
   useEffect(() => {
@@ -179,9 +182,8 @@ export const ConversationDetail = ({
     if (isAtBottom) {
       shouldScrollRef.current = true
     } else {
-      // Se não está no fim, incrementa contador de novas mensagens
+      // Se não está no fim, incrementa contador (badge UI handles notification)
       setNewMessagesCount(prev => prev + 1)
-      // Não mostra toast se usuário não está no fim (badge é suficiente)
     }
   }, [checkIfUserAtBottom, onMarkAsRead, phone])
 
@@ -218,14 +220,28 @@ export const ConversationDetail = ({
     }
   }, [messages])
 
+  // Helper function to calculate current sticky date from refs
+  const calculateStickyDate = useCallback((scrollElement: Element): string | null => {
+    const STICKY_HEADER_OFFSET = 50
+    let currentDate: string | null = null
+    const containerRect = scrollElement.getBoundingClientRect()
+    
+    dateRefs.current.forEach((element, date) => {
+      const rect = element.getBoundingClientRect()
+      if (rect.top <= containerRect.top + STICKY_HEADER_OFFSET) {
+        currentDate = date
+      }
+    })
+
+    return currentDate
+  }, [])
+
   // Combined scroll handler - throttled to prevent mobile freezing
   // Single useEffect with both scroll position and sticky date tracking
   // Setup once and relies on refs for current data
   useEffect(() => {
     const scrollElement = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]')
     if (!scrollElement) return
-
-    const STICKY_HEADER_OFFSET = 50
 
     // Combined handler for both scroll position and sticky date
     const handleScrollUpdate = () => {
@@ -235,17 +251,7 @@ export const ConversationDetail = ({
       setIsUserAtBottom(isAtBottom)
 
       // Update sticky date header using refs (always current)
-      let currentDate: string | null = null
-      const containerRect = scrollElement.getBoundingClientRect()
-      
-      dateRefs.current.forEach((element, date) => {
-        const rect = element.getBoundingClientRect()
-        if (rect.top <= containerRect.top + STICKY_HEADER_OFFSET) {
-          currentDate = date
-        }
-      })
-
-      setStickyDate(currentDate)
+      setStickyDate(calculateStickyDate(scrollElement))
     }
 
     // Throttle scroll handler to 100ms - prevents excessive updates on mobile
@@ -258,7 +264,7 @@ export const ConversationDetail = ({
     return () => {
       scrollElement.removeEventListener('scroll', throttledScrollHandler)
     }
-  }, []) // Empty deps - handler uses refs which are always current
+  }, [calculateStickyDate]) // calculateStickyDate is stable (uses useCallback)
 
   // Trigger sticky date update when messages change (for initial render and new messages)
   useEffect(() => {
@@ -267,22 +273,11 @@ export const ConversationDetail = ({
       const scrollElement = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]')
       if (!scrollElement) return
 
-      const STICKY_HEADER_OFFSET = 50
-      let currentDate: string | null = null
-      const containerRect = scrollElement.getBoundingClientRect()
-      
-      dateRefs.current.forEach((element, date) => {
-        const rect = element.getBoundingClientRect()
-        if (rect.top <= containerRect.top + STICKY_HEADER_OFFSET) {
-          currentDate = date
-        }
-      })
-
-      setStickyDate(currentDate)
+      setStickyDate(calculateStickyDate(scrollElement))
     }, 100)
 
     return () => clearTimeout(timeout)
-  }, [messages.length])
+  }, [messages.length, calculateStickyDate])
 
   // Clear date refs when conversation changes
   useEffect(() => {
