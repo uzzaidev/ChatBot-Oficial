@@ -43,7 +43,7 @@ const upsertClienteWhatsApp = async (
         client_id: clientId, // 🔐 Multi-tenant: Associa customer ao cliente
       },
       {
-        onConflict: 'telefone',
+        onConflict: 'telefone,client_id', // 🔐 FIX: Use composite key for multi-tenant isolation
         ignoreDuplicates: false,
       }
     )

@@ -170,6 +170,13 @@ export async function POST(
       console.error(`[WEBHOOK/${clientId}] ❌ Cliente não encontrado`)
       return new NextResponse('Client not found', { status: 404 })
     }
+    
+    // 🔍 DEBUG: Log detalhado da config carregada
+    console.log(`\n🔍 [WEBHOOK/${clientId}] CONFIG LOADED FROM DB:`)
+    console.log(`  Client Name: ${config.name}`)
+    console.log(`  Client Slug: ${config.slug}`)
+    console.log(`  System Prompt Preview: ${config.prompts.systemPrompt?.substring(0, 150)}...`)
+    console.log(`  Prompt Length: ${config.prompts.systemPrompt?.length} chars\n`)
 
     if (config.status !== 'active') {
       console.error(`[WEBHOOK/${clientId}] ❌ Cliente inativo: ${config.status}`)
