@@ -1,20 +1,20 @@
-import { CustomerRecord, ConversationStatus } from '@/lib/types'
-import { createServiceRoleClient } from '@/lib/supabase'
+import { ConversationStatus, CustomerRecord } from "@/lib/types";
+import { createServiceRoleClient } from "@/lib/supabase";
 
 export interface CheckOrCreateCustomerInput {
-  phone: string
-  name: string
-  clientId: string // 🔐 Multi-tenant: ID do cliente (obrigatório - não mais opcional)
+  phone: string;
+  name: string;
+  clientId: string; // 🔐 Multi-tenant: ID do cliente (obrigatório - não mais opcional)
 }
 
 /**
  * Interface para dados do cliente
  */
 interface ClienteWhatsAppData {
-  telefone: string
-  nome: string
-  status: string
-  created_at?: string
+  telefone: string;
+  nome: string;
+  status: string;
+  created_at?: string;
 }
 
 /**
@@ -27,31 +27,31 @@ const upsertClienteWhatsApp = async (
   supabase: ReturnType<typeof createServiceRoleClient>,
   phone: string,
   name: string,
-  clientId: string // 🔐 Multi-tenant: ID do cliente (obrigatório após migration 005)
+  clientId: string, // 🔐 Multi-tenant: ID do cliente (obrigatório após migration 005)
 ): Promise<{ data: ClienteWhatsAppData | null; error: any }> => {
   // Usa tabela SEM espaço (após migration 004)
   // Precisa do cast explícito porque TypeScript não conhece a tabela ainda
-  const supabaseAny = supabase as any
+  const supabaseAny = supabase as any;
 
   const result = await supabaseAny
-    .from('clientes_whatsapp')
+    .from("clientes_whatsapp")
     .upsert(
       {
         telefone: phone,
         nome: name,
-        status: 'bot',
+        status: "bot",
         client_id: clientId, // 🔐 Multi-tenant: Associa customer ao cliente
       },
       {
-        onConflict: 'telefone,client_id', // 🔐 FIX: Use composite key for multi-tenant isolation
+        onConflict: "telefone,client_id", // 🔐 FIX: Use composite key for multi-tenant isolation
         ignoreDuplicates: false,
-      }
+      },
     )
     .select()
-    .single()
+    .single();
 
-  return result
-}
+  return result;
+};
 
 /**
  * VERSÃO OTIMIZADA: Usa Supabase client em vez de pg direto
@@ -63,36 +63,44 @@ const upsertClienteWhatsApp = async (
  * - Retry automático em caso de falha temporária
  */
 export const checkOrCreateCustomer = async (
-  input: CheckOrCreateCustomerInput
+  input: CheckOrCreateCustomerInput,
 ): Promise<CustomerRecord> => {
-  const startTime = Date.now()
+  const startTime = Date.now();
 
   try {
-    const { phone, name, clientId } = input
+    const { phone, name, clientId } = input;
 
     if (!clientId) {
-      throw new Error('clientId is required - DEFAULT_CLIENT_ID is no longer used')
+      throw new Error(
+        "clientId is required - DEFAULT_CLIENT_ID is no longer used",
+      );
     }
 
-
     // Cria cliente Supabase com SERVICE ROLE (bypassa RLS - fix VULN-007)
-    const supabase = createServiceRoleClient()
+    const supabase = createServiceRoleClient();
 
     // UPSERT usando helper function (bypass de tipos do TypeScript)
 
-    const { data, error } = await upsertClienteWhatsApp(supabase, phone, name, clientId)
+    const { data, error } = await upsertClienteWhatsApp(
+      supabase,
+      phone,
+      name,
+      clientId,
+    );
 
-    const duration = Date.now() - startTime
+    const duration = Date.now() - startTime;
 
     if (error) {
-      console.error(`[checkOrCreateCustomer] 💥 Erro do Supabase after ${duration}ms:`, error)
-      throw new Error(`Supabase error: ${error.message} (code: ${error.code})`)
+      console.error(
+        `[checkOrCreateCustomer] 💥 Erro do Supabase after ${duration}ms:`,
+        error,
+      );
+      throw new Error(`Supabase error: ${error.message} (code: ${error.code})`);
     }
 
     if (!data) {
-      throw new Error('No data returned from upsert')
+      throw new Error("No data returned from upsert");
     }
-
 
     return {
       id: String(data.telefone),
@@ -102,16 +110,30 @@ export const checkOrCreateCustomer = async (
       status: data.status as ConversationStatus,
       created_at: data.created_at,
       updated_at: data.created_at,
-    }
+    };
   } catch (error) {
-    const duration = Date.now() - startTime
-    console.error(`[checkOrCreateCustomer] 💥💥💥 ERRO CRÍTICO after ${duration}ms 💥💥💥`)
-    console.error(`[checkOrCreateCustomer] Error type:`, error instanceof Error ? error.constructor.name : typeof error)
-    console.error(`[checkOrCreateCustomer] Error message:`, error instanceof Error ? error.message : String(error))
-    console.error(`[checkOrCreateCustomer] Error stack:`, error instanceof Error ? error.stack : 'No stack trace')
-    console.error(`[checkOrCreateCustomer] Input data:`, { phone: input.phone, name: input.name })
+    const duration = Date.now() - startTime;
+    console.error(
+      `[checkOrCreateCustomer] 💥💥💥 ERRO CRÍTICO after ${duration}ms 💥💥💥`,
+    );
+    console.error(
+      `[checkOrCreateCustomer] Error type:`,
+      error instanceof Error ? error.constructor.name : typeof error,
+    );
+    console.error(
+      `[checkOrCreateCustomer] Error message:`,
+      error instanceof Error ? error.message : String(error),
+    );
+    console.error(
+      `[checkOrCreateCustomer] Error stack:`,
+      error instanceof Error ? error.stack : "No stack trace",
+    );
+    console.error(`[checkOrCreateCustomer] Input data:`, {
+      phone: input.phone,
+      name: input.name,
+    });
 
-    const errorMessage = error instanceof Error ? error.message : String(error)
-    throw new Error(`Failed to check or create customer: ${errorMessage}`)
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to check or create customer: ${errorMessage}`);
   }
-}
+};
