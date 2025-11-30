@@ -1,6 +1,6 @@
-import { AIResponse, ChatMessage, ClientConfig } from '@/lib/types'
-import { generateChatCompletion } from '@/lib/groq'
-import { generateChatCompletionOpenAI } from '@/lib/openai'
+import { AIResponse, ChatMessage, ClientConfig } from "@/lib/types";
+import { generateChatCompletion } from "@/lib/groq";
+import { generateChatCompletionOpenAI } from "@/lib/openai";
 
 // 📝 PROMPT PADRÃO (usado apenas como fallback se config não tiver systemPrompt)
 const DEFAULT_SYSTEM_PROMPT = `## Papel
@@ -72,7 +72,7 @@ Encaminhe o cliente com naturalidade, sem pressão.
 
 ## Objetivo Final
 Transformar cada interação em uma **conversa de confiança**.
-O cliente deve sentir que falou com **um especialista de verdade**, representado por um assistente inteligente, capaz de unir **engenharia, tecnologia e inteligência de dados** para encontrar a melhor solução para o seu caso.`
+O cliente deve sentir que falou com **um especialista de verdade**, representado por um assistente inteligente, capaz de unir **engenharia, tecnologia e inteligência de dados** para encontrar a melhor solução para o seu caso.`;
 
 // SUBAGENTE DESATIVADO - Não está implementado
 // const SUB_AGENT_TOOL_DEFINITION = {
@@ -94,128 +94,150 @@ O cliente deve sentir que falou com **um especialista de verdade**, representado
 // }
 
 const HUMAN_HANDOFF_TOOL_DEFINITION = {
-  type: 'function',
+  type: "function",
   function: {
-    name: 'transferir_atendimento',
-    description: 'SOMENTE utilize essa tool quando o usuário EXPLICITAMENTE solicitar falar com um humano, atendente ou pessoa. Exemplos: "quero falar com alguém", "preciso de um atendente", "pode me transferir para um humano". NÃO use esta tool para perguntas normais que você pode responder.',
+    name: "transferir_atendimento",
+    description:
+      'SOMENTE utilize essa tool quando o usuário EXPLICITAMENTE solicitar falar com um humano, atendente ou pessoa. Exemplos: "quero falar com alguém", "preciso de um atendente", "pode me transferir para um humano". NÃO use esta tool para perguntas normais que você pode responder.',
     parameters: {
-      type: 'object',
+      type: "object",
       properties: {
         motivo: {
-          type: 'string',
-          description: 'Motivo da transferência solicitada pelo usuário',
+          type: "string",
+          description: "Motivo da transferência solicitada pelo usuário",
         },
       },
-      required: ['motivo'],
+      required: ["motivo"],
     },
   },
-}
+};
 
 export interface GenerateAIResponseInput {
-  message: string
-  chatHistory: ChatMessage[]
-  ragContext: string
-  customerName: string
-  config: ClientConfig // 🔐 Config dinâmica do cliente
-  greetingInstruction?: string // 🔧 Phase 1: Continuity greeting instruction
+  message: string;
+  chatHistory: ChatMessage[];
+  ragContext: string;
+  customerName: string;
+  config: ClientConfig; // 🔐 Config dinâmica do cliente
+  greetingInstruction?: string; // 🔧 Phase 1: Continuity greeting instruction
 }
 
 /**
  * 🔐 Gera resposta da IA usando config dinâmica do cliente
  *
  * Usa systemPrompt e groqApiKey do config do cliente do Vault
- * 
+ *
  * 🔧 Phase 1: Injects continuity greeting instruction if provided
  */
-export const generateAIResponse = async (input: GenerateAIResponseInput): Promise<AIResponse> => {
+export const generateAIResponse = async (
+  input: GenerateAIResponseInput,
+): Promise<AIResponse> => {
   try {
-    const { message, chatHistory, ragContext, customerName, config, greetingInstruction } = input
+    const {
+      message,
+      chatHistory,
+      ragContext,
+      customerName,
+      config,
+      greetingInstruction,
+    } = input;
 
     // Usar systemPrompt do config do cliente (ou fallback)
-    const systemPrompt = config.prompts.systemPrompt || DEFAULT_SYSTEM_PROMPT
-    
+    const systemPrompt = config.prompts.systemPrompt || DEFAULT_SYSTEM_PROMPT;
+
     // 🔍 DEBUG: Log para rastrear qual config está sendo usado
-    console.log('\n🔍 [generateAIResponse] DEBUG CONFIG:')
-    console.log(`  Client ID: ${config.id}`)
-    console.log(`  Client Name: ${config.name}`)
-    console.log(`  Provider: ${config.primaryProvider}`)
-    console.log(`  System Prompt Preview (first 150 chars): ${systemPrompt.substring(0, 150)}...`)
-    console.log(`  System Prompt Length: ${systemPrompt.length} chars`)
-    console.log(`  Using DEFAULT_SYSTEM_PROMPT: ${systemPrompt === DEFAULT_SYSTEM_PROMPT}\n`)
+    console.log("\n🔍 [generateAIResponse] DEBUG CONFIG:");
+    console.log(`  Client ID: ${config.id}`);
+    console.log(`  Client Name: ${config.name}`);
+    console.log(`  Provider: ${config.primaryProvider}`);
+    console.log(
+      `  System Prompt Preview (first 150 chars): ${
+        systemPrompt.substring(0, 150)
+      }...`,
+    );
+    console.log(`  System Prompt Length: ${systemPrompt.length} chars`);
+    console.log(
+      `  Using DEFAULT_SYSTEM_PROMPT: ${
+        systemPrompt === DEFAULT_SYSTEM_PROMPT
+      }\n`,
+    );
 
     // Data e hora atual (para contexto da IA)
-    const now = new Date()
-    const dateTimeInfo = `Data e hora atual: ${now.toLocaleDateString('pt-BR', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'America/Sao_Paulo'
-    })} (horário de Brasília)`
+    const now = new Date();
+    const dateTimeInfo = `Data e hora atual: ${
+      now.toLocaleDateString("pt-BR", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "America/Sao_Paulo",
+      })
+    } (horário de Brasília)`;
 
     const messages: ChatMessage[] = [
       {
-        role: 'system',
+        role: "system",
         content: systemPrompt, // 🔐 Usa prompt do config do cliente
       },
       {
-        role: 'system',
+        role: "system",
         content: dateTimeInfo,
       },
-    ]
+    ];
 
     // 🔧 Phase 1: Add continuity greeting instruction if provided
     if (greetingInstruction && greetingInstruction.trim().length > 0) {
       messages.push({
-        role: 'system',
+        role: "system",
         content: `IMPORTANTE - Contexto da conversa: ${greetingInstruction}`,
-      })
+      });
     }
 
     if (ragContext && ragContext.trim().length > 0) {
       messages.push({
-        role: 'user',
+        role: "user",
         content: `Contexto relevante da base de conhecimento:\n\n${ragContext}`,
-      })
+      });
     }
 
     // Valida e adiciona chatHistory - VALIDAÇÃO EXTRA
     if (Array.isArray(chatHistory) && chatHistory.length > 0) {
       const validHistory = chatHistory.filter((msg) => {
-        const isValid = msg && 
-          typeof msg === 'object' &&
-          (msg.role === 'user' || msg.role === 'assistant') &&
-          typeof msg.content === 'string' &&
-          msg.content.trim().length > 0
-        
+        const isValid = msg &&
+          typeof msg === "object" &&
+          (msg.role === "user" || msg.role === "assistant") &&
+          typeof msg.content === "string" &&
+          msg.content.trim().length > 0;
+
         if (!isValid) {
         }
-        
-        return isValid
-      })
-      
-      messages.push(...validHistory)
+
+        return isValid;
+      });
+
+      messages.push(...validHistory);
     }
 
     // Adiciona mensagem atual - VALIDAÇÃO
-    if (!message || typeof message !== 'string' || message.trim().length === 0) {
-      throw new Error('Message must be a non-empty string')
+    if (
+      !message || typeof message !== "string" || message.trim().length === 0
+    ) {
+      throw new Error("Message must be a non-empty string");
     }
 
     messages.push({
-      role: 'user',
+      role: "user",
       content: `${customerName}: ${message}`,
-    })
+    });
 
     // Log para debug
 
-    const tools = [HUMAN_HANDOFF_TOOL_DEFINITION]
+    const tools = [HUMAN_HANDOFF_TOOL_DEFINITION];
 
     // 🔐 Escolher provider dinamicamente baseado na config do cliente
-    
-    if (config.primaryProvider === 'openai') {
+
+    if (config.primaryProvider === "openai") {
       // Usar OpenAI Chat Completion
       return await generateChatCompletionOpenAI(
         messages,
@@ -225,8 +247,8 @@ export const generateAIResponse = async (input: GenerateAIResponseInput): Promis
           temperature: config.settings.temperature,
           max_tokens: config.settings.maxTokens,
           model: config.models.openaiModel, // gpt-4o, gpt-4o-mini, etc
-        }
-      )
+        },
+      );
     } else {
       // Usar Groq Chat Completion (padrão)
       return await generateChatCompletion(
@@ -237,11 +259,13 @@ export const generateAIResponse = async (input: GenerateAIResponseInput): Promis
           temperature: config.settings.temperature,
           max_tokens: config.settings.maxTokens,
           model: config.models.groqModel,
-        }
-      )
+        },
+      );
     }
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    throw new Error(`Failed to generate AI response: ${errorMessage}`)
+    const errorMessage = error instanceof Error
+      ? error.message
+      : "Unknown error";
+    throw new Error(`Failed to generate AI response: ${errorMessage}`);
   }
-}
+};
