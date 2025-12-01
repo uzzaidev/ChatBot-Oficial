@@ -42,8 +42,8 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
     : undefined
   
   // Fallback for legacy messages without real media
-  const hasLegacyMediaTag = message.content.match(/\[(IMAGE|IMAGEM|AUDIO|ÁUDIO|DOCUMENT|DOCUMENTO)\]/)
-  const legacyFilename = message.content.match(/\](.*?)$/)?.[1]?.trim() || 'Arquivo'
+  const hasLegacyMediaTag = message.content.match(/\[(image|imagem|audio|áudio|document|documento|documento:[^\]]*)\]/i)
+  const legacyFilename = message.content.match(/\[(?:documento:\s*)?([^\]]+)\]/i)?.[1]?.trim() || 'Arquivo'
 
   // Render real image
   const renderImage = () => {
@@ -150,10 +150,14 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
 
   // Render legacy media tag (fallback for old messages)
   const renderLegacyMedia = () => {
+    // Check if it's a document with filename in the tag
+    const docMatch = message.content.match(/\[documento:\s*([^\]]+)\]/i)
+    const displayName = docMatch ? docMatch[1].trim() : legacyFilename
+    
     return (
-      <div className="flex items-center gap-2 mb-1 text-sm opacity-80">
-        <FileText className="h-4 w-4" />
-        <span className="font-medium">Arquivo enviado</span>
+      <div className={`flex items-center gap-2 mb-1 p-2 rounded-lg ${isIncoming ? 'bg-silver-50' : 'bg-white/10'}`}>
+        <FileText className="h-5 w-5" />
+        <span className="font-medium text-sm">{displayName || 'Arquivo enviado'}</span>
       </div>
     )
   }
@@ -185,8 +189,16 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
       // For images with real media, show description/caption
       return message.content.replace(/\[Imagem recebida\]\s*/i, '').trim()
     }
+    if (hasRealMedia && mediaMetadata.type === 'document') {
+      // For documents with real media, show content after the document tag
+      return message.content.replace(/\[Documento:[^\]]*\]\s*/i, '').trim()
+    }
     if (hasLegacyMediaTag) {
-      return legacyFilename
+      // For legacy media tags, extract content after the tag
+      const contentAfterTag = message.content.replace(/\[[^\]]+\]\s*/, '').trim()
+      // If there's meaningful content after the tag, return it; otherwise return empty
+      // The renderLegacyMedia will show the filename
+      return contentAfterTag.length > 0 ? contentAfterTag : ''
     }
     return message.content
   }
