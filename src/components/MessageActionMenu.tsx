@@ -113,11 +113,11 @@ export const MessageActionMenu = ({
 
       <DropdownMenuContent
         align={isIncoming ? 'end' : 'start'}
-        className="w-56 bg-white dark:bg-zinc-800 border dark:border-zinc-700"
+        className="min-w-[280px] bg-white dark:bg-zinc-800 border dark:border-zinc-700"
       >
         {/* Emoji reactions row - only show if wamid is available */}
         {canReact && (
-          <div className="flex items-center justify-around p-2 border-b dark:border-zinc-700">
+          <div className="flex items-center justify-evenly gap-1 p-2 border-b dark:border-zinc-700">
             {REACTION_EMOJIS.map((emoji) => (
               <button
                 key={emoji}
@@ -125,7 +125,7 @@ export const MessageActionMenu = ({
                 disabled={isReacting}
                 className="
                   p-1.5 rounded-full hover:bg-silver-100 dark:hover:bg-zinc-700
-                  transition-colors text-xl
+                  transition-colors text-xl flex-shrink-0
                   disabled:opacity-50
                 "
                 title={`React with ${emoji}`}
