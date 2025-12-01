@@ -28,6 +28,8 @@ export interface GetChatHistoryResult {
 
 export const getChatHistory = async (input: GetChatHistoryInput): Promise<GetChatHistoryResult> => {
   const startTime = Date.now()
+  // Default fallback value for maxHistory
+  const defaultMaxHistory = input.maxHistory ?? 30
 
   try {
     const { phone, clientId } = input
@@ -110,7 +112,7 @@ export const getChatHistory = async (input: GetChatHistoryInput): Promise<GetCha
       stats: {
         messageCount: 0,
         totalPromptSize: 0,
-        maxHistoryRequested: input.maxHistory || 30,
+        maxHistoryRequested: defaultMaxHistory,
         durationMs: duration,
       }
     }
