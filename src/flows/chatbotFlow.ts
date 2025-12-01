@@ -303,7 +303,7 @@ export const processChatbotMessage = async (
         // Both enabled - fetch in parallel
         logger.logNodeStart('11. Get RAG Context', { queryLength: batchedContent.length })
         
-        const [history, rag] = await Promise.all([
+        const [historyResult, rag] = await Promise.all([
           getChatHistory({
             phone: parsedMessage.phone,
             clientId: config.id,
@@ -316,19 +316,33 @@ export const processChatbotMessage = async (
           }),
         ])
         
-        chatHistory2 = history
+        chatHistory2 = historyResult.messages
         ragContext = rag
         
-        logger.logNodeSuccess('10. Get Chat History', { messageCount: chatHistory2.length })
+        // 📊 Log com estatísticas detalhadas para monitoramento do histórico
+        logger.logNodeSuccess('10. Get Chat History', { 
+          messageCount: historyResult.stats.messageCount,
+          totalPromptSize: historyResult.stats.totalPromptSize,
+          maxHistoryRequested: historyResult.stats.maxHistoryRequested,
+          durationMs: historyResult.stats.durationMs,
+        })
         logger.logNodeSuccess('11. Get RAG Context', { contextLength: ragContext.length })
       } else if (shouldGetHistory) {
         // Only history enabled
-        chatHistory2 = await getChatHistory({
+        const historyResult = await getChatHistory({
           phone: parsedMessage.phone,
           clientId: config.id,
           maxHistory: config.settings.maxChatHistory,
         })
-        logger.logNodeSuccess('10. Get Chat History', { messageCount: chatHistory2.length })
+        chatHistory2 = historyResult.messages
+        
+        // 📊 Log com estatísticas detalhadas para monitoramento do histórico
+        logger.logNodeSuccess('10. Get Chat History', { 
+          messageCount: historyResult.stats.messageCount,
+          totalPromptSize: historyResult.stats.totalPromptSize,
+          maxHistoryRequested: historyResult.stats.maxHistoryRequested,
+          durationMs: historyResult.stats.durationMs,
+        })
         logger.logNodeSuccess('11. Get RAG Context', { skipped: true, reason: 'node disabled or config disabled' })
       } else if (shouldGetRAG) {
         // Only RAG enabled (rare case)
