@@ -87,7 +87,7 @@ export const DocumentUpload = ({ onUploadSuccess }: DocumentUploadProps) => {
       // Handle non-JSON error responses (e.g., 413 Request Entity Too Large)
       if (!response.ok) {
         if (response.status === 413) {
-          throw new Error('Arquivo muito grande para o servidor. Tente um arquivo menor que 4MB ou entre em contato com o suporte.')
+          throw new Error('Arquivo muito grande para o servidor. Por favor, tente um arquivo menor.')
         }
         // Try to parse JSON error, but handle non-JSON responses gracefully
         let errorMessage = `Erro ${response.status}: ${response.statusText}`
