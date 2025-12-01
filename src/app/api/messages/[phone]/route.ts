@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cleanMessageContent } from '@/lib/utils'
 import { query } from '@/lib/postgres'
-import type { Message } from '@/lib/types'
+import type { Message, MessageType } from '@/lib/types'
 import { getClientIdFromSession } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
+
+// Valid message types
+const VALID_MESSAGE_TYPES = new Set<MessageType>(['text', 'audio', 'image', 'document', 'video'])
 
 interface RouteParams {
   params: {
@@ -107,8 +110,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       // Limpar tags de function calls
       const cleanedContent = cleanMessageContent(messageContent)
 
-      // 📎 Determine message type based on media metadata
-      const msgType = mediaMetadata?.type || 'text'
+      // 📎 Determine message type based on media metadata with validation
+      const rawMsgType = mediaMetadata?.type || 'text'
+      const msgType: MessageType = VALID_MESSAGE_TYPES.has(rawMsgType as MessageType) 
+        ? (rawMsgType as MessageType) 
+        : 'text'
 
       return {
         id: item.id?.toString() || `msg-${index}`,
@@ -117,7 +123,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         phone: String(phone),
         name: messageType === 'human' ? 'Cliente' : 'Bot',
         content: cleanedContent,
-        type: msgType as 'text' | 'audio' | 'image' | 'document' | 'video',
+        type: msgType,
         direction: messageType === 'human' ? ('incoming' as const) : ('outgoing' as const),
         status: 'sent' as const,
         timestamp: item.created_at || new Date().toISOString(),

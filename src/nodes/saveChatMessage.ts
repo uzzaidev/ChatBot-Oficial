@@ -1,19 +1,12 @@
 import { query } from '@/lib/postgres'
-
-export interface MediaMetadata {
-  type: 'image' | 'audio' | 'document'
-  url: string
-  mimeType: string
-  filename?: string
-  size?: number
-}
+import type { StoredMediaMetadata } from '@/lib/types'
 
 export interface SaveChatMessageInput {
   phone: string
   message: string
   type: 'user' | 'ai'
   clientId: string // 🔐 Multi-tenant: ID do cliente
-  mediaMetadata?: MediaMetadata // 📎 Media attachment metadata
+  mediaMetadata?: StoredMediaMetadata // 📎 Media attachment metadata
 }
 
 export const saveChatMessage = async (input: SaveChatMessageInput): Promise<void> => {
