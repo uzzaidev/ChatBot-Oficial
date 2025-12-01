@@ -60,8 +60,11 @@ const MIME_TO_EXTENSION: Record<string, string> = {
   'text/plain': 'txt',
 }
 
+// Valid file extensions (for validation)
+const VALID_EXTENSIONS = new Set(['ogg', 'opus', 'mp3', 'm4a', 'wav', 'webm', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt', 'mp4', 'avi', 'mov'])
+
 const getExtensionFromMimeType = (mimeType: string, defaultExt: string = 'bin'): string => {
-  // First try exact match
+  // First try exact match from mapping
   if (MIME_TO_EXTENSION[mimeType]) {
     return MIME_TO_EXTENSION[mimeType]
   }
@@ -69,8 +72,15 @@ const getExtensionFromMimeType = (mimeType: string, defaultExt: string = 'bin'):
   const parts = mimeType.split('/')
   if (parts.length === 2) {
     // Handle cases like 'image/svg+xml' -> 'svg'
-    const subtype = parts[1].split('+')[0].split(';')[0]
-    return subtype || defaultExt
+    const subtype = parts[1].split('+')[0].split(';')[0].toLowerCase()
+    // Only use extracted extension if it's a known valid extension
+    if (subtype && VALID_EXTENSIONS.has(subtype)) {
+      return subtype
+    }
+    // Special case: 'jpeg' should be 'jpg' for better compatibility
+    if (subtype === 'jpeg') {
+      return 'jpg'
+    }
   }
   return defaultExt
 }
