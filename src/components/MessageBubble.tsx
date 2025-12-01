@@ -4,9 +4,12 @@ import type { Message, StoredMediaMetadata } from '@/lib/types'
 import { FileText, Download, Play, File } from 'lucide-react'
 import Image from 'next/image'
 import { useState } from 'react'
+import { MessageActionMenu } from '@/components/MessageActionMenu'
 
 interface MessageBubbleProps {
   message: Message
+  onReaction?: (messageId: string, emoji: string) => Promise<void>
+  onDelete?: (messageId: string, mediaUrl?: string) => Promise<void>
 }
 
 // Type guard for stored media metadata
@@ -21,9 +24,10 @@ const isStoredMediaMetadata = (obj: unknown): obj is StoredMediaMetadata => {
   )
 }
 
-export const MessageBubble = ({ message }: MessageBubbleProps) => {
+export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubbleProps) => {
   const isIncoming = message.direction === 'incoming'
   const [imageError, setImageError] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   
   // 📎 Extract media metadata from message with type guard
   const rawMediaMetadata = message.metadata && typeof message.metadata === 'object' 
@@ -184,9 +188,38 @@ export const MessageBubble = ({ message }: MessageBubbleProps) => {
 
   const textContent = getTextContent()
 
+  // Handle reaction
+  const handleReaction = async (emoji: string) => {
+    if (onReaction) {
+      await onReaction(message.id, emoji)
+    }
+  }
+
+  // Handle delete
+  const handleDelete = async () => {
+    if (onDelete) {
+      setIsDeleting(true)
+      try {
+        await onDelete(message.id, mediaMetadata?.url)
+      } finally {
+        setIsDeleting(false)
+      }
+    }
+  }
+
   return (
     <div className={'flex ' + (isIncoming ? 'justify-start' : 'justify-end') + ' mb-2 px-2'}>
-      <div className={'max-w-[70%] rounded-lg p-3 break-words ' + (isIncoming ? 'bg-white shadow-sm' : 'bg-mint-500 text-white')}>
+      <div className={'relative group max-w-[70%] rounded-lg p-3 break-words ' + (isIncoming ? 'bg-white shadow-sm' : 'bg-mint-500 text-white')}>
+        {/* Action menu - WhatsApp style dropdown */}
+        {(onReaction || onDelete) && (
+          <MessageActionMenu
+            message={message}
+            onReaction={handleReaction}
+            onDelete={handleDelete}
+            isDeleting={isDeleting}
+          />
+        )}
+        
         {renderMediaContent()}
         {textContent && (
           <p className="whitespace-pre-wrap text-sm md:text-base">{textContent}</p>
