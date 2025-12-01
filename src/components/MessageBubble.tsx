@@ -42,8 +42,8 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
     : undefined
   
   // Fallback for legacy messages without real media
-  const hasLegacyMediaTag = message.content.match(/\[(IMAGE|IMAGEM|AUDIO|ÁUDIO|DOCUMENT|DOCUMENTO|Documento:[^\]]*)\]/)
-  const legacyFilename = message.content.match(/\[(?:Documento:\s*)?([^\]]+)\]/)?.[1]?.trim() || 'Arquivo'
+  const hasLegacyMediaTag = message.content.match(/\[(image|imagem|audio|áudio|document|documento|documento:[^\]]*)\]/i)
+  const legacyFilename = message.content.match(/\[(?:documento:\s*)?([^\]]+)\]/i)?.[1]?.trim() || 'Arquivo'
 
   // Render real image
   const renderImage = () => {
@@ -151,7 +151,7 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
   // Render legacy media tag (fallback for old messages)
   const renderLegacyMedia = () => {
     // Check if it's a document with filename in the tag
-    const docMatch = message.content.match(/\[Documento:\s*([^\]]+)\]/)
+    const docMatch = message.content.match(/\[documento:\s*([^\]]+)\]/i)
     const displayName = docMatch ? docMatch[1].trim() : legacyFilename
     
     return (
