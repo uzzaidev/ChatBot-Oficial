@@ -47,19 +47,20 @@ export async function GET(request: NextRequest) {
             SELECT h2.message 
             FROM n8n_chat_histories h2 
             WHERE h2.session_id = CAST(c.telefone AS TEXT)
-              AND (h2.client_id = $1 OR h2.client_id IS NULL)
+              AND h2.client_id = $1
             ORDER BY h2.created_at DESC 
             LIMIT 1
           ) as last_message_json
         FROM clientes_whatsapp c
         LEFT JOIN n8n_chat_histories h ON CAST(c.telefone AS TEXT) = h.session_id
-          AND (h.client_id = $1 OR h.client_id IS NULL)
-        WHERE EXISTS (
-          SELECT 1 
-          FROM n8n_chat_histories h3 
-          WHERE h3.session_id = CAST(c.telefone AS TEXT)
-            AND (h3.client_id = $1 OR h3.client_id IS NULL)
-        )
+          AND h.client_id = $1
+        WHERE c.client_id = $1
+          AND EXISTS (
+            SELECT 1 
+            FROM n8n_chat_histories h3 
+            WHERE h3.session_id = CAST(c.telefone AS TEXT)
+              AND h3.client_id = $1
+          )
         ${status ? "AND c.status = $2" : ""}
         GROUP BY c.telefone, c.nome, c.status, c.created_at, c.last_read_at
       )
