@@ -56,6 +56,12 @@ export const MessageActionMenu = ({
   const mediaMetadata: StoredMediaMetadata | null = isStoredMediaMetadata(rawMediaMetadata) ? rawMediaMetadata : null
   const hasMedia = mediaMetadata !== null
 
+  // 📱 Check if wamid is available for reactions
+  const wamid = message.metadata && typeof message.metadata === 'object'
+    ? (message.metadata as Record<string, unknown>).wamid as string | undefined
+    : undefined
+  const canReact = !!wamid // Reactions require WhatsApp message ID
+
   const handleReaction = async (emoji: string) => {
     setIsReacting(true)
     try {
@@ -109,24 +115,26 @@ export const MessageActionMenu = ({
         align={isIncoming ? 'end' : 'start'}
         className="w-56 bg-white dark:bg-zinc-800 border dark:border-zinc-700"
       >
-        {/* Emoji reactions row */}
-        <div className="flex items-center justify-around p-2 border-b dark:border-zinc-700">
-          {REACTION_EMOJIS.map((emoji) => (
-            <button
-              key={emoji}
-              onClick={() => handleReaction(emoji)}
-              disabled={isReacting}
-              className="
-                p-1.5 rounded-full hover:bg-silver-100 dark:hover:bg-zinc-700
-                transition-colors text-xl
-                disabled:opacity-50
-              "
-              title={`React with ${emoji}`}
-            >
-              {emoji}
-            </button>
-          ))}
-        </div>
+        {/* Emoji reactions row - only show if wamid is available */}
+        {canReact && (
+          <div className="flex items-center justify-around p-2 border-b dark:border-zinc-700">
+            {REACTION_EMOJIS.map((emoji) => (
+              <button
+                key={emoji}
+                onClick={() => handleReaction(emoji)}
+                disabled={isReacting}
+                className="
+                  p-1.5 rounded-full hover:bg-silver-100 dark:hover:bg-zinc-700
+                  transition-colors text-xl
+                  disabled:opacity-50
+                "
+                title={`React with ${emoji}`}
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Media actions - only show for media messages */}
         {hasMedia && (

@@ -35,6 +35,11 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
     : null
   const mediaMetadata: StoredMediaMetadata | null = isStoredMediaMetadata(rawMediaMetadata) ? rawMediaMetadata : null
   const hasRealMedia = mediaMetadata !== null
+
+  // 📱 Extract wamid for WhatsApp reactions
+  const wamid = message.metadata && typeof message.metadata === 'object'
+    ? (message.metadata as Record<string, unknown>).wamid as string | undefined
+    : undefined
   
   // Fallback for legacy messages without real media
   const hasLegacyMediaTag = message.content.match(/\[(IMAGE|IMAGEM|AUDIO|ÁUDIO|DOCUMENT|DOCUMENTO)\]/)
@@ -188,10 +193,12 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
 
   const textContent = getTextContent()
 
-  // Handle reaction
+  // Handle reaction - uses wamid if available for WhatsApp API
   const handleReaction = async (emoji: string) => {
     if (onReaction) {
-      await onReaction(message.id, emoji)
+      // Pass wamid for reactions (required by WhatsApp API) or fallback to message.id
+      const reactionId = wamid || message.id
+      await onReaction(reactionId, emoji)
     }
   }
 
