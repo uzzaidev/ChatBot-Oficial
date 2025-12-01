@@ -162,9 +162,9 @@ export async function POST(request: NextRequest) {
       const buffer = Buffer.from(await file.arrayBuffer())
       try {
         const pdfData = await pdfParse(buffer)
-        text = pdfData.text || ''
+        text = pdfData.text ?? ''
       } catch (pdfError) {
-        const pdfErrorMessage = pdfError instanceof Error ? pdfError.message : 'Unknown PDF error'
+        const pdfErrorMessage = pdfError instanceof Error ? pdfError.message : 'Erro PDF desconhecido'
         console.error('[Upload] ❌ PDF parsing error:', pdfErrorMessage)
         return NextResponse.json(
           { error: `Erro ao processar PDF: ${pdfErrorMessage}. Verifique se o arquivo não está corrompido ou protegido por senha.` },
