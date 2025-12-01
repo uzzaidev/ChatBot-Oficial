@@ -40,6 +40,17 @@ const ALLOWED_TYPES = [
   'image/jpg'
 ]
 
+// Error messages for empty text extraction, keyed by MIME type
+// Note: 'image/jpg' is included for compatibility with some systems that send this non-standard MIME type
+const EMPTY_TEXT_ERROR_MESSAGES: Record<string, string> = {
+  'application/pdf': 'O PDF não contém texto extraível. Verifique se não é um PDF de imagens ou protegido.',
+  'text/plain': 'O arquivo de texto está vazio.',
+  'image/jpeg': 'Não foi possível extrair texto da imagem.',
+  'image/png': 'Não foi possível extrair texto da imagem.',
+  'image/webp': 'Não foi possível extrair texto da imagem.',
+  'image/jpg': 'Não foi possível extrair texto da imagem.',
+}
+
 /**
  * Extract text from image using OpenAI Vision API (GPT-4o)
  * Serverless-compatible, no canvas dependencies
@@ -202,15 +213,7 @@ export async function POST(request: NextRequest) {
 
     if (!text || text.trim().length === 0) {
       // Provide more helpful error message based on file type
-      const errorMessages: Record<string, string> = {
-        'application/pdf': 'O PDF não contém texto extraível. Verifique se não é um PDF de imagens ou protegido.',
-        'text/plain': 'O arquivo de texto está vazio.',
-        'image/jpeg': 'Não foi possível extrair texto da imagem.',
-        'image/png': 'Não foi possível extrair texto da imagem.',
-        'image/webp': 'Não foi possível extrair texto da imagem.',
-        'image/jpg': 'Não foi possível extrair texto da imagem.',
-      }
-      const specificError = errorMessages[file.type] || 'Arquivo vazio ou falha na extração de texto'
+      const specificError = EMPTY_TEXT_ERROR_MESSAGES[file.type] || 'Arquivo vazio ou falha na extração de texto'
       return NextResponse.json(
         { error: specificError },
         { status: 400 }
