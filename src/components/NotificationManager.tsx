@@ -1,13 +1,12 @@
 'use client'
 
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { useNotifications } from '@/hooks/useNotifications'
 import { useGlobalRealtimeNotifications, type MessageNotification } from '@/hooks/useGlobalRealtimeNotifications'
 import { Button } from '@/components/ui/button'
 import { Bell, BellOff } from 'lucide-react'
-
-const DEFAULT_CLIENT_ID = 'b21b314f-c49a-467d-94b3-a21ed4412227'
+import { createClientBrowser } from '@/lib/supabase'
 
 interface NotificationManagerProps {
   enabled?: boolean
@@ -23,6 +22,8 @@ interface NotificationManagerProps {
  * - Toca som e mostra notificação do navegador
  * - Botão para habilitar/desabilitar notificações
  * 
+ * 🔐 Multi-tenant: Gets clientId from authenticated session
+ * 
  * Adicione no layout.tsx como:
  * <NotificationManager enabled={true} />
  */
@@ -30,6 +31,36 @@ export function NotificationManager({ enabled = true }: NotificationManagerProps
   const pathname = usePathname()
   const hasRequestedPermissionRef = useRef(false)
   const pathnameRef = useRef(pathname)
+  // 🔐 Multi-tenant: Get clientId from authenticated session
+  const [clientId, setClientId] = useState<string | null>(null)
+  const clientIdRef = useRef<string | null>(null)
+  
+  // 🔐 Multi-tenant: Fetch clientId from authenticated session
+  useEffect(() => {
+    const fetchClientId = async () => {
+      try {
+        const supabase = createClientBrowser()
+        const { data: { user } } = await supabase.auth.getUser()
+        
+        if (user) {
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('client_id')
+            .eq('id', user.id)
+            .single()
+          
+          if (profile?.client_id) {
+            setClientId(profile.client_id)
+            clientIdRef.current = profile.client_id
+          }
+        }
+      } catch (error) {
+        console.error('[NotificationManager] Failed to get clientId:', error)
+      }
+    }
+    
+    fetchClientId()
+  }, [])
   
   // Atualizar ref quando pathname mudar
   useEffect(() => {
@@ -75,6 +106,12 @@ export function NotificationManager({ enabled = true }: NotificationManagerProps
 
   // Callback quando nova mensagem chega - usar refs para evitar dependências instáveis
   const handleNewMessage = useCallback(async (notification: MessageNotification) => {
+    // 🔐 Multi-tenant: Skip if no clientId available
+    const currentClientId = clientIdRef.current
+    if (!currentClientId) {
+      return
+    }
+    
     const currentPathname = pathnameRef.current
     const currentPhone = currentPathname?.includes('/conversations/') 
       ? currentPathname.split('/conversations/')[1]?.split('?')[0]
@@ -85,8 +122,8 @@ export function NotificationManager({ enabled = true }: NotificationManagerProps
       let clientName = notification.phone
       
       try {
-        // Buscar direto da API de conversas
-        const response = await fetch(`/api/conversations?clientId=${DEFAULT_CLIENT_ID}`)
+        // 🔐 Multi-tenant: API uses authenticated session to get clientId
+        const response = await fetch(`/api/conversations`)
         
         if (response.ok) {
           const data = await response.json()
@@ -111,13 +148,13 @@ export function NotificationManager({ enabled = true }: NotificationManagerProps
       } catch (error) {
         // Se falhar, tentar buscar direto do Supabase
         try {
-          const { createClientBrowser } = await import('@/lib/supabase')
           const supabase = createClientBrowser()
+          // 🔐 Multi-tenant: Use clientId from ref
           const { data: cliente } = await supabase
             .from('clientes_whatsapp')
             .select('nome')
             .eq('telefone', notification.phone)
-            .eq('client_id', DEFAULT_CLIENT_ID)
+            .eq('client_id', currentClientId)
             .single()
           
           if (cliente?.nome) {
@@ -166,8 +203,11 @@ export function NotificationManager({ enabled = true }: NotificationManagerProps
     }
   }, []) // SEM dependências - usar refs
 
-  // Monitorar mensagens globalmente
-  useGlobalRealtimeNotifications(handleNewMessage)
+  // 🔐 Multi-tenant: Monitor messages with clientId for tenant isolation
+  useGlobalRealtimeNotifications({ 
+    clientId: clientId || '', 
+    onNewMessage: handleNewMessage 
+  })
 
   // Não renderizar UI se notificações não suportadas
   if (!isSupported || !enabled) {

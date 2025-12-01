@@ -72,7 +72,8 @@ export const useRealtimeMessages = ({
           event: "INSERT",
           schema: "public",
           table: "n8n_chat_histories",
-          filter: `session_id=eq.${phone}`,
+          // 🔐 Multi-tenant: Filter by client_id to ensure tenant isolation
+          filter: `client_id=eq.${clientId}`,
         },
         (payload) => {
           try {

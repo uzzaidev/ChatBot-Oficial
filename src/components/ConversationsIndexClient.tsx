@@ -31,7 +31,8 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
   })
 
   // Hook global para notificações em tempo real
-  const { lastUpdatePhone } = useGlobalRealtimeNotifications()
+  // 🔐 Multi-tenant: Pass clientId for tenant isolation
+  const { lastUpdatePhone } = useGlobalRealtimeNotifications({ clientId })
 
   return (
     <div className="fixed inset-0 flex overflow-hidden bg-white">
