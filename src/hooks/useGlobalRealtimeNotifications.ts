@@ -10,7 +10,7 @@ export interface MessageNotification {
 }
 
 interface UseGlobalRealtimeNotificationsOptions {
-  clientId: string; // 🔐 Multi-tenant: Required for tenant isolation
+  clientId: string | null; // 🔐 Multi-tenant: Required for tenant isolation (null = not yet loaded)
   onNewMessage?: (notification: MessageNotification) => void;
 }
 
@@ -22,6 +22,7 @@ let globalCallback: ((notification: MessageNotification) => void) | null = null;
  * Usado para mostrar notificações em conversas não abertas
  * 
  * 🔐 Multi-tenant: Requires clientId to ensure tenant isolation
+ * When clientId is null, the subscription is not set up (e.g., user not yet authenticated)
  */
 export const useGlobalRealtimeNotifications = ({
   clientId,
@@ -45,8 +46,9 @@ export const useGlobalRealtimeNotifications = ({
   }, [onNewMessage]);
 
   useEffect(() => {
-    // 🔐 Multi-tenant: Don't setup subscription without clientId
-    if (!clientId) return;
+    // 🔐 Multi-tenant: Don't setup subscription without valid clientId
+    // Check for both null/undefined and empty string
+    if (!clientId || clientId === '') return;
 
     const supabase = createClientBrowser();
     let channel: RealtimeChannel;
