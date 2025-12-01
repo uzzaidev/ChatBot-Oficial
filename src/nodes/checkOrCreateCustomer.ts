@@ -38,9 +38,10 @@ const upsertClienteWhatsApp = async (
   const supabaseAny = supabase as any;
 
   // 🔧 FIX: Primeiro, verificar se o cliente já existe
+  // Seleciona apenas os campos necessários para reduzir transferência de dados
   const { data: existingCustomer, error: selectError } = await supabaseAny
     .from("clientes_whatsapp")
-    .select("*")
+    .select("telefone, nome, status, created_at, client_id")
     .eq("telefone", phone)
     .eq("client_id", clientId)
     .single();
