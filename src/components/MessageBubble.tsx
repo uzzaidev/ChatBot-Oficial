@@ -1,29 +1,36 @@
 'use client'
 
-import type { Message } from '@/lib/types'
-import { FileText, Download, Play, Image as ImageIcon, File } from 'lucide-react'
+import type { Message, StoredMediaMetadata } from '@/lib/types'
+import { FileText, Download, Play, File } from 'lucide-react'
 import Image from 'next/image'
 import { useState } from 'react'
 
-interface MediaMetadata {
-  type: 'image' | 'audio' | 'document'
-  url: string
-  mimeType: string
-  filename?: string
-  size?: number
-}
-
 interface MessageBubbleProps {
   message: Message
+}
+
+// Type guard for stored media metadata
+const isStoredMediaMetadata = (obj: unknown): obj is StoredMediaMetadata => {
+  if (!obj || typeof obj !== 'object') return false
+  const meta = obj as Record<string, unknown>
+  return (
+    typeof meta.type === 'string' &&
+    ['image', 'audio', 'document'].includes(meta.type) &&
+    typeof meta.url === 'string' &&
+    typeof meta.mimeType === 'string'
+  )
 }
 
 export const MessageBubble = ({ message }: MessageBubbleProps) => {
   const isIncoming = message.direction === 'incoming'
   const [imageError, setImageError] = useState(false)
   
-  // 📎 Extract media metadata from message
-  const mediaMetadata: MediaMetadata | null = (message.metadata as any)?.media || null
-  const hasRealMedia = mediaMetadata && mediaMetadata.url
+  // 📎 Extract media metadata from message with type guard
+  const rawMediaMetadata = message.metadata && typeof message.metadata === 'object' 
+    ? (message.metadata as Record<string, unknown>).media 
+    : null
+  const mediaMetadata: StoredMediaMetadata | null = isStoredMediaMetadata(rawMediaMetadata) ? rawMediaMetadata : null
+  const hasRealMedia = mediaMetadata !== null
   
   // Fallback for legacy messages without real media
   const hasLegacyMediaTag = message.content.match(/\[(IMAGE|IMAGEM|AUDIO|ÁUDIO|DOCUMENT|DOCUMENTO)\]/)

@@ -1,4 +1,4 @@
-import { WhatsAppWebhookPayload, ParsedMessage, ClientConfig } from '@/lib/types'
+import { WhatsAppWebhookPayload, ParsedMessage, ClientConfig, StoredMediaMetadata } from '@/lib/types'
 import { filterStatusUpdates } from '@/nodes/filterStatusUpdates'
 import { parseMessage } from '@/nodes/parseMessage'
 import { checkHumanHandoffStatus } from '@/nodes/checkHumanHandoffStatus'
@@ -16,7 +16,7 @@ import { generateAIResponse } from '@/nodes/generateAIResponse'
 import { formatResponse } from '@/nodes/formatResponse'
 import { sendWhatsAppMessage } from '@/nodes/sendWhatsAppMessage'
 import { handleHumanHandoff } from '@/nodes/handleHumanHandoff'
-import { saveChatMessage, MediaMetadata } from '@/nodes/saveChatMessage'
+import { saveChatMessage } from '@/nodes/saveChatMessage'
 // 🔧 Phase 1-3: Configuration-driven nodes
 import { checkContinuity } from '@/nodes/checkContinuity'
 import { classifyIntent } from '@/nodes/classifyIntent'
@@ -34,6 +34,45 @@ export interface ChatbotFlowResult {
   messagesSent?: number
   handedOff?: boolean
   error?: string
+}
+
+// 📎 MIME type to file extension mapping
+const MIME_TO_EXTENSION: Record<string, string> = {
+  // Audio
+  'audio/ogg': 'ogg',
+  'audio/opus': 'opus',
+  'audio/mpeg': 'mp3',
+  'audio/mp4': 'm4a',
+  'audio/wav': 'wav',
+  'audio/webm': 'webm',
+  // Images
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/gif': 'gif',
+  'image/webp': 'webp',
+  'image/svg+xml': 'svg',
+  // Documents
+  'application/pdf': 'pdf',
+  'application/msword': 'doc',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+  'application/vnd.ms-excel': 'xls',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+  'text/plain': 'txt',
+}
+
+const getExtensionFromMimeType = (mimeType: string, defaultExt: string = 'bin'): string => {
+  // First try exact match
+  if (MIME_TO_EXTENSION[mimeType]) {
+    return MIME_TO_EXTENSION[mimeType]
+  }
+  // Try to extract from MIME type (e.g., 'image/jpeg' -> 'jpeg')
+  const parts = mimeType.split('/')
+  if (parts.length === 2) {
+    // Handle cases like 'image/svg+xml' -> 'svg'
+    const subtype = parts[1].split('+')[0].split(';')[0]
+    return subtype || defaultExt
+  }
+  return defaultExt
 }
 
 /**
@@ -90,7 +129,7 @@ export const processChatbotMessage = async (
     // transcription is still available for the human attendant to see
     let processedContent: string | undefined
     // 📎 Track media metadata for displaying real files in conversation
-    let mediaMetadata: MediaMetadata | undefined
+    let mediaMetadata: StoredMediaMetadata | undefined
     
     const shouldProcessMedia = shouldExecuteNode('process_media', nodeStates)
     
@@ -103,12 +142,14 @@ export const processChatbotMessage = async (
 
         // 📎 Upload audio to Supabase Storage
         try {
-          const filename = `audio_${parsedMessage.phone}_${Date.now()}.ogg`
-          const mediaUrl = await uploadFileToStorage(audioBuffer, filename, parsedMessage.metadata.mimeType || 'audio/ogg', config.id)
+          const mimeType = parsedMessage.metadata.mimeType || 'audio/ogg'
+          const extension = getExtensionFromMimeType(mimeType, 'ogg')
+          const filename = `audio_${parsedMessage.phone}_${Date.now()}.${extension}`
+          const mediaUrl = await uploadFileToStorage(audioBuffer, filename, mimeType, config.id)
           mediaMetadata = {
             type: 'audio',
             url: mediaUrl,
-            mimeType: parsedMessage.metadata.mimeType || 'audio/ogg',
+            mimeType,
             filename,
             size: audioBuffer.length
           }
@@ -140,13 +181,14 @@ export const processChatbotMessage = async (
 
         // 📎 Upload image to Supabase Storage
         try {
-          const extension = (parsedMessage.metadata.mimeType || 'image/jpeg').split('/')[1] || 'jpg'
+          const mimeType = parsedMessage.metadata.mimeType || 'image/jpeg'
+          const extension = getExtensionFromMimeType(mimeType, 'jpg')
           const filename = `image_${parsedMessage.phone}_${Date.now()}.${extension}`
-          const mediaUrl = await uploadFileToStorage(imageBuffer, filename, parsedMessage.metadata.mimeType || 'image/jpeg', config.id)
+          const mediaUrl = await uploadFileToStorage(imageBuffer, filename, mimeType, config.id)
           mediaMetadata = {
             type: 'image',
             url: mediaUrl,
-            mimeType: parsedMessage.metadata.mimeType || 'image/jpeg',
+            mimeType,
             filename,
             size: imageBuffer.length
           }
