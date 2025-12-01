@@ -30,21 +30,22 @@ export const normalizeMessage = (input: NormalizeMessageInput): NormalizedMessag
       } else {
         normalizedContent = `[Imagem] Descrição: ${processedContent}`
       }
-    } else if (type === 'document' && processedContent) {
+    } else if (type === 'document') {
       // Para documento: enviar conteúdo extraído + legenda se houver
       const filename = parsedMessage.metadata?.filename || 'documento'
-      if (content && content.trim().length > 0) {
-        normalizedContent = `[Documento: ${filename}] Conteúdo: ${processedContent}\nLegenda do usuário: ${content}`
+      if (processedContent) {
+        if (content && content.trim().length > 0) {
+          normalizedContent = `[Documento: ${filename}] Conteúdo: ${processedContent}\nLegenda do usuário: ${content}`
+        } else {
+          normalizedContent = `[Documento: ${filename}] Conteúdo: ${processedContent}`
+        }
       } else {
-        normalizedContent = `[Documento: ${filename}] Conteúdo: ${processedContent}`
-      }
-    } else if (type === 'document' && !processedContent) {
-      // Documento sem conteúdo extraído (fallback)
-      const filename = parsedMessage.metadata?.filename || 'documento'
-      if (content && content.trim().length > 0) {
-        normalizedContent = `[Documento: ${filename}] ${content}`
-      } else {
-        normalizedContent = `[Documento: ${filename}] Arquivo recebido`
+        // Documento sem conteúdo extraído (fallback)
+        if (content && content.trim().length > 0) {
+          normalizedContent = `[Documento: ${filename}] ${content}`
+        } else {
+          normalizedContent = `[Documento: ${filename}] Arquivo recebido`
+        }
       }
     }
 
