@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       output,
-      info: `Histórico recuperado: ${output.length} mensagens`,
+      info: `Histórico recuperado: ${output.stats.messageCount} mensagens, ${output.stats.totalPromptSize} caracteres`,
     })
   } catch (error: any) {
     console.error('[TEST getChatHistory] Error:', error)
