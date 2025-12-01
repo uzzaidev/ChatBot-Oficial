@@ -30,6 +30,23 @@ export const normalizeMessage = (input: NormalizeMessageInput): NormalizedMessag
       } else {
         normalizedContent = `[Imagem] Descrição: ${processedContent}`
       }
+    } else if (type === 'document') {
+      // Para documento: enviar conteúdo extraído + legenda se houver
+      const filename = parsedMessage.metadata?.filename || 'documento'
+      if (processedContent) {
+        if (content && content.trim().length > 0) {
+          normalizedContent = `[Documento: ${filename}] Conteúdo: ${processedContent}\nLegenda do usuário: ${content}`
+        } else {
+          normalizedContent = `[Documento: ${filename}] Conteúdo: ${processedContent}`
+        }
+      } else {
+        // Documento sem conteúdo extraído (fallback)
+        if (content && content.trim().length > 0) {
+          normalizedContent = `[Documento: ${filename}] ${content}`
+        } else {
+          normalizedContent = `[Documento: ${filename}] Arquivo recebido`
+        }
+      }
     }
 
     return {
