@@ -20,14 +20,9 @@ START
   ↓
 2. parse_message
   ↓
-3. check_customer
+3. check_customer (verifica ou cria cliente)
   ↓
-  IF (customer.status === "human")
-    → STOP (já transferido)
-  ELSE
-    → Continua ↓
-  ↓
-4. process_media
+4. process_media ⚡ EXECUTADO ANTES DO CHECK DE HUMANO
   ↓
   IF (tipo === "audio")
     → 4a. download_audio → 4b. transcribe_audio (Whisper)
@@ -38,11 +33,19 @@ START
   ELSE
     → Skip (texto simples)
   ↓
-5. normalize_message
+5. normalize_message (inclui transcrição/descrição)
   ↓
-6. push_to_redis
+6. check_human_handoff ⚡ AGORA DEPOIS DO PROCESSAMENTO DE MÍDIA
   ↓
-7. save_user_message (salva mensagem do USUÁRIO no histórico)
+  IF (customer.status === "humano" ou "transferido")
+    → Salva mensagem COM transcrição no histórico
+    → STOP (bot não responde, mas humano vê descrição)
+  ELSE
+    → Continua ↓
+  ↓
+7. push_to_redis
+  ↓
+8. save_user_message (salva mensagem do USUÁRIO no histórico)
   ↓
 ```
 
@@ -51,7 +54,7 @@ START
 ## 🔀 Primeira Decisão: Message Batching
 
 ```
-8. batch_messages
+9. batch_messages
   ↓
   IF (config.settings.messageSplitEnabled === true)
     → Aguarda 10s
@@ -74,11 +77,11 @@ START
 ## 🔀 Segunda Decisão: RAG Context
 
 ```
-9-10. Processamento Paralelo (Promise.all)
+10-11. Processamento Paralelo (Promise.all)
   ↓
   PARALELO:
-  ├─ 9. get_chat_history (busca últimas 15 mensagens)
-  ├─ 10. get_rag_context (SE config.settings.enableRAG === true)
+  ├─ 10. get_chat_history (busca últimas 15 mensagens)
+  ├─ 11. get_rag_context (SE config.settings.enableRAG === true)
   │     ↓
   │     IF (enableRAG === true)
   │       → Vector search (Supabase pgvector)
@@ -86,7 +89,7 @@ START
   │     ELSE
   │       → ragContext = "" (vazio)
   │
-  └─ 9.6. classify_intent (classifica intenção do usuário)
+  └─ 10.6. classify_intent (classifica intenção do usuário)
         ↓
         IF (config.intent_classifier.use_llm === true)
           → Usa Groq para classificar
@@ -102,7 +105,7 @@ START
 ## 🔀 Terceira Decisão: Continuity Check
 
 ```
-9.5. check_continuity
+10.5. check_continuity
   ↓
   Calcula hoursSinceLastMessage
   ↓
@@ -120,7 +123,7 @@ START
 ## 🤖 Geração de Resposta
 
 ```
-11. generate_response (Groq Llama 3.3 70B ou OpenAI GPT-4o)
+12. generate_response (Groq Llama 3.3 70B ou OpenAI GPT-4o)
   ↓
   Inputs:
   - batchedContent (mensagem do usuário)
@@ -144,7 +147,7 @@ START
 ## 🔀 Quarta Decisão: Repetition Detection
 
 ```
-11.5. detect_repetition
+12.5. detect_repetition
   ↓
   Compara resposta com últimas N respostas salvas
   ↓
@@ -167,11 +170,11 @@ START
 ## 💾 Salvamento e Formatação
 
 ```
-11.6. save_ai_message (salva resposta da IA no histórico)
+12.7. save_ai_message (salva resposta da IA no histórico)
   ↓
   Salva aiResponse.content em PostgreSQL (n8n_chat_histories)
   ↓
-12. format_response
+13. format_response
   ↓
   IF (config.settings.messageSplitEnabled === true)
     → Usa segundo LLM (Groq) para dividir em múltiplas msgs
@@ -180,7 +183,7 @@ START
   ELSE
     → formattedMessages = [aiResponse.content] (mensagem única)
   ↓
-13. send_whatsapp
+14. send_whatsapp
   ↓
   Para cada mensagem em formattedMessages:
     → Envia via Meta WhatsApp API
@@ -259,16 +262,22 @@ IF (chat_history.enabled === false
 
 | Node | O que salva | Quando |
 |------|-------------|--------|
-| **7. save_user_message** | Mensagem do USUÁRIO | Logo após normalize, ANTES de batch |
-| **11.6. save_ai_message** | Resposta da IA | APÓS generate + detect_repetition, ANTES de formatar |
+| **6. check_human_handoff** | Mensagem do USUÁRIO (se em modo humano) | Quando status é 'humano' ou 'transferido', COM transcrição |
+| **8. save_user_message** | Mensagem do USUÁRIO | Logo após push_redis, ANTES de batch (fluxo normal do bot) |
+| **12.7. save_ai_message** | Resposta da IA | APÓS generate + detect_repetition, ANTES de formatar |
 
 **Ordem cronológica:**
 1. Usuário envia mensagem WhatsApp
-2. **NODE 7**: Salva mensagem do usuário
-3. Processamento (batch, history, rag, generate)
-4. **NODE 11.6**: Salva resposta da IA
-5. **NODE 12**: Formata resposta em múltiplas mensagens
-6. **NODE 13**: Envia via WhatsApp
+2. **NODE 4**: Processa mídia (transcreve áudio, analisa imagem/PDF)
+3. **NODE 5**: Normaliza mensagem com transcrição
+4. **NODE 6**: Verifica se em atendimento humano
+   - SE SIM: Salva mensagem COM transcrição e PARA
+   - SE NÃO: Continua...
+5. **NODE 8**: Salva mensagem do usuário (fluxo normal)
+6. Processamento (batch, history, rag, generate)
+7. **NODE 12.7**: Salva resposta da IA
+8. **NODE 13**: Formata resposta em múltiplas mensagens
+9. **NODE 14**: Envia via WhatsApp
 
 ---
 
@@ -287,25 +296,37 @@ IF (chat_history.enabled === false
 
 ```
 CAMINHO:
-normalize → push_redis → save_user → batch (10s) →
+parse → check_customer → process_media → normalize → check_handoff →
+push_redis → save_user → batch (10s) →
   ┬─ chat_history → check_continuity ─┐
   ├─ rag_context ─────────────────────┼→ generate → detect_repetition → save_ai → format → send
   └─ classify_intent ─────────────────┘
 ```
 
-### Exemplo 2: Sem Batching (Resposta Imediata)
+### Exemplo 2: Cliente em Atendimento Humano
+
+```
+CAMINHO:
+parse → check_customer → process_media (transcreve áudio) → normalize →
+check_handoff (status = "humano") → SALVA mensagem COM transcrição → STOP
+
+🎯 BENEFÍCIO: Humano vê no histórico:
+"[Áudio recebido] Cliente disse: 'Preciso de ajuda com meu pedido número 12345'"
+```
+
+### Exemplo 3: Sem Batching (Resposta Imediata)
 
 ```
 config.settings.messageSplitEnabled = false
 
 CAMINHO:
-normalize → push_redis → save_user → [batch SKIP] →
+... → check_handoff → push_redis → save_user → [batch SKIP] →
   ┬─ chat_history (de save_user via bypass) → check_continuity ─┐
   ├─ rag_context (de save_user via bypass) ─────────────────────┼→ generate → ...
   └─ classify_intent (de save_user via bypass) ─────────────────┘
 ```
 
-### Exemplo 3: Sem RAG (Economia de Custos)
+### Exemplo 4: Sem RAG (Economia de Custos)
 
 ```
 config.settings.enableRAG = false
@@ -317,7 +338,7 @@ CAMINHO:
   └─ classify_intent ──────────────────┘
 ```
 
-### Exemplo 4: Mínimo (Performance Máxima)
+### Exemplo 5: Mínimo (Performance Máxima)
 
 ```
 Tudo desabilitado exceto essenciais:
@@ -328,9 +349,9 @@ Tudo desabilitado exceto essenciais:
 - detect_repetition: OFF
 
 CAMINHO:
-normalize → save_user → generate (via bypass de save_user) → save_ai → send
+... → check_handoff → save_user → generate (via bypass de save_user) → save_ai → send
 ```
 
 ---
 
-**Última atualização:** 2025-11-16
+**Última atualização:** 2025-12-01

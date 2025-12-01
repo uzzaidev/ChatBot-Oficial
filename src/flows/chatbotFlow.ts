@@ -73,49 +73,19 @@ export const processChatbotMessage = async (
     const parsedMessage = parseMessage(filteredPayload)
     logger.logNodeSuccess('2. Parse Message', { phone: parsedMessage.phone, type: parsedMessage.type })
 
-    // NODE 3: Check Human Handoff Status
-    logger.logNodeStart('3. Check Human Handoff Status', { phone: parsedMessage.phone })
-    const handoffCheck = await checkHumanHandoffStatus({
-      phone: parsedMessage.phone,
-      clientId: config.id
-    })
-    logger.logNodeSuccess('3. Check Human Handoff Status', handoffCheck)
-
-    // Se está em atendimento humano, para o processamento do bot
-    if (handoffCheck.skipBot) {
-      // NODE 3.1: Bot Processing Skipped
-      logger.logNodeSuccess('3.1. Bot Processing Skipped', {
-        reason: handoffCheck.reason,
-        status: handoffCheck.customerStatus,
-        messageWillBeSaved: true,
-        botWillNotRespond: true
-      })
-      logger.finishExecution('success')
-
-      // Salvar mensagem do usuário no histórico mesmo sem responder
-      await saveChatMessage({
-        phone: parsedMessage.phone,
-        message: parsedMessage.content,
-        type: 'user',
-        clientId: config.id
-      })
-
-      return {
-        success: true
-      }
-    }
-
-    // NODE 4: Check/Create Customer
-    logger.logNodeStart('4. Check/Create Customer', { phone: parsedMessage.phone, name: parsedMessage.name })
+    // NODE 3: Check/Create Customer
+    logger.logNodeStart('3. Check/Create Customer', { phone: parsedMessage.phone, name: parsedMessage.name })
     const customer = await checkOrCreateCustomer({
       phone: parsedMessage.phone,
       name: parsedMessage.name,
       clientId: config.id, // 🔐 Multi-tenant: Associa customer ao cliente
     })
-    logger.logNodeSuccess('4. Check/Create Customer', { status: customer.status })
-
+    logger.logNodeSuccess('3. Check/Create Customer', { status: customer.status })
 
     // NODE 4: Process Media (audio/image/document) - configurable
+    // 🔧 IMPORTANT: Process media BEFORE checking human handoff status
+    // This ensures that when a conversation is with a human, the audio/image/PDF 
+    // transcription is still available for the human attendant to see
     let processedContent: string | undefined
     
     const shouldProcessMedia = shouldExecuteNode('process_media', nodeStates)
@@ -212,29 +182,72 @@ export const processChatbotMessage = async (
     })
     logger.logNodeSuccess('5. Normalize Message', { content: normalizedMessage.content })
 
-    // NODE 6: Push to Redis (configurable)
+    // NODE 6: Check Human Handoff Status
+    // 🔧 Moved AFTER media processing so that human attendants can see 
+    // audio transcriptions, image descriptions, and PDF summaries
+    logger.logNodeStart('6. Check Human Handoff Status', { phone: parsedMessage.phone })
+    const handoffCheck = await checkHumanHandoffStatus({
+      phone: parsedMessage.phone,
+      clientId: config.id
+    })
+    logger.logNodeSuccess('6. Check Human Handoff Status', handoffCheck)
+
+    // Se está em atendimento humano, salva mensagem (com transcrição) e para o bot
+    if (handoffCheck.skipBot) {
+      // NODE 6.1: Bot Processing Skipped (but message is saved WITH transcription)
+      logger.logNodeSuccess('6.1. Bot Processing Skipped', {
+        reason: handoffCheck.reason,
+        status: handoffCheck.customerStatus,
+        messageWillBeSaved: true,
+        messageHasTranscription: !!processedContent,
+        botWillNotRespond: true
+      })
+
+      // Para imagens, salvar uma versão simplificada no histórico
+      let messageForHistory = normalizedMessage.content
+      if (parsedMessage.type === 'image') {
+        messageForHistory = parsedMessage.content && parsedMessage.content.trim().length > 0
+          ? `[Imagem recebida] ${parsedMessage.content}`
+          : '[Imagem recebida]'
+      }
+
+      // Salvar mensagem do usuário no histórico (agora COM transcrição/descrição)
+      await saveChatMessage({
+        phone: parsedMessage.phone,
+        message: messageForHistory,
+        type: 'user',
+        clientId: config.id
+      })
+
+      logger.finishExecution('success')
+      return {
+        success: true
+      }
+    }
+
+    // NODE 7: Push to Redis (configurable)
     if (shouldExecuteNode('push_to_redis', nodeStates)) {
-      logger.logNodeStart('6. Push to Redis', normalizedMessage)
+      logger.logNodeStart('7. Push to Redis', normalizedMessage)
       
       try {
         await pushToRedis(normalizedMessage)
-        logger.logNodeSuccess('6. Push to Redis', { success: true })
+        logger.logNodeSuccess('7. Push to Redis', { success: true })
         
         // Update debounce timestamp (resets the 10s timer)
         const debounceKey = `debounce:${parsedMessage.phone}`
         await setWithExpiry(debounceKey, String(Date.now()), 15) // 15s TTL (buffer above 10s delay)
         
       } catch (redisError) {
-        console.error('[chatbotFlow] NODE 6: ❌ ERRO NO REDIS!', redisError)
-        logger.logNodeError('6. Push to Redis', redisError)
+        console.error('[chatbotFlow] NODE 7: ❌ ERRO NO REDIS!', redisError)
+        logger.logNodeError('7. Push to Redis', redisError)
         // Continua mesmo com erro Redis (graceful degradation)
       }
     } else {
-      logger.logNodeSuccess('6. Push to Redis', { skipped: true, reason: 'node disabled' })
+      logger.logNodeSuccess('7. Push to Redis', { skipped: true, reason: 'node disabled' })
     }
 
-    // NODE 7: Save User Message
-    logger.logNodeStart('7. Save Chat Message (User)', { phone: parsedMessage.phone, type: 'user' })
+    // NODE 8: Save User Message
+    logger.logNodeStart('8. Save Chat Message (User)', { phone: parsedMessage.phone, type: 'user' })
     
     // Para imagens, salvar uma versão simplificada no histórico
     let messageForHistory = normalizedMessage.content
@@ -250,18 +263,18 @@ export const processChatbotMessage = async (
       type: 'user',
       clientId: config.id, // 🔐 Multi-tenant: Associa mensagem ao cliente
     })
-    logger.logNodeSuccess('7. Save Chat Message (User)', { saved: true })
+    logger.logNodeSuccess('8. Save Chat Message (User)', { saved: true })
 
-    // NODE 8: Batch Messages (configurable - can be disabled)
+    // NODE 9: Batch Messages (configurable - can be disabled)
     let batchedContent: string
     
     if (shouldExecuteNode('batch_messages', nodeStates) && config.settings.messageSplitEnabled) {
-      logger.logNodeStart('8. Batch Messages', { phone: parsedMessage.phone })
+      logger.logNodeStart('9. Batch Messages', { phone: parsedMessage.phone })
       batchedContent = await batchMessages(parsedMessage.phone)
-      logger.logNodeSuccess('8. Batch Messages', { contentLength: batchedContent?.length || 0 })
+      logger.logNodeSuccess('9. Batch Messages', { contentLength: batchedContent?.length || 0 })
     } else {
       const reason = !shouldExecuteNode('batch_messages', nodeStates) ? 'node disabled' : 'config disabled'
-      logger.logNodeSuccess('8. Batch Messages', { skipped: true, reason })
+      logger.logNodeSuccess('9. Batch Messages', { skipped: true, reason })
       batchedContent = normalizedMessage.content
     }
 
@@ -271,7 +284,7 @@ export const processChatbotMessage = async (
     }
 
     
-    // NODE 9 & 10: Get Chat History + RAG Context (configurable)
+    // NODE 10 & 11: Get Chat History + RAG Context (configurable)
     let chatHistory2: any[] = []
     let ragContext: string = ''
     
@@ -279,7 +292,7 @@ export const processChatbotMessage = async (
     const shouldGetHistory = shouldExecuteNode('get_chat_history', nodeStates)
     
     if (shouldGetHistory) {
-      logger.logNodeStart('9. Get Chat History', { phone: parsedMessage.phone })
+      logger.logNodeStart('10. Get Chat History', { phone: parsedMessage.phone })
     }
     
     // Check if we should fetch RAG context
@@ -288,7 +301,7 @@ export const processChatbotMessage = async (
     if (shouldGetHistory || shouldGetRAG) {
       if (shouldGetHistory && shouldGetRAG) {
         // Both enabled - fetch in parallel
-        logger.logNodeStart('10. Get RAG Context', { queryLength: batchedContent.length })
+        logger.logNodeStart('11. Get RAG Context', { queryLength: batchedContent.length })
         
         const [history, rag] = await Promise.all([
           getChatHistory({
@@ -306,8 +319,8 @@ export const processChatbotMessage = async (
         chatHistory2 = history
         ragContext = rag
         
-        logger.logNodeSuccess('9. Get Chat History', { messageCount: chatHistory2.length })
-        logger.logNodeSuccess('10. Get RAG Context', { contextLength: ragContext.length })
+        logger.logNodeSuccess('10. Get Chat History', { messageCount: chatHistory2.length })
+        logger.logNodeSuccess('11. Get RAG Context', { contextLength: ragContext.length })
       } else if (shouldGetHistory) {
         // Only history enabled
         chatHistory2 = await getChatHistory({
@@ -315,40 +328,40 @@ export const processChatbotMessage = async (
           clientId: config.id,
           maxHistory: config.settings.maxChatHistory,
         })
-        logger.logNodeSuccess('9. Get Chat History', { messageCount: chatHistory2.length })
-        logger.logNodeSuccess('10. Get RAG Context', { skipped: true, reason: 'node disabled or config disabled' })
+        logger.logNodeSuccess('10. Get Chat History', { messageCount: chatHistory2.length })
+        logger.logNodeSuccess('11. Get RAG Context', { skipped: true, reason: 'node disabled or config disabled' })
       } else if (shouldGetRAG) {
         // Only RAG enabled (rare case)
-        logger.logNodeStart('10. Get RAG Context', { queryLength: batchedContent.length })
+        logger.logNodeStart('11. Get RAG Context', { queryLength: batchedContent.length })
         ragContext = await getRAGContext({
           query: batchedContent,
           clientId: config.id,
           openaiApiKey: config.apiKeys.openaiApiKey,
         })
-        logger.logNodeSuccess('9. Get Chat History', { skipped: true, reason: 'node disabled' })
-        logger.logNodeSuccess('10. Get RAG Context', { contextLength: ragContext.length })
+        logger.logNodeSuccess('10. Get Chat History', { skipped: true, reason: 'node disabled' })
+        logger.logNodeSuccess('11. Get RAG Context', { contextLength: ragContext.length })
       }
     } else {
       // Both disabled
-      logger.logNodeSuccess('9. Get Chat History', { skipped: true, reason: 'node disabled' })
-      logger.logNodeSuccess('10. Get RAG Context', { skipped: true, reason: 'node disabled or config disabled' })
+      logger.logNodeSuccess('10. Get Chat History', { skipped: true, reason: 'node disabled' })
+      logger.logNodeSuccess('11. Get RAG Context', { skipped: true, reason: 'node disabled or config disabled' })
     }
 
     // 🔧 Phase 1: Check Conversation Continuity (configurable)
     let continuityInfo: any
     
     if (shouldExecuteNode('check_continuity', nodeStates)) {
-      logger.logNodeStart('9.5. Check Continuity', { phone: parsedMessage.phone })
+      logger.logNodeStart('10.5. Check Continuity', { phone: parsedMessage.phone })
       continuityInfo = await checkContinuity({
         phone: parsedMessage.phone,
         clientId: config.id,
       })
-      logger.logNodeSuccess('9.5. Check Continuity', {
+      logger.logNodeSuccess('10.5. Check Continuity', {
         isNew: continuityInfo.isNewConversation,
         hoursSince: continuityInfo.hoursSinceLastMessage,
       })
     } else {
-      logger.logNodeSuccess('9.5. Check Continuity', { skipped: true, reason: 'node disabled' })
+      logger.logNodeSuccess('10.5. Check Continuity', { skipped: true, reason: 'node disabled' })
       continuityInfo = {
         isNewConversation: false,
         hoursSinceLastMessage: 0,
@@ -360,19 +373,19 @@ export const processChatbotMessage = async (
     let intentInfo: any
     
     if (shouldExecuteNode('classify_intent', nodeStates)) {
-      logger.logNodeStart('9.6. Classify Intent', { messageLength: batchedContent.length })
+      logger.logNodeStart('10.6. Classify Intent', { messageLength: batchedContent.length })
       intentInfo = await classifyIntent({
         message: batchedContent,
         clientId: config.id,
         groqApiKey: config.apiKeys.groqApiKey,
       })
-      logger.logNodeSuccess('9.6. Classify Intent', {
+      logger.logNodeSuccess('10.6. Classify Intent', {
         intent: intentInfo.intent,
         confidence: intentInfo.confidence,
         usedLLM: intentInfo.usedLLM,
       })
     } else {
-      logger.logNodeSuccess('9.6. Classify Intent', { skipped: true, reason: 'node disabled' })
+      logger.logNodeSuccess('10.6. Classify Intent', { skipped: true, reason: 'node disabled' })
       intentInfo = {
         intent: 'outro',
         confidence: 'medium',
@@ -380,8 +393,8 @@ export const processChatbotMessage = async (
       }
     }
 
-    // NODE 11: Generate AI Response (com config do cliente + greeting instruction)
-    logger.logNodeStart('11. Generate AI Response', { messageLength: batchedContent.length, historyCount: chatHistory2.length })
+    // NODE 12: Generate AI Response (com config do cliente + greeting instruction)
+    logger.logNodeStart('12. Generate AI Response', { messageLength: batchedContent.length, historyCount: chatHistory2.length })
     const aiResponse = await generateAIResponse({
       message: batchedContent,
       chatHistory: chatHistory2,
@@ -390,7 +403,7 @@ export const processChatbotMessage = async (
       config, // 🔐 Passa config com systemPrompt e groqApiKey
       greetingInstruction: continuityInfo.greetingInstruction, // 🔧 Phase 1: Inject greeting
     })
-    logger.logNodeSuccess('11. Generate AI Response', {
+    logger.logNodeSuccess('12. Generate AI Response', {
       contentLength: aiResponse.content?.length || 0,
       hasToolCalls: !!aiResponse.toolCalls,
       toolCount: aiResponse.toolCalls?.length || 0
@@ -398,7 +411,7 @@ export const processChatbotMessage = async (
 
     // 🔧 Phase 3: Detect Repetition and regenerate if needed (configurable)
     if (shouldExecuteNode('detect_repetition', nodeStates) && aiResponse.content && aiResponse.content.trim().length > 0) {
-      logger.logNodeStart('11.5. Detect Repetition', { responseLength: aiResponse.content.length })
+      logger.logNodeStart('12.5. Detect Repetition', { responseLength: aiResponse.content.length })
       
       const repetitionCheck = await detectRepetition({
         phone: parsedMessage.phone,
@@ -406,7 +419,7 @@ export const processChatbotMessage = async (
         proposedResponse: aiResponse.content,
       })
       
-      logger.logNodeSuccess('11.5. Detect Repetition', {
+      logger.logNodeSuccess('12.5. Detect Repetition', {
         isRepetition: repetitionCheck.isRepetition,
         similarity: repetitionCheck.similarityScore,
       })
@@ -415,7 +428,7 @@ export const processChatbotMessage = async (
         const originalResponse = aiResponse.content
         
         // Regenerate with anti-repetition instruction
-        logger.logNodeStart('11.6. Regenerate with Variation', {
+        logger.logNodeStart('12.6. Regenerate with Variation', {
           originalResponsePreview: originalResponse.substring(0, 150) + '...'
         })
         
@@ -456,7 +469,7 @@ export const processChatbotMessage = async (
         aiResponse.content = variedResponse.content
         aiResponse.toolCalls = variedResponse.toolCalls
         
-        logger.logNodeSuccess('11.6. Regenerate with Variation', {
+        logger.logNodeSuccess('12.6. Regenerate with Variation', {
           originalLength: originalResponse.length,
           newLength: variedResponse.content?.length || 0,
           originalPreview: originalResponse.substring(0, 100),
@@ -471,7 +484,7 @@ export const processChatbotMessage = async (
       } else {
       }
     } else if (!shouldExecuteNode('detect_repetition', nodeStates)) {
-      logger.logNodeSuccess('11.5. Detect Repetition', { skipped: true, reason: 'node disabled' })
+      logger.logNodeSuccess('12.5. Detect Repetition', { skipped: true, reason: 'node disabled' })
     }
 
     // 📊 Log usage to database for analytics
@@ -509,8 +522,8 @@ export const processChatbotMessage = async (
       )
 
       if (hasHumanHandoff) {
-        // NODE 14: Handle Human Handoff
-        logger.logNodeStart('14. Handle Human Handoff', {
+        // NODE 15: Handle Human Handoff
+        logger.logNodeStart('15. Handle Human Handoff', {
           phone: parsedMessage.phone,
           customerName: parsedMessage.name
         })
@@ -519,7 +532,7 @@ export const processChatbotMessage = async (
           customerName: parsedMessage.name,
           config, // 🔐 Passa config com notificationEmail
         })
-        logger.logNodeSuccess('14. Handle Human Handoff', {
+        logger.logNodeSuccess('15. Handle Human Handoff', {
           transferred: true,
           emailSent: true,
           notificationEmail: config.notificationEmail
@@ -535,8 +548,8 @@ export const processChatbotMessage = async (
       return { success: true, messagesSent: 0 }
     }
 
-    // NODE 11.7: Save AI Message
-    logger.logNodeStart('11.7. Save AI Message', {
+    // NODE 12.7: Save AI Message
+    logger.logNodeStart('12.7. Save AI Message', {
       phone: parsedMessage.phone,
       contentLength: aiResponse.content.length
     })
@@ -546,21 +559,21 @@ export const processChatbotMessage = async (
       type: 'ai',
       clientId: config.id, // 🔐 Multi-tenant: Associa mensagem ao cliente
     })
-    logger.logNodeSuccess('11.7. Save AI Message', { saved: true })
+    logger.logNodeSuccess('12.7. Save AI Message', { saved: true })
 
-    // NODE 12: Format Response (configurável)
-    logger.logNodeStart('12. Format Response', { contentLength: aiResponse.content.length })
+    // NODE 13: Format Response (configurável)
+    logger.logNodeStart('13. Format Response', { contentLength: aiResponse.content.length })
     let formattedMessages: string[]
     
     if (config.settings.messageSplitEnabled) {
       formattedMessages = formatResponse(aiResponse.content)
-      logger.logNodeSuccess('12. Format Response', { 
+      logger.logNodeSuccess('13. Format Response', { 
         messageCount: formattedMessages.length,
         messages: formattedMessages.map((msg, idx) => `[${idx + 1}]: ${msg.substring(0, 100)}...`)
       })
     } else {
       formattedMessages = [aiResponse.content]
-      logger.logNodeSuccess('12. Format Response', { 
+      logger.logNodeSuccess('13. Format Response', { 
         messageCount: 1,
         messages: [`[1]: ${aiResponse.content.substring(0, 100)}...`]
       })
@@ -571,14 +584,14 @@ export const processChatbotMessage = async (
       return { success: true, messagesSent: 0 }
     }
 
-    // NODE 13: Send WhatsApp Message (com config do cliente)
-    logger.logNodeStart('13. Send WhatsApp Message', { phone: parsedMessage.phone, messageCount: formattedMessages.length })
+    // NODE 14: Send WhatsApp Message (com config do cliente)
+    logger.logNodeStart('14. Send WhatsApp Message', { phone: parsedMessage.phone, messageCount: formattedMessages.length })
     const messageIds = await sendWhatsAppMessage({
       phone: parsedMessage.phone,
       messages: formattedMessages,
       config, // 🔐 Passa config com metaAccessToken e metaPhoneNumberId
     })
-    logger.logNodeSuccess('13. Send WhatsApp Message', { sentCount: messageIds.length })
+    logger.logNodeSuccess('14. Send WhatsApp Message', { sentCount: messageIds.length })
 
     logger.finishExecution('success')
     return { success: true, messagesSent: messageIds.length }
