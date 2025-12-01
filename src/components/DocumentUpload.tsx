@@ -84,11 +84,23 @@ export const DocumentUpload = ({ onUploadSuccess }: DocumentUploadProps) => {
         body: formData,
       })
 
-      const data = await response.json()
-
+      // Handle non-JSON error responses (e.g., 413 Request Entity Too Large)
       if (!response.ok) {
-        throw new Error(data.error || 'Erro ao fazer upload')
+        if (response.status === 413) {
+          throw new Error('Arquivo muito grande para o servidor. Tente um arquivo menor que 4MB ou entre em contato com o suporte.')
+        }
+        // Try to parse JSON error, but handle non-JSON responses gracefully
+        let errorMessage = `Erro ${response.status}: ${response.statusText}`
+        try {
+          const data = await response.json()
+          errorMessage = data.error || errorMessage
+        } catch {
+          // Response is not JSON, use the status text
+        }
+        throw new Error(errorMessage)
       }
+
+      const data = await response.json()
 
       setUploadResult(data)
       toast({
