@@ -22,7 +22,7 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '10mb',
     },
-    // External packages for serverless compatibility (pdf-parse uses pdf.js which requires canvas APIs)
+    // External packages for serverless compatibility (pdf-parse uses pdf.js which may try to load canvas)
     serverComponentsExternalPackages: ['pdf-parse'],
   },
   webpack: (config, { isServer }) => {
