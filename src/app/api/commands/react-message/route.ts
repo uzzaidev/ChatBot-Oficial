@@ -17,8 +17,17 @@ interface ReactMessageRequest {
  *
  * Request body:
  * - phone: Recipient phone number
- * - messageId: WhatsApp message ID (wamid.xxx)
+ * - messageId: WhatsApp message ID (wamid.xxx format)
  * - emoji: Emoji to react with (empty string to remove reaction)
+ *
+ * NOTE: This endpoint requires the WhatsApp message ID (wamid.xxx), not the database ID.
+ * The wamid is received when a message is sent/received via WhatsApp webhook.
+ * 
+ * TODO: Currently, the dashboard stores database IDs in Message.id, not wamid.
+ * To fully enable reactions, we need to:
+ * 1. Store wamid in message metadata when receiving webhooks
+ * 2. Return wamid in the messages API response
+ * 3. Pass wamid to this endpoint instead of database ID
  */
 export async function POST(request: NextRequest) {
   try {
@@ -39,6 +48,18 @@ export async function POST(request: NextRequest) {
     if (!phone || !messageId) {
       return NextResponse.json(
         { error: 'phone and messageId are required' },
+        { status: 400 }
+      )
+    }
+
+    // Validate that messageId looks like a WhatsApp message ID (wamid format)
+    // wamid format: wamid.HBgLxxxxxx... (starts with "wamid.")
+    if (!messageId.startsWith('wamid.')) {
+      return NextResponse.json(
+        { 
+          error: 'Invalid messageId format',
+          details: 'Expected WhatsApp message ID (wamid.xxx format). The current message ID appears to be a database ID.',
+        },
         { status: 400 }
       )
     }
