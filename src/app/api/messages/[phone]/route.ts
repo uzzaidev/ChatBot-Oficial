@@ -52,7 +52,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // Motivo: Supabase pode ter limites de paginação que não queremos
 
     const pgMessages = await query<any>(
-      `SELECT id, session_id, message, created_at
+      `SELECT id, session_id, message, media_metadata, created_at
        FROM n8n_chat_histories
        WHERE session_id = $1
        AND client_id = $2
@@ -86,12 +86,29 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         messageData = item.message || {}
       }
 
+      // 📎 Parse media_metadata if present
+      let mediaMetadata: any = null
+      if (item.media_metadata) {
+        if (typeof item.media_metadata === 'string') {
+          try {
+            mediaMetadata = JSON.parse(item.media_metadata)
+          } catch {
+            mediaMetadata = null
+          }
+        } else {
+          mediaMetadata = item.media_metadata
+        }
+      }
+
       // Extrair type e content do JSON
       const messageType = messageData.type || 'ai'  // 'human' ou 'ai'
       const messageContent = messageData.content || ''
 
       // Limpar tags de function calls
       const cleanedContent = cleanMessageContent(messageContent)
+
+      // 📎 Determine message type based on media metadata
+      const msgType = mediaMetadata?.type || 'text'
 
       return {
         id: item.id?.toString() || `msg-${index}`,
@@ -100,11 +117,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         phone: String(phone),
         name: messageType === 'human' ? 'Cliente' : 'Bot',
         content: cleanedContent,
-        type: 'text' as const,
+        type: msgType as 'text' | 'audio' | 'image' | 'document' | 'video',
         direction: messageType === 'human' ? ('incoming' as const) : ('outgoing' as const),
         status: 'sent' as const,
         timestamp: item.created_at || new Date().toISOString(),
-        metadata: null,
+        metadata: mediaMetadata ? { media: mediaMetadata } : null,
       }
     })
 
