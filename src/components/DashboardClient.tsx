@@ -77,7 +77,8 @@ export function DashboardClient({ clientId }: DashboardClientProps) {
   })
 
   // Hook global para notificações em tempo real
-  const { lastUpdatePhone } = useGlobalRealtimeNotifications()
+  // 🔐 Multi-tenant: Pass clientId for tenant isolation
+  const { lastUpdatePhone } = useGlobalRealtimeNotifications({ clientId })
 
   useEffect(() => {
     const calculateMetrics = () => {
