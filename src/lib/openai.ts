@@ -257,9 +257,12 @@ export const generateEmbedding = async (
 export const extractTextFromPDF = async (pdfBuffer: Buffer): Promise<string> => {
   try {
     // 🔧 Import dinâmico: só carrega pdf-parse quando função é chamada
-    // Isso evita erro de DOMMatrix/canvas no Vercel quando webhook é carregado
-    const pdfParse = require('pdf-parse')
-    const pdfData = await pdfParse(pdfBuffer)
+    // pdf-parse v2.4.5 uses class-based API - PDFParse.getText() works without Canvas dependencies
+    const { PDFParse } = await import('pdf-parse')
+    const parser = new PDFParse({ data: pdfBuffer })
+    const pdfData = await parser.getText()
+    // Clean up resources
+    await parser.destroy()
     return pdfData.text
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
