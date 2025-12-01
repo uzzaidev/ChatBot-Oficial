@@ -39,7 +39,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       const pgResult = await query<any>(
         `SELECT COUNT(*) as count FROM n8n_chat_histories 
          WHERE session_id = $1 
-         AND (client_id = $2 OR client_id IS NULL)`,
+         AND client_id = $2`,
         [phone, clientId]
       )
     } catch (pgError) {
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       `SELECT id, session_id, message, created_at
        FROM n8n_chat_histories
        WHERE session_id = $1
-       AND (client_id = $2 OR client_id IS NULL)
+       AND client_id = $2
        ORDER BY created_at DESC`,  // DESC: mais recentes primeiro
       [phone, clientId]
     )
