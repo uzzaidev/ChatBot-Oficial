@@ -40,6 +40,17 @@ const ALLOWED_TYPES = [
   'image/jpg'
 ]
 
+// Error messages for empty text extraction, keyed by MIME type
+// Note: 'image/jpg' is included for compatibility with some systems that send this non-standard MIME type
+const EMPTY_TEXT_ERROR_MESSAGES: Record<string, string> = {
+  'application/pdf': 'O PDF não contém texto extraível. Verifique se não é um PDF de imagens ou protegido.',
+  'text/plain': 'O arquivo de texto está vazio.',
+  'image/jpeg': 'Não foi possível extrair texto da imagem.',
+  'image/png': 'Não foi possível extrair texto da imagem.',
+  'image/webp': 'Não foi possível extrair texto da imagem.',
+  'image/jpg': 'Não foi possível extrair texto da imagem.',
+}
+
 /**
  * Extract text from image using OpenAI Vision API (GPT-4o)
  * Serverless-compatible, no canvas dependencies
@@ -146,9 +157,20 @@ export async function POST(request: NextRequest) {
     if (file.type === 'application/pdf') {
       // PDF extraction using pdf-parse v1.1.0 function-based API
       // Uses bundled pdf.js v1.9.426 which works in serverless environments without browser APIs
+      // Note: pdf.js may emit warnings like "TT: undefined function: 32" for PDFs with custom fonts,
+      // but these are non-fatal and text extraction still works
       const buffer = Buffer.from(await file.arrayBuffer())
-      const pdfData = await pdfParse(buffer)
-      text = pdfData.text
+      try {
+        const pdfData = await pdfParse(buffer)
+        text = pdfData?.text ?? ''
+      } catch (pdfError) {
+        const pdfErrorMessage = pdfError instanceof Error ? pdfError.message : 'Erro PDF desconhecido'
+        console.error('[Upload] ❌ PDF parsing error:', pdfErrorMessage)
+        return NextResponse.json(
+          { error: `Erro ao processar PDF: ${pdfErrorMessage}. Verifique se o arquivo não está corrompido ou protegido por senha.` },
+          { status: 400 }
+        )
+      }
     } else if (file.type.startsWith('image/')) {
       // Get OpenAI key from Vault (REQUIRED for image OCR)
       const { data: clientConfigTemp } = await supabase
@@ -190,8 +212,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (!text || text.trim().length === 0) {
+      // Provide more helpful error message based on file type
+      const specificError = EMPTY_TEXT_ERROR_MESSAGES[file.type] || 'Arquivo vazio ou falha na extração de texto'
       return NextResponse.json(
-        { error: 'File is empty or text extraction failed' },
+        { error: specificError },
         { status: 400 }
       )
     }
