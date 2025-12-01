@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Delete media from Supabase Storage if mediaUrl is provided
+    let mediaDeleted = false
     if (mediaUrl) {
       try {
         // Extract the file path from the URL
@@ -78,7 +79,11 @@ export async function POST(request: NextRequest) {
           if (storageError) {
             console.error('[DELETE-MESSAGE API] Storage deletion warning:', storageError)
             // Don't fail the request if storage deletion fails
+          } else {
+            mediaDeleted = true
           }
+        } else {
+          console.warn('[DELETE-MESSAGE API] Could not parse Supabase Storage URL format:', mediaUrl)
         }
       } catch (storageErr) {
         console.error('[DELETE-MESSAGE API] Storage deletion error:', storageErr)
@@ -91,7 +96,7 @@ export async function POST(request: NextRequest) {
       message: 'Message deleted successfully',
       data: {
         messageId,
-        mediaDeleted: !!mediaUrl,
+        mediaDeleted,
       },
     })
   } catch (error) {
