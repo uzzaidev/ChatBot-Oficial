@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
       const buffer = Buffer.from(await file.arrayBuffer())
       try {
         const pdfData = await pdfParse(buffer)
-        text = pdfData.text ?? ''
+        text = pdfData?.text ?? ''
       } catch (pdfError) {
         const pdfErrorMessage = pdfError instanceof Error ? pdfError.message : 'Erro PDF desconhecido'
         console.error('[Upload] ❌ PDF parsing error:', pdfErrorMessage)
