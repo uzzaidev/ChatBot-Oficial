@@ -2,7 +2,7 @@ export type ConversationStatus = "bot" | "humano" | "transferido";
 
 export type MessageType = "text" | "audio" | "image" | "document" | "video";
 
-export type StoredMediaType = "image" | "audio" | "document";
+export type StoredMediaType = "image" | "audio" | "document" | "video";
 
 export type MessageDirection = "incoming" | "outgoing";
 

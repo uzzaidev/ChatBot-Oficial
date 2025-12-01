@@ -15,7 +15,7 @@ const isStoredMediaMetadata = (obj: unknown): obj is StoredMediaMetadata => {
   const meta = obj as Record<string, unknown>
   return (
     typeof meta.type === 'string' &&
-    ['image', 'audio', 'document'].includes(meta.type) &&
+    ['image', 'audio', 'document', 'video'].includes(meta.type) &&
     typeof meta.url === 'string' &&
     typeof meta.mimeType === 'string'
   )
@@ -118,7 +118,7 @@ export const MessageBubble = ({ message }: MessageBubbleProps) => {
         >
           <div className={`p-2 rounded-lg ${isPDF ? 'bg-red-100' : 'bg-blue-100'}`}>
             {isPDF ? (
-              <FileText className={`h-6 w-6 ${isPDF ? 'text-red-600' : 'text-blue-600'}`} />
+              <FileText className="h-6 w-6 text-red-600" />
             ) : (
               <File className="h-6 w-6 text-blue-600" />
             )}
