@@ -58,6 +58,53 @@ const EMPTY_TEXT_ERROR_MESSAGES: Record<string, string> = {
  * @returns Object with error type and user-friendly message in Portuguese
  */
 const categorizeOpenAIError = (error: unknown): { type: string; message: string } => {
+  // Check for structured OpenAI API error objects first
+  const errorObj = error as { code?: string; type?: string; status?: number; message?: string }
+  
+  // Check structured error code from OpenAI SDK
+  if (errorObj?.code) {
+    const code = errorObj.code.toLowerCase()
+    if (code === 'invalid_api_key') {
+      return {
+        type: 'invalid_key',
+        message: 'Chave da OpenAI inválida. Verifique se a chave está correta em Configurações.'
+      }
+    }
+    if (code === 'insufficient_quota') {
+      return {
+        type: 'quota_exceeded',
+        message: 'Limite de uso da OpenAI excedido. Verifique o saldo e billing da sua conta OpenAI em https://platform.openai.com/account/billing'
+      }
+    }
+    if (code === 'rate_limit_exceeded') {
+      return {
+        type: 'rate_limit',
+        message: 'Limite de requisições atingido. Aguarde alguns segundos e tente novamente.'
+      }
+    }
+    if (code === 'model_not_found') {
+      return {
+        type: 'model_not_found',
+        message: 'Modelo de IA não encontrado ou indisponível na sua conta OpenAI.'
+      }
+    }
+  }
+  
+  // Check HTTP status code
+  if (errorObj?.status === 401) {
+    return {
+      type: 'auth_error',
+      message: 'Erro de autenticação com a OpenAI. Reconfigure sua chave em Configurações.'
+    }
+  }
+  if (errorObj?.status === 429) {
+    return {
+      type: 'rate_limit',
+      message: 'Limite de requisições atingido. Aguarde alguns segundos e tente novamente.'
+    }
+  }
+  
+  // Fallback to string matching on error message
   const errorMessage = error instanceof Error ? error.message : String(error)
   const errorString = errorMessage.toLowerCase()
   
@@ -71,11 +118,11 @@ const categorizeOpenAIError = (error: unknown): { type: string; message: string 
     }
   }
   
-  // Check for quota exceeded
+  // Check for quota exceeded - use more specific patterns
   if (errorString.includes('insufficient_quota') || 
-      errorString.includes('quota') ||
+      errorString.includes('quota exceeded') ||
       errorString.includes('exceeded your current quota') ||
-      errorString.includes('billing')) {
+      errorString.includes('you exceeded your current quota')) {
     return {
       type: 'quota_exceeded',
       message: 'Limite de uso da OpenAI excedido. Verifique o saldo e billing da sua conta OpenAI em https://platform.openai.com/account/billing'
@@ -84,7 +131,7 @@ const categorizeOpenAIError = (error: unknown): { type: string; message: string 
   
   // Check for rate limit
   if (errorString.includes('rate_limit') || 
-      errorString.includes('rate limit') ||
+      errorString.includes('rate limit exceeded') ||
       errorString.includes('too many requests')) {
     return {
       type: 'rate_limit',
@@ -94,21 +141,11 @@ const categorizeOpenAIError = (error: unknown): { type: string; message: string 
   
   // Check for model not found
   if (errorString.includes('model_not_found') || 
-      errorString.includes('does not exist') ||
+      errorString.includes('the model') && errorString.includes('does not exist') ||
       errorString.includes('model not found')) {
     return {
       type: 'model_not_found',
       message: 'Modelo de IA não encontrado ou indisponível na sua conta OpenAI.'
-    }
-  }
-  
-  // Check for authentication error
-  if (errorString.includes('authentication') || 
-      errorString.includes('unauthorized') ||
-      errorString.includes('401')) {
-    return {
-      type: 'auth_error',
-      message: 'Erro de autenticação com a OpenAI. Reconfigure sua chave em Configurações.'
     }
   }
   
