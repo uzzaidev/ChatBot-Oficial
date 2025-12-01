@@ -8,8 +8,28 @@ export interface GetChatHistoryInput {
   maxHistory?: number // 🔧 Configurável (padrão: busca do banco, fallback 30)
 }
 
-export const getChatHistory = async (input: GetChatHistoryInput): Promise<ChatMessage[]> => {
+/**
+ * 📊 Estatísticas do histórico para monitoramento no backend
+ */
+export interface ChatHistoryStats {
+  messageCount: number       // Número de mensagens válidas retornadas
+  totalPromptSize: number    // Tamanho total do conteúdo em caracteres
+  maxHistoryRequested: number // Limite de mensagens solicitado
+  durationMs: number         // Tempo de execução em ms
+}
+
+/**
+ * Resultado do getChatHistory com mensagens e estatísticas
+ */
+export interface GetChatHistoryResult {
+  messages: ChatMessage[]
+  stats: ChatHistoryStats
+}
+
+export const getChatHistory = async (input: GetChatHistoryInput): Promise<GetChatHistoryResult> => {
   const startTime = Date.now()
+  // Default fallback value for maxHistory
+  const defaultMaxHistory = input.maxHistory ?? 30
 
   try {
     const { phone, clientId } = input
@@ -37,7 +57,15 @@ export const getChatHistory = async (input: GetChatHistoryInput): Promise<ChatMe
     const duration = Date.now() - startTime
 
     if (!result.rows || result.rows.length === 0) {
-      return []
+      return {
+        messages: [],
+        stats: {
+          messageCount: 0,
+          totalPromptSize: 0,
+          maxHistoryRequested: maxHistory,
+          durationMs: duration,
+        }
+      }
     }
 
     const chatMessages: ChatMessage[] = result.rows
@@ -60,15 +88,33 @@ export const getChatHistory = async (input: GetChatHistoryInput): Promise<ChatMe
         }
       })
 
+    // 📊 Calcula o tamanho total do prompt (soma de todos os conteúdos)
+    const totalPromptSize = chatMessages.reduce((acc, msg) => acc + (msg.content?.length || 0), 0)
     
     // Alerta se query for lenta
     if (duration > 1000) {
     }
     
-    return chatMessages
+    return {
+      messages: chatMessages,
+      stats: {
+        messageCount: chatMessages.length,
+        totalPromptSize,
+        maxHistoryRequested: maxHistory,
+        durationMs: duration,
+      }
+    }
   } catch (error) {
     const duration = Date.now() - startTime
     console.error(`[getChatHistory] ❌ Error after ${duration}ms:`, error)
-    return []
+    return {
+      messages: [],
+      stats: {
+        messageCount: 0,
+        totalPromptSize: 0,
+        maxHistoryRequested: defaultMaxHistory,
+        durationMs: duration,
+      }
+    }
   }
 }
