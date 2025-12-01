@@ -318,12 +318,14 @@ export const processChatbotMessage = async (
 
       // Salvar mensagem do usuário no histórico (agora COM transcrição/descrição)
       // 📎 Include media metadata for displaying real files in conversation
+      // 📱 Include wamid for WhatsApp message reactions
       await saveChatMessage({
         phone: parsedMessage.phone,
         message: messageForHistory,
         type: 'user',
         clientId: config.id,
-        mediaMetadata
+        mediaMetadata,
+        wamid: parsedMessage.messageId // Store WhatsApp message ID for reactions
       })
 
       logger.finishExecution('success')
@@ -365,12 +367,14 @@ export const processChatbotMessage = async (
     }
     
     // 📎 Include media metadata for displaying real files in conversation
+    // 📱 Include wamid for WhatsApp message reactions
     await saveChatMessage({
       phone: parsedMessage.phone,
       message: messageForHistory,
       type: 'user',
       clientId: config.id, // 🔐 Multi-tenant: Associa mensagem ao cliente
-      mediaMetadata
+      mediaMetadata,
+      wamid: parsedMessage.messageId // Store WhatsApp message ID for reactions
     })
     logger.logNodeSuccess('8. Save Chat Message (User)', { saved: true })
 
