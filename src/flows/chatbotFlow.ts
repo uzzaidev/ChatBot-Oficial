@@ -1,4 +1,4 @@
-import { WhatsAppWebhookPayload, ParsedMessage, ClientConfig } from '@/lib/types'
+import { WhatsAppWebhookPayload, ParsedMessage, ClientConfig, StoredMediaMetadata } from '@/lib/types'
 import { filterStatusUpdates } from '@/nodes/filterStatusUpdates'
 import { parseMessage } from '@/nodes/parseMessage'
 import { checkHumanHandoffStatus } from '@/nodes/checkHumanHandoffStatus'
@@ -26,12 +26,63 @@ import { setWithExpiry } from '@/lib/redis'
 import { logOpenAIUsage, logGroqUsage, logWhisperUsage } from '@/lib/usageTracking'
 // 🔄 Flow synchronization - Option 4 (Hybrid)
 import { getAllNodeStates, shouldExecuteNode } from '@/lib/flowHelpers'
+// 📎 Media storage for displaying real files in conversations
+import { uploadFileToStorage } from '@/lib/storage'
 
 export interface ChatbotFlowResult {
   success: boolean
   messagesSent?: number
   handedOff?: boolean
   error?: string
+}
+
+// 📎 MIME type to file extension mapping
+const MIME_TO_EXTENSION: Record<string, string> = {
+  // Audio
+  'audio/ogg': 'ogg',
+  'audio/opus': 'opus',
+  'audio/mpeg': 'mp3',
+  'audio/mp4': 'm4a',
+  'audio/wav': 'wav',
+  'audio/webm': 'webm',
+  // Images
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/gif': 'gif',
+  'image/webp': 'webp',
+  'image/svg+xml': 'svg',
+  // Documents
+  'application/pdf': 'pdf',
+  'application/msword': 'doc',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+  'application/vnd.ms-excel': 'xls',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+  'text/plain': 'txt',
+}
+
+// Valid file extensions (for validation)
+const VALID_EXTENSIONS = new Set(['ogg', 'opus', 'mp3', 'm4a', 'wav', 'webm', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt', 'mp4', 'avi', 'mov'])
+
+const getExtensionFromMimeType = (mimeType: string, defaultExt: string = 'bin'): string => {
+  // First try exact match from mapping
+  if (MIME_TO_EXTENSION[mimeType]) {
+    return MIME_TO_EXTENSION[mimeType]
+  }
+  // Try to extract from MIME type (e.g., 'image/jpeg' -> 'jpeg')
+  const parts = mimeType.split('/')
+  if (parts.length === 2) {
+    // Handle cases like 'image/svg+xml' -> 'svg'
+    const subtype = parts[1].split('+')[0].split(';')[0].toLowerCase()
+    // Only use extracted extension if it's a known valid extension
+    if (subtype && VALID_EXTENSIONS.has(subtype)) {
+      return subtype
+    }
+    // Special case: 'jpeg' should be 'jpg' for better compatibility
+    if (subtype === 'jpeg') {
+      return 'jpg'
+    }
+  }
+  return defaultExt
 }
 
 /**
@@ -87,6 +138,8 @@ export const processChatbotMessage = async (
     // This ensures that when a conversation is with a human, the audio/image/PDF 
     // transcription is still available for the human attendant to see
     let processedContent: string | undefined
+    // 📎 Track media metadata for displaying real files in conversation
+    let mediaMetadata: StoredMediaMetadata | undefined
     
     const shouldProcessMedia = shouldExecuteNode('process_media', nodeStates)
     
@@ -96,6 +149,24 @@ export const processChatbotMessage = async (
       if (parsedMessage.type === 'audio' && parsedMessage.metadata?.id) {
         const audioBuffer = await downloadMetaMedia(parsedMessage.metadata.id, config.apiKeys.metaAccessToken)
         logger.logNodeSuccess('4a. Download Audio', { size: audioBuffer.length })
+
+        // 📎 Upload audio to Supabase Storage
+        try {
+          const mimeType = parsedMessage.metadata.mimeType || 'audio/ogg'
+          const extension = getExtensionFromMimeType(mimeType, 'ogg')
+          const filename = `audio_${parsedMessage.phone}_${Date.now()}.${extension}`
+          const mediaUrl = await uploadFileToStorage(audioBuffer, filename, mimeType, config.id)
+          mediaMetadata = {
+            type: 'audio',
+            url: mediaUrl,
+            mimeType,
+            filename,
+            size: audioBuffer.length
+          }
+          logger.logNodeSuccess('4a.1. Upload Audio to Storage', { url: mediaUrl })
+        } catch (uploadError) {
+          console.error('[chatbotFlow] ❌ Failed to upload audio to storage:', uploadError)
+        }
 
         const transcriptionResult = await transcribeAudio(audioBuffer, config.apiKeys.openaiApiKey)
         processedContent = transcriptionResult.text
@@ -117,6 +188,24 @@ export const processChatbotMessage = async (
       } else if (parsedMessage.type === 'image' && parsedMessage.metadata?.id) {
         const imageBuffer = await downloadMetaMedia(parsedMessage.metadata.id, config.apiKeys.metaAccessToken)
         logger.logNodeSuccess('4a. Download Image', { size: imageBuffer.length })
+
+        // 📎 Upload image to Supabase Storage
+        try {
+          const mimeType = parsedMessage.metadata.mimeType || 'image/jpeg'
+          const extension = getExtensionFromMimeType(mimeType, 'jpg')
+          const filename = `image_${parsedMessage.phone}_${Date.now()}.${extension}`
+          const mediaUrl = await uploadFileToStorage(imageBuffer, filename, mimeType, config.id)
+          mediaMetadata = {
+            type: 'image',
+            url: mediaUrl,
+            mimeType,
+            filename,
+            size: imageBuffer.length
+          }
+          logger.logNodeSuccess('4a.1. Upload Image to Storage', { url: mediaUrl })
+        } catch (uploadError) {
+          console.error('[chatbotFlow] ❌ Failed to upload image to storage:', uploadError)
+        }
 
         const visionResult = await analyzeImage(imageBuffer, parsedMessage.metadata.mimeType || 'image/jpeg', config.apiKeys.openaiApiKey)
 
@@ -141,6 +230,22 @@ export const processChatbotMessage = async (
       } else if (parsedMessage.type === 'document' && parsedMessage.metadata?.id) {
         const documentBuffer = await downloadMetaMedia(parsedMessage.metadata.id, config.apiKeys.metaAccessToken)
         logger.logNodeSuccess('4a. Download Document', { size: documentBuffer.length, filename: parsedMessage.metadata.filename })
+
+        // 📎 Upload document to Supabase Storage
+        try {
+          const filename = parsedMessage.metadata.filename || `document_${parsedMessage.phone}_${Date.now()}.pdf`
+          const mediaUrl = await uploadFileToStorage(documentBuffer, filename, parsedMessage.metadata.mimeType || 'application/pdf', config.id)
+          mediaMetadata = {
+            type: 'document',
+            url: mediaUrl,
+            mimeType: parsedMessage.metadata.mimeType || 'application/pdf',
+            filename,
+            size: documentBuffer.length
+          }
+          logger.logNodeSuccess('4a.1. Upload Document to Storage', { url: mediaUrl })
+        } catch (uploadError) {
+          console.error('[chatbotFlow] ❌ Failed to upload document to storage:', uploadError)
+        }
 
         const documentResult = await analyzeDocument(
           documentBuffer,
@@ -212,11 +317,13 @@ export const processChatbotMessage = async (
       }
 
       // Salvar mensagem do usuário no histórico (agora COM transcrição/descrição)
+      // 📎 Include media metadata for displaying real files in conversation
       await saveChatMessage({
         phone: parsedMessage.phone,
         message: messageForHistory,
         type: 'user',
-        clientId: config.id
+        clientId: config.id,
+        mediaMetadata
       })
 
       logger.finishExecution('success')
@@ -257,11 +364,13 @@ export const processChatbotMessage = async (
         : '[Imagem recebida]'
     }
     
+    // 📎 Include media metadata for displaying real files in conversation
     await saveChatMessage({
       phone: parsedMessage.phone,
       message: messageForHistory,
       type: 'user',
       clientId: config.id, // 🔐 Multi-tenant: Associa mensagem ao cliente
+      mediaMetadata
     })
     logger.logNodeSuccess('8. Save Chat Message (User)', { saved: true })
 
