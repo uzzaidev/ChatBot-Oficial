@@ -257,12 +257,10 @@ export const generateEmbedding = async (
 export const extractTextFromPDF = async (pdfBuffer: Buffer): Promise<string> => {
   try {
     // 🔧 Import dinâmico: só carrega pdf-parse quando função é chamada
-    // pdf-parse v2.4.5 uses class-based API - PDFParse.getText() works without Canvas dependencies
-    const { PDFParse } = await import('pdf-parse')
-    const parser = new PDFParse({ data: pdfBuffer })
-    const pdfData = await parser.getText()
-    // Clean up resources
-    await parser.destroy()
+    // pdf-parse v1.1.0 uses function-based API with bundled pdf.js v1.9.426
+    // Works in serverless environments without browser APIs like DOMMatrix
+    const pdfParse = (await import('pdf-parse')).default
+    const pdfData = await pdfParse(pdfBuffer)
     return pdfData.text
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
