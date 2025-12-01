@@ -2,6 +2,8 @@ export type ConversationStatus = "bot" | "humano" | "transferido";
 
 export type MessageType = "text" | "audio" | "image" | "document" | "video";
 
+export type StoredMediaType = "image" | "audio" | "document" | "video";
+
 export type MessageDirection = "incoming" | "outgoing";
 
 export type MessageStatus =
@@ -15,6 +17,18 @@ export type MessageStatus =
 export type UsageSource = "openai" | "meta" | "groq" | "whisper";
 
 export type ExecutionStatus = "running" | "success" | "error";
+
+/**
+ * 📎 Stored media metadata for displaying real media files in conversations
+ * This is stored in the database after uploading to Supabase Storage
+ */
+export interface StoredMediaMetadata {
+  type: StoredMediaType;
+  url: string;
+  mimeType: string;
+  filename?: string;
+  size?: number;
+}
 
 export interface ExecutionLog {
   id: number;
