@@ -52,6 +52,111 @@ const EMPTY_TEXT_ERROR_MESSAGES: Record<string, string> = {
 }
 
 /**
+ * Categorize OpenAI API errors and return user-friendly messages
+ * 
+ * @param error - Error object from OpenAI API call
+ * @returns Object with error type and user-friendly message in Portuguese
+ */
+const categorizeOpenAIError = (error: unknown): { type: string; message: string } => {
+  // Check for structured OpenAI API error objects first
+  const errorObj = error as { code?: string; type?: string; status?: number; message?: string }
+  
+  // Check structured error code from OpenAI SDK
+  if (errorObj?.code) {
+    const code = errorObj.code.toLowerCase()
+    if (code === 'invalid_api_key') {
+      return {
+        type: 'invalid_key',
+        message: 'Chave da OpenAI inválida. Verifique se a chave está correta em Configurações.'
+      }
+    }
+    if (code === 'insufficient_quota') {
+      return {
+        type: 'quota_exceeded',
+        message: 'Limite de uso da OpenAI excedido. Verifique o saldo e billing da sua conta OpenAI em https://platform.openai.com/account/billing'
+      }
+    }
+    if (code === 'rate_limit_exceeded') {
+      return {
+        type: 'rate_limit',
+        message: 'Limite de requisições atingido. Aguarde alguns segundos e tente novamente.'
+      }
+    }
+    if (code === 'model_not_found') {
+      return {
+        type: 'model_not_found',
+        message: 'Modelo de IA não encontrado ou indisponível na sua conta OpenAI.'
+      }
+    }
+  }
+  
+  // Check HTTP status code
+  if (errorObj?.status === 401) {
+    return {
+      type: 'auth_error',
+      message: 'Erro de autenticação com a OpenAI. Reconfigure sua chave em Configurações.'
+    }
+  }
+  if (errorObj?.status === 429) {
+    return {
+      type: 'rate_limit',
+      message: 'Limite de requisições atingido. Aguarde alguns segundos e tente novamente.'
+    }
+  }
+  
+  // Fallback to string matching on error message
+  const errorMessage = error instanceof Error ? error.message : String(error)
+  const errorString = errorMessage.toLowerCase()
+  
+  // Check for invalid API key
+  if (errorString.includes('invalid_api_key') || 
+      errorString.includes('incorrect api key') ||
+      errorString.includes('invalid api key')) {
+    return {
+      type: 'invalid_key',
+      message: 'Chave da OpenAI inválida. Verifique se a chave está correta em Configurações.'
+    }
+  }
+  
+  // Check for quota exceeded - use more specific patterns
+  if (errorString.includes('insufficient_quota') || 
+      errorString.includes('quota exceeded') ||
+      errorString.includes('exceeded your current quota') ||
+      errorString.includes('you exceeded your current quota')) {
+    return {
+      type: 'quota_exceeded',
+      message: 'Limite de uso da OpenAI excedido. Verifique o saldo e billing da sua conta OpenAI em https://platform.openai.com/account/billing'
+    }
+  }
+  
+  // Check for rate limit
+  if (errorString.includes('rate_limit') || 
+      errorString.includes('rate limit exceeded') ||
+      errorString.includes('too many requests')) {
+    return {
+      type: 'rate_limit',
+      message: 'Limite de requisições atingido. Aguarde alguns segundos e tente novamente.'
+    }
+  }
+  
+  // Check for model not found
+  if (errorString.includes('model_not_found') || 
+      errorString.includes('the model') && errorString.includes('does not exist') ||
+      errorString.includes('model not found')) {
+    return {
+      type: 'model_not_found',
+      message: 'Modelo de IA não encontrado ou indisponível na sua conta OpenAI.'
+    }
+  }
+  
+  // Default: unknown error
+  return {
+    type: 'unknown',
+    message: `Erro na API da OpenAI: ${errorMessage}`
+  }
+}
+
+/**
  * Extract text from image using OpenAI Vision API (GPT-4o)
  * Serverless-compatible, no canvas dependencies
  * REQUIRES client to have OpenAI API key configured in Vault
@@ -188,14 +293,24 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      const { data: openaiKeyForOCR } = await supabase.rpc('get_secret', {
+      const { data: openaiKeyForOCR, error: vaultErrorOCR } = await supabase.rpc('get_secret', {
         secret_id: clientConfigTemp.openai_api_key_secret_id
       })
+
+      if (vaultErrorOCR) {
+        console.error('[Upload] ❌ Vault error retrieving OpenAI key for OCR:', vaultErrorOCR)
+        return NextResponse.json(
+          {
+            error: 'Erro ao acessar o cofre de segredos. Contate o suporte se o problema persistir.'
+          },
+          { status: 500 }
+        )
+      }
 
       if (!openaiKeyForOCR) {
         return NextResponse.json(
           {
-            error: 'Erro ao recuperar chave da OpenAI. Por favor, reconfigure sua chave em Configurações.'
+            error: 'Chave da OpenAI não encontrada no cofre. Por favor, reconfigure sua chave em Configurações.'
           },
           { status: 400 }
         )
@@ -204,8 +319,17 @@ export async function POST(request: NextRequest) {
       // Image OCR extraction using OpenAI Vision (serverless-compatible)
       const buffer = Buffer.from(await file.arrayBuffer())
       console.log('[Upload] Extracting text from image using OpenAI Vision...')
-      text = await extractTextFromImage(buffer, openaiKeyForOCR)
-      console.log('[Upload] Text extracted successfully from image')
+      try {
+        text = await extractTextFromImage(buffer, openaiKeyForOCR)
+        console.log('[Upload] Text extracted successfully from image')
+      } catch (ocrError) {
+        console.error('[Upload] ❌ OpenAI Vision OCR error:', ocrError)
+        const { message: ocrErrorMessage } = categorizeOpenAIError(ocrError)
+        return NextResponse.json(
+          { error: ocrErrorMessage },
+          { status: 400 }
+        )
+      }
     } else {
       // text/plain
       text = await file.text()
@@ -236,33 +360,53 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { data: openaiApiKey } = await supabase.rpc('get_secret', {
+    const { data: openaiApiKey, error: vaultError } = await supabase.rpc('get_secret', {
       secret_id: clientConfig.openai_api_key_secret_id
     })
+
+    if (vaultError) {
+      console.error('[Upload] ❌ Vault error retrieving OpenAI key for embeddings:', vaultError)
+      return NextResponse.json(
+        {
+          error: 'Erro ao acessar o cofre de segredos. Contate o suporte se o problema persistir.'
+        },
+        { status: 500 }
+      )
+    }
 
     if (!openaiApiKey) {
       return NextResponse.json(
         {
-          error: 'Erro ao recuperar chave da OpenAI. Por favor, reconfigure sua chave em Configurações.'
+          error: 'Chave da OpenAI não encontrada no cofre. Por favor, reconfigure sua chave em Configurações.'
         },
         { status: 400 }
       )
     }
 
     // 7. Process document with chunking
-    const result = await processDocumentWithChunking({
-      text,
-      clientId,
-      metadata: {
-        filename: file.name,
-        documentType,
-        source: 'upload',
-        uploadedBy: user.email || user.id,
-        fileSize: file.size,
-        mimeType: file.type,
-      },
-      openaiApiKey,
-    })
+    let result
+    try {
+      result = await processDocumentWithChunking({
+        text,
+        clientId,
+        metadata: {
+          filename: file.name,
+          documentType,
+          source: 'upload',
+          uploadedBy: user.email || user.id,
+          fileSize: file.size,
+          mimeType: file.type,
+        },
+        openaiApiKey,
+      })
+    } catch (processingError) {
+      console.error('[Upload] ❌ Document processing error:', processingError)
+      const { message: processingErrorMessage } = categorizeOpenAIError(processingError)
+      return NextResponse.json(
+        { error: processingErrorMessage },
+        { status: 400 }
+      )
+    }
 
 
     // 8. Return success response
