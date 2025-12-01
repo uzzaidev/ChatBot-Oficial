@@ -1,7 +1,17 @@
 'use client'
 
 import type { Message } from '@/lib/types'
-import { FileText } from 'lucide-react'
+import { FileText, Download, Play, Image as ImageIcon, File } from 'lucide-react'
+import Image from 'next/image'
+import { useState } from 'react'
+
+interface MediaMetadata {
+  type: 'image' | 'audio' | 'document'
+  url: string
+  mimeType: string
+  filename?: string
+  size?: number
+}
 
 interface MessageBubbleProps {
   message: Message
@@ -9,23 +19,184 @@ interface MessageBubbleProps {
 
 export const MessageBubble = ({ message }: MessageBubbleProps) => {
   const isIncoming = message.direction === 'incoming'
-  const hasMedia = message.content.match(/\[(IMAGE|IMAGEM|AUDIO|ÁUDIO|DOCUMENT|DOCUMENTO)\]/)
-  const filename = message.content.match(/\](.*?)$/)?.[1]?.trim() || 'Arquivo'
+  const [imageError, setImageError] = useState(false)
+  
+  // 📎 Extract media metadata from message
+  const mediaMetadata: MediaMetadata | null = (message.metadata as any)?.media || null
+  const hasRealMedia = mediaMetadata && mediaMetadata.url
+  
+  // Fallback for legacy messages without real media
+  const hasLegacyMediaTag = message.content.match(/\[(IMAGE|IMAGEM|AUDIO|ÁUDIO|DOCUMENT|DOCUMENTO)\]/)
+  const legacyFilename = message.content.match(/\](.*?)$/)?.[1]?.trim() || 'Arquivo'
+
+  // Render real image
+  const renderImage = () => {
+    if (!mediaMetadata || imageError) return null
+    
+    return (
+      <div className="relative mb-2 rounded-lg overflow-hidden max-w-[280px]">
+        <Image
+          src={mediaMetadata.url}
+          alt={mediaMetadata.filename || 'Imagem'}
+          width={280}
+          height={200}
+          className="object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+          onClick={() => window.open(mediaMetadata.url, '_blank')}
+          onError={() => setImageError(true)}
+          unoptimized
+        />
+        <a
+          href={mediaMetadata.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="absolute bottom-2 right-2 bg-black/50 hover:bg-black/70 text-white p-1.5 rounded-full transition-colors"
+          title="Abrir imagem"
+        >
+          <Download className="h-4 w-4" />
+        </a>
+      </div>
+    )
+  }
+
+  // Render real audio
+  const renderAudio = () => {
+    if (!mediaMetadata) return null
+    
+    return (
+      <div className="mb-2">
+        <div className="flex items-center gap-2 mb-2 text-sm opacity-80">
+          <Play className="h-4 w-4" />
+          <span className="font-medium">Áudio</span>
+        </div>
+        <audio 
+          controls 
+          className="w-full max-w-[280px] h-10"
+          preload="metadata"
+        >
+          <source src={mediaMetadata.url} type={mediaMetadata.mimeType || 'audio/ogg'} />
+          Seu navegador não suporta áudio.
+        </audio>
+        <a
+          href={mediaMetadata.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 mt-1 text-xs opacity-70 hover:opacity-100 transition-opacity"
+        >
+          <Download className="h-3 w-3" />
+          Baixar áudio
+        </a>
+      </div>
+    )
+  }
+
+  // Render real document (PDF, etc)
+  const renderDocument = () => {
+    if (!mediaMetadata) return null
+    
+    const isPDF = mediaMetadata.mimeType?.includes('pdf')
+    const filename = mediaMetadata.filename || 'Documento'
+    const fileSize = mediaMetadata.size ? formatFileSize(mediaMetadata.size) : ''
+    
+    return (
+      <div className="mb-2">
+        <a
+          href={mediaMetadata.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+            isIncoming 
+              ? 'bg-silver-50 hover:bg-silver-100 border-silver-200' 
+              : 'bg-white/10 hover:bg-white/20 border-white/20'
+          }`}
+        >
+          <div className={`p-2 rounded-lg ${isPDF ? 'bg-red-100' : 'bg-blue-100'}`}>
+            {isPDF ? (
+              <FileText className={`h-6 w-6 ${isPDF ? 'text-red-600' : 'text-blue-600'}`} />
+            ) : (
+              <File className="h-6 w-6 text-blue-600" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className={`text-sm font-medium truncate ${isIncoming ? 'text-erie-black-800' : 'text-white'}`}>
+              {filename}
+            </p>
+            {fileSize && (
+              <p className={`text-xs ${isIncoming ? 'text-erie-black-500' : 'text-white/70'}`}>
+                {fileSize}
+              </p>
+            )}
+          </div>
+          <Download className={`h-5 w-5 flex-shrink-0 ${isIncoming ? 'text-erie-black-400' : 'text-white/70'}`} />
+        </a>
+      </div>
+    )
+  }
+
+  // Render legacy media tag (fallback for old messages)
+  const renderLegacyMedia = () => {
+    return (
+      <div className="flex items-center gap-2 mb-1 text-sm opacity-80">
+        <FileText className="h-4 w-4" />
+        <span className="font-medium">Arquivo enviado</span>
+      </div>
+    )
+  }
+
+  // Render media content based on type
+  const renderMediaContent = () => {
+    if (!hasRealMedia) {
+      if (hasLegacyMediaTag) {
+        return renderLegacyMedia()
+      }
+      return null
+    }
+
+    switch (mediaMetadata.type) {
+      case 'image':
+        return renderImage()
+      case 'audio':
+        return renderAudio()
+      case 'document':
+        return renderDocument()
+      default:
+        return null
+    }
+  }
+
+  // Get text content to display
+  const getTextContent = () => {
+    if (hasRealMedia && mediaMetadata.type === 'image') {
+      // For images with real media, show description/caption
+      return message.content.replace(/\[Imagem recebida\]\s*/i, '').trim()
+    }
+    if (hasLegacyMediaTag) {
+      return legacyFilename
+    }
+    return message.content
+  }
+
+  const textContent = getTextContent()
 
   return (
     <div className={'flex ' + (isIncoming ? 'justify-start' : 'justify-end') + ' mb-2 px-2'}>
       <div className={'max-w-[70%] rounded-lg p-3 break-words ' + (isIncoming ? 'bg-white shadow-sm' : 'bg-mint-500 text-white')}>
-        {hasMedia && (
-          <div className="flex items-center gap-2 mb-1 text-sm opacity-80">
-            <FileText className="h-4 w-4" />
-            <span className="font-medium">Arquivo enviado</span>
-          </div>
+        {renderMediaContent()}
+        {textContent && (
+          <p className="whitespace-pre-wrap text-sm md:text-base">{textContent}</p>
         )}
-        <p className="whitespace-pre-wrap text-sm md:text-base">{hasMedia ? filename : message.content}</p>
         <p className={'text-xs mt-1 ' + (isIncoming ? 'text-erie-black-500' : 'text-white/70')}>
           {new Date(message.timestamp).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}
         </p>
       </div>
     </div>
   )
+}
+
+// Helper function to format file size
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
 }
