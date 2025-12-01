@@ -24,9 +24,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
 import { processDocumentWithChunking } from '@/nodes/processDocumentWithChunking'
 import OpenAI from 'openai'
-
-// pdf-parse uses CommonJS, need to import this way
-const pdfParse = require('pdf-parse')
+// pdf-parse v2.4.5 uses class-based API - PDFParse.getText() works without Canvas dependencies
+import { PDFParse } from 'pdf-parse'
 
 export const dynamic = 'force-dynamic'
 
@@ -144,10 +143,14 @@ export async function POST(request: NextRequest) {
     let text: string
 
     if (file.type === 'application/pdf') {
-      // PDF extraction
+      // PDF extraction using pdf-parse v2.4.5 class-based API
+      // Uses getText() which works without Canvas dependencies (serverless-compatible)
       const buffer = Buffer.from(await file.arrayBuffer())
-      const pdfData = await pdfParse(buffer)
+      const parser = new PDFParse({ data: buffer })
+      const pdfData = await parser.getText()
       text = pdfData.text
+      // Clean up resources
+      await parser.destroy()
     } else if (file.type.startsWith('image/')) {
       // Get OpenAI key from Vault (REQUIRED for image OCR)
       const { data: clientConfigTemp } = await supabase
