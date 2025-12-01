@@ -55,7 +55,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // Motivo: Supabase pode ter limites de paginação que não queremos
 
     const pgMessages = await query<any>(
-      `SELECT id, session_id, message, media_metadata, created_at
+      `SELECT id, session_id, message, media_metadata, wamid, created_at
        FROM n8n_chat_histories
        WHERE session_id = $1
        AND client_id = $2
@@ -116,6 +116,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         ? (rawMsgType as MessageType) 
         : 'text'
 
+      // 📱 Include wamid in metadata for reactions
+      const metadata: Record<string, unknown> = {}
+      if (mediaMetadata) {
+        metadata.media = mediaMetadata
+      }
+      if (item.wamid) {
+        metadata.wamid = item.wamid
+      }
+
       return {
         id: item.id?.toString() || `msg-${index}`,
         client_id: clientId,
@@ -127,7 +136,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         direction: messageType === 'human' ? ('incoming' as const) : ('outgoing' as const),
         status: 'sent' as const,
         timestamp: item.created_at || new Date().toISOString(),
-        metadata: mediaMetadata ? { media: mediaMetadata } : null,
+        metadata: Object.keys(metadata).length > 0 ? metadata : null,
       }
     })
 

@@ -8,6 +8,7 @@ import { useMessages } from '@/hooks/useMessages'
 import { useRealtimeMessages } from '@/hooks/useRealtimeMessages'
 import type { Message } from '@/lib/types'
 import { isSameDay, formatMessageDate, throttle } from '@/lib/utils'
+import { useToast } from '@/hooks/use-toast'
 
 interface ConversationDetailProps {
   phone: string
@@ -30,12 +31,14 @@ export const ConversationDetail = ({
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const [realtimeMessages, setRealtimeMessages] = useState<Message[]>([])
   const [optimisticMessages, setOptimisticMessages] = useState<Message[]>([])
+  const [deletedMessageIds, setDeletedMessageIds] = useState<Set<string>>(new Set())
   const [stickyDate, setStickyDate] = useState<string | null>(null)
   const [newMessagesCount, setNewMessagesCount] = useState(0)
   const [isUserAtBottom, setIsUserAtBottom] = useState(true)
   const dateRefs = useRef<Map<string, HTMLDivElement>>(new Map())
   const shouldScrollRef = useRef(true)
   const lastFetchedIdsRef = useRef<Set<string>>(new Set())
+  const { toast } = useToast()
 
   const { messages: fetchedMessages, loading, error } = useMessages({
     clientId,
@@ -66,19 +69,21 @@ export const ConversationDetail = ({
   useEffect(() => {
     setRealtimeMessages([])
     setOptimisticMessages([])
+    setDeletedMessageIds(new Set())
     setNewMessagesCount(0)
     shouldScrollRef.current = true
     lastFetchedIdsRef.current.clear()
   }, [phone])
 
-  // Combine fetched + realtime + optimistic messages, removing duplicates
+  // Combine fetched + realtime + optimistic messages, removing duplicates and deleted messages
   const messages = useMemo(() => {
     const allMessages = [...fetchedMessages, ...realtimeMessages, ...optimisticMessages]
 
-    // Remove duplicates based on message ID
+    // Remove duplicates based on message ID and filter out deleted messages
     const uniqueMessages = allMessages.reduce((acc, message) => {
       const exists = acc.some(m => m.id === message.id)
-      if (!exists) {
+      const isDeleted = deletedMessageIds.has(message.id)
+      if (!exists && !isDeleted) {
         acc.push(message)
       }
       return acc
@@ -90,7 +95,7 @@ export const ConversationDetail = ({
     )
 
     return uniqueMessages
-  }, [fetchedMessages, realtimeMessages, optimisticMessages])
+  }, [fetchedMessages, realtimeMessages, optimisticMessages, deletedMessageIds])
 
   // Check if user is at bottom - uses the state that's updated by scroll handler
   const checkIfUserAtBottom = useCallback(() => {
@@ -160,6 +165,76 @@ export const ConversationDetail = ({
       setNewMessagesCount(prev => prev + 1)
     }
   }, [checkIfUserAtBottom, onMarkAsRead, phone])
+
+  // Handle message reaction via WhatsApp API
+  const handleReaction = useCallback(async (messageId: string, emoji: string) => {
+    try {
+      const response = await fetch('/api/commands/react-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone,
+          messageId,
+          emoji,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to send reaction')
+      }
+
+      toast({
+        title: emoji ? 'Reação enviada' : 'Reação removida',
+        description: emoji ? `Você reagiu com ${emoji}` : 'Reação removida com sucesso',
+      })
+    } catch (error) {
+      console.error('[ConversationDetail] Reaction error:', error)
+      toast({
+        title: 'Erro ao reagir',
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
+        variant: 'destructive',
+      })
+    }
+  }, [phone, toast])
+
+  // Handle message deletion
+  const handleDelete = useCallback(async (messageId: string, mediaUrl?: string) => {
+    try {
+      const response = await fetch('/api/commands/delete-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messageId,
+          mediaUrl,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to delete message')
+      }
+
+      // Optimistically remove from UI
+      setDeletedMessageIds(prev => {
+        const newSet = new Set(prev)
+        newSet.add(messageId)
+        return newSet
+      })
+
+      toast({
+        title: 'Mensagem apagada',
+        description: 'A mensagem foi removida com sucesso',
+      })
+    } catch (error) {
+      console.error('[ConversationDetail] Delete error:', error)
+      toast({
+        title: 'Erro ao apagar',
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
+        variant: 'destructive',
+      })
+    }
+  }, [toast])
 
   // Realtime subscription para novas mensagens (depois do handleNewMessage)
   const { isConnected: realtimeConnected } = useRealtimeMessages({
@@ -363,7 +438,14 @@ export const ConversationDetail = ({
                     </div>
                   )
                 } else {
-                  return <MessageBubble key={item.message.id} message={item.message} />
+                  return (
+                    <MessageBubble
+                      key={item.message.id}
+                      message={item.message}
+                      onReaction={handleReaction}
+                      onDelete={handleDelete}
+                    />
+                  )
                 }
               })}
             </div>
