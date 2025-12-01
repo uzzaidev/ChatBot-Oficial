@@ -204,8 +204,9 @@ export function NotificationManager({ enabled = true }: NotificationManagerProps
   }, []) // SEM dependências - usar refs
 
   // 🔐 Multi-tenant: Monitor messages with clientId for tenant isolation
+  // Pass null until clientId is loaded - hook will wait to set up subscription
   useGlobalRealtimeNotifications({ 
-    clientId: clientId || '', 
+    clientId, 
     onNewMessage: handleNewMessage 
   })
 
