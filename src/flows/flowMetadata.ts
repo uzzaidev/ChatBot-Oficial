@@ -29,10 +29,28 @@ export interface FlowNodeMetadata {
 /**
  * Complete flow architecture metadata
  * Order matters - represents execution order in the flow
+ * 
+ * NEW ORDER (after embeddings fix):
+ * 1. Filter Status
+ * 2. Parse Message
+ * 3. Check/Create Customer
+ * 4. Process Media (audio/image/document transcription) <- MOVED BEFORE handoff check
+ * 5. Normalize Message
+ * 6. Check Human Handoff Status <- MOVED AFTER media processing
+ * 7. Push to Redis
+ * 8. Save User Message
+ * 9. Batch Messages
+ * 10-11. Get Chat History + RAG Context
+ * 10.5-10.6. Check Continuity + Classify Intent
+ * 12. Generate AI Response
+ * 12.5-12.7. Detect Repetition + Save AI Message
+ * 13. Format Response
+ * 14. Send WhatsApp Message
+ * 15. Handle Human Handoff (if AI requests transfer)
  */
 export const FLOW_METADATA: FlowNodeMetadata[] = [
   // ========================================
-  // PREPROCESSING NODES (1-8)
+  // PREPROCESSING NODES (1-5)
   // ========================================
   {
     id: 'filter_status',
@@ -69,7 +87,7 @@ export const FLOW_METADATA: FlowNodeMetadata[] = [
   {
     id: 'process_media',
     name: 'Process Media',
-    description: 'Processa áudio/imagem/documento',
+    description: 'Processa áudio/imagem/documento (transcrição/análise). Executado ANTES do check de atendimento humano para que humanos vejam descrições.',
     category: 'preprocessing',
     enabled: true,
     hasConfig: true,
@@ -81,7 +99,7 @@ export const FLOW_METADATA: FlowNodeMetadata[] = [
   {
     id: 'normalize_message',
     name: 'Normalize Message',
-    description: 'Normaliza conteúdo da mensagem',
+    description: 'Normaliza conteúdo da mensagem com transcrição/descrição',
     category: 'preprocessing',
     enabled: true,
     hasConfig: false,
@@ -89,6 +107,25 @@ export const FLOW_METADATA: FlowNodeMetadata[] = [
     bypassable: false,
     dependencies: ['process_media'],
   },
+  
+  // ========================================
+  // HUMAN HANDOFF CHECK NODE (6)
+  // ========================================
+  {
+    id: 'check_human_handoff',
+    name: 'Check Human Handoff Status',
+    description: 'Verifica se conversa está em atendimento humano. Se sim, salva mensagem (COM transcrição) e para o bot.',
+    category: 'preprocessing',
+    enabled: true,
+    hasConfig: false,
+    configurable: false, // Always runs - required
+    bypassable: false,
+    dependencies: ['normalize_message'],
+  },
+  
+  // ========================================
+  // REMAINING PREPROCESSING NODES (7-9)
+  // ========================================
   {
     id: 'push_to_redis',
     name: 'Push to Redis',
@@ -98,7 +135,7 @@ export const FLOW_METADATA: FlowNodeMetadata[] = [
     hasConfig: false,
     configurable: true, // Can be disabled for testing
     bypassable: true,
-    dependencies: ['normalize_message'],
+    dependencies: ['check_human_handoff'],
   },
   {
     id: 'save_user_message',
@@ -125,7 +162,7 @@ export const FLOW_METADATA: FlowNodeMetadata[] = [
   },
   
   // ========================================
-  // ANALYSIS NODES (9-10)
+  // ANALYSIS NODES (10-11)
   // ========================================
   {
     id: 'get_chat_history',
@@ -155,7 +192,7 @@ export const FLOW_METADATA: FlowNodeMetadata[] = [
   },
 
   // ========================================
-  // AUXILIARY AGENTS (9.5, 9.6)
+  // AUXILIARY AGENTS (10.5, 10.6)
   // ========================================
   {
     id: 'check_continuity',
@@ -185,7 +222,7 @@ export const FLOW_METADATA: FlowNodeMetadata[] = [
   },
   
   // ========================================
-  // GENERATION NODE (11)
+  // GENERATION NODE (12)
   // ========================================
   {
     id: 'generate_response',
@@ -202,7 +239,7 @@ export const FLOW_METADATA: FlowNodeMetadata[] = [
   },
 
   // ========================================
-  // POST-PROCESSING NODES (11.5, 11.6)
+  // POST-PROCESSING NODES (12.5, 12.6)
   // ========================================
   {
     id: 'detect_repetition',
@@ -230,7 +267,7 @@ export const FLOW_METADATA: FlowNodeMetadata[] = [
   },
 
   // ========================================
-  // OUTPUT NODES (12-14)
+  // OUTPUT NODES (13-14)
   // ========================================
   {
     id: 'format_response',
