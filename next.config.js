@@ -20,7 +20,7 @@ const nextConfig = {
   },
   experimental: {
     serverActions: {
-      bodySizeLimit: '2mb',
+      bodySizeLimit: '10mb',
     },
     // External packages for serverless compatibility (pdf-parse uses pdf.js which requires canvas APIs)
     serverComponentsExternalPackages: ['pdf-parse'],
