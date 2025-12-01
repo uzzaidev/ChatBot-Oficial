@@ -18,10 +18,14 @@ interface ClienteWhatsAppData {
 }
 
 /**
- * Helper function para fazer upsert na tabela de clientes
+ * Helper function para buscar ou criar cliente na tabela
  *
  * NOTA: Usa tabela clientes_whatsapp (sem espaço) após migration 004
  * Se a migration ainda não foi rodada, a VIEW "Clientes WhatsApp" vai redirecionar
+ *
+ * 🔧 FIX: Preserva status 'humano' ou 'transferido' existentes
+ * O status só deve mudar para 'bot' quando o usuário explicitamente selecionar 'bot'
+ * Nunca deve voltar automaticamente para 'bot' quando humano responde
  */
 const upsertClienteWhatsApp = async (
   supabase: ReturnType<typeof createServiceRoleClient>,
@@ -33,20 +37,66 @@ const upsertClienteWhatsApp = async (
   // Precisa do cast explícito porque TypeScript não conhece a tabela ainda
   const supabaseAny = supabase as any;
 
+  // 🔧 FIX: Primeiro, verificar se o cliente já existe
+  // Seleciona apenas os campos necessários para reduzir transferência de dados
+  const { data: existingCustomer, error: selectError } = await supabaseAny
+    .from("clientes_whatsapp")
+    .select("telefone, nome, status, created_at, client_id")
+    .eq("telefone", phone)
+    .eq("client_id", clientId)
+    .single();
+
+  // Se o cliente já existe
+  if (existingCustomer && !selectError) {
+    const currentStatus = existingCustomer.status?.toLowerCase() || "";
+
+    // 🔧 FIX: Se status é 'humano' ou 'transferido', preservar e NÃO atualizar
+    // O status só deve mudar quando o usuário explicitamente selecionar 'bot'
+    if (currentStatus === "humano" || currentStatus === "transferido") {
+      // Apenas atualiza o nome se necessário, mas NUNCA muda o status
+      if (existingCustomer.nome !== name && name) {
+        await supabaseAny
+          .from("clientes_whatsapp")
+          .update({ nome: name })
+          .eq("telefone", phone)
+          .eq("client_id", clientId);
+
+        return {
+          data: { ...existingCustomer, nome: name },
+          error: null,
+        };
+      }
+
+      // Retorna o cliente existente sem modificar
+      return { data: existingCustomer, error: null };
+    }
+
+    // Se status é 'bot' ou outro, pode atualizar o nome
+    if (existingCustomer.nome !== name && name) {
+      const { data: updatedData, error: updateError } = await supabaseAny
+        .from("clientes_whatsapp")
+        .update({ nome: name })
+        .eq("telefone", phone)
+        .eq("client_id", clientId)
+        .select()
+        .single();
+
+      return { data: updatedData || existingCustomer, error: updateError };
+    }
+
+    // Retorna o cliente existente
+    return { data: existingCustomer, error: null };
+  }
+
+  // Cliente não existe, criar novo com status 'bot'
   const result = await supabaseAny
     .from("clientes_whatsapp")
-    .upsert(
-      {
-        telefone: phone,
-        nome: name,
-        status: "bot",
-        client_id: clientId, // 🔐 Multi-tenant: Associa customer ao cliente
-      },
-      {
-        onConflict: "telefone,client_id", // 🔐 FIX: Use composite key for multi-tenant isolation
-        ignoreDuplicates: false,
-      },
-    )
+    .insert({
+      telefone: phone,
+      nome: name,
+      status: "bot",
+      client_id: clientId, // 🔐 Multi-tenant: Associa customer ao cliente
+    })
     .select()
     .single();
 
