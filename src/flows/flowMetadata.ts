@@ -30,7 +30,7 @@ export interface FlowNodeMetadata {
  * Complete flow architecture metadata
  * Order matters - represents execution order in the flow
  * 
- * NEW ORDER (after embeddings fix):
+ * NEW ORDER (after human handoff transcription fix):
  * 1. Filter Status
  * 2. Parse Message
  * 3. Check/Create Customer
