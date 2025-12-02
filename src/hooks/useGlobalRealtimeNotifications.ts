@@ -9,16 +9,25 @@ export interface MessageNotification {
   timestamp: string;
 }
 
+interface UseGlobalRealtimeNotificationsOptions {
+  clientId: string | null; // 🔐 Multi-tenant: Required for tenant isolation (null = not yet loaded)
+  onNewMessage?: (notification: MessageNotification) => void;
+}
+
 // Singleton callback storage - garante que apenas um callback seja ativo
 let globalCallback: ((notification: MessageNotification) => void) | null = null;
 
 /**
  * Hook global para monitorar TODAS as mensagens em tempo real
  * Usado para mostrar notificações em conversas não abertas
+ * 
+ * 🔐 Multi-tenant: Requires clientId to ensure tenant isolation
+ * When clientId is null, the subscription is not set up (e.g., user not yet authenticated)
  */
-export const useGlobalRealtimeNotifications = (
-  onNewMessage?: (notification: MessageNotification) => void,
-) => {
+export const useGlobalRealtimeNotifications = ({
+  clientId,
+  onNewMessage,
+}: UseGlobalRealtimeNotificationsOptions) => {
   const [lastUpdatePhone, setLastUpdatePhone] = useState<string | null>(null);
   const [lastNotification, setLastNotification] = useState<
     MessageNotification | null
@@ -37,18 +46,25 @@ export const useGlobalRealtimeNotifications = (
   }, [onNewMessage]);
 
   useEffect(() => {
+    // 🔐 Multi-tenant: Don't setup subscription without valid clientId
+    // Check for both null/undefined and empty string
+    if (!clientId || clientId === '') return;
+
     const supabase = createClientBrowser();
     let channel: RealtimeChannel;
 
     const setupGlobalSubscription = async () => {
       channel = supabase
-        .channel("global-chat-histories")
+        // 🔐 Multi-tenant: Include clientId in channel name for isolation
+        .channel(`global-chat-histories:${clientId}`)
         .on(
           "postgres_changes",
           {
             event: "INSERT",
             schema: "public",
             table: "n8n_chat_histories",
+            // 🔐 Multi-tenant: Filter by client_id to ensure tenant isolation
+            filter: `client_id=eq.${clientId}`,
           },
           (payload) => {
             try {
@@ -107,7 +123,7 @@ export const useGlobalRealtimeNotifications = (
         setIsConnected(false);
       }
     };
-  }, []); // SEM dependências - callback vem do singleton
+  }, [clientId]); // 🔐 Multi-tenant: Re-subscribe when clientId changes
 
   return {
     lastUpdatePhone,

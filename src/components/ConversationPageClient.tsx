@@ -101,7 +101,8 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
   }, [])
 
   // Hook global para notificações em tempo real
-  const { lastUpdatePhone } = useGlobalRealtimeNotifications()
+  // 🔐 Multi-tenant: Pass clientId for tenant isolation
+  const { lastUpdatePhone } = useGlobalRealtimeNotifications({ clientId })
 
   // Callback para marcar como lida (usado pelo ConversationDetail)
   const handleMarkAsRead = useCallback(async (conversationPhone: string) => {
