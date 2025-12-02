@@ -1,6 +1,6 @@
 'use client'
 
-import { MessageSquare, LayoutDashboard, Settings, BarChart3, ChevronLeft, ChevronRight, GitBranch, Terminal, CheckCircle, BookOpen } from 'lucide-react'
+import { MessageSquare, LayoutDashboard, Settings, BarChart3, ChevronLeft, ChevronRight, GitBranch, Terminal, CheckCircle, BookOpen, Users } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Separator } from '@/components/ui/separator'
@@ -87,6 +87,14 @@ export function DashboardNavigation({
           href="/dashboard/conversations"
           icon={<MessageSquare className="h-5 w-5 flex-shrink-0" />}
           label="Conversas"
+          isCollapsed={isCollapsed}
+          onClick={onLinkClick}
+        />
+
+        <NavItem
+          href="/dashboard/contacts"
+          icon={<Users className="h-5 w-5 flex-shrink-0" />}
+          label="Contatos"
           isCollapsed={isCollapsed}
           onClick={onLinkClick}
         />
