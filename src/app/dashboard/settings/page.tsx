@@ -1053,12 +1053,14 @@ export default function SettingsPage() {
                     type="number"
                     id="message_delay_ms"
                     value={agentConfig.settings.message_delay_ms}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const value = e.target.value
+                      const parsed = value === '' ? 2000 : parseInt(value)
                       setAgentConfig({
                         ...agentConfig,
-                        settings: { ...agentConfig.settings, message_delay_ms: parseInt(e.target.value) || 2000 },
+                        settings: { ...agentConfig.settings, message_delay_ms: isNaN(parsed) ? 2000 : parsed },
                       })
-                    }
+                    }}
                     disabled={!editingAgent}
                     min={0}
                     max={10000}
