@@ -293,7 +293,7 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      const { data: openaiKeyForOCR, error: vaultErrorOCR } = await supabase.rpc('get_secret', {
+      const { data: openaiKeyForOCR, error: vaultErrorOCR } = await supabase.rpc('get_client_secret', {
         secret_id: clientConfigTemp.openai_api_key_secret_id
       })
 
@@ -360,7 +360,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { data: openaiApiKey, error: vaultError } = await supabase.rpc('get_secret', {
+    const { data: openaiApiKey, error: vaultError } = await supabase.rpc('get_client_secret', {
       secret_id: clientConfig.openai_api_key_secret_id
     })
 
