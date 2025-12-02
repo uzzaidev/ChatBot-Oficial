@@ -28,12 +28,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const sqlQuery = `
       SELECT 
-        id,
         telefone as phone,
         nome as name,
         status,
         created_at,
-        updated_at
+        COALESCE(updated_at, created_at) as updated_at
       FROM clientes_whatsapp
       WHERE client_id = $1 AND telefone = $2
     `;
@@ -51,7 +50,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({
       contact: {
-        id: row.id,
+        id: String(row.phone), // Use phone as ID since PK is (telefone, client_id)
         phone: String(row.phone),
         name: row.name || "Sem nome",
         status: row.status || "bot",
@@ -126,7 +125,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       UPDATE clientes_whatsapp
       SET ${updates.join(", ")}
       WHERE client_id = $1 AND telefone = $2
-      RETURNING id, telefone as phone, nome as name, status, created_at, updated_at
+      RETURNING telefone as phone, nome as name, status, created_at, COALESCE(updated_at, NOW()) as updated_at
     `;
 
     const result = await query<any>(updateQuery, values);
@@ -143,7 +142,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({
       success: true,
       contact: {
-        id: row.id,
+        id: String(row.phone), // Use phone as ID since PK is (telefone, client_id)
         phone: String(row.phone),
         name: row.name || "Sem nome",
         status: row.status,
@@ -181,7 +180,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const deleteQuery = `
       DELETE FROM clientes_whatsapp
       WHERE client_id = $1 AND telefone = $2
-      RETURNING id
+      RETURNING telefone
     `;
 
     const result = await query<any>(deleteQuery, [clientId, cleanPhone]);
