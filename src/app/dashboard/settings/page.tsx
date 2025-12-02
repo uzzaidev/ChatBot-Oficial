@@ -95,6 +95,7 @@ export default function SettingsPage() {
       enable_human_handoff: false,
       message_split_enabled: false,
       batching_delay_seconds: 10,
+      message_delay_ms: 2000, // Delay between split messages
     },
   })
   const [editingAgent, setEditingAgent] = useState(false)
@@ -177,6 +178,7 @@ export default function SettingsPage() {
               enable_human_handoff: false,
               message_split_enabled: false,
               batching_delay_seconds: 10,
+              message_delay_ms: 2000,
             },
           })
         }
@@ -1042,6 +1044,30 @@ export default function SettingsPage() {
                     className="mt-2"
                   />
                   <p className="text-xs text-gray-500 mt-1">0 - 60 segundos</p>
+                </div>
+
+                {/* Message Delay */}
+                <div>
+                  <Label htmlFor="message_delay_ms">Delay entre Mensagens (ms)</Label>
+                  <Input
+                    type="number"
+                    id="message_delay_ms"
+                    value={agentConfig.settings.message_delay_ms}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      const parsed = value === '' ? 2000 : parseInt(value)
+                      setAgentConfig({
+                        ...agentConfig,
+                        settings: { ...agentConfig.settings, message_delay_ms: isNaN(parsed) ? 2000 : parsed },
+                      })
+                    }}
+                    disabled={!editingAgent}
+                    min={0}
+                    max={10000}
+                    step={100}
+                    className="mt-2"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">0 - 10000 ms (delay entre mensagens divididas)</p>
                 </div>
               </div>
             </div>

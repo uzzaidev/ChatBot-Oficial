@@ -363,6 +363,7 @@ export interface ClientConfig {
     enableHumanHandoff: boolean;
     messageSplitEnabled: boolean;
     maxChatHistory: number;
+    messageDelayMs: number; // Delay between split messages (in milliseconds)
   };
 
   // Notificações
