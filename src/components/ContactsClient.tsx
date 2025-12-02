@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { useContacts, Contact } from '@/hooks/useContacts'
 import { useToast } from '@/hooks/use-toast'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -38,7 +38,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { StatusBadge } from '@/components/StatusBadge'
 import { formatPhone, getInitials, formatDateTime } from '@/lib/utils'
-import type { ConversationStatus } from '@/lib/types'
+import type { ConversationStatus, ContactImportResult } from '@/lib/types'
 import {
   Users,
   Plus,
@@ -51,7 +51,6 @@ import {
   List,
   Phone,
   Trash2,
-  Edit,
   X,
   CheckCircle,
   AlertCircle,
@@ -83,14 +82,9 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
 
   // Import states
   const [importFile, setImportFile] = useState<File | null>(null)
-  const [importResult, setImportResult] = useState<{
-    total: number
-    imported: number
-    skipped: number
-    errors: Array<{ row: number; phone: string; error: string }>
-  } | null>(null)
+  const [importResult, setImportResult] = useState<ContactImportResult | null>(null)
 
-  const { contacts, loading, refetch, addContact, updateContact, deleteContact, importContacts } =
+  const { contacts, loading, addContact, updateContact, deleteContact, importContacts } =
     useContacts({
       clientId,
       status: statusFilter === 'all' ? undefined : statusFilter,
@@ -212,12 +206,46 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
     }
   }
 
+  /**
+   * Parse CSV content handling quoted fields with commas
+   * Implements RFC 4180 basic parsing
+   */
+  const parseCSVLine = (line: string): string[] => {
+    const result: string[] = []
+    let current = ''
+    let inQuotes = false
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i]
+      const nextChar = line[i + 1]
+
+      if (char === '"') {
+        if (inQuotes && nextChar === '"') {
+          // Escaped quote
+          current += '"'
+          i++
+        } else {
+          // Toggle quote state
+          inQuotes = !inQuotes
+        }
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim())
+        current = ''
+      } else {
+        current += char
+      }
+    }
+
+    result.push(current.trim())
+    return result
+  }
+
   const parseCSV = (content: string): Array<{ phone: string; name?: string; status?: string }> => {
     const lines = content.trim().split('\n')
     if (lines.length < 2) return []
 
-    // Parse header
-    const header = lines[0].toLowerCase().split(',').map((h) => h.trim())
+    // Parse header using RFC 4180 parsing
+    const header = parseCSVLine(lines[0]).map((h) => h.toLowerCase())
     const phoneIndex = header.findIndex((h) => h === 'telefone' || h === 'phone')
     const nameIndex = header.findIndex((h) => h === 'nome' || h === 'name')
     const statusIndex = header.findIndex((h) => h === 'status')
@@ -226,7 +254,7 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
 
     // Parse data rows
     return lines.slice(1).map((line) => {
-      const values = line.split(',').map((v) => v.trim())
+      const values = parseCSVLine(line)
       return {
         phone: values[phoneIndex] || '',
         name: nameIndex !== -1 ? values[nameIndex] : undefined,
