@@ -35,16 +35,15 @@ export async function GET(request: NextRequest) {
 
     const sqlQuery = `
       SELECT 
-        id,
         telefone as phone,
         nome as name,
         status,
         created_at,
-        updated_at
+        COALESCE(updated_at, created_at) as updated_at
       FROM clientes_whatsapp
       WHERE client_id = $1
       ${status ? "AND status = $2" : ""}
-      ORDER BY created_at DESC
+      ORDER BY COALESCE(updated_at, created_at) DESC
       LIMIT ${status ? "$3" : "$2"} OFFSET ${status ? "$4" : "$3"}
     `;
 
@@ -66,7 +65,7 @@ export async function GET(request: NextRequest) {
     ]);
 
     const contacts: Contact[] = result.rows.map((row) => ({
-      id: row.id,
+      id: String(row.phone), // Use phone as ID since PK is (telefone, client_id)
       phone: String(row.phone),
       name: row.name || "Sem nome",
       status: row.status || "bot",
@@ -145,7 +144,7 @@ export async function POST(request: NextRequest) {
     const insertQuery = `
       INSERT INTO clientes_whatsapp (client_id, telefone, nome, status, created_at, updated_at)
       VALUES ($1, $2, $3, $4, NOW(), NOW())
-      RETURNING id, telefone as phone, nome as name, status, created_at, updated_at
+      RETURNING telefone as phone, nome as name, status, created_at, COALESCE(updated_at, created_at) as updated_at
     `;
 
     const result = await query<any>(insertQuery, [
@@ -160,7 +159,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       contact: {
-        id: contact.id,
+        id: String(contact.phone), // Use phone as ID since PK is (telefone, client_id)
         phone: String(contact.phone),
         name: contact.name || "Sem nome",
         status: contact.status,
