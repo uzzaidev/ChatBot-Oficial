@@ -26,7 +26,9 @@ export const sendWhatsAppMessage = async (input: SendWhatsAppMessageInput): Prom
     const messageIds: string[] = []
 
     // Use configurable delay from settings, fallback to default
-    const messageDelayMs = config.settings.messageDelayMs ?? DEFAULT_MESSAGE_DELAY_MS
+    // Validate bounds: min 0ms, max 10000ms (10 seconds)
+    const rawDelay = config.settings.messageDelayMs ?? DEFAULT_MESSAGE_DELAY_MS
+    const messageDelayMs = Math.max(0, Math.min(10000, rawDelay))
 
     for (let i = 0; i < messages.length; i++) {
       const message = messages[i]
