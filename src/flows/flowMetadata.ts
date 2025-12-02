@@ -272,7 +272,7 @@ export const FLOW_METADATA: FlowNodeMetadata[] = [
   {
     id: 'format_response',
     name: 'Format Response',
-    description: 'Formata resposta para WhatsApp',
+    description: 'Formata resposta para WhatsApp (divide mensagens longas em múltiplas)',
     category: 'output',
     enabled: true,
     hasConfig: false,
@@ -284,10 +284,11 @@ export const FLOW_METADATA: FlowNodeMetadata[] = [
   {
     id: 'send_whatsapp',
     name: 'Send WhatsApp Message',
-    description: 'Envia mensagem via Meta API',
+    description: 'Envia mensagem via Meta API. Delay entre mensagens divididas configurável em Settings.',
     category: 'output',
     enabled: true,
-    hasConfig: false,
+    hasConfig: true,
+    configKey: 'send_whatsapp:message_delay_ms',
     configurable: false, // Always runs - required
     bypassable: false,
     dependencies: ['format_response'],

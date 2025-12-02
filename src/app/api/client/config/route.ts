@@ -62,6 +62,7 @@ export async function GET(request: NextRequest) {
           enable_human_handoff: false,
           message_split_enabled: false,
           batching_delay_seconds: 10,
+          message_delay_ms: 2000, // Delay between split messages (default: 2000ms)
         },
       },
     })
