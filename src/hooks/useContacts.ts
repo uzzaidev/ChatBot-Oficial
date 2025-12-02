@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import type { ConversationStatus } from "@/lib/types";
+import type { ConversationStatus, ContactImportResult } from "@/lib/types";
 
 export interface Contact {
   id: string;
@@ -27,18 +27,7 @@ interface UseContactsResult {
   addContact: (phone: string, name?: string, status?: ConversationStatus) => Promise<Contact | null>;
   updateContact: (phone: string, updates: { name?: string; status?: ConversationStatus }) => Promise<Contact | null>;
   deleteContact: (phone: string) => Promise<boolean>;
-  importContacts: (contacts: Array<{ phone: string; name?: string; status?: string }>) => Promise<ImportResult | null>;
-}
-
-interface ImportResult {
-  total: number;
-  imported: number;
-  skipped: number;
-  errors: Array<{
-    row: number;
-    phone: string;
-    error: string;
-  }>;
+  importContacts: (contacts: Array<{ phone: string; name?: string; status?: string }>) => Promise<ContactImportResult | null>;
 }
 
 export const useContacts = ({
@@ -168,7 +157,7 @@ export const useContacts = ({
   );
 
   const importContacts = useCallback(
-    async (contactsList: Array<{ phone: string; name?: string; status?: string }>): Promise<ImportResult | null> => {
+    async (contactsList: Array<{ phone: string; name?: string; status?: string }>): Promise<ContactImportResult | null> => {
       try {
         const response = await apiFetch("/api/contacts/import", {
           method: "POST",

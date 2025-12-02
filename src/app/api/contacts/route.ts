@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
       WHERE client_id = $1
       ${status ? "AND status = $2" : ""}
       ORDER BY created_at DESC
-      LIMIT $${status ? "3" : "2"} OFFSET $${status ? "4" : "3"}
+      LIMIT ${status ? "$3" : "$2"} OFFSET ${status ? "$4" : "$3"}
     `;
 
     const countQuery = `

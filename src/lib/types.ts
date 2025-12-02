@@ -387,6 +387,20 @@ export interface ChatMessage {
 }
 
 /**
+ * Contact import result interface
+ */
+export interface ContactImportResult {
+  total: number;
+  imported: number;
+  skipped: number;
+  errors: Array<{
+    row: number;
+    phone: string;
+    error: string;
+  }>;
+}
+
+/**
  * Supabase Database Types
  *
  * NOTA: Para types completos, gerar com:
