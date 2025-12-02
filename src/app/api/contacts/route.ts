@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
 
     // Verificar se o contato já existe
     const existingQuery = `
-      SELECT id FROM clientes_whatsapp 
+      SELECT telefone FROM clientes_whatsapp 
       WHERE client_id = $1 AND telefone = $2
     `;
     const existingResult = await query<any>(existingQuery, [
