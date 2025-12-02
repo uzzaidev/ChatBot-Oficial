@@ -218,6 +218,7 @@ export const getClientConfig = async (clientId: string): Promise<ClientConfig | 
         enableHumanHandoff: client.settings.enable_human_handoff,
         messageSplitEnabled: client.settings.message_split_enabled,
         maxChatHistory: client.settings.max_chat_history,
+        messageDelayMs: client.settings.message_delay_ms ?? 2000, // Delay between split messages (default: 2000ms)
       },
       notificationEmail: client.notification_email || undefined,
     }
