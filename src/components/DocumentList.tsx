@@ -36,6 +36,7 @@ interface Document {
   chunkCount: number
   uploadedAt: string
   uploadedBy: string
+  originalFileUrl?: string // NEW: URL do arquivo original no Storage
 }
 
 interface DocumentListProps {
@@ -192,6 +193,20 @@ export const DocumentList = ({ refreshTrigger }: DocumentListProps) => {
                   <span>{doc.documentType}</span>
                   <span>•</span>
                   <span>{formatDate(doc.uploadedAt)}</span>
+                  {doc.originalFileUrl && (
+                    <>
+                      <span>•</span>
+                      <a
+                        href={doc.originalFileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-500 hover:text-blue-700 hover:underline font-medium"
+                        title="Abrir arquivo original em nova aba"
+                      >
+                        Ver arquivo
+                      </a>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

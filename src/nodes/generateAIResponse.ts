@@ -112,6 +112,30 @@ const HUMAN_HANDOFF_TOOL_DEFINITION = {
   },
 };
 
+const SEARCH_DOCUMENT_TOOL_DEFINITION = {
+  type: "function",
+  function: {
+    name: "buscar_documento",
+    description:
+      'Busca e envia documentos ou imagens da base de conhecimento. Use quando o usuário EXPLICITAMENTE solicitar um documento, manual, catálogo, imagem ou arquivo específico. Exemplos: "me envia o catálogo", "preciso do manual", "tem alguma imagem sobre isso", "pode me enviar o documento X". NÃO use para perguntas gerais que você pode responder com texto.',
+    parameters: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: "Termo de busca extraído da solicitação do usuário (nome do arquivo, tipo de documento ou assunto relacionado)",
+        },
+        document_type: {
+          type: "string",
+          description: "Tipo de documento a buscar (opcional). Use 'catalog' para catálogos, 'manual' para manuais, 'image' para imagens, 'faq' para perguntas frequentes, ou 'any' para qualquer tipo",
+          enum: ["catalog", "manual", "faq", "image", "any"],
+        },
+      },
+      required: ["query"],
+    },
+  },
+};
+
 export interface GenerateAIResponseInput {
   message: string;
   chatHistory: ChatMessage[];
@@ -233,7 +257,10 @@ export const generateAIResponse = async (
 
     // Log para debug
 
-    const tools = [HUMAN_HANDOFF_TOOL_DEFINITION];
+    const tools = [
+      HUMAN_HANDOFF_TOOL_DEFINITION,
+      SEARCH_DOCUMENT_TOOL_DEFINITION, // NEW: Buscar documentos da base de conhecimento
+    ];
 
     // 🔐 Escolher provider dinamicamente baseado na config do cliente
 

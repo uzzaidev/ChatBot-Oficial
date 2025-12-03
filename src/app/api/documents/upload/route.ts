@@ -26,7 +26,8 @@ import { processDocumentWithChunking } from '@/nodes/processDocumentWithChunking
 import OpenAI from 'openai'
 // pdf-parse v1.1.0 uses a function-based API that works in serverless environments
 // It bundles an older version of pdf.js (v1.9.426) that doesn't require browser APIs like DOMMatrix
-import pdfParse from 'pdf-parse'
+import * as pdfParseModule from 'pdf-parse'
+const pdfParse = (pdfParseModule as any).default || pdfParseModule
 
 export const dynamic = 'force-dynamic'
 
@@ -344,7 +345,41 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 6. Get client config for OpenAI API key (REQUIRED for embeddings)
+    // 6. Upload original file to Supabase Storage
+    console.log('[Upload] Saving original file to Storage...')
+    const fileBuffer = Buffer.from(await file.arrayBuffer())
+    const timestamp = Date.now()
+    const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_') // Sanitize filename
+    const storagePath = `${clientId}/${documentType}/${timestamp}-${sanitizedFilename}`
+
+    const { data: uploadData, error: uploadError } = await supabase
+      .storage
+      .from('knowledge-documents')
+      .upload(storagePath, fileBuffer, {
+        contentType: file.type,
+        upsert: false
+      })
+
+    if (uploadError) {
+      console.error('[Upload] ❌ Storage upload error:', uploadError)
+      return NextResponse.json(
+        { error: `Erro ao salvar arquivo no storage: ${uploadError.message}` },
+        { status: 500 }
+      )
+    }
+
+    console.log('[Upload] ✅ File saved to Storage:', storagePath)
+
+    // 7. Generate public URL for the uploaded file
+    const { data: publicUrlData } = supabase
+      .storage
+      .from('knowledge-documents')
+      .getPublicUrl(storagePath)
+
+    const originalFileUrl = publicUrlData.publicUrl
+    console.log('[Upload] ✅ Public URL generated:', originalFileUrl)
+
+    // 8. Get client config for OpenAI API key (REQUIRED for embeddings)
     const { data: clientConfig } = await supabase
       .from('clients')
       .select('openai_api_key_secret_id')
@@ -383,7 +418,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 7. Process document with chunking
+    // 9. Process document with chunking (includes original file metadata)
     let result
     try {
       result = await processDocumentWithChunking({
@@ -396,6 +431,11 @@ export async function POST(request: NextRequest) {
           uploadedBy: user.email || user.id,
           fileSize: file.size,
           mimeType: file.type,
+          // NEW: Original file metadata for WhatsApp sending
+          original_file_url: originalFileUrl,
+          original_file_path: storagePath,
+          original_file_size: file.size,
+          original_mime_type: file.type,
         },
         openaiApiKey,
       })

@@ -41,3 +41,7 @@ export type { DetectRepetitionInput, DetectRepetitionOutput } from './detectRepe
 // 🔧 RAG: Document processing with semantic chunking
 export { processDocumentWithChunking, deleteDocuments, listDocuments } from './processDocumentWithChunking'
 export type { ProcessDocumentInput, ProcessDocumentOutput } from './processDocumentWithChunking'
+export { searchDocumentInKnowledge } from './searchDocumentInKnowledge'
+export type { SearchDocumentInput, DocumentSearchResult } from './searchDocumentInKnowledge'
+export { handleDocumentSearchToolCall } from './handleDocumentSearchToolCall'
+export type { HandleDocumentSearchInput, HandleDocumentSearchOutput } from './handleDocumentSearchToolCall'
