@@ -698,6 +698,12 @@ export default function FlowArchitectureManager() {
                           'similarity_threshold',
                           'max_results',
                         ],
+                        search_document: [
+                          'enabled',
+                          'similarity_threshold',
+                          'max_results',
+                          'max_file_size_mb',
+                        ],
                       }
 
                       const order = orderMap[nodeId]
@@ -741,6 +747,9 @@ export default function FlowArchitectureManager() {
                         // RAG Context
                         'enabled': 'Habilitado',
                         'max_results': 'Máximo de Resultados',
+
+                        // Search Document
+                        'max_file_size_mb': 'Tamanho Máximo do Arquivo (MB)',
 
                         // Common fields
                         'temperature': 'Temperature (Criatividade)',

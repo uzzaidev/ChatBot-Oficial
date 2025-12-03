@@ -146,14 +146,19 @@ export const processDocumentWithChunking = async (
       const embeddingResult = await generateEmbedding(chunk.content, openaiApiKey)
       totalEmbeddingTokens += embeddingResult.usage.total_tokens
 
-      // Salvar no vector store
-      const { data, error } = await supabaseAny
+      // Salvar no vector store (includes original file metadata)
+      const { data, error} = await supabaseAny
         .from('documents')
         .insert({
           content: chunk.content,
           embedding: embeddingResult.embedding,
           metadata: chunk.enrichedMetadata,
-          client_id: clientId
+          client_id: clientId,
+          // NEW: Original file metadata (from Storage upload)
+          original_file_url: metadata.original_file_url || null,
+          original_file_path: metadata.original_file_path || null,
+          original_file_size: metadata.original_file_size || null,
+          original_mime_type: metadata.original_mime_type || null
         })
         .select('id')
         .single()
@@ -291,16 +296,17 @@ export const listDocuments = async (
   chunkCount: number
   uploadedAt: string
   uploadedBy: string
+  originalFileUrl?: string // NEW
 }>> => {
 
   try {
     const supabase = createServiceRoleClient() // Service role bypassa RLS
     const supabaseAny = supabase as any // TypeScript bypass para tabela documents
 
-    // Buscar documentos agrupados por filename
+    // Buscar documentos agrupados por filename (includes original_file_url)
     const { data, error } = await supabaseAny
       .from('documents')
-      .select('id, metadata')
+      .select('id, metadata, original_file_url')
       .eq('client_id', clientId)
       .limit(filters?.limit || 100)
 
@@ -321,7 +327,8 @@ export const listDocuments = async (
           documentType: row.metadata?.documentType || 'unknown',
           chunkCount: 0,
           uploadedAt: row.metadata?.uploadedAt || new Date().toISOString(),
-          uploadedBy: row.metadata?.uploadedBy || 'unknown'
+          uploadedBy: row.metadata?.uploadedBy || 'unknown',
+          originalFileUrl: row.original_file_url || undefined // NEW: URL do Storage
         })
       }
 

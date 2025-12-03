@@ -259,7 +259,8 @@ export const extractTextFromPDF = async (pdfBuffer: Buffer): Promise<string> => 
     // 🔧 Import dinâmico: só carrega pdf-parse quando função é chamada
     // pdf-parse v1.1.0 uses function-based API with bundled pdf.js v1.9.426
     // Works in serverless environments without browser APIs like DOMMatrix
-    const pdfParse = (await import('pdf-parse')).default
+    const pdfParseModule = await import('pdf-parse')
+    const pdfParse = (pdfParseModule as any).default || pdfParseModule
     const pdfData = await pdfParse(pdfBuffer)
     return pdfData.text
   } catch (error) {

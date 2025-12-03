@@ -239,8 +239,20 @@ export const FLOW_METADATA: FlowNodeMetadata[] = [
   },
 
   // ========================================
-  // POST-PROCESSING NODES (12.5, 12.6)
+  // POST-PROCESSING NODES (12.5, 12.6, 12.7)
   // ========================================
+  {
+    id: 'search_document',
+    name: 'Search & Send Documents',
+    description: 'Busca e envia documentos/imagens da base de conhecimento via WhatsApp quando a IA aciona a tool buscar_documento. Configurável em /dashboard/knowledge',
+    category: 'auxiliary',
+    enabled: true,
+    hasConfig: true,
+    configurable: true, // Can be disabled
+    configKey: 'doc_search:config',
+    bypassable: true,
+    dependencies: ['generate_response'],
+  },
   {
     id: 'detect_repetition',
     name: 'Detect Repetition',

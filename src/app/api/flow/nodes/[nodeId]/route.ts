@@ -45,6 +45,7 @@ export async function GET(
       classify_intent: 'intent_classifier:use_llm',
       generate_response: 'personality:config',
       detect_repetition: 'repetition_detector:similarity_threshold',
+      search_document: 'doc_search:config',
     }
 
     const configKey = configKeyMap[nodeId]
@@ -240,6 +241,7 @@ export async function PATCH(
       classify_intent: 'intent_classifier:use_llm',
       generate_response: 'personality:config',
       detect_repetition: 'repetition_detector:similarity_threshold',
+      search_document: 'doc_search:config',
     }
 
     const configKey = configKeyMap[nodeId]
@@ -426,6 +428,13 @@ function getRelatedConfigKeys(nodeId: string): string[] {
       'batching:delay_seconds',
       'batching:enabled',
     ],
+    search_document: [
+      'doc_search:config',
+      'doc_search:enabled',
+      'doc_search:similarity_threshold',
+      'doc_search:max_results',
+      'doc_search:max_file_size_mb',
+    ],
   }
 
   return relatedKeysMap[nodeId] || []
@@ -477,6 +486,12 @@ function getDefaultConfig(nodeId: string): Record<string, any> {
     },
     process_media: {
       enabled: true,
+    },
+    search_document: {
+      enabled: true,
+      similarity_threshold: 0.7,
+      max_results: 3,
+      max_file_size_mb: 10,
     },
   }
 

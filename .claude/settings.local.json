@@ -47,7 +47,8 @@
       "Bash(npx cap sync:*)",
       "Bash(findstr:*)",
       "Bash(powershell -Command:*)",
-      "Bash(pnpm install:*)"
+      "Bash(pnpm install:*)",
+      "Bash(doppler run:*)"
     ],
     "deny": [],
     "ask": []

@@ -1074,6 +1074,139 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
+        {/* Seção 3.5: Envio de Documentos RAG */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Bot className="h-5 w-5 text-blue-500" />
+                  Envio de Documentos RAG
+                </CardTitle>
+                <CardDescription>
+                  Configure como o agente envia documentos e imagens da base de conhecimento via WhatsApp
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <Alert>
+              <AlertDescription className="text-sm">
+                <strong>Nota:</strong> Esta funcionalidade permite que o agente busque e envie automaticamente documentos, catálogos, manuais e imagens armazenados na base de conhecimento quando solicitado pelo usuário. Requer RAG e Function Calling habilitados.
+              </AlertDescription>
+            </Alert>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Habilitar/Desabilitar */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="enable_document_sending">Habilitar envio de documentos</Label>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Permite que o agente busque e envie documentos da base de conhecimento
+                  </p>
+                </div>
+                <Input
+                  type="checkbox"
+                  id="enable_document_sending"
+                  checked={agentConfig.settings.enable_rag && agentConfig.settings.enable_tools}
+                  disabled={true}
+                  className="w-5 h-5"
+                  title="Requer RAG e Function Calling habilitados"
+                />
+              </div>
+
+              {/* Threshold de Similaridade */}
+              <div>
+                <Label htmlFor="doc_search_threshold">Threshold de Similaridade</Label>
+                <p className="text-xs text-gray-500 mt-1 mb-2">
+                  Quão similar deve ser o documento para ser considerado relevante (0.0 - 1.0)
+                </p>
+                <Input
+                  type="number"
+                  id="doc_search_threshold"
+                  defaultValue={0.7}
+                  disabled={!editingAgent}
+                  min={0}
+                  max={1}
+                  step={0.1}
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  Padrão: 0.7 (valores maiores = mais rigoroso)
+                </p>
+              </div>
+
+              {/* Máximo de Documentos */}
+              <div>
+                <Label htmlFor="doc_max_results">Máximo de Documentos</Label>
+                <p className="text-xs text-gray-500 mt-1 mb-2">
+                  Número máximo de documentos a enviar por solicitação
+                </p>
+                <Input
+                  type="number"
+                  id="doc_max_results"
+                  defaultValue={3}
+                  disabled={!editingAgent}
+                  min={1}
+                  max={5}
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  Padrão: 3 documentos (1-5)
+                </p>
+              </div>
+
+              {/* Tamanho Máximo */}
+              <div>
+                <Label htmlFor="doc_max_file_size">Tamanho Máximo (MB)</Label>
+                <p className="text-xs text-gray-500 mt-1 mb-2">
+                  Tamanho máximo de arquivo para envio via WhatsApp
+                </p>
+                <Input
+                  type="number"
+                  id="doc_max_file_size"
+                  defaultValue={10}
+                  disabled={!editingAgent}
+                  min={1}
+                  max={16}
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  WhatsApp: máx 16MB documentos, 5MB imagens
+                </p>
+              </div>
+            </div>
+
+            {/* Status Indicator */}
+            <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              {agentConfig.settings.enable_rag && agentConfig.settings.enable_tools ? (
+                <>
+                  <CheckCircle className="h-5 w-5 text-green-500" />
+                  <span className="text-sm text-green-700 dark:text-green-400">
+                    <strong>Ativo:</strong> Agente pode buscar e enviar documentos via tool <code>buscar_documento</code>
+                  </span>
+                </>
+              ) : (
+                <>
+                  <AlertTriangle className="h-5 w-5 text-amber-500" />
+                  <span className="text-sm text-amber-700 dark:text-amber-400">
+                    <strong>Inativo:</strong> Habilite RAG e Function Calling para usar esta funcionalidade
+                  </span>
+                </>
+              )}
+            </div>
+
+            {/* Como usar */}
+            <div className="border-t pt-4">
+              <h4 className="text-sm font-semibold mb-2">💡 Como usar:</h4>
+              <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1 list-disc list-inside">
+                <li>Faça upload de documentos em <strong>/dashboard/knowledge</strong></li>
+                <li>Usuário solicita via WhatsApp: <em>&quot;me envia o catálogo&quot;</em></li>
+                <li>AI aciona tool <code>buscar_documento</code> automaticamente</li>
+                <li>Sistema busca na base, encontra o documento mais relevante</li>
+                <li>Envia PDF/imagem diretamente no WhatsApp</li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Seção 4: Variáveis de Ambiente */}
         <Card>
           <CardHeader>

@@ -642,32 +642,67 @@ export const processChatbotMessage = async (
     } else {
     }
 
-    // 🔧 Human Handoff configurável: Se desabilitado, ignora tool calls de transferência
-    if (config.settings.enableHumanHandoff && aiResponse.toolCalls && aiResponse.toolCalls.length > 0) {
-      const hasHumanHandoff = aiResponse.toolCalls.some(
-        (tool) => tool.function.name === 'transferir_atendimento'
-      )
+    // 🔧 Tool Calls Processing
+    if (aiResponse.toolCalls && aiResponse.toolCalls.length > 0) {
+      for (const toolCall of aiResponse.toolCalls) {
+        // Tool 1: transferir_atendimento
+        if (toolCall.function.name === 'transferir_atendimento' && config.settings.enableHumanHandoff) {
+          // NODE 15: Handle Human Handoff
+          logger.logNodeStart('15. Handle Human Handoff', {
+            phone: parsedMessage.phone,
+            customerName: parsedMessage.name
+          })
+          await handleHumanHandoff({
+            phone: parsedMessage.phone,
+            customerName: parsedMessage.name,
+            config, // 🔐 Passa config com notificationEmail
+          })
+          logger.logNodeSuccess('15. Handle Human Handoff', {
+            transferred: true,
+            emailSent: true,
+            notificationEmail: config.notificationEmail
+          })
+          logger.finishExecution('success')
+          return { success: true, handedOff: true }
+        }
 
-      if (hasHumanHandoff) {
-        // NODE 15: Handle Human Handoff
-        logger.logNodeStart('15. Handle Human Handoff', {
-          phone: parsedMessage.phone,
-          customerName: parsedMessage.name
-        })
-        await handleHumanHandoff({
-          phone: parsedMessage.phone,
-          customerName: parsedMessage.name,
-          config, // 🔐 Passa config com notificationEmail
-        })
-        logger.logNodeSuccess('15. Handle Human Handoff', {
-          transferred: true,
-          emailSent: true,
-          notificationEmail: config.notificationEmail
-        })
-        logger.finishExecution('success')
-        return { success: true, handedOff: true }
+        // Tool 2: buscar_documento (NEW)
+        if (toolCall.function.name === 'buscar_documento') {
+          // NODE 15.5: Handle Document Search
+          logger.logNodeStart('15.5. Handle Document Search', {
+            phone: parsedMessage.phone,
+            toolCallId: toolCall.id
+          })
+
+          const { handleDocumentSearchToolCall } = await import('@/nodes/handleDocumentSearchToolCall')
+
+          const documentSearchResult = await handleDocumentSearchToolCall({
+            toolCall,
+            phone: parsedMessage.phone,
+            clientId: config.id,
+            config
+          })
+
+          logger.logNodeSuccess('15.5. Handle Document Search', {
+            success: documentSearchResult.success,
+            documentsFound: documentSearchResult.documentsFound,
+            documentsSent: documentSearchResult.documentsSent,
+            filesSent: documentSearchResult.filesSent
+          })
+
+          // Se enviou documentos, retornar (não precisa enviar mensagem de texto)
+          if (documentSearchResult.documentsSent && documentSearchResult.documentsSent > 0) {
+            logger.finishExecution('success')
+            return {
+              success: true,
+              messagesSent: documentSearchResult.documentsSent
+            }
+          }
+
+          // Se não encontrou ou falhou, AI response content terá a mensagem
+          // Continue o fluxo normal
+        }
       }
-    } else if (!config.settings.enableHumanHandoff && aiResponse.toolCalls && aiResponse.toolCalls.length > 0) {
     }
 
     if (!aiResponse.content || aiResponse.content.trim().length === 0) {
