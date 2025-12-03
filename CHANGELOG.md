@@ -5,6 +5,76 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [3.1.0] - 2025-12-03 ✅ PRODUÇÃO
+
+### 🎉 Minor: Sistema de Envio de Documentos RAG via WhatsApp
+
+Sistema completo de busca semântica e envio automático de documentos/imagens da base de conhecimento diretamente via WhatsApp.
+
+#### Added
+- **Tool `buscar_documento`** - AI pode buscar e enviar documentos autonomamente quando solicitado pelo usuário
+- **Node `searchDocumentInKnowledge`** - Busca semântica com pgvector, agrupamento por arquivo e ranking por similaridade
+- **Node `handleDocumentSearchToolCall`** - Processa tool call e envia documentos via WhatsApp API
+- **Storage de arquivos originais** - Bucket `knowledge-documents` no Supabase Storage para manter PDFs/imagens originais
+- **Colunas de metadata** na tabela `documents`:
+  - `original_file_url`: URL pública do arquivo no Storage
+  - `original_file_path`: Path do arquivo no bucket
+  - `original_file_size`: Tamanho em bytes
+  - `original_mime_type`: MIME type (PDF, JPEG, PNG, WEBP)
+- **Configuração no Flow Architecture** - Node "Search & Send Documents" configurável com:
+  - Similarity threshold (0.0 - 1.0, padrão: 0.7)
+  - Max results (1-10, padrão: 3)
+  - Max file size MB (padrão: 10)
+  - Toggle habilitar/desabilitar
+- **Seção no Settings** - "Envio de Documentos RAG" com status ativo/inativo e configurações
+- **Link "Ver arquivo"** no DocumentList para preview de documentos originais
+- **Rate limiting** - 1 segundo de delay entre envios múltiplos de documentos
+- **Suporte a múltiplos formatos**:
+  - PDFs enviados como documento (download)
+  - Imagens (JPG, PNG, WEBP) enviadas como mídia (zoom)
+- **Endpoint de teste** - `/api/test/nodes/search-document` para validação isolada
+
+#### Changed
+- Upload API (`/api/documents/upload`) agora salva arquivo original no Storage antes do chunking
+- `processDocumentWithChunking` inclui metadata do arquivo original em cada chunk
+- `listDocuments` retorna `originalFileUrl` para cada documento
+- Flow Metadata (`flowMetadata.ts`) com novo node na categoria "auxiliary"
+- API de configuração de nodes (`/api/flow/nodes/[nodeId]`) suporta `search_document`
+
+#### Technical Details
+- **Pipeline de execução**:
+  1. USER: "me envia o catálogo"
+  2. NODE 12 (Generate AI Response): AI detecta necessidade
+  3. NODE 15.5 (handleDocumentSearchToolCall):
+     - Gera embedding da query (OpenAI)
+     - Busca no pgvector (cosine similarity > threshold)
+     - Agrupa chunks por filename (1 resultado por arquivo)
+     - Envia via `sendImageMessage()` ou `sendDocumentMessage()`
+  4. NODE 13-14: Format + Send (mensagem de texto confirmação)
+- **Storage público** - Bucket com RLS: SELECT public, INSERT/UPDATE/DELETE service_role
+- **Backend Monitor** - NODE 15.5 aparece automaticamente nas execuções
+- **Migrations**:
+  - `20251203000001_create_knowledge_storage_policies.sql` - RLS policies
+  - `20251203000002_add_original_file_metadata.sql` - Novas colunas + indexes
+
+#### Documentation
+- `docs/features/knowledge-media/PLANO_ENVIO_DOCUMENTOS_RAG.md` - Plano completo da implementação (5 fases)
+- `docs/features/knowledge-media/OPERACAO_ENVIO_DOCUMENTOS.md` - Guia operacional completo:
+  - Fluxo visual do sistema
+  - Pré-requisitos e validação
+  - Teste passo a passo (20 minutos)
+  - Troubleshooting de 8 problemas comuns
+  - Debug checklist em 4 níveis
+  - Métricas SQL para KPIs
+  - Tabela de erros (onde aparecem e significado)
+
+#### Fixes
+- pdf-parse import corrigido para compatibilidade TypeScript em serverless
+- Unescaped quotes em JSX substituídas por `&quot;`
+- Build de produção completo sem erros
+
+---
+
 ## [3.0.1] - 2025-11-25
 
 ### 🎉 Minor: Browser Notifications System
