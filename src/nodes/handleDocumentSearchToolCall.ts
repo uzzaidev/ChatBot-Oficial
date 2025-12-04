@@ -57,6 +57,15 @@ export interface HandleDocumentSearchOutput {
 
   /** Lista de arquivos enviados (para log) */
   filesSent?: string[]
+
+  /** Metadados de debug da busca */
+  searchMetadata?: {
+    totalDocumentsInBase: number
+    chunksFound: number
+    uniqueDocumentsFound: number
+    threshold: number
+    documentTypeFilter?: string
+  }
 }
 
 /**
@@ -112,7 +121,7 @@ export const handleDocumentSearchToolCall = async (
     console.log(`  Document Type: ${document_type || 'any'}`)
 
     // 2. Buscar documentos na base de conhecimento
-    const results = await searchDocumentInKnowledge({
+    const searchResult = await searchDocumentInKnowledge({
       query,
       clientId,
       documentType: document_type === 'any' ? undefined : document_type,
@@ -121,7 +130,17 @@ export const handleDocumentSearchToolCall = async (
       maxResults: 3 // Limitar a 3 documentos por solicitação
     })
 
-    console.log(`  Found: ${results.length} documents`)
+    const { results, metadata } = searchResult
+
+    // Log metadata para debug
+    console.log('\n📊 [Search Metadata]')
+    console.log(`  Total docs in base: ${metadata.totalDocumentsInBase}`)
+    console.log(`  Chunks found in search: ${metadata.chunksFound}`)
+    console.log(`  Unique docs found: ${metadata.uniqueDocumentsFound}`)
+    console.log(`  Threshold used: ${metadata.threshold}`)
+    if (metadata.documentTypeFilter) {
+      console.log(`  Document type filter: ${metadata.documentTypeFilter}`)
+    }
 
     // 3. Se não encontrou documentos
     if (results.length === 0) {
@@ -132,7 +151,8 @@ export const handleDocumentSearchToolCall = async (
         success: true,
         message,
         documentsFound: 0,
-        documentsSent: 0
+        documentsSent: 0,
+        searchMetadata: metadata
       }
     }
 
@@ -208,7 +228,8 @@ export const handleDocumentSearchToolCall = async (
       message,
       documentsFound: results.length,
       documentsSent: sentCount,
-      filesSent
+      filesSent,
+      searchMetadata: metadata
     }
 
   } catch (error) {
