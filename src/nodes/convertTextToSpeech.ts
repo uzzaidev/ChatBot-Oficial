@@ -88,12 +88,16 @@ export const convertTextToSpeech = async (
   // 2. Buscar credenciais do cliente do Vault
   const { data: client } = await supabase
     .from("clients")
-    .select("openai_api_key_secret_id, meta_access_token_secret_id, meta_verify_token_secret_id")
+    .select(
+      "openai_api_key_secret_id, meta_access_token_secret_id, meta_verify_token_secret_id",
+    )
     .eq("id", clientId)
     .single();
 
   if (!client?.openai_api_key_secret_id) {
-    throw new Error(`Client ${clientId} does not have OpenAI API key configured`);
+    throw new Error(
+      `Client ${clientId} does not have OpenAI API key configured`,
+    );
   }
 
   const secrets = await getClientSecrets(supabase, {
