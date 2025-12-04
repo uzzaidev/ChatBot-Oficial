@@ -79,12 +79,13 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
   const renderAudio = () => {
     if (!mediaMetadata) return null
 
-    // Check if message has transcription and audio_duration_seconds (TTS message)
-    const transcription = (message as any).transcription || message.content
+    // Check if message has transcription (TTS message) or audio_duration_seconds
+    const transcription = (message as any).transcription || null
     const audioDuration = (message as any).audio_duration_seconds || 0
 
-    // If has transcription and duration, use fancy AudioMessage component
-    if (transcription && audioDuration > 0) {
+    // If has transcription (TTS message), use fancy AudioMessage component
+    // Even if duration is 0 (will be estimated from text length)
+    if (transcription) {
       return (
         <div className="-m-3">
           <AudioMessage
@@ -213,6 +214,10 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
     if (hasRealMedia && mediaMetadata.type === 'document') {
       // For documents with real media, show content after the document tag
       return message.content.replace(/\[Documento:[^\]]*\]\s*/i, '').trim()
+    }
+    if (hasRealMedia && mediaMetadata.type === 'audio') {
+      // For TTS audio messages, don't show text content (transcription is inside AudioMessage component)
+      return ''
     }
     if (hasLegacyMediaTag) {
       // For legacy media tags, extract content after the tag
