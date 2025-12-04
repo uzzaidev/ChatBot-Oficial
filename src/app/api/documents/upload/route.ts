@@ -21,7 +21,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { createServerClient, createServiceRoleClient } from '@/lib/supabase'
 import { processDocumentWithChunking } from '@/nodes/processDocumentWithChunking'
 import OpenAI from 'openai'
 // pdf-parse v1.1.0 uses a function-based API that works in serverless environments
@@ -229,6 +229,9 @@ export async function POST(request: NextRequest) {
 
     const clientId = profile.client_id
 
+    // 2.5. Create service role client for Storage operations (bypasses RLS)
+    const supabaseServiceRole = createServiceRoleClient()
+
     // 3. Parse multipart form data
     const formData = await request.formData()
     const file = formData.get('file') as File | null
@@ -352,7 +355,7 @@ export async function POST(request: NextRequest) {
     const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_') // Sanitize filename
     const storagePath = `${clientId}/${documentType}/${timestamp}-${sanitizedFilename}`
 
-    const { data: uploadData, error: uploadError } = await supabase
+    const { data: uploadData, error: uploadError } = await supabaseServiceRole
       .storage
       .from('knowledge-documents')
       .upload(storagePath, fileBuffer, {
@@ -371,7 +374,7 @@ export async function POST(request: NextRequest) {
     console.log('[Upload] ✅ File saved to Storage:', storagePath)
 
     // 7. Generate public URL for the uploaded file
-    const { data: publicUrlData } = supabase
+    const { data: publicUrlData } = supabaseServiceRole
       .storage
       .from('knowledge-documents')
       .getPublicUrl(storagePath)
