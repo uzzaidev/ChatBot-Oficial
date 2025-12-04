@@ -2,6 +2,7 @@
 import OpenAI from "openai";
 import crypto from "crypto";
 import { createServerClient } from "@/lib/supabase-server";
+import { getClientSecrets } from "@/lib/vault";
 
 export interface ConvertTextToSpeechInput {
   text: string;
@@ -33,14 +34,15 @@ export const convertTextToSpeech = async (
     throw new Error("Text is empty, cannot generate audio");
   }
 
+  // Criar cliente Supabase uma única vez
+  const supabase = createServerClient();
+
   // 1. Verificar cache
   if (useCache) {
     const textHash = crypto
       .createHash("md5")
       .update(`${text}_${voice}_${speed}`)
       .digest("hex");
-
-    const supabase = createServerClient();
 
     const { data: cached } = await supabase
       .from("tts_cache")
@@ -83,11 +85,32 @@ export const convertTextToSpeech = async (
     }
   }
 
-  // 2. Gerar novo áudio via OpenAI TTS
+  // 2. Buscar credenciais do cliente do Vault
+  const { data: client } = await supabase
+    .from("clients")
+    .select("openai_api_key_secret_id, meta_access_token_secret_id, meta_verify_token_secret_id")
+    .eq("id", clientId)
+    .single();
+
+  if (!client?.openai_api_key_secret_id) {
+    throw new Error(`Client ${clientId} does not have OpenAI API key configured`);
+  }
+
+  const secrets = await getClientSecrets(supabase, {
+    meta_access_token_secret_id: client.meta_access_token_secret_id,
+    meta_verify_token_secret_id: client.meta_verify_token_secret_id,
+    openai_api_key_secret_id: client.openai_api_key_secret_id,
+  });
+
+  if (!secrets.openaiApiKey) {
+    throw new Error(`Failed to retrieve OpenAI API key for client ${clientId}`);
+  }
+
+  // 3. Gerar novo áudio via OpenAI TTS
   console.log(`[TTS] Generating new audio for ${text.length} characters`);
 
   const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
+    apiKey: secrets.openaiApiKey,
   });
 
   const validVoices = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"];
@@ -113,9 +136,8 @@ export const convertTextToSpeech = async (
   const wordCount = text.split(/\s+/).length;
   const durationSeconds = Math.ceil((wordCount / 2.5) / speed);
 
-  // 3. Salvar no cache
+  // 4. Salvar no cache
   if (useCache) {
-    const supabase = createServerClient();
     const textHash = crypto
       .createHash("md5")
       .update(`${text}_${voice}_${speed}`)
@@ -154,8 +176,7 @@ export const convertTextToSpeech = async (
     }
   }
 
-  // Log generation
-  const supabase = createServerClient();
+  // 5. Log generation
   await supabase.from("tts_usage_logs").insert({
     client_id: clientId,
     phone: "system",

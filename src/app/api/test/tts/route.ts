@@ -1,6 +1,7 @@
 // src/app/api/test/tts/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { convertTextToSpeech } from "@/nodes/convertTextToSpeech";
+import { createServerClient } from "@/lib/supabase-server";
 
 export const dynamic = "force-dynamic";
 
@@ -25,11 +26,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Usar clientId de teste
+    // Buscar clientId do usuário autenticado
+    const supabase = createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+
+    const { data: profile } = await supabase
+      .from("user_profiles")
+      .select("client_id")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile?.client_id) {
+      return NextResponse.json(
+        { error: "User has no associated client" },
+        { status: 403 },
+      );
+    }
+
+    // Gerar áudio com o clientId real do usuário
     const { audioBuffer, format, fromCache, durationSeconds } =
       await convertTextToSpeech({
         text,
-        clientId: "test-client",
+        clientId: profile.client_id,
         voice,
         speed,
         useCache: false, // Não usar cache em testes
@@ -77,10 +102,34 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Buscar clientId do usuário autenticado
+    const supabase = createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+
+    const { data: profile } = await supabase
+      .from("user_profiles")
+      .select("client_id")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile?.client_id) {
+      return NextResponse.json(
+        { error: "User has no associated client" },
+        { status: 403 },
+      );
+    }
+
     const { audioBuffer, durationSeconds, fromCache } =
       await convertTextToSpeech({
         text,
-        clientId: "test-client",
+        clientId: profile.client_id,
         voice,
         speed,
         useCache: false,
