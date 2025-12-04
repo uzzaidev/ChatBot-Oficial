@@ -139,14 +139,22 @@ export const searchDocumentInKnowledge = async (
 
   // Variáveis para salvar antes do try-catch (para debug em caso de erro)
   let totalDocumentsInBase = 0
-  let threshold = searchThreshold || 0.7
-  let max = maxResults || 5
+  let threshold = searchThreshold ?? 0.7 // Use ?? instead of || to handle 0 correctly
+  let max = maxResults ?? 5 // Use ?? instead of || to handle 0 correctly
 
   try {
+    console.log(`[searchDocumentInKnowledge] 🐛 DEBUG: searchThreshold param = ${searchThreshold} (type: ${typeof searchThreshold})`)
+    console.log(`[searchDocumentInKnowledge] 🐛 DEBUG: initial threshold = ${threshold}`)
+
     // 1. Buscar configurações (se não fornecidas)
     if (searchThreshold === undefined) {
+      console.log(`[searchDocumentInKnowledge] 🐛 DEBUG: searchThreshold is undefined, fetching from config`)
       const configValue = await getBotConfig(clientId, 'knowledge_media:search_threshold')
+      console.log(`[searchDocumentInKnowledge] 🐛 DEBUG: config value = ${configValue}`)
       threshold = configValue !== null ? Number(configValue) : 0.7
+      console.log(`[searchDocumentInKnowledge] 🐛 DEBUG: threshold after config = ${threshold}`)
+    } else {
+      console.log(`[searchDocumentInKnowledge] 🐛 DEBUG: searchThreshold was provided, using ${searchThreshold}`)
     }
 
     if (maxResults === undefined) {
