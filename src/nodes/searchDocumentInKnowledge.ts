@@ -69,6 +69,29 @@ export interface DocumentSearchResult {
   preview: string
 }
 
+export interface SearchDocumentOutput {
+  /** Lista de documentos encontrados */
+  results: DocumentSearchResult[]
+
+  /** Metadados da busca (para debug) */
+  metadata: {
+    /** Total de documentos únicos na base (para o client_id) */
+    totalDocumentsInBase: number
+
+    /** Total de chunks encontrados na busca vetorial (antes de agrupar) */
+    chunksFound: number
+
+    /** Total de documentos únicos após agrupamento */
+    uniqueDocumentsFound: number
+
+    /** Threshold de similaridade usado */
+    threshold: number
+
+    /** Tipo de documento filtrado (se houver) */
+    documentTypeFilter?: string
+  }
+}
+
 /**
  * Busca documentos na base de conhecimento usando busca semântica
  *
@@ -104,7 +127,7 @@ export interface DocumentSearchResult {
  */
 export const searchDocumentInKnowledge = async (
   input: SearchDocumentInput
-): Promise<DocumentSearchResult[]> => {
+): Promise<SearchDocumentOutput> => {
   const {
     query,
     clientId,
@@ -131,11 +154,26 @@ export const searchDocumentInKnowledge = async (
 
     console.log(`[searchDocumentInKnowledge] Query: "${query}", type: ${documentType || 'any'}, threshold: ${threshold}`)
 
+    // 1.5. Contar total de documentos únicos na base (para debug)
+    const supabase = createServerClient()
+    const supabaseAny = supabase as any
+
+    const { data: totalDocsData } = await supabaseAny
+      .from('documents')
+      .select('original_file_url')
+      .eq('client_id', clientId)
+      .not('original_file_url', 'is', null)
+
+    // Contar arquivos únicos (distintos por URL)
+    const uniqueUrls = new Set(totalDocsData?.map((d: any) => d.original_file_url) || [])
+    const totalDocumentsInBase = uniqueUrls.size
+
+    console.log(`[searchDocumentInKnowledge] 📊 Total documents in base: ${totalDocumentsInBase}`)
+
     // 2. Gerar embedding da query
     const embeddingResult = await generateEmbedding(query, openaiApiKey)
 
     // 3. Buscar documentos similares usando match_documents RPC
-    const supabase = createServerClient()
 
     const { data, error } = await supabase.rpc('match_documents', {
       query_embedding: embeddingResult.embedding,
@@ -149,12 +187,23 @@ export const searchDocumentInKnowledge = async (
       throw new Error(`Failed to search documents: ${error.message}`)
     }
 
+    const chunksFound = data?.length || 0
+
     if (!data || data.length === 0) {
-      console.log('[searchDocumentInKnowledge] No documents found')
-      return []
+      console.log('[searchDocumentInKnowledge] ❌ No chunks found matching criteria')
+      return {
+        results: [],
+        metadata: {
+          totalDocumentsInBase,
+          chunksFound: 0,
+          uniqueDocumentsFound: 0,
+          threshold,
+          documentTypeFilter: documentType
+        }
+      }
     }
 
-    console.log(`[searchDocumentInKnowledge] Found ${data.length} chunks`)
+    console.log(`[searchDocumentInKnowledge] 🔍 Found ${chunksFound} chunks matching query`)
 
     // 4. Agrupar chunks por arquivo original (filename)
     // Múltiplos chunks do mesmo arquivo → retorna apenas o de maior similaridade
@@ -202,13 +251,39 @@ export const searchDocumentInKnowledge = async (
 
     console.log(`[searchDocumentInKnowledge] ✅ Returning ${results.length} unique documents`)
 
-    return results
+    // Log similarity scores for debug
+    if (results.length > 0) {
+      console.log('[searchDocumentInKnowledge] 📈 Similarity scores:')
+      results.forEach((doc, idx) => {
+        console.log(`  ${idx + 1}. ${doc.filename} - Score: ${doc.similarity.toFixed(3)} (${(doc.similarity * 100).toFixed(1)}%)`)
+      })
+    }
+
+    return {
+      results,
+      metadata: {
+        totalDocumentsInBase,
+        chunksFound,
+        uniqueDocumentsFound: results.length,
+        threshold,
+        documentTypeFilter: documentType
+      }
+    }
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     console.error('[searchDocumentInKnowledge] ❌ Error:', errorMessage)
 
-    // Retornar array vazio ao invés de quebrar o fluxo
-    return []
+    // Retornar estrutura vazia ao invés de quebrar o fluxo
+    return {
+      results: [],
+      metadata: {
+        totalDocumentsInBase: 0,
+        chunksFound: 0,
+        uniqueDocumentsFound: 0,
+        threshold: searchThreshold || 0.7,
+        documentTypeFilter: documentType
+      }
+    }
   }
 }

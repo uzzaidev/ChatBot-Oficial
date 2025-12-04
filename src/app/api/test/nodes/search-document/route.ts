@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
 
     // Call the node
     const startTime = Date.now()
-    const results = await searchDocumentInKnowledge({
+    const searchResult = await searchDocumentInKnowledge({
       query,
       clientId,
       documentType,
@@ -54,8 +54,12 @@ export async function GET(request: NextRequest) {
     })
     const duration = Date.now() - startTime
 
+    const { results, metadata } = searchResult
+
     console.log(`\n✅ [Test] Search completed in ${duration}ms`)
-    console.log(`  Found: ${results.length} unique documents`)
+    console.log(`  Total docs in base: ${metadata.totalDocumentsInBase}`)
+    console.log(`  Chunks found: ${metadata.chunksFound}`)
+    console.log(`  Unique docs found: ${metadata.uniqueDocumentsFound}`)
 
     // Format response
     return NextResponse.json({
@@ -65,6 +69,12 @@ export async function GET(request: NextRequest) {
       threshold,
       maxResults,
       duration: `${duration}ms`,
+      metadata: {
+        totalDocumentsInBase: metadata.totalDocumentsInBase,
+        chunksFound: metadata.chunksFound,
+        uniqueDocumentsFound: metadata.uniqueDocumentsFound,
+        threshold: metadata.threshold
+      },
       resultsCount: results.length,
       results: results.map((doc) => ({
         filename: doc.filename,
