@@ -130,7 +130,7 @@ export const getClientConfig = async (
   try {
     const supabase = createServerClient();
 
-    // 1. Buscar config do cliente (sem secrets ainda)
+    // 1. Buscar config do cliente (incluindo colunas TTS diretas)
     const { data: client, error } = await supabase
       .from("clients")
       .select("*")
@@ -223,11 +223,12 @@ export const getClientConfig = async (
         messageSplitEnabled: client.settings.message_split_enabled,
         maxChatHistory: client.settings.max_chat_history,
         messageDelayMs: client.settings.message_delay_ms ?? 2000, // Delay between split messages (default: 2000ms)
-        tts_enabled: client.settings.tts_enabled ?? false,
-        tts_provider: client.settings.tts_provider ?? "openai",
-        tts_voice: client.settings.tts_voice ?? "alloy",
-        tts_speed: client.settings.tts_speed ?? 1.0,
-        tts_auto_offer: client.settings.tts_auto_offer ?? false,
+        // TTS settings vêm das colunas diretas, não do JSONB
+        tts_enabled: client.tts_enabled ?? false,
+        tts_provider: client.tts_provider ?? "openai",
+        tts_voice: client.tts_voice ?? "alloy",
+        tts_speed: client.tts_speed ?? 1.0,
+        tts_auto_offer: client.tts_auto_offer ?? false,
       },
       notificationEmail: client.notification_email || undefined,
     };
