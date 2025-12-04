@@ -101,6 +101,8 @@ export const handleAudioToolCall = async (
     // 2.3 Upload permanente para Supabase Storage (backup)
     const fileName = `audio/${clientId}/${Date.now()}.mp3`;
 
+    console.log(`[TTS] 🐛 Attempting upload to Supabase Storage: ${fileName}`);
+
     const { error: storageError } = await supabase.storage
       .from("message-media")
       .upload(fileName, audioBuffer, {
@@ -115,12 +117,16 @@ export const handleAudioToolCall = async (
         .getPublicUrl(fileName);
       permanentAudioUrl = publicUrl;
       console.log(
-        `[TTS] Audio backed up to Supabase Storage: ${permanentAudioUrl}`,
+        `[TTS] ✅ Audio backed up to Supabase Storage: ${permanentAudioUrl}`,
       );
     } else {
-      console.warn(
-        "[TTS] Failed to backup audio to Supabase Storage:",
-        storageError.message,
+      console.error(
+        "[TTS] ❌ Failed to backup audio to Supabase Storage:",
+        storageError,
+      );
+      console.error(
+        "[TTS] ❌ Error details:",
+        JSON.stringify(storageError, null, 2)
       );
     }
 
@@ -137,9 +143,26 @@ export const handleAudioToolCall = async (
 
     // 2.5 SALVAR NA TABELA n8n_chat_histories
     // Preparar media metadata no formato esperado
+
+    // ⚠️ CRITICAL: If Supabase upload failed, we MUST use a different approach
+    // We'll create a data URL or serve via API endpoint
+    let audioUrl = permanentAudioUrl;
+
+    if (!audioUrl) {
+      console.warn(
+        "[TTS] ⚠️  Supabase upload failed, creating fallback data URL"
+      );
+      // Create data URL as fallback (works but increases message size)
+      const base64Audio = audioBuffer.toString('base64');
+      audioUrl = `data:audio/mpeg;base64,${base64Audio}`;
+      console.log(
+        `[TTS] 🔄 Using data URL fallback (${Math.round(base64Audio.length / 1024)}KB)`
+      );
+    }
+
     const mediaMetadata: StoredMediaMetadata = {
       type: "audio",
-      url: permanentAudioUrl || `whatsapp://media/${mediaId}`,
+      url: audioUrl,
       mimeType: "audio/mpeg",
       filename: `audio_${Date.now()}.mp3`,
       size: audioBuffer.length,
