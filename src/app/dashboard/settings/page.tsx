@@ -1492,6 +1492,73 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
+        {/* Seção 4.5: Text-to-Speech (TTS) */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Mic className="w-5 h-5 text-blue-500" />
+                <div>
+                  <CardTitle>Text-to-Speech (TTS)</CardTitle>
+                  <CardDescription>
+                    Configure o envio de respostas em áudio (mensagens de voz)
+                  </CardDescription>
+                </div>
+              </div>
+              <Button
+                onClick={() => window.location.href = '/dashboard/settings/tts'}
+                variant="default"
+                className="gap-2"
+              >
+                <Mic className="w-4 h-4" />
+                Ver Configurações Completas
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert>
+              <Mic className="h-4 w-4" />
+              <AlertDescription>
+                O bot pode converter respostas longas em mensagens de voz (áudio) para melhor experiência do usuário.
+                Configure voz, velocidade e quando usar áudio através da página de configurações completas.
+              </AlertDescription>
+            </Alert>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+              <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">6</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">Vozes Disponíveis</p>
+              </div>
+              <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">HD</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">Qualidade de Áudio</p>
+              </div>
+              <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">0.5-2x</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">Velocidade Ajustável</p>
+              </div>
+            </div>
+
+            <div className="border-t pt-4">
+              <h4 className="text-sm font-semibold mb-2">Recursos Disponíveis:</h4>
+              <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1 list-disc list-inside">
+                <li>Preview de vozes (Alloy, Echo, Fable, Onyx, Nova, Shimmer)</li>
+                <li>Controle de velocidade de fala (0.5x a 2.0x)</li>
+                <li>Qualidade HD (tts-1-hd) ou Rápida (tts-1)</li>
+                <li>Estatísticas de uso e economia de cache</li>
+                <li>Player com waveform e transcrição no WhatsApp</li>
+              </ul>
+            </div>
+
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+              <p className="text-xs text-blue-700 dark:text-blue-300">
+                💡 <strong>Dica:</strong> Configure no prompt do sistema quando o bot deve usar áudio.
+                Exemplo: &quot;Use a tool enviar_resposta_em_audio para explicações longas (mais de 500 caracteres)&quot;.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Seção 5: Bot Configurations */}
         <BotConfigurationManager />
       </div>

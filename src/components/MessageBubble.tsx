@@ -79,41 +79,19 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
   const renderAudio = () => {
     if (!mediaMetadata) return null
 
-    // Check if message has transcription (TTS message)
-    const transcription = (message as any).transcription || null
+    // Check if message has transcription and duration (TTS message)
+    const transcription = (message as any).transcription || ''
+    const audioDuration = (message as any).audio_duration_seconds || 0
 
+    // Use AudioMessage component with waveform and transcription
     return (
-      <div className="mb-2">
-        <div className="flex items-center gap-2 mb-2 text-sm opacity-80">
-          <Play className="h-4 w-4" />
-          <span className="font-medium">Áudio</span>
-        </div>
-        <audio
-          controls
-          className="w-full max-w-[280px] h-10"
-          preload="metadata"
-        >
-          <source src={mediaMetadata.url} type={mediaMetadata.mimeType || 'audio/ogg'} />
-          Seu navegador não suporta áudio.
-        </audio>
-        <a
-          href={mediaMetadata.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 mt-1 text-xs opacity-70 hover:opacity-100 transition-opacity"
-        >
-          <Download className="h-3 w-3" />
-          Baixar áudio
-        </a>
-        
-        {/* Show transcription for TTS messages */}
-        {transcription && (
-          <div className="mt-2 pt-2 border-t border-gray-200/50">
-            <p className="text-xs opacity-60 mb-1">Transcrição:</p>
-            <p className="text-sm">{transcription}</p>
-          </div>
-        )}
-      </div>
+      <AudioMessage
+        audioUrl={mediaMetadata.url}
+        transcription={transcription}
+        durationSeconds={audioDuration}
+        direction={isIncoming ? 'inbound' : 'outbound'}
+        timestamp={message.timestamp}
+      />
     )
   }
 
