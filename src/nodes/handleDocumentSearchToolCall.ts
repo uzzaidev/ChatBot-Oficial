@@ -126,7 +126,7 @@ export const handleDocumentSearchToolCall = async (
       clientId,
       documentType: document_type === 'any' ? undefined : document_type,
       openaiApiKey: config.apiKeys.openaiApiKey,
-      searchThreshold: 0.7,
+      searchThreshold: 0.5, // Temporariamente mais baixo para debug
       maxResults: 3 // Limitar a 3 documentos por solicitação
     })
 
