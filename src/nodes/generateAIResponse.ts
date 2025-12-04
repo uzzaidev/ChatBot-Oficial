@@ -137,6 +137,44 @@ const SEARCH_DOCUMENT_TOOL_DEFINITION = {
   },
 };
 
+const TTS_AUDIO_TOOL_DEFINITION = {
+  type: "function",
+  function: {
+    name: "enviar_resposta_em_audio",
+    description: `Envia a resposta como mensagem de voz (áudio) ao invés de texto.
+
+USE QUANDO:
+- Explicações longas ou tutoriais (>200 caracteres)
+- Cliente solicitou explicitamente áudio ("pode explicar por áudio?", "me manda um áudio")
+- Conteúdo educacional ou passo-a-passo complexo
+- Histórias ou narrativas que ficam melhores faladas
+
+NÃO USE PARA:
+- Respostas curtas (<100 caracteres)
+- Perguntas simples ou confirmações
+- Listas ou menus de opções
+- Informações que precisam ser lidas/copiadas (telefones, links, códigos, endereços)
+- Perguntas que requerem resposta do usuário
+
+Se não tiver certeza, use perguntar_antes=true para pedir permissão ao cliente.`,
+    parameters: {
+      type: "object",
+      properties: {
+        texto_para_audio: {
+          type: "string",
+          description: "Texto que será convertido em áudio (máximo 5000 caracteres). Use texto natural, como se estivesse falando.",
+        },
+        perguntar_antes: {
+          type: "boolean",
+          description: "Se true, pergunta 'Quer que eu explique por áudio?' antes de enviar. Use quando não tiver certeza se o cliente quer áudio.",
+          default: false,
+        },
+      },
+      required: ["texto_para_audio"],
+    },
+  },
+};
+
 export interface GenerateAIResponseInput {
   message: string;
   chatHistory: ChatMessage[];
@@ -261,6 +299,7 @@ export const generateAIResponse = async (
     const tools = [
       HUMAN_HANDOFF_TOOL_DEFINITION,
       SEARCH_DOCUMENT_TOOL_DEFINITION, // NEW: Buscar documentos da base de conhecimento
+      TTS_AUDIO_TOOL_DEFINITION, // NEW: Enviar resposta em áudio (TTS)
     ];
 
     // 🔐 Escolher provider dinamicamente baseado na config do cliente

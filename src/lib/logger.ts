@@ -136,6 +136,32 @@ class ExecutionLogger {
       })
   }
 
+  // Log de aviso/warning em um node (fire-and-forget)
+  logNodeWarning(nodeName: string, warning: any): void {
+    if (!this.executionId || !this.supabase) return
+
+    // Fire-and-forget - não bloqueia execução
+    // @ts-ignore - execution_logs table optional
+    this.supabase
+      .from('execution_logs')
+      // @ts-ignore
+      .insert({
+        execution_id: this.executionId,
+        node_name: nodeName,
+        status: 'warning',
+        timestamp: new Date().toISOString(),
+        metadata: warning,
+        client_id: this.clientId,
+      })
+      // @ts-ignore
+      .then(result => {
+        if (result.error) {
+        }
+      // @ts-ignore
+      }).catch((err: any) => {
+      })
+  }
+
   // Wrapper para executar um node com logging automático
   async executeNode<T>(
     nodeName: string,

@@ -46,6 +46,7 @@ export async function GET(
       generate_response: 'personality:config',
       detect_repetition: 'repetition_detector:similarity_threshold',
       search_document: 'doc_search:config',
+      handle_audio_tool: 'tts:config',
     }
 
     const configKey = configKeyMap[nodeId]
@@ -242,6 +243,7 @@ export async function PATCH(
       generate_response: 'personality:config',
       detect_repetition: 'repetition_detector:similarity_threshold',
       search_document: 'doc_search:config',
+      handle_audio_tool: 'tts:config',
     }
 
     const configKey = configKeyMap[nodeId]
@@ -435,6 +437,14 @@ function getRelatedConfigKeys(nodeId: string): string[] {
       'doc_search:max_results',
       'doc_search:max_file_size_mb',
     ],
+    handle_audio_tool: [
+      'tts:config',
+      'tts:enabled',
+      'tts:provider',
+      'tts:voice',
+      'tts:speed',
+      'tts:auto_offer',
+    ],
   }
 
   return relatedKeysMap[nodeId] || []
@@ -492,6 +502,13 @@ function getDefaultConfig(nodeId: string): Record<string, any> {
       similarity_threshold: 0.7,
       max_results: 3,
       max_file_size_mb: 10,
+    },
+    handle_audio_tool: {
+      enabled: true,
+      provider: 'openai',
+      voice: 'alloy',
+      speed: 1.0,
+      auto_offer: true,
     },
   }
 

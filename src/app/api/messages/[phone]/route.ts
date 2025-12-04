@@ -55,7 +55,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // Motivo: Supabase pode ter limites de paginação que não queremos
 
     const pgMessages = await query<any>(
-      `SELECT id, session_id, message, media_metadata, wamid, created_at
+      `SELECT id, session_id, message, media_metadata, wamid, created_at, transcription, audio_duration_seconds
        FROM n8n_chat_histories
        WHERE session_id = $1
        AND client_id = $2
@@ -137,6 +137,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         status: 'sent' as const,
         timestamp: item.created_at || new Date().toISOString(),
         metadata: Object.keys(metadata).length > 0 ? metadata : null,
+        transcription: item.transcription || null,
+        audio_duration_seconds: item.audio_duration_seconds || null,
       }
     })
 

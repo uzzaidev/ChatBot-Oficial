@@ -33,6 +33,7 @@ export interface ChatbotFlowResult {
   success: boolean
   messagesSent?: number
   handedOff?: boolean
+  sentAsAudio?: boolean
   error?: string
 }
 
@@ -736,6 +737,58 @@ export const processChatbotMessage = async (
 
           // Se não encontrou ou falhou, AI response content terá a mensagem
           // Continue o fluxo normal
+        }
+
+        // Tool 3: enviar_resposta_em_audio (NEW - TTS)
+        if (toolCall.function.name === 'enviar_resposta_em_audio') {
+          // NODE 15.7: Handle Audio Tool Call
+          logger.logNodeStart('15.7. Handle Audio Tool Call (TTS)', {
+            phone: parsedMessage.phone,
+            toolCallId: toolCall.id
+          })
+
+          const { handleAudioToolCall } = await import('@/handlers/handleAudioToolCall')
+
+          const args = JSON.parse(toolCall.function.arguments)
+
+          const audioResult = await handleAudioToolCall({
+            texto_para_audio: args.texto_para_audio,
+            perguntar_antes: args.perguntar_antes || false,
+            phone: parsedMessage.phone,
+            clientId: config.id,
+            config
+          })
+
+          logger.logNodeSuccess('15.7. Handle Audio Tool Call (TTS)', {
+            success: audioResult.success,
+            sentAsAudio: audioResult.sentAsAudio,
+            messageId: audioResult.messageId
+          })
+
+          // Se enviou áudio com sucesso, terminar fluxo
+          if (audioResult.sentAsAudio) {
+            logger.finishExecution('success')
+            return {
+              success: true,
+              sentAsAudio: true,
+              messagesSent: 1
+            }
+          }
+
+          // Se falhou mas enviou texto (fallback), terminar fluxo
+          if (audioResult.success && !audioResult.sentAsAudio) {
+            logger.finishExecution('success')
+            return {
+              success: true,
+              sentAsAudio: false,
+              messagesSent: 1
+            }
+          }
+
+          // Se falhou completamente, continua fluxo normal
+          logger.logNodeWarning('15.7. Handle Audio Tool Call (TTS)', {
+            warning: 'Audio failed, continuing with normal text flow'
+          })
         }
       }
     }

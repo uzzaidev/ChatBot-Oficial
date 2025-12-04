@@ -239,8 +239,20 @@ export const FLOW_METADATA: FlowNodeMetadata[] = [
   },
 
   // ========================================
-  // POST-PROCESSING NODES (12.5, 12.6, 12.7)
+  // POST-PROCESSING NODES (12.5, 12.6, 12.7, 12.8)
   // ========================================
+  {
+    id: 'handle_audio_tool',
+    name: 'Handle Audio Tool Call (TTS)',
+    description: 'Gera e envia mensagens de áudio quando a IA aciona a tool enviar_resposta_em_audio. Usa OpenAI TTS com cache inteligente. Configurável em /dashboard/settings/tts',
+    category: 'auxiliary',
+    enabled: true,
+    hasConfig: true,
+    configurable: true, // Can be disabled via tts_enabled flag
+    configKey: 'tts:config',
+    bypassable: true,
+    dependencies: ['generate_response'],
+  },
   {
     id: 'search_document',
     name: 'Search & Send Documents',
