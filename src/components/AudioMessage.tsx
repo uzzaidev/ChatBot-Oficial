@@ -21,16 +21,32 @@ export const AudioMessage = ({
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [showTranscription, setShowTranscription] = useState(false)
+  const [audioError, setAudioError] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
 
-  const togglePlay = () => {
+  // Debug logs
+  console.log('[AudioMessage] Props:', {
+    audioUrl,
+    hasTranscription: !!transcription,
+    durationSeconds,
+    direction
+  })
+
+  const togglePlay = async () => {
     if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause()
-      } else {
-        audioRef.current.play()
+      try {
+        if (isPlaying) {
+          audioRef.current.pause()
+        } else {
+          console.log('[AudioMessage] Attempting to play:', audioUrl)
+          await audioRef.current.play()
+          console.log('[AudioMessage] Play started successfully')
+        }
+        setIsPlaying(!isPlaying)
+      } catch (error) {
+        console.error('[AudioMessage] Play error:', error)
+        setAudioError(error instanceof Error ? error.message : 'Erro ao reproduzir áudio')
       }
-      setIsPlaying(!isPlaying)
     }
   }
 
@@ -48,17 +64,35 @@ export const AudioMessage = ({
     const handleEnded = () => setIsPlaying(false)
     const handlePlay = () => setIsPlaying(true)
     const handlePause = () => setIsPlaying(false)
+    const handleError = (e: Event) => {
+      console.error('[AudioMessage] Audio element error:', e)
+      const audioElement = e.target as HTMLAudioElement
+      if (audioElement.error) {
+        console.error('[AudioMessage] Error details:', {
+          code: audioElement.error.code,
+          message: audioElement.error.message
+        })
+        setAudioError(`Erro ao carregar áudio (código: ${audioElement.error.code})`)
+      }
+    }
+    const handleLoadedMetadata = () => {
+      console.log('[AudioMessage] Audio metadata loaded successfully')
+    }
 
     audio.addEventListener('timeupdate', handleTimeUpdate)
     audio.addEventListener('ended', handleEnded)
     audio.addEventListener('play', handlePlay)
     audio.addEventListener('pause', handlePause)
+    audio.addEventListener('error', handleError)
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata)
 
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate)
       audio.removeEventListener('ended', handleEnded)
       audio.removeEventListener('play', handlePlay)
       audio.removeEventListener('pause', handlePause)
+      audio.removeEventListener('error', handleError)
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata)
     }
   }, [])
 
@@ -142,8 +176,16 @@ export const AudioMessage = ({
         </div>
       )}
 
+      {/* Erro de áudio */}
+      {audioError && (
+        <div className="text-xs bg-red-500/20 border border-red-500/50 rounded p-2 mt-2">
+          <p className="font-medium">❌ {audioError}</p>
+          <p className="opacity-75 mt-1">URL: {audioUrl}</p>
+        </div>
+      )}
+
       {/* Audio element (invisível) */}
-      <audio ref={audioRef} src={audioUrl} preload="metadata" />
+      <audio ref={audioRef} src={audioUrl} preload="metadata" crossOrigin="anonymous" />
 
       {/* Timestamp */}
       <span className="text-xs opacity-60 text-right">
