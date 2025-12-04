@@ -79,27 +79,9 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
   const renderAudio = () => {
     if (!mediaMetadata) return null
 
-    // Check if message has transcription (TTS message) or audio_duration_seconds
+    // Check if message has transcription (TTS message)
     const transcription = (message as any).transcription || null
-    const audioDuration = (message as any).audio_duration_seconds || 0
 
-    // If has transcription (TTS message), use fancy AudioMessage component
-    // Even if duration is 0 (will be estimated from text length)
-    if (transcription) {
-      return (
-        <div className="-m-3">
-          <AudioMessage
-            audioUrl={mediaMetadata.url}
-            transcription={transcription}
-            durationSeconds={audioDuration}
-            direction={message.direction === 'incoming' ? 'inbound' : 'outbound'}
-            timestamp={message.timestamp}
-          />
-        </div>
-      )
-    }
-
-    // Fallback to simple HTML5 audio player (for received audios without transcription)
     return (
       <div className="mb-2">
         <div className="flex items-center gap-2 mb-2 text-sm opacity-80">
@@ -123,6 +105,14 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
           <Download className="h-3 w-3" />
           Baixar áudio
         </a>
+        
+        {/* Show transcription for TTS messages */}
+        {transcription && (
+          <div className="mt-2 pt-2 border-t border-gray-200/50">
+            <p className="text-xs opacity-60 mb-1">Transcrição:</p>
+            <p className="text-sm">{transcription}</p>
+          </div>
+        )}
       </div>
     )
   }
