@@ -23,8 +23,14 @@ export interface ConvertTextToSpeechOutput {
 export const convertTextToSpeech = async (
   input: ConvertTextToSpeechInput,
 ): Promise<ConvertTextToSpeechOutput> => {
-  const { text, clientId, voice = "alloy", speed = 1.0, model = "tts-1-hd", useCache = true } =
-    input;
+  const {
+    text,
+    clientId,
+    voice = "alloy",
+    speed = 1.0,
+    model = "tts-1-hd",
+    useCache = true,
+  } = input;
 
   // Validação: máximo 5000 caracteres
   if (text.length > 5000) {

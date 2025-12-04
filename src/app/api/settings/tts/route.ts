@@ -31,7 +31,9 @@ export async function GET(request: NextRequest) {
     // Obter configuração TTS do cliente
     const { data: client, error } = await supabase
       .from("clients")
-      .select("tts_enabled, tts_provider, tts_model, tts_voice, tts_speed, tts_auto_offer")
+      .select(
+        "tts_enabled, tts_provider, tts_model, tts_voice, tts_speed, tts_auto_offer",
+      )
       .eq("id", profile.client_id)
       .single();
 
@@ -87,8 +89,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { tts_enabled, tts_provider, tts_model, tts_voice, tts_speed, tts_auto_offer } =
-      body;
+    const {
+      tts_enabled,
+      tts_provider,
+      tts_model,
+      tts_voice,
+      tts_speed,
+      tts_auto_offer,
+    } = body;
 
     // Validações
     const validVoices = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"];
