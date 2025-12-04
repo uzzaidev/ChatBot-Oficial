@@ -1,0 +1,385 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
+import type { ChartConfig, ChartType, MetricType } from '@/lib/types/dashboard-metrics'
+
+interface ChartConfigModalProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  config?: ChartConfig
+  onSave: (config: ChartConfig) => void
+}
+
+const METRIC_OPTIONS: { value: MetricType; label: string; description: string }[] = [
+  {
+    value: 'conversations_per_day',
+    label: 'Conversas por Dia',
+    description: 'Total de conversas iniciadas por dia',
+  },
+  {
+    value: 'new_clients_per_day',
+    label: 'Novos Clientes por Dia',
+    description: 'Novos clientes cadastrados por dia',
+  },
+  {
+    value: 'messages_per_day',
+    label: 'Mensagens por Dia',
+    description: 'Total de mensagens enviadas/recebidas por dia',
+  },
+  {
+    value: 'tokens_per_day',
+    label: 'Tokens por Dia',
+    description: 'Consumo de tokens de IA por dia',
+  },
+  {
+    value: 'cost_per_day',
+    label: 'Custo por Dia',
+    description: 'Custo de APIs por dia',
+  },
+  {
+    value: 'status_distribution',
+    label: 'Distribuição por Status',
+    description: 'Distribuição atual de conversas por status',
+  },
+]
+
+const CHART_TYPE_OPTIONS: { value: ChartType; label: string }[] = [
+  { value: 'line', label: 'Linha' },
+  { value: 'bar', label: 'Barra' },
+  { value: 'area', label: 'Área' },
+  { value: 'composed', label: 'Composto' },
+]
+
+const COLOR_PRESETS = [
+  { name: 'Azul', primary: '#3b82f6', secondary: '#60a5fa' },
+  { name: 'Verde', primary: '#10b981', secondary: '#34d399' },
+  { name: 'Roxo', primary: '#8b5cf6', secondary: '#a78bfa' },
+  { name: 'Rosa', primary: '#ec4899', secondary: '#f472b6' },
+  { name: 'Laranja', primary: '#f59e0b', secondary: '#fbbf24' },
+  { name: 'Vermelho', primary: '#ef4444', secondary: '#f87171' },
+]
+
+/**
+ * ChartConfigModal Component
+ *
+ * Modal para configurar/customizar gráficos do dashboard:
+ * - Tipo de métrica
+ * - Tipo de gráfico
+ * - Título e descrição
+ * - Cores primária e secundária
+ * - Opções de grid e legenda
+ * - Altura do gráfico
+ */
+export function ChartConfigModal({
+  open,
+  onOpenChange,
+  config,
+  onSave,
+}: ChartConfigModalProps) {
+  const [formData, setFormData] = useState<Partial<ChartConfig>>({
+    type: 'line',
+    metricType: 'conversations_per_day',
+    title: 'Novo Gráfico',
+    description: '',
+    colors: {
+      primary: '#3b82f6',
+      secondary: '#60a5fa',
+    },
+    showGrid: true,
+    showLegend: true,
+    height: 300,
+  })
+
+  useEffect(() => {
+    if (config) {
+      setFormData(config)
+    } else {
+      // Reset to defaults when creating new chart
+      setFormData({
+        type: 'line',
+        metricType: 'conversations_per_day',
+        title: 'Novo Gráfico',
+        description: '',
+        colors: {
+          primary: '#3b82f6',
+          secondary: '#60a5fa',
+        },
+        showGrid: true,
+        showLegend: true,
+        height: 300,
+      })
+    }
+  }, [config, open])
+
+  const handleSave = () => {
+    const finalConfig: ChartConfig = {
+      id: config?.id || `chart_${Date.now()}`,
+      type: formData.type!,
+      metricType: formData.metricType!,
+      title: formData.title!,
+      description: formData.description,
+      colors: formData.colors!,
+      showGrid: formData.showGrid,
+      showLegend: formData.showLegend,
+      height: formData.height,
+      position: config?.position || { x: 0, y: 0, w: 6, h: 2 },
+    }
+
+    onSave(finalConfig)
+    onOpenChange(false)
+  }
+
+  const applyColorPreset = (preset: typeof COLOR_PRESETS[0]) => {
+    setFormData({
+      ...formData,
+      colors: {
+        primary: preset.primary,
+        secondary: preset.secondary,
+      },
+    })
+  }
+
+  const selectedMetric = METRIC_OPTIONS.find((m) => m.value === formData.metricType)
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            {config ? 'Editar Gráfico' : 'Adicionar Gráfico'}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-6 py-4">
+          {/* Metric Type */}
+          <div className="space-y-2">
+            <Label htmlFor="metricType">Métrica</Label>
+            <Select
+              value={formData.metricType}
+              onValueChange={(value) =>
+                setFormData({ ...formData, metricType: value as MetricType })
+              }
+            >
+              <SelectTrigger id="metricType">
+                <SelectValue placeholder="Selecione uma métrica" />
+              </SelectTrigger>
+              <SelectContent>
+                {METRIC_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedMetric && (
+              <p className="text-sm text-muted-foreground">
+                {selectedMetric.description}
+              </p>
+            )}
+          </div>
+
+          {/* Chart Type */}
+          <div className="space-y-2">
+            <Label htmlFor="chartType">Tipo de Gráfico</Label>
+            <Select
+              value={formData.type}
+              onValueChange={(value) =>
+                setFormData({ ...formData, type: value as ChartType })
+              }
+            >
+              <SelectTrigger id="chartType">
+                <SelectValue placeholder="Selecione um tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                {CHART_TYPE_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Title */}
+          <div className="space-y-2">
+            <Label htmlFor="title">Título</Label>
+            <Input
+              id="title"
+              value={formData.title}
+              onChange={(e) =>
+                setFormData({ ...formData, title: e.target.value })
+              }
+              placeholder="Ex: Conversas por Dia"
+            />
+          </div>
+
+          {/* Description */}
+          <div className="space-y-2">
+            <Label htmlFor="description">Descrição (opcional)</Label>
+            <Input
+              id="description"
+              value={formData.description}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
+              placeholder="Ex: Total de conversas iniciadas por dia"
+            />
+          </div>
+
+          {/* Color Presets */}
+          <div className="space-y-2">
+            <Label>Cores (Presets)</Label>
+            <div className="grid grid-cols-3 gap-2">
+              {COLOR_PRESETS.map((preset) => (
+                <Button
+                  key={preset.name}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => applyColorPreset(preset)}
+                  className="justify-start gap-2"
+                >
+                  <div className="flex gap-1">
+                    <div
+                      className="w-4 h-4 rounded"
+                      style={{ backgroundColor: preset.primary }}
+                    />
+                    <div
+                      className="w-4 h-4 rounded"
+                      style={{ backgroundColor: preset.secondary }}
+                    />
+                  </div>
+                  {preset.name}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Custom Colors */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="primaryColor">Cor Primária</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="primaryColor"
+                  type="color"
+                  value={formData.colors?.primary}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      colors: { ...formData.colors!, primary: e.target.value },
+                    })
+                  }
+                  className="w-20 h-10"
+                />
+                <Input
+                  value={formData.colors?.primary}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      colors: { ...formData.colors!, primary: e.target.value },
+                    })
+                  }
+                  placeholder="#3b82f6"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="secondaryColor">Cor Secundária</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="secondaryColor"
+                  type="color"
+                  value={formData.colors?.secondary}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      colors: { ...formData.colors!, secondary: e.target.value },
+                    })
+                  }
+                  className="w-20 h-10"
+                />
+                <Input
+                  value={formData.colors?.secondary}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      colors: { ...formData.colors!, secondary: e.target.value },
+                    })
+                  }
+                  placeholder="#60a5fa"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Height */}
+          <div className="space-y-2">
+            <Label htmlFor="height">Altura (px)</Label>
+            <Input
+              id="height"
+              type="number"
+              min={200}
+              max={600}
+              step={50}
+              value={formData.height}
+              onChange={(e) =>
+                setFormData({ ...formData, height: parseInt(e.target.value) })
+              }
+            />
+          </div>
+
+          {/* Options */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="showGrid">Mostrar Grade</Label>
+                <p className="text-sm text-muted-foreground">
+                  Exibir linhas de grade no gráfico
+                </p>
+              </div>
+              <Switch
+                id="showGrid"
+                checked={formData.showGrid}
+                onCheckedChange={(checked) =>
+                  setFormData({ ...formData, showGrid: checked })
+                }
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="showLegend">Mostrar Legenda</Label>
+                <p className="text-sm text-muted-foreground">
+                  Exibir legenda dos dados
+                </p>
+              </div>
+              <Switch
+                id="showLegend"
+                checked={formData.showLegend}
+                onCheckedChange={(checked) =>
+                  setFormData({ ...formData, showLegend: checked })
+                }
+              />
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={handleSave}>
+            {config ? 'Salvar Alterações' : 'Adicionar Gráfico'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
