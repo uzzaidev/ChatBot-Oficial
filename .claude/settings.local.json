@@ -48,7 +48,8 @@
       "Bash(findstr:*)",
       "Bash(powershell -Command:*)",
       "Bash(pnpm install:*)",
-      "Bash(doppler run:*)"
+      "Bash(doppler run:*)",
+      "Bash(psql:*)"
     ],
     "deny": [],
     "ask": []
