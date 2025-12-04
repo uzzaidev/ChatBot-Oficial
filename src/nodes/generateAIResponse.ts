@@ -127,8 +127,9 @@ const SEARCH_DOCUMENT_TOOL_DEFINITION = {
         },
         document_type: {
           type: "string",
-          description: "Tipo de documento a buscar (opcional). Use 'catalog' para catálogos, 'manual' para manuais, 'image' para imagens, 'faq' para perguntas frequentes, ou 'any' para qualquer tipo",
-          enum: ["catalog", "manual", "faq", "image", "any"],
+          description: "Tipo de documento a buscar. SEMPRE use 'any' para buscar em todos os tipos de documentos. Outros valores: 'catalog', 'manual', 'image', 'faq' (use apenas se o usuário for muito específico sobre o tipo)",
+          enum: ["any", "catalog", "manual", "faq", "image"],
+          default: "any",
         },
       },
       required: ["query"],
