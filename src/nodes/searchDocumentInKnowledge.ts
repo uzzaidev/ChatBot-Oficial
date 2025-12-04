@@ -252,13 +252,9 @@ export const searchDocumentInKnowledge = async (
         continue
       }
 
-      // Filtar por tipo de documento se especificado
-      if (documentType && documentType !== 'any') {
-        const docType = doc.metadata?.documentType
-        if (docType !== documentType) {
-          continue
-        }
-      }
+      // ✅ REMOVIDO: Filtro por tipo de documento
+      // A busca semântica já encontra o documento mais relevante pela similaridade
+      // Filtrar por tipo estava causando falsos negativos (ex: imagem marcada como "catalog" não era encontrada ao buscar "image")
 
       // Se já existe, pega o de maior similarity
       const existing = groupedByFile.get(filename)
