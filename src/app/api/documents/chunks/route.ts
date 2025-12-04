@@ -173,20 +173,21 @@ export async function POST(request: NextRequest) {
 
     // 4. Get OpenAI API key from config
     const supabaseServiceRole = createServiceRoleClient()
-    const { data: clientConfig } = await supabaseServiceRole
+    const supabaseConfigAny = supabaseServiceRole as any
+    const { data: clientConfig, error: configError } = await supabaseConfigAny
       .from('clients')
       .select('openai_api_key_secret_id')
       .eq('id', clientId)
       .single()
 
-    if (!clientConfig?.openai_api_key_secret_id) {
+    if (configError || !clientConfig || !clientConfig.openai_api_key_secret_id) {
       return NextResponse.json(
         { error: 'OpenAI API key not configured' },
         { status: 400 }
       )
     }
 
-    const { data: openaiApiKey, error: vaultError } = await supabaseServiceRole.rpc('get_client_secret', {
+    const { data: openaiApiKey, error: vaultError } = await supabaseConfigAny.rpc('get_client_secret', {
       secret_id: clientConfig.openai_api_key_secret_id
     })
 
