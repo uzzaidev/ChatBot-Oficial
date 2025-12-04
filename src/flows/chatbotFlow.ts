@@ -958,11 +958,18 @@ export const processChatbotMessage = async (
             "@/handlers/handleAudioToolCall"
           );
 
-          const args = JSON.parse(toolCall.function.arguments);
+          // Pega o texto que o AI gerou (aiResponse.content)
+          const aiText = aiResponse.content || "";
+
+          if (!aiText || aiText.trim().length === 0) {
+            logger.logNodeWarning("15.7. Handle Audio Tool Call (TTS)", {
+              warning: "No AI text to convert to audio, skipping",
+            });
+            continue;
+          }
 
           const audioResult = await handleAudioToolCall({
-            texto_para_audio: args.texto_para_audio,
-            perguntar_antes: args.perguntar_antes || false,
+            aiResponseText: aiText,
             phone: parsedMessage.phone,
             clientId: config.id,
             config,
