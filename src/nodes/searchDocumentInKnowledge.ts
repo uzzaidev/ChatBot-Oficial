@@ -16,7 +16,7 @@
  * - Agente principal usa como tool para buscar documentos sob demanda
  */
 
-import { createServerClient } from '@/lib/supabase'
+import { createServiceRoleClient } from '@/lib/supabase'
 import { generateEmbedding } from '@/lib/openai'
 import { getBotConfig } from '@/lib/config'
 
@@ -155,7 +155,7 @@ export const searchDocumentInKnowledge = async (
     console.log(`[searchDocumentInKnowledge] Query: "${query}", type: ${documentType || 'any'}, threshold: ${threshold}`)
 
     // 1.5. Contar total de documentos únicos na base (para debug)
-    const supabase = createServerClient()
+    const supabase = createServiceRoleClient()
     const supabaseAny = supabase as any
 
     const { data: totalDocsData } = await supabaseAny
@@ -175,7 +175,7 @@ export const searchDocumentInKnowledge = async (
 
     // 3. Buscar documentos similares usando match_documents RPC
 
-    const { data, error } = await supabase.rpc('match_documents', {
+    const { data, error } = await supabaseAny.rpc('match_documents', {
       query_embedding: embeddingResult.embedding,
       match_threshold: threshold,
       match_count: max * 3, // Buscar mais para agrupar depois
