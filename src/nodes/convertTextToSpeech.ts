@@ -9,6 +9,7 @@ export interface ConvertTextToSpeechInput {
   clientId: string;
   voice?: string;
   speed?: number;
+  model?: string; // 'tts-1' or 'tts-1-hd'
   useCache?: boolean;
 }
 
@@ -22,7 +23,7 @@ export interface ConvertTextToSpeechOutput {
 export const convertTextToSpeech = async (
   input: ConvertTextToSpeechInput,
 ): Promise<ConvertTextToSpeechOutput> => {
-  const { text, clientId, voice = "alloy", speed = 1.0, useCache = true } =
+  const { text, clientId, voice = "alloy", speed = 1.0, model = "tts-1-hd", useCache = true } =
     input;
 
   // Validação: máximo 5000 caracteres
@@ -120,8 +121,11 @@ export const convertTextToSpeech = async (
   const validVoices = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"];
   const selectedVoice = validVoices.includes(voice) ? voice : "alloy";
 
+  const validModels = ["tts-1", "tts-1-hd"];
+  const selectedModel = validModels.includes(model) ? model : "tts-1-hd";
+
   const mp3Response = await openai.audio.speech.create({
-    model: "tts-1-hd",
+    model: selectedModel,
     voice: selectedVoice as
       | "alloy"
       | "echo"

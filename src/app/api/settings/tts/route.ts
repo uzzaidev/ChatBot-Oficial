@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     // Obter configuração TTS do cliente
     const { data: client, error } = await supabase
       .from("clients")
-      .select("tts_enabled, tts_provider, tts_voice, tts_speed, tts_auto_offer")
+      .select("tts_enabled, tts_provider, tts_model, tts_voice, tts_speed, tts_auto_offer")
       .eq("id", profile.client_id)
       .single();
 
@@ -46,6 +46,7 @@ export async function GET(request: NextRequest) {
       config: {
         tts_enabled: client?.tts_enabled || false,
         tts_provider: client?.tts_provider || "openai",
+        tts_model: client?.tts_model || "tts-1-hd",
         tts_voice: client?.tts_voice || "alloy",
         tts_speed: client?.tts_speed || 1.0,
         tts_auto_offer: client?.tts_auto_offer ?? true,
@@ -86,7 +87,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { tts_enabled, tts_provider, tts_voice, tts_speed, tts_auto_offer } =
+    const { tts_enabled, tts_provider, tts_model, tts_voice, tts_speed, tts_auto_offer } =
       body;
 
     // Validações
@@ -102,12 +103,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const validModels = ["tts-1", "tts-1-hd"];
+    if (tts_model && !validModels.includes(tts_model)) {
+      return NextResponse.json({ error: "Invalid model" }, { status: 400 });
+    }
+
     // Atualizar configuração
     const { error } = await supabase
       .from("clients")
       .update({
         tts_enabled: tts_enabled ?? false,
         tts_provider: tts_provider || "openai",
+        tts_model: tts_model || "tts-1-hd",
         tts_voice: tts_voice || "alloy",
         tts_speed: tts_speed || 1.0,
         tts_auto_offer: tts_auto_offer ?? true,

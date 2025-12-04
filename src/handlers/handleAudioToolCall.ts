@@ -122,6 +122,7 @@ export const handleAudioToolCall = async (
         clientId,
         voice: config.settings?.tts_voice || "alloy",
         speed: config.settings?.tts_speed || 1.0,
+        model: config.settings?.tts_model || "tts-1-hd",
         useCache: true,
       });
 

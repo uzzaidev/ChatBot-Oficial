@@ -368,6 +368,7 @@ export interface ClientConfig {
     messageDelayMs: number; // Delay between split messages (in milliseconds)
     tts_enabled?: boolean;
     tts_provider?: string;
+    tts_model?: string; // 'tts-1' (fast) or 'tts-1-hd' (quality)
     tts_voice?: string;
     tts_speed?: number;
     tts_auto_offer?: boolean;
