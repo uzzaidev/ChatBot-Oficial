@@ -14,7 +14,7 @@ import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getInitials } from '@/lib/utils'
 import { markConversationAsRead } from '@/lib/api'
-import { MessageCircle, LayoutDashboard, Menu, Bot, User, ArrowRight, List } from 'lucide-react'
+import { MessageCircle, LayoutDashboard, Menu, Bot, User, ArrowRight, List, Home } from 'lucide-react'
 import Link from 'next/link'
 import type { MediaAttachment } from '@/components/MediaPreview'
 import type { Message } from '@/lib/types'
@@ -124,8 +124,13 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
           <h2 className="text-white font-semibold text-lg">Conversas</h2>
         </div>
         <Link href="/dashboard">
-          <Button variant="ghost" size="sm" className="text-white hover:bg-mint-700">
-            <LayoutDashboard className="h-4 w-4" />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-white hover:bg-mint-700 flex items-center gap-2 px-3"
+          >
+            <Home className="h-4 w-4" />
+            <span className="font-medium">Início</span>
           </Button>
         </Link>
       </div>

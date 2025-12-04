@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useConversations } from '@/hooks/useConversations'
 import { useGlobalRealtimeNotifications } from '@/hooks/useGlobalRealtimeNotifications'
 import { ConversationList } from '@/components/ConversationList'
-import { MessageCircle, LayoutDashboard, Bot, User, ArrowRight, List } from 'lucide-react'
+import { MessageCircle, LayoutDashboard, Bot, User, ArrowRight, List, Home } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import Link from 'next/link'
@@ -45,8 +45,13 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
             <h2 className="text-white font-semibold text-lg">Conversas</h2>
           </div>
           <Link href="/dashboard">
-            <Button variant="ghost" size="sm" className="text-white hover:bg-mint-700">
-              <LayoutDashboard className="h-4 w-4" />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-white hover:bg-mint-700 flex items-center gap-2 px-3"
+            >
+              <Home className="h-4 w-4" />
+              <span className="font-medium">Início</span>
             </Button>
           </Link>
         </div>
