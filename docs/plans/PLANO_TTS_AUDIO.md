@@ -1,6 +1,18 @@
 # Plano Técnico: Feature de Áudio/TTS (Text-to-Speech) - MODULAR
 
-**Status:** 📋 Planejamento v2.0
+> ⚠️ **DOCUMENTO DESATUALIZADO**
+>
+> Este é o plano original (v2.0) criado antes da implementação.
+>
+> **ARQUITETURA ATUAL (v3.0):** Ver `TTS_ARCHITECTURE_V3.md`
+>
+> **Principais mudanças:**
+> - Tool `enviar_resposta_em_audio` **SEM parâmetros** (AI não passa texto)
+> - Handler recebe `aiResponseText` do chatbotFlow (texto que AI já gerou)
+> - Lógica de "perguntar antes" movida 100% para prompt do sistema
+> - SEMPRE salva mensagens no banco (corrigido bug crítico)
+
+**Status:** 📋 Planejamento v2.0 (IMPLEMENTAÇÃO v3.0 DIVERGIU)
 **Prioridade:** Alta
 **Complexidade:** Média-Alta
 **Arquitetura:** **Modular, Não-Invasiva, TTS como Tool do AI**

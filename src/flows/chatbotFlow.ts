@@ -958,18 +958,20 @@ export const processChatbotMessage = async (
             "@/handlers/handleAudioToolCall"
           );
 
-          // Pega o texto que o AI gerou (aiResponse.content)
-          const aiText = aiResponse.content || "";
+          // Parse argumentos da tool
+          const args = JSON.parse(toolCall.function.arguments || "{}");
+          const textoParaAudio = args.texto_para_audio || "";
 
-          if (!aiText || aiText.trim().length === 0) {
+          if (!textoParaAudio || textoParaAudio.trim().length === 0) {
             logger.logNodeWarning("15.7. Handle Audio Tool Call (TTS)", {
-              warning: "No AI text to convert to audio, skipping",
+              warning: "No text provided in texto_para_audio argument, skipping",
+              args,
             });
             continue;
           }
 
           const audioResult = await handleAudioToolCall({
-            aiResponseText: aiText,
+            aiResponseText: textoParaAudio,
             phone: parsedMessage.phone,
             clientId: config.id,
             config,
