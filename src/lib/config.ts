@@ -226,6 +226,7 @@ export const getClientConfig = async (
         // TTS settings vêm das colunas diretas, não do JSONB
         tts_enabled: client.tts_enabled ?? false,
         tts_provider: client.tts_provider ?? "openai",
+        tts_model: client.tts_model ?? "tts-1-hd",
         tts_voice: client.tts_voice ?? "alloy",
         tts_speed: client.tts_speed ?? 1.0,
         tts_auto_offer: client.tts_auto_offer ?? false,

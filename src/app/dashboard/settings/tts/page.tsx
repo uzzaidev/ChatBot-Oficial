@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast'
 interface TTSConfig {
   tts_enabled: boolean
   tts_provider: string
+  tts_model: string
   tts_voice: string
   tts_speed: number
   tts_auto_offer: boolean
@@ -40,6 +41,7 @@ export default function TTSSettingsPage() {
   const [config, setConfig] = useState<TTSConfig>({
     tts_enabled: false,
     tts_provider: 'openai',
+    tts_model: 'tts-1-hd',
     tts_voice: 'alloy',
     tts_speed: 1.0,
     tts_auto_offer: true
@@ -231,6 +233,59 @@ export default function TTSSettingsPage() {
           <p className="text-sm text-gray-500 mt-2">
             Se desativado, áudio só será enviado se cliente pedir explicitamente
           </p>
+        </CardContent>
+      </Card>
+
+      {/* Model Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Modelo de Geração</CardTitle>
+          <CardDescription>
+            Escolha entre velocidade (tts-1) ou qualidade máxima (tts-1-hd)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div
+              className={`p-4 border-2 rounded-lg cursor-pointer transition ${
+                config.tts_model === 'tts-1'
+                  ? 'border-mint-500 bg-mint-50'
+                  : 'border-gray-200 hover:border-mint-300'
+              } ${!config.tts_enabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              onClick={() => config.tts_enabled && setConfig({ ...config, tts_model: 'tts-1' })}
+            >
+              <h3 className="font-semibold text-lg">TTS-1 (Rápido)</h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Menor latência e custo reduzido. Ideal para alto volume.
+              </p>
+              {config.tts_model === 'tts-1' && (
+                <div className="mt-2 text-mint-600 flex items-center gap-1">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span className="text-sm font-medium">Selecionado</span>
+                </div>
+              )}
+            </div>
+
+            <div
+              className={`p-4 border-2 rounded-lg cursor-pointer transition ${
+                config.tts_model === 'tts-1-hd'
+                  ? 'border-mint-500 bg-mint-50'
+                  : 'border-gray-200 hover:border-mint-300'
+              } ${!config.tts_enabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              onClick={() => config.tts_enabled && setConfig({ ...config, tts_model: 'tts-1-hd' })}
+            >
+              <h3 className="font-semibold text-lg">TTS-1-HD (Qualidade)</h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Máxima qualidade de áudio. Recomendado para experiência premium.
+              </p>
+              {config.tts_model === 'tts-1-hd' && (
+                <div className="mt-2 text-mint-600 flex items-center gap-1">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span className="text-sm font-medium">Selecionado</span>
+                </div>
+              )}
+            </div>
+          </div>
         </CardContent>
       </Card>
 
