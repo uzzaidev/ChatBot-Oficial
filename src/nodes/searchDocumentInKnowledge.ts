@@ -189,6 +189,17 @@ export const searchDocumentInKnowledge = async (
     const embeddingResult = await generateEmbedding(query, openaiApiKey)
     console.log(`[searchDocumentInKnowledge] ✅ Embedding generated: ${embeddingResult.embedding.length} dimensions`)
 
+    // 🐛 DEBUG: Calcular magnitude do embedding gerado (deveria ser ≈ 1.0)
+    const magnitude = Math.sqrt(embeddingResult.embedding.reduce((sum, val) => sum + val * val, 0))
+    console.log(`[searchDocumentInKnowledge] 🐛 DEBUG: Query embedding magnitude = ${magnitude}`)
+    console.log(`[searchDocumentInKnowledge] 🐛 DEBUG: First 5 values = [${embeddingResult.embedding.slice(0, 5).join(', ')}]`)
+
+    // 🐛 DEBUG: Verificar se embedding está vazio ou todo zeros
+    const isAllZeros = embeddingResult.embedding.every(val => val === 0)
+    if (isAllZeros) {
+      console.error(`[searchDocumentInKnowledge] ❌ ERROR: Embedding is all zeros! This will cause NULL similarity!`)
+    }
+
     // 3. Buscar documentos similares usando match_documents RPC
 
     const { data, error } = await supabaseAny.rpc('match_documents', {
@@ -197,6 +208,12 @@ export const searchDocumentInKnowledge = async (
       match_count: max * 3, // Buscar mais para agrupar depois
       filter_client_id: clientId
     })
+
+    // 🐛 DEBUG: Log RPC response
+    console.log(`[searchDocumentInKnowledge] 🐛 DEBUG: RPC response - error: ${!!error}, data length: ${data?.length || 0}`)
+    if (data && data.length > 0) {
+      console.log(`[searchDocumentInKnowledge] 🐛 DEBUG: First result:`, JSON.stringify(data[0], null, 2))
+    }
 
     if (error) {
       console.error('[searchDocumentInKnowledge] ❌ Error calling match_documents:', error)
