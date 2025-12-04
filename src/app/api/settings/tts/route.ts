@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase-server'
+import { NextRequest, NextResponse } from "next/server";
+import { createServerClient } from "@/lib/supabase-server";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 /**
  * GET /api/settings/tts
@@ -9,52 +9,54 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerClient()
+    const supabase = createServerClient();
 
     // Obter usuário logado
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Obter client_id do usuário
     const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('client_id')
-      .eq('id', user.id)
-      .single()
+      .from("user_profiles")
+      .select("client_id")
+      .eq("id", user.id)
+      .single();
 
     if (!profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
     }
 
     // Obter configuração TTS do cliente
     const { data: client, error } = await supabase
-      .from('clients')
-      .select('tts_enabled, tts_provider, tts_voice, tts_speed, tts_auto_offer')
-      .eq('id', profile.client_id)
-      .single()
+      .from("clients")
+      .select("tts_enabled, tts_provider, tts_voice, tts_speed, tts_auto_offer")
+      .eq("id", profile.client_id)
+      .single();
 
     if (error) {
-      console.error('[TTS Settings] Error fetching config:', error)
-      return NextResponse.json({ error: 'Failed to fetch config' }, { status: 500 })
+      console.error("[TTS Settings] Error fetching config:", error);
+      return NextResponse.json({ error: "Failed to fetch config" }, {
+        status: 500,
+      });
     }
 
     return NextResponse.json({
       config: {
         tts_enabled: client?.tts_enabled || false,
-        tts_provider: client?.tts_provider || 'openai',
-        tts_voice: client?.tts_voice || 'alloy',
+        tts_provider: client?.tts_provider || "openai",
+        tts_voice: client?.tts_voice || "alloy",
         tts_speed: client?.tts_speed || 1.0,
-        tts_auto_offer: client?.tts_auto_offer ?? true
-      }
-    })
+        tts_auto_offer: client?.tts_auto_offer ?? true,
+      },
+    });
   } catch (error) {
-    console.error('[TTS Settings] GET error:', error)
+    console.error("[TTS Settings] GET error:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
 
@@ -64,61 +66,67 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerClient()
+    const supabase = createServerClient();
 
     // Obter usuário logado
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Obter client_id do usuário
     const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('client_id')
-      .eq('id', user.id)
-      .single()
+      .from("user_profiles")
+      .select("client_id")
+      .eq("id", user.id)
+      .single();
 
     if (!profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
     }
 
-    const body = await request.json()
-    const { tts_enabled, tts_provider, tts_voice, tts_speed, tts_auto_offer } = body
+    const body = await request.json();
+    const { tts_enabled, tts_provider, tts_voice, tts_speed, tts_auto_offer } =
+      body;
 
     // Validações
-    const validVoices = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer']
+    const validVoices = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"];
     if (tts_voice && !validVoices.includes(tts_voice)) {
-      return NextResponse.json({ error: 'Invalid voice' }, { status: 400 })
+      return NextResponse.json({ error: "Invalid voice" }, { status: 400 });
     }
 
     if (tts_speed && (tts_speed < 0.25 || tts_speed > 4.0)) {
-      return NextResponse.json({ error: 'Speed must be between 0.25 and 4.0' }, { status: 400 })
+      return NextResponse.json(
+        { error: "Speed must be between 0.25 and 4.0" },
+        { status: 400 },
+      );
     }
 
     // Atualizar configuração
     const { error } = await supabase
-      .from('clients')
+      .from("clients")
       .update({
         tts_enabled: tts_enabled ?? false,
-        tts_provider: tts_provider || 'openai',
-        tts_voice: tts_voice || 'alloy',
+        tts_provider: tts_provider || "openai",
+        tts_voice: tts_voice || "alloy",
         tts_speed: tts_speed || 1.0,
-        tts_auto_offer: tts_auto_offer ?? true
+        tts_auto_offer: tts_auto_offer ?? true,
       })
-      .eq('id', profile.client_id)
+      .eq("id", profile.client_id);
 
     if (error) {
-      console.error('[TTS Settings] Error updating config:', error)
-      return NextResponse.json({ error: 'Failed to update config' }, { status: 500 })
+      console.error("[TTS Settings] Error updating config:", error);
+      return NextResponse.json({ error: "Failed to update config" }, {
+        status: 500,
+      });
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('[TTS Settings] POST error:', error)
+    console.error("[TTS Settings] POST error:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
