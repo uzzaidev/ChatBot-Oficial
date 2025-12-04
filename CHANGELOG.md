@@ -5,6 +5,31 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+---
+
+## [Não Lançado] - Em Desenvolvimento
+
+### Fixed
+- **Busca de Documentos RAG Não Encontrava Resultados** (2025-12-04)
+  - Corrigido bug crítico onde busca semântica retornava 0 resultados apesar de documentos existirem
+  - Causa raiz: Filtro de tipo de documento muito restritivo rejeitava resultados válidos
+    - Exemplo: Imagem marcada como "catalog" era rejeitada ao buscar tipo "image"
+    - Busca retornava chunk com similarity = 0.302, mas filtro descartava por incompatibilidade de tipo
+  - Solução: Removido filtro de tipo, confiando na busca semântica para encontrar documentos relevantes
+  - Impacto: Feature agora funciona 100%, AI consegue enviar documentos via WhatsApp
+  - Arquivo: `src/nodes/searchDocumentInKnowledge.ts`
+  - Documentação: `docs/bugfix/DOCUMENT_SEARCH_NULL_SIMILARITY_FIX.md`
+
+### Added
+- **Logs de Debug Aprimorados para Busca de Documentos** (2025-12-04)
+  - Adicionado validação de magnitude do embedding (deve ser ≈ 1.0)
+  - Adicionado logging de resposta RPC completa
+  - Adicionado primeiros 5 valores do embedding para debugging
+  - Adicionado detecção de embeddings vazios (todos zeros)
+  - Facilita diagnóstico de problemas futuros em busca vetorial
+
+---
+
 ## [3.1.0] - 2025-12-03 ✅ PRODUÇÃO
 
 ### 🎉 Minor: Sistema de Envio de Documentos RAG via WhatsApp

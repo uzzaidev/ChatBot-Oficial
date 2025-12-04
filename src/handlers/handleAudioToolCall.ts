@@ -8,8 +8,7 @@ import { ClientConfig, StoredMediaMetadata } from "@/lib/types";
 import { query } from "@/lib/postgres";
 
 export interface HandleAudioToolCallInput {
-  texto_para_audio: string;
-  perguntar_antes?: boolean;
+  aiResponseText: string; // Texto gerado pelo AI (aiResponse.content)
   phone: string;
   clientId: string;
   config: ClientConfig;
@@ -25,21 +24,36 @@ export interface HandleAudioToolCallOutput {
 export const handleAudioToolCall = async (
   input: HandleAudioToolCallInput,
 ): Promise<HandleAudioToolCallOutput> => {
-  const { texto_para_audio, perguntar_antes, phone, clientId, config } = input;
+  const { aiResponseText, phone, clientId, config } = input;
 
   const supabase = createServerClient();
 
+  console.log(`[TTS] Processing audio request for ${phone}`);
+  console.log(`[TTS] Text length: ${aiResponseText.length} chars`);
+
   // 1. Verificação de segurança: TTS habilitado globalmente?
   if (!config.settings?.tts_enabled) {
-    console.log("[TTS] Disabled globally, sending as text instead");
+    console.log("[TTS] TTS disabled globally, sending as text fallback");
 
-    // Envia como texto
+    // Envia como texto e SALVA NO BANCO
     try {
       const { messageId } = await sendTextMessage(
         phone,
-        texto_para_audio,
+        aiResponseText,
         config,
       );
+
+      // ✅ SALVAR no banco
+      await saveChatMessage({
+        phone,
+        message: aiResponseText,
+        type: "ai",
+        clientId,
+        wamid: messageId,
+      });
+
+      console.log(`[TTS] Text sent and saved (TTS disabled): ${messageId}`);
+
       return {
         success: true,
         sentAsAudio: false,
@@ -47,6 +61,7 @@ export const handleAudioToolCall = async (
         messageId,
       };
     } catch (error) {
+      console.error("[TTS] Error sending text:", error);
       return {
         success: false,
         sentAsAudio: false,
@@ -55,70 +70,14 @@ export const handleAudioToolCall = async (
     }
   }
 
-  // 2. Verificar preferência do cliente WhatsApp
-  const { data: customer } = await supabase
-    .from("clientes_whatsapp")
-    .select("audio_preference")
-    .eq("telefone", phone)
-    .eq("client_id", clientId)
-    .single();
-
-  // Se cliente não quer áudio, envia texto
-  if (customer?.audio_preference === "never") {
-    console.log('[TTS] Customer preference is "never", sending as text');
-
-    try {
-      const { messageId } = await sendTextMessage(
-        phone,
-        texto_para_audio,
-        config,
-      );
-      return { success: true, sentAsAudio: false, messageId };
-    } catch (error) {
-      return {
-        success: false,
-        sentAsAudio: false,
-        error: error instanceof Error ? error.message : "Failed to send text",
-      };
-    }
-  }
-
-  // 3. Se deve perguntar antes, envia pergunta primeiro
-  // TODO: Implementar state machine para aguardar resposta
-  // Por enquanto, se perguntar_antes=true, envia texto
-  if (perguntar_antes && customer?.audio_preference === "ask") {
-    console.log("[TTS] perguntar_antes=true, asking customer first");
-
-    try {
-      await sendTextMessage(
-        phone,
-        'Quer que eu explique isso por áudio? Responda "sim" ou "não".',
-        config,
-      );
-      // Por enquanto, envia texto após perguntar
-      const { messageId } = await sendTextMessage(
-        phone,
-        texto_para_audio,
-        config,
-      );
-      return { success: true, sentAsAudio: false, messageId };
-    } catch (error) {
-      return {
-        success: false,
-        sentAsAudio: false,
-        error: error instanceof Error ? error.message : "Failed to send text",
-      };
-    }
-  }
-
-  // 4. ENVIAR ÁUDIO com fallback robusto
+  // 2. ENVIAR ÁUDIO com fallback robusto
   try {
     console.log("[TTS] Attempting to generate and send audio");
 
-    // 4.1 Converter para áudio
+    // 2.1 Converter para áudio
     const { audioBuffer, format, fromCache, durationSeconds } =
       await convertTextToSpeech({
-        text: texto_para_audio,
+        text: aiResponseText,
         clientId,
         voice: config.settings?.tts_voice || "alloy",
         speed: config.settings?.tts_speed || 1.0,
@@ -130,7 +89,7 @@ export const handleAudioToolCall = async (
       `[TTS] Audio generated (${audioBuffer.length} bytes, from cache: ${fromCache})`,
     );
 
-    // 4.2 Upload para WhatsApp
+    // 2.2 Upload para WhatsApp
     const { mediaId, expiresAt } = await uploadAudioToWhatsApp({
       audioBuffer,
       accessToken: config.apiKeys.metaAccessToken!,
@@ -139,7 +98,7 @@ export const handleAudioToolCall = async (
 
     console.log(`[TTS] Audio uploaded to WhatsApp: ${mediaId}`);
 
-    // 4.2.1 Upload permanente para Supabase Storage (backup)
+    // 2.3 Upload permanente para Supabase Storage (backup)
     const fileName = `audio/${clientId}/${Date.now()}.mp3`;
 
     const { error: storageError } = await supabase.storage
@@ -165,7 +124,7 @@ export const handleAudioToolCall = async (
       );
     }
 
-    // 4.3 Enviar mensagem de áudio
+    // 2.4 Enviar mensagem de áudio
     const { messageId } = await sendAudioMessageByMediaId(
       phone,
       mediaId,
@@ -176,7 +135,7 @@ export const handleAudioToolCall = async (
       `[TTS] Audio message sent successfully! Message ID: ${messageId}`,
     );
 
-    // 4.4 SALVAR NA TABELA n8n_chat_histories
+    // 2.5 SALVAR NA TABELA n8n_chat_histories
     // Preparar media metadata no formato esperado
     const mediaMetadata: StoredMediaMetadata = {
       type: "audio",
@@ -189,7 +148,7 @@ export const handleAudioToolCall = async (
     // Salvar mensagem usando a função padrão
     await saveChatMessage({
       phone,
-      message: texto_para_audio,
+      message: aiResponseText,
       type: "ai",
       clientId,
       mediaMetadata,
@@ -201,10 +160,12 @@ export const handleAudioToolCall = async (
       `UPDATE n8n_chat_histories
        SET transcription = $1, audio_duration_seconds = $2
        WHERE session_id = $3 AND client_id = $4 AND wamid = $5`,
-      [texto_para_audio, durationSeconds, phone, clientId, messageId],
+      [aiResponseText, durationSeconds, phone, clientId, messageId],
     );
 
-    // 4.5 Atualizar última mensagem da conversa
+    console.log(`[TTS] Audio message saved to database`);
+
+    // 2.6 Atualizar última mensagem da conversa
     const { data: conversation } = await supabase
       .from("conversations")
       .select("id")
@@ -222,16 +183,11 @@ export const handleAudioToolCall = async (
         .eq("id", conversation.id);
     }
 
-    // 4.6 Atualizar timestamp de último áudio
-    await supabase
-      .from("clientes_whatsapp")
-      .update({ last_audio_response_at: new Date().toISOString() })
-      .eq("telefone", phone)
-      .eq("client_id", clientId);
+    console.log(`[TTS] Conversation updated`);
 
     return { success: true, sentAsAudio: true, messageId };
   } catch (error) {
-    // FALLBACK: Se QUALQUER erro, envia texto
+    // 3. FALLBACK: Se QUALQUER erro ao gerar/enviar áudio, envia texto
     console.error(
       "[TTS] Error generating/sending audio, falling back to text:",
       error,
@@ -242,7 +198,7 @@ export const handleAudioToolCall = async (
       client_id: clientId,
       phone,
       event_type: "fallback",
-      text_length: texto_para_audio.length,
+      text_length: aiResponseText.length,
       from_cache: false,
       error_message: error instanceof Error ? error.message : "Unknown error",
     });
@@ -250,14 +206,14 @@ export const handleAudioToolCall = async (
     try {
       const { messageId } = await sendTextMessage(
         phone,
-        texto_para_audio,
+        aiResponseText,
         config,
       );
 
       // Salvar como mensagem de texto em n8n_chat_histories
       await saveChatMessage({
         phone,
-        message: texto_para_audio,
+        message: aiResponseText,
         type: "ai",
         clientId,
         wamid: messageId,
@@ -275,7 +231,7 @@ export const handleAudioToolCall = async (
         await supabase
           .from("conversations")
           .update({
-            last_message: texto_para_audio.substring(0, 50),
+            last_message: aiResponseText.substring(0, 50),
             last_update: new Date().toISOString(),
           })
           .eq("id", conversation.id);
