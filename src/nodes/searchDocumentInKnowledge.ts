@@ -137,17 +137,19 @@ export const searchDocumentInKnowledge = async (
     maxResults
   } = input
 
+  // Variáveis para salvar antes do try-catch (para debug em caso de erro)
+  let totalDocumentsInBase = 0
+  let threshold = searchThreshold || 0.7
+  let max = maxResults || 5
+
   try {
     // 1. Buscar configurações (se não fornecidas)
-    let threshold = searchThreshold
-    let max = maxResults
-
-    if (threshold === undefined) {
+    if (searchThreshold === undefined) {
       const configValue = await getBotConfig(clientId, 'knowledge_media:search_threshold')
       threshold = configValue !== null ? Number(configValue) : 0.7
     }
 
-    if (max === undefined) {
+    if (maxResults === undefined) {
       const configValue = await getBotConfig(clientId, 'rag:max_results')
       max = configValue !== null ? Number(configValue) : 5
     }
@@ -158,20 +160,26 @@ export const searchDocumentInKnowledge = async (
     const supabase = createServiceRoleClient()
     const supabaseAny = supabase as any
 
-    const { data: totalDocsData } = await supabaseAny
+    const { data: totalDocsData, error: countError } = await supabaseAny
       .from('documents')
       .select('original_file_url')
       .eq('client_id', clientId)
       .not('original_file_url', 'is', null)
 
+    if (countError) {
+      console.error('[searchDocumentInKnowledge] ❌ Error counting documents:', countError)
+    }
+
     // Contar arquivos únicos (distintos por URL)
     const uniqueUrls = new Set(totalDocsData?.map((d: any) => d.original_file_url) || [])
-    const totalDocumentsInBase = uniqueUrls.size
+    totalDocumentsInBase = uniqueUrls.size
 
     console.log(`[searchDocumentInKnowledge] 📊 Total documents in base: ${totalDocumentsInBase}`)
 
     // 2. Gerar embedding da query
+    console.log(`[searchDocumentInKnowledge] 🔑 Generating embedding (apiKey provided: ${!!openaiApiKey})`)
     const embeddingResult = await generateEmbedding(query, openaiApiKey)
+    console.log(`[searchDocumentInKnowledge] ✅ Embedding generated: ${embeddingResult.embedding.length} dimensions`)
 
     // 3. Buscar documentos similares usando match_documents RPC
 
@@ -273,15 +281,16 @@ export const searchDocumentInKnowledge = async (
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     console.error('[searchDocumentInKnowledge] ❌ Error:', errorMessage)
+    console.error('[searchDocumentInKnowledge] ❌ Stack:', error instanceof Error ? error.stack : 'N/A')
 
-    // Retornar estrutura vazia ao invés de quebrar o fluxo
+    // Retornar estrutura vazia mas com totalDocumentsInBase salvo antes do erro
     return {
       results: [],
       metadata: {
-        totalDocumentsInBase: 0,
+        totalDocumentsInBase, // Usa a variável salva antes do try-catch
         chunksFound: 0,
         uniqueDocumentsFound: 0,
-        threshold: searchThreshold || 0.7,
+        threshold,
         documentTypeFilter: documentType
       }
     }

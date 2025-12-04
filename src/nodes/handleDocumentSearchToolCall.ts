@@ -58,6 +58,14 @@ export interface HandleDocumentSearchOutput {
   /** Lista de arquivos enviados (para log) */
   filesSent?: string[]
 
+  /** Metadados dos arquivos enviados (para renderizar no frontend) */
+  filesMetadata?: Array<{
+    url: string
+    filename: string
+    mimeType: string
+    size: number
+  }>
+
   /** Metadados de debug da busca */
   searchMetadata?: {
     totalDocumentsInBase: number
@@ -159,6 +167,7 @@ export const handleDocumentSearchToolCall = async (
     // 4. Enviar documentos via WhatsApp
     let sentCount = 0
     const filesSent: string[] = []
+    const filesMetadata: Array<{ url: string; filename: string; mimeType: string; size: number }> = []
     const errors: string[] = []
 
     for (const doc of results) {
@@ -191,6 +200,14 @@ export const handleDocumentSearchToolCall = async (
 
         sentCount++
         filesSent.push(doc.filename)
+
+        // Coletar metadados para renderizar no frontend
+        filesMetadata.push({
+          url: doc.originalFileUrl,
+          filename: doc.filename,
+          mimeType: doc.originalMimeType,
+          size: doc.originalFileSize
+        })
 
         // Delay entre envios para evitar rate limit
         if (sentCount < results.length) {
@@ -229,6 +246,7 @@ export const handleDocumentSearchToolCall = async (
       documentsFound: results.length,
       documentsSent: sentCount,
       filesSent,
+      filesMetadata,
       searchMetadata: metadata
     }
 
