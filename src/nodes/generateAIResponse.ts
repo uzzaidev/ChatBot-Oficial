@@ -141,15 +141,20 @@ const TTS_AUDIO_TOOL_DEFINITION = {
   type: "function",
   function: {
     name: "enviar_resposta_em_audio",
-    description: `Converte a resposta atual em mensagem de voz (áudio) ao invés de enviar como texto.
+    description: `Converte sua resposta em mensagem de voz (áudio) ao invés de enviar como texto.
 
-IMPORTANTE: Esta tool NÃO requer argumentos. Ela automaticamente converte o texto da sua resposta atual em áudio.
+IMPORTANTE: Passe o texto que deseja converter como argumento 'texto_para_audio'.
 
 A decisão de quando usar esta tool deve ser configurada no prompt do sistema pelo administrador.`,
     parameters: {
       type: "object",
-      properties: {},
-      required: [],
+      properties: {
+        texto_para_audio: {
+          type: "string",
+          description: "Texto que será convertido em áudio (sua resposta completa para o cliente)",
+        },
+      },
+      required: ["texto_para_audio"],
     },
   },
 };

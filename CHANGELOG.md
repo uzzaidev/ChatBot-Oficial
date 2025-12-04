@@ -20,6 +20,18 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
   - Arquivo: `src/nodes/searchDocumentInKnowledge.ts`
   - Documentação: `docs/bugfix/DOCUMENT_SEARCH_NULL_SIMILARITY_FIX.md`
 
+- **TTS: Mensagens Não Salvas no Banco e Enviadas em Duplicata** (2025-12-04)
+  - Corrigido bug crítico onde handler TTS perguntava e enviava texto imediatamente sem esperar resposta
+  - Problema: Handler enviava 2 mensagens (pergunta + texto) mas NÃO salvava no banco
+  - Frontend não exibia mensagens, backend monitor mostrava `_END` incorretamente
+  - **REFATORAÇÃO COMPLETA DA ARQUITETURA TTS**:
+    - Tool `enviar_resposta_em_audio` agora **sem parâmetros** (antes tinha `texto_para_audio`)
+    - Handler recebe `aiResponseText` do chatbotFlow (texto que AI já gerou)
+    - AI gera resposta uma vez, handler apenas converte para áudio
+    - Removida lógica de "perguntar antes" do código (deve estar no prompt do sistema)
+  - Impacto: Arquitetura mais simples, eficiente (menos tokens) e sem bugs de duplicação
+  - Arquivos: `src/handlers/handleAudioToolCall.ts`, `src/flows/chatbotFlow.ts`, `src/nodes/generateAIResponse.ts`
+
 ### Added
 - **Logs de Debug Aprimorados para Busca de Documentos** (2025-12-04)
   - Adicionado validação de magnitude do embedding (deve ser ≈ 1.0)
@@ -27,6 +39,13 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
   - Adicionado primeiros 5 valores do embedding para debugging
   - Adicionado detecção de embeddings vazios (todos zeros)
   - Facilita diagnóstico de problemas futuros em busca vetorial
+
+### Changed
+- **Arquitetura TTS Refatorada** (2025-12-04)
+  - Tool `enviar_resposta_em_audio` não requer mais argumentos
+  - Lógica de "quando usar áudio" movida 100% para prompt do sistema (configurável via frontend)
+  - Handler sempre salva mensagens no banco (texto ou áudio)
+  - Logging detalhado em cada etapa do processo TTS
 
 ---
 
