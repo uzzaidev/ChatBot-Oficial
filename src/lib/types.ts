@@ -80,6 +80,8 @@ export interface Message {
   status: MessageStatus;
   timestamp: string;
   metadata: Record<string, unknown> | null;
+  transcription?: string | null; // TTS: Text transcription for audio messages
+  audio_duration_seconds?: number | null; // TTS: Duration of audio in seconds
 }
 
 export interface UsageLog {
@@ -364,6 +366,11 @@ export interface ClientConfig {
     messageSplitEnabled: boolean;
     maxChatHistory: number;
     messageDelayMs: number; // Delay between split messages (in milliseconds)
+    tts_enabled?: boolean;
+    tts_provider?: string;
+    tts_voice?: string;
+    tts_speed?: number;
+    tts_auto_offer?: boolean;
   };
 
   // Notificações

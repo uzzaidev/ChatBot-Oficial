@@ -5,6 +5,7 @@ import { FileText, Download, Play, File } from 'lucide-react'
 import Image from 'next/image'
 import { useState } from 'react'
 import { MessageActionMenu } from '@/components/MessageActionMenu'
+import { AudioMessage } from '@/components/AudioMessage'
 
 interface MessageBubbleProps {
   message: Message
@@ -77,15 +78,35 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
   // Render real audio
   const renderAudio = () => {
     if (!mediaMetadata) return null
-    
+
+    // Check if message has transcription and audio_duration_seconds (TTS message)
+    const transcription = (message as any).transcription || message.content
+    const audioDuration = (message as any).audio_duration_seconds || 0
+
+    // If has transcription and duration, use fancy AudioMessage component
+    if (transcription && audioDuration > 0) {
+      return (
+        <div className="-m-3">
+          <AudioMessage
+            audioUrl={mediaMetadata.url}
+            transcription={transcription}
+            durationSeconds={audioDuration}
+            direction={message.direction === 'incoming' ? 'inbound' : 'outbound'}
+            timestamp={message.timestamp}
+          />
+        </div>
+      )
+    }
+
+    // Fallback to simple HTML5 audio player (for received audios without transcription)
     return (
       <div className="mb-2">
         <div className="flex items-center gap-2 mb-2 text-sm opacity-80">
           <Play className="h-4 w-4" />
           <span className="font-medium">Áudio</span>
         </div>
-        <audio 
-          controls 
+        <audio
+          controls
           className="w-full max-w-[280px] h-10"
           preload="metadata"
         >

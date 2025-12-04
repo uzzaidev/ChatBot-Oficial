@@ -163,7 +163,7 @@ export const sendImageMessage = async (
 }
 
 /**
- * 🔐 Envia áudio via WhatsApp
+ * 🔐 Envia áudio via WhatsApp (por URL)
  *
  * @param phone - Número do destinatário
  * @param audioUrl - URL pública do áudio
@@ -201,6 +201,48 @@ export const sendAudioMessage = async (
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     throw new Error(`Failed to send audio message via Meta API: ${errorMessage}`)
+  }
+}
+
+/**
+ * 🔐 Envia áudio via WhatsApp (por Media ID)
+ *
+ * @param phone - Número do destinatário
+ * @param mediaId - WhatsApp Media ID (retornado pelo upload)
+ * @param config - Config opcional (do Vault)
+ * @returns ID da mensagem enviada
+ */
+export const sendAudioMessageByMediaId = async (
+  phone: string,
+  mediaId: string,
+  config?: ClientConfig
+): Promise<{ messageId: string }> => {
+  try {
+    const accessToken = config?.apiKeys.metaAccessToken
+    const phoneNumberId = config?.apiKeys.metaPhoneNumberId || getRequiredEnvVariable('META_PHONE_NUMBER_ID')
+
+    const client = createMetaApiClient(accessToken)
+
+    const response = await client.post(`/${phoneNumberId}/messages`, {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to: phone,
+      type: 'audio',
+      audio: {
+        id: mediaId,
+      },
+    })
+
+    const messageId = response.data?.messages?.[0]?.id
+
+    if (!messageId) {
+      throw new Error('No message ID returned from Meta API')
+    }
+
+    return { messageId }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    throw new Error(`Failed to send audio message by media ID via Meta API: ${errorMessage}`)
   }
 }
 
