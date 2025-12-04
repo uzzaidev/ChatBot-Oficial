@@ -15,9 +15,10 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
-import { FileText, Trash2, Loader2, AlertCircle } from 'lucide-react'
+import { FileText, Trash2, Loader2, AlertCircle, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
+import { ChunksViewer } from '@/components/ChunksViewer'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,6 +51,8 @@ export const DocumentList = ({ refreshTrigger }: DocumentListProps) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [documentToDelete, setDocumentToDelete] = useState<Document | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [chunksViewerOpen, setChunksViewerOpen] = useState(false)
+  const [documentToView, setDocumentToView] = useState<Document | null>(null)
   const { toast } = useToast()
 
   const fetchDocuments = useCallback(async () => {
@@ -86,6 +89,11 @@ export const DocumentList = ({ refreshTrigger }: DocumentListProps) => {
   const handleDeleteClick = (doc: Document) => {
     setDocumentToDelete(doc)
     setDeleteDialogOpen(true)
+  }
+
+  const handleViewChunksClick = (doc: Document) => {
+    setDocumentToView(doc)
+    setChunksViewerOpen(true)
   }
 
   const handleDeleteConfirm = async () => {
@@ -211,17 +219,41 @@ export const DocumentList = ({ refreshTrigger }: DocumentListProps) => {
               </div>
             </div>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleDeleteClick(doc)}
-              className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleViewChunksClick(doc)}
+                className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950"
+                title="Visualizar e gerenciar chunks"
+              >
+                <Eye className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleDeleteClick(doc)}
+                className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                title="Deletar documento"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         ))}
       </div>
+
+      {/* Chunks viewer modal */}
+      {documentToView && (
+        <ChunksViewer
+          filename={documentToView.filename}
+          isOpen={chunksViewerOpen}
+          onClose={() => {
+            setChunksViewerOpen(false)
+            setDocumentToView(null)
+          }}
+        />
+      )}
 
       {/* Delete confirmation dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
