@@ -88,7 +88,6 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error('[vault-config] Error:', errorMessage)
 
     return NextResponse.json(
       {

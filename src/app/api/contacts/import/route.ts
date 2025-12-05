@@ -130,7 +130,6 @@ export async function POST(request: NextRequest) {
       result,
     });
   } catch (error) {
-    console.error("[API /contacts/import] Error:", error);
     return NextResponse.json(
       { error: "Erro interno do servidor" },
       { status: 500 }

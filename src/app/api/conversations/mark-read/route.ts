@@ -56,11 +56,6 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        console.log("👁️ [mark-read] Marking conversation as read:", {
-            phone,
-            clientId,
-        });
-
         // Update last_read_at in clientes_whatsapp
         const { data, error } = await supabase
             .from("clientes_whatsapp")
@@ -69,7 +64,6 @@ export async function POST(request: NextRequest) {
             .select();
 
         if (error) {
-            console.error("❌ [mark-read] Error updating last_read_at:", error);
             return NextResponse.json(
                 { error: `Database error: ${error.message}` },
                 { status: 500 },
@@ -77,17 +71,11 @@ export async function POST(request: NextRequest) {
         }
 
         if (!data || data.length === 0) {
-            console.warn(
-                "⚠️ [mark-read] No conversation found for phone:",
-                phone,
-            );
             return NextResponse.json(
                 { error: "Conversation not found" },
                 { status: 404 },
             );
         }
-
-        console.log("✅ [mark-read] Successfully marked as read:", data[0]);
 
         return NextResponse.json({
             success: true,
@@ -97,7 +85,6 @@ export async function POST(request: NextRequest) {
             },
         });
     } catch (error) {
-        console.error("❌ [mark-read] Unexpected error:", error);
         return NextResponse.json(
             { error: error instanceof Error ? error.message : "Unknown error" },
             { status: 500 },

@@ -79,7 +79,7 @@ export default function BackendPage() {
         }
       }
     } catch (error) {
-      console.error('Error fetching logs:', error)
+      // Error fetching logs - handled silently
     }
   }, [selectedExecution])
 

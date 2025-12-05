@@ -54,7 +54,6 @@ export async function POST(request: NextRequest) {
 
     if (!n8nResponse.ok) {
       const errorText = await n8nResponse.text()
-      console.error('Erro ao transferir para humano via n8n:', errorText)
       return NextResponse.json(
         { error: 'Falha ao transferir conversa via n8n' },
         { status: 502 }
@@ -69,7 +68,6 @@ export async function POST(request: NextRequest) {
       data: result,
     })
   } catch (error) {
-    console.error('Erro inesperado ao transferir conversa:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

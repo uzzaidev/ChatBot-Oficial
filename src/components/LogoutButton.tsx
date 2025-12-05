@@ -37,12 +37,10 @@ export function LogoutButton({ isCollapsed = false }: LogoutButtonProps) {
         router.push('/login')
         router.refresh()
       } else {
-        console.error('[LogoutButton] Erro no logout:', data.error)
         alert('Erro ao fazer logout. Tente novamente.')
         setLoading(false)
       }
     } catch (error) {
-      console.error('[LogoutButton] Erro inesperado:', error)
       alert('Erro ao fazer logout. Tente novamente.')
       setLoading(false)
     }

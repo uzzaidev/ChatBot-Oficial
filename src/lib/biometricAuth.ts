@@ -44,7 +44,6 @@ export async function checkBiometricAvailability(): Promise<{
       type: result.isAvailable ? type : undefined,
     }
   } catch (error) {
-    console.error('[Biometric Auth] Erro ao verificar disponibilidade:', error)
     return { available: false }
   }
 }
@@ -70,7 +69,6 @@ export async function authenticateWithBiometric(): Promise<{
     // Se chegou aqui, autenticação foi bem-sucedida
     return { success: true }
   } catch (error: any) {
-    console.error('[Biometric Auth] Erro na autenticação:', error)
     
     // Mensagens de erro amigáveis
     let errorMessage = 'Erro ao autenticar'

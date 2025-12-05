@@ -76,7 +76,6 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error('[ListDocuments] ❌ Error:', errorMessage)
 
     return NextResponse.json(
       { error: `Failed to list documents: ${errorMessage}` },

@@ -25,7 +25,6 @@ export default function DashboardLayout({
         const { data: { user } } = await supabase.auth.getUser()
         setUser(user)
       } catch (error) {
-        console.error('Erro ao buscar usuário:', error)
       } finally {
         setLoading(false)
       }

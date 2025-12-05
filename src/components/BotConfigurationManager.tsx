@@ -65,7 +65,6 @@ export default function BotConfigurationManager() {
       
       if (!response.ok) {
         const errorText = await response.text()
-        console.error('[BotConfigurationManager] ❌ Response not OK:', errorText)
         throw new Error('Failed to fetch configurations')
       }
       const data = await response.json()
@@ -90,7 +89,6 @@ export default function BotConfigurationManager() {
 
       setConfigs(grouped)
     } catch (error) {
-      console.error('[BotConfigurationManager] ❌ Error fetching configs:', error)
       showNotification('error', 'Falha ao carregar configurações')
     } finally {
       setLoading(false)
@@ -136,7 +134,6 @@ export default function BotConfigurationManager() {
       setEditValue(null)
       fetchConfigs() // Reload configs
     } catch (error) {
-      console.error('Error saving config:', error)
       showNotification('error', 'Falha ao salvar configuração')
     }
   }
@@ -158,7 +155,6 @@ export default function BotConfigurationManager() {
       showNotification('success', 'Configuração restaurada para o padrão')
       fetchConfigs() // Reload configs
     } catch (error) {
-      console.error('Error resetting config:', error)
       showNotification('error', 'Falha ao restaurar configuração')
     }
   }

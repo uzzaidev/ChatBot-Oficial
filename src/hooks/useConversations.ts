@@ -83,7 +83,6 @@ export const useConversations = ({
         ? err.message
         : "Erro desconhecido";
       setError(errorMessage);
-      console.error("Erro ao buscar conversas:", err);
     } finally {
       // Only clear loading state if it was set (initial load or manual refresh)
       if (!isRealtimeUpdate) {

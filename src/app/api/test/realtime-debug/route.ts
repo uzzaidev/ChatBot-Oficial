@@ -42,7 +42,6 @@ export async function GET() {
     const supabaseAnon = createClient(supabaseUrl, anonKey)
 
     // 3. Testar conexão básica (REST API)
-    console.log('🧪 Testing REST API connection...')
     const { data: testData, error: testError } = await supabaseAnon
       .from('n8n_chat_histories')
       .select('id')
@@ -58,7 +57,6 @@ export async function GET() {
     })
 
     // 4. Testar Realtime com configurações detalhadas
-    console.log('🧪 Testing Realtime connection...')
 
     let realtimeStatus = 'PENDING'
     let realtimeError: any = null
@@ -80,12 +78,10 @@ export async function GET() {
             table: 'n8n_chat_histories',
           },
           (payload) => {
-            console.log('✅ Realtime event received:', payload)
             subscriptionDetails.receivedEvent = true
           }
         )
         .subscribe((status, err) => {
-          console.log(`📡 Realtime status: ${status}`, err || '')
           realtimeStatus = status
           realtimeError = err
 
@@ -93,13 +89,11 @@ export async function GET() {
           subscriptionDetails.lastError = err
 
           if (status === 'SUBSCRIBED') {
-            console.log('✅ Realtime SUBSCRIBED successfully')
             setTimeout(() => {
               supabaseAnon.removeChannel(channel)
               resolve()
             }, 2000)
           } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-            console.error(`❌ Realtime ${status}:`, err)
             supabaseAnon.removeChannel(channel)
             resolve()
           }
@@ -108,7 +102,6 @@ export async function GET() {
       // Timeout de 10s
       setTimeout(() => {
         if (realtimeStatus === 'PENDING') {
-          console.error('⏱️ Realtime timeout')
           supabaseAnon.removeChannel(channel)
           resolve()
         }
@@ -129,7 +122,6 @@ export async function GET() {
 
     // 5. Verificar RLS policies (usando service key)
     if (serviceKey) {
-      console.log('🧪 Checking RLS policies...')
       const supabaseService = createClient(supabaseUrl, serviceKey)
 
       // Try to check RLS policies
@@ -187,7 +179,6 @@ export async function GET() {
       ].filter(Boolean) : [],
     })
   } catch (error) {
-    console.error('❌ Diagnostic error:', error)
 
     return NextResponse.json({
       success: false,

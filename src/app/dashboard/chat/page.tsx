@@ -47,7 +47,6 @@ function ChatPageContent() {
                     }
                 }
             } catch (error) {
-                console.error('Erro ao verificar autenticação:', error)
             } finally {
                 setLoading(false)
             }

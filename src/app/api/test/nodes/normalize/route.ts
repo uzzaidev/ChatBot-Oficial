@@ -60,7 +60,6 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     )
   } catch (error: any) {
-    console.error('[TEST normalizeMessage] Error:', error)
     return NextResponse.json(
       { error: error.message, details: error.stack },
       { status: 500 }

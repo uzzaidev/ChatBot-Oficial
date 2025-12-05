@@ -30,7 +30,6 @@ export async function POST(request: NextRequest) {
       info: `RAG context recuperado: ${output.length} caracteres`,
     })
   } catch (error: any) {
-    console.error('[TEST getRAGContext] Error:', error)
     return NextResponse.json(
       { error: error.message, details: error.stack },
       { status: 500 }

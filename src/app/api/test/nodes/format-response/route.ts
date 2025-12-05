@@ -30,7 +30,6 @@ export async function POST(request: NextRequest) {
       info: `Resposta formatada em ${output.length} mensagem(ns)`,
     })
   } catch (error: any) {
-    console.error('[TEST formatResponse] Error:', error)
     return NextResponse.json(
       { error: error.message, details: error.stack },
       { status: 500 }

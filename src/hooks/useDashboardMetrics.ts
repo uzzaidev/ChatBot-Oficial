@@ -63,7 +63,6 @@ export function useDashboardMetrics({
 
       setMetrics(data)
     } catch (err) {
-      console.error('[useDashboardMetrics] Error:', err)
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
       setLoading(false)

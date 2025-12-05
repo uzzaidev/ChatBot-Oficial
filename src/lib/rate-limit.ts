@@ -35,7 +35,6 @@ try {
   } else {
   }
 } catch (error) {
-  console.error('[rate-limit] Failed to initialize Redis:', error)
 }
 
 /**
@@ -146,7 +145,6 @@ export async function checkRateLimit(
     return null // No rate limit hit
   } catch (error) {
     // Graceful degradation - if Redis fails, allow request
-    console.error('[rate-limit] Error checking rate limit:', error)
     return null
   }
 }

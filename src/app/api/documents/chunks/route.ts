@@ -73,7 +73,6 @@ export async function GET(request: NextRequest) {
       .order('metadata->>chunkIndex', { ascending: true })
 
     if (fetchError) {
-      console.error('[GetChunks] ❌ Error fetching chunks:', fetchError)
       return NextResponse.json(
         { error: 'Failed to fetch chunks' },
         { status: 500 }
@@ -106,7 +105,6 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error('[GetChunks] ❌ Error:', errorMessage)
 
     return NextResponse.json(
       { error: `Failed to get chunks: ${errorMessage}` },
@@ -237,7 +235,6 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (insertError) {
-      console.error('[AddManualChunk] ❌ Error inserting chunk:', insertError)
       return NextResponse.json(
         { error: 'Failed to add chunk' },
         { status: 500 }
@@ -252,7 +249,6 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error('[AddManualChunk] ❌ Error:', errorMessage)
 
     return NextResponse.json(
       { error: `Failed to add chunk: ${errorMessage}` },

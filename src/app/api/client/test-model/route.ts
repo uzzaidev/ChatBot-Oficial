@@ -242,7 +242,6 @@ export async function POST(request: NextRequest) {
       provider,
     })
   } catch (error) {
-    console.error('[client/test-model] Erro:', error)
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
     
     return NextResponse.json(

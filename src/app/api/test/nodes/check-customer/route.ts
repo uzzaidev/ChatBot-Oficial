@@ -44,7 +44,6 @@ export async function POST(request: NextRequest) {
       info: `Cliente verificado - Status: ${output.status}`,
     })
   } catch (error: any) {
-    console.error('[TEST checkOrCreateCustomer] Error:', error)
     return NextResponse.json(
       { error: error.message, details: error.stack },
       { status: 500 }
