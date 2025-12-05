@@ -68,11 +68,7 @@ export async function GET(
     if (enabledFetchError) {
       if (enabledFetchError.code === "PGRST116") {
       } else {
-          code: enabledFetchError.code,
-          message: enabledFetchError.message,
-          details: enabledFetchError.details,
-          hint: enabledFetchError.hint,
-        });
+        // Error fetching enabled state - use defaults
       }
     }
 
@@ -146,9 +142,7 @@ export async function GET(
 
         // Log errors except "not found"
         if (configFetchError && configFetchError.code !== "PGRST116") {
-            "[flow/nodes] Error fetching config:",
-            configFetchError,
-          );
+          // Error fetching config - use defaults
         }
 
         if (configData && configData.config_value !== null) {
@@ -182,9 +176,7 @@ export async function GET(
 
         // Log errors (not using .single() so no "not found" code)
         if (relatedFetchError) {
-            "[flow/nodes] Error fetching related configs:",
-            relatedFetchError,
-          );
+          // Error fetching related configs - use defaults
         }
 
         if (relatedConfigs && relatedConfigs.length > 0) {
@@ -298,9 +290,6 @@ export async function PATCH(
         );
 
       if (enabledError) {
-          "[flow/nodes] Error updating enabled state:",
-          enabledError,
-        );
         return NextResponse.json({ error: enabledError.message }, {
           status: 500,
         });
@@ -384,9 +373,6 @@ export async function PATCH(
             .eq("id", clientId);
 
           if (clientError) {
-              "[flow/nodes] Error updating TTS config:",
-              clientError,
-            );
             return NextResponse.json({ error: clientError.message }, {
               status: 500,
             });

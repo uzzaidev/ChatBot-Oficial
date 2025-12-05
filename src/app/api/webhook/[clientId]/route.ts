@@ -77,10 +77,6 @@ export async function GET(
     const config = await getClientConfig(clientId);
 
     if (!config) {
-        "\n❌ [ERRO] Cliente não encontrado ou inativo no banco de dados",
-      );
-        '  Verifique se o cliente existe na tabela "clients" e está com status "active"',
-      );
       return new NextResponse("Client not found", { status: 404 });
     }
 
@@ -107,38 +103,9 @@ export async function GET(
     if (mode === "subscribe" && token === expectedToken) {
       return new NextResponse(challenge, { status: 200 });
     } else {
-
-      if (mode !== "subscribe") {
-          `  Motivo: Mode inválido (recebido: "${mode}", esperado: "subscribe")`,
-        );
-      }
-
-      if (token !== expectedToken) {
-          "  Motivo: Token não corresponde ao configurado no Vault",
-        );
-          `  Token recebido (primeiros 20): ${token?.substring(0, 20)}...`,
-        );
-          `  Token esperado (primeiros 20): ${
-            expectedToken.substring(0, 20)
-          }...`,
-        );
-      }
-
-        "═══════════════════════════════════════════════════════════\n",
-      );
-
       return new NextResponse("Invalid verification token", { status: 403 });
     }
   } catch (error) {
-      "  Tipo:",
-      error instanceof Error ? error.constructor.name : typeof error,
-    );
-      "  Mensagem:",
-      error instanceof Error ? error.message : String(error),
-    );
-      "═══════════════════════════════════════════════════════════\n",
-    );
-
     return new NextResponse("Internal error", { status: 500 });
   }
 }
@@ -172,17 +139,7 @@ export async function POST(
       return new NextResponse("Client not found", { status: 404 });
     }
 
-    // 🔍 DEBUG: Log detalhado da config carregada
-      `  System Prompt Preview: ${
-        config.prompts.systemPrompt?.substring(0, 150)
-      }...`,
-    );
-      `  Prompt Length: ${config.prompts.systemPrompt?.length} chars\n`,
-    );
-
     if (config.status !== "active") {
-        `[WEBHOOK/${clientId}] ❌ Cliente inativo: ${config.status}`,
-      );
       return new NextResponse("Client not active", { status: 403 });
     }
 
@@ -244,9 +201,7 @@ export async function POST(
         addWebhookMessage(webhookMessage);
       }
     } catch (parseError) {
-        `[WEBHOOK/${clientId}] Erro ao extrair mensagem:`,
-        parseError,
-      );
+      // Error extracting message - continue processing
     }
 
     // 4. Deduplication check - prevent processing duplicate messages
@@ -269,14 +224,10 @@ export async function POST(
           if (markResult.error) {
           }
         } else {
-            `[WEBHOOK/${clientId}] ❌ Falhou ao marcar como processada: ${markResult.error}`,
-          );
+          // Failed to mark message as processed - non-critical
         }
       } catch (dedupError) {
-        // Graceful degradation - se AMBOS Redis e PostgreSQL falharem, continuar
-          `[WEBHOOK/${clientId}] ⚠️ Erro crítico no sistema de deduplicação:`,
-          dedupError,
-        );
+        // Graceful degradation - if both Redis and PostgreSQL fail, continue
       }
     }
 
@@ -285,7 +236,7 @@ export async function POST(
     try {
       const result = await processChatbotMessage(body, config);
     } catch (flowError) {
-      // Continua e retorna 200 (Meta requer isso)
+      // Flow error - continue and return 200 (Meta requires this)
     }
 
     return new NextResponse("EVENT_RECEIVED", { status: 200 });

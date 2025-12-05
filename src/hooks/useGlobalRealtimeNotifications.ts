@@ -97,9 +97,7 @@ export const useGlobalRealtimeNotifications = ({
                 }
               }
             } catch (error) {
-                "❌ [GlobalRealtime] Erro ao processar mensagem:",
-                error,
-              );
+              // Error processing message - non-critical
             }
           },
         )
@@ -109,6 +107,7 @@ export const useGlobalRealtimeNotifications = ({
           } else if (status === "CLOSED") {
             setIsConnected(false);
           } else if (status === "CHANNEL_ERROR") {
+            // Channel error - will try to reconnect
           }
         });
     };

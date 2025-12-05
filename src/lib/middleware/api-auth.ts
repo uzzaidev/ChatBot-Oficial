@@ -88,9 +88,6 @@ export function withAuth(handler: AuthenticatedHandler) {
       } = await supabase.auth.getUser()
 
       if (authError || !user) {
-          pathname,
-          error: authError?.message,
-        })
         return NextResponse.json(
           { error: 'Unauthorized: Authentication required' },
           { status: 401 }
@@ -105,9 +102,6 @@ export function withAuth(handler: AuthenticatedHandler) {
         .single()
 
       if (profileError || !profile) {
-          user_id: user.id,
-          error: profileError?.message,
-        })
         return NextResponse.json(
           { error: 'Unauthorized: Profile not found' },
           { status: 401 }
@@ -116,9 +110,6 @@ export function withAuth(handler: AuthenticatedHandler) {
 
       // 3. Check if user is active
       if (!profile.is_active) {
-          user_id: user.id,
-          email: user.email,
-        })
         return NextResponse.json(
           { error: 'Forbidden: Account is inactive' },
           { status: 403 }
@@ -168,9 +159,6 @@ export function withAdminAuth(handler: AuthenticatedHandler) {
       } = await supabase.auth.getUser()
 
       if (authError || !user) {
-          pathname,
-          error: authError?.message,
-        })
         return NextResponse.json(
           { error: 'Unauthorized: Authentication required' },
           { status: 401 }
@@ -186,9 +174,6 @@ export function withAdminAuth(handler: AuthenticatedHandler) {
         .single()
 
       if (profileError || !profile) {
-          user_id: user.id,
-          error: profileError?.message,
-        })
         return NextResponse.json(
           { error: 'Unauthorized: Profile not found' },
           { status: 401 }
@@ -197,9 +182,6 @@ export function withAdminAuth(handler: AuthenticatedHandler) {
 
       // 3. Check if user is active
       if (!profile.is_active) {
-          user_id: user.id,
-          email: user.email,
-        })
         return NextResponse.json(
           { error: 'Forbidden: Account is inactive' },
           { status: 403 }
@@ -209,11 +191,6 @@ export function withAdminAuth(handler: AuthenticatedHandler) {
       // 4. Validate admin role (must be admin or client_admin)
       const validAdminRoles = ['admin', 'client_admin']
       if (!validAdminRoles.includes(profile.role)) {
-          user_id: user.id,
-          email: user.email,
-          role: profile.role,
-          required: validAdminRoles,
-        })
         return NextResponse.json(
           { error: 'Forbidden: Admin access required' },
           { status: 403 }
