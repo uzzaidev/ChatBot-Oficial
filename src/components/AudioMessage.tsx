@@ -65,16 +65,12 @@ export const AudioMessage = ({
         setAudioError(`Erro ao carregar áudio (código: ${audioElement.error.code})`)
       }
     }
-    const handleLoadedMetadata = () => {
-      // Audio metadata loaded successfully
-    }
 
     audio.addEventListener('timeupdate', handleTimeUpdate)
     audio.addEventListener('ended', handleEnded)
     audio.addEventListener('play', handlePlay)
     audio.addEventListener('pause', handlePause)
     audio.addEventListener('error', handleError)
-    audio.addEventListener('loadedmetadata', handleLoadedMetadata)
 
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate)
@@ -82,7 +78,6 @@ export const AudioMessage = ({
       audio.removeEventListener('play', handlePlay)
       audio.removeEventListener('pause', handlePause)
       audio.removeEventListener('error', handleError)
-      audio.removeEventListener('loadedmetadata', handleLoadedMetadata)
     }
   }, [])
 
