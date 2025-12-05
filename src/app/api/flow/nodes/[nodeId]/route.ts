@@ -68,7 +68,6 @@ export async function GET(
     if (enabledFetchError) {
       if (enabledFetchError.code === "PGRST116") {
       } else {
-        console.error("[flow/nodes] ❌ Error fetching enabled state:", {
           code: enabledFetchError.code,
           message: enabledFetchError.message,
           details: enabledFetchError.details,
@@ -147,7 +146,6 @@ export async function GET(
 
         // Log errors except "not found"
         if (configFetchError && configFetchError.code !== "PGRST116") {
-          console.error(
             "[flow/nodes] Error fetching config:",
             configFetchError,
           );
@@ -184,7 +182,6 @@ export async function GET(
 
         // Log errors (not using .single() so no "not found" code)
         if (relatedFetchError) {
-          console.error(
             "[flow/nodes] Error fetching related configs:",
             relatedFetchError,
           );
@@ -219,7 +216,6 @@ export async function GET(
       config,
     });
   } catch (error: any) {
-    console.error("[flow/nodes] Unexpected error:", error);
     return NextResponse.json(
       { error: error.message || "Internal server error" },
       { status: 500 },
@@ -302,7 +298,6 @@ export async function PATCH(
         );
 
       if (enabledError) {
-        console.error(
           "[flow/nodes] Error updating enabled state:",
           enabledError,
         );
@@ -364,7 +359,6 @@ export async function PATCH(
           .eq("id", clientId);
 
         if (clientError) {
-          console.error("[flow/nodes] Error updating client:", clientError);
           return NextResponse.json({ error: clientError.message }, {
             status: 500,
           });
@@ -390,7 +384,6 @@ export async function PATCH(
             .eq("id", clientId);
 
           if (clientError) {
-            console.error(
               "[flow/nodes] Error updating TTS config:",
               clientError,
             );
@@ -440,7 +433,6 @@ export async function PATCH(
         const errors = results.filter((r) => r.error).map((r) => r.error);
 
         if (errors.length > 0) {
-          console.error("[flow/nodes] Errors upserting configs:", errors);
           return NextResponse.json({ error: errors[0]?.message }, {
             status: 500,
           });
@@ -455,7 +447,6 @@ export async function PATCH(
         : "Configuration updated",
     });
   } catch (error: any) {
-    console.error("[flow/nodes] Unexpected error:", error);
     return NextResponse.json(
       { error: error.message || "Internal server error" },
       { status: 500 },

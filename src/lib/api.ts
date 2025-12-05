@@ -33,7 +33,6 @@ export function getApiBaseUrl(): string {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
     if (!apiUrl) {
-      console.warn(
         "[API] NEXT_PUBLIC_API_URL não configurada! Mobile não conseguirá acessar APIs. " +
           "Configure em .env.mobile",
       );
@@ -83,12 +82,10 @@ export async function apiFetch(
       if (session?.access_token) {
         headers["Authorization"] = `Bearer ${session.access_token}`;
       } else {
-        console.warn(
           "[API] ❌ Nenhuma sessão ativa no mobile - requisição sem autenticação",
         );
       }
     } catch (error) {
-      console.error("[API] ❌ Erro ao buscar sessão:", error);
     }
   }
 
@@ -149,13 +146,11 @@ export async function markConversationAsRead(
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("❌ [markConversationAsRead] Error:", data.error);
       return { success: false, error: data.error };
     }
 
     return { success: true };
   } catch (error) {
-    console.error("❌ [markConversationAsRead] Exception:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",

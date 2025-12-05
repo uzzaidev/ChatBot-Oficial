@@ -94,7 +94,6 @@ export const useRealtimeConversations = ({
               onConversationUpdateRef.current(update);
             }
           } catch (error) {
-            console.error(
               "❌ [Realtime Conversations] Error processing clientes_whatsapp:",
               error,
             );
@@ -130,7 +129,6 @@ export const useRealtimeConversations = ({
               onConversationUpdateRef.current(update);
             }
           } catch (error) {
-            console.error(
               "❌ [Realtime Conversations] Error processing n8n_chat_histories:",
               error,
             );
