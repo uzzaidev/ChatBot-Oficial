@@ -97,8 +97,9 @@ export interface HandleDocumentSearchOutput {
  *   config: clientConfig
  * })
  *
- * // result.message → "Encontrei 1 documento e enviei: catalogo-2024.pdf"
+ * // result.message → "" (documento enviado sem texto adicional)
  * // result.documentsSent → 1
+ * // result.filesMetadata → metadados do arquivo para renderização no frontend
  * ```
  */
 export const handleDocumentSearchToolCall = async (
@@ -162,20 +163,20 @@ export const handleDocumentSearchToolCall = async (
         const isImage = doc.originalMimeType.startsWith("image/");
 
         if (isImage) {
-          // Enviar como imagem
+          // Enviar como imagem (sem caption)
           await sendImageMessage(
             phone,
             doc.originalFileUrl,
-            `📷 ${doc.filename}`, // Caption
+            undefined, // Sem caption
             config,
           );
         } else {
-          // Enviar como documento (PDF, DOC, etc.)
+          // Enviar como documento (PDF, DOC, etc.) - sem caption
           await sendDocumentMessage(
             phone,
             doc.originalFileUrl,
             doc.filename,
-            `📄 Documento da base de conhecimento`, // Caption
+            undefined, // Sem caption
             config,
           );
         }
@@ -204,24 +205,18 @@ export const handleDocumentSearchToolCall = async (
     }
 
     // 5. Montar mensagem de retorno
+    // Mensagem simplificada - apenas o documento é mostrado no frontend via filesMetadata
     let message: string;
 
     if (sentCount === 0) {
       message =
-        `Encontrei ${results.length} documento(s) relacionado(s) a "${query}", mas houve erro ao enviar: ${
-          errors.join(", ")
-        }`;
+        `Não foi possível enviar os documentos. ${errors.join(", ")}`;
     } else if (sentCount === results.length) {
-      const fileList = filesSent.join(", ");
-      message = sentCount === 1
-        ? `Encontrei e enviei o documento: ${fileList}`
-        : `Encontrei ${results.length} documentos e enviei todos: ${fileList}`;
+      // Mensagem vazia - apenas o documento/imagem será mostrado
+      message = "";
     } else {
-      const fileList = filesSent.join(", ");
-      message =
-        `Encontrei ${results.length} documentos e enviei ${sentCount}: ${fileList}. Alguns falharam: ${
-          errors.join(", ")
-        }`;
+      // Parcialmente enviado - mostrar apenas erros
+      message = errors.length > 0 ? `Alguns arquivos falharam: ${errors.join(", ")}` : "";
     }
 
     return {
