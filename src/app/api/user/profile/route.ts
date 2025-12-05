@@ -40,7 +40,6 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (profileError || !profile) {
-      console.error('[profile] Erro ao buscar user_profile:', profileError)
       return NextResponse.json({ error: 'Perfil não encontrado' }, { status: 404 })
     }
 
@@ -51,9 +50,7 @@ export async function GET(request: NextRequest) {
       .eq('id', profile.client_id)
       .single()
 
-    if (clientError) {
-      console.error('[profile] Erro ao buscar client:', clientError)
-    }
+    // clientError is non-critical - phone is optional
 
     return NextResponse.json({
       id: profile.id,
@@ -63,7 +60,6 @@ export async function GET(request: NextRequest) {
       phone: client?.meta_display_phone || '',
     })
   } catch (error) {
-    console.error('[profile] Erro:', error)
     return NextResponse.json({ error: 'Erro ao buscar perfil' }, { status: 500 })
   }
 }
@@ -109,7 +105,6 @@ export async function PATCH(request: NextRequest) {
       .eq('id', user.id)
 
     if (updateError) {
-      console.error('[profile] Erro ao atualizar:', updateError)
       return NextResponse.json(
         { error: 'Erro ao atualizar perfil' },
         { status: 500 }
@@ -129,7 +124,6 @@ export async function PATCH(request: NextRequest) {
       message: 'Nome atualizado com sucesso',
     })
   } catch (error) {
-    console.error('[profile] Erro:', error)
     return NextResponse.json({ error: 'Erro ao atualizar perfil' }, { status: 500 })
   }
 }

@@ -86,7 +86,6 @@ export default function LoginPage() {
       router.push('/dashboard')
       router.refresh()
     } catch (err) {
-      console.error('[Login] Erro ao restaurar sessão:', err)
       setError('Erro ao restaurar sessão. Faça login manualmente.')
       setLoading(false)
     }
@@ -109,8 +108,6 @@ export default function LoginPage() {
       const { data, error: signInError } = await signInWithEmail(email, password)
 
       if (signInError) {
-        console.error('[Login] Erro:', signInError)
-
         // Mensagens de erro amigáveis
         if (signInError.message.includes('Invalid login credentials')) {
           setError('Email ou senha incorretos')
@@ -164,7 +161,6 @@ export default function LoginPage() {
       router.push('/dashboard')
       router.refresh()
     } catch (err) {
-      console.error('[Login] Erro inesperado:', err)
       setError('Erro inesperado ao fazer login. Tente novamente.')
       setLoading(false)
     }
