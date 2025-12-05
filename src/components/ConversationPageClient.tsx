@@ -325,6 +325,8 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
 
             {/* Lista de Conversas */}
             <div 
+              ref={scrollContainerRef}
+              onScroll={handleScroll}
               className="flex-1 overflow-y-auto"
             >
               <ConversationList
