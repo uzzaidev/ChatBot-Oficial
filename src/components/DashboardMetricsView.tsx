@@ -94,7 +94,6 @@ export function DashboardMetricsView({ clientId }: DashboardMetricsViewProps) {
 
         // Se a versão não bater, usar as cores padrão novas
         if (config.version !== CONFIG_VERSION) {
-          console.log('[DashboardMetricsView] Config version mismatch, using new defaults')
           setCharts(DEFAULT_CHARTS)
           setLayout('grid')
         } else {

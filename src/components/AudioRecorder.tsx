@@ -41,7 +41,6 @@ export const AudioRecorder = ({ phone, clientId, onAudioSent, onRecordingChange,
 
     for (const type of types) {
       if (MediaRecorder.isTypeSupported(type)) {
-        console.log('🎤 [AudioRecorder] Codec selecionado:', type)
         return type
       }
     }
@@ -83,7 +82,6 @@ export const AudioRecorder = ({ phone, clientId, onAudioSent, onRecordingChange,
         // IMPORTANTE: Usar o MIME type ORIGINAL do MediaRecorder
         // Não modificar o tipo, pois isso pode corromper o arquivo
         const actualMimeType = mediaRecorder.mimeType
-        console.log('🎵 [AudioRecorder] MIME type gravado:', actualMimeType)
 
         // Determinar extensão baseada no MIME type
         let extension = 'ogg'
@@ -182,13 +180,6 @@ export const AudioRecorder = ({ phone, clientId, onAudioSent, onRecordingChange,
     try {
       setUploading(true)
 
-      console.log('📤 [AudioRecorder] Enviando áudio:', {
-        filename: file.name,
-        size: file.size,
-        type: file.type,
-        phone
-      })
-
       // Validar tamanho (16 MB máximo para WhatsApp)
       const maxSize = 16 * 1024 * 1024
       if (file.size > maxSize) {
@@ -206,15 +197,11 @@ export const AudioRecorder = ({ phone, clientId, onAudioSent, onRecordingChange,
       formData.append('file', file)
       formData.append('type', 'audio')
 
-      console.log('🔄 [AudioRecorder] Chamando API /api/commands/send-media...')
-
       const { apiFetch } = await import('@/lib/api')
       const response = await apiFetch('/api/commands/send-media', {
         method: 'POST',
         body: formData
       })
-
-      console.log('📥 [AudioRecorder] Resposta da API:', response.status)
 
       if (!response.ok) {
         const errorData = await response.json()
@@ -223,7 +210,6 @@ export const AudioRecorder = ({ phone, clientId, onAudioSent, onRecordingChange,
       }
 
       const responseData = await response.json()
-      console.log('✅ [AudioRecorder] Áudio enviado com sucesso:', responseData)
 
       toast({
         title: 'Sucesso',
