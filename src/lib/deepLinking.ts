@@ -102,6 +102,5 @@ const navigateToInvite = (inviteCode: string) => {
  * Navega para home/dashboard
  */
 const navigateToHome = () => {
-  console.log("[Deep Linking] Navegando para home");
   window.location.href = "/dashboard";
 };

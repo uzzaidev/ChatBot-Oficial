@@ -65,14 +65,11 @@ export const useMessagesPolling = ({
   useEffect(() => {
     if (!enabled) return
 
-    console.log(`🔄 [Polling] Starting polling every ${pollInterval}ms`)
-
     const interval = setInterval(() => {
       fetchMessages()
     }, pollInterval)
 
     return () => {
-      console.log('🧹 [Polling] Cleaning up')
       clearInterval(interval)
     }
   }, [enabled, pollInterval, fetchMessages])

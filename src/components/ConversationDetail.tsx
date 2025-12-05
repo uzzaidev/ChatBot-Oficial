@@ -120,21 +120,17 @@ export const ConversationDetail = ({
 
   // Handle optimistic message (from SendMessageForm)
   const handleOptimisticMessage = useCallback((message: Message) => {
-    console.log('➕ [ConversationDetail] Adding optimistic message:', message.id)
     setOptimisticMessages(prev => [...prev, message])
     shouldScrollRef.current = true // Always scroll for user's own messages
   }, [])
 
   // Handle message error (remove optimistic message)
   const handleMessageError = useCallback((tempId: string) => {
-    console.log('❌ [ConversationDetail] Removing failed optimistic message:', tempId)
     setOptimisticMessages(prev => prev.filter(msg => msg.id !== tempId))
   }, [])
 
   // Stable callback for handling new messages from realtime
   const handleNewMessage = useCallback((newMessage: Message) => {
-    console.log('📨 [ConversationDetail] New realtime message:', newMessage.id)
-
     // Remove optimistic message if exists (replace with real one)
     setOptimisticMessages(prev => prev.filter(msg => msg.content !== newMessage.content))
 
@@ -143,7 +139,6 @@ export const ConversationDetail = ({
       // Check if message already exists in realtime messages
       const exists = prev.some(msg => msg.id === newMessage.id)
       if (exists) {
-        console.log('⚠️ [ConversationDetail] Message already exists, skipping')
         return prev
       }
 
@@ -152,7 +147,6 @@ export const ConversationDetail = ({
 
     // Marcar conversa como lida (já que está visualizando)
     if (onMarkAsRead) {
-      console.log('👁️ [ConversationDetail] Marking as read (message received while open)')
       onMarkAsRead(phone)
     }
 

@@ -83,15 +83,6 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
     const transcription = (message as any).transcription || ''
     const audioDuration = (message as any).audio_duration_seconds || 0
 
-    // Debug logs
-    console.log('[MessageBubble] Audio data:', {
-      messageId: message.id,
-      mediaMetadata,
-      transcription: transcription ? `${transcription.substring(0, 50)}...` : 'none',
-      audioDuration,
-      url: mediaMetadata.url
-    })
-
     // Use AudioMessage component with waveform and transcription
     return (
       <AudioMessage
