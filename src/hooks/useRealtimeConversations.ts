@@ -167,7 +167,6 @@ export const useRealtimeConversations = ({
       
       // Double-check conditions before reconnecting
       if (!isReconnectingRef.current && channelRef.current?.state === "closed") {
-        console.log("🔄 [Realtime Conversations] Reconnecting after debounce...");
         hasAttemptedRef.current = false;
         setupRealtimeSubscription();
       }
@@ -212,7 +211,6 @@ export const useRealtimeConversations = ({
       "appStateChange",
       (state: { isActive: boolean }) => {
         if (state.isActive) {
-          console.log("📱 [Realtime Conversations] App resumed, scheduling reconnect check...");
           scheduleReconnect();
         }
       },
@@ -231,7 +229,6 @@ export const useRealtimeConversations = ({
       "networkStatusChange",
       (status: { connected: boolean }) => {
         if (status.connected) {
-          console.log("📶 [Realtime Conversations] Network connected, scheduling reconnect check...");
           scheduleReconnect();
         }
       },

@@ -24,23 +24,13 @@ export const AudioMessage = ({
   const [audioError, setAudioError] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
 
-  // Debug logs
-  console.log('[AudioMessage] Props:', {
-    audioUrl,
-    hasTranscription: !!transcription,
-    durationSeconds,
-    direction
-  })
-
   const togglePlay = async () => {
     if (audioRef.current) {
       try {
         if (isPlaying) {
           audioRef.current.pause()
         } else {
-          console.log('[AudioMessage] Attempting to play:', audioUrl)
           await audioRef.current.play()
-          console.log('[AudioMessage] Play started successfully')
         }
         setIsPlaying(!isPlaying)
       } catch (error) {
@@ -76,7 +66,7 @@ export const AudioMessage = ({
       }
     }
     const handleLoadedMetadata = () => {
-      console.log('[AudioMessage] Audio metadata loaded successfully')
+      // Audio metadata loaded successfully
     }
 
     audio.addEventListener('timeupdate', handleTimeUpdate)

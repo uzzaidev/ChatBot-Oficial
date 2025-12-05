@@ -296,8 +296,6 @@ export default function SettingsPage() {
     setLoadingSecrets(true)
     setNotification(null)
 
-    console.log('[settings] Salvando secret:', { key, valueLength: value?.length })
-
     try {
       const { apiFetch } = await import('@/lib/api')
       const response = await apiFetch('/api/vault/secrets', {
@@ -307,8 +305,6 @@ export default function SettingsPage() {
       })
 
       const data = await response.json()
-
-      console.log('[settings] Resposta do servidor:', { ok: response.ok, status: response.status, data })
 
       if (response.ok) {
         setNotification({ type: 'success', message: `${key} atualizado com sucesso!` })

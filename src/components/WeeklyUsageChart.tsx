@@ -18,17 +18,10 @@ interface WeeklyUsageChartProps {
 }
 
 export function WeeklyUsageChart({ data }: WeeklyUsageChartProps) {
-  console.log('[WeeklyUsageChart] Raw data received:', data.length, 'weeks')
-
   // Sort by week_start date (ascending - oldest to newest)
   const sortedData = [...data].sort((a, b) =>
     new Date(a.week_start).getTime() - new Date(b.week_start).getTime()
   )
-
-  console.log('[WeeklyUsageChart] Week range:', {
-    oldest: sortedData[0]?.week_start,
-    newest: sortedData[sortedData.length - 1]?.week_start
-  })
 
   // Transform data for chart
   const chartData = sortedData.map((item) => ({
@@ -42,11 +35,6 @@ export function WeeklyUsageChart({ data }: WeeklyUsageChartProps) {
     }),
     timestamp: new Date(item.week_start).getTime()
   }))
-
-  console.log('[WeeklyUsageChart] Final chartData:', chartData.map(d => ({
-    date: d.date,
-    total: d.Total
-  })))
 
   return (
     <Card>
