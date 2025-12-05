@@ -191,23 +191,6 @@ export const generateAIResponse = async (
     // Usar systemPrompt do config do cliente (ou fallback)
     const systemPrompt = config.prompts.systemPrompt || DEFAULT_SYSTEM_PROMPT;
 
-    // 🔍 DEBUG: Log para rastrear qual config está sendo usado
-    console.log("\n🔍 [generateAIResponse] DEBUG CONFIG:");
-    console.log(`  Client ID: ${config.id}`);
-    console.log(`  Client Name: ${config.name}`);
-    console.log(`  Provider: ${config.primaryProvider}`);
-    console.log(
-      `  System Prompt Preview (first 150 chars): ${
-        systemPrompt.substring(0, 150)
-      }...`,
-    );
-    console.log(`  System Prompt Length: ${systemPrompt.length} chars`);
-    console.log(
-      `  Using DEFAULT_SYSTEM_PROMPT: ${
-        systemPrompt === DEFAULT_SYSTEM_PROMPT
-      }\n`,
-    );
-
     // Data e hora atual (para contexto da IA)
     const now = new Date();
     const dateTimeInfo = `Data e hora atual: ${

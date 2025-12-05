@@ -42,10 +42,8 @@ export default function AnalyticsPage() {
         if (profile?.client_id) {
           setClientId(profile.client_id)
         } else {
-          console.error('[AnalyticsPage] Client ID não encontrado')
         }
       } catch (error) {
-        console.error('[AnalyticsPage] Erro ao verificar autenticação:', error)
       } finally {
         setLoading(false)
       }

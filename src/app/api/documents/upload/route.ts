@@ -274,7 +274,6 @@ export async function POST(request: NextRequest) {
         text = pdfData?.text ?? ''
       } catch (pdfError) {
         const pdfErrorMessage = pdfError instanceof Error ? pdfError.message : 'Erro PDF desconhecido'
-        console.error('[Upload] ❌ PDF parsing error:', pdfErrorMessage)
         return NextResponse.json(
           { error: `Erro ao processar PDF: ${pdfErrorMessage}. Verifique se o arquivo não está corrompido ou protegido por senha.` },
           { status: 400 }
@@ -302,7 +301,6 @@ export async function POST(request: NextRequest) {
       })
 
       if (vaultErrorOCR) {
-        console.error('[Upload] ❌ Vault error retrieving OpenAI key for OCR:', vaultErrorOCR)
         return NextResponse.json(
           {
             error: 'Erro ao acessar o cofre de segredos. Contate o suporte se o problema persistir.'
@@ -322,12 +320,9 @@ export async function POST(request: NextRequest) {
 
       // Image OCR extraction using OpenAI Vision (serverless-compatible)
       const buffer = Buffer.from(await file.arrayBuffer())
-      console.log('[Upload] Extracting text from image using OpenAI Vision...')
       try {
         text = await extractTextFromImage(buffer, openaiKeyForOCR)
-        console.log('[Upload] Text extracted successfully from image')
       } catch (ocrError) {
-        console.error('[Upload] ❌ OpenAI Vision OCR error:', ocrError)
         const { message: ocrErrorMessage } = categorizeOpenAIError(ocrError)
         return NextResponse.json(
           { error: ocrErrorMessage },
@@ -349,7 +344,6 @@ export async function POST(request: NextRequest) {
     }
 
     // 6. Upload original file to Supabase Storage
-    console.log('[Upload] Saving original file to Storage...')
     const fileBuffer = Buffer.from(await file.arrayBuffer())
     const timestamp = Date.now()
     const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_') // Sanitize filename
@@ -364,14 +358,12 @@ export async function POST(request: NextRequest) {
       })
 
     if (uploadError) {
-      console.error('[Upload] ❌ Storage upload error:', uploadError)
       return NextResponse.json(
         { error: `Erro ao salvar arquivo no storage: ${uploadError.message}` },
         { status: 500 }
       )
     }
 
-    console.log('[Upload] ✅ File saved to Storage:', storagePath)
 
     // 7. Generate public URL for the uploaded file
     const { data: publicUrlData } = supabaseServiceRole
@@ -380,7 +372,6 @@ export async function POST(request: NextRequest) {
       .getPublicUrl(storagePath)
 
     const originalFileUrl = publicUrlData.publicUrl
-    console.log('[Upload] ✅ Public URL generated:', originalFileUrl)
 
     // 8. Get client config for OpenAI API key (REQUIRED for embeddings)
     const { data: clientConfig } = await supabase
@@ -403,7 +394,6 @@ export async function POST(request: NextRequest) {
     })
 
     if (vaultError) {
-      console.error('[Upload] ❌ Vault error retrieving OpenAI key for embeddings:', vaultError)
       return NextResponse.json(
         {
           error: 'Erro ao acessar o cofre de segredos. Contate o suporte se o problema persistir.'
@@ -443,7 +433,6 @@ export async function POST(request: NextRequest) {
         openaiApiKey,
       })
     } catch (processingError) {
-      console.error('[Upload] ❌ Document processing error:', processingError)
       const { message: processingErrorMessage } = categorizeOpenAIError(processingError)
       return NextResponse.json(
         { error: processingErrorMessage },
@@ -465,7 +454,6 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error('[Upload] ❌ Error:', errorMessage)
 
     return NextResponse.json(
       { error: `Failed to process document: ${errorMessage}` },

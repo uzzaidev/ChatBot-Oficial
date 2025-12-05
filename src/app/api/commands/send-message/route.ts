@@ -30,7 +30,6 @@ export async function POST(request: NextRequest) {
     const clientId = await getClientIdFromSession(request as any)
 
     if (!clientId) {
-      console.error('[SEND-MESSAGE API] ❌ Usuário não autenticado ou sem client_id')
       return NextResponse.json(
         { error: 'Unauthorized - client_id not found in session' },
         { status: 401 }
@@ -55,7 +54,6 @@ export async function POST(request: NextRequest) {
     const config = await getClientConfig(clientId)
 
     if (!config) {
-      console.error('[SEND-MESSAGE API] ❌ Config não encontrado para client_id:', clientId)
       return NextResponse.json({ error: 'Client configuration not found' }, { status: 404 })
     }
 
@@ -90,12 +88,6 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
-    const duration = Date.now() - startTime
-    console.error(`[SEND-MESSAGE API] ❌❌❌ ERRO após ${duration}ms`)
-    console.error(`[SEND-MESSAGE API] Error type:`, error instanceof Error ? error.constructor.name : typeof error)
-    console.error(`[SEND-MESSAGE API] Error message:`, error instanceof Error ? error.message : String(error))
-    console.error(`[SEND-MESSAGE API] Error stack:`, error instanceof Error ? error.stack : 'No stack trace')
-
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
 
     return NextResponse.json(

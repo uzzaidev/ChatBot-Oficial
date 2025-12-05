@@ -47,15 +47,6 @@ export const checkHumanHandoffStatus = async (
       .single()
 
     if (error || !customer) {
-      // Log detalhado para debug quando cliente não é encontrado
-      console.log('[checkHumanHandoffStatus] Cliente não encontrado ou erro', {
-        phone,
-        clientId,
-        error: error?.message,
-        errorDetails: error,
-        customerData: customer
-      })
-      
       // Se cliente não existe, será criado depois com status 'bot'
       return {
         skipBot: false,
@@ -83,7 +74,6 @@ export const checkHumanHandoffStatus = async (
       customerStatus: status
     }
   } catch (error) {
-    console.error('[checkHumanHandoffStatus] Erro:', error)
     // Em caso de erro, continua com bot (fail-safe)
     return {
       skipBot: false,

@@ -113,9 +113,6 @@ export const detectRepetition = async (input: DetectRepetitionInput): Promise<De
       usedEmbeddings: false, // Will be true when embeddings are implemented
     }
   } catch (error) {
-    const duration = Date.now() - startTime
-    console.error(`[detectRepetition] ❌ Error after ${duration}ms:`, error)
-
     // On error, assume no repetition (fail open)
     return {
       isRepetition: false,

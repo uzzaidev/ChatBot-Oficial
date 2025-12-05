@@ -128,10 +128,6 @@ export async function GET(request: NextRequest) {
       : { data: '', error: null }
 
     if (metaAccessError || metaVerifyError) {
-      console.error('[vault/secrets] Erro ao descriptografar secrets:', {
-        metaAccessError,
-        metaVerifyError,
-      })
       return NextResponse.json(
         { error: 'Erro ao buscar secrets do Vault' },
         { status: 500 }
@@ -164,7 +160,6 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('[vault/secrets] Erro:', error)
     return NextResponse.json(
       { error: 'Erro ao buscar secrets' },
       { status: 500 }
@@ -257,7 +252,6 @@ export async function PUT(request: NextRequest) {
         .eq('id', clientId)
 
       if (updateError) {
-        console.error('[vault/secrets] Erro ao atualizar meta_phone_number_id:', updateError)
         return NextResponse.json(
           { error: 'Erro ao atualizar phone number ID' },
           { status: 500 }
@@ -303,7 +297,6 @@ export async function PUT(request: NextRequest) {
       })
 
       if (createError || !newSecretId) {
-        console.error('[vault/secrets] Erro ao criar secret:', createError)
         return NextResponse.json(
           {
             error: 'Erro ao criar secret no Vault',
@@ -323,7 +316,6 @@ export async function PUT(request: NextRequest) {
         .eq('id', clientId)
 
       if (updateClientError) {
-        console.error('[vault/secrets] Erro ao atualizar client com secret_id:', updateClientError)
         return NextResponse.json(
           {
             error: 'Secret criado mas falhou ao vincular ao cliente',
@@ -376,7 +368,6 @@ export async function PUT(request: NextRequest) {
     })
 
     if (deleteError || !deleteResult) {
-      console.error('[vault/secrets] Erro ao deletar secret antigo:', deleteError)
       return NextResponse.json(
         {
           error: 'Erro ao deletar secret antigo',
@@ -394,7 +385,6 @@ export async function PUT(request: NextRequest) {
     })
 
     if (createError || !newSecretId) {
-      console.error('[vault/secrets] Erro ao criar novo secret:', createError)
       return NextResponse.json(
         {
           error: 'Erro ao criar secret no Vault',
@@ -414,7 +404,6 @@ export async function PUT(request: NextRequest) {
       .eq('id', clientId)
 
     if (updateClientError) {
-      console.error('[vault/secrets] Erro ao atualizar client com novo secret_id:', updateClientError)
       // Tentar deletar o novo secret criado para evitar lixo
       await supabase.rpc('delete_client_secret', { secret_id: newSecretId })
 
@@ -450,7 +439,6 @@ export async function PUT(request: NextRequest) {
       key: key,
     })
   } catch (error) {
-    console.error('[vault/secrets] Erro:', error)
     return NextResponse.json(
       { error: 'Erro ao atualizar secret' },
       { status: 500 }

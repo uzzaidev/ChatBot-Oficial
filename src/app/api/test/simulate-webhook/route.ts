@@ -84,7 +84,6 @@ export async function POST(request: NextRequest) {
       payload_sent: metaPayload,
     })
   } catch (error: any) {
-    console.error('[SIMULATE WEBHOOK] Error:', error)
     
     return NextResponse.json(
       {

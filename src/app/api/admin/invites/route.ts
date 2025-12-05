@@ -83,7 +83,6 @@ export async function GET(request: NextRequest) {
     const { data: invites, error: invitesError } = await query
 
     if (invitesError) {
-      console.error('[GET /api/admin/invites] Error fetching invites:', invitesError)
       return NextResponse.json(
         { error: 'Erro ao buscar convites', details: invitesError.message },
         { status: 500 }
@@ -118,7 +117,6 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('[GET /api/admin/invites] Unexpected error:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -245,7 +243,6 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (createError) {
-      console.error('[POST /api/admin/invites] Error creating invite:', createError)
       return NextResponse.json(
         { error: 'Erro ao criar convite', details: createError.message },
         { status: 500 }
@@ -263,7 +260,6 @@ export async function POST(request: NextRequest) {
     }, { status: 201 })
 
   } catch (error) {
-    console.error('[POST /api/admin/invites] Unexpected error:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

@@ -208,11 +208,6 @@ export const getClientIdFromSession = async (request?: Request): Promise<string 
   const metadataClientId = user.user_metadata?.client_id
 
   if (!metadataClientId) {
-    console.error('[getClientIdFromSession] ❌ user_metadata não tem client_id!')
-    console.error('  Usuário foi criado sem client_id no metadata.')
-    console.error('  Possíveis soluções:')
-    console.error('  1. Deletar usuário e registrar novamente via /register')
-    console.error('  2. Criar manualmente no Supabase Dashboard com client_id')
     return null
   }
 
@@ -229,7 +224,6 @@ export const getClientIdFromSession = async (request?: Request): Promise<string 
     .single()
 
   if (createError || !newProfile) {
-    console.error('[getClientIdFromSession] ❌ Falha ao criar profile:', createError)
     return null
   }
 

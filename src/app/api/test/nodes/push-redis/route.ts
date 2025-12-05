@@ -27,7 +27,6 @@ export async function POST(request: NextRequest) {
       info: `Mensagem adicionada ao Redis para ${input.phone}`,
     })
   } catch (error: any) {
-    console.error('[TEST pushToRedis] Error:', error)
     return NextResponse.json(
       { error: error.message, details: error.stack },
       { status: 500 }

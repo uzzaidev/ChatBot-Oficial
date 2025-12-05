@@ -185,7 +185,6 @@ export async function logAuditEvent(
   try {
     // Validação básica
     if (!entry.action || !entry.resourceType || !entry.status) {
-      console.error('[AUDIT] ❌ Entry inválida - faltam campos obrigatórios:', entry)
       return
     }
     
@@ -194,7 +193,6 @@ export async function logAuditEvent(
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
     
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('[AUDIT] ❌ Supabase credentials não configuradas')
       return
     }
     
@@ -232,12 +230,10 @@ export async function logAuditEvent(
       })
     
     if (error) {
-      console.error('[AUDIT] ❌ Erro ao inserir log:', error)
       // Não lançar erro - não queremos quebrar operação principal por falha de audit
     } else {
     }
   } catch (error) {
-    console.error('[AUDIT] ❌ Exceção ao logar audit event:', error)
     // Graceful degradation - não quebrar operação principal
   }
 }

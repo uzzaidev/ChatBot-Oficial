@@ -61,7 +61,6 @@ export async function POST(request: NextRequest) {
       message: 'Senha validada com sucesso',
     })
   } catch (error) {
-    console.error('[revalidate-password] Erro:', error)
     return NextResponse.json(
       { error: 'Erro ao validar senha' },
       { status: 500 }

@@ -101,7 +101,6 @@ export function DashboardMetricsView({ clientId }: DashboardMetricsViewProps) {
           setLayout(config.layout || 'grid')
         }
       } catch (err) {
-        console.error('[DashboardMetricsView] Failed to load config:', err)
         setCharts(DEFAULT_CHARTS)
       }
     } else {

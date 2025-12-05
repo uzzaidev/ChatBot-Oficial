@@ -98,7 +98,6 @@ export default function RegisterPage() {
       router.push('/dashboard')
       router.refresh()
     } catch (err) {
-      console.error('[Register] Erro inesperado:', err)
       setError('Erro inesperado ao criar conta. Tente novamente.')
       setLoading(false)
     }

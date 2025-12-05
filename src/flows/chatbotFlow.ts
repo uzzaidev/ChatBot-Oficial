@@ -228,10 +228,7 @@ export const processChatbotMessage = async (
             url: mediaUrl,
           });
         } catch (uploadError) {
-          console.error(
-            "[chatbotFlow] ❌ Failed to upload audio to storage:",
-            uploadError,
-          );
+          // Failed to upload audio to storage - non-critical, continue processing
         }
 
         const transcriptionResult = await transcribeAudio(
@@ -253,10 +250,7 @@ export const processChatbotMessage = async (
             transcriptionResult.usage.total_tokens,
           );
         } catch (usageError) {
-          console.error(
-            "[chatbotFlow] ❌ Failed to log Whisper usage:",
-            usageError,
-          );
+          // Failed to log Whisper usage - non-critical
         }
       } else if (parsedMessage.type === "image" && parsedMessage.metadata?.id) {
         const imageBuffer = await downloadMetaMedia(
@@ -290,10 +284,7 @@ export const processChatbotMessage = async (
             url: mediaUrl,
           });
         } catch (uploadError) {
-          console.error(
-            "[chatbotFlow] ❌ Failed to upload image to storage:",
-            uploadError,
-          );
+          // Failed to upload image to storage - non-critical
         }
 
         const visionResult = await analyzeImage(
@@ -319,10 +310,7 @@ export const processChatbotMessage = async (
             visionResult.usage,
           );
         } catch (usageError) {
-          console.error(
-            "[chatbotFlow] ❌ Failed to log Vision usage:",
-            usageError,
-          );
+          // Failed to log Vision usage - non-critical
         }
       } else if (
         parsedMessage.type === "document" && parsedMessage.metadata?.id
@@ -357,10 +345,7 @@ export const processChatbotMessage = async (
             url: mediaUrl,
           });
         } catch (uploadError) {
-          console.error(
-            "[chatbotFlow] ❌ Failed to upload document to storage:",
-            uploadError,
-          );
+          // Failed to upload document to storage - non-critical
         }
 
         const documentResult = await analyzeDocument(
@@ -387,10 +372,7 @@ export const processChatbotMessage = async (
               documentResult.usage,
             );
           } catch (usageError) {
-            console.error(
-              "[chatbotFlow] ❌ Failed to log PDF usage:",
-              usageError,
-            );
+            // Failed to log PDF usage - non-critical
           }
         }
       }
@@ -481,7 +463,6 @@ export const processChatbotMessage = async (
         const debounceKey = `debounce:${parsedMessage.phone}`;
         await setWithExpiry(debounceKey, String(Date.now()), 15); // 15s TTL (buffer above 10s delay)
       } catch (redisError) {
-        console.error("[chatbotFlow] NODE 7: ❌ ERRO NO REDIS!", redisError);
         logger.logNodeError("7. Push to Redis", redisError);
         // Continua mesmo com erro Redis (graceful degradation)
       }
@@ -830,8 +811,7 @@ export const processChatbotMessage = async (
           );
         }
       } catch (usageError) {
-        console.error("[chatbotFlow] ❌ Failed to log usage:", usageError);
-        // Não quebrar o fluxo por erro de logging
+        // Failed to log usage - non-critical
       }
     } else {
     }
@@ -1076,7 +1056,6 @@ export const processChatbotMessage = async (
     const errorMessage = error instanceof Error
       ? error.message
       : "Unknown error occurred";
-    console.error(`[chatbotFlow] Error processing message: ${errorMessage}`);
 
     logger.finishExecution("error");
 

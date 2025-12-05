@@ -88,10 +88,6 @@ export function withAuth(handler: AuthenticatedHandler) {
       } = await supabase.auth.getUser()
 
       if (authError || !user) {
-        console.error('[withAuth] Authentication failed:', {
-          pathname,
-          error: authError?.message,
-        })
         return NextResponse.json(
           { error: 'Unauthorized: Authentication required' },
           { status: 401 }
@@ -106,10 +102,6 @@ export function withAuth(handler: AuthenticatedHandler) {
         .single()
 
       if (profileError || !profile) {
-        console.error('[withAuth] Profile not found:', {
-          user_id: user.id,
-          error: profileError?.message,
-        })
         return NextResponse.json(
           { error: 'Unauthorized: Profile not found' },
           { status: 401 }
@@ -118,10 +110,6 @@ export function withAuth(handler: AuthenticatedHandler) {
 
       // 3. Check if user is active
       if (!profile.is_active) {
-        console.error('[withAuth] Inactive user:', {
-          user_id: user.id,
-          email: user.email,
-        })
         return NextResponse.json(
           { error: 'Forbidden: Account is inactive' },
           { status: 403 }
@@ -138,7 +126,6 @@ export function withAuth(handler: AuthenticatedHandler) {
         routeParams
       )
     } catch (error) {
-      console.error('[withAuth] Unexpected error:', error)
       return NextResponse.json(
         { error: 'Internal server error' },
         { status: 500 }
@@ -172,10 +159,6 @@ export function withAdminAuth(handler: AuthenticatedHandler) {
       } = await supabase.auth.getUser()
 
       if (authError || !user) {
-        console.error('[withAdminAuth] Authentication failed:', {
-          pathname,
-          error: authError?.message,
-        })
         return NextResponse.json(
           { error: 'Unauthorized: Authentication required' },
           { status: 401 }
@@ -191,10 +174,6 @@ export function withAdminAuth(handler: AuthenticatedHandler) {
         .single()
 
       if (profileError || !profile) {
-        console.error('[withAdminAuth] Profile not found:', {
-          user_id: user.id,
-          error: profileError?.message,
-        })
         return NextResponse.json(
           { error: 'Unauthorized: Profile not found' },
           { status: 401 }
@@ -203,10 +182,6 @@ export function withAdminAuth(handler: AuthenticatedHandler) {
 
       // 3. Check if user is active
       if (!profile.is_active) {
-        console.error('[withAdminAuth] Inactive user:', {
-          user_id: user.id,
-          email: user.email,
-        })
         return NextResponse.json(
           { error: 'Forbidden: Account is inactive' },
           { status: 403 }
@@ -216,12 +191,6 @@ export function withAdminAuth(handler: AuthenticatedHandler) {
       // 4. Validate admin role (must be admin or client_admin)
       const validAdminRoles = ['admin', 'client_admin']
       if (!validAdminRoles.includes(profile.role)) {
-        console.error('[withAdminAuth] Insufficient permissions:', {
-          user_id: user.id,
-          email: user.email,
-          role: profile.role,
-          required: validAdminRoles,
-        })
         return NextResponse.json(
           { error: 'Forbidden: Admin access required' },
           { status: 403 }
@@ -239,7 +208,6 @@ export function withAdminAuth(handler: AuthenticatedHandler) {
         routeParams
       )
     } catch (error) {
-      console.error('[withAdminAuth] Unexpected error:', error)
       return NextResponse.json(
         { error: 'Internal server error' },
         { status: 500 }
@@ -293,7 +261,6 @@ export function withOptionalAuth(handler: AuthenticatedHandler) {
         routeParams
       )
     } catch (error) {
-      console.error('[withOptionalAuth] Unexpected error:', error)
       return NextResponse.json(
         { error: 'Internal server error' },
         { status: 500 }

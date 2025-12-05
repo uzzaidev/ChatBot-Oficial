@@ -15,9 +15,6 @@ export async function GET(req: NextRequest) {
     const mode = url.searchParams.get("hub.mode");
     const challenge = url.searchParams.get("hub.challenge");
 
-    console.error('❌ [WEBHOOK GET] DEPRECATED: Este endpoint não é mais suportado')
-    console.error('📋 [WEBHOOK GET] AÇÃO NECESSÁRIA: Migre para /api/webhook/{client_id}')
-    console.error(`📋 [WEBHOOK GET] Acesse ${getWebhookBaseUrl()}/dashboard/settings para obter sua webhook URL`)
 
     // Retornar erro em formato JSON para facilitar debug
     return new NextResponse(
@@ -45,7 +42,6 @@ export async function GET(req: NextRequest) {
       }
     )
   } catch (err) {
-    console.error("Erro ao processar GET do webhook:", err)
     return new NextResponse("Erro interno", { status: 500 })
   }
 }
@@ -91,7 +87,6 @@ export async function POST(req: NextRequest) {
       } else {
       }
     } catch (parseError) {
-      console.error('❌ Erro ao extrair dados da mensagem:', parseError)
     }
 
 
@@ -107,9 +102,6 @@ export async function POST(req: NextRequest) {
     // 4. Configure no Meta Dashboard: https://developers.facebook.com/apps/
     //
     // Ver endpoint novo: src/app/api/webhook/[clientId]/route.ts
-    console.error('❌ [WEBHOOK] DEPRECATED: Este endpoint não usa mais .env fallback')
-    console.error('📋 [WEBHOOK] AÇÃO NECESSÁRIA: Migre para /api/webhook/{client_id}')
-    console.error(`📋 [WEBHOOK] Acesse ${getWebhookBaseUrl()}/dashboard/settings para obter sua webhook URL`)
 
     return new NextResponse(
       JSON.stringify({
@@ -133,7 +125,6 @@ export async function POST(req: NextRequest) {
       }
     );
   } catch (err) {
-    console.error("Erro ao processar POST do webhook:", err);
     return new NextResponse("Erro interno", { status: 500 });
   }
 }

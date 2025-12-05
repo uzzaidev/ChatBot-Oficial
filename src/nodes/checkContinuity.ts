@@ -82,7 +82,6 @@ export const checkContinuity = async (input: CheckContinuityInput): Promise<Chec
     }
   } catch (error) {
     const duration = Date.now() - startTime
-    console.error(`[checkContinuity] ❌ Error after ${duration}ms:`, error)
 
     // Fallback to safe defaults
     return {

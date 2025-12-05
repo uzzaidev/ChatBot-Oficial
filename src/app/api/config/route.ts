@@ -76,8 +76,6 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error('[GET /api/config] ❌ Error:', errorMessage)
-    console.error('[GET /api/config] ❌ Stack:', error instanceof Error ? error.stack : 'No stack')
 
     return NextResponse.json(
       { error: 'Failed to fetch configurations', details: errorMessage },
@@ -152,7 +150,6 @@ export async function PUT(request: NextRequest) {
     })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error('[PUT /api/config] Error:', errorMessage)
 
     return NextResponse.json(
       { error: 'Failed to update configuration', details: errorMessage },
@@ -213,7 +210,6 @@ export async function DELETE(request: NextRequest) {
     })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error('[DELETE /api/config] Error:', errorMessage)
 
     return NextResponse.json(
       { error: 'Failed to reset configuration', details: errorMessage },

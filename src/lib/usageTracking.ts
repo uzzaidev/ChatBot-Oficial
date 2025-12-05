@@ -170,7 +170,6 @@ export const logUsage = async (params: LogUsageParams): Promise<void> => {
 
   } catch (error) {
     // Don't throw error - usage tracking failure shouldn't break the flow
-    console.error('[UsageTracking] Failed to log usage:', error)
   }
 }
 

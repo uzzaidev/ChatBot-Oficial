@@ -27,7 +27,6 @@ export async function POST(request: NextRequest) {
       info: `Mensagem parseada: ${output.type} de ${output.name} (${output.phone})`,
     })
   } catch (error: any) {
-    console.error('[TEST parseMessage] Error:', error)
     return NextResponse.json(
       { error: error.message, details: error.stack },
       { status: 500 }

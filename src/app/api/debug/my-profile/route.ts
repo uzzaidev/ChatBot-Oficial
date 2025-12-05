@@ -90,7 +90,6 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('[GET /api/debug/my-profile] ❌ Unexpected error:', error)
     return NextResponse.json({
       error: 'Internal server error',
       message: error instanceof Error ? error.message : 'Unknown error'

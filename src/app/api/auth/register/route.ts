@@ -87,7 +87,6 @@ export async function POST(request: NextRequest) {
       })
 
     if (metaAccessError) {
-      console.error('[register] Erro ao criar meta_access_token secret:', metaAccessError)
       return NextResponse.json(
         { error: 'Erro ao criar secrets no Vault' },
         { status: 500 }
@@ -102,7 +101,6 @@ export async function POST(request: NextRequest) {
       })
 
     if (metaVerifyError) {
-      console.error('[register] Erro ao criar meta_verify_token secret:', metaVerifyError)
       return NextResponse.json(
         { error: 'Erro ao criar secrets no Vault' },
         { status: 500 }
@@ -117,7 +115,6 @@ export async function POST(request: NextRequest) {
       })
 
     if (openaiError) {
-      console.error('[register] Erro ao criar openai_api_key secret:', openaiError)
       return NextResponse.json(
         { error: 'Erro ao criar secrets no Vault' },
         { status: 500 }
@@ -132,7 +129,6 @@ export async function POST(request: NextRequest) {
       })
 
     if (groqError) {
-      console.error('[register] Erro ao criar groq_api_key secret:', groqError)
       return NextResponse.json(
         { error: 'Erro ao criar secrets no Vault' },
         { status: 500 }
@@ -166,7 +162,6 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (clientError || !newClient) {
-      console.error('[register] Erro ao criar client:', clientError)
       return NextResponse.json(
         { error: 'Erro ao criar registro de cliente' },
         { status: 500 }
@@ -190,7 +185,6 @@ export async function POST(request: NextRequest) {
     })
 
     if (authError || !authData.user) {
-      console.error('[register] Erro ao criar usuário:', authError)
 
       // Rollback: deletar client criado
       await (supabase as any).from('clients').delete().eq('id', clientId)
@@ -224,7 +218,6 @@ export async function POST(request: NextRequest) {
       })
 
     if (manualProfileError) {
-      console.error('[register] Erro ao criar user_profile:', manualProfileError)
       
       // Rollback: deletar usuário e client
       await supabase.auth.admin.deleteUser(authData.user.id)
@@ -261,7 +254,6 @@ export async function POST(request: NextRequest) {
       message: 'Conta criada com sucesso! Configure suas credenciais em Configurações.',
     })
   } catch (error) {
-    console.error('[register] Erro inesperado:', error)
     return NextResponse.json(
       { error: 'Erro interno ao criar conta' },
       { status: 500 }

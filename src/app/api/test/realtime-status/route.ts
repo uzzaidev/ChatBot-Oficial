@@ -26,7 +26,6 @@ export async function GET() {
         .in('trigger_name', ['broadcast_message_trigger', 'broadcast_conversation_trigger'])
       triggersManual = result.data
     } catch (e) {
-      console.warn('Could not query triggers via information_schema')
     }
 
     // 2. Verificar funções
@@ -38,7 +37,6 @@ export async function GET() {
         .in('routine_name', ['broadcast_message_change', 'broadcast_conversation_change'])
       functions = result.data
     } catch (e) {
-      console.warn('Could not query functions via information_schema')
     }
 
     const results = {
@@ -85,7 +83,6 @@ export async function GET() {
       overallStatus: allOk ? '✅ Tudo OK!' : '❌ Configuração incompleta'
     })
   } catch (error) {
-    console.error('❌ Erro ao verificar status:', error)
     return NextResponse.json(
       {
         error: 'Erro ao verificar status',

@@ -30,7 +30,6 @@ export async function POST(request: NextRequest) {
       info: `Mídia baixada: ${output.length} bytes`,
     })
   } catch (error: any) {
-    console.error('[TEST downloadMetaMedia] Error:', error)
     return NextResponse.json(
       { error: error.message, details: error.stack },
       { status: 500 }

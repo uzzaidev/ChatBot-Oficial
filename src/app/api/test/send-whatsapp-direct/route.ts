@@ -40,7 +40,6 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error: any) {
-    console.error('[TEST DIRECT] ❌ Error sending message:', error)
     
     return NextResponse.json(
       {

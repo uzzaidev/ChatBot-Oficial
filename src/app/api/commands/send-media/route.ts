@@ -31,7 +31,6 @@ export async function POST(request: NextRequest) {
     const clientId = await getClientIdFromSession(request as any)
 
     if (!clientId) {
-      console.error('[SEND-MEDIA API] ❌ Usuário não autenticado ou sem client_id')
       return NextResponse.json(
         { error: 'Unauthorized - client_id not found in session' },
         { status: 401 }
@@ -66,7 +65,6 @@ export async function POST(request: NextRequest) {
     const config = await getClientConfig(clientId)
 
     if (!config) {
-      console.error('[SEND-MEDIA API] ❌ Config não encontrado para client_id:', clientId)
       return NextResponse.json({ error: 'Client configuration not found' }, { status: 404 })
     }
 
@@ -78,7 +76,6 @@ export async function POST(request: NextRequest) {
 
     // Se for áudio, converter para OGG/Opus (formato mais compatível com WhatsApp)
     if (mediaType === 'audio') {
-      console.log('🔄 [SEND-MEDIA API] Convertendo áudio para OGG/Opus...')
       try {
         const converted = await convertAudioToWhatsAppFormat({
           inputBuffer: buffer,
@@ -89,15 +86,7 @@ export async function POST(request: NextRequest) {
         buffer = Buffer.from(converted.buffer)
         mimeType = converted.mimeType
         fileName = file.name.replace(/\.[^.]+$/, `.${converted.extension}`)
-
-        console.log('✅ [SEND-MEDIA API] Áudio convertido com sucesso:', {
-          originalSize: arrayBuffer.byteLength,
-          convertedSize: buffer.length,
-          mimeType,
-          fileName,
-        })
       } catch (conversionError) {
-        console.error('❌ [SEND-MEDIA API] Erro ao converter áudio:', conversionError)
         throw new Error('Não foi possível converter o áudio para formato compatível')
       }
     }
@@ -171,12 +160,6 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
-    const duration = Date.now() - startTime
-    console.error(`[SEND-MEDIA API] ❌❌❌ ERRO após ${duration}ms`)
-    console.error(`[SEND-MEDIA API] Error type:`, error instanceof Error ? error.constructor.name : typeof error)
-    console.error(`[SEND-MEDIA API] Error message:`, error instanceof Error ? error.message : String(error))
-    console.error(`[SEND-MEDIA API] Error stack:`, error instanceof Error ? error.stack : 'No stack trace')
-
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
 
     return NextResponse.json(

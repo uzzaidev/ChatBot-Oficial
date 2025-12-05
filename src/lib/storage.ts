@@ -80,7 +80,6 @@ export const deleteFileFromStorage = async (publicUrl: string): Promise<boolean>
 
     return true
   } catch (error) {
-    console.error('Failed to delete file from storage:', error)
     return false
   }
 }
@@ -110,10 +109,8 @@ export const ensureMediaBucketExists = async (): Promise<void> => {
         throw createError
       }
 
-      console.log(`✅ Bucket '${MEDIA_BUCKET}' criado com sucesso`)
     }
   } catch (error) {
-    console.error('Erro ao criar bucket:', error)
     throw error
   }
 }

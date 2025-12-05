@@ -77,7 +77,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ executions })
   } catch (error: any) {
-    console.error('[DEBUG API] Error fetching executions:', error)
     return NextResponse.json(
       { error: 'Failed to fetch executions', details: error.message },
       { status: 500 }

@@ -27,7 +27,6 @@ export const handleHumanHandoff = async (input: HandleHumanHandoffInput): Promis
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error(`[handleHumanHandoff] ❌ Failed to update customer status: ${errorMessage}`)
     throw new Error(`Failed to update customer status: ${errorMessage}`)
   }
 
@@ -57,8 +56,6 @@ Por favor, entre em contato o mais breve possível.`
     )
 
   } catch (emailError) {
-    const emailErrorMessage = emailError instanceof Error ? emailError.message : 'Unknown error'
-    console.error(`[handleHumanHandoff] ⚠️ Failed to send email notification: ${emailErrorMessage}`)
     // NÃO lança erro - handoff deve continuar mesmo se email falhar
   }
 }

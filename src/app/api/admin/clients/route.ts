@@ -62,7 +62,6 @@ export async function GET(request: NextRequest) {
     const { data: clients, error: clientsError } = await query
 
     if (clientsError) {
-      console.error('[GET /api/admin/clients] Error fetching clients:', clientsError)
       return NextResponse.json(
         { error: 'Erro ao buscar clientes', details: clientsError.message },
         { status: 500 }
@@ -76,7 +75,6 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('[GET /api/admin/clients] Unexpected error:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

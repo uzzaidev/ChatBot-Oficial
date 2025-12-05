@@ -128,7 +128,6 @@ export default function SettingsPage() {
           })
         }
       } catch (error) {
-        console.error('[settings] Erro ao carregar perfil:', error)
       }
     }
 
@@ -147,7 +146,6 @@ export default function SettingsPage() {
           setSecrets(data.secrets || {})
         }
       } catch (error) {
-        console.error('[settings] Erro ao carregar secrets:', error)
       }
     }
 
@@ -183,7 +181,6 @@ export default function SettingsPage() {
           })
         }
       } catch (error) {
-        console.error('[settings] Erro ao carregar agent config:', error)
       }
     }
 
@@ -319,10 +316,8 @@ export default function SettingsPage() {
           ? `${data.error}: ${data.details}`
           : data.error || 'Erro ao atualizar variável'
         setNotification({ type: 'error', message: errorMessage })
-        console.error('[settings] Erro ao salvar:', { error: data.error, details: data.details })
       }
     } catch (error) {
-      console.error('[settings] Exceção ao salvar:', error)
       setNotification({ type: 'error', message: 'Erro ao atualizar variável' })
     } finally {
       setLoadingSecrets(false)

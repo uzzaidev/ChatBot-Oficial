@@ -88,10 +88,6 @@ export async function GET(request: NextRequest) {
           // Extrai conteúdo da mensagem (formato LangChain)
           lastMessageContent = msgData.data?.content || msgData.content || "";
         } catch (error) {
-          console.error(
-            "[API /conversations] Error parsing message JSON:",
-            error,
-          );
           lastMessageContent = "";
         }
       }
@@ -122,8 +118,6 @@ export async function GET(request: NextRequest) {
       offset,
     });
   } catch (error) {
-    const duration = Date.now() - startTime;
-    console.error(`[API /conversations] ❌ Error after ${duration}ms:`, error);
     return NextResponse.json(
       { error: "Erro interno do servidor" },
       { status: 500 },
