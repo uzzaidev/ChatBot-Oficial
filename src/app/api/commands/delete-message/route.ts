@@ -77,16 +77,14 @@ export async function POST(request: NextRequest) {
             .remove([filePath])
 
           if (storageError) {
-            console.error('[DELETE-MESSAGE API] Storage deletion warning:', storageError)
             // Don't fail the request if storage deletion fails
           } else {
             mediaDeleted = true
           }
         } else {
-          console.warn('[DELETE-MESSAGE API] Could not parse Supabase Storage URL format:', mediaUrl)
+          // Could not parse Supabase Storage URL format - non-critical
         }
       } catch (storageErr) {
-        console.error('[DELETE-MESSAGE API] Storage deletion error:', storageErr)
         // Don't fail the request if storage deletion fails
       }
     }
@@ -100,8 +98,6 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('[DELETE-MESSAGE API] Error:', error)
-
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
 
     return NextResponse.json(

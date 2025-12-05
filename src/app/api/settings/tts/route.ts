@@ -38,7 +38,6 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error("[TTS Settings] Error fetching config:", error);
       return NextResponse.json({ error: "Failed to fetch config" }, {
         status: 500,
       });
@@ -55,7 +54,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("[TTS Settings] GET error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },
@@ -130,7 +128,6 @@ export async function POST(request: NextRequest) {
       .eq("id", profile.client_id);
 
     if (error) {
-      console.error("[TTS Settings] Error updating config:", error);
       return NextResponse.json({ error: "Failed to update config" }, {
         status: 500,
       });
@@ -138,7 +135,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("[TTS Settings] POST error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

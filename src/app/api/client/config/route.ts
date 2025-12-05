@@ -67,7 +67,6 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('[client/config] GET Erro:', error)
     return NextResponse.json(
       { error: 'Erro ao buscar configurações' },
       { status: 500 }
@@ -137,7 +136,6 @@ export async function PATCH(request: NextRequest) {
       .eq('id', clientId)
 
     if (updateError) {
-      console.error('[client/config] PATCH Erro ao atualizar:', updateError)
       return NextResponse.json(
         { error: 'Erro ao atualizar configurações' },
         { status: 500 }
@@ -150,7 +148,6 @@ export async function PATCH(request: NextRequest) {
       message: 'Configurações atualizadas com sucesso',
     })
   } catch (error) {
-    console.error('[client/config] PATCH Erro:', error)
     return NextResponse.json(
       { error: 'Erro ao atualizar configurações' },
       { status: 500 }

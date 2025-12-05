@@ -105,7 +105,6 @@ export async function PATCH(
       .single()
 
     if (updateError) {
-      console.error('[PATCH /api/admin/invites/[id]] Error updating invite:', updateError)
       return NextResponse.json(
         { error: 'Erro ao atualizar convite', details: updateError.message },
         { status: 500 }
@@ -118,7 +117,6 @@ export async function PATCH(
     })
 
   } catch (error) {
-    console.error('[PATCH /api/admin/invites/[id]] Unexpected error:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -200,7 +198,6 @@ export async function DELETE(
       .eq('id', inviteId)
 
     if (deleteError) {
-      console.error('[DELETE /api/admin/invites/[id]] Error deleting invite:', deleteError)
       return NextResponse.json(
         { error: 'Erro ao deletar convite', details: deleteError.message },
         { status: 500 }
@@ -212,7 +209,6 @@ export async function DELETE(
     })
 
   } catch (error) {
-    console.error('[DELETE /api/admin/invites/[id]] Unexpected error:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

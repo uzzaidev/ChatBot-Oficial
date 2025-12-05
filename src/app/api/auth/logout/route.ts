@@ -17,7 +17,6 @@ export async function POST(request: NextRequest) {
     const { error } = await supabase.auth.signOut()
 
     if (error) {
-      console.error('[logout] Erro:', error)
       return NextResponse.json(
         { success: false, error: error.message },
         { status: 500 }
@@ -27,7 +26,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[logout] Erro inesperado:', error)
     return NextResponse.json(
       { success: false, error: 'Erro ao fazer logout' },
       { status: 500 }

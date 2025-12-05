@@ -69,7 +69,6 @@ export default function TTSSettingsPage() {
         setConfig(data.config)
       }
     } catch (error) {
-      console.error('Failed to load TTS config:', error)
     } finally {
       setLoading(false)
     }
@@ -83,7 +82,6 @@ export default function TTSSettingsPage() {
         setStats(data.stats)
       }
     } catch (error) {
-      console.error('Failed to load TTS stats:', error)
     }
   }
 

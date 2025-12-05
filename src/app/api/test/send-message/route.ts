@@ -91,7 +91,6 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error: any) {
-    console.error('[TEST] Error processing test message:', error)
     
     return NextResponse.json(
       {

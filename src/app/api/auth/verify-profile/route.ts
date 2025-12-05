@@ -38,7 +38,6 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (profileError || !profile) {
-      console.error('[verify-profile] Profile não encontrado:', profileError)
       return NextResponse.json(
         {
           success: false,
@@ -65,7 +64,6 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (clientError || !client) {
-      console.error('[verify-profile] Client não encontrado:', clientError)
       return NextResponse.json(
         { success: false, error: 'Cliente não encontrado' },
         { status: 404 }
@@ -91,7 +89,6 @@ export async function GET(request: NextRequest) {
       user_name: profile.full_name,
     })
   } catch (error) {
-    console.error('[verify-profile] Erro:', error)
     return NextResponse.json(
       { success: false, error: 'Erro ao verificar perfil' },
       { status: 500 }

@@ -105,7 +105,6 @@ export async function GET(request: NextRequest) {
     const { data: users, error: usersError } = await query
 
     if (usersError) {
-      console.error('[GET /api/admin/users] Error fetching users:', usersError)
       return NextResponse.json(
         { error: 'Erro ao buscar usuários', details: usersError.message },
         { status: 500 }
@@ -135,7 +134,6 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('[GET /api/admin/users] Unexpected error:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -289,7 +287,6 @@ export async function POST(request: NextRequest) {
     })
 
     if (createAuthError || !authUser.user) {
-      console.error('[POST /api/admin/users] ❌ Error creating auth user:', createAuthError)
       return NextResponse.json(
         { error: 'Erro ao criar usuário no sistema de autenticação', details: createAuthError?.message },
         { status: 500 }
@@ -316,7 +313,6 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (profileCreateError) {
-      console.error('[POST /api/admin/users] ❌ Error creating user profile:', profileCreateError)
       
       // Rollback: deletar usuário do auth se falhar ao criar profile
       await supabaseAdmin.auth.admin.deleteUser(authUser.user.id)
@@ -355,7 +351,6 @@ export async function POST(request: NextRequest) {
     }, { status: 201 })
 
   } catch (error) {
-    console.error('[POST /api/admin/users] 💥 Unexpected error:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

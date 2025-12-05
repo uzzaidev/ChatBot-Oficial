@@ -112,7 +112,6 @@ export async function GET(request: NextRequest) {
       startDate: startDate.toISOString(),
     })
   } catch (error) {
-    console.error('[Dashboard Debug API] Error:', error)
     return NextResponse.json(
       { error: 'Failed to fetch debug data', details: error },
       { status: 500 }

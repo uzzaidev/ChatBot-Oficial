@@ -46,7 +46,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         [phone, clientId]
       )
     } catch (pgError) {
-      console.error('[API Messages] PostgreSQL count error:', pgError)
     }
 
 
@@ -154,7 +153,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       }
     })
   } catch (error) {
-    console.error('Erro inesperado:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

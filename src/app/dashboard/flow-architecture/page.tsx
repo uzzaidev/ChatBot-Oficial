@@ -42,10 +42,8 @@ export default function FlowArchitecturePage() {
         if (profile?.client_id) {
           setClientId(profile.client_id)
         } else {
-          console.error('[FlowArchitecturePage] Client ID não encontrado')
         }
       } catch (error) {
-        console.error('[FlowArchitecturePage] Erro ao verificar autenticação:', error)
       } finally {
         setLoading(false)
       }

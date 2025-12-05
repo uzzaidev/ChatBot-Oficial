@@ -35,7 +35,6 @@ export const createSecret = async (
     })
 
     if (error) {
-      console.error('[createSecret] Failed to create secret:', error)
       throw new Error(`Failed to create secret: ${error.message}`)
     }
 
@@ -70,14 +69,12 @@ export const getSecret = async (secretId: string): Promise<string | null> => {
     })
 
     if (error) {
-      console.error('[getSecret] Failed to read secret:', error)
       throw new Error(`Failed to read secret: ${error.message}`)
     }
 
     return data
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error(`[getSecret] Error reading secret ${secretId}:`, errorMessage)
     return null
   }
 }
@@ -103,7 +100,6 @@ export const updateSecret = async (
     })
 
     if (error) {
-      console.error('[updateSecret] Failed to update secret:', error)
       throw new Error(`Failed to update secret: ${error.message}`)
     }
 

@@ -84,13 +84,11 @@ async function checkProcessedPostgres(
     })
     
     if (error) {
-      console.error('[DEDUP/PG] ❌ Erro ao verificar deduplicação:', error)
       return false // Se erro, assume não processado (safe default)
     }
     
     return data === true
   } catch (error) {
-    console.error('[DEDUP/PG] ❌ Exceção ao verificar deduplicação:', error)
     return false
   }
 }
@@ -115,13 +113,11 @@ async function markProcessedPostgres(
     })
     
     if (error) {
-      console.error('[DEDUP/PG] ❌ Erro ao marcar como processado:', error)
       return false
     }
     
     return true
   } catch (error) {
-    console.error('[DEDUP/PG] ❌ Exceção ao marcar como processado:', error)
     return false
   }
 }
@@ -138,7 +134,6 @@ async function checkProcessedRedis(dedupKey: string): Promise<boolean | null> {
     const result = await get(dedupKey)
     return result !== null
   } catch (error) {
-    console.error('[DEDUP/REDIS] ❌ Erro ao verificar deduplicação:', error)
     return null // Indica falha (não true/false)
   }
 }
@@ -154,7 +149,6 @@ async function markProcessedRedis(
     await setWithExpiry(dedupKey, new Date().toISOString(), expirySeconds)
     return true
   } catch (error) {
-    console.error('[DEDUP/REDIS] ❌ Erro ao marcar como processado:', error)
     return false
   }
 }
@@ -270,7 +264,6 @@ export async function markMessageAsProcessed(
     }
   }
   
-  console.error(`[DEDUP] ❌ Falhou em marcar como processado (ambos): ${messageId}`)
   return {
     success: false,
     source: 'none' as any,
@@ -297,7 +290,6 @@ export async function cleanupOldRecords(retentionHours: number = 24): Promise<nu
     })
     
     if (error) {
-      console.error('[DEDUP/CLEANUP] ❌ Erro ao fazer cleanup:', error)
       return 0
     }
     
@@ -305,7 +297,6 @@ export async function cleanupOldRecords(retentionHours: number = 24): Promise<nu
     
     return deletedCount
   } catch (error) {
-    console.error('[DEDUP/CLEANUP] ❌ Exceção ao fazer cleanup:', error)
     return 0
   }
 }
@@ -332,13 +323,11 @@ export async function getDedupStats(clientId?: string) {
     const { data, error } = await query
     
     if (error) {
-      console.error('[DEDUP/STATS] ❌ Erro ao buscar estatísticas:', error)
       return null
     }
     
     return data
   } catch (error) {
-    console.error('[DEDUP/STATS] ❌ Exceção ao buscar estatísticas:', error)
     return null
   }
 }

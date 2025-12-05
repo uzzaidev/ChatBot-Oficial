@@ -59,7 +59,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       },
     });
   } catch (error) {
-    console.error("[API /contacts/[phone]] Error:", error);
     return NextResponse.json(
       { error: "Erro interno do servidor" },
       { status: 500 }
@@ -151,7 +150,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       },
     });
   } catch (error) {
-    console.error("[API /contacts/[phone] PATCH] Error:", error);
     return NextResponse.json(
       { error: "Erro interno do servidor" },
       { status: 500 }
@@ -197,7 +195,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       message: "Contato removido com sucesso",
     });
   } catch (error) {
-    console.error("[API /contacts/[phone] DELETE] Error:", error);
     return NextResponse.json(
       { error: "Erro interno do servidor" },
       { status: 500 }

@@ -16,7 +16,6 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET() {
   try {
-    console.log('🧪 [Realtime Test] Iniciando teste...')
 
     const supabase = createClientBrowser()
 
@@ -36,22 +35,18 @@ export async function GET() {
             table: 'n8n_chat_histories',
           },
           (payload) => {
-            console.log('✅ [Realtime Test] Evento recebido:', payload)
             receivedEvent = true
           }
         )
         .subscribe((status, err) => {
-          console.log(`📡 [Realtime Test] Status: ${status}`)
 
           if (err) {
-            console.error('❌ [Realtime Test] Erro:', err)
             subscriptionError = err
           }
 
           connectionStatus = status
 
           if (status === 'SUBSCRIBED') {
-            console.log('✅ [Realtime Test] SUCESSO - Realtime está funcionando!')
 
             // Aguardar 2s para possíveis eventos
             setTimeout(() => {
@@ -59,7 +54,6 @@ export async function GET() {
               resolve()
             }, 2000)
           } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-            console.error('❌ [Realtime Test] FALHOU - Status:', status)
             supabase.removeChannel(channel)
             resolve()
           }
@@ -68,7 +62,6 @@ export async function GET() {
       // Timeout de 10s
       setTimeout(() => {
         if (connectionStatus === 'PENDING') {
-          console.error('⏱️ [Realtime Test] TIMEOUT - Não conectou em 10s')
           supabase.removeChannel(channel)
           resolve()
         }
@@ -94,11 +87,9 @@ export async function GET() {
       ] : null,
     }
 
-    console.log('🧪 [Realtime Test] Resultado:', result)
 
     return NextResponse.json(result)
   } catch (error) {
-    console.error('❌ [Realtime Test] Erro inesperado:', error)
 
     return NextResponse.json({
       success: false,

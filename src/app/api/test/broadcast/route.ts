@@ -43,7 +43,6 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (error) {
-      console.error('❌ Erro ao inserir mensagem de teste:', error)
       return NextResponse.json(
         { error: error.message },
         { status: 500 }
@@ -62,7 +61,6 @@ export async function GET(request: NextRequest) {
       ]
     })
   } catch (error) {
-    console.error('❌ Erro no teste de broadcast:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

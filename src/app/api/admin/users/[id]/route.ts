@@ -99,7 +99,6 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('[GET /api/admin/users/[id]] Unexpected error:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -237,7 +236,6 @@ export async function PATCH(
       .single()
 
     if (updateError) {
-      console.error('[PATCH /api/admin/users/[id]] Error updating user:', updateError)
       return NextResponse.json(
         { error: 'Erro ao atualizar usuário', details: updateError.message },
         { status: 500 }
@@ -279,7 +277,6 @@ export async function PATCH(
     })
 
   } catch (error) {
-    console.error('[PATCH /api/admin/users/[id]] Unexpected error:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -392,7 +389,6 @@ export async function DELETE(
       // Deletar do auth
       const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(userId)
       if (authDeleteError) {
-        console.error('[DELETE /api/admin/users/[id]] Error deleting auth user:', authDeleteError)
         return NextResponse.json(
           { error: 'Erro ao deletar usuário do auth', details: authDeleteError.message },
           { status: 500 }
@@ -432,7 +428,6 @@ export async function DELETE(
         .eq('id', userId)
 
       if (deactivateError) {
-        console.error('[DELETE /api/admin/users/[id]] Error deactivating user:', deactivateError)
         return NextResponse.json(
           { error: 'Erro ao desativar usuário', details: deactivateError.message },
           { status: 500 }
@@ -462,7 +457,6 @@ export async function DELETE(
     }
 
   } catch (error) {
-    console.error('[DELETE /api/admin/users/[id]] Unexpected error:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

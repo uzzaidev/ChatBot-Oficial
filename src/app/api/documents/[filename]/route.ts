@@ -79,7 +79,6 @@ export async function DELETE(
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error('[DeleteDocument] ❌ Error:', errorMessage)
 
     return NextResponse.json(
       { error: `Failed to delete document: ${errorMessage}` },

@@ -50,7 +50,6 @@ export const useMessagesPolling = ({
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido'
       setError(errorMessage)
-      console.error('[Polling] Erro ao buscar mensagens:', err)
     } finally {
       setLoading(false)
     }

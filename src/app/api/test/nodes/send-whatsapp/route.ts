@@ -56,7 +56,6 @@ export async function POST(request: NextRequest) {
       info: `${output.length} mensagem(ns) enviada(s) com sucesso`,
     })
   } catch (error: any) {
-    console.error('[TEST sendWhatsAppMessage] Error:', error)
     return NextResponse.json(
       { error: error.message, details: error.stack },
       { status: 500 }
