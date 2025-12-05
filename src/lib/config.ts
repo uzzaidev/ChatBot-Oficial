@@ -235,9 +235,6 @@ export const getClientConfig = async (
 
     return config;
   } catch (error) {
-    const errorMessage = error instanceof Error
-      ? error.message
-      : "Unknown error";
     return null;
   }
 };
@@ -259,15 +256,6 @@ export const validateClientConfig = (config: ClientConfig): boolean => {
   ];
 
   const isValid = required.every((field) => field && field.length > 0);
-
-  if (!isValid) {
-      hasMetaToken: !!config.apiKeys.metaAccessToken,
-      hasPhoneId: !!config.apiKeys.metaPhoneNumberId,
-      hasOpenAI: !!config.apiKeys.openaiApiKey,
-      hasGroq: !!config.apiKeys.groqApiKey,
-      hasPrompt: !!config.prompts.systemPrompt,
-    });
-  }
 
   return isValid;
 };
@@ -295,10 +283,6 @@ export const getClientConfigWithFallback = async (
   }
 
   // DEPRECATED: .env fallback não é mais suportado
-    "❌ [getClientConfigWithFallback] DEPRECATED: .env fallback não é mais suportado. " +
-      "Configure o webhook com client_id: {WEBHOOK_BASE_URL}/api/webhook/{client_id}",
-  );
-
   throw new Error(
     "Legacy .env config is no longer supported. " +
       "Please update your webhook URL to: " +

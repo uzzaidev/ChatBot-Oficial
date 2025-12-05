@@ -40,11 +40,6 @@ export async function convertAudioToWhatsAppFormat(
     // Salvar buffer de entrada em arquivo temporário
     await writeFile(inputPath, inputBuffer)
 
-      input: inputPath,
-      output: outputPath,
-      format: outputFormat,
-    })
-
     // Converter usando FFmpeg
     await new Promise<void>((resolve, reject) => {
       const command = ffmpeg(inputPath)
@@ -81,10 +76,6 @@ export async function convertAudioToWhatsAppFormat(
     // Ler arquivo convertido
     const fs = require('fs')
     const outputBuffer = await fs.promises.readFile(outputPath)
-
-      size: outputBuffer.length,
-      format: outputFormat,
-    })
 
     // Limpar arquivos temporários
     await unlink(inputPath).catch(() => {})

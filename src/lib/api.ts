@@ -33,10 +33,7 @@ export function getApiBaseUrl(): string {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
     if (!apiUrl) {
-        "[API] NEXT_PUBLIC_API_URL não configurada! Mobile não conseguirá acessar APIs. " +
-          "Configure em .env.mobile",
-      );
-      // Fallback para produção
+      // NEXT_PUBLIC_API_URL não configurada - usando fallback para produção
       return "https://uzzapp.uzzai.com.br";
     }
 
@@ -81,11 +78,9 @@ export async function apiFetch(
 
       if (session?.access_token) {
         headers["Authorization"] = `Bearer ${session.access_token}`;
-      } else {
-          "[API] ❌ Nenhuma sessão ativa no mobile - requisição sem autenticação",
-        );
       }
     } catch (error) {
+      // Error fetching session - continue without auth
     }
   }
 

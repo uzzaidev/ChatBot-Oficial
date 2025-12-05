@@ -76,6 +76,7 @@ export const useNotifications = ({
     // Solicitar permissão
     const requestPermission = useCallback(async (): Promise<boolean> => {
         if (!isSupported) {
+            // Notification API not supported
             return false;
         }
 
@@ -113,9 +114,7 @@ export const useNotifications = ({
                 return false;
             }
         } catch (error) {
-                "[Notifications] Error requesting permission:",
-                error,
-            );
+            // Error requesting permission
             return false;
         }
     }, [isSupported, toast]);
@@ -127,9 +126,11 @@ export const useNotifications = ({
         try {
             // Reset audio to start
             audioRef.current.currentTime = 0;
-            audioRef.current.play().catch((error) => {
+            audioRef.current.play().catch(() => {
+                // Could not play sound - non-critical
             });
         } catch (error) {
+            // Error playing sound - non-critical
         }
     }, [sound]);
 
@@ -180,9 +181,6 @@ export const useNotifications = ({
                     notification.close();
                 }, 5000);
             } catch (error) {
-                    "[Notifications] Error showing notification:",
-                    error,
-                );
                 // Fallback para toast
                 toast({
                     title,

@@ -228,9 +228,7 @@ export const processChatbotMessage = async (
             url: mediaUrl,
           });
         } catch (uploadError) {
-            "[chatbotFlow] ❌ Failed to upload audio to storage:",
-            uploadError,
-          );
+          // Failed to upload audio to storage - non-critical, continue processing
         }
 
         const transcriptionResult = await transcribeAudio(
@@ -252,9 +250,7 @@ export const processChatbotMessage = async (
             transcriptionResult.usage.total_tokens,
           );
         } catch (usageError) {
-            "[chatbotFlow] ❌ Failed to log Whisper usage:",
-            usageError,
-          );
+          // Failed to log Whisper usage - non-critical
         }
       } else if (parsedMessage.type === "image" && parsedMessage.metadata?.id) {
         const imageBuffer = await downloadMetaMedia(
@@ -288,9 +284,7 @@ export const processChatbotMessage = async (
             url: mediaUrl,
           });
         } catch (uploadError) {
-            "[chatbotFlow] ❌ Failed to upload image to storage:",
-            uploadError,
-          );
+          // Failed to upload image to storage - non-critical
         }
 
         const visionResult = await analyzeImage(
@@ -316,9 +310,7 @@ export const processChatbotMessage = async (
             visionResult.usage,
           );
         } catch (usageError) {
-            "[chatbotFlow] ❌ Failed to log Vision usage:",
-            usageError,
-          );
+          // Failed to log Vision usage - non-critical
         }
       } else if (
         parsedMessage.type === "document" && parsedMessage.metadata?.id
@@ -353,9 +345,7 @@ export const processChatbotMessage = async (
             url: mediaUrl,
           });
         } catch (uploadError) {
-            "[chatbotFlow] ❌ Failed to upload document to storage:",
-            uploadError,
-          );
+          // Failed to upload document to storage - non-critical
         }
 
         const documentResult = await analyzeDocument(
@@ -382,9 +372,7 @@ export const processChatbotMessage = async (
               documentResult.usage,
             );
           } catch (usageError) {
-              "[chatbotFlow] ❌ Failed to log PDF usage:",
-              usageError,
-            );
+            // Failed to log PDF usage - non-critical
           }
         }
       }
@@ -823,7 +811,7 @@ export const processChatbotMessage = async (
           );
         }
       } catch (usageError) {
-        // Não quebrar o fluxo por erro de logging
+        // Failed to log usage - non-critical
       }
     } else {
     }
