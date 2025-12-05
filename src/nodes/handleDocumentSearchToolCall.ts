@@ -107,17 +107,11 @@ export const handleDocumentSearchToolCall = async (
   const { toolCall, phone, clientId, config } = input;
 
   try {
-    console.log("\n🔍 [handleDocumentSearchToolCall] Processing tool call");
-
     // 1. Parse arguments
     let args: { query: string; document_type?: string };
     try {
       args = JSON.parse(toolCall.function.arguments);
     } catch (parseError) {
-      console.error(
-        "[handleDocumentSearchToolCall] ❌ Failed to parse arguments:",
-        parseError,
-      );
       return {
         success: false,
         message: "Erro ao processar solicitação de busca de documento.",
@@ -127,9 +121,6 @@ export const handleDocumentSearchToolCall = async (
     }
 
     const { query, document_type } = args;
-
-    console.log(`  Query: "${query}"`);
-    console.log(`  Document Type: ${document_type || "any"}`);
 
     // 2. Buscar documentos na base de conhecimento
     const searchResult = await searchDocumentInKnowledge({
@@ -143,21 +134,10 @@ export const handleDocumentSearchToolCall = async (
 
     const { results, metadata } = searchResult;
 
-    // Log metadata para debug
-    console.log("\n📊 [Search Metadata]");
-    console.log(`  Total docs in base: ${metadata.totalDocumentsInBase}`);
-    console.log(`  Chunks found in search: ${metadata.chunksFound}`);
-    console.log(`  Unique docs found: ${metadata.uniqueDocumentsFound}`);
-    console.log(`  Threshold used: ${metadata.threshold}`);
-    if (metadata.documentTypeFilter) {
-      console.log(`  Document type filter: ${metadata.documentTypeFilter}`);
-    }
-
     // 3. Se não encontrou documentos
     if (results.length === 0) {
       const message =
         `Não encontrei documentos relacionados a "${query}" na base de conhecimento.`;
-      console.log(`  ℹ️  ${message}`);
 
       return {
         success: true,
@@ -178,10 +158,6 @@ export const handleDocumentSearchToolCall = async (
 
     for (const doc of results) {
       try {
-        console.log(
-          `\n  📤 Sending: ${doc.filename} (${doc.originalMimeType})`,
-        );
-
         // Determinar tipo de mídia baseado no MIME type
         const isImage = doc.originalMimeType.startsWith("image/");
 
@@ -193,7 +169,6 @@ export const handleDocumentSearchToolCall = async (
             `📷 ${doc.filename}`, // Caption
             config,
           );
-          console.log(`    ✅ Image sent`);
         } else {
           // Enviar como documento (PDF, DOC, etc.)
           await sendDocumentMessage(
@@ -203,7 +178,6 @@ export const handleDocumentSearchToolCall = async (
             `📄 Documento da base de conhecimento`, // Caption
             config,
           );
-          console.log(`    ✅ Document sent`);
         }
 
         sentCount++;
@@ -219,14 +193,12 @@ export const handleDocumentSearchToolCall = async (
 
         // Delay entre envios para evitar rate limit
         if (sentCount < results.length) {
-          console.log("    ⏱️  Waiting 1s before next send...");
           await new Promise((resolve) => setTimeout(resolve, 1000));
         }
       } catch (sendError) {
         const errorMessage = sendError instanceof Error
           ? sendError.message
           : "Unknown error";
-        console.error(`  ❌ Error sending ${doc.filename}:`, errorMessage);
         errors.push(`${doc.filename}: ${errorMessage}`);
       }
     }
@@ -252,9 +224,6 @@ export const handleDocumentSearchToolCall = async (
         }`;
     }
 
-    console.log(`\n✅ [handleDocumentSearchToolCall] Completed`);
-    console.log(`  Message: ${message}`);
-
     return {
       success: sentCount > 0,
       message,
@@ -268,7 +237,6 @@ export const handleDocumentSearchToolCall = async (
     const errorMessage = error instanceof Error
       ? error.message
       : "Unknown error";
-    console.error("\n❌ [handleDocumentSearchToolCall] Error:", errorMessage);
 
     return {
       success: false,

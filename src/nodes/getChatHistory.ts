@@ -106,7 +106,6 @@ export const getChatHistory = async (input: GetChatHistoryInput): Promise<GetCha
     }
   } catch (error) {
     const duration = Date.now() - startTime
-    console.error(`[getChatHistory] ❌ Error after ${duration}ms:`, error)
     return {
       messages: [],
       stats: {

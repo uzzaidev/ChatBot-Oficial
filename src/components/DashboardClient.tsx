@@ -49,7 +49,7 @@ export function DashboardClient({ clientId }: DashboardClientProps) {
           setIsAdmin(!!hasAdminAccess)
         }
       } catch (error) {
-        console.error('[Dashboard] Error checking admin role:', error)
+        // Error checking admin role - fallback to non-admin
       } finally {
         setCheckingAdmin(false)
       }

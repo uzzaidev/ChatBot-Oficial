@@ -101,8 +101,6 @@ export const StatusToggle = ({ phone, currentStatus }: StatusToggleProps) => {
         description: `Conversa alterada para: ${statusConfig[newStatus].label}`,
       })
     } catch (error) {
-      console.error('[StatusToggle] Erro ao atualizar status:', error)
-
       toast({
         title: 'Erro ao atualizar status',
         description: error instanceof Error ? error.message : 'Erro desconhecido',

@@ -164,7 +164,6 @@ export const processDocumentWithChunking = async (
         .single()
 
       if (error) {
-        console.error(`[ProcessDocument] ❌ Error saving chunk ${i}:`, error)
         throw new Error(`Failed to save chunk: ${error.message}`)
       }
 
@@ -197,7 +196,6 @@ export const processDocumentWithChunking = async (
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error(`[ProcessDocument] ❌ Error:`, errorMessage)
     throw new Error(`Failed to process document: ${errorMessage}`)
   }
 }
@@ -268,7 +266,6 @@ export const deleteDocuments = async (filters: {
     return deletedCount
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error(`[DeleteDocuments] ❌ Error:`, errorMessage)
     throw new Error(`Failed to delete documents: ${errorMessage}`)
   }
 }
@@ -341,7 +338,6 @@ export const listDocuments = async (
     return documents
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error(`[ListDocuments] ❌ Error:`, errorMessage)
     throw new Error(`Failed to list documents: ${errorMessage}`)
   }
 }
