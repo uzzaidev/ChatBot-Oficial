@@ -49,8 +49,6 @@ export const useRealtimeMessagesBroadcast = ({
 
     const supabase = createClientBrowser()
 
-    console.log(`📡 [Broadcast] Connecting to channel: messages:${phone}`)
-
     const channel = supabase
       .channel(`messages:${clientId}:${phone}`, {
         config: {
@@ -58,8 +56,6 @@ export const useRealtimeMessagesBroadcast = ({
         },
       })
       .on('broadcast', { event: '*' }, (payload) => {
-        console.log('✅ [Broadcast] Event received:', payload)
-
         try {
           // Payload vem de realtime.broadcast_changes()
           const { type, new: data, old: oldData } = payload.payload as any
@@ -71,7 +67,6 @@ export const useRealtimeMessagesBroadcast = ({
 
           // Filter by session_id (phone) - garantir que é a conversa certa
           if (data.session_id !== phone) {
-            console.log('⚠️ [Broadcast] Message for different session, ignoring')
             return
           }
 
@@ -113,20 +108,15 @@ export const useRealtimeMessagesBroadcast = ({
         }
       })
       .subscribe((status, err) => {
-        console.log(`📡 [Broadcast] Status: ${status}`, err || '')
-
         if (status === 'SUBSCRIBED') {
           setIsConnected(true)
           setRetryCount(0)
-          console.log('✅ [Broadcast] Successfully connected!')
         } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
           setIsConnected(false)
-          console.error(`❌ [Broadcast] Connection ${status}`, err)
 
           // Retry with exponential backoff
           if (retryCount < 5) {
             const delay = Math.min(1000 * Math.pow(2, retryCount), 30000)
-            console.log(`🔄 [Broadcast] Retrying in ${delay}ms (attempt ${retryCount + 1}/5)...`)
 
             reconnectTimeoutRef.current = setTimeout(() => {
               setRetryCount(prev => prev + 1)
@@ -155,7 +145,6 @@ export const useRealtimeMessagesBroadcast = ({
 
       if (channelRef.current) {
         const supabase = createClientBrowser()
-        console.log('🧹 [Broadcast] Cleaning up channel')
         supabase.removeChannel(channelRef.current)
         setIsConnected(false)
       }

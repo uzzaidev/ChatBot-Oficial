@@ -19,17 +19,10 @@ interface DailyUsageChartProps {
 }
 
 export function DailyUsageChart({ data, days = 30 }: DailyUsageChartProps) {
-  console.log('[DailyUsageChart] Raw data received:', data.length, 'rows')
-
   // Sort data by date first (ascending)
   const sortedData = [...data].sort((a, b) =>
     new Date(a.date).getTime() - new Date(b.date).getTime()
   )
-
-  console.log('[DailyUsageChart] Date range:', {
-    oldest: sortedData[0]?.date,
-    newest: sortedData[sortedData.length - 1]?.date
-  })
 
   // Group data by date and aggregate by source
   const groupedData = sortedData.reduce((acc: Record<string, any>, item) => {
@@ -60,11 +53,6 @@ export function DailyUsageChart({ data, days = 30 }: DailyUsageChartProps) {
     .sort((a: any, b: any) => b.timestamp - a.timestamp)
     .slice(0, days)
     .reverse() // Reverse to show oldest first (left to right)
-
-  console.log('[DailyUsageChart] Final chartData:', chartData.map(d => ({
-    date: d.date,
-    total: d.Total
-  })))
 
   return (
     <Card>

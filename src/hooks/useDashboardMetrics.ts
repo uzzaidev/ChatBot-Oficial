@@ -41,17 +41,12 @@ export function useDashboardMetrics({
       setLoading(true)
       setError(null)
 
-      console.log('[useDashboardMetrics] Fetching metrics for days:', days)
-
       const supabase = createClientBrowser()
       const { data: { session } } = await supabase.auth.getSession()
 
       if (!session) {
-        console.error('[useDashboardMetrics] No session found')
         throw new Error('Not authenticated')
       }
-
-      console.log('[useDashboardMetrics] Session found, fetching from API...')
 
       const response = await fetch(`/api/dashboard/metrics?days=${days}`, {
         headers: {
@@ -59,20 +54,12 @@ export function useDashboardMetrics({
         },
       })
 
-      console.log('[useDashboardMetrics] Response status:', response.status)
-
       if (!response.ok) {
         const errorData = await response.json()
-        console.error('[useDashboardMetrics] API error:', errorData)
         throw new Error(`Failed to fetch metrics: ${errorData.error || response.statusText}`)
       }
 
       const data = await response.json()
-      console.log('[useDashboardMetrics] Metrics data:', data)
-      console.log('[useDashboardMetrics] Conversations count:', data.conversations?.length)
-      console.log('[useDashboardMetrics] Messages count:', data.messages?.length)
-      console.log('[useDashboardMetrics] Tokens count:', data.tokens?.length)
-      console.log('[useDashboardMetrics] Cost count:', data.cost?.length)
 
       setMetrics(data)
     } catch (err) {
