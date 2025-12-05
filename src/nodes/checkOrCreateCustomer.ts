@@ -141,10 +141,6 @@ export const checkOrCreateCustomer = async (
     const duration = Date.now() - startTime;
 
     if (error) {
-      console.error(
-        `[checkOrCreateCustomer] 💥 Erro do Supabase after ${duration}ms:`,
-        error,
-      );
       throw new Error(`Supabase error: ${error.message} (code: ${error.code})`);
     }
 
@@ -162,27 +158,6 @@ export const checkOrCreateCustomer = async (
       updated_at: data.created_at,
     };
   } catch (error) {
-    const duration = Date.now() - startTime;
-    console.error(
-      `[checkOrCreateCustomer] 💥💥💥 ERRO CRÍTICO after ${duration}ms 💥💥💥`,
-    );
-    console.error(
-      `[checkOrCreateCustomer] Error type:`,
-      error instanceof Error ? error.constructor.name : typeof error,
-    );
-    console.error(
-      `[checkOrCreateCustomer] Error message:`,
-      error instanceof Error ? error.message : String(error),
-    );
-    console.error(
-      `[checkOrCreateCustomer] Error stack:`,
-      error instanceof Error ? error.stack : "No stack trace",
-    );
-    console.error(`[checkOrCreateCustomer] Input data:`, {
-      phone: input.phone,
-      name: input.name,
-    });
-
     const errorMessage = error instanceof Error ? error.message : String(error);
     throw new Error(`Failed to check or create customer: ${errorMessage}`);
   }

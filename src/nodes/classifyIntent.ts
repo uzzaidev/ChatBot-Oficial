@@ -101,9 +101,6 @@ export const classifyIntent = async (input: ClassifyIntentInput): Promise<Classi
       usedLLM: true,
     }
   } catch (error) {
-    const duration = Date.now() - startTime
-    console.error(`[classifyIntent] ❌ Error after ${duration}ms:`, error)
-
     // Fallback to 'outro' (other)
     return {
       intent: 'outro',

@@ -63,7 +63,6 @@ export const executeDiagnosticSubagent = async (userMessage: string): Promise<Di
       confidence: 'high'
     }
   } catch (error) {
-    console.error('[executeDiagnosticSubagent] Erro:', error)
     return {
       area: 'INDEFINIDO',
       confidence: 'low'

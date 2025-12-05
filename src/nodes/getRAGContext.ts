@@ -49,7 +49,6 @@ export const getRAGContext = async (input: GetRAGContextInput): Promise<string> 
     })
 
     if (error) {
-      console.error(`[getRAGContext] ❌ Error calling match_documents:`, error)
       throw new Error(`Failed to match documents: ${error.message}`)
     }
 
@@ -70,8 +69,6 @@ export const getRAGContext = async (input: GetRAGContextInput): Promise<string> 
     return concatenatedContent
   } catch (error) {
     // Se der erro, retorna vazio ao invés de quebrar o fluxo
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error(`[getRAGContext] ❌ Error (returning empty): ${errorMessage}`)
     return ''
   }
 }

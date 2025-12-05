@@ -45,7 +45,7 @@ export const AudioRecorder = ({ phone, clientId, onAudioSent, onRecordingChange,
       }
     }
 
-    console.warn('⚠️ [AudioRecorder] Nenhum codec suportado, usando padrão do navegador')
+    // Nenhum codec suportado, usando padrão do navegador
     return ''
   }
 
@@ -93,7 +93,7 @@ export const AudioRecorder = ({ phone, clientId, onAudioSent, onRecordingChange,
           extension = 'aac'
         } else if (actualMimeType.includes('webm')) {
           extension = 'webm'
-          console.warn('⚠️ [AudioRecorder] WebM não é suportado pelo WhatsApp')
+          // WebM não é suportado pelo WhatsApp, mas vamos continuar
         } else if (actualMimeType.includes('ogg') || actualMimeType.includes('opus')) {
           extension = 'ogg'
         }
@@ -128,8 +128,6 @@ export const AudioRecorder = ({ phone, clientId, onAudioSent, onRecordingChange,
       setRecording(true)
       onRecordingChange?.(true)
     } catch (error) {
-      console.error('Erro ao acessar microfone:', error)
-
       let errorMessage = 'Não foi possível acessar o microfone'
 
       if (error instanceof Error) {
@@ -183,7 +181,6 @@ export const AudioRecorder = ({ phone, clientId, onAudioSent, onRecordingChange,
       // Validar tamanho (16 MB máximo para WhatsApp)
       const maxSize = 16 * 1024 * 1024
       if (file.size > maxSize) {
-        console.error('❌ [AudioRecorder] Áudio muito grande:', file.size)
         toast({
           title: 'Áudio muito grande',
           description: 'O áudio gravado excede 16 MB. Tente gravar um áudio mais curto.',
@@ -205,7 +202,6 @@ export const AudioRecorder = ({ phone, clientId, onAudioSent, onRecordingChange,
 
       if (!response.ok) {
         const errorData = await response.json()
-        console.error('❌ [AudioRecorder] Erro da API:', errorData)
         throw new Error(errorData.error || 'Erro ao enviar áudio')
       }
 
@@ -220,7 +216,6 @@ export const AudioRecorder = ({ phone, clientId, onAudioSent, onRecordingChange,
         onAudioSent()
       }
     } catch (error) {
-      console.error('❌ [AudioRecorder] Erro ao enviar áudio:', error)
       toast({
         title: 'Erro ao enviar áudio',
         description: error instanceof Error ? error.message : 'Erro desconhecido',

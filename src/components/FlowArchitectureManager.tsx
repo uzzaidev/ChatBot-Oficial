@@ -111,7 +111,7 @@ export default function FlowArchitectureManager() {
               }
             }
           } catch (error) {
-            console.error(`Error fetching state for ${node.id}:`, error)
+            // Error fetching state for node - using default
           }
           return { nodeId: node.id, enabled: true }
         })
@@ -130,7 +130,7 @@ export default function FlowArchitectureManager() {
         )
         
       } catch (error) {
-        console.error('Error loading node states:', error)
+        // Error loading node states - using defaults
       } finally {
         setInitialLoading(false)
       }
@@ -154,7 +154,6 @@ export default function FlowArchitectureManager() {
         setNodeConfig({ enabled: node.enabled })
       }
     } catch (error) {
-      console.error('Error fetching node config:', error)
       setNodeConfig({ enabled: node.enabled })
     } finally {
       setLoading(false)
@@ -351,7 +350,7 @@ export default function FlowArchitectureManager() {
         })
       }
     } catch (error) {
-      console.error('Error rendering Mermaid diagram:', error)
+      // Error rendering Mermaid diagram
     }
   }, [generateMermaidDiagram, handleNodeClick, nodes])
 
