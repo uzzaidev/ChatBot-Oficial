@@ -85,7 +85,6 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error: any) {
-    console.error('[check-table-schema] ❌ Erro:', error)
     return NextResponse.json(
       {
         error: error.message,

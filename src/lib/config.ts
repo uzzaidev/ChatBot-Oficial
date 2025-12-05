@@ -139,7 +139,6 @@ export const getClientConfig = async (
       .single() as { data: any; error: any };
 
     if (error || !client) {
-      console.error("[getClientConfig] Failed to fetch client:", error);
       return null;
     }
 
@@ -236,10 +235,6 @@ export const getClientConfig = async (
 
     return config;
   } catch (error) {
-    const errorMessage = error instanceof Error
-      ? error.message
-      : "Unknown error";
-    console.error("[getClientConfig] Error:", errorMessage);
     return null;
   }
 };
@@ -261,16 +256,6 @@ export const validateClientConfig = (config: ClientConfig): boolean => {
   ];
 
   const isValid = required.every((field) => field && field.length > 0);
-
-  if (!isValid) {
-    console.error("[validateClientConfig] Invalid config:", {
-      hasMetaToken: !!config.apiKeys.metaAccessToken,
-      hasPhoneId: !!config.apiKeys.metaPhoneNumberId,
-      hasOpenAI: !!config.apiKeys.openaiApiKey,
-      hasGroq: !!config.apiKeys.groqApiKey,
-      hasPrompt: !!config.prompts.systemPrompt,
-    });
-  }
 
   return isValid;
 };
@@ -298,11 +283,6 @@ export const getClientConfigWithFallback = async (
   }
 
   // DEPRECATED: .env fallback não é mais suportado
-  console.error(
-    "❌ [getClientConfigWithFallback] DEPRECATED: .env fallback não é mais suportado. " +
-      "Configure o webhook com client_id: {WEBHOOK_BASE_URL}/api/webhook/{client_id}",
-  );
-
   throw new Error(
     "Legacy .env config is no longer supported. " +
       "Please update your webhook URL to: " +
@@ -391,7 +371,6 @@ export const getBotConfig = async (
 
     return data.config_value;
   } catch (error) {
-    console.error(`[getBotConfig] Erro ao buscar config ${configKey}:`, error);
     return null;
   }
 };
@@ -425,7 +404,6 @@ export const getBotConfigs = async (
       .or(`client_id.eq.${clientId},is_default.eq.true`);
 
     if (error || !data) {
-      console.error("[getBotConfigs] Erro ao buscar configs:", error);
       return new Map();
     }
 
@@ -451,7 +429,6 @@ export const getBotConfigs = async (
 
     return configMap;
   } catch (error) {
-    console.error("[getBotConfigs] Erro:", error);
     return new Map();
   }
 };
@@ -501,7 +478,6 @@ export const setBotConfig = async (
     const cacheKey = `${clientId}:${configKey}`;
     botConfigCache.delete(cacheKey);
   } catch (error) {
-    console.error(`[setBotConfig] Erro ao salvar ${configKey}:`, error);
     throw error;
   }
 };
@@ -538,7 +514,6 @@ export const resetBotConfig = async (
     const cacheKey = `${clientId}:${configKey}`;
     botConfigCache.delete(cacheKey);
   } catch (error) {
-    console.error(`[resetBotConfig] Erro ao resetar ${configKey}:`, error);
     throw error;
   }
 };
@@ -598,7 +573,6 @@ export const listBotConfigs = async (
 
     return Array.from(configMap.values());
   } catch (error) {
-    console.error("[listBotConfigs] Erro:", error);
     return [];
   }
 };

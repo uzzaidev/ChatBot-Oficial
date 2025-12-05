@@ -49,7 +49,6 @@ export async function GET(
       identifier,
     );
     if (rateLimitResponse) {
-      console.error(`[WEBHOOK GET] Rate limit exceeded for IP: ${ip}`);
       return rateLimitResponse;
     }
 
@@ -78,20 +77,10 @@ export async function GET(
     const config = await getClientConfig(clientId);
 
     if (!config) {
-      console.error(
-        "\n❌ [ERRO] Cliente não encontrado ou inativo no banco de dados",
-      );
-      console.error(`  Client ID procurado: ${clientId}`);
-      console.error(
-        '  Verifique se o cliente existe na tabela "clients" e está com status "active"',
-      );
       return new NextResponse("Client not found", { status: 404 });
     }
 
     if (config.status !== "active") {
-      console.error("\n❌ [ERRO] Cliente não está ativo");
-      console.error(`  Status atual: ${config.status}`);
-      console.error('  O cliente precisa ter status "active" para funcionar');
       return new NextResponse("Client not active", { status: 403 });
     }
 
@@ -114,51 +103,9 @@ export async function GET(
     if (mode === "subscribe" && token === expectedToken) {
       return new NextResponse(challenge, { status: 200 });
     } else {
-      console.error("\n❌ [STEP 6] VERIFICAÇÃO FALHOU!");
-
-      if (mode !== "subscribe") {
-        console.error(
-          `  Motivo: Mode inválido (recebido: "${mode}", esperado: "subscribe")`,
-        );
-      }
-
-      if (token !== expectedToken) {
-        console.error(
-          "  Motivo: Token não corresponde ao configurado no Vault",
-        );
-        console.error(
-          `  Token recebido (primeiros 20): ${token?.substring(0, 20)}...`,
-        );
-        console.error(
-          `  Token esperado (primeiros 20): ${
-            expectedToken.substring(0, 20)
-          }...`,
-        );
-      }
-
-      console.error("  Status HTTP: 403");
-      console.error(
-        "═══════════════════════════════════════════════════════════\n",
-      );
-
       return new NextResponse("Invalid verification token", { status: 403 });
     }
   } catch (error) {
-    console.error("\n💥 [ERRO CRÍTICO] Exceção no GET:");
-    console.error(
-      "  Tipo:",
-      error instanceof Error ? error.constructor.name : typeof error,
-    );
-    console.error(
-      "  Mensagem:",
-      error instanceof Error ? error.message : String(error),
-    );
-    console.error("  Stack:", error instanceof Error ? error.stack : "N/A");
-    console.error("  Status HTTP: 500");
-    console.error(
-      "═══════════════════════════════════════════════════════════\n",
-    );
-
     return new NextResponse("Internal error", { status: 500 });
   }
 }
@@ -179,7 +126,6 @@ export async function POST(
     const signature = request.headers.get("X-Hub-Signature-256");
 
     if (!signature) {
-      console.error(`[WEBHOOK/${clientId}] ❌ Assinatura ausente`);
       return new NextResponse("Missing signature", { status: 403 });
     }
 
@@ -190,27 +136,10 @@ export async function POST(
     const config = await getClientConfig(clientId);
 
     if (!config) {
-      console.error(`[WEBHOOK/${clientId}] ❌ Cliente não encontrado`);
       return new NextResponse("Client not found", { status: 404 });
     }
 
-    // 🔍 DEBUG: Log detalhado da config carregada
-    console.log(`\n🔍 [WEBHOOK/${clientId}] CONFIG LOADED FROM DB:`);
-    console.log(`  Client Name: ${config.name}`);
-    console.log(`  Client Slug: ${config.slug}`);
-    console.log(
-      `  System Prompt Preview: ${
-        config.prompts.systemPrompt?.substring(0, 150)
-      }...`,
-    );
-    console.log(
-      `  Prompt Length: ${config.prompts.systemPrompt?.length} chars\n`,
-    );
-
     if (config.status !== "active") {
-      console.error(
-        `[WEBHOOK/${clientId}] ❌ Cliente inativo: ${config.status}`,
-      );
       return new NextResponse("Client not active", { status: 403 });
     }
 
@@ -221,9 +150,6 @@ export async function POST(
     const appSecret = config.apiKeys.metaAppSecret;
 
     if (!appSecret) {
-      console.error(`[WEBHOOK/${clientId}] ❌ App secret não configurado`);
-      console.error(`  Configure o App Secret em /dashboard/settings`);
-      console.error(`  App Secret ≠ Verify Token (são valores diferentes!)`);
       return new NextResponse("App secret not configured", { status: 500 });
     }
 
@@ -240,9 +166,6 @@ export async function POST(
       signatureBuffer.length !== expectedBuffer.length ||
       !crypto.timingSafeEqual(signatureBuffer, expectedBuffer)
     ) {
-      console.error(`[WEBHOOK/${clientId}] ❌ ASSINATURA INVÁLIDA!`);
-      console.error(`  Recebido: ${signature.substring(0, 20)}...`);
-      console.error(`  Esperado: ${expectedSignature.substring(0, 20)}...`);
       return new NextResponse("Invalid signature", { status: 403 });
     }
 
@@ -278,10 +201,7 @@ export async function POST(
         addWebhookMessage(webhookMessage);
       }
     } catch (parseError) {
-      console.error(
-        `[WEBHOOK/${clientId}] Erro ao extrair mensagem:`,
-        parseError,
-      );
+      // Error extracting message - continue processing
     }
 
     // 4. Deduplication check - prevent processing duplicate messages
@@ -304,16 +224,10 @@ export async function POST(
           if (markResult.error) {
           }
         } else {
-          console.error(
-            `[WEBHOOK/${clientId}] ❌ Falhou ao marcar como processada: ${markResult.error}`,
-          );
+          // Failed to mark message as processed - non-critical
         }
       } catch (dedupError) {
-        // Graceful degradation - se AMBOS Redis e PostgreSQL falharem, continuar
-        console.error(
-          `[WEBHOOK/${clientId}] ⚠️ Erro crítico no sistema de deduplicação:`,
-          dedupError,
-        );
+        // Graceful degradation - if both Redis and PostgreSQL fail, continue
       }
     }
 
@@ -322,13 +236,11 @@ export async function POST(
     try {
       const result = await processChatbotMessage(body, config);
     } catch (flowError) {
-      console.error(`[WEBHOOK/${clientId}] ❌ Erro no flow:`, flowError);
-      // Continua e retorna 200 (Meta requer isso)
+      // Flow error - continue and return 200 (Meta requires this)
     }
 
     return new NextResponse("EVENT_RECEIVED", { status: 200 });
   } catch (error) {
-    console.error(`[WEBHOOK/${clientId}] Erro crítico:`, error);
     return new NextResponse("Internal error", { status: 500 });
   }
 }

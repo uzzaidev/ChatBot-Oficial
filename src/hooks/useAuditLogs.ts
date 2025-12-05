@@ -137,7 +137,6 @@ export function useAuditLogs(options: UseAuditLogsOptions = {}): UseAuditLogsRes
       }
 
     } catch (err) {
-      console.error('[useAuditLogs] Erro ao buscar logs:', err)
       setError(err instanceof Error ? err.message : 'Erro desconhecido')
     } finally {
       setLoading(false)

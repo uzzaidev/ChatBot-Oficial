@@ -48,26 +48,20 @@ export const getRedisClient = async (): Promise<RedisClient> => {
 
     // Se falhou com SSL, tentar sem SSL como fallback
     if (error instanceof Error && isSSLError(error)) {
-      console.warn('[Redis] ⚠️ Falha SSL detectada, tentando conexão sem SSL...')
 
       try {
         const fallbackUrl = redisUrl.replace('rediss://', 'redis://')
         const client = await attemptConnection(fallbackUrl, false)
         redisClient = client
 
-        console.warn('[Redis] ⚠️ ATENÇÃO: Conectado SEM SSL em produção!')
-        console.warn('[Redis] 🔒 Recomendação: Habilite SSL no Redis Cloud')
 
         return client
       } catch (fallbackError) {
         const fallbackMessage = fallbackError instanceof Error ? fallbackError.message : 'Unknown error'
-        console.error('[Redis] ❌ Fallback também falhou:', fallbackMessage)
         throw new Error(`Failed to connect to Redis with and without SSL: ${fallbackMessage}`)
       }
     }
 
-    console.error('[Redis] ❌ Connection failed:', errorMessage)
-    console.error('[Redis] URL format:', redisUrl.replace(/:[^:@]+@/, ':****@'))
     throw new Error(`Failed to connect to Redis: ${errorMessage}`)
   }
 }
@@ -90,14 +84,12 @@ const attemptConnection = async (redisUrl: string, useSSL: boolean): Promise<Red
       // Estratégia de retry com limite
       reconnectStrategy: (retries: number) => {
         if (retries > 10) {
-          console.error('[Redis] ❌ Limite de reconexão atingido (10 tentativas)')
           // Reseta o cliente global para permitir nova tentativa mais tarde
           redisClient = null
           return new Error('Max reconnection attempts reached')
         }
         // Backoff exponencial: 500ms, 1s, 2s, 4s, 8s, etc (max 30s)
         const delay = Math.min(retries * 500, 30000)
-        console.log(`[Redis] 🔄 Tentativa ${retries}/10 em ${delay}ms...`)
         return delay
       },
     }
@@ -106,12 +98,10 @@ const attemptConnection = async (redisUrl: string, useSSL: boolean): Promise<Red
     clientConfig.socket = {
       reconnectStrategy: (retries: number) => {
         if (retries > 10) {
-          console.error('[Redis] ❌ Limite de reconexão atingido (10 tentativas)')
           redisClient = null
           return new Error('Max reconnection attempts reached')
         }
         const delay = Math.min(retries * 500, 30000)
-        console.log(`[Redis] 🔄 Tentativa ${retries}/10 em ${delay}ms...`)
         return delay
       },
     }
@@ -120,7 +110,6 @@ const attemptConnection = async (redisUrl: string, useSSL: boolean): Promise<Red
   const client = createClient(clientConfig)
 
   client.on('error', (error) => {
-    console.error('[Redis] Erro:', error.message)
     // Se erro crítico, reseta cliente global
     if (error.message.includes('Max reconnection attempts reached')) {
       redisClient = null
@@ -129,11 +118,9 @@ const attemptConnection = async (redisUrl: string, useSSL: boolean): Promise<Red
 
   client.on('connect', () => {
     const protocol = useSSL ? 'SSL/TLS' : 'TCP'
-    console.log(`[Redis] Conectado (${protocol}) - ${url.hostname}`)
   })
 
   client.on('reconnecting', () => {
-    console.warn('[Redis] Reconectando...')
   })
 
   await client.connect()
@@ -147,7 +134,6 @@ export const lpushMessage = async (key: string, value: string): Promise<number> 
     return typeof result === 'number' ? result : parseInt(String(result))
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error('[Redis] LPUSH falhou:', errorMessage)
     throw new Error(`Failed to push message to Redis list: ${errorMessage}`)
   }
 }
@@ -159,7 +145,6 @@ export const lrangeMessages = async (key: string, start: number, stop: number): 
     return result.map(item => String(item))
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error('[Redis] LRANGE falhou:', errorMessage)
     throw new Error(`Failed to retrieve messages from Redis list: ${errorMessage}`)
   }
 }
@@ -171,7 +156,6 @@ export const deleteKey = async (key: string): Promise<number> => {
     return typeof result === 'number' ? result : parseInt(String(result))
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error('[Redis] DEL falhou:', errorMessage)
     throw new Error(`Failed to delete key from Redis: ${errorMessage}`)
   }
 }
@@ -182,7 +166,6 @@ export const setWithExpiry = async (key: string, value: string, expirySeconds: n
     await client.setEx(key, expirySeconds, value)
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error('[Redis] SETEX falhou:', errorMessage)
     throw new Error(`Failed to set key with expiry in Redis: ${errorMessage}`)
   }
 }
@@ -194,7 +177,6 @@ export const get = async (key: string): Promise<string | null> => {
     return result ? String(result) : null
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error('[Redis] GET falhou:', errorMessage)
     throw new Error(`Failed to get key from Redis: ${errorMessage}`)
   }
 }

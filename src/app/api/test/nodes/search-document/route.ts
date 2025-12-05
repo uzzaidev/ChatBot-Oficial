@@ -36,12 +36,6 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log('\n🔍 [Test] Search Document in Knowledge')
-    console.log(`  Query: "${query}"`)
-    console.log(`  Document Type: ${documentType || 'any'}`)
-    console.log(`  Client ID: ${clientId}`)
-    console.log(`  Threshold: ${threshold}`)
-    console.log(`  Max Results: ${maxResults}`)
 
     // Call the node
     const startTime = Date.now()
@@ -56,10 +50,6 @@ export async function GET(request: NextRequest) {
 
     const { results, metadata } = searchResult
 
-    console.log(`\n✅ [Test] Search completed in ${duration}ms`)
-    console.log(`  Total docs in base: ${metadata.totalDocumentsInBase}`)
-    console.log(`  Chunks found: ${metadata.chunksFound}`)
-    console.log(`  Unique docs found: ${metadata.uniqueDocumentsFound}`)
 
     // Format response
     return NextResponse.json({
@@ -89,7 +79,6 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error('\n❌ [Test] Error:', errorMessage)
 
     return NextResponse.json(
       {

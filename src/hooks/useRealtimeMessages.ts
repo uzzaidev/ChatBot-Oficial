@@ -118,7 +118,6 @@ export const useRealtimeMessages = ({
               onNewMessageRef.current(newMessage);
             }
           } catch (error) {
-            console.error("[Realtime] Error processing message:", error);
           }
         },
       )

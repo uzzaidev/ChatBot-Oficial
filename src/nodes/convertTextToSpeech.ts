@@ -60,8 +60,6 @@ export const convertTextToSpeech = async (
       .single();
 
     if (cached) {
-      console.log(`[TTS] Cache hit for hash: ${textHash}`);
-
       // Cache hit! Atualizar contador (fire-and-forget)
       supabase.rpc("increment_tts_cache_hit", { cache_text_hash: textHash })
         .then();
@@ -69,7 +67,7 @@ export const convertTextToSpeech = async (
       // Download áudio do cache
       const response = await fetch(cached.audio_url);
       if (!response.ok) {
-        console.warn("[TTS] Failed to fetch from cache, generating new audio");
+        // Failed to fetch from cache, generating new audio
       } else {
         const audioBuffer = Buffer.from(await response.arrayBuffer());
 
@@ -118,8 +116,6 @@ export const convertTextToSpeech = async (
   }
 
   // 3. Gerar novo áudio via OpenAI TTS
-  console.log(`[TTS] Generating new audio for ${text.length} characters`);
-
   const openai = new OpenAI({
     apiKey: secrets.openaiApiKey,
   });
@@ -183,10 +179,8 @@ export const convertTextToSpeech = async (
         file_size_bytes: audioBuffer.length,
         hit_count: 0,
       });
-
-      console.log(`[TTS] Audio cached at: ${publicUrl}`);
     } else {
-      console.warn("[TTS] Failed to cache audio:", uploadError.message);
+      // Failed to cache audio - non-critical error
     }
   }
 

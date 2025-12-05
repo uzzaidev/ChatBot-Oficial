@@ -55,7 +55,7 @@ export function NotificationManager({ enabled = true }: NotificationManagerProps
           }
         }
       } catch (error) {
-        console.error('[NotificationManager] Failed to get clientId:', error)
+        // Failed to get clientId - notifications won't work for tenant isolation
       }
     }
     

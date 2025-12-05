@@ -64,7 +64,6 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
     if (phone) {
       markConversationAsRead(phone).then((result) => {
         if (!result.success) {
-          console.error('❌ [ConversationPageClient] Failed to mark as read:', result.error)
         }
       })
     }
@@ -108,7 +107,6 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
   const handleMarkAsRead = useCallback(async (conversationPhone: string) => {
     const result = await markConversationAsRead(conversationPhone)
     if (!result.success) {
-      console.error('❌ [ConversationPageClient] Failed to mark as read:', result.error)
     }
   }, [])
 

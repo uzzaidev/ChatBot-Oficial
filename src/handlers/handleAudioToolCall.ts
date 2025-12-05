@@ -28,12 +28,8 @@ export const handleAudioToolCall = async (
 
   const supabase = createServerClient();
 
-  console.log(`[TTS] Processing audio request for ${phone}`);
-  console.log(`[TTS] Text length: ${aiResponseText.length} chars`);
-
   // 1. Verificação de segurança: TTS habilitado globalmente?
   if (!config.settings?.tts_enabled) {
-    console.log("[TTS] TTS disabled globally, sending as text fallback");
 
     // Envia como texto e SALVA NO BANCO
     try {
@@ -52,8 +48,6 @@ export const handleAudioToolCall = async (
         wamid: messageId,
       });
 
-      console.log(`[TTS] Text sent and saved (TTS disabled): ${messageId}`);
-
       return {
         success: true,
         sentAsAudio: false,
@@ -61,7 +55,6 @@ export const handleAudioToolCall = async (
         messageId,
       };
     } catch (error) {
-      console.error("[TTS] Error sending text:", error);
       return {
         success: false,
         sentAsAudio: false,
@@ -72,8 +65,6 @@ export const handleAudioToolCall = async (
 
   // 2. ENVIAR ÁUDIO com fallback robusto
   try {
-    console.log("[TTS] Attempting to generate and send audio");
-
     // 2.1 Converter para áudio
     const { audioBuffer, format, fromCache, durationSeconds } =
       await convertTextToSpeech({
@@ -85,10 +76,6 @@ export const handleAudioToolCall = async (
         useCache: true,
       });
 
-    console.log(
-      `[TTS] Audio generated (${audioBuffer.length} bytes, from cache: ${fromCache})`,
-    );
-
     // 2.2 Upload para WhatsApp
     const { mediaId, expiresAt } = await uploadAudioToWhatsApp({
       audioBuffer,
@@ -96,12 +83,8 @@ export const handleAudioToolCall = async (
       phoneNumberId: config.apiKeys.metaPhoneNumberId!,
     });
 
-    console.log(`[TTS] Audio uploaded to WhatsApp: ${mediaId}`);
-
     // 2.3 Upload permanente para Supabase Storage (backup)
     const fileName = `audio/${clientId}/${Date.now()}.mp3`;
-
-    console.log(`[TTS] 🐛 Attempting upload to Supabase Storage: ${fileName}`);
 
     const { error: storageError } = await supabase.storage
       .from("message-media")
@@ -116,18 +99,8 @@ export const handleAudioToolCall = async (
         .from("message-media")
         .getPublicUrl(fileName);
       permanentAudioUrl = publicUrl;
-      console.log(
-        `[TTS] ✅ Audio backed up to Supabase Storage: ${permanentAudioUrl}`,
-      );
     } else {
-      console.error(
-        "[TTS] ❌ Failed to backup audio to Supabase Storage:",
-        storageError,
-      );
-      console.error(
-        "[TTS] ❌ Error details:",
-        JSON.stringify(storageError, null, 2)
-      );
+      // Storage upload failed - non-critical, fallback will be used
     }
 
     // 2.4 Enviar mensagem de áudio
@@ -135,10 +108,6 @@ export const handleAudioToolCall = async (
       phone,
       mediaId,
       config,
-    );
-
-    console.log(
-      `[TTS] Audio message sent successfully! Message ID: ${messageId}`,
     );
 
     // 2.5 SALVAR NA TABELA n8n_chat_histories
@@ -149,15 +118,9 @@ export const handleAudioToolCall = async (
     let audioUrl = permanentAudioUrl;
 
     if (!audioUrl) {
-      console.warn(
-        "[TTS] ⚠️  Supabase upload failed, creating fallback data URL"
-      );
       // Create data URL as fallback (works but increases message size)
       const base64Audio = audioBuffer.toString('base64');
       audioUrl = `data:audio/mpeg;base64,${base64Audio}`;
-      console.log(
-        `[TTS] 🔄 Using data URL fallback (${Math.round(base64Audio.length / 1024)}KB)`
-      );
     }
 
     const mediaMetadata: StoredMediaMetadata = {
@@ -186,8 +149,6 @@ export const handleAudioToolCall = async (
       [aiResponseText, durationSeconds, phone, clientId, messageId],
     );
 
-    console.log(`[TTS] Audio message saved to database`);
-
     // 2.6 Atualizar última mensagem da conversa
     const { data: conversation } = await supabase
       .from("conversations")
@@ -206,15 +167,9 @@ export const handleAudioToolCall = async (
         .eq("id", conversation.id);
     }
 
-    console.log(`[TTS] Conversation updated`);
-
     return { success: true, sentAsAudio: true, messageId };
   } catch (error) {
     // 3. FALLBACK: Se QUALQUER erro ao gerar/enviar áudio, envia texto
-    console.error(
-      "[TTS] Error generating/sending audio, falling back to text:",
-      error,
-    );
 
     // Log failure
     await supabase.from("tts_usage_logs").insert({

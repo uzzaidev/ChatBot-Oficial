@@ -48,12 +48,10 @@ export default function DashboardPage() {
           if (metadataClientId) {
             setClientId(metadataClientId)
           } else {
-            console.error('Client ID não encontrado')
             // Opcional: mostrar erro ou redirect
           }
         }
       } catch (error) {
-        console.error('Erro ao verificar autenticação:', error)
       } finally {
         setLoading(false)
       }

@@ -30,7 +30,6 @@ export async function GET(request: NextRequest) {
       .order('model', { ascending: true })
 
     if (pricingError) {
-      console.error('[PricingConfig] Error fetching configs:', pricingError)
       return NextResponse.json(
         { error: 'Erro ao buscar configurações' },
         { status: 500 }
@@ -41,7 +40,6 @@ export async function GET(request: NextRequest) {
       pricingConfigs: pricingConfigs || [],
     })
   } catch (error) {
-    console.error('[PricingConfig] Unexpected error:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -117,7 +115,6 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (upsertError) {
-      console.error('[PricingConfig] Error upserting config:', upsertError)
       return NextResponse.json(
         { error: 'Erro ao salvar configuração' },
         { status: 500 }
@@ -130,7 +127,6 @@ export async function POST(request: NextRequest) {
       config: updatedConfig,
     })
   } catch (error) {
-    console.error('[PricingConfig] Unexpected error:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -182,7 +178,6 @@ export async function DELETE(request: NextRequest) {
       .eq('model', model)
 
     if (deleteError) {
-      console.error('[PricingConfig] Error deleting config:', deleteError)
       return NextResponse.json(
         { error: 'Erro ao deletar configuração' },
         { status: 500 }
@@ -194,7 +189,6 @@ export async function DELETE(request: NextRequest) {
       message: 'Configuração resetada para padrão',
     })
   } catch (error) {
-    console.error('[PricingConfig] Unexpected error:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

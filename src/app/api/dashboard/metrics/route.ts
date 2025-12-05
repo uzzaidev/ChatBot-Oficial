@@ -43,10 +43,6 @@ export async function GET(request: NextRequest) {
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - days)
 
-    console.log('[Dashboard Metrics API] Fetching data for client:', clientId)
-    console.log('[Dashboard Metrics API] Requested days:', days)
-    console.log('[Dashboard Metrics API] Start date (filter):', startDate.toISOString())
-
     // TEMPORARIAMENTE: Buscar TODOS os dados sem filtro de data
     // para mostrar que os dados existem
     const useDateFilter = days < 365 // Só aplicar filtro se for menos de 1 ano
@@ -65,10 +61,6 @@ export async function GET(request: NextRequest) {
     const { data: conversationsData, error: convError } = await conversationsQuery
       .order('created_at', { ascending: true })
 
-    if (convError) {
-      console.error('[Dashboard Metrics API] Conversations error:', convError)
-    }
-
     // 2. Novos clientes por dia
     let clientsQuery = supabase
       .from('clientes_whatsapp')
@@ -81,10 +73,6 @@ export async function GET(request: NextRequest) {
 
     const { data: clientsData, error: clientsError } = await clientsQuery
       .order('created_at', { ascending: true })
-
-    if (clientsError) {
-      console.error('[Dashboard Metrics API] Clients error:', clientsError)
-    }
 
     // 3. Mensagens por dia (usando n8n_chat_histories)
     // message é JSONB: { type: "human" | "ai", content: "..." }
@@ -99,10 +87,6 @@ export async function GET(request: NextRequest) {
 
     const { data: messagesData, error: msgError } = await messagesQuery
       .order('created_at', { ascending: true })
-
-    if (msgError) {
-      console.error('[Dashboard Metrics API] Messages error:', msgError)
-    }
 
     // 4. Tokens e custos por dia
     // IMPORTANTE: usage_logs tem RLS que só permite service_role
@@ -121,32 +105,11 @@ export async function GET(request: NextRequest) {
     const { data: usageData, error: usageError } = await usageQuery
       .order('created_at', { ascending: true })
 
-    if (usageError) {
-      console.error('[Dashboard Metrics API] Usage logs error:', usageError)
-    }
-
     // 5. Distribuição por status (atual) - usando clientes_whatsapp
     const { data: statusData } = await supabase
       .from('clientes_whatsapp')
       .select('status')
       .eq('client_id', clientId)
-
-    // Processar dados
-    console.log('[Dashboard Metrics API] Raw data counts:', {
-      conversations: conversationsData?.length || 0,
-      clients: clientsData?.length || 0,
-      messages: messagesData?.length || 0,
-      usage: usageData?.length || 0,
-      status: statusData?.length || 0,
-    })
-
-    // Debug: mostrar primeiros registros de usage_logs
-    if (usageData && usageData.length > 0) {
-      console.log('[Dashboard Metrics API] Sample usage_logs:', usageData.slice(0, 3))
-    } else {
-      console.log('[Dashboard Metrics API] ⚠️  NO usage_logs data found!')
-      console.log('[Dashboard Metrics API] Note: Token charts will be empty without usage_logs data')
-    }
 
     const metrics: DashboardMetricsData = {
       conversations: processConversationsData(conversationsData || []),
@@ -157,18 +120,8 @@ export async function GET(request: NextRequest) {
       statusDistribution: processStatusDistribution(statusData || []),
     }
 
-    console.log('[Dashboard Metrics API] Processed data counts:', {
-      conversations: metrics.conversations.length,
-      clients: metrics.clients.length,
-      messages: metrics.messages.length,
-      tokens: metrics.tokens.length,
-      cost: metrics.cost.length,
-      statusDistribution: metrics.statusDistribution.length,
-    })
-
     return NextResponse.json(metrics)
   } catch (error) {
-    console.error('[Dashboard Metrics API] Error:', error)
     return NextResponse.json(
       { error: 'Failed to fetch metrics' },
       { status: 500 }

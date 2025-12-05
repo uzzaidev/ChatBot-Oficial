@@ -76,7 +76,7 @@ export const useNotifications = ({
     // Solicitar permissão
     const requestPermission = useCallback(async (): Promise<boolean> => {
         if (!isSupported) {
-            console.warn("[Notifications] Notification API not supported");
+            // Notification API not supported
             return false;
         }
 
@@ -85,7 +85,6 @@ export const useNotifications = ({
         }
 
         if (Notification.permission === "denied") {
-            console.warn("[Notifications] Permission denied by user");
             toast({
                 title: "Notificações bloqueadas",
                 description:
@@ -115,10 +114,7 @@ export const useNotifications = ({
                 return false;
             }
         } catch (error) {
-            console.error(
-                "[Notifications] Error requesting permission:",
-                error,
-            );
+            // Error requesting permission
             return false;
         }
     }, [isSupported, toast]);
@@ -130,11 +126,11 @@ export const useNotifications = ({
         try {
             // Reset audio to start
             audioRef.current.currentTime = 0;
-            audioRef.current.play().catch((error) => {
-                console.warn("[Notifications] Could not play sound:", error);
+            audioRef.current.play().catch(() => {
+                // Could not play sound - non-critical
             });
         } catch (error) {
-            console.error("[Notifications] Error playing sound:", error);
+            // Error playing sound - non-critical
         }
     }, [sound]);
 
@@ -185,10 +181,6 @@ export const useNotifications = ({
                     notification.close();
                 }, 5000);
             } catch (error) {
-                console.error(
-                    "[Notifications] Error showing notification:",
-                    error,
-                );
                 // Fallback para toast
                 toast({
                     title,

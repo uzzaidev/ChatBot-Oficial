@@ -183,7 +183,6 @@ export const ConversationDetail = ({
         description: emoji ? `Você reagiu com ${emoji}` : 'Reação removida com sucesso',
       })
     } catch (error) {
-      console.error('[ConversationDetail] Reaction error:', error)
       toast({
         title: 'Erro ao reagir',
         description: error instanceof Error ? error.message : 'Erro desconhecido',
@@ -221,7 +220,6 @@ export const ConversationDetail = ({
         description: 'A mensagem foi removida com sucesso',
       })
     } catch (error) {
-      console.error('[ConversationDetail] Delete error:', error)
       toast({
         title: 'Erro ao apagar',
         description: error instanceof Error ? error.message : 'Erro desconhecido',

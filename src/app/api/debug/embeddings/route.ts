@@ -75,11 +75,6 @@ export async function GET(request: NextRequest) {
       docsWithoutEmbedding: analysis?.filter((d: any) => !d.hasEmbedding).length || 0
     }
 
-    console.log('\n🔍 [DEBUG EMBEDDINGS]')
-    console.log(`  Total docs: ${summary.totalDocs}`)
-    console.log(`  With embeddings: ${summary.docsWithEmbedding}`)
-    console.log(`  Without embeddings: ${summary.docsWithoutEmbedding}`)
-
     return NextResponse.json({
       success: true,
       clientId,
@@ -92,7 +87,6 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error('[DEBUG EMBEDDINGS] ❌ Error:', errorMessage)
 
     return NextResponse.json(
       { error: errorMessage },

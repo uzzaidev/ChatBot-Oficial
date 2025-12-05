@@ -95,7 +95,6 @@ export async function POST(request: NextRequest) {
         : 'AI response vazia',
     })
   } catch (error: any) {
-    console.error('[TEST generateAIResponse] Error:', error)
     return NextResponse.json(
       { error: error.message, details: error.stack },
       { status: 500 }

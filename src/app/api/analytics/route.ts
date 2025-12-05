@@ -100,8 +100,6 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    const duration = Date.now() - startTime
-    console.error(`[API /analytics] ❌ Error after ${duration}ms:`, error)
     return NextResponse.json(
       { error: 'Failed to fetch analytics data' },
       { status: 500 }

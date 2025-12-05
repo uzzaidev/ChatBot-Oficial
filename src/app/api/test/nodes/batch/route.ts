@@ -39,7 +39,6 @@ export async function POST(request: NextRequest) {
         : 'Nenhuma mensagem no batch',
     })
   } catch (error: any) {
-    console.error('[TEST batchMessages] Error:', error)
     return NextResponse.json(
       { error: error.message, details: error.stack },
       { status: 500 }

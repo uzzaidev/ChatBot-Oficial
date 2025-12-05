@@ -68,7 +68,6 @@ export async function POST(request: NextRequest) {
     )
 
     if (updateError) {
-      console.error('[password] Erro ao atualizar senha:', updateError)
       return NextResponse.json(
         { error: 'Erro ao atualizar senha' },
         { status: 500 }
@@ -81,7 +80,6 @@ export async function POST(request: NextRequest) {
       message: 'Senha atualizada com sucesso',
     })
   } catch (error) {
-    console.error('[password] Erro:', error)
     return NextResponse.json(
       { error: 'Erro ao atualizar senha' },
       { status: 500 }

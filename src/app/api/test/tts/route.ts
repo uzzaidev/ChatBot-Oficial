@@ -71,7 +71,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("[Test TTS] Error:", error);
     return NextResponse.json(
       {
         error: "Failed to generate audio",
@@ -145,7 +144,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("[Test TTS GET] Error:", error);
     return NextResponse.json(
       {
         error: "Failed to generate audio",

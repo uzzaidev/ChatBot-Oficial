@@ -62,7 +62,6 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('[DEBUG LOGS] Error:', error)
     return NextResponse.json(
       {
         success: false,

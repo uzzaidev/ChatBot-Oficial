@@ -54,7 +54,6 @@ export const useMessages = ({
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido'
       setError(errorMessage)
-      console.error('Erro ao buscar mensagens:', err)
     } finally {
       setLoading(false)
     }

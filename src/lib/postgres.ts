@@ -69,7 +69,6 @@ export const getPool = (): Pool => {
 
   // Log de erros
   pool.on('error', (err) => {
-    console.error('[Postgres] ❌ Pool error:', err)
   })
 
   // NOVO: Log quando pool conecta/desconecta (útil para debugging)
@@ -185,7 +184,6 @@ export const query = async <T = any>(
         errorMessage.includes('ETIMEDOUT') ||
         errorMessage.includes('ECONNRESET')
 
-      console.error(`[Postgres] ❌ Query ERRO (${duration}ms) - Attempt ${attempt + 1}/${maxRetries + 1}:`, error)
 
       // If not retryable or last attempt, throw immediately
       if (!isRetryable || attempt === maxRetries) {

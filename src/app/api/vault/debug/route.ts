@@ -140,7 +140,6 @@ export async function GET(request: NextRequest) {
       meta_phone_number_id: client.meta_phone_number_id,
     })
   } catch (error) {
-    console.error('[vault/debug] Erro:', error)
     return NextResponse.json(
       { error: 'Erro ao buscar dados de debug' },
       { status: 500 }

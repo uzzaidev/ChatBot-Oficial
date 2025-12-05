@@ -39,8 +39,6 @@ export const saveChatMessage = async (input: SaveChatMessageInput): Promise<void
     if (duration > 500) {
     }
   } catch (error) {
-    const duration = Date.now() - startTime
-    console.error(`[saveChatMessage] ❌ Error after ${duration}ms:`, error)
     throw new Error(`Failed to save chat message: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
 }

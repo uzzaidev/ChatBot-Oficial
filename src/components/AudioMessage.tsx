@@ -34,7 +34,6 @@ export const AudioMessage = ({
         }
         setIsPlaying(!isPlaying)
       } catch (error) {
-        console.error('[AudioMessage] Play error:', error)
         setAudioError(error instanceof Error ? error.message : 'Erro ao reproduzir áudio')
       }
     }
@@ -55,13 +54,8 @@ export const AudioMessage = ({
     const handlePlay = () => setIsPlaying(true)
     const handlePause = () => setIsPlaying(false)
     const handleError = (e: Event) => {
-      console.error('[AudioMessage] Audio element error:', e)
       const audioElement = e.target as HTMLAudioElement
       if (audioElement.error) {
-        console.error('[AudioMessage] Error details:', {
-          code: audioElement.error.code,
-          message: audioElement.error.message
-        })
         setAudioError(`Erro ao carregar áudio (código: ${audioElement.error.code})`)
       }
     }

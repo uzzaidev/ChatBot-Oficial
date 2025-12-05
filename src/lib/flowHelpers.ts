@@ -72,7 +72,6 @@ export async function isNodeEnabled(clientId: string, nodeId: string): Promise<b
         return enabled
       }
       
-      console.error(`[flowHelpers] Error checking node state for ${nodeId}:`, error)
       // On error, default to enabled for safety
       return true
     }
@@ -84,7 +83,6 @@ export async function isNodeEnabled(clientId: string, nodeId: string): Promise<b
     
     return enabled
   } catch (error) {
-    console.error(`[flowHelpers] Exception checking node state for ${nodeId}:`, error)
     // On exception, default to enabled for safety
     return true
   }
@@ -121,7 +119,6 @@ export async function getAllNodeStates(clientId: string): Promise<Map<string, bo
       .like('config_key', 'flow:node_enabled:%')
     
     if (error) {
-      console.error('[flowHelpers] Error fetching all node states:', error)
       // Return defaults from metadata
       FLOW_METADATA.forEach(node => {
         states.set(node.id, node.enabled)
@@ -155,7 +152,6 @@ export async function getAllNodeStates(clientId: string): Promise<Map<string, bo
     
     return states
   } catch (error) {
-    console.error('[flowHelpers] Exception fetching all node states:', error)
     // Return defaults from metadata
     FLOW_METADATA.forEach(node => {
       states.set(node.id, node.enabled)

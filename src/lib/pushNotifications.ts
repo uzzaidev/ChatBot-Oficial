@@ -34,17 +34,14 @@ export const initPushNotifications = async () => {
       // 2. Registrar para receber notificações
       await PushNotifications.register();
     } else {
-      console.warn(
-        "[Push Notifications] Permissão negada:",
-        permissionResult.receive,
-      );
+      // Permission denied
       return;
     }
 
     // 3. Configurar listeners
     setupListeners();
   } catch (error) {
-    console.error("[Push Notifications] Erro ao inicializar:", error);
+    // Error initializing push notifications
   }
 };
 
@@ -60,7 +57,7 @@ const setupListeners = () => {
 
   // Listener: Erro ao registrar token
   PushNotifications.addListener("registrationError", (error) => {
-    console.error("[Push Notifications] Erro ao registrar token:", error);
+    // Error registering token
   });
 
   // Listener: Notificação recebida (app em foreground)
@@ -101,9 +98,7 @@ const saveTokenToBackend = async (token: string) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
     if (userError || !user) {
-      console.warn(
-        "[Push Notifications] Usuário não autenticado, token não será salvo",
-      );
+      // User not authenticated, token won't be saved
       return;
     }
 
@@ -127,10 +122,10 @@ const saveTokenToBackend = async (token: string) => {
       );
 
     if (upsertError) {
-      console.error("[Push Notifications] Erro ao salvar token:", upsertError);
+      // Error saving token
     }
   } catch (error) {
-    console.error("[Push Notifications] Erro ao salvar token:", error);
+    // Error saving token
   }
 };
 
@@ -153,8 +148,7 @@ const handleNotificationAction = (action: any) => {
       window.location.href = "/dashboard";
     }
   } catch (error) {
-    console.error("[Push Notifications] Erro ao processar ação:", error);
-    // Fallback: navegar para dashboard
+    // Fallback: navigate to dashboard
     window.location.href = "/dashboard";
   }
 };

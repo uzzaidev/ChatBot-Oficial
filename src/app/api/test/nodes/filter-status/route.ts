@@ -29,7 +29,6 @@ export async function POST(request: NextRequest) {
         : 'Mensagem filtrada (status update ou inválida)',
     })
   } catch (error: any) {
-    console.error('[TEST filterStatusUpdates] Error:', error)
     return NextResponse.json(
       { error: error.message, details: error.stack },
       { status: 500 }

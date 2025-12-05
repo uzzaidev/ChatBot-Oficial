@@ -104,7 +104,6 @@ export const useRealtimeMessagesBroadcast = ({
             onNewMessageRef.current(newMessage)
           }
         } catch (error) {
-          console.error('❌ [Broadcast] Error processing message:', error)
         }
       })
       .subscribe((status, err) => {

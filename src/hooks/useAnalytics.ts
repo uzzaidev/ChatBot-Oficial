@@ -54,7 +54,6 @@ export function useAnalytics(options: UseAnalyticsOptions = {}): UseAnalyticsRet
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error'
       setError(errorMessage)
-      console.error('[useAnalytics] Error:', err)
     } finally {
       setLoading(false)
     }

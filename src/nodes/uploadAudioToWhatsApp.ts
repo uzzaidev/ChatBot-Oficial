@@ -15,10 +15,6 @@ export const uploadAudioToWhatsApp = async (
 ): Promise<UploadAudioToWhatsAppOutput> => {
   const { audioBuffer, accessToken, phoneNumberId } = input;
 
-  console.log(
-    `[WhatsApp Upload] Uploading ${audioBuffer.length} bytes to WhatsApp`,
-  );
-
   // Create FormData with Blob (works with fetch)
   const formData = new FormData();
   const blob = new Blob([new Uint8Array(audioBuffer)], { type: "audio/mpeg" });
@@ -38,7 +34,6 @@ export const uploadAudioToWhatsApp = async (
 
   if (!response.ok) {
     const errorData = await response.json();
-    console.error("[WhatsApp Upload] Failed:", errorData);
     throw new Error(`WhatsApp upload failed: ${JSON.stringify(errorData)}`);
   }
 
@@ -47,8 +42,6 @@ export const uploadAudioToWhatsApp = async (
   // WhatsApp media expira em 30 dias
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 30);
-
-  console.log(`[WhatsApp Upload] Success! Media ID: ${data.id}`);
 
   return {
     mediaId: data.id,

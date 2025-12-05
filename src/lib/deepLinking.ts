@@ -36,7 +36,6 @@ export const initDeepLinking = () => {
     .catch((error) => {
       // iOS pode não ter launch URL (normal)
       if (Capacitor.getPlatform() !== "ios") {
-        console.error("[Deep Linking] Erro ao obter launch URL:", error);
       }
     });
 };
@@ -76,7 +75,6 @@ const handleDeepLink = (url: string) => {
       navigateToHome();
     }
   } catch (error) {
-    console.error("[Deep Linking] Erro ao processar deep link:", error);
     // Em caso de erro, redirecionar para home
     navigateToHome();
   }

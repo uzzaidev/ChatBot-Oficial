@@ -68,7 +68,6 @@ export const useContacts = ({
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Erro desconhecido";
       setError(errorMessage);
-      console.error("Erro ao buscar contatos:", err);
     } finally {
       setLoading(false);
     }
@@ -96,7 +95,6 @@ export const useContacts = ({
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Erro desconhecido";
         setError(errorMessage);
-        console.error("Erro ao adicionar contato:", err);
         return null;
       }
     },
@@ -125,7 +123,6 @@ export const useContacts = ({
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Erro desconhecido";
         setError(errorMessage);
-        console.error("Erro ao atualizar contato:", err);
         return null;
       }
     },
@@ -149,7 +146,6 @@ export const useContacts = ({
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Erro desconhecido";
         setError(errorMessage);
-        console.error("Erro ao remover contato:", err);
         return false;
       }
     },
@@ -178,7 +174,6 @@ export const useContacts = ({
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Erro desconhecido";
         setError(errorMessage);
-        console.error("Erro ao importar contatos:", err);
         return null;
       }
     },
