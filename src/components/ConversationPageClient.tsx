@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef, useMemo, useLayoutEffect } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo, useLayoutEffect, memo } from 'react'
 import { ConversationDetail } from '@/components/ConversationDetail'
 import { SendMessageForm } from '@/components/SendMessageForm'
 import { StatusToggle } from '@/components/StatusToggle'
@@ -19,6 +19,55 @@ import { MessageCircle, Menu, Bot, User, ArrowRight, List, Home, Search, X } fro
 import Link from 'next/link'
 import type { MediaAttachment } from '@/components/MediaPreview'
 import type { Message } from '@/lib/types'
+
+// Componente de pesquisa extraído para evitar duplicação e perda de foco
+interface SearchSectionProps {
+  searchTerm: string
+  onSearchChange: (value: string) => void
+  onClearSearch: () => void
+  resultCount: number
+}
+
+const SearchSection = memo(function SearchSection({
+  searchTerm,
+  onSearchChange,
+  onClearSearch,
+  resultCount,
+}: SearchSectionProps) {
+  return (
+    <div className="p-3 border-b border-silver-200 bg-white">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-erie-black-400" />
+        <Input
+          type="text"
+          placeholder="Pesquisar contatos ou números..."
+          value={searchTerm}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="pl-9 pr-9 h-10 bg-silver-50 border-silver-200 focus:bg-white"
+        />
+        {searchTerm && (
+          <button
+            onClick={onClearSearch}
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-erie-black-400 hover:text-erie-black-600"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+      {/* Indicador de pesquisa ativa */}
+      {searchTerm.length >= 2 && (
+        <p className="text-xs text-erie-black-500 mt-2">
+          {resultCount} resultado{resultCount !== 1 ? 's' : ''} encontrado{resultCount !== 1 ? 's' : ''}
+        </p>
+      )}
+      {searchTerm.length === 1 && (
+        <p className="text-xs text-erie-black-400 mt-2">
+          Digite mais 1 caractere para pesquisar...
+        </p>
+      )}
+    </div>
+  )
+})
 
 interface ConversationPageClientProps {
   phone: string
@@ -231,38 +280,12 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
       <div className="hidden lg:flex w-96 border-r border-silver-200 flex-col bg-white">
         {sidebarHeader}
 
-        {/* Campo de Pesquisa - Renderizado inline para manter o foco */}
-        <div className="p-3 border-b border-silver-200 bg-white">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-erie-black-400" />
-            <Input
-              type="text"
-              placeholder="Pesquisar contatos ou números..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 pr-9 h-10 bg-silver-50 border-silver-200 focus:bg-white"
-            />
-            {searchTerm && (
-              <button
-                onClick={handleClearSearch}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-erie-black-400 hover:text-erie-black-600"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-          {/* Indicador de pesquisa ativa */}
-          {searchTerm.length >= 2 && (
-            <p className="text-xs text-erie-black-500 mt-2">
-              {filteredConversations.length} resultado{filteredConversations.length !== 1 ? 's' : ''} encontrado{filteredConversations.length !== 1 ? 's' : ''}
-            </p>
-          )}
-          {searchTerm.length === 1 && (
-            <p className="text-xs text-erie-black-400 mt-2">
-              Digite mais 1 caractere para pesquisar...
-            </p>
-          )}
-        </div>
+        <SearchSection
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          onClearSearch={handleClearSearch}
+          resultCount={filteredConversations.length}
+        />
 
         {statusFilters}
 
@@ -288,38 +311,12 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
           <div className="flex flex-col h-full">
             {sidebarHeader}
 
-            {/* Campo de Pesquisa - Renderizado inline para manter o foco */}
-            <div className="p-3 border-b border-silver-200 bg-white">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-erie-black-400" />
-                <Input
-                  type="text"
-                  placeholder="Pesquisar contatos ou números..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 pr-9 h-10 bg-silver-50 border-silver-200 focus:bg-white"
-                />
-                {searchTerm && (
-                  <button
-                    onClick={handleClearSearch}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-erie-black-400 hover:text-erie-black-600"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-              {/* Indicador de pesquisa ativa */}
-              {searchTerm.length >= 2 && (
-                <p className="text-xs text-erie-black-500 mt-2">
-                  {filteredConversations.length} resultado{filteredConversations.length !== 1 ? 's' : ''} encontrado{filteredConversations.length !== 1 ? 's' : ''}
-                </p>
-              )}
-              {searchTerm.length === 1 && (
-                <p className="text-xs text-erie-black-400 mt-2">
-                  Digite mais 1 caractere para pesquisar...
-                </p>
-              )}
-            </div>
+            <SearchSection
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              onClearSearch={handleClearSearch}
+              resultCount={filteredConversations.length}
+            />
 
             {statusFilters}
 
