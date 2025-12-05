@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef, useMemo, useLayoutEffect } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo, useLayoutEffect, memo } from 'react'
 import { ConversationDetail } from '@/components/ConversationDetail'
 import { SendMessageForm } from '@/components/SendMessageForm'
 import { StatusToggle } from '@/components/StatusToggle'
@@ -19,6 +19,55 @@ import { MessageCircle, Menu, Bot, User, ArrowRight, List, Home, Search, X } fro
 import Link from 'next/link'
 import type { MediaAttachment } from '@/components/MediaPreview'
 import type { Message } from '@/lib/types'
+
+// Componente de pesquisa extraído para evitar duplicação e perda de foco
+interface SearchSectionProps {
+  searchTerm: string
+  onSearchChange: (value: string) => void
+  onClearSearch: () => void
+  resultCount: number
+}
+
+const SearchSection = memo(function SearchSection({
+  searchTerm,
+  onSearchChange,
+  onClearSearch,
+  resultCount,
+}: SearchSectionProps) {
+  return (
+    <div className="p-3 border-b border-silver-200 bg-white">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-erie-black-400" />
+        <Input
+          type="text"
+          placeholder="Pesquisar contatos ou números..."
+          value={searchTerm}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="pl-9 pr-9 h-10 bg-silver-50 border-silver-200 focus:bg-white"
+        />
+        {searchTerm && (
+          <button
+            onClick={onClearSearch}
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-erie-black-400 hover:text-erie-black-600"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+      {/* Indicador de pesquisa ativa */}
+      {searchTerm.length >= 2 && (
+        <p className="text-xs text-erie-black-500 mt-2">
+          {resultCount} resultado{resultCount !== 1 ? 's' : ''} encontrado{resultCount !== 1 ? 's' : ''}
+        </p>
+      )}
+      {searchTerm.length === 1 && (
+        <p className="text-xs text-erie-black-400 mt-2">
+          Digite mais 1 caractere para pesquisar...
+        </p>
+      )}
+    </div>
+  )
+})
 
 interface ConversationPageClientProps {
   phone: string
@@ -163,129 +212,128 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
 
   const conversation = conversations.find((c) => c.phone === phone)
 
-  // Componente de Sidebar (reutilizado para desktop e mobile)
-  const SidebarContent = () => (
-    <>
-      {/* Header da Sidebar */}
-      <div className="bg-mint-600 p-4 flex items-center justify-between shadow-md">
-        <div className="flex items-center gap-3">
-          <MessageCircle className="h-6 w-6 text-white" />
-          <h2 className="text-white font-semibold text-lg">Conversas</h2>
-        </div>
-        <Link href="/dashboard">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-white hover:bg-mint-700 flex items-center gap-2 px-3"
-          >
-            <Home className="h-4 w-4" />
-            <span className="font-medium">Início</span>
-          </Button>
-        </Link>
+  // Header da Sidebar (static content, não precisa mudar)
+  const sidebarHeader = (
+    <div className="bg-mint-600 p-4 flex items-center justify-between shadow-md">
+      <div className="flex items-center gap-3">
+        <MessageCircle className="h-6 w-6 text-white" />
+        <h2 className="text-white font-semibold text-lg">Conversas</h2>
       </div>
-
-      {/* Campo de Pesquisa */}
-      <div className="p-3 border-b border-silver-200 bg-white">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-erie-black-400" />
-          <Input
-            type="text"
-            placeholder="Pesquisar contatos ou números..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 pr-9 h-10 bg-silver-50 border-silver-200 focus:bg-white"
-          />
-          {searchTerm && (
-            <button
-              onClick={handleClearSearch}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-erie-black-400 hover:text-erie-black-600"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-        {/* Indicador de pesquisa ativa */}
-        {searchTerm.length >= 2 && (
-          <p className="text-xs text-erie-black-500 mt-2">
-            {filteredConversations.length} resultado{filteredConversations.length !== 1 ? 's' : ''} encontrado{filteredConversations.length !== 1 ? 's' : ''}
-          </p>
-        )}
-        {searchTerm.length === 1 && (
-          <p className="text-xs text-erie-black-400 mt-2">
-            Digite mais 1 caractere para pesquisar...
-          </p>
-        )}
-      </div>
-
-      {/* Filtros por Status */}
-      <div className="border-b border-silver-200 bg-white">
-        <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'all' | 'bot' | 'humano' | 'transferido')}>
-          <TabsList className="w-full justify-start rounded-none h-auto p-0 bg-transparent flex-wrap">
-            <TabsTrigger
-              value="all"
-              className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-mint-600 rounded-none text-xs sm:text-sm px-2 sm:px-3"
-            >
-              <List className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Todas</span>
-              <span className="sm:hidden">Todas</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="bot"
-              className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 rounded-none text-xs sm:text-sm px-2 sm:px-3"
-            >
-              <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Bot</span>
-              <span className="sm:hidden">Bot</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="humano"
-              className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-green-600 rounded-none text-xs sm:text-sm px-2 sm:px-3"
-            >
-              <User className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Humano</span>
-              <span className="sm:hidden">Humano</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="transferido"
-              className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-orange-600 rounded-none text-xs sm:text-sm px-2 sm:px-3"
-            >
-              <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Transferido</span>
-              <span className="sm:hidden">Transf.</span>
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
-
-      {/* Lista de Conversas */}
-      <div 
-        ref={scrollContainerRef}
-        onScroll={handleScroll}
-        className="flex-1 overflow-y-auto"
-      >
-        <ConversationList
-          conversations={filteredConversations}
-          loading={loading}
-          currentPhone={phone}
-          lastUpdatePhone={lastUpdatePhone}
-          onConversationClick={() => setSidebarOpen(false)}
-        />
-      </div>
-    </>
+      <Link href="/dashboard">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-white hover:bg-mint-700 flex items-center gap-2 px-3"
+        >
+          <Home className="h-4 w-4" />
+          <span className="font-medium">Início</span>
+        </Button>
+      </Link>
+    </div>
   )
+
+  // Filtros por Status (memoizado para evitar re-renders desnecessários)
+  const statusFilters = useMemo(() => (
+    <div className="border-b border-silver-200 bg-white">
+      <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'all' | 'bot' | 'humano' | 'transferido')}>
+        <TabsList className="w-full justify-start rounded-none h-auto p-0 bg-transparent flex-wrap">
+          <TabsTrigger
+            value="all"
+            className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-mint-600 rounded-none text-xs sm:text-sm px-2 sm:px-3"
+          >
+            <List className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Todas</span>
+            <span className="sm:hidden">Todas</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="bot"
+            className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 rounded-none text-xs sm:text-sm px-2 sm:px-3"
+          >
+            <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Bot</span>
+            <span className="sm:hidden">Bot</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="humano"
+            className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-green-600 rounded-none text-xs sm:text-sm px-2 sm:px-3"
+          >
+            <User className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Humano</span>
+            <span className="sm:hidden">Humano</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="transferido"
+            className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-orange-600 rounded-none text-xs sm:text-sm px-2 sm:px-3"
+          >
+            <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Transferido</span>
+            <span className="sm:hidden">Transf.</span>
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+    </div>
+  ), [statusFilter])
 
   return (
     <div className="fixed inset-0 flex overflow-hidden bg-white">
       {/* Sidebar Desktop - Oculta em mobile (< lg) */}
       <div className="hidden lg:flex w-96 border-r border-silver-200 flex-col bg-white">
-        <SidebarContent />
+        {sidebarHeader}
+
+        <SearchSection
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          onClearSearch={handleClearSearch}
+          resultCount={filteredConversations.length}
+        />
+
+        {statusFilters}
+
+        {/* Lista de Conversas */}
+        <div 
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto"
+        >
+          <ConversationList
+            conversations={filteredConversations}
+            loading={loading}
+            currentPhone={phone}
+            lastUpdatePhone={lastUpdatePhone}
+            onConversationClick={() => setSidebarOpen(false)}
+          />
+        </div>
       </div>
 
       {/* Sidebar Mobile - Sheet drawer */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <SheetContent side="left" className="p-0 w-[85vw] sm:w-96">
           <div className="flex flex-col h-full">
-            <SidebarContent />
+            {sidebarHeader}
+
+            <SearchSection
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              onClearSearch={handleClearSearch}
+              resultCount={filteredConversations.length}
+            />
+
+            {statusFilters}
+
+            {/* Lista de Conversas */}
+            <div 
+              ref={scrollContainerRef}
+              onScroll={handleScroll}
+              className="flex-1 overflow-y-auto"
+            >
+              <ConversationList
+                conversations={filteredConversations}
+                loading={loading}
+                currentPhone={phone}
+                lastUpdatePhone={lastUpdatePhone}
+                onConversationClick={() => setSidebarOpen(false)}
+              />
+            </div>
           </div>
         </SheetContent>
       </Sheet>
