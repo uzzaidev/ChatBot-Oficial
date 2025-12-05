@@ -74,7 +74,6 @@ export async function PUT(
       .eq('client_id', profile.client_id)
 
     if (updateError) {
-      console.error('[api/customers/status] Erro ao atualizar:', updateError)
       return NextResponse.json(
         { error: 'Erro ao atualizar status' },
         { status: 500 }
@@ -87,7 +86,6 @@ export async function PUT(
       message: 'Status atualizado com sucesso',
     })
   } catch (error) {
-    console.error('[api/customers/status] Erro:', error)
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
 }
