@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo, useLayoutEffect } from 'react'
 import { ConversationDetail } from '@/components/ConversationDetail'
 import { SendMessageForm } from '@/components/SendMessageForm'
 import { StatusToggle } from '@/components/StatusToggle'
@@ -10,11 +10,12 @@ import { useGlobalRealtimeNotifications } from '@/hooks/useGlobalRealtimeNotific
 import { ConversationList } from '@/components/ConversationList'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getInitials } from '@/lib/utils'
 import { markConversationAsRead } from '@/lib/api'
-import { MessageCircle, LayoutDashboard, Menu, Bot, User, ArrowRight, List, Home } from 'lucide-react'
+import { MessageCircle, Menu, Bot, User, ArrowRight, List, Home, Search, X } from 'lucide-react'
 import Link from 'next/link'
 import type { MediaAttachment } from '@/components/MediaPreview'
 import type { Message } from '@/lib/types'
@@ -35,6 +36,9 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [statusFilter, setStatusFilter] = useState<'all' | 'bot' | 'humano' | 'transferido'>('all')
   const [attachments, setAttachments] = useState<MediaAttachment[]>([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const scrollPositionRef = useRef(0)
 
   // Refs para callbacks de optimistic updates
   const optimisticCallbacksRef = useRef<{
@@ -103,6 +107,53 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
   // 🔐 Multi-tenant: Pass clientId for tenant isolation
   const { lastUpdatePhone } = useGlobalRealtimeNotifications({ clientId })
 
+  // Salvar posição do scroll antes de atualizar
+  const saveScrollPosition = useCallback(() => {
+    if (scrollContainerRef.current) {
+      scrollPositionRef.current = scrollContainerRef.current.scrollTop
+    }
+  }, [])
+
+  // Restaurar posição do scroll após atualização
+  const restoreScrollPosition = useCallback(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = scrollPositionRef.current
+    }
+  }, [])
+
+  // Filtrar conversas baseado no termo de pesquisa (após 2 caracteres)
+  const filteredConversations = useMemo(() => {
+    // Se o termo de pesquisa tiver menos de 2 caracteres, mostrar todas
+    if (searchTerm.length < 2) {
+      return conversations
+    }
+
+    const searchLower = searchTerm.toLowerCase().trim()
+    // Limpar o termo de pesquisa uma vez fora do loop de filter
+    const phoneSearchTerm = searchTerm.replace(/\D/g, '')
+    
+    // Filtrar por nome ou telefone
+    return conversations.filter((conversation) => {
+      const nameMatch = conversation.name?.toLowerCase().includes(searchLower)
+      const phoneMatch = phoneSearchTerm && conversation.phone?.includes(phoneSearchTerm)
+      return nameMatch || phoneMatch
+    })
+  }, [conversations, searchTerm])
+
+  // Restaurar scroll quando as conversas são atualizadas (useLayoutEffect para sincronização imediata com DOM)
+  useLayoutEffect(() => {
+    restoreScrollPosition()
+  }, [conversations, restoreScrollPosition])
+
+  // Handler para scroll - salva posição durante scroll
+  const handleScroll = useCallback(() => {
+    saveScrollPosition()
+  }, [saveScrollPosition])
+
+  const handleClearSearch = useCallback(() => {
+    setSearchTerm('')
+  }, [])
+
   // Callback para marcar como lida (usado pelo ConversationDetail)
   const handleMarkAsRead = useCallback(async (conversationPhone: string) => {
     const result = await markConversationAsRead(conversationPhone)
@@ -131,6 +182,39 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
             <span className="font-medium">Início</span>
           </Button>
         </Link>
+      </div>
+
+      {/* Campo de Pesquisa */}
+      <div className="p-3 border-b border-silver-200 bg-white">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-erie-black-400" />
+          <Input
+            type="text"
+            placeholder="Pesquisar contatos ou números..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9 pr-9 h-10 bg-silver-50 border-silver-200 focus:bg-white"
+          />
+          {searchTerm && (
+            <button
+              onClick={handleClearSearch}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-erie-black-400 hover:text-erie-black-600"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+        {/* Indicador de pesquisa ativa */}
+        {searchTerm.length >= 2 && (
+          <p className="text-xs text-erie-black-500 mt-2">
+            {filteredConversations.length} resultado{filteredConversations.length !== 1 ? 's' : ''} encontrado{filteredConversations.length !== 1 ? 's' : ''}
+          </p>
+        )}
+        {searchTerm.length === 1 && (
+          <p className="text-xs text-erie-black-400 mt-2">
+            Digite mais 1 caractere para pesquisar...
+          </p>
+        )}
       </div>
 
       {/* Filtros por Status */}
@@ -174,9 +258,13 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
       </div>
 
       {/* Lista de Conversas */}
-      <div className="flex-1 overflow-y-auto">
+      <div 
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto"
+      >
         <ConversationList
-          conversations={conversations}
+          conversations={filteredConversations}
           loading={loading}
           currentPhone={phone}
           lastUpdatePhone={lastUpdatePhone}
