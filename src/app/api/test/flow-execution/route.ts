@@ -3,21 +3,21 @@
  *
  * Testa o FlowExecutor sem precisar do webhook real
  *
- * POST /api/test/flow-execution/start
- *   - Inicia um flow para um contato
- *   - Body: { flowId, phone, clientId }
- *
- * POST /api/test/flow-execution/continue
- *   - Continua execução de um flow
- *   - Body: { phone, clientId, userResponse, interactiveResponseId }
+ * POST /api/test/flow-execution
+ *   - action: 'start' - Inicia um flow para um contato
+ *     Body: { action: 'start', flowId, phone, clientId }
+ *   - action: 'continue' - Continua execução de um flow
+ *     Body: { action: 'continue', phone, clientId, userResponse, interactiveResponseId }
  *
  * GET /api/test/flow-execution/status?phone=XXX&clientId=YYY
  *   - Ver status atual da execução
+ *
+ * NOTE: Transfer to bot/human is tested via flow blocks (ai_handoff, human_handoff)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { FlowExecutor } from '@/lib/flows/flowExecutor';
-import { createServerClient } from '@/lib/supabase/server';
+import { createServerClient } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -101,58 +101,8 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    if (action === 'transfer_bot') {
-      // TESTAR TRANSFERÊNCIA PARA BOT
-      const { executionId } = body;
-
-      if (!executionId) {
-        return NextResponse.json(
-          { error: 'executionId is required' },
-          { status: 400 }
-        );
-      }
-
-      console.log(`🤖 [TEST] Transferindo para bot - execution ${executionId}`);
-
-      await executor.transferToBot(executionId);
-
-      return NextResponse.json({
-        success: true,
-        message: 'Transferido para bot (status → bot)',
-        data: {
-          executionId,
-          newStatus: 'bot'
-        }
-      });
-    }
-
-    if (action === 'transfer_human') {
-      // TESTAR TRANSFERÊNCIA PARA HUMANO
-      const { executionId } = body;
-
-      if (!executionId) {
-        return NextResponse.json(
-          { error: 'executionId is required' },
-          { status: 400 }
-        );
-      }
-
-      console.log(`👤 [TEST] Transferindo para humano - execution ${executionId}`);
-
-      await executor.transferToHuman(executionId);
-
-      return NextResponse.json({
-        success: true,
-        message: 'Transferido para humano (status → humano)',
-        data: {
-          executionId,
-          newStatus: 'humano'
-        }
-      });
-    }
-
     return NextResponse.json(
-      { error: `Unknown action: ${action}. Valid: start, continue, transfer_bot, transfer_human` },
+      { error: `Unknown action: ${action}. Valid: start, continue` },
       { status: 400 }
     );
 
