@@ -189,8 +189,6 @@ export default function FlowCanvas() {
         attributionPosition="bottom-left"
         snapToGrid
         snapGrid={[15, 15]}
-        edgesFocusable={true}
-        edgesSelectable={true}
         defaultEdgeOptions={{
           type: 'smoothstep',
           animated: true,
