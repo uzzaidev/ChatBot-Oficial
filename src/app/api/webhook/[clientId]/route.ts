@@ -21,6 +21,7 @@ import { getClientConfig } from "@/lib/config";
 import { checkDuplicateMessage, markMessageAsProcessed } from "@/lib/dedup";
 import crypto from "crypto";
 import { checkRateLimit, webhookVerifyLimiter } from "@/lib/rate-limit";
+import { parseInteractiveMessage } from "@/lib/whatsapp/interactiveMessages";
 
 export const dynamic = "force-dynamic";
 
@@ -185,16 +186,30 @@ export async function POST(
         const contact = value?.contacts?.[0];
         messageId = message.id || `msg-${Date.now()}`;
 
+        // 🆕 Parse interactive message response
+        const interactiveResponse = parseInteractiveMessage(message);
+        
+        if (interactiveResponse) {
+          console.log('📱 Interactive message response received:', {
+            type: interactiveResponse.type,
+            id: interactiveResponse.id,
+            title: interactiveResponse.title,
+            from: interactiveResponse.from,
+          });
+        }
+
         const webhookMessage = {
           id: messageId,
           timestamp: new Date().toISOString(),
           from: message.from,
           name: contact?.profile?.name || "Unknown",
           type: message.type,
-          content: message.text?.body ||
-            message.image?.caption ||
-            message.audio?.id ||
-            message.type,
+          content: interactiveResponse 
+            ? `[${interactiveResponse.type}] ${interactiveResponse.title}` 
+            : (message.text?.body ||
+              message.image?.caption ||
+              message.audio?.id ||
+              message.type),
           raw: body,
         };
 
