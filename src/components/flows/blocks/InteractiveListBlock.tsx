@@ -12,10 +12,20 @@
 import { memo } from 'react'
 import { Handle, Position, NodeProps } from '@xyflow/react'
 import { List } from 'lucide-react'
+import type { ListSection } from '@/types/interactiveFlows'
+
+interface InteractiveListData {
+  listHeader?: string
+  listBody?: string
+  listFooter?: string
+  listButtonText?: string
+  listSections?: ListSection[]
+}
 
 const InteractiveListBlock = memo(({ data, selected }: NodeProps) => {
-  const sections = data.listSections || []
-  const totalRows = sections.reduce((acc: number, section: any) => acc + (section.rows?.length || 0), 0)
+  const blockData = data as InteractiveListData
+  const sections = blockData.listSections || []
+  const totalRows = sections.reduce((acc: number, section: ListSection) => acc + (section.rows?.length || 0), 0)
 
   return (
     <div
@@ -46,8 +56,8 @@ const InteractiveListBlock = memo(({ data, selected }: NodeProps) => {
 
       {/* Preview */}
       <div className="text-xs text-gray-600 space-y-1">
-        {data.listBody ? (
-          <p className="truncate font-medium">{data.listBody}</p>
+        {blockData.listBody ? (
+          <p className="truncate font-medium">{blockData.listBody}</p>
         ) : (
           <p className="text-gray-400 italic">Clique para editar...</p>
         )}

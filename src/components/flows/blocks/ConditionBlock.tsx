@@ -2,9 +2,9 @@
 
 /**
  * Condition Block Component
- * 
+ *
  * Conditional branching based on variables.
- * 
+ *
  * @phase Phase 5 - Interface Drag-and-Drop
  * @created 2025-12-06
  */
@@ -12,9 +12,15 @@
 import { memo } from 'react'
 import { Handle, Position, NodeProps } from '@xyflow/react'
 import { GitBranch } from 'lucide-react'
+import type { Condition } from '@/types/interactiveFlows'
+
+interface ConditionBlockData {
+  conditions?: Condition[]
+}
 
 const ConditionBlock = memo(({ data, selected }: NodeProps) => {
-  const conditions = data.conditions || []
+  const blockData = data as ConditionBlockData
+  const conditions = blockData.conditions || []
 
   return (
     <div

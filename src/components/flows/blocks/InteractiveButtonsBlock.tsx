@@ -12,9 +12,17 @@
 import { memo } from 'react'
 import { Handle, Position, NodeProps } from '@xyflow/react'
 import { Square } from 'lucide-react'
+import type { ReplyButton } from '@/types/interactiveFlows'
+
+interface InteractiveButtonsData {
+  buttonsBody?: string
+  buttonsFooter?: string
+  buttons?: ReplyButton[]
+}
 
 const InteractiveButtonsBlock = memo(({ data, selected }: NodeProps) => {
-  const buttons = data.buttons || []
+  const blockData = data as InteractiveButtonsData
+  const buttons = blockData.buttons || []
 
   return (
     <div
@@ -45,8 +53,8 @@ const InteractiveButtonsBlock = memo(({ data, selected }: NodeProps) => {
 
       {/* Preview */}
       <div className="text-xs text-gray-600 space-y-1">
-        {data.buttonsBody ? (
-          <p className="truncate font-medium">{data.buttonsBody}</p>
+        {blockData.buttonsBody ? (
+          <p className="truncate font-medium">{blockData.buttonsBody}</p>
         ) : (
           <p className="text-gray-400 italic">Clique para editar...</p>
         )}

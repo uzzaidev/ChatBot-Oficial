@@ -13,7 +13,12 @@ import { memo } from 'react'
 import { Handle, Position, NodeProps } from '@xyflow/react'
 import { MessageSquare } from 'lucide-react'
 
+interface MessageBlockData {
+  messageText?: string
+}
+
 const MessageBlock = memo(({ data, selected }: NodeProps) => {
+  const blockData = data as MessageBlockData
   return (
     <div
       className={`
@@ -43,8 +48,8 @@ const MessageBlock = memo(({ data, selected }: NodeProps) => {
 
       {/* Preview */}
       <div className="text-xs text-gray-600">
-        {data.messageText ? (
-          <p className="line-clamp-2">{data.messageText}</p>
+        {blockData.messageText ? (
+          <p className="line-clamp-2">{blockData.messageText}</p>
         ) : (
           <p className="text-gray-400 italic">Clique para editar...</p>
         )}
