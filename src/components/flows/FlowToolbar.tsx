@@ -91,6 +91,8 @@ export default function FlowToolbar() {
       id: edge.id,
       source: edge.source,
       target: edge.target,
+      sourceHandle: edge.sourceHandle,
+      targetHandle: edge.targetHandle,
       label: edge.label
     })),
     startBlockId: startBlockId || nodes.find(n => n.type === 'start')?.id || nodes[0]?.id || '',
