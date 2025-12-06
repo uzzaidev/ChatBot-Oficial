@@ -151,7 +151,7 @@ export const useFlowStore = create<FlowState>()(
       if (!state.flowId || state.flowId === 'new') {
         // TODO: Create new flow
         console.warn('Create new flow not implemented yet')
-        return
+        throw new Error('Criar novos flows ainda não está implementado. Por favor, edite um flow existente.')
       }
 
       set({ isSaving: true })
