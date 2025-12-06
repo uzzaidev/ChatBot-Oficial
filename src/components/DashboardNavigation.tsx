@@ -1,6 +1,6 @@
 'use client'
 
-import { MessageSquare, LayoutDashboard, Settings, BarChart3, ChevronLeft, ChevronRight, GitBranch, Terminal, CheckCircle, BookOpen, Users } from 'lucide-react'
+import { MessageSquare, LayoutDashboard, Settings, BarChart3, ChevronLeft, ChevronRight, GitBranch, Terminal, CheckCircle, BookOpen, Users, Workflow } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Separator } from '@/components/ui/separator'
@@ -103,6 +103,14 @@ export function DashboardNavigation({
           href="/dashboard/knowledge"
           icon={<BookOpen className="h-5 w-5 flex-shrink-0" />}
           label="Base de Conhecimento"
+          isCollapsed={isCollapsed}
+          onClick={onLinkClick}
+        />
+
+        <NavItem
+          href="/dashboard/flows"
+          icon={<Workflow className="h-5 w-5 flex-shrink-0" />}
+          label="Flows Interativos"
           isCollapsed={isCollapsed}
           onClick={onLinkClick}
         />

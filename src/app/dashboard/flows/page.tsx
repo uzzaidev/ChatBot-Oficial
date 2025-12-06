@@ -12,7 +12,7 @@
  * @created 2025-12-06
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClientBrowser } from '@/lib/supabase'
 import type { InteractiveFlow } from '@/types/interactiveFlows'
@@ -24,11 +24,7 @@ export default function FlowsListPage() {
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
-  useEffect(() => {
-    loadFlows()
-  }, [])
-
-  const loadFlows = async () => {
+  const loadFlows = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -55,7 +51,11 @@ export default function FlowsListPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [router])
+
+  useEffect(() => {
+    loadFlows()
+  }, [loadFlows])
 
   const handleCreateFlow = () => {
     router.push('/dashboard/flows/new/edit')

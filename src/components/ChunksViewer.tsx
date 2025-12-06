@@ -11,7 +11,7 @@
  * - Add manual chunks with tags
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { X, Plus, FileText, Tag, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -54,13 +54,7 @@ export const ChunksViewer = ({ filename, isOpen, onClose }: ChunksViewerProps) =
   const [newChunkTags, setNewChunkTags] = useState('')
   const { toast } = useToast()
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchChunks()
-    }
-  }, [isOpen, filename])
-
-  const fetchChunks = async () => {
+  const fetchChunks = useCallback(async () => {
     setIsLoading(true)
     try {
       const { apiFetch } = await import('@/lib/api')
@@ -83,7 +77,13 @@ export const ChunksViewer = ({ filename, isOpen, onClose }: ChunksViewerProps) =
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [filename, toast])
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchChunks()
+    }
+  }, [isOpen, fetchChunks])
 
   const handleAddChunk = async () => {
     if (!newChunkContent.trim()) {

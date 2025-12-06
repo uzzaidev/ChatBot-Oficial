@@ -10,7 +10,7 @@
  * @created 2025-12-06
  */
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { X, RotateCcw } from 'lucide-react'
 import { FlowSimulator, SimulationResult } from '@/lib/flows/flowSimulator'
 import type { InteractiveFlow, ListSection, ReplyButton } from '@/types/interactiveFlows'
@@ -47,16 +47,6 @@ export default function FlowPreview({ flow, open, onClose }: FlowPreviewProps) {
   const [isProcessing, setIsProcessing] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  // Initialize simulator when dialog opens
-  useEffect(() => {
-    if (open && flow) {
-      const newSimulator = new FlowSimulator(flow)
-      setSimulator(newSimulator)
-      setMessages([])
-      startSimulation(newSimulator)
-    }
-  }, [open, flow])
-
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (scrollRef.current) {
@@ -64,29 +54,33 @@ export default function FlowPreview({ flow, open, onClose }: FlowPreviewProps) {
     }
   }, [messages])
 
-  const startSimulation = async (sim: FlowSimulator) => {
-    if (!flow.startBlockId) {
-      addSystemMessage('⚠️ Flow não tem bloco inicial configurado')
-      return
+  const addSystemMessage = useCallback((content: string) => {
+    const newMessage: PreviewMessage = {
+      id: `msg-${Date.now()}-${Math.random()}`,
+      type: 'system',
+      content,
+      timestamp: new Date()
     }
+    setMessages(prev => [...prev, newMessage])
+  }, [])
 
-    setIsProcessing(true)
-    try {
-      const result = await sim.executeBlock(flow.startBlockId)
-      await processSimulationResult(result, sim)
-    } catch (error: any) {
-      addSystemMessage(`❌ Erro: ${error.message}`)
-    } finally {
-      setIsProcessing(false)
+  const addBotMessage = useCallback((content: string, interactive?: PreviewMessage['interactive']) => {
+    const newMessage: PreviewMessage = {
+      id: `msg-${Date.now()}-${Math.random()}`,
+      type: 'bot',
+      content,
+      timestamp: new Date(),
+      interactive
     }
-  }
+    setMessages(prev => [...prev, newMessage])
+  }, [])
 
-  const processSimulationResult = async (result: SimulationResult, sim: FlowSimulator) => {
+  const processSimulationResult = useCallback(async (result: SimulationResult, sim: FlowSimulator) => {
     switch (result.type) {
       case 'message':
         // Add bot message
         addBotMessage(result.content || '')
-        
+
         // Auto-advance to next block if configured
         if (result.autoAdvance && result.nextBlockId) {
           setTimeout(async () => {
@@ -129,7 +123,7 @@ export default function FlowPreview({ flow, open, onClose }: FlowPreviewProps) {
       case 'action':
         // Show action was executed (optional, can be hidden)
         addSystemMessage(`⚙️ ${result.actionDescription}`)
-        
+
         // Continue if has next block
         if (result.nextBlockId) {
           setTimeout(async () => {
@@ -141,33 +135,39 @@ export default function FlowPreview({ flow, open, onClose }: FlowPreviewProps) {
         }
         break
     }
-  }
+  }, [addBotMessage, addSystemMessage])
 
-  const addBotMessage = (content: string, interactive?: PreviewMessage['interactive']) => {
-    const newMessage: PreviewMessage = {
-      id: `msg-${Date.now()}-${Math.random()}`,
-      type: 'bot',
-      content,
-      timestamp: new Date(),
-      interactive
+  const startSimulation = useCallback(async (sim: FlowSimulator) => {
+    if (!flow.startBlockId) {
+      addSystemMessage('⚠️ Flow não tem bloco inicial configurado')
+      return
     }
-    setMessages(prev => [...prev, newMessage])
-  }
+
+    setIsProcessing(true)
+    try {
+      const result = await sim.executeBlock(flow.startBlockId)
+      await processSimulationResult(result, sim)
+    } catch (error: any) {
+      addSystemMessage(`❌ Erro: ${error.message}`)
+    } finally {
+      setIsProcessing(false)
+    }
+  }, [flow.startBlockId, addSystemMessage, processSimulationResult])
+
+  // Initialize simulator when dialog opens
+  useEffect(() => {
+    if (open && flow) {
+      const newSimulator = new FlowSimulator(flow)
+      setSimulator(newSimulator)
+      setMessages([])
+      startSimulation(newSimulator)
+    }
+  }, [open, flow, startSimulation])
 
   const addUserMessage = (content: string) => {
     const newMessage: PreviewMessage = {
       id: `msg-${Date.now()}-${Math.random()}`,
       type: 'user',
-      content,
-      timestamp: new Date()
-    }
-    setMessages(prev => [...prev, newMessage])
-  }
-
-  const addSystemMessage = (content: string) => {
-    const newMessage: PreviewMessage = {
-      id: `msg-${Date.now()}-${Math.random()}`,
-      type: 'system',
       content,
       timestamp: new Date()
     }
