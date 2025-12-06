@@ -122,6 +122,8 @@ export const useFlowStore = create<FlowState>()(
             id: edge.id,
             source: edge.source,
             target: edge.target,
+            sourceHandle: edge.sourceHandle,
+            targetHandle: edge.targetHandle,
             label: edge.label,
             type: 'smoothstep',
             animated: true,
@@ -146,57 +148,104 @@ export const useFlowStore = create<FlowState>()(
     saveFlow: async () => {
       const state = get()
       
-      if (!state.flowId || state.flowId === 'new') {
-        // TODO: Create new flow
-        console.warn('Create new flow not implemented yet')
-        return
+      // Transform FlowNode[] back to FlowBlock[]
+      const blocks: FlowBlock[] = state.nodes.map((node) => ({
+        id: node.id,
+        type: node.type as any,
+        position: node.position,
+        data: node.data
+      }))
+
+      // Transform FlowNodeEdge[] back to FlowEdge[]
+      const edges: FlowEdge[] = state.edges.map((edge) => ({
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        sourceHandle: edge.sourceHandle,
+        targetHandle: edge.targetHandle,
+        label: edge.label,
+        type: edge.type === 'smoothstep' ? 'default' : (edge.type as any)
+      }))
+
+      const startBlockId = state.startBlockId || blocks.find(b => b.type === 'start')?.id
+
+      // Validate we have required data
+      if (!state.flowName || state.flowName.trim().length === 0) {
+        throw new Error('Nome do flow é obrigatório')
+      }
+
+      if (blocks.length === 0) {
+        throw new Error('Adicione pelo menos um bloco ao flow')
+      }
+
+      if (!startBlockId) {
+        throw new Error('Adicione um bloco de início ao flow')
       }
 
       set({ isSaving: true })
 
       try {
-        // Transform FlowNode[] back to FlowBlock[]
-        const blocks: FlowBlock[] = state.nodes.map((node) => ({
-          id: node.id,
-          type: node.type as any,
-          position: node.position,
-          data: node.data
-        }))
-
-        // Transform FlowNodeEdge[] back to FlowEdge[]
-        const edges: FlowEdge[] = state.edges.map((edge) => ({
-          id: edge.id,
-          source: edge.source,
-          target: edge.target,
-          label: edge.label,
-          type: edge.type === 'smoothstep' ? 'default' : (edge.type as any)
-        }))
-
-        const response = await fetch(`/api/flows/${state.flowId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: state.flowName,
-            description: state.flowDescription,
-            isActive: state.isActive,
-            triggerType: state.triggerType,
-            triggerKeywords: state.triggerKeywords,
-            blocks,
-            edges,
-            startBlockId: state.startBlockId || blocks.find(b => b.type === 'start')?.id
+        // Check if creating new or updating existing
+        if (!state.flowId || state.flowId === 'new') {
+          // Create new flow
+          const response = await fetch('/api/flows', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: state.flowName,
+              description: state.flowDescription,
+              isActive: state.isActive,
+              triggerType: state.triggerType || 'keyword',
+              triggerKeywords: state.triggerKeywords,
+              blocks,
+              edges,
+              startBlockId
+            })
           })
-        })
 
-        if (!response.ok) {
-          throw new Error('Failed to save flow')
+          if (!response.ok) {
+            const errorData = await response.json()
+            throw new Error(errorData.error || 'Failed to create flow')
+          }
+
+          const { flow } = await response.json()
+          
+          // Update store with new flow ID
+          set((state) => {
+            state.flowId = flow.id
+            state.hasUnsavedChanges = false
+            state.lastSavedAt = new Date()
+          })
+
+          console.log('✅ Flow created successfully')
+        } else {
+          // Update existing flow
+          const response = await fetch(`/api/flows/${state.flowId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: state.flowName,
+              description: state.flowDescription,
+              isActive: state.isActive,
+              triggerType: state.triggerType,
+              triggerKeywords: state.triggerKeywords,
+              blocks,
+              edges,
+              startBlockId
+            })
+          })
+
+          if (!response.ok) {
+            throw new Error('Failed to save flow')
+          }
+
+          set((state) => {
+            state.hasUnsavedChanges = false
+            state.lastSavedAt = new Date()
+          })
+
+          console.log('✅ Flow saved successfully')
         }
-
-        set((state) => {
-          state.hasUnsavedChanges = false
-          state.lastSavedAt = new Date()
-        })
-
-        console.log('✅ Flow saved successfully')
       } catch (error: any) {
         console.error('Error saving flow:', error)
         throw error

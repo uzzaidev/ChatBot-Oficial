@@ -13,7 +13,7 @@ import { memo } from 'react'
 import { Handle, Position, NodeProps } from '@xyflow/react'
 import { Zap } from 'lucide-react'
 
-const ActionBlock = memo(({ data, selected }: NodeProps) => {
+const ActionBlock = memo(({ id, data, selected }: NodeProps) => {
   const actionType = data.actionType
 
   const getActionLabel = () => {
@@ -50,10 +50,11 @@ const ActionBlock = memo(({ data, selected }: NodeProps) => {
       {/* Header */}
       <div className="flex items-center gap-2">
         <Zap className="w-5 h-5 text-orange-600" />
-        <div>
+        <div className="flex-1">
           <div className="font-semibold text-sm text-gray-900">Ação</div>
           <div className="text-xs text-gray-600">{getActionLabel()}</div>
         </div>
+        <span className="text-xs text-gray-500">{id.replace('node-', '').slice(0, 8)}</span>
       </div>
     </div>
   )
