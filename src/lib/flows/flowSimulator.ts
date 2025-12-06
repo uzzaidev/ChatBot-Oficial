@@ -93,18 +93,41 @@ export class FlowSimulator {
         // Evaluate conditions
         const conditions = block.data.conditions || []
         
-        for (const condition of conditions) {
+        for (let i = 0; i < conditions.length; i++) {
+          const condition = conditions[i]
           if (this.evaluateCondition(condition)) {
+            // First try nextBlockId for backward compatibility
             if (condition.nextBlockId) {
               return this.executeBlock(condition.nextBlockId)
+            }
+            
+            // Then try edge with sourceHandle matching condition index
+            const conditionEdge = this.flow.edges.find(e => 
+              e.source === blockId && e.sourceHandle === `condition-${i}`
+            )
+            if (conditionEdge?.target) {
+              return this.executeBlock(conditionEdge.target)
             }
           }
         }
 
-        // Default path
-        const defaultNextId = block.data.defaultNextBlockId || this.findNextBlock(blockId)
-        if (defaultNextId) {
-          return this.executeBlock(defaultNextId)
+        // Default path - try defaultNextBlockId first
+        if (block.data.defaultNextBlockId) {
+          return this.executeBlock(block.data.defaultNextBlockId)
+        }
+
+        // Then try edge with sourceHandle "default"
+        const defaultEdge = this.flow.edges.find(e => 
+          e.source === blockId && e.sourceHandle === 'default'
+        )
+        if (defaultEdge?.target) {
+          return this.executeBlock(defaultEdge.target)
+        }
+
+        // Finally try any edge without sourceHandle
+        const anyEdge = this.findNextBlock(blockId)
+        if (anyEdge) {
+          return this.executeBlock(anyEdge)
         }
         
         return {
@@ -181,14 +204,23 @@ export class FlowSimulator {
   /**
    * Handle user choice from interactive message
    */
-  async handleUserChoice(choiceId: string, choiceTitle: string, nextBlockId: string): Promise<SimulationResult> {
+  async handleUserChoice(choiceId: string, choiceTitle: string, nextBlockId?: string): Promise<SimulationResult> {
     // Save choice in variable
     this.variables.last_choice = choiceTitle
     this.variables.last_choice_id = choiceId
 
-    // Execute next block
+    // Try to find next block from nextBlockId first (backward compatibility)
     if (nextBlockId) {
       return this.executeBlock(nextBlockId)
+    }
+
+    // Otherwise, look for edge with matching sourceHandle
+    const edge = this.flow.edges.find(e => 
+      e.source === this.currentBlockId && e.sourceHandle === choiceId
+    )
+
+    if (edge?.target) {
+      return this.executeBlock(edge.target)
     }
 
     return {

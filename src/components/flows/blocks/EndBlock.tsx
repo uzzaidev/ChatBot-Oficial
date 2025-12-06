@@ -13,7 +13,7 @@ import { memo } from 'react'
 import { Handle, Position, NodeProps } from '@xyflow/react'
 import { StopCircle } from 'lucide-react'
 
-const EndBlock = memo(({ data, selected }: NodeProps) => {
+const EndBlock = memo(({ id, data, selected }: NodeProps) => {
   return (
     <div
       className={`
@@ -35,10 +35,11 @@ const EndBlock = memo(({ data, selected }: NodeProps) => {
         <div className="p-2 bg-red-100 rounded-lg">
           <StopCircle className="w-5 h-5 text-red-600" />
         </div>
-        <div>
+        <div className="flex-1">
           <div className="font-semibold text-sm text-gray-900">Fim</div>
           <div className="text-xs text-gray-500">Finalizar flow</div>
         </div>
+        <span className="text-xs text-gray-500">ID: {id.slice(0, 8)}</span>
       </div>
     </div>
   )

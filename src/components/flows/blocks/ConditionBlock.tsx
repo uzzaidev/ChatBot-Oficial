@@ -37,18 +37,12 @@ const ConditionBlock = memo(({ id, data, selected }: NodeProps) => {
         ${selected ? 'border-yellow-500 shadow-lg ring-2 ring-yellow-200' : 'border-yellow-300'}
       `}
     >
-      {/* Handles - Maiores e com hover */}
+      {/* Input Handle */}
       <Handle
         type="target"
         position={Position.Top}
         className="w-4 h-4 !bg-yellow-500 hover:w-5 hover:h-5 transition-all cursor-crosshair"
         style={{ top: -8 }}
-      />
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        className="w-4 h-4 !bg-yellow-500 hover:w-5 hover:h-5 transition-all cursor-crosshair"
-        style={{ bottom: -8 }}
       />
 
       {/* Delete Button */}
@@ -66,6 +60,7 @@ const ConditionBlock = memo(({ id, data, selected }: NodeProps) => {
       <div className="flex items-center gap-2 mb-2">
         <GitBranch className="w-5 h-5 text-yellow-600" />
         <span className="font-semibold text-sm text-gray-800">Condição</span>
+        <span className="text-xs text-gray-500 ml-auto">ID: {id.slice(0, 8)}</span>
       </div>
 
       {/* Preview */}
@@ -78,6 +73,49 @@ const ConditionBlock = memo(({ id, data, selected }: NodeProps) => {
           <p className="text-gray-400 italic">Clique para editar...</p>
         )}
       </div>
+
+      {/* Multiple Output Handles - One per Condition + Default */}
+      {conditions.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-yellow-200 space-y-2">
+          {conditions.map((condition, index) => (
+            <div key={index} className="flex items-center justify-between text-xs relative">
+              <span className="text-gray-700 truncate flex-1 pr-2" title={`${condition.variable} ${condition.operator} ${condition.value}`}>
+                {index + 1}. {condition.variable} {condition.operator} {condition.value}
+              </span>
+              <div className="w-3 h-3 bg-yellow-500 rounded-full" />
+              <Handle
+                type="source"
+                position={Position.Right}
+                id={`condition-${index}`}
+                className="!w-3 !h-3 !bg-yellow-500 hover:!w-4 hover:!h-4 transition-all cursor-crosshair"
+                style={{ 
+                  right: -6,
+                  top: 'auto',
+                  bottom: 'auto'
+                }}
+              />
+            </div>
+          ))}
+          {/* Default path */}
+          <div className="flex items-center justify-between text-xs relative pt-2 border-t border-yellow-100">
+            <span className="text-gray-500 italic flex-1 pr-2">
+              Padrão (else)
+            </span>
+            <div className="w-3 h-3 bg-yellow-400 rounded-full" />
+            <Handle
+              type="source"
+              position={Position.Right}
+              id="default"
+              className="!w-3 !h-3 !bg-yellow-400 hover:!w-4 hover:!h-4 transition-all cursor-crosshair"
+              style={{ 
+                right: -6,
+                top: 'auto',
+                bottom: 'auto'
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 })

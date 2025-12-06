@@ -39,18 +39,12 @@ const InteractiveButtonsBlock = memo(({ id, data, selected }: NodeProps) => {
         ${selected ? 'border-indigo-500 shadow-lg ring-2 ring-indigo-200' : 'border-indigo-300'}
       `}
     >
-      {/* Handles - Maiores e com hover */}
+      {/* Input Handle */}
       <Handle
         type="target"
         position={Position.Top}
         className="w-4 h-4 !bg-indigo-500 hover:w-5 hover:h-5 transition-all cursor-crosshair"
         style={{ top: -8 }}
-      />
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        className="w-4 h-4 !bg-indigo-500 hover:w-5 hover:h-5 transition-all cursor-crosshair"
-        style={{ bottom: -8 }}
       />
 
       {/* Delete Button */}
@@ -68,6 +62,7 @@ const InteractiveButtonsBlock = memo(({ id, data, selected }: NodeProps) => {
       <div className="flex items-center gap-2 mb-2">
         <Square className="w-5 h-5 text-indigo-600" />
         <span className="font-semibold text-sm text-gray-800">Botões</span>
+        <span className="text-xs text-gray-500 ml-auto">ID: {id.slice(0, 8)}</span>
       </div>
 
       {/* Preview */}
@@ -83,6 +78,31 @@ const InteractiveButtonsBlock = memo(({ id, data, selected }: NodeProps) => {
           </p>
         )}
       </div>
+
+      {/* Multiple Output Handles - One per Button */}
+      {buttons.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-indigo-200 space-y-2">
+          {buttons.map((button, index) => (
+            <div key={button.id} className="flex items-center justify-between text-xs relative">
+              <span className="text-gray-700 truncate flex-1 pr-2" title={button.title}>
+                {index + 1}. {button.title}
+              </span>
+              <div className="w-3 h-3 bg-indigo-500 rounded-full" />
+              <Handle
+                type="source"
+                position={Position.Right}
+                id={button.id}
+                className="!w-3 !h-3 !bg-indigo-500 hover:!w-4 hover:!h-4 transition-all cursor-crosshair"
+                style={{ 
+                  right: -6,
+                  top: 'auto',
+                  bottom: 'auto'
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 })

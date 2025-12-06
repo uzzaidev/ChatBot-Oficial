@@ -33,6 +33,9 @@ const InteractiveListBlock = memo(({ id, data, selected }: NodeProps) => {
     deleteElements({ nodes: [{ id }] })
   }
 
+  // Flatten all rows from all sections for handle creation
+  const allRows = sections.flatMap(section => section.rows)
+
   return (
     <div
       className={`
@@ -42,18 +45,12 @@ const InteractiveListBlock = memo(({ id, data, selected }: NodeProps) => {
         ${selected ? 'border-purple-500 shadow-lg ring-2 ring-purple-200' : 'border-purple-300'}
       `}
     >
-      {/* Handles - Maiores e com hover */}
+      {/* Input Handle */}
       <Handle
         type="target"
         position={Position.Top}
         className="w-4 h-4 !bg-purple-500 hover:w-5 hover:h-5 transition-all cursor-crosshair"
         style={{ top: -8 }}
-      />
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        className="w-4 h-4 !bg-purple-500 hover:w-5 hover:h-5 transition-all cursor-crosshair"
-        style={{ bottom: -8 }}
       />
 
       {/* Delete Button */}
@@ -71,6 +68,7 @@ const InteractiveListBlock = memo(({ id, data, selected }: NodeProps) => {
       <div className="flex items-center gap-2 mb-2">
         <List className="w-5 h-5 text-purple-600" />
         <span className="font-semibold text-sm text-gray-800">Lista Interativa</span>
+        <span className="text-xs text-gray-500 ml-auto">ID: {id.slice(0, 8)}</span>
       </div>
 
       {/* Preview */}
@@ -86,6 +84,36 @@ const InteractiveListBlock = memo(({ id, data, selected }: NodeProps) => {
           </p>
         )}
       </div>
+
+      {/* Multiple Output Handles - One per List Row */}
+      {allRows.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-purple-200 space-y-1.5 max-h-[200px] overflow-y-auto">
+          {sections.map((section) => (
+            <div key={section.id}>
+              <div className="text-xs font-medium text-purple-700 mb-1">{section.title}</div>
+              {section.rows.map((row) => (
+                <div key={row.id} className="flex items-center justify-between text-xs relative pl-2 py-1">
+                  <span className="text-gray-700 truncate flex-1 pr-2" title={row.title}>
+                    • {row.title}
+                  </span>
+                  <div className="w-2.5 h-2.5 bg-purple-500 rounded-full" />
+                  <Handle
+                    type="source"
+                    position={Position.Right}
+                    id={row.id}
+                    className="!w-3 !h-3 !bg-purple-500 hover:!w-4 hover:!h-4 transition-all cursor-crosshair"
+                    style={{ 
+                      right: -6,
+                      top: 'auto',
+                      bottom: 'auto'
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 })
