@@ -148,7 +148,7 @@ export async function PUT(
     // Check if flow exists and user has access
     const { data: existingFlow, error: fetchError } = await supabase
       .from('interactive_flows')
-      .select('client_id')
+      .select('client_id, blocks')
       .eq('id', flowId)
       .single()
 
@@ -223,7 +223,7 @@ export async function PUT(
       updateData.start_block_id = body.startBlockId
 
       // Validate startBlockId exists in blocks (if blocks are being updated)
-      const blocksToValidate = body.blocks || existingFlow
+      const blocksToValidate = body.blocks || existingFlow.blocks
       if (
         blocksToValidate &&
         Array.isArray(blocksToValidate) &&
