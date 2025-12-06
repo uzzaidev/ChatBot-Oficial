@@ -10,38 +10,57 @@
  */
 
 import { memo } from 'react'
-import { Handle, Position, NodeProps } from '@xyflow/react'
-import { GitBranch } from 'lucide-react'
+import { Handle, Position, NodeProps, useReactFlow } from '@xyflow/react'
+import { GitBranch, Trash2 } from 'lucide-react'
 import type { Condition } from '@/types/interactiveFlows'
 
 interface ConditionBlockData {
   conditions?: Condition[]
 }
 
-const ConditionBlock = memo(({ data, selected }: NodeProps) => {
+const ConditionBlock = memo(({ id, data, selected }: NodeProps) => {
   const blockData = data as ConditionBlockData
   const conditions = blockData.conditions || []
+  const { deleteElements } = useReactFlow()
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    deleteElements({ nodes: [{ id }] })
+  }
 
   return (
     <div
       className={`
         px-4 py-3 rounded-lg border-2 bg-white shadow-md
         min-w-[200px] max-w-[300px]
-        transition-all duration-200
+        transition-all duration-200 relative
         ${selected ? 'border-yellow-500 shadow-lg ring-2 ring-yellow-200' : 'border-yellow-300'}
       `}
     >
-      {/* Handles */}
+      {/* Handles - Maiores e com hover */}
       <Handle
         type="target"
         position={Position.Top}
-        className="w-3 h-3 !bg-yellow-500"
+        className="w-4 h-4 !bg-yellow-500 hover:w-5 hover:h-5 transition-all cursor-crosshair"
+        style={{ top: -8 }}
       />
       <Handle
         type="source"
         position={Position.Bottom}
-        className="w-3 h-3 !bg-yellow-500"
+        className="w-4 h-4 !bg-yellow-500 hover:w-5 hover:h-5 transition-all cursor-crosshair"
+        style={{ bottom: -8 }}
       />
+
+      {/* Delete Button */}
+      {selected && (
+        <button
+          onClick={handleDelete}
+          className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors shadow-md z-10"
+          title="Deletar bloco"
+        >
+          <Trash2 className="w-3 h-3" />
+        </button>
+      )}
 
       {/* Header */}
       <div className="flex items-center gap-2 mb-2">

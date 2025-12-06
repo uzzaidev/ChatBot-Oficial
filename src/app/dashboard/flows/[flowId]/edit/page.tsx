@@ -12,7 +12,7 @@
  * @created 2025-12-06
  */
 
-import { use, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ReactFlowProvider } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
@@ -24,11 +24,10 @@ import FlowSidebar from '@/components/flows/FlowSidebar'
 import FlowPropertiesPanel from '@/components/flows/FlowPropertiesPanel'
 
 interface FlowEditorPageProps {
-  params: Promise<{ flowId: string }>
+  params: { flowId: string }
 }
 
-export default function FlowEditorPage(props: FlowEditorPageProps) {
-  const params = use(props.params)
+export default function FlowEditorPage({ params }: FlowEditorPageProps) {
   const { flowId } = params
   const router = useRouter()
   const { loadFlow, reset } = useFlowStore()

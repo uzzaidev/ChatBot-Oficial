@@ -23,11 +23,12 @@ const StartBlock = memo(({ data, selected }: NodeProps) => {
         ${selected ? 'border-green-500 shadow-lg ring-2 ring-green-200' : 'border-green-300'}
       `}
     >
-      {/* Output handle */}
+      {/* Output handle - Maior para melhor UX */}
       <Handle
         type="source"
         position={Position.Bottom}
-        className="w-3 h-3 !bg-green-500"
+        className="w-4 h-4 !bg-green-500 hover:w-5 hover:h-5 transition-all cursor-crosshair"
+        style={{ bottom: -8 }}
       />
 
       {/* Content */}
