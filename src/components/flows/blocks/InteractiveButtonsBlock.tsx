@@ -62,7 +62,7 @@ const InteractiveButtonsBlock = memo(({ id, data, selected }: NodeProps) => {
       <div className="flex items-center gap-2 mb-2">
         <Square className="w-5 h-5 text-indigo-600" />
         <span className="font-semibold text-sm text-gray-800">Botões</span>
-        <span className="text-xs text-gray-500 ml-auto">ID: {id.slice(0, 8)}</span>
+        <span className="text-xs text-gray-500 ml-auto">{id.replace('node-', '').slice(0, 8)}</span>
       </div>
 
       {/* Preview */}
@@ -87,7 +87,6 @@ const InteractiveButtonsBlock = memo(({ id, data, selected }: NodeProps) => {
               <span className="text-gray-700 truncate flex-1 pr-2" title={button.title}>
                 {index + 1}. {button.title}
               </span>
-              <div className="w-3 h-3 bg-indigo-500 rounded-full" />
               <Handle
                 type="source"
                 position={Position.Right}

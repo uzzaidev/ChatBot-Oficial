@@ -206,23 +206,14 @@ export default function FlowPreview({ flow, open, onClose }: FlowPreviewProps) {
         <DialogHeader className="px-6 py-4 border-b">
           <div className="flex items-center justify-between">
             <DialogTitle>Preview do Flow</DialogTitle>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleReset}
-                title="Reiniciar simulação"
-              >
-                <RotateCcw className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleReset}
+              title="Reiniciar simulação"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </Button>
           </div>
         </DialogHeader>
 
