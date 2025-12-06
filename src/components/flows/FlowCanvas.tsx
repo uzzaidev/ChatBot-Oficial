@@ -74,7 +74,16 @@ export default function FlowCanvas() {
   }, [nodes, setLocalNodes])
 
   useEffect(() => {
-    setLocalEdges(edges as Edge[])
+    // Add selection styling to edges
+    const edgesWithStyle = edges.map(edge => ({
+      ...edge,
+      style: {
+        ...edge.style,
+        strokeWidth: edge.selected ? 3 : 2,
+        stroke: edge.selected ? '#F59E0B' : '#3B82F6'
+      }
+    }))
+    setLocalEdges(edgesWithStyle as Edge[])
   }, [edges, setLocalEdges])
 
   // Handle node changes (drag, delete, etc)
