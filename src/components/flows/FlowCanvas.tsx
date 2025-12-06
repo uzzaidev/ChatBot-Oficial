@@ -74,31 +74,68 @@ export default function FlowCanvas() {
   }, [nodes, setLocalNodes])
 
   useEffect(() => {
-    setLocalEdges(edges as Edge[])
+    // Add selection styling to edges
+    const edgesWithStyle = edges.map(edge => ({
+      ...edge,
+      style: {
+        ...edge.style,
+        strokeWidth: edge.selected ? 3 : 2,
+        stroke: edge.selected ? '#F59E0B' : '#3B82F6'
+      }
+    }))
+    setLocalEdges(edgesWithStyle as Edge[])
   }, [edges, setLocalEdges])
 
   // Handle node changes (drag, delete, etc)
   const handleNodesChange: OnNodesChange = useCallback((changes) => {
     onNodesChange(changes)
-    // Update store after a short delay to batch changes
-    setTimeout(() => {
-      setNodes(localNodes as FlowNode[])
-    }, 0)
+    
+    // Check if there are actual changes that should be saved
+    const shouldUpdateStore = changes.some(change => 
+      change.type === 'position' || 
+      change.type === 'remove' || 
+      change.type === 'add'
+    )
+    
+    // Update store only for meaningful changes
+    if (shouldUpdateStore) {
+      setTimeout(() => {
+        setNodes(localNodes as FlowNode[])
+      }, 0)
+    }
   }, [onNodesChange, setNodes, localNodes])
 
   // Handle edge changes
   const handleEdgesChange: OnEdgesChange = useCallback((changes) => {
     onEdgesChange(changes)
-    setTimeout(() => {
-      setEdges(localEdges as FlowNodeEdge[])
-    }, 0)
+    
+    // Check if there are actual changes that should be saved
+    const shouldUpdateStore = changes.some(change => 
+      change.type === 'remove' || 
+      change.type === 'add'
+    )
+    
+    // Update store only for meaningful changes
+    if (shouldUpdateStore) {
+      setTimeout(() => {
+        setEdges(localEdges as FlowNodeEdge[])
+      }, 0)
+    }
   }, [onEdgesChange, setEdges, localEdges])
 
   // Handle new connections
   const onConnect: OnConnect = useCallback((connection: Connection) => {
+    // Constants for ID truncation to keep edge IDs manageable
+    const NODE_ID_LENGTH = 8
+    const HANDLE_ID_LENGTH = 12
+    
+    // Generate shorter edge ID to avoid extremely long IDs
+    const handleSuffix = connection.sourceHandle 
+      ? `-${connection.sourceHandle.slice(0, HANDLE_ID_LENGTH)}` 
+      : ''
     const edge: Edge = {
       ...connection,
-      id: `edge-${connection.source}-${connection.target}`,
+      id: `e-${connection.source?.slice(-NODE_ID_LENGTH)}${handleSuffix}-${connection.target?.slice(-NODE_ID_LENGTH)}`,
       type: 'smoothstep',
       animated: true,
       markerEnd: {
@@ -117,6 +154,7 @@ export default function FlowCanvas() {
 
   // Handle node click (select)
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+    event.stopPropagation()
     setSelectedNode(node.id)
   }, [setSelectedNode])
 
