@@ -1,4 +1,4 @@
-export type ConversationStatus = "bot" | "humano" | "transferido";
+export type ConversationStatus = "bot" | "humano" | "transferido" | "fluxo_inicial";
 
 export type MessageType = "text" | "audio" | "image" | "document" | "video";
 
