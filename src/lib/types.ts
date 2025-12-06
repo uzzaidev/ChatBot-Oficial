@@ -1,6 +1,6 @@
 export type ConversationStatus = "bot" | "humano" | "transferido" | "fluxo_inicial";
 
-export type MessageType = "text" | "audio" | "image" | "document" | "video";
+export type MessageType = "text" | "audio" | "image" | "document" | "video" | "interactive";
 
 export type StoredMediaType = "image" | "audio" | "document" | "video";
 
@@ -284,6 +284,10 @@ export interface ParsedMessage {
   timestamp: string;
   messageId: string;
   metadata?: MediaMetadata;
+  // Interactive message fields
+  interactiveType?: 'button_reply' | 'list_reply';
+  interactiveResponseId?: string;
+  interactiveResponseTitle?: string;
 }
 
 export interface MediaMetadata {

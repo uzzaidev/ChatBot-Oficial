@@ -35,6 +35,9 @@ export const parseMessage = (payload: WhatsAppWebhookPayload): ParsedMessage => 
 
     let content = ''
     let metadata: MediaMetadata | undefined
+    let interactiveType: 'button_reply' | 'list_reply' | undefined
+    let interactiveResponseId: string | undefined
+    let interactiveResponseTitle: string | undefined
 
     if (type === 'text' && 'text' in message) {
       content = message.text.body
@@ -59,6 +62,21 @@ export const parseMessage = (payload: WhatsAppWebhookPayload): ParsedMessage => 
         sha256: message.document.sha256,
         filename: message.document.filename,
       }
+    } else if (type === 'interactive' && 'interactive' in message) {
+      // Parse interactive message response (button or list)
+      const interactive = (message as any).interactive
+
+      if (interactive.type === 'button_reply' && interactive.button_reply) {
+        interactiveType = 'button_reply'
+        interactiveResponseId = interactive.button_reply.id
+        interactiveResponseTitle = interactive.button_reply.title
+        content = interactive.button_reply.title
+      } else if (interactive.type === 'list_reply' && interactive.list_reply) {
+        interactiveType = 'list_reply'
+        interactiveResponseId = interactive.list_reply.id
+        interactiveResponseTitle = interactive.list_reply.title
+        content = interactive.list_reply.title
+      }
     }
 
     return {
@@ -69,6 +87,9 @@ export const parseMessage = (payload: WhatsAppWebhookPayload): ParsedMessage => 
       timestamp,
       messageId,
       metadata,
+      interactiveType,
+      interactiveResponseId,
+      interactiveResponseTitle,
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
