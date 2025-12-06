@@ -98,7 +98,7 @@ export default function FlowCanvas() {
   const onConnect: OnConnect = useCallback((connection: Connection) => {
     const edge: Edge = {
       ...connection,
-      id: `edge-${connection.source}-${connection.target}`,
+      id: `edge-${connection.source}-${connection.sourceHandle || 'default'}-${connection.target}`,
       type: 'smoothstep',
       animated: true,
       markerEnd: {
