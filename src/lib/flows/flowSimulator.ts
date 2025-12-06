@@ -93,8 +93,8 @@ export class FlowSimulator {
         // Evaluate conditions
         const conditions = block.data.conditions || []
         
-        for (let i = 0; i < conditions.length; i++) {
-          const condition = conditions[i]
+        for (let conditionIndex = 0; conditionIndex < conditions.length; conditionIndex++) {
+          const condition = conditions[conditionIndex]
           if (this.evaluateCondition(condition)) {
             // First try nextBlockId for backward compatibility
             if (condition.nextBlockId) {
@@ -103,7 +103,7 @@ export class FlowSimulator {
             
             // Then try edge with sourceHandle matching condition index
             const conditionEdge = this.flow.edges.find(e => 
-              e.source === blockId && e.sourceHandle === `condition-${i}`
+              e.source === blockId && e.sourceHandle === `condition-${conditionIndex}`
             )
             if (conditionEdge?.target) {
               return this.executeBlock(conditionEdge.target)

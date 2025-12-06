@@ -96,9 +96,11 @@ export default function FlowCanvas() {
 
   // Handle new connections
   const onConnect: OnConnect = useCallback((connection: Connection) => {
+    // Generate shorter edge ID to avoid extremely long IDs
+    const handleSuffix = connection.sourceHandle ? `-${connection.sourceHandle.slice(0, 12)}` : ''
     const edge: Edge = {
       ...connection,
-      id: `edge-${connection.source}-${connection.sourceHandle || 'default'}-${connection.target}`,
+      id: `e-${connection.source?.slice(-8)}${handleSuffix}-${connection.target?.slice(-8)}`,
       type: 'smoothstep',
       animated: true,
       markerEnd: {

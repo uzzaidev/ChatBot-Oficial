@@ -33,9 +33,6 @@ const InteractiveListBlock = memo(({ id, data, selected }: NodeProps) => {
     deleteElements({ nodes: [{ id }] })
   }
 
-  // Flatten all rows from all sections for handle creation
-  const allRows = sections.flatMap(section => section.rows)
-
   return (
     <div
       className={`
@@ -86,7 +83,7 @@ const InteractiveListBlock = memo(({ id, data, selected }: NodeProps) => {
       </div>
 
       {/* Multiple Output Handles - One per List Row */}
-      {allRows.length > 0 && (
+      {totalRows > 0 && (
         <div className="mt-3 pt-3 border-t border-purple-200 space-y-1.5 max-h-[200px] overflow-y-auto">
           {sections.map((section) => (
             <div key={section.id}>
