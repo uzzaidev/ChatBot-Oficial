@@ -93,7 +93,8 @@ export class FlowSimulator {
         // Evaluate conditions
         const conditions = block.data.conditions || []
         
-        for (const [conditionIndex, condition] of conditions.entries()) {
+        for (let conditionIndex = 0; conditionIndex < conditions.length; conditionIndex++) {
+          const condition = conditions[conditionIndex]
           if (this.evaluateCondition(condition)) {
             // First try nextBlockId for backward compatibility
             if (condition.nextBlockId) {
