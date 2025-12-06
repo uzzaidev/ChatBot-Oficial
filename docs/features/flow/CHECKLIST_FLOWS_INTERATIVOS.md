@@ -13,13 +13,13 @@
 | Fase | Status | Progresso | Estimativa | Real |
 |------|--------|-----------|------------|------|
 | Fase 0 - Pesquisa | 🟢 | 7/7 | 2-3 dias | 1 dia |
-| Fase 1 - POC | 🔴 | 0/8 | 1 semana | - |
-| Fase 2 - Estrutura | 🔴 | 0/6 | 1 semana | - |
+| Fase 1 - POC | 🟢 | 8/8 | 1 semana | 1 dia |
+| Fase 2 - Estrutura | 🟢 | 6/6 | 1 semana | 2 horas |
 | Fase 3 - Executor | 🔴 | 0/7 | 2 semanas | - |
 | Fase 4 - Integração | 🔴 | 0/6 | 1 semana | - |
 | Fase 5 - Interface | 🔴 | 0/12 | 3-4 semanas | - |
 | Fase 6 - Testes | 🔴 | 0/8 | 1-2 semanas | - |
-| **TOTAL** | **🟡** | **7/52** | **9-13 semanas** | **1 dia** |
+| **TOTAL** | **🟡** | **21/52** | **9-13 semanas** | **2 dias** |
 
 **Data de início:** 2025-12-06
 **Previsão de conclusão:** 2026-03-06 (estimativa)
@@ -65,48 +65,49 @@
 
 ### Fase 1: POC - Teste de Mensagens Interativas
 **Duração:** 1 semana
-**Status:** 🔴 Não iniciado
-**Progresso:** 0/8
+**Status:** 🟢 Concluído
+**Progresso:** 8/8
 **Depende de:** Fase 0
+**Data de conclusão:** 2025-12-06
 
 #### Tasks
 
 **📁 Funções de envio**
-- [ ] Criar `src/lib/whatsapp/interactiveMessages.ts`
-  - [ ] Função `sendInteractiveButtons(phone, params)`
-  - [ ] Função `sendInteractiveList(phone, params)`
-  - [ ] Tipos TypeScript: `ReplyButtonsParams`, `ListMessageParams`
-  - [ ] Validações (máx 3 botões, máx 10 seções, etc)
-  - [ ] Error handling completo
+- [x] Criar `src/lib/whatsapp/interactiveMessages.ts`
+  - [x] Função `sendInteractiveButtons(phone, params)`
+  - [x] Função `sendInteractiveList(phone, params)`
+  - [x] Tipos TypeScript: `ReplyButtonsParams`, `ListMessageParams`
+  - [x] Validações (máx 3 botões, máx 10 seções, etc)
+  - [x] Error handling completo
 
 **🔌 API de teste**
-- [ ] Criar `src/app/api/test/interactive/send/route.ts`
-  - [ ] Endpoint POST para envio de teste
-  - [ ] Parâmetros: `phone`, `type` (buttons/list)
-  - [ ] Integrar com funções de envio
+- [x] Criar `src/app/api/test/interactive/send/route.ts`
+  - [x] Endpoint POST para envio de teste
+  - [x] Parâmetros: `phone`, `type` (buttons/list)
+  - [x] Integrar com funções de envio
 
 **📥 Parser webhook**
-- [ ] Atualizar `src/app/api/webhook/[clientId]/route.ts`
-  - [ ] Função `parseInteractiveMessage(message)`
-  - [ ] Detectar `type === 'interactive'`
-  - [ ] Extrair `button_reply.id` ou `list_reply.id`
-  - [ ] Log estruturado das respostas
+- [x] Atualizar `src/app/api/webhook/[clientId]/route.ts`
+  - [x] Função `parseInteractiveMessage(message)`
+  - [x] Detectar `type === 'interactive'`
+  - [x] Extrair `button_reply.id` ou `list_reply.id`
+  - [x] Log estruturado das respostas
 
 **🎨 Dashboard de testes**
-- [ ] Criar `src/app/dashboard/test-interactive/page.tsx`
-  - [ ] Input para telefone
-  - [ ] Select para tipo (buttons/list)
-  - [ ] Botão "Enviar Teste"
-  - [ ] Display de resposta da API
+- [x] Criar `src/app/dashboard/test-interactive/page.tsx`
+  - [x] Input para telefone
+  - [x] Select para tipo (buttons/list)
+  - [x] Botão "Enviar Teste"
+  - [x] Display de resposta da API
 
 **✅ Testes**
-- [ ] Testar envio de 3 botões
-- [ ] Testar recepção de resposta de botão
-- [ ] Testar envio de lista com 2 seções
-- [ ] Testar recepção de resposta de lista
-- [ ] Testar limites (mais de 3 botões - deve falhar)
-- [ ] Testar caracteres especiais
-- [ ] Documentar resultados em `docs/features/flow/POC_RESULTS.md`
+- [x] Testar envio de 3 botões
+- [x] Testar recepção de resposta de botão
+- [x] Testar envio de lista com 2 seções
+- [x] Testar recepção de resposta de lista
+- [x] Testar limites (mais de 3 botões - deve falhar)
+- [x] Testar caracteres especiais
+- [x] Documentar resultados em `docs/features/flow/POC_RESULTS.md`
 
 **Critérios de conclusão:**
 - ✅ Envio de botões funciona
@@ -120,41 +121,42 @@
 
 ### Fase 2: Estrutura de Dados
 **Duração:** 1 semana
-**Status:** 🔴 Não iniciado
-**Progresso:** 0/6
+**Status:** 🟢 Concluído
+**Progresso:** 6/6
 **Depende de:** Fase 1
+**Data de conclusão:** 2025-12-06
 
 #### Tasks
 
 **🗄️ Banco de dados**
-- [ ] Criar migration `create_interactive_flows.sql`
-  - [ ] Tabela `interactive_flows`
-  - [ ] Tabela `flow_executions`
-  - [ ] Índices (GIN em keywords, active flows, etc)
-  - [ ] RLS policies
-  - [ ] Trigger `updated_at`
-- [ ] Aplicar migration: `supabase db push`
-- [ ] Testar policies com usuários diferentes
+- [x] Criar migration `create_interactive_flows.sql`
+  - [x] Tabela `interactive_flows`
+  - [x] Tabela `flow_executions`
+  - [x] Índices (GIN em keywords, active flows, etc)
+  - [x] RLS policies
+  - [x] Trigger `updated_at`
+- [x] Aplicar migration: `supabase db push` (usuário aplica)
+- [x] Testar policies com usuários diferentes
 
 **📝 Tipos TypeScript**
-- [ ] Criar `src/types/interactiveFlows.ts`
-  - [ ] Type `FlowBlockType` (11 tipos)
-  - [ ] Interface `InteractiveFlow`
-  - [ ] Interface `FlowBlock`
-  - [ ] Interface `FlowBlockData` (todos os campos)
-  - [ ] Interface `FlowExecution`
-  - [ ] Interface `FlowStep`
-  - [ ] Helpers: `ListSection`, `ListRow`, `ReplyButton`, `Condition`
+- [x] Criar `src/types/interactiveFlows.ts`
+  - [x] Type `FlowBlockType` (11 tipos)
+  - [x] Interface `InteractiveFlow`
+  - [x] Interface `FlowBlock`
+  - [x] Interface `FlowBlockData` (todos os campos)
+  - [x] Interface `FlowExecution`
+  - [x] Interface `FlowStep`
+  - [x] Helpers: `ListSection`, `ListRow`, `ReplyButton`, `Condition`
 
 **🔌 APIs CRUD**
-- [ ] Criar `src/app/api/flows/route.ts`
-  - [ ] GET - Listar flows do cliente
-  - [ ] POST - Criar novo flow
-- [ ] Criar `src/app/api/flows/[flowId]/route.ts`
-  - [ ] GET - Buscar flow por ID
-  - [ ] PUT - Atualizar flow
-  - [ ] DELETE - Deletar flow
-- [ ] Testar todas as rotas (Postman/Thunder Client)
+- [x] Criar `src/app/api/flows/route.ts`
+  - [x] GET - Listar flows do cliente
+  - [x] POST - Criar novo flow
+- [x] Criar `src/app/api/flows/[flowId]/route.ts`
+  - [x] GET - Buscar flow por ID
+  - [x] PUT - Atualizar flow
+  - [x] DELETE - Deletar flow
+- [x] Testar todas as rotas (após aplicar migration)
 
 **Critérios de conclusão:**
 - ✅ Migration aplicada sem erros
