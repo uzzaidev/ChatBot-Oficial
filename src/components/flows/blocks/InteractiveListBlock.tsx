@@ -65,7 +65,7 @@ const InteractiveListBlock = memo(({ id, data, selected }: NodeProps) => {
       <div className="flex items-center gap-2 mb-2">
         <List className="w-5 h-5 text-purple-600" />
         <span className="font-semibold text-sm text-gray-800">Lista Interativa</span>
-        <span className="text-xs text-gray-500 ml-auto">ID: {id.slice(0, 8)}</span>
+        <span className="text-xs text-gray-500 ml-auto">{id.replace('node-', '').slice(0, 8)}</span>
       </div>
 
       {/* Preview */}
@@ -84,7 +84,7 @@ const InteractiveListBlock = memo(({ id, data, selected }: NodeProps) => {
 
       {/* Multiple Output Handles - One per List Row */}
       {totalRows > 0 && (
-        <div className="mt-3 pt-3 border-t border-purple-200 space-y-1.5 max-h-[200px] overflow-y-auto">
+        <div className="mt-3 pt-3 border-t border-purple-200 space-y-1.5">
           {sections.map((section) => (
             <div key={section.id}>
               <div className="text-xs font-medium text-purple-700 mb-1">{section.title}</div>
@@ -93,7 +93,6 @@ const InteractiveListBlock = memo(({ id, data, selected }: NodeProps) => {
                   <span className="text-gray-700 truncate flex-1 pr-2" title={row.title}>
                     • {row.title}
                   </span>
-                  <div className="w-2.5 h-2.5 bg-purple-500 rounded-full" />
                   <Handle
                     type="source"
                     position={Position.Right}

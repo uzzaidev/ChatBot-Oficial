@@ -64,7 +64,7 @@ const MessageBlock = memo(({ id, data, selected }: NodeProps) => {
       <div className="flex items-center gap-2 mb-2">
         <MessageSquare className="w-5 h-5 text-blue-600" />
         <span className="font-semibold text-sm text-gray-800">Mensagem</span>
-        <span className="text-xs text-gray-500 ml-auto">ID: {id.slice(0, 8)}</span>
+        <span className="text-xs text-gray-500 ml-auto">{id.replace('node-', '').slice(0, 8)}</span>
       </div>
 
       {/* Preview */}

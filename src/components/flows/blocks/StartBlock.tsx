@@ -40,7 +40,7 @@ const StartBlock = memo(({ id, data, selected }: NodeProps) => {
           <div className="font-semibold text-sm text-gray-900">Início</div>
           <div className="text-xs text-gray-500">Bloco inicial</div>
         </div>
-        <span className="text-xs text-gray-500">ID: {id.slice(0, 8)}</span>
+        <span className="text-xs text-gray-500">{id.replace('node-', '').slice(0, 8)}</span>
       </div>
     </div>
   )
