@@ -15,20 +15,30 @@ import { useFlowStore } from '@/stores/flowStore'
 import { useState } from 'react'
 import FlowPreview from './FlowPreview'
 import type { InteractiveFlow } from '@/types/interactiveFlows'
+import { useToast } from '@/hooks/use-toast'
 
 export default function FlowToolbar() {
   const router = useRouter()
   const { flowId, flowName, flowDescription, isActive, triggerType, triggerKeywords, nodes, edges, startBlockId, isSaving, hasUnsavedChanges, lastSavedAt, saveFlow } = useFlowStore()
   const [saving, setSaving] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
+  const { toast } = useToast()
 
   const handleSave = async () => {
     setSaving(true)
     try {
       await saveFlow()
-    } catch (error) {
+      toast({
+        title: "Flow salvo com sucesso",
+        description: "Todas as alterações foram salvas.",
+      })
+    } catch (error: any) {
       console.error('Save failed:', error)
-      alert('Erro ao salvar flow')
+      toast({
+        title: "Erro ao salvar flow",
+        description: error.message || "Ocorreu um erro ao salvar o flow. Tente novamente.",
+        variant: "destructive",
+      })
     } finally {
       setSaving(false)
     }
