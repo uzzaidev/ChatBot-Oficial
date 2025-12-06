@@ -80,18 +80,38 @@ export default function FlowCanvas() {
   // Handle node changes (drag, delete, etc)
   const handleNodesChange: OnNodesChange = useCallback((changes) => {
     onNodesChange(changes)
-    // Update store after a short delay to batch changes
-    setTimeout(() => {
-      setNodes(localNodes as FlowNode[])
-    }, 0)
+    
+    // Check if there are actual changes that should be saved
+    const shouldUpdateStore = changes.some(change => 
+      change.type === 'position' || 
+      change.type === 'remove' || 
+      change.type === 'add'
+    )
+    
+    // Update store only for meaningful changes
+    if (shouldUpdateStore) {
+      setTimeout(() => {
+        setNodes(localNodes as FlowNode[])
+      }, 0)
+    }
   }, [onNodesChange, setNodes, localNodes])
 
   // Handle edge changes
   const handleEdgesChange: OnEdgesChange = useCallback((changes) => {
     onEdgesChange(changes)
-    setTimeout(() => {
-      setEdges(localEdges as FlowNodeEdge[])
-    }, 0)
+    
+    // Check if there are actual changes that should be saved
+    const shouldUpdateStore = changes.some(change => 
+      change.type === 'remove' || 
+      change.type === 'add'
+    )
+    
+    // Update store only for meaningful changes
+    if (shouldUpdateStore) {
+      setTimeout(() => {
+        setEdges(localEdges as FlowNodeEdge[])
+      }, 0)
+    }
   }, [onEdgesChange, setEdges, localEdges])
 
   // Handle new connections
@@ -169,6 +189,8 @@ export default function FlowCanvas() {
         attributionPosition="bottom-left"
         snapToGrid
         snapGrid={[15, 15]}
+        edgesFocusable={true}
+        edgesSelectable={true}
         defaultEdgeOptions={{
           type: 'smoothstep',
           animated: true,
