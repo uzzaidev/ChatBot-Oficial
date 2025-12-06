@@ -117,6 +117,7 @@ export default function FlowCanvas() {
 
   // Handle node click (select)
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+    event.stopPropagation()
     setSelectedNode(node.id)
   }, [setSelectedNode])
 

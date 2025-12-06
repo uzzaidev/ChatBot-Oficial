@@ -174,7 +174,7 @@ export default function FlowPreview({ flow, open, onClose }: FlowPreviewProps) {
     setMessages(prev => [...prev, newMessage])
   }
 
-  const handleInteractiveChoice = async (choiceId: string, choiceTitle: string, nextBlockId: string) => {
+  const handleInteractiveChoice = async (choiceId: string, choiceTitle: string, nextBlockId?: string) => {
     if (!simulator || isProcessing) return
 
     // Add user's choice
@@ -269,7 +269,7 @@ export default function FlowPreview({ flow, open, onClose }: FlowPreviewProps) {
  */
 interface MessageBubbleProps {
   message: PreviewMessage
-  onInteractiveChoice: (choiceId: string, choiceTitle: string, nextBlockId: string) => void
+  onInteractiveChoice: (choiceId: string, choiceTitle: string, nextBlockId?: string) => void
   disabled: boolean
 }
 

@@ -122,6 +122,8 @@ export const useFlowStore = create<FlowState>()(
             id: edge.id,
             source: edge.source,
             target: edge.target,
+            sourceHandle: edge.sourceHandle,
+            targetHandle: edge.targetHandle,
             label: edge.label,
             type: 'smoothstep',
             animated: true,
@@ -168,6 +170,8 @@ export const useFlowStore = create<FlowState>()(
           id: edge.id,
           source: edge.source,
           target: edge.target,
+          sourceHandle: edge.sourceHandle,
+          targetHandle: edge.targetHandle,
           label: edge.label,
           type: edge.type === 'smoothstep' ? 'default' : (edge.type as any)
         }))
