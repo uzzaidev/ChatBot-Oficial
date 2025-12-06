@@ -15,11 +15,11 @@
 | Fase 0 - Pesquisa | 🟢 | 7/7 | 2-3 dias | 1 dia |
 | Fase 1 - POC | 🟢 | 8/8 | 1 semana | 1 dia |
 | Fase 2 - Estrutura | 🟢 | 6/6 | 1 semana | 2 horas |
-| Fase 3 - Executor | 🔴 | 0/7 | 2 semanas | - |
-| Fase 4 - Integração | 🔴 | 0/6 | 1 semana | - |
-| Fase 5 - Interface | 🔴 | 0/12 | 3-4 semanas | - |
-| Fase 6 - Testes | 🔴 | 0/8 | 1-2 semanas | - |
-| **TOTAL** | **🟡** | **21/52** | **9-13 semanas** | **2 dias** |
+| Fase 3 - Executor + Status | 🔴 | 0/10 | 2 semanas | - |
+| Fase 4 - Integração Webhook | 🔴 | 0/9 | 1 semana | - |
+| Fase 5 - Interface + Preview | 🔴 | 0/15 | 3-4 semanas | - |
+| Fase 6 - Testes | 🔴 | 0/10 | 1-2 semanas | - |
+| **TOTAL** | **🟡** | **21/65** | **9-13 semanas** | **2 dias** |
 
 **Data de início:** 2025-12-06
 **Previsão de conclusão:** 2026-03-06 (estimativa)
@@ -138,6 +138,19 @@
 - [x] Aplicar migration: `supabase db push` (usuário aplica)
 - [x] Testar policies com usuários diferentes
 
+**⚠️ IMPORTANTE - Novo Status:**
+Adicionar novo status `fluxo_inicial` à tabela `clientes_whatsapp`:
+```sql
+-- Migration adicional
+ALTER TABLE clientes_whatsapp
+  DROP CONSTRAINT IF EXISTS clientes_whatsapp_status_check;
+
+ALTER TABLE clientes_whatsapp
+  ADD CONSTRAINT clientes_whatsapp_status_check
+  CHECK (status IN ('bot', 'humano', 'transferido', 'fluxo_inicial'));
+```
+**Status `fluxo_inicial`:** Cliente está navegando no flow de opções, agente não pode responder ainda.
+
 **📝 Tipos TypeScript**
 - [x] Criar `src/types/interactiveFlows.ts`
   - [x] Type `FlowBlockType` (11 tipos)
@@ -166,12 +179,12 @@
 
 ---
 
-## ⚙️ Sprint 3: Executor de Flows (2 semanas)
+## ⚙️ Sprint 3: Executor de Flows + Controle de Status (2 semanas)
 
-### Fase 3: Executor de Flows
+### Fase 3: Executor de Flows + Controle de Status
 **Duração:** 2 semanas
 **Status:** 🔴 Não iniciado
-**Progresso:** 0/7
+**Progresso:** 0/10
 **Depende de:** Fase 2
 
 #### Tasks
@@ -179,6 +192,7 @@
 **🏃 FlowExecutor class**
 - [ ] Criar `src/lib/flows/flowExecutor.ts`
   - [ ] Método `startFlow(flowId, clientId, phone)`
+    - [ ] **IMPORTANTE:** Ao iniciar flow, mudar status do contato para `'fluxo_inicial'`
   - [ ] Método `continueFlow(clientId, phone, userResponse, interactiveId)`
   - [ ] Método privado `executeBlock(executionId, blockId, flow)`
   - [ ] Método privado `determineNextBlock(...)`
@@ -192,9 +206,20 @@
 - [ ] Implementar `executeActionBlock()` (set_variable, increment, add_tag)
 - [ ] Implementar `executeDelayBlock()` (básico)
 - [ ] Implementar `executeWebhookBlock()`
-- [ ] Implementar `transferToAI()`
+
+**🎯 Controle de Status (NOVO)**
+- [ ] Implementar `transferToBot()`
+  - [ ] Atualizar status para `'bot'`
+  - [ ] Marcar flow como `'transferred_ai'`
+  - [ ] Log da transferência
 - [ ] Implementar `transferToHuman()`
+  - [ ] Atualizar status para `'humano'`
+  - [ ] Marcar flow como `'transferred_human'`
+  - [ ] Notificar agente (email/notificação)
 - [ ] Implementar `completeFlow()`
+  - [ ] Se não houver transferência explícita, manter status `'bot'` (padrão)
+  - [ ] Marcar flow como `'completed'`
+  - [ ] Limpar estado de execução
 
 **🧪 Testes unitários**
 - [ ] Criar `src/lib/flows/__tests__/flowExecutor.test.ts`
@@ -219,52 +244,82 @@
 
 ---
 
-## 🔗 Sprint 4: Integração com Pipeline (1 semana)
+## 🔗 Sprint 4: Integração Webhook + Roteamento por Status (1 semana)
 
-### Fase 4: Integração com Pipeline
+### Fase 4: Integração Webhook + Roteamento por Status
 **Duração:** 1 semana
 **Status:** 🔴 Não iniciado
-**Progresso:** 0/6
+**Progresso:** 0/9
 **Depende de:** Fase 3
 
 #### Tasks
+
+**🚦 Lógica de Roteamento por Status (CRÍTICO)**
+- [ ] Atualizar `src/flows/chatbotFlow.ts` - Adicionar verificação de status ANTES de processar
+  ```typescript
+  // PSEUDO-CÓDIGO
+  const customer = await getOrCreateCustomer(phone);
+
+  // 1. Se status === 'fluxo_inicial' → Processar via FlowExecutor
+  if (customer.status === 'fluxo_inicial') {
+    await flowExecutor.continueFlow(clientId, phone, message, interactiveId);
+    return; // NÃO vai para bot/humano
+  }
+
+  // 2. Se status === 'humano' ou 'transferido' → Enviar para agente
+  if (customer.status === 'humano' || customer.status === 'transferido') {
+    await notifyAgent(phone, message);
+    return; // NÃO vai para bot
+  }
+
+  // 3. Se status === 'bot' → Continuar pipeline normal (IA)
+  // ... resto do pipeline ...
+  ```
 
 **🎯 Node checkInteractiveFlow**
 - [ ] Criar `src/nodes/checkInteractiveFlow.ts`
   - [ ] Interface `CheckInteractiveFlowInput`
   - [ ] Interface `CheckInteractiveFlowOutput`
-  - [ ] Lógica: verificar execução ativa
-  - [ ] Lógica: verificar trigger "always"
+  - [ ] Lógica: verificar se é **primeiro contato** (ou trigger específico)
+  - [ ] Lógica: verificar trigger "always" (sempre inicia flow)
   - [ ] Lógica: verificar trigger "keyword"
+  - [ ] Se match → Iniciar flow e mudar status para `'fluxo_inicial'`
   - [ ] Error handling (fail-safe para IA)
 
 **🔄 Integração chatbotFlow**
-- [ ] Atualizar `src/flows/chatbotFlow.ts`
-  - [ ] Adicionar NODE 15 após NODE 9
+- [ ] Adicionar NODE 15 (checkInteractiveFlow) ANTES de processar IA
   - [ ] Importar `checkInteractiveFlow`
+  - [ ] Executar APENAS se `status === 'bot'` (primeiro contato)
   - [ ] Passar parâmetros corretos
-  - [ ] Verificar `shouldContinueToAI`
-  - [ ] Early return se flow executado
+  - [ ] Se flow iniciado → Early return (não processa IA)
 
-**📨 Parser de mensagens**
+**📨 Parser de mensagens interativas**
 - [ ] Atualizar `src/nodes/parseMessage.ts`
   - [ ] Adicionar type `'interactive'` ao `ParsedMessage`
   - [ ] Detectar `message.type === 'interactive'`
   - [ ] Extrair `button_reply` ou `list_reply`
   - [ ] Retornar campos `interactiveType`, `interactiveResponseId`
 
-**🧪 Testes de integração**
-- [ ] Flow "always" inicia automaticamente
-- [ ] Flow "keyword" inicia ao enviar keyword
+**🧪 Testes de integração - Status**
+- [ ] Primeiro contato → Flow inicia automaticamente
+- [ ] Status muda para `'fluxo_inicial'` ao iniciar flow
+- [ ] Enquanto em `'fluxo_inicial'`, agente NÃO recebe mensagens
 - [ ] Resposta de botão continua flow
-- [ ] Resposta de lista continua flow
-- [ ] Após flow terminar, próxima msg vai para IA
-- [ ] Múltiplos contatos com flows simultâneos
+- [ ] Ao escolher "Falar com atendente" → Status muda para `'humano'`
+- [ ] Ao escolher "Bot" → Status muda para `'bot'`
+- [ ] Após mudança de status, roteamento funciona corretamente
 
 **📄 Endpoint de teste E2E**
 - [ ] Criar `src/app/api/test/flow-execution/route.ts`
   - [ ] Simular início de flow
-  - [ ] Retornar execution ID
+  - [ ] Testar mudança de status
+  - [ ] Retornar execution ID e status
+
+**📚 Documentação da lógica de roteamento**
+- [ ] Criar `docs/features/flow/ROUTING_LOGIC.md`
+  - [ ] Diagrama de decisão (status → roteamento)
+  - [ ] Exemplos de cada cenário
+  - [ ] Fluxo completo: primeiro contato → flow → bot/humano
 
 **Critérios de conclusão:**
 - ✅ Node integrado no pipeline
@@ -274,12 +329,12 @@
 
 ---
 
-## 🎨 Sprint 5-6: Interface Drag-and-Drop (3-4 semanas)
+## 🎨 Sprint 5-6: Interface Drag-and-Drop + Preview (3-4 semanas)
 
-### Fase 5: Interface Drag-and-Drop
+### Fase 5: Interface Drag-and-Drop + Preview/Simulador
 **Duração:** 3-4 semanas
 **Status:** 🔴 Não iniciado
-**Progresso:** 0/12
+**Progresso:** 0/15
 **Depende de:** Fase 4
 
 #### Tasks
@@ -370,12 +425,36 @@
 - [ ] Keyboard shortcuts (Ctrl+S, Delete, Esc)
 - [ ] Undo/Redo (opcional)
 
+**🎭 Preview/Simulador de Flow (NOVO - CRÍTICO)**
+- [ ] Criar `src/components/flows/FlowPreview.tsx`
+  - [ ] Modal/Dialog com simulador de chat
+  - [ ] Interface de mensagens (estilo WhatsApp)
+  - [ ] Renderizar blocos do flow em ordem
+  - [ ] Simular listas interativas (clicar em opções)
+  - [ ] Simular botões (clicar em botões)
+  - [ ] Navegar pelo fluxo sem enviar mensagens reais
+  - [ ] Mostrar transições entre blocos
+  - [ ] Indicar quando vai para "Bot" ou "Humano"
+
+- [ ] Adicionar botão "Preview" no FlowToolbar
+  - [ ] Ao clicar, abrir modal de preview
+  - [ ] Carregar flow atual do store
+  - [ ] Iniciar simulação do bloco inicial
+
+- [ ] Lógica de simulação
+  - [ ] Criar `src/lib/flows/flowSimulator.ts`
+  - [ ] Similar ao FlowExecutor, mas SEM enviar mensagens
+  - [ ] Apenas navega pelos blocos
+  - [ ] Retorna próximo bloco baseado em escolha simulada
+  - [ ] Armazena histórico de navegação (para voltar)
+
 **Critérios de conclusão:**
 - ✅ Interface drag-and-drop funcional
 - ✅ Todos os blocos com componentes customizados
 - ✅ Propriedades editáveis
 - ✅ Auto-save funcionando
 - ✅ Performance 60 FPS
+- ✅ Preview/Simulador funcional (usuário testa flow antes de publicar)
 
 ---
 
@@ -384,7 +463,7 @@
 ### Fase 6: Testes e Refinamento
 **Duração:** 1-2 semanas
 **Status:** 🔴 Não iniciado
-**Progresso:** 0/8
+**Progresso:** 0/10
 **Depende de:** Fase 5
 
 #### Tasks
@@ -396,11 +475,22 @@
   - [ ] Teste: conectar blocos
   - [ ] Teste: editar propriedades
   - [ ] Teste: salvar flow
+  - [ ] Teste: preview do flow (abrir modal, navegar)
+
 - [ ] Criar `tests/e2e/flows/execute-flow.spec.ts`
   - [ ] Teste: flow executa ao enviar keyword
   - [ ] Teste: resposta de botão continua flow
   - [ ] Teste: resposta de lista continua flow
-  - [ ] Teste: transferir para IA
+  - [ ] Teste: transferir para Bot (status muda para 'bot')
+  - [ ] Teste: transferir para Humano (status muda para 'humano')
+
+- [ ] Criar `tests/e2e/flows/status-routing.spec.ts` (NOVO)
+  - [ ] Teste: primeiro contato → status 'fluxo_inicial'
+  - [ ] Teste: mensagem em 'fluxo_inicial' NÃO vai para agente
+  - [ ] Teste: escolher "Falar com atendente" → muda para 'humano'
+  - [ ] Teste: mensagem em 'humano' vai para agente
+  - [ ] Teste: escolher "Bot" → muda para 'bot'
+  - [ ] Teste: mensagem em 'bot' vai para IA
 
 **⚡ Testes de performance**
 - [ ] Testar com flow de 50+ blocos
@@ -482,11 +572,37 @@ Atualizar após lançamento:
 - [ ] Compartilhar flows entre clientes
 - [ ] Importar/exportar flows (JSON)
 - [ ] Versionamento de flows
-- [ ] Preview mode (testar flow sem enviar)
+- [x] ~~Preview mode (testar flow sem enviar)~~ ✅ Implementado na Fase 5
 - [ ] Integração com Zapier/Make
+- [ ] Histórico de mudanças de status (audit log)
+- [ ] Métricas de conversão por flow (quantos chegam ao final)
+- [ ] Heatmap de navegação (quais opções mais clicadas)
 
 ---
 
 **Última atualização:** 2025-12-06
-**Responsável:** -
+**Responsável:** Luis Boff + Claude Code
 **Revisado por:** -
+
+---
+
+## 🆕 Mudanças Importantes (Changelog)
+
+### 2025-12-06 - Atualização do Plano
+**Adicionado:**
+- ✅ **Novo status `fluxo_inicial`** para controlar quando cliente está em flow
+- ✅ **Lógica de roteamento por status** no webhook (flow → bot → humano)
+- ✅ **Preview/Simulador** de flows (testar antes de publicar)
+- ✅ **Customização total** para o cliente montar fluxos
+- ✅ **Controle de acesso do agente** (não pode responder em `fluxo_inicial`)
+
+**Modificado:**
+- 📝 Fase 3: Adicionadas 3 tasks (controle de status)
+- 📝 Fase 4: Adicionadas 3 tasks (roteamento por status)
+- 📝 Fase 5: Adicionadas 3 tasks (preview/simulador)
+- 📝 Fase 6: Adicionadas 2 tasks (testes de status)
+- 📊 Total de tasks: 52 → 65
+
+**Progresso Atual:**
+- ✅ Fases 0, 1, 2 concluídas (21/65 tasks)
+- ⏳ Próximo: Fase 3 (Executor + Controle de Status)
