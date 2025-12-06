@@ -17,14 +17,14 @@
 | Fase 2 - Estrutura | 🟢 | 6/6 | 1 semana | 2 horas |
 | Fase 3 - Executor + Status | 🟢 | 10/10 | 2 semanas | 1 dia |
 | Fase 4 - Integração Webhook | 🟢 | 9/9 | 1 semana | 2 horas |
-| Fase 5 - Interface + Preview | 🟡 | 11/15 | 3-4 semanas | 1 dia (em progresso) |
+| Fase 5 - Interface + Preview | 🟢 | 15/15 | 3-4 semanas | 1 dia |
 | Fase 6 - Testes | 🔴 | 0/10 | 1-2 semanas | - |
-| **TOTAL** | **🟡** | **51/65** | **9-13 semanas** | **4 dias + 4 horas (em progresso)** |
+| **TOTAL** | **🟡** | **55/65** | **9-13 semanas** | **4 dias + 4 horas** |
 
 **Data de início:** 2025-12-06
 **Última atualização:** 2025-12-06
 **Previsão de conclusão:** 2026-03-06 (estimativa original)
-**Taxa de progresso:** 78.5% (51/65 tasks completadas)
+**Taxa de progresso:** 84.6% (55/65 tasks completadas)
 
 ---
 
@@ -338,10 +338,11 @@ ALTER TABLE clientes_whatsapp
 
 ### Fase 5: Interface Drag-and-Drop + Preview/Simulador
 **Duração:** 3-4 semanas
-**Status:** 🟡 Em progresso
-**Progresso:** 11/15 (73%)
+**Status:** 🟢 Concluído
+**Progresso:** 15/15 (100%) ✅
 **Depende de:** Fase 4
 **Data de início:** 2025-12-06
+**Data de conclusão:** 2025-12-06
 
 #### Tasks
 
@@ -412,11 +413,16 @@ ALTER TABLE clientes_whatsapp
   - [x] Gerenciar botões (add/remove, máx 3)
   - [x] Validar tamanho do título (20 chars)
   - [x] Preview visual
-- [ ] Criar `src/components/flows/properties/ConditionBlockProperties.tsx`
-  - [ ] Add/remove conditions
-  - [ ] Select operator (==, !=, >, <, contains)
-  - [ ] Input value
-  - [ ] Select next block
+- [x] Criar `src/components/flows/properties/ConditionBlockProperties.tsx` ✅ 2025-12-06
+  - [x] Add/remove conditions
+  - [x] Select operator (==, !=, >, <, contains, not_contains)
+  - [x] Input value
+  - [x] Input next block ID (ou conectar visualmente)
+  - [x] Caminho padrão se nenhuma condição for verdadeira
+- [x] Criar `src/components/flows/properties/ActionBlockProperties.tsx` ✅ 2025-12-06
+  - [x] Select action type (set_variable, increment, add_tag, remove_tag)
+  - [x] Dynamic params based on action type
+  - [x] Preview da ação configurada
 
 **⚡ Performance e otimizações**
 - [x] Memoizar todos componentes de bloco (React.memo) ✅ 2025-12-06
@@ -434,35 +440,39 @@ ALTER TABLE clientes_whatsapp
 - [ ] Undo/Redo (opcional)
 
 **🎭 Preview/Simulador de Flow (NOVO - CRÍTICO)**
-- [ ] Criar `src/components/flows/FlowPreview.tsx`
-  - [ ] Modal/Dialog com simulador de chat
-  - [ ] Interface de mensagens (estilo WhatsApp)
-  - [ ] Renderizar blocos do flow em ordem
-  - [ ] Simular listas interativas (clicar em opções)
-  - [ ] Simular botões (clicar em botões)
-  - [ ] Navegar pelo fluxo sem enviar mensagens reais
-  - [ ] Mostrar transições entre blocos
-  - [ ] Indicar quando vai para "Bot" ou "Humano"
+- [x] Criar `src/lib/flows/flowSimulator.ts` ✅ 2025-12-06
+  - [x] Similar ao FlowExecutor, mas SEM enviar mensagens
+  - [x] Navega pelos blocos baseado em escolhas
+  - [x] Retorna próximo bloco baseado em escolha simulada
+  - [x] Armazena histórico de navegação (para voltar)
+  - [x] Avalia condições (6 operadores)
+  - [x] Gerencia variáveis durante simulação
 
-- [ ] Adicionar botão "Preview" no FlowToolbar
-  - [ ] Ao clicar, abrir modal de preview
-  - [ ] Carregar flow atual do store
-  - [ ] Iniciar simulação do bloco inicial
+- [x] Criar `src/components/flows/FlowPreview.tsx` ✅ 2025-12-06
+  - [x] Modal/Dialog com simulador de chat
+  - [x] Interface de mensagens (estilo WhatsApp)
+  - [x] Renderizar blocos do flow em ordem
+  - [x] Simular listas interativas (clicar em opções)
+  - [x] Simular botões (clicar em botões)
+  - [x] Navegar pelo fluxo sem enviar mensagens reais
+  - [x] Mostrar transições entre blocos
+  - [x] Indicar quando vai para "Bot" ou "Humano"
+  - [x] Botão reset para reiniciar simulação
+  - [x] Auto-scroll para última mensagem
 
-- [ ] Lógica de simulação
-  - [ ] Criar `src/lib/flows/flowSimulator.ts`
-  - [ ] Similar ao FlowExecutor, mas SEM enviar mensagens
-  - [ ] Apenas navega pelos blocos
-  - [ ] Retorna próximo bloco baseado em escolha simulada
-  - [ ] Armazena histórico de navegação (para voltar)
+- [x] Adicionar botão "Preview" no FlowToolbar ✅ 2025-12-06
+  - [x] Ao clicar, abrir modal de preview
+  - [x] Carregar flow atual do store
+  - [x] Iniciar simulação do bloco inicial
+  - [x] Validar flow antes de abrir (tem blocos? tem start?)
 
 **Critérios de conclusão:**
 - [x] Interface drag-and-drop funcional ✅ 2025-12-06
 - [x] Todos os blocos com componentes customizados ✅ 2025-12-06
-- [x] Propriedades editáveis (3/4 panels) 🟡
+- [x] Propriedades editáveis (5/5 panels) ✅ 2025-12-06
 - [x] Auto-save funcionando ✅ 2025-12-06
 - [ ] Performance 60 FPS (precisa teste com flow real)
-- [ ] Preview/Simulador funcional (usuário testa flow antes de publicar)
+- [x] Preview/Simulador funcional ✅ 2025-12-06 (usuário testa flow antes de publicar)
 
 ---
 
