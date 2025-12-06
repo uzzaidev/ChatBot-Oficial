@@ -26,6 +26,8 @@ import { saveChatMessage } from "@/nodes/saveChatMessage";
 import { checkContinuity } from "@/nodes/checkContinuity";
 import { classifyIntent } from "@/nodes/classifyIntent";
 import { detectRepetition } from "@/nodes/detectRepetition";
+// 🔄 Phase 4: Interactive Flows
+import { checkInteractiveFlow } from "@/nodes/checkInteractiveFlow";
 import { createExecutionLogger } from "@/lib/logger";
 import { setWithExpiry } from "@/lib/redis";
 import {
@@ -177,6 +179,55 @@ export const processChatbotMessage = async (
     logger.logNodeSuccess("3. Check/Create Customer", {
       status: customer.status,
     });
+
+    // ═════════════════════════════════════════════════════════════════
+    // 🚦 PHASE 4: STATUS-BASED ROUTING (CRITICAL - EXECUTES FIRST)
+    // ═════════════════════════════════════════════════════════════════
+    console.log(`📊 [chatbotFlow] Contact status: ${customer.status}`)
+
+    // ROUTE 1: Flow Interativo Ativo (maximum priority)
+    if (customer.status === 'fluxo_inicial') {
+      console.log('🔄 [chatbotFlow] Contact in interactive flow - processing via FlowExecutor')
+      logger.logNodeStart('3.1. Route to Interactive Flow', {
+        status: customer.status,
+      })
+
+      // Check interactive flow
+      const flowResult = await checkInteractiveFlow({
+        clientId: config.id,
+        phone: parsedMessage.phone,
+        content: parsedMessage.content,
+        isInteractiveReply: parsedMessage.type === 'interactive',
+        interactiveResponseId: parsedMessage.interactiveResponseId,
+      })
+
+      if (flowResult.flowExecuted) {
+        logger.logNodeSuccess('3.1. Route to Interactive Flow', {
+          flowExecuted: true,
+          flowName: flowResult.flowName,
+        })
+        logger.finishExecution('success')
+        return { success: true }
+      }
+
+      // If flow wasn't executed (edge case), log warning and continue to AI
+      console.warn(
+        '⚠️ [chatbotFlow] Status is fluxo_inicial but flow was not executed'
+      )
+      logger.logNodeSuccess('3.1. Route to Interactive Flow', {
+        flowExecuted: false,
+        continuingToAI: true,
+      })
+    }
+
+    // ROUTE 2: Atendimento Humano (human/transferred status)
+    // Note: This is now handled by checkHumanHandoffStatus (NODE 6)
+    // but we keep this comment for clarity about the routing logic
+    // Status 'humano' or 'transferido' will be caught by NODE 6
+
+    // ROUTE 3: Bot/IA (status === 'bot' OR new contact)
+    // Continue to normal pipeline below
+    console.log('🤖 [chatbotFlow] Processing via bot/IA pipeline')
 
     // NODE 4: Process Media (audio/image/document) - configurable
     // 🔧 IMPORTANT: Process media BEFORE checking human handoff status
@@ -523,6 +574,49 @@ export const processChatbotMessage = async (
     if (!batchedContent || batchedContent.trim().length === 0) {
       logger.finishExecution("success");
       return { success: true };
+    }
+
+    // ═════════════════════════════════════════════════════════════════
+    // 🚀 NODE 15: CHECK INTERACTIVE FLOW (Phase 4)
+    // ═════════════════════════════════════════════════════════════════
+    // This node checks if a flow should be started BEFORE processing via AI
+    // Only executes if status === 'bot' (not in flow or human handoff)
+    if (customer.status === 'bot') {
+      logger.logNodeStart('15. Check Interactive Flow', {
+        phone: parsedMessage.phone,
+      })
+
+      const flowResult = await checkInteractiveFlow({
+        clientId: config.id,
+        phone: parsedMessage.phone,
+        content: batchedContent,
+        isInteractiveReply: parsedMessage.type === 'interactive',
+        interactiveResponseId: parsedMessage.interactiveResponseId,
+        isFirstContact: customer.message_count === 0, // First contact?
+      })
+
+      logger.logNodeSuccess('15. Check Interactive Flow', {
+        flowExecuted: flowResult.flowExecuted,
+        flowStarted: flowResult.flowStarted,
+        flowName: flowResult.flowName,
+        shouldContinueToAI: flowResult.shouldContinueToAI,
+      })
+
+      if (flowResult.flowExecuted || flowResult.flowStarted) {
+        console.log(
+          `✅ [chatbotFlow] Flow ${flowResult.flowStarted ? 'started' : 'continued'}: ${flowResult.flowName}`
+        )
+        logger.finishExecution('success')
+        return { success: true }
+      }
+
+      if (!flowResult.shouldContinueToAI) {
+        console.log('⏸️ [chatbotFlow] Flow processing, waiting for next interaction')
+        logger.finishExecution('success')
+        return { success: true }
+      }
+
+      console.log('➡️ [chatbotFlow] No active flow, continuing to AI agent')
     }
 
     // NODE 10 & 11: Get Chat History + RAG Context (configurable)
