@@ -592,7 +592,6 @@ export const processChatbotMessage = async (
         content: batchedContent,
         isInteractiveReply: parsedMessage.type === 'interactive',
         interactiveResponseId: parsedMessage.interactiveResponseId,
-        isFirstContact: customer.message_count === 0, // First contact?
       })
 
       logger.logNodeSuccess('15. Check Interactive Flow', {
