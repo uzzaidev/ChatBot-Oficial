@@ -34,9 +34,13 @@ Permitir que **clientes criem fluxos de atendimento visual** usando mensagens in
 ### Diferencial
 - Interface **drag-and-drop fluida** (60 FPS)
 - Mensagens **nativas do WhatsApp** (listas e botões)
+- **Controle de status inteligente** (`fluxo_inicial` | `bot` | `humano`)
+- **Roteamento automático** baseado em status do contato
+- **Preview/Simulador** de flows (testar antes de publicar)
 - **Pré-processamento** antes do agente IA
 - Condicionais baseadas nas escolhas do usuário
 - Multi-tenant com isolamento completo
+- **Customização total** pelo cliente (drag-and-drop)
 
 ### Timeline Estimado
 | Fase | Duração | Entregas |
@@ -61,44 +65,62 @@ Permitir que **clientes criem fluxos de atendimento visual** usando mensagens in
 │ 1. CLIENTE CRIA FLOW (Drag & Drop)                              │
 │    - Adiciona blocos (mensagem, lista, botões, condição)        │
 │    - Conecta blocos com edges                                    │
-│    - Define triggers (palavra-chave, QR code, manual)           │
+│    - Define triggers (primeiro contato, keyword, QR code)       │
+│    - TESTA NO PREVIEW (simulador de chat) ⭐                     │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │ 2. MENSAGEM CHEGA NO WEBHOOK                                     │
-│    - Passa pelo pipeline (14 nodes)                             │
-│    - NOVO NODE: checkInteractiveFlow (antes da IA)              │
+│    - Verifica STATUS DO CONTATO (CRÍTICO) ⭐                     │
+│    ┌───────────────────────────────────────────────────────┐    │
+│    │ STATUS = 'fluxo_inicial' ?                            │    │
+│    │ ├─ SIM → Processa via FlowExecutor                    │    │
+│    │ │         (agente NÃO pode responder)                 │    │
+│    │ │                                                      │    │
+│    │ STATUS = 'humano' ou 'transferido' ?                  │    │
+│    │ ├─ SIM → Envia para agente humano                     │    │
+│    │ │         (NÃO vai para bot)                          │    │
+│    │ │                                                      │    │
+│    │ STATUS = 'bot' (padrão) ?                             │    │
+│    │ └─ SIM → Verifica se deve iniciar flow                │    │
+│    │          ├─ Match trigger? → Inicia flow              │    │
+│    │          └─ Sem match → Continua para IA              │    │
+│    └───────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ 3. CHECKINTERACTIVEFLOW NODE                                    │
-│    ┌─────────────────────────────────────────────────────────┐  │
-│    │ Tem flow ativo para esse contato?                      │  │
-│    │ ├─ SIM → Executa próximo bloco do flow                │  │
-│    │ └─ NÃO → Verifica trigger (keyword, etc)               │  │
-│    │          ├─ Match → Inicia flow                        │  │
-│    │          └─ No match → Continua para IA                │  │
-│    └─────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│ 4. EXECUTOR DE FLOW                                             │
+│ 3. EXECUTOR DE FLOW (se status = 'fluxo_inicial')              │
+│    - Busca execução ativa                                       │
 │    - Busca bloco atual do flow                                  │
 │    - Executa ação do bloco:                                     │
 │      • Envia mensagem texto                                     │
 │      • Envia lista interativa (até 10 opções)                   │
 │      • Envia botões (até 3 botões)                              │
 │      • Avalia condição                                          │
-│      • Executa ação (tag, variável, transferir)                 │
+│      • Executa ação (tag, variável)                             │
+│      • TRANSFERE para bot/humano (muda status) ⭐               │
 │    - Salva estado para próxima interação                        │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ 5. USUÁRIO RESPONDE                                             │
+│ 4. USUÁRIO RESPONDE                                             │
 │    - Clica em botão OU seleciona item da lista                  │
 │    - Webhook recebe resposta estruturada                        │
+│    - Verifica status (ainda em 'fluxo_inicial'?)                │
 │    - Flow executor identifica próximo bloco                     │
-│    - Repete até fim do flow OU transferir para IA               │
+│    - Repete até:                                                │
+│      • Transferir para bot → status = 'bot'                     │
+│      • Transferir para humano → status = 'humano'               │
+│      • Fim do flow → status = 'bot' (padrão)                    │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ 5. APÓS MUDANÇA DE STATUS                                       │
+│    - Sistema roteia baseado no NOVO status:                     │
+│      • status = 'bot' → Próxima mensagem vai para IA            │
+│      • status = 'humano' → Próxima mensagem vai para agente     │
+│    - Flow é marcado como completado                             │
+│    - Sistema volta ao comportamento normal                      │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -130,10 +152,732 @@ Permitir que **clientes criem fluxos de atendimento visual** usando mensagens in
 ```
 
 **Experiência do usuário final:**
-1. Usuário envia "Oi"
-2. Bot responde: "Olá! Como posso te ajudar?" + lista com 3 opções
-3. Usuário clica em "Vendas"
-4. Bot executa bloco 4 (pode ser mensagem, transferir para humano, ou IA)
+1. Usuário envia "Oi" (primeiro contato)
+2. **Status muda para `'fluxo_inicial'`** ⭐
+3. Bot responde: "Olá! Como posso te ajudar?" + lista com 3 opções
+4. Usuário clica em "Vendas"
+5. Bot executa bloco 4 (ex: "Ótimo! Te transfiro para vendas")
+6. **Status muda para `'humano'`** ⭐
+7. Próxima mensagem do usuário vai para o agente humano
+
+---
+
+## 2.1. Sistema de Status e Roteamento ⭐ NOVO
+
+### Visão Geral
+
+O sistema utiliza **4 status** para controlar o roteamento de mensagens:
+
+| Status | Descrição | Quem Responde | Uso |
+|--------|-----------|---------------|-----|
+| **`bot`** | Conversa normal com IA | Agente IA | Padrão inicial, após flow |
+| **`humano`** | Atendimento humano ativo | Agente humano | Após transferência |
+| **`transferido`** | (Legacy) Transferido | Agente humano | Compatibilidade |
+| **`fluxo_inicial`** ⭐ | Navegando flow interativo | Flow executor | Novo - durante flow |
+
+### Transições de Estado
+
+```mermaid
+stateDiagram-v2
+    [*] --> bot: Primeiro contato
+    bot --> fluxo_inicial: Match trigger flow
+    fluxo_inicial --> bot: Escolhe "Bot" OU fim do flow
+    fluxo_inicial --> humano: Escolhe "Atendente"
+    humano --> bot: Atendente finaliza
+    bot --> humano: Comando transferir
+```
+
+**Regras Críticas:**
+1. **`fluxo_inicial`:** Agente humano NÃO pode responder (bloqueado)
+2. **`humano` ou `transferido`:** Bot/IA NÃO pode responder
+3. **`bot`:** Apenas IA responde (exceto se flow for iniciado)
+
+### Lógica de Roteamento no Webhook
+
+**Arquivo:** `src/flows/chatbotFlow.ts`
+
+```typescript
+export const processChatbotMessage = async (body: any): Promise<void> => {
+  try {
+    // ... parsing da mensagem ...
+
+    const changes = body.entry[0]?.changes[0];
+    const message = changes?.value?.messages?.[0];
+    const from = message?.from;
+
+    // NODE 3: Check or Create Customer
+    const customer = await checkOrCreateCustomer({
+      phone: from,
+      clientId: body.clientId
+    });
+
+    // ═══════════════════════════════════════════════════════════
+    // ⭐ ROTEAMENTO POR STATUS (CRÍTICO) - EXECUTAR PRIMEIRO ⭐
+    // ═══════════════════════════════════════════════════════════
+
+    console.log(`📊 Status do contato: ${customer.status}`);
+
+    // ROTA 1: Flow Interativo Ativo (prioridade máxima)
+    if (customer.status === 'fluxo_inicial') {
+      console.log('🔄 Contato em flow interativo - processando via FlowExecutor');
+
+      const { interactiveResponseId } = await parseMessage({ message });
+
+      await flowExecutor.continueFlow(
+        body.clientId,
+        from,
+        message.text?.body || '',
+        interactiveResponseId
+      );
+
+      return; // ⚠️ EARLY RETURN - NÃO processa IA nem humano
+    }
+
+    // ROTA 2: Atendimento Humano
+    if (customer.status === 'humano' || customer.status === 'transferido') {
+      console.log('👤 Contato em atendimento humano - enviando para agente');
+
+      // Salvar mensagem no histórico
+      await saveChatMessage({
+        phone: from,
+        clientId: body.clientId,
+        message: {
+          type: 'human',
+          content: message.text?.body || ''
+        }
+      });
+
+      // Notificar agente via realtime (Supabase)
+      await supabase
+        .from('messages')
+        .insert({
+          client_id: body.clientId,
+          phone: from,
+          content: message.text?.body,
+          direction: 'incoming',
+          created_at: new Date().toISOString()
+        });
+
+      return; // ⚠️ EARLY RETURN - NÃO processa IA
+    }
+
+    // ROTA 3: Bot/IA (status === 'bot' OU novo contato)
+    console.log('🤖 Processando via bot/IA');
+
+    // Verificar se deve iniciar flow (antes de processar IA)
+    const flowResult = await checkInteractiveFlow({
+      clientId: body.clientId,
+      phone: from,
+      content: message.text?.body || '',
+      isFirstContact: customer.message_count === 0 // Primeiro contato?
+    });
+
+    if (flowResult.flowStarted) {
+      console.log(`✅ Flow iniciado: ${flowResult.flowName}`);
+      return; // Flow iniciou, status já mudou para 'fluxo_inicial'
+    }
+
+    // Continuar pipeline normal (IA)
+    // NODE 9: Get Chat History
+    const chatHistory = await getChatHistory({ phone: from, clientId: body.clientId });
+
+    // NODE 10: Get RAG Context
+    const ragContext = await getRAGContext({
+      query: message.text?.body,
+      clientId: body.clientId
+    });
+
+    // NODE 11: Generate AI Response
+    const aiResponse = await generateAIResponse({
+      userMessage: message.text?.body,
+      chatHistory,
+      ragContext,
+      clientId: body.clientId,
+      phone: from
+    });
+
+    // ... resto do pipeline ...
+
+  } catch (error: any) {
+    console.error('❌ Erro no webhook:', error);
+    throw error;
+  }
+};
+```
+
+### Mudanças de Status
+
+**Quem controla:** `FlowExecutor` (Fase 3)
+
+```typescript
+// src/lib/flows/flowExecutor.ts
+
+export class FlowExecutor {
+  private supabase = createServerClient();
+
+  /**
+   * Inicia flow e muda status para 'fluxo_inicial'
+   */
+  async startFlow(
+    flowId: string,
+    clientId: string,
+    phone: string
+  ): Promise<FlowExecution> {
+    // 1. Buscar flow
+    const { data: flow } = await this.supabase
+      .from('interactive_flows')
+      .select('*')
+      .eq('id', flowId)
+      .single();
+
+    // 2. Criar execução
+    const { data: execution } = await this.supabase
+      .from('flow_executions')
+      .insert({
+        flow_id: flowId,
+        client_id: clientId,
+        phone,
+        current_block_id: flow.start_block_id,
+        status: 'active'
+      })
+      .select()
+      .single();
+
+    // 3. ⭐ MUDAR STATUS DO CONTATO PARA 'fluxo_inicial'
+    const supabaseAny = this.supabase as any;
+    await supabaseAny
+      .from('clientes_whatsapp')
+      .update({ status: 'fluxo_inicial' })
+      .eq('telefone', phone)
+      .eq('client_id', clientId);
+
+    console.log(`✅ Status alterado: bot → fluxo_inicial (${phone})`);
+
+    // 4. Executar primeiro bloco
+    await this.executeBlock(execution.id, flow.start_block_id, flow);
+
+    return execution;
+  }
+
+  /**
+   * Transfere para bot (IA)
+   */
+  async transferToBot(executionId: string): Promise<void> {
+    // Buscar execução
+    const { data: execution } = await this.supabase
+      .from('flow_executions')
+      .select('phone, client_id')
+      .eq('id', executionId)
+      .single();
+
+    if (!execution) throw new Error('Execution not found');
+
+    // 1. Atualizar status do contato
+    const supabaseAny = this.supabase as any;
+    await supabaseAny
+      .from('clientes_whatsapp')
+      .update({ status: 'bot' })
+      .eq('telefone', execution.phone)
+      .eq('client_id', execution.client_id);
+
+    console.log(`✅ Status alterado: fluxo_inicial → bot (${execution.phone})`);
+
+    // 2. Marcar flow como completado
+    await this.supabase
+      .from('flow_executions')
+      .update({
+        status: 'transferred_ai',
+        completed_at: new Date().toISOString()
+      })
+      .eq('id', executionId);
+  }
+
+  /**
+   * Transfere para humano
+   */
+  async transferToHuman(executionId: string): Promise<void> {
+    // Buscar execução
+    const { data: execution } = await this.supabase
+      .from('flow_executions')
+      .select('phone, client_id')
+      .eq('id', executionId)
+      .single();
+
+    if (!execution) throw new Error('Execution not found');
+
+    // 1. Atualizar status do contato
+    const supabaseAny = this.supabase as any;
+    await supabaseAny
+      .from('clientes_whatsapp')
+      .update({ status: 'humano' })
+      .eq('telefone', execution.phone)
+      .eq('client_id', execution.client_id);
+
+    console.log(`✅ Status alterado: fluxo_inicial → humano (${execution.phone})`);
+
+    // 2. Marcar flow como completado
+    await this.supabase
+      .from('flow_executions')
+      .update({
+        status: 'transferred_human',
+        completed_at: new Date().toISOString()
+      })
+      .eq('id', executionId);
+
+    // 3. Notificar agente
+    await this.notifyAgent(execution.phone, execution.client_id);
+  }
+
+  /**
+   * Completa flow sem transferência explícita
+   * (padrão: volta para bot)
+   */
+  async completeFlow(executionId: string): Promise<void> {
+    const { data: execution } = await this.supabase
+      .from('flow_executions')
+      .select('phone, client_id')
+      .eq('id', executionId)
+      .single();
+
+    if (!execution) throw new Error('Execution not found');
+
+    // Status padrão: bot
+    const supabaseAny = this.supabase as any;
+    await supabaseAny
+      .from('clientes_whatsapp')
+      .update({ status: 'bot' })
+      .eq('telefone', execution.phone)
+      .eq('client_id', execution.client_id);
+
+    console.log(`✅ Flow completado - Status: fluxo_inicial → bot (${execution.phone})`);
+
+    await this.supabase
+      .from('flow_executions')
+      .update({
+        status: 'completed',
+        completed_at: new Date().toISOString()
+      })
+      .eq('id', executionId);
+  }
+
+  private async notifyAgent(phone: string, clientId: string): Promise<void> {
+    // Enviar email ou notificação realtime
+    // (similar ao handleHumanHandoff existente)
+    console.log(`📧 Notificando agente: novo atendimento de ${phone}`);
+  }
+}
+```
+
+### Exemplo de Fluxo Completo
+
+**Cenário:** Cliente configura flow de atendimento inicial
+
+**1. Cliente cria flow no dashboard:**
+```
+[START]
+  ↓
+[MENSAGEM: "Olá! Como posso ajudar?"]
+  ↓
+[LISTA: Escolha departamento]
+  ├─ Suporte → [TRANSFERIR PARA BOT]
+  ├─ Vendas → [TRANSFERIR PARA HUMANO]
+  └─ Financeiro → [TRANSFERIR PARA HUMANO]
+```
+
+**2. Usuário final envia primeira mensagem:**
+```typescript
+// Webhook recebe: "Oi"
+// Status atual: 'bot' (novo contato)
+
+// checkInteractiveFlow detecta: primeiro contato
+// → Inicia flow
+// → Status muda para 'fluxo_inicial'
+// → Envia mensagem + lista
+```
+
+**3. Usuário clica em "Vendas":**
+```typescript
+// Webhook recebe: interactive_list_reply (id: "opt_vendas")
+// Status atual: 'fluxo_inicial'
+
+// Roteamento: if (status === 'fluxo_inicial') → FlowExecutor
+// FlowExecutor: executeBlock("transferir_humano")
+// → Status muda para 'humano'
+// → Notifica agente
+```
+
+**4. Usuário envia nova mensagem:**
+```typescript
+// Webhook recebe: "Qual o preço?"
+// Status atual: 'humano'
+
+// Roteamento: if (status === 'humano') → Envia para agente
+// ✅ Agente recebe mensagem
+// ❌ Bot NÃO responde
+```
+
+### Migration Necessária
+
+**Arquivo:** `supabase/migrations/YYYYMMDDHHMMSS_add_fluxo_inicial_status.sql`
+
+```sql
+-- Adicionar novo status 'fluxo_inicial' à tabela clientes_whatsapp
+
+ALTER TABLE clientes_whatsapp
+  DROP CONSTRAINT IF EXISTS clientes_whatsapp_status_check;
+
+ALTER TABLE clientes_whatsapp
+  ADD CONSTRAINT clientes_whatsapp_status_check
+  CHECK (status IN ('bot', 'humano', 'transferido', 'fluxo_inicial'));
+
+-- Adicionar índice para performance (queries filtram por status)
+CREATE INDEX IF NOT EXISTS idx_clientes_whatsapp_status
+  ON clientes_whatsapp(client_id, status);
+
+-- Comentário
+COMMENT ON COLUMN clientes_whatsapp.status IS
+  'Status do contato: bot (IA), humano (agente), transferido (legacy), fluxo_inicial (navegando flow interativo)';
+```
+
+**Aplicar:**
+```bash
+supabase db push
+```
+
+---
+
+## 2.2. Preview/Simulador de Flows ⭐ NOVO
+
+### Objetivo
+
+Permitir que o cliente **teste o flow antes de publicar**, simulando a experiência do usuário final sem enviar mensagens reais via WhatsApp.
+
+### Funcionamento
+
+**Botão "Preview" no editor:**
+- Localizado no toolbar do editor de flows
+- Ao clicar, abre modal com simulador de chat
+- Interface estilo WhatsApp
+
+**Componentes:**
+
+```typescript
+// src/components/flows/FlowPreview.tsx
+
+interface FlowPreviewProps {
+  flow: InteractiveFlow; // Flow atual do editor
+  onClose: () => void;
+}
+
+export const FlowPreview: React.FC<FlowPreviewProps> = ({ flow, onClose }) => {
+  const [messages, setMessages] = useState<PreviewMessage[]>([]);
+  const [currentBlockId, setCurrentBlockId] = useState(flow.startBlockId);
+  const [history, setHistory] = useState<string[]>([]); // Para voltar
+
+  // Inicializar com primeiro bloco
+  useEffect(() => {
+    executeBlock(flow.startBlockId);
+  }, []);
+
+  const executeBlock = (blockId: string) => {
+    const block = flow.blocks.find(b => b.id === blockId);
+    if (!block) return;
+
+    switch (block.type) {
+      case 'message':
+        // Adicionar mensagem às messages
+        setMessages(prev => [...prev, {
+          type: 'bot',
+          content: block.data.messageText,
+          timestamp: new Date()
+        }]);
+
+        // Auto-avançar para próximo bloco
+        const nextEdge = flow.edges.find(e => e.source === blockId);
+        if (nextEdge) {
+          setTimeout(() => executeBlock(nextEdge.target), 500);
+        }
+        break;
+
+      case 'interactive_list':
+        // Renderizar lista interativa
+        setMessages(prev => [...prev, {
+          type: 'bot',
+          content: block.data.listBody,
+          interactive: {
+            type: 'list',
+            sections: block.data.listSections
+          },
+          timestamp: new Date()
+        }]);
+        break;
+
+      case 'interactive_buttons':
+        // Renderizar botões
+        setMessages(prev => [...prev, {
+          type: 'bot',
+          content: block.data.buttonsBody,
+          interactive: {
+            type: 'buttons',
+            buttons: block.data.buttons
+          },
+          timestamp: new Date()
+        }]);
+        break;
+
+      case 'ai_handoff':
+        setMessages(prev => [...prev, {
+          type: 'system',
+          content: '🤖 Transferido para Bot/IA',
+          timestamp: new Date()
+        }]);
+        break;
+
+      case 'human_handoff':
+        setMessages(prev => [...prev, {
+          type: 'system',
+          content: '👤 Transferido para Atendente Humano',
+          timestamp: new Date()
+        }]);
+        break;
+    }
+
+    setCurrentBlockId(blockId);
+    setHistory(prev => [...prev, blockId]);
+  };
+
+  const handleInteractiveChoice = (choiceId: string, nextBlockId: string) => {
+    // Adicionar escolha do usuário
+    setMessages(prev => [...prev, {
+      type: 'user',
+      content: choiceId, // Título da opção escolhida
+      timestamp: new Date()
+    }]);
+
+    // Executar próximo bloco
+    setTimeout(() => executeBlock(nextBlockId), 300);
+  };
+
+  return (
+    <Dialog open onClose={onClose}>
+      <DialogContent className="max-w-md h-[600px] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b pb-2">
+          <h3 className="font-bold">Preview do Flow</h3>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+
+        {/* Chat messages */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {messages.map((msg, idx) => (
+            <PreviewMessageBubble
+              key={idx}
+              message={msg}
+              onChoiceClick={handleInteractiveChoice}
+            />
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div className="border-t pt-2 text-sm text-gray-500">
+          <p>💡 Simulação - nenhuma mensagem real será enviada</p>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+```
+
+**Simulador (lógica isolada):**
+
+```typescript
+// src/lib/flows/flowSimulator.ts
+
+export class FlowSimulator {
+  private flow: InteractiveFlow;
+  private currentBlockId: string;
+  private variables: Record<string, any> = {};
+  private history: string[] = [];
+
+  constructor(flow: InteractiveFlow) {
+    this.flow = flow;
+    this.currentBlockId = flow.startBlockId;
+  }
+
+  /**
+   * Executa bloco e retorna resultado
+   * (SEM enviar mensagens reais)
+   */
+  async executeBlock(blockId: string): Promise<SimulationResult> {
+    const block = this.flow.blocks.find(b => b.id === blockId);
+    if (!block) {
+      return { type: 'error', message: 'Block not found' };
+    }
+
+    this.currentBlockId = blockId;
+    this.history.push(blockId);
+
+    switch (block.type) {
+      case 'message':
+        return {
+          type: 'message',
+          content: block.data.messageText,
+          autoAdvance: true, // Avança automaticamente
+          nextBlockId: this.findNextBlock(blockId)
+        };
+
+      case 'interactive_list':
+        return {
+          type: 'interactive_list',
+          body: block.data.listBody,
+          sections: block.data.listSections,
+          // Não avança automaticamente (precisa escolha)
+        };
+
+      case 'interactive_buttons':
+        return {
+          type: 'interactive_buttons',
+          body: block.data.buttonsBody,
+          buttons: block.data.buttons,
+          // Não avança automaticamente
+        };
+
+      case 'condition':
+        // Avaliar condições
+        const matchingCondition = block.data.conditions?.find(cond =>
+          this.evaluateCondition(cond)
+        );
+
+        const nextId = matchingCondition?.nextBlockId || block.data.defaultNextBlockId;
+        if (nextId) {
+          return this.executeBlock(nextId); // Recursão
+        }
+        return { type: 'end' };
+
+      case 'action':
+        // Executar ação (set_variable, etc)
+        if (block.data.actionType === 'set_variable') {
+          this.variables[block.data.actionParams.name] = block.data.actionParams.value;
+        }
+
+        // Auto-avançar
+        const actionNextId = this.findNextBlock(blockId);
+        if (actionNextId) {
+          return this.executeBlock(actionNextId);
+        }
+        return { type: 'end' };
+
+      case 'ai_handoff':
+        return {
+          type: 'transfer',
+          destination: 'bot',
+          message: '🤖 Transferido para Bot/IA'
+        };
+
+      case 'human_handoff':
+        return {
+          type: 'transfer',
+          destination: 'human',
+          message: '👤 Transferido para Atendente Humano'
+        };
+
+      case 'end':
+        return { type: 'end' };
+
+      default:
+        return { type: 'error', message: `Unknown block type: ${block.type}` };
+    }
+  }
+
+  /**
+   * Processa escolha do usuário (botão ou lista)
+   */
+  async handleUserChoice(choiceId: string, nextBlockId: string): Promise<SimulationResult> {
+    // Salvar escolha em variável
+    this.variables.last_choice = choiceId;
+
+    // Executar próximo bloco
+    return this.executeBlock(nextBlockId);
+  }
+
+  private findNextBlock(currentBlockId: string): string | null {
+    const edge = this.flow.edges.find(e => e.source === currentBlockId);
+    return edge?.target || null;
+  }
+
+  private evaluateCondition(condition: Condition): boolean {
+    const varValue = this.variables[condition.variable];
+
+    switch (condition.operator) {
+      case '==': return varValue == condition.value;
+      case '!=': return varValue != condition.value;
+      case '>': return Number(varValue) > Number(condition.value);
+      case '<': return Number(varValue) < Number(condition.value);
+      case 'contains': return String(varValue).includes(String(condition.value));
+      case 'not_contains': return !String(varValue).includes(String(condition.value));
+      default: return false;
+    }
+  }
+
+  /**
+   * Voltar para bloco anterior
+   */
+  goBack(): void {
+    if (this.history.length > 1) {
+      this.history.pop(); // Remove atual
+      this.currentBlockId = this.history[this.history.length - 1];
+    }
+  }
+}
+
+interface SimulationResult {
+  type: 'message' | 'interactive_list' | 'interactive_buttons' | 'transfer' | 'end' | 'error';
+  content?: string;
+  body?: string;
+  sections?: ListSection[];
+  buttons?: ReplyButton[];
+  destination?: 'bot' | 'human';
+  message?: string;
+  autoAdvance?: boolean;
+  nextBlockId?: string | null;
+}
+```
+
+### Interface Visual
+
+**Layout do Modal:**
+```
+┌─────────────────────────────────────┐
+│  Preview do Flow              [X]   │
+├─────────────────────────────────────┤
+│                                     │
+│  [Bot] Olá! Como posso ajudar?      │
+│                                     │
+│  [Bot] Escolha um departamento:     │
+│  ┌─────────────────────────────┐   │
+│  │ 📋 Ver opções              │   │  ← Lista interativa
+│  └─────────────────────────────┘   │
+│                                     │
+│  [User] Vendas              ← Clicou│
+│                                     │
+│  [Bot] Ótimo! Vou te transferir...  │
+│                                     │
+│  [System] 👤 Transferido p/ Humano  │
+│                                     │
+├─────────────────────────────────────┤
+│ 💡 Simulação - nenhuma msg real     │
+└─────────────────────────────────────┘
+```
+
+### Vantagens
+
+1. **Cliente testa fluxo antes de publicar**
+2. **Identifica erros de lógica** (blocos sem conexão, condições erradas)
+3. **Valida experiência do usuário** (textos, ordem, transições)
+4. **Nenhuma mensagem real enviada** (zero custo de API)
+5. **Navegação completa** (pode voltar, refazer escolhas)
 
 ---
 
