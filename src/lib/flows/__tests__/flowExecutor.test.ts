@@ -13,30 +13,47 @@ import type {
 } from '@/types/interactiveFlows'
 
 // Mock Supabase client
-jest.mock('@/lib/supabase-server', () => ({
-  createServerClient: jest.fn(() => ({
-    from: jest.fn(() => ({
-      select: jest.fn(() => ({
+const mockSupabaseClient = {
+  from: jest.fn(() => ({
+    select: jest.fn(() => ({
+      eq: jest.fn(() => ({
         eq: jest.fn(() => ({
           eq: jest.fn(() => ({
-            eq: jest.fn(() => ({
-              single: jest.fn(() => Promise.resolve({ data: null, error: null })),
-            })),
+            single: jest.fn(() => Promise.resolve({ data: null, error: null })),
+            maybeSingle: jest.fn(() => Promise.resolve({ data: null, error: null })),
           })),
+          single: jest.fn(() => Promise.resolve({ data: null, error: null })),
+          maybeSingle: jest.fn(() => Promise.resolve({ data: null, error: null })),
         })),
+        single: jest.fn(() => Promise.resolve({ data: null, error: null })),
+        maybeSingle: jest.fn(() => Promise.resolve({ data: null, error: null })),
       })),
-      insert: jest.fn(() => ({
+      single: jest.fn(() => Promise.resolve({ data: null, error: null })),
+      maybeSingle: jest.fn(() => Promise.resolve({ data: null, error: null })),
+    })),
+    insert: jest.fn(() => ({
+      select: jest.fn(() => ({
+        single: jest.fn(() => Promise.resolve({ data: null, error: null })),
+        maybeSingle: jest.fn(() => Promise.resolve({ data: null, error: null })),
+      })),
+    })),
+    update: jest.fn(() => ({
+      eq: jest.fn(() => ({
+        eq: jest.fn(() => Promise.resolve({ error: null })),
+      })),
+    })),
+    upsert: jest.fn(() => ({
+      eq: jest.fn(() => ({
         select: jest.fn(() => ({
           single: jest.fn(() => Promise.resolve({ data: null, error: null })),
         })),
       })),
-      update: jest.fn(() => ({
-        eq: jest.fn(() => ({
-          eq: jest.fn(() => Promise.resolve({ error: null })),
-        })),
-      })),
     })),
   })),
+}
+
+jest.mock('@/lib/supabase-server', () => ({
+  createServerClient: jest.fn(() => mockSupabaseClient),
 }))
 
 // Mock WhatsApp functions

@@ -11,6 +11,9 @@
     "build:mobile:prd": "doppler run --config prd -- cross-env CAPACITOR_BUILD=true next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
     "cap:sync": "npx cap sync",
     "cap:open:android": "npx cap open android",
     "cap:open:ios": "npx cap open ios"
@@ -71,7 +74,9 @@
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
+    "@jest/globals": "^30.2.0",
     "@types/form-data": "^2.5.2",
+    "@types/jest": "^30.0.0",
     "@types/node": "^22.18.12",
     "@types/nodemailer": "^7.0.3",
     "@types/pdf-parse": "^1.1.5",
@@ -82,8 +87,10 @@
     "dotenv-cli": "^11.0.0",
     "eslint": "^8.57.1",
     "eslint-config-next": "^15.1.8",
+    "jest": "^30.2.0",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
+    "ts-jest": "^29.4.6",
     "typescript": "^5"
   }
 }
