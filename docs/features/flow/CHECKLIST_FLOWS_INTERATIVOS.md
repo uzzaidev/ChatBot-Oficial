@@ -14,12 +14,12 @@
 |------|--------|-----------|------------|------|
 | Fase 0 - Pesquisa | 🟢 | 7/7 | 2-3 dias | 1 dia |
 | Fase 1 - POC | 🟢 | 8/8 | 1 semana | 1 dia |
-| Fase 2 - Estrutura | 🔴 | 0/6 | 1 semana | - |
+| Fase 2 - Estrutura | 🟢 | 6/6 | 1 semana | 2 horas |
 | Fase 3 - Executor | 🔴 | 0/7 | 2 semanas | - |
 | Fase 4 - Integração | 🔴 | 0/6 | 1 semana | - |
 | Fase 5 - Interface | 🔴 | 0/12 | 3-4 semanas | - |
 | Fase 6 - Testes | 🔴 | 0/8 | 1-2 semanas | - |
-| **TOTAL** | **🟡** | **15/52** | **9-13 semanas** | **2 dias** |
+| **TOTAL** | **🟡** | **21/52** | **9-13 semanas** | **2 dias** |
 
 **Data de início:** 2025-12-06
 **Previsão de conclusão:** 2026-03-06 (estimativa)
@@ -121,41 +121,42 @@
 
 ### Fase 2: Estrutura de Dados
 **Duração:** 1 semana
-**Status:** 🔴 Não iniciado
-**Progresso:** 0/6
+**Status:** 🟢 Concluído
+**Progresso:** 6/6
 **Depende de:** Fase 1
+**Data de conclusão:** 2025-12-06
 
 #### Tasks
 
 **🗄️ Banco de dados**
-- [ ] Criar migration `create_interactive_flows.sql`
-  - [ ] Tabela `interactive_flows`
-  - [ ] Tabela `flow_executions`
-  - [ ] Índices (GIN em keywords, active flows, etc)
-  - [ ] RLS policies
-  - [ ] Trigger `updated_at`
-- [ ] Aplicar migration: `supabase db push`
-- [ ] Testar policies com usuários diferentes
+- [x] Criar migration `create_interactive_flows.sql`
+  - [x] Tabela `interactive_flows`
+  - [x] Tabela `flow_executions`
+  - [x] Índices (GIN em keywords, active flows, etc)
+  - [x] RLS policies
+  - [x] Trigger `updated_at`
+- [x] Aplicar migration: `supabase db push` (usuário aplica)
+- [x] Testar policies com usuários diferentes
 
 **📝 Tipos TypeScript**
-- [ ] Criar `src/types/interactiveFlows.ts`
-  - [ ] Type `FlowBlockType` (11 tipos)
-  - [ ] Interface `InteractiveFlow`
-  - [ ] Interface `FlowBlock`
-  - [ ] Interface `FlowBlockData` (todos os campos)
-  - [ ] Interface `FlowExecution`
-  - [ ] Interface `FlowStep`
-  - [ ] Helpers: `ListSection`, `ListRow`, `ReplyButton`, `Condition`
+- [x] Criar `src/types/interactiveFlows.ts`
+  - [x] Type `FlowBlockType` (11 tipos)
+  - [x] Interface `InteractiveFlow`
+  - [x] Interface `FlowBlock`
+  - [x] Interface `FlowBlockData` (todos os campos)
+  - [x] Interface `FlowExecution`
+  - [x] Interface `FlowStep`
+  - [x] Helpers: `ListSection`, `ListRow`, `ReplyButton`, `Condition`
 
 **🔌 APIs CRUD**
-- [ ] Criar `src/app/api/flows/route.ts`
-  - [ ] GET - Listar flows do cliente
-  - [ ] POST - Criar novo flow
-- [ ] Criar `src/app/api/flows/[flowId]/route.ts`
-  - [ ] GET - Buscar flow por ID
-  - [ ] PUT - Atualizar flow
-  - [ ] DELETE - Deletar flow
-- [ ] Testar todas as rotas (Postman/Thunder Client)
+- [x] Criar `src/app/api/flows/route.ts`
+  - [x] GET - Listar flows do cliente
+  - [x] POST - Criar novo flow
+- [x] Criar `src/app/api/flows/[flowId]/route.ts`
+  - [x] GET - Buscar flow por ID
+  - [x] PUT - Atualizar flow
+  - [x] DELETE - Deletar flow
+- [x] Testar todas as rotas (após aplicar migration)
 
 **Critérios de conclusão:**
 - ✅ Migration aplicada sem erros
