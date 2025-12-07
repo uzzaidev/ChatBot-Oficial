@@ -101,23 +101,45 @@ export async function GET(request: NextRequest) {
     const conversations: ConversationWithCount[] = result.rows.map((row) => {
       const telefoneStr = String(row.telefone);
 
-      // Parse última mensagem (JSON do LangChain) e fallback para messages
+      // Escolher última mensagem comparando timestamps entre n8n_chat_histories e messages
       let lastMessageContent = "";
+
+      // Parse mensagem de n8n_chat_histories
+      let contentFromHistory = "";
       if (row.last_message_json) {
         try {
           const msgData = typeof row.last_message_json === "string"
             ? JSON.parse(row.last_message_json)
             : row.last_message_json;
-          lastMessageContent = msgData.data?.content || msgData.content || "";
+          contentFromHistory = msgData.data?.content || msgData.content || "";
         } catch (error) {
-          lastMessageContent = "";
+          contentFromHistory = "";
         }
       }
-      if (
-        (!lastMessageContent || lastMessageContent.length === 0) &&
-        row.last_message_from_messages
-      ) {
-        lastMessageContent = row.last_message_from_messages;
+
+      // Pegar mensagem de messages
+      const contentFromMessages = row.last_message_from_messages || "";
+
+      // Comparar timestamps e usar a mensagem mais recente
+      const timeHistory = row.last_message_time ? new Date(row.last_message_time) : null;
+      const timeMessages = row.last_message_time_messages ? new Date(row.last_message_time_messages) : null;
+
+      if (timeHistory && timeMessages) {
+        // Ambas existem - usar a mais recente
+        if (timeMessages > timeHistory) {
+          lastMessageContent = contentFromMessages;
+        } else {
+          lastMessageContent = contentFromHistory;
+        }
+      } else if (timeMessages) {
+        // Só existe em messages
+        lastMessageContent = contentFromMessages;
+      } else if (timeHistory) {
+        // Só existe em n8n_chat_histories
+        lastMessageContent = contentFromHistory;
+      } else {
+        // Nenhuma existe - usar fallback
+        lastMessageContent = contentFromHistory || contentFromMessages;
       }
 
       const lastUpdate = (() => {
