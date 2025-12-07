@@ -118,7 +118,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         }
 
         // Extrair type e content do JSON
-        const messageType = messageData.type || "ai"; // 'human' ou 'ai'
+        const messageType = messageData.type || "ai"; // 'human' | 'ai' | 'system'
+        if (messageType === "system") {
+          // System-only context (ex: fluxo interativo) deve ficar invisível no frontend
+          return null;
+        }
         const messageContent = messageData.content || "";
 
         // Limpar tags de function calls
@@ -158,7 +162,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           audio_duration_seconds: item.audio_duration_seconds || null,
         };
       },
-    );
+    ).filter(Boolean) as Message[];
 
     // Mensagens persistidas diretamente na tabela messages (ex: interativos)
     const savedMessages: Message[] = (interactiveData || []).map(
@@ -191,6 +195,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           ? "incoming"
           : "outgoing";
 
+        // Evitar duplicar mensagens de texto do usuário já salvas em n8n_chat_histories
+        const isDuplicableIncomingText =
+          direction === "incoming" &&
+          msgType === "text" &&
+          !((metadata as any)?.interactive_response_id || (metadata as any)?.interactive);
+
+        if (isDuplicableIncomingText) {
+          return null;
+        }
+
         return {
           id: item.id?.toString() || `saved-${index}`,
           client_id: item.client_id || clientId,
@@ -207,7 +221,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           audio_duration_seconds: item.audio_duration_seconds || null,
         };
       },
-    );
+    ).filter(Boolean) as Message[];
 
     // Combinar e ordenar por timestamp
     const messages = [...n8nMessages, ...savedMessages].sort((a, b) => {
