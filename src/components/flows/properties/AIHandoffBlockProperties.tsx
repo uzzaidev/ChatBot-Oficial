@@ -56,6 +56,7 @@ export default function AIHandoffBlockProperties({ node, onUpdate }: AIHandoffBl
             setTransitionMessage(value)
             handleUpdate({ transitionMessage: value })
           }}
+          onKeyDown={(e) => e.stopPropagation()}
           placeholder="Ex: Perfeito! Agora vou te conectar com nosso assistente virtual..."
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 min-h-[100px]"
           maxLength={1024}

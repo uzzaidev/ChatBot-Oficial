@@ -45,7 +45,14 @@ export default function FlowPropertiesPanel() {
   }
 
   return (
-    <aside className="w-80 bg-white border-l border-gray-200 p-4 overflow-y-auto">
+    <aside
+      className="w-80 bg-white border-l border-gray-200 p-4 overflow-y-auto"
+      onKeyDown={(e) => {
+        // Prevent ReactFlow from capturing keyboard events (like Backspace/Delete)
+        // when user is editing text in property panels
+        e.stopPropagation()
+      }}
+    >
       <h3 className="font-bold text-lg mb-1 text-gray-900">Propriedades</h3>
       <p className="text-sm text-gray-600 mb-4">
         {selectedNode.data?.label || selectedNode.type}
