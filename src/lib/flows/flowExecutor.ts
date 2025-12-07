@@ -174,7 +174,8 @@ export class FlowExecutor {
         currentBlock,
         userResponse,
         interactiveResponseId,
-        execution.variables
+        execution.variables,
+        flow
       )
 
       if (!nextBlockId) {
@@ -269,12 +270,12 @@ export class FlowExecutor {
         break
 
       case 'interactive_list':
-        await this.executeInteractiveListBlock(execution.phone, block)
+        await this.executeInteractiveListBlock(execution.phone, execution.client_id, block)
         // Wait for user response
         break
 
       case 'interactive_buttons':
-        await this.executeInteractiveButtonsBlock(execution.phone, block)
+        await this.executeInteractiveButtonsBlock(execution.phone, execution.client_id, block)
         // Wait for user response
         break
 
@@ -340,6 +341,7 @@ export class FlowExecutor {
    */
   private async executeInteractiveListBlock(
     phone: string,
+    clientId: string,
     block: FlowBlock
   ): Promise<void> {
     const { listHeader, listBody, listFooter, listButtonText, listSections } = block.data
@@ -368,6 +370,16 @@ export class FlowExecutor {
       sections,
     })
 
+    // Save message to database with interactive metadata
+    await this.saveInteractiveMessage(phone, clientId, {
+      type: 'list',
+      header: listHeader,
+      body: listBody,
+      footer: listFooter,
+      buttonText: listButtonText,
+      sections: listSections,
+    })
+
     console.log(`✅ [FlowExecutor] Interactive list sent to ${phone}`)
   }
 
@@ -378,6 +390,7 @@ export class FlowExecutor {
    */
   private async executeInteractiveButtonsBlock(
     phone: string,
+    clientId: string,
     block: FlowBlock
   ): Promise<void> {
     const { buttonsBody, buttons, buttonsFooter } = block.data
@@ -399,6 +412,14 @@ export class FlowExecutor {
     }))
 
     await sendInteractiveButtons(phone, {
+      body: buttonsBody,
+      footer: buttonsFooter,
+      buttons: buttonsList,
+    })
+
+    // Save message to database with interactive metadata
+    await this.saveInteractiveMessage(phone, clientId, {
+      type: 'button',
       body: buttonsBody,
       footer: buttonsFooter,
       buttons: buttonsList,
@@ -695,6 +716,8 @@ export class FlowExecutor {
   /**
    * ➡️ Advance to next block automatically
    * 
+   * Used for blocks without user interaction (message, action, delay, webhook)
+   * 
    * @private
    */
   private async advanceToNextBlock(
@@ -702,12 +725,16 @@ export class FlowExecutor {
     currentBlockId: string,
     flow: InteractiveFlow
   ): Promise<void> {
+    // Find any edge from current block (for blocks without sourceHandle like message, action, delay)
+    // Note: Buttons and lists use determineNextBlock() instead, which handles sourceHandle
     const nextEdge = flow.edges.find((e) => e.source === currentBlockId)
 
     if (nextEdge) {
+      console.log(`➡️ [FlowExecutor] Advancing to next block: ${nextEdge.target}`)
       await this.executeBlock(executionId, nextEdge.target, flow)
     } else {
       // No next block - complete flow
+      console.log(`⚠️ [FlowExecutor] No outgoing edge found for block ${currentBlockId}, completing flow`)
       await this.completeFlow(executionId)
     }
   }
@@ -715,31 +742,69 @@ export class FlowExecutor {
   /**
    * 🔍 Determine next block based on current block and user response
    * 
+   * For interactive buttons and lists, this finds the next block by:
+   * 1. Matching the user's response ID to a button/list item
+   * 2. Finding the edge with that sourceHandle
+   * 3. Returning the target block ID from the edge
+   * 
    * @private
    */
   private determineNextBlock(
     currentBlock: FlowBlock,
     userResponse: string,
     interactiveResponseId: string | undefined,
-    variables: Record<string, any>
+    variables: Record<string, any>,
+    flow: InteractiveFlow
   ): string | null {
     // For interactive lists and buttons, match by ID
     if (currentBlock.type === 'interactive_list' && interactiveResponseId) {
       const sections = currentBlock.data.listSections || []
+      
+      // First check if nextBlockId is set in the row data (legacy approach)
       for (const section of sections) {
         const row = section.rows.find((r) => r.id === interactiveResponseId)
-        if (row) {
+        if (row && row.nextBlockId) {
+          console.log(`📋 [FlowExecutor] Found nextBlockId in list row data: ${row.nextBlockId}`)
           return row.nextBlockId
         }
       }
+      
+      // If not found in data, look for edge with matching sourceHandle
+      const edge = flow.edges.find(
+        (e) => e.source === currentBlock.id && e.sourceHandle === interactiveResponseId
+      )
+      
+      if (edge) {
+        console.log(`📋 [FlowExecutor] Found edge for list item ${interactiveResponseId} -> ${edge.target}`)
+        return edge.target
+      }
+      
+      console.warn(`⚠️ [FlowExecutor] No connection found for list item: ${interactiveResponseId}`)
+      return null
     }
 
     if (currentBlock.type === 'interactive_buttons' && interactiveResponseId) {
       const buttons = currentBlock.data.buttons || []
+      
+      // First check if nextBlockId is set in button data (legacy approach)
       const button = buttons.find((b) => b.id === interactiveResponseId)
-      if (button) {
+      if (button && button.nextBlockId) {
+        console.log(`🔘 [FlowExecutor] Found nextBlockId in button data: ${button.nextBlockId}`)
         return button.nextBlockId
       }
+      
+      // If not found in data, look for edge with matching sourceHandle
+      const edge = flow.edges.find(
+        (e) => e.source === currentBlock.id && e.sourceHandle === interactiveResponseId
+      )
+      
+      if (edge) {
+        console.log(`🔘 [FlowExecutor] Found edge for button ${interactiveResponseId} -> ${edge.target}`)
+        return edge.target
+      }
+      
+      console.warn(`⚠️ [FlowExecutor] No connection found for button: ${interactiveResponseId}`)
+      return null
     }
 
     // For other block types, return null (let executeBlock handle it)
@@ -843,6 +908,85 @@ export class FlowExecutor {
       startedAt: new Date(executionDB.started_at),
       lastStepAt: new Date(executionDB.last_step_at),
       completedAt: executionDB.completed_at ? new Date(executionDB.completed_at) : undefined,
+    }
+  }
+
+  /**
+   * 💾 Save interactive message to database
+   * 
+   * Stores the interactive message in the messages table so it can be
+   * displayed properly in the conversation view
+   * 
+   * @private
+   */
+  private async saveInteractiveMessage(
+    phone: string,
+    clientId: string,
+    interactiveData: {
+      type: 'button' | 'list'
+      body: string
+      footer?: string
+      buttons?: Array<{ id: string; title: string }>
+      header?: string
+      buttonText?: string
+      sections?: any[]
+    }
+  ): Promise<void> {
+    try {
+      // Get or create conversation
+      const { data: conversation } = await this.supabase
+        .from('conversations')
+        .select('id')
+        .eq('client_id', clientId)
+        .eq('phone', phone)
+        .maybeSingle()
+
+      let conversationId = conversation?.id
+
+      if (!conversationId) {
+        // Create conversation
+        const { data: newConversation, error: createError } = await this.supabase
+          .from('conversations')
+          .insert({
+            client_id: clientId,
+            phone,
+            status: 'fluxo_inicial',
+            last_message: interactiveData.body,
+          })
+          .select('id')
+          .single()
+
+        if (createError) {
+          console.error(`❌ [FlowExecutor] Failed to create conversation: ${createError.message}`)
+          return
+        }
+
+        conversationId = newConversation.id
+      }
+
+      // Save message
+      const { error: messageError } = await this.supabase
+        .from('messages')
+        .insert({
+          client_id: clientId,
+          conversation_id: conversationId,
+          phone,
+          content: interactiveData.body,
+          type: 'interactive',
+          direction: 'outgoing',
+          status: 'sent',
+          metadata: {
+            interactive: interactiveData,
+          },
+        })
+
+      if (messageError) {
+        console.error(`❌ [FlowExecutor] Failed to save interactive message: ${messageError.message}`)
+      } else {
+        console.log(`✅ [FlowExecutor] Interactive message saved to database`)
+      }
+    } catch (error) {
+      console.error(`❌ [FlowExecutor] Error saving interactive message:`, error)
     }
   }
 }

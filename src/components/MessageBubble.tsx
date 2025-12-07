@@ -6,6 +6,8 @@ import Image from 'next/image'
 import { useState } from 'react'
 import { MessageActionMenu } from '@/components/MessageActionMenu'
 import { AudioMessage } from '@/components/AudioMessage'
+import { InteractiveButtonsMessage } from '@/components/InteractiveButtonsMessage'
+import { InteractiveListMessage } from '@/components/InteractiveListMessage'
 
 interface MessageBubbleProps {
   message: Message
@@ -25,6 +27,37 @@ const isStoredMediaMetadata = (obj: unknown): obj is StoredMediaMetadata => {
   )
 }
 
+// Type guards for interactive message metadata
+interface InteractiveButtonsMetadata {
+  type: 'button'
+  body: string
+  footer?: string
+  buttons: Array<{ id: string; title: string }>
+}
+
+interface InteractiveListMetadata {
+  type: 'list'
+  header?: string
+  body: string
+  footer?: string
+  buttonText: string
+  sections: Array<{
+    title: string
+    rows: Array<{ id: string; title: string; description?: string }>
+  }>
+}
+
+type InteractiveMetadata = InteractiveButtonsMetadata | InteractiveListMetadata
+
+const isInteractiveMetadata = (obj: unknown): obj is InteractiveMetadata => {
+  if (!obj || typeof obj !== 'object') return false
+  const meta = obj as Record<string, unknown>
+  return (
+    typeof meta.type === 'string' &&
+    (meta.type === 'button' || meta.type === 'list')
+  )
+}
+
 export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubbleProps) => {
   const isIncoming = message.direction === 'incoming'
   const [imageError, setImageError] = useState(false)
@@ -36,6 +69,14 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
     : null
   const mediaMetadata: StoredMediaMetadata | null = isStoredMediaMetadata(rawMediaMetadata) ? rawMediaMetadata : null
   const hasRealMedia = mediaMetadata !== null
+
+  // 🔘 Extract interactive message metadata
+  const rawInteractiveMetadata = message.metadata && typeof message.metadata === 'object'
+    ? (message.metadata as Record<string, unknown>).interactive
+    : null
+  const interactiveMetadata: InteractiveMetadata | null = isInteractiveMetadata(rawInteractiveMetadata) 
+    ? rawInteractiveMetadata 
+    : null
 
   // 📱 Extract wamid for WhatsApp reactions
   const wamid = message.metadata && typeof message.metadata === 'object'
@@ -154,6 +195,32 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
 
   // Render media content based on type
   const renderMediaContent = () => {
+    // Handle interactive messages first
+    if (message.type === 'interactive' && interactiveMetadata) {
+      if (interactiveMetadata.type === 'button') {
+        return (
+          <InteractiveButtonsMessage
+            body={interactiveMetadata.body}
+            footer={interactiveMetadata.footer}
+            buttons={interactiveMetadata.buttons}
+            isIncoming={isIncoming}
+          />
+        )
+      } else if (interactiveMetadata.type === 'list') {
+        return (
+          <InteractiveListMessage
+            header={interactiveMetadata.header}
+            body={interactiveMetadata.body}
+            footer={interactiveMetadata.footer}
+            buttonText={interactiveMetadata.buttonText}
+            sections={interactiveMetadata.sections}
+            isIncoming={isIncoming}
+          />
+        )
+      }
+    }
+
+    // Handle regular media content
     if (!hasRealMedia) {
       if (hasLegacyMediaTag) {
         return renderLegacyMedia()
@@ -175,6 +242,11 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
 
   // Get text content to display
   const getTextContent = () => {
+    // For interactive messages, don't show text content (it's in the interactive component)
+    if (message.type === 'interactive' && interactiveMetadata) {
+      return ''
+    }
+    
     if (hasRealMedia && mediaMetadata.type === 'image') {
       // For images with real media, show description/caption
       return message.content.replace(/\[Imagem recebida\]\s*/i, '').trim()
