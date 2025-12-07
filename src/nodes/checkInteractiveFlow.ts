@@ -52,6 +52,7 @@ export const checkInteractiveFlow = async (
   } = input;
 
   console.log(`🔍 [NODE 15] Checking interactive flow for ${phone}`);
+  console.log(`🔍 [NODE 15] Client ID: ${clientId}`);
 
   const supabase = createServerClient();
   const executor = new FlowExecutor();
@@ -65,6 +66,11 @@ export const checkInteractiveFlow = async (
       .eq("phone", phone)
       .eq("status", "active")
       .maybeSingle();
+
+    console.log(
+      `🔍 [NODE 15] Active execution query result:`,
+      JSON.stringify({ data: activeExecution, error: executionError }),
+    );
 
     if (executionError) {
       console.error(
@@ -109,6 +115,11 @@ export const checkInteractiveFlow = async (
       .eq("is_active", true)
       .eq("trigger_type", "always")
       .limit(1);
+
+    console.log(
+      `🔍 [NODE 15] Always flows query result:`,
+      JSON.stringify({ data: alwaysFlows, error: alwaysError }),
+    );
 
     if (alwaysError) {
       console.error(
@@ -172,13 +183,19 @@ export const checkInteractiveFlow = async (
     console.log(
       `🔍 [NODE 15] No trigger matched, checking for any active flow`,
     );
+    console.log(`🔍 [NODE 15] Querying with client_id: ${clientId}`);
 
     const { data: anyActiveFlow, error: anyFlowError } = await supabase
       .from("interactive_flows")
-      .select("id, name")
+      .select("id, name, trigger_type, is_active")
       .eq("client_id", clientId)
       .eq("is_active", true)
       .limit(1);
+
+    console.log(
+      `🔍 [NODE 15] Any active flow query result:`,
+      JSON.stringify({ data: anyActiveFlow, error: anyFlowError }),
+    );
 
     if (anyFlowError) {
       console.error(
@@ -200,6 +217,12 @@ export const checkInteractiveFlow = async (
 
     // 4. No flow available at all
     console.log(`➡️ [NODE 15] No flow matched, continuing to AI`);
+    console.log(
+      `➡️ [NODE 15] Summary: clientId=${clientId}, phone=${phone}, content="${content}"`,
+    );
+    console.log(
+      `➡️ [NODE 15] No active flows found for this client. Check if there are flows in interactive_flows table with is_active=true and client_id=${clientId}`,
+    );
 
     return {
       shouldContinueToAI: true,
