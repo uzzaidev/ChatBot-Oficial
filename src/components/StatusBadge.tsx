@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge'
-import { Bot, User, ArrowRight, HelpCircle } from 'lucide-react'
+import { Bot, User, ArrowRight, HelpCircle, Workflow } from 'lucide-react'
 import { LucideIcon } from 'lucide-react'
 
 interface StatusBadgeProps {
@@ -29,6 +29,11 @@ const statusConfig: Record<string, StatusConfig> = {
     label: 'Transferido',
     icon: ArrowRight,
     color: 'bg-orange-500/10 text-orange-700 border-orange-200',
+  },
+  fluxo_inicial: {
+    label: 'Em Flow',
+    icon: Workflow,
+    color: 'bg-purple-500/10 text-purple-700 border-purple-200',
   },
   // Legacy status values (for backward compatibility)
   human: {

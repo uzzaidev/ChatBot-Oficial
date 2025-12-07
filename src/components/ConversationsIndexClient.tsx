@@ -24,7 +24,7 @@ interface ConversationsIndexClientProps {
  * - Área central vazia com mensagem para selecionar uma conversa
  */
 export function ConversationsIndexClient({ clientId }: ConversationsIndexClientProps) {
-  const [statusFilter, setStatusFilter] = useState<'all' | 'bot' | 'humano' | 'transferido'>('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'bot' | 'humano' | 'transferido' | 'fluxo_inicial'>('all')
   const [searchTerm, setSearchTerm] = useState('')
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const scrollPositionRef = useRef(0)
@@ -143,7 +143,7 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
 
         {/* Filtros por Status */}
         <div className="border-b border-silver-200 bg-white">
-          <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'all' | 'bot' | 'humano' | 'transferido')}>
+          <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'all' | 'bot' | 'humano' | 'transferido' | 'fluxo_inicial')}>
             <TabsList className="w-full justify-start rounded-none h-auto p-0 bg-transparent">
               <TabsTrigger
                 value="all"
@@ -172,6 +172,13 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
               >
                 <ArrowRight className="h-4 w-4" />
                 Transferido
+              </TabsTrigger>
+              <TabsTrigger
+                value="fluxo_inicial"
+                className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-purple-600 rounded-none"
+              >
+                <ArrowRight className="h-4 w-4" />
+                Em Flow
               </TabsTrigger>
             </TabsList>
           </Tabs>

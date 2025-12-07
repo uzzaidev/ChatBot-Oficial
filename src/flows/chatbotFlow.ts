@@ -183,41 +183,43 @@ export const processChatbotMessage = async (
     // ═════════════════════════════════════════════════════════════════
     // 🚦 PHASE 4: STATUS-BASED ROUTING (CRITICAL - EXECUTES FIRST)
     // ═════════════════════════════════════════════════════════════════
-    console.log(`📊 [chatbotFlow] Contact status: ${customer.status}`)
+    console.log(`📊 [chatbotFlow] Contact status: ${customer.status}`);
 
     // ROUTE 1: Flow Interativo Ativo (maximum priority)
-    if (customer.status === 'fluxo_inicial') {
-      console.log('🔄 [chatbotFlow] Contact in interactive flow - processing via FlowExecutor')
-      logger.logNodeStart('3.1. Route to Interactive Flow', {
+    if (customer.status === "fluxo_inicial") {
+      console.log(
+        "🔄 [chatbotFlow] Contact in interactive flow - processing via FlowExecutor",
+      );
+      logger.logNodeStart("3.1. Route to Interactive Flow", {
         status: customer.status,
-      })
+      });
 
       // Check interactive flow
       const flowResult = await checkInteractiveFlow({
         clientId: config.id,
         phone: parsedMessage.phone,
         content: parsedMessage.content,
-        isInteractiveReply: parsedMessage.type === 'interactive',
+        isInteractiveReply: parsedMessage.type === "interactive",
         interactiveResponseId: parsedMessage.interactiveResponseId,
-      })
+      });
 
       if (flowResult.flowExecuted) {
-        logger.logNodeSuccess('3.1. Route to Interactive Flow', {
+        logger.logNodeSuccess("3.1. Route to Interactive Flow", {
           flowExecuted: true,
           flowName: flowResult.flowName,
-        })
-        logger.finishExecution('success')
-        return { success: true }
+        });
+        logger.finishExecution("success");
+        return { success: true };
       }
 
       // If flow wasn't executed (edge case), log warning and continue to AI
       console.warn(
-        '⚠️ [chatbotFlow] Status is fluxo_inicial but flow was not executed'
-      )
-      logger.logNodeSuccess('3.1. Route to Interactive Flow', {
+        "⚠️ [chatbotFlow] Status is fluxo_inicial but flow was not executed",
+      );
+      logger.logNodeSuccess("3.1. Route to Interactive Flow", {
         flowExecuted: false,
         continuingToAI: true,
-      })
+      });
     }
 
     // ROUTE 2: Atendimento Humano (human/transferred status)
@@ -227,7 +229,7 @@ export const processChatbotMessage = async (
 
     // ROUTE 3: Bot/IA (status === 'bot' OR new contact)
     // Continue to normal pipeline below
-    console.log('🤖 [chatbotFlow] Processing via bot/IA pipeline')
+    console.log("🤖 [chatbotFlow] Processing via bot/IA pipeline");
 
     // NODE 4: Process Media (audio/image/document) - configurable
     // 🔧 IMPORTANT: Process media BEFORE checking human handoff status
@@ -579,44 +581,9 @@ export const processChatbotMessage = async (
     // ═════════════════════════════════════════════════════════════════
     // 🚀 NODE 15: CHECK INTERACTIVE FLOW (Phase 4)
     // ═════════════════════════════════════════════════════════════════
-    // This node checks if a flow should be started BEFORE processing via AI
-    // Only executes if status === 'bot' (not in flow or human handoff)
-    if (customer.status === 'bot') {
-      logger.logNodeStart('15. Check Interactive Flow', {
-        phone: parsedMessage.phone,
-      })
-
-      const flowResult = await checkInteractiveFlow({
-        clientId: config.id,
-        phone: parsedMessage.phone,
-        content: batchedContent,
-        isInteractiveReply: parsedMessage.type === 'interactive',
-        interactiveResponseId: parsedMessage.interactiveResponseId,
-      })
-
-      logger.logNodeSuccess('15. Check Interactive Flow', {
-        flowExecuted: flowResult.flowExecuted,
-        flowStarted: flowResult.flowStarted,
-        flowName: flowResult.flowName,
-        shouldContinueToAI: flowResult.shouldContinueToAI,
-      })
-
-      if (flowResult.flowExecuted || flowResult.flowStarted) {
-        console.log(
-          `✅ [chatbotFlow] Flow ${flowResult.flowStarted ? 'started' : 'continued'}: ${flowResult.flowName}`
-        )
-        logger.finishExecution('success')
-        return { success: true }
-      }
-
-      if (!flowResult.shouldContinueToAI) {
-        console.log('⏸️ [chatbotFlow] Flow processing, waiting for next interaction')
-        logger.finishExecution('success')
-        return { success: true }
-      }
-
-      console.log('➡️ [chatbotFlow] No active flow, continuing to AI agent')
-    }
+    // REMOVED: Triggers are no longer checked here
+    // Flows are ONLY executed when status is already 'fluxo_inicial'
+    // Status must be manually set to 'fluxo_inicial' to enter a flow
 
     // NODE 10 & 11: Get Chat History + RAG Context (configurable)
     let chatHistory2: any[] = [];
@@ -1037,7 +1004,8 @@ export const processChatbotMessage = async (
 
           if (!textoParaAudio || textoParaAudio.trim().length === 0) {
             logger.logNodeWarning("15.7. Handle Audio Tool Call (TTS)", {
-              warning: "No text provided in texto_para_audio argument, skipping",
+              warning:
+                "No text provided in texto_para_audio argument, skipping",
               args,
             });
             continue;

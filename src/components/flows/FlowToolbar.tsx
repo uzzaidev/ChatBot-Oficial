@@ -10,18 +10,22 @@
  */
 
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Save, Play, Loader2 } from 'lucide-react'
+import { ArrowLeft, Save, Play, Loader2, Pencil, Settings } from 'lucide-react'
 import { useFlowStore } from '@/stores/flowStore'
 import { useState } from 'react'
 import FlowPreview from './FlowPreview'
+import FlowTriggerSettings from './FlowTriggerSettings'
 import type { InteractiveFlow } from '@/types/interactiveFlows'
 import { useToast } from '@/hooks/use-toast'
 
 export default function FlowToolbar() {
   const router = useRouter()
-  const { flowId, flowName, flowDescription, isActive, triggerType, triggerKeywords, nodes, edges, startBlockId, isSaving, hasUnsavedChanges, lastSavedAt, saveFlow } = useFlowStore()
+  const { flowId, flowName, flowDescription, isActive, triggerType, triggerKeywords, nodes, edges, startBlockId, isSaving, hasUnsavedChanges, lastSavedAt, saveFlow, updateFlowMetadata } = useFlowStore()
   const [saving, setSaving] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
+  const [showTriggerSettings, setShowTriggerSettings] = useState(false)
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [editedName, setEditedName] = useState(flowName)
   const { toast } = useToast()
 
   const handleSave = async () => {
@@ -72,6 +76,31 @@ export default function FlowToolbar() {
     setShowPreview(true)
   }
 
+  const handleNameEdit = () => {
+    setIsEditingName(true)
+    setEditedName(flowName)
+  }
+
+  const handleNameSave = () => {
+    if (editedName.trim()) {
+      updateFlowMetadata({ flowName: editedName.trim() })
+      setIsEditingName(false)
+    }
+  }
+
+  const handleNameCancel = () => {
+    setEditedName(flowName)
+    setIsEditingName(false)
+  }
+
+  const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleNameSave()
+    } else if (e.key === 'Escape') {
+      handleNameCancel()
+    }
+  }
+
   // Convert store state to InteractiveFlow format for preview
   const currentFlow: InteractiveFlow = {
     id: flowId || 'preview',
@@ -114,7 +143,50 @@ export default function FlowToolbar() {
           </button>
           <div>
             <div className="text-sm text-gray-500">Editor de Flows</div>
-            <div className="font-semibold text-gray-900">{flowName}</div>
+            <div className="flex items-center gap-2">
+              {isEditingName ? (
+                <input
+                  type="text"
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  onBlur={handleNameSave}
+                  onKeyDown={handleNameKeyDown}
+                  className="font-semibold text-gray-900 border border-blue-500 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  autoFocus
+                  placeholder="Nome do flow"
+                />
+              ) : (
+                <>
+                  <div className="font-semibold text-gray-900">{flowName}</div>
+                  <button
+                    onClick={handleNameEdit}
+                    className="p-1 hover:bg-gray-100 rounded transition-colors"
+                    title="Editar nome"
+                  >
+                    <Pencil className="w-4 h-4 text-gray-500" />
+                  </button>
+                </>
+              )}
+            </div>
+            {/* Trigger indicator */}
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-xs text-gray-500">Trigger:</span>
+              {triggerType === 'always' && (
+                <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded">
+                  ⚡ Sempre Ativo
+                </span>
+              )}
+              {triggerType === 'keyword' && (
+                <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded">
+                  🔑 Palavras: {triggerKeywords?.join(', ') || 'Nenhuma'}
+                </span>
+              )}
+              {triggerType === 'manual' && (
+                <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
+                  ✋ Manual
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -139,6 +211,14 @@ export default function FlowToolbar() {
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowTriggerSettings(true)}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            title="Configurar trigger"
+          >
+            <Settings className="w-4 h-4" />
+            Trigger
+          </button>
           <button
             onClick={handleSave}
             disabled={!hasUnsavedChanges || isSaving || saving}
@@ -167,6 +247,12 @@ export default function FlowToolbar() {
         flow={currentFlow}
         open={showPreview}
         onClose={() => setShowPreview(false)}
+      />
+
+      {/* Trigger Settings Modal */}
+      <FlowTriggerSettings
+        open={showTriggerSettings}
+        onClose={() => setShowTriggerSettings(false)}
       />
     </>
   )

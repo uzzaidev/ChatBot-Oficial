@@ -83,7 +83,7 @@ interface ConversationPageClientProps {
  */
 export function ConversationPageClient({ phone, clientId }: ConversationPageClientProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [statusFilter, setStatusFilter] = useState<'all' | 'bot' | 'humano' | 'transferido'>('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'bot' | 'humano' | 'transferido' | 'fluxo_inicial'>('all')
   const [attachments, setAttachments] = useState<MediaAttachment[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const scrollContainerRef = useRef<HTMLDivElement>(null)
@@ -235,7 +235,7 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
   // Filtros por Status (memoizado para evitar re-renders desnecessários)
   const statusFilters = useMemo(() => (
     <div className="border-b border-silver-200 bg-white">
-      <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'all' | 'bot' | 'humano' | 'transferido')}>
+      <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'all' | 'bot' | 'humano' | 'transferido' | 'fluxo_inicial')}>
         <TabsList className="w-full justify-start rounded-none h-auto p-0 bg-transparent flex-wrap">
           <TabsTrigger
             value="all"
