@@ -56,6 +56,7 @@ import {
   AlertCircle,
   LayoutDashboard,
   MessageCircle,
+  Workflow,
 } from 'lucide-react'
 import Link from 'next/link'
 import { apiFetch } from '@/lib/api'
@@ -398,6 +399,18 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                             Humano (Manual)
                           </div>
                         </SelectItem>
+                        <SelectItem value="transferido">
+                          <div className="flex items-center gap-2">
+                            <ArrowRight className="h-4 w-4" />
+                            Transferido
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="fluxo_inicial">
+                          <div className="flex items-center gap-2">
+                            <Workflow className="h-4 w-4" />
+                            Em Flow
+                          </div>
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -667,7 +680,7 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                     </SelectItem>
                     <SelectItem value="fluxo_inicial">
                       <div className="flex items-center gap-2">
-                        <ArrowRight className="h-4 w-4 text-purple-500" />
+                        <Workflow className="h-4 w-4 text-purple-500" />
                         Em Flow
                       </div>
                     </SelectItem>
