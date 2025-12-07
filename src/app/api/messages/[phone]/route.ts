@@ -68,7 +68,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         [phone, clientId],
       ),
       query<any>(
-        `SELECT id, client_id, phone, content, metadata, "timestamp"
+        `SELECT id, client_id, phone, content, direction, metadata, "timestamp"
          FROM messages
          WHERE phone = $1
          AND client_id = $2
@@ -187,6 +187,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           return "text";
         })();
 
+        const direction = item.direction === "incoming"
+          ? "incoming"
+          : "outgoing";
+
         return {
           id: item.id?.toString() || `saved-${index}`,
           client_id: item.client_id || clientId,
@@ -195,9 +199,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           name: item.direction === "incoming" ? "Cliente" : "Bot",
           content: cleanMessageContent(item.content || ""),
           type: msgType,
-          direction: item.direction === "incoming"
-            ? ("incoming" as const)
-            : ("outgoing" as const),
+          direction: direction as Message["direction"],
           status: (item.status || "sent") as Message["status"],
           timestamp: item.timestamp || new Date().toISOString(),
           metadata,

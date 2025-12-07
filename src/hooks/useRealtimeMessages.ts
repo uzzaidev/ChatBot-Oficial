@@ -121,6 +121,65 @@ export const useRealtimeMessages = ({
           }
         },
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `client_id=eq.${clientId}`,
+        },
+        (payload) => {
+          try {
+            const data = payload.new as any;
+
+            if (!data || data.phone !== phone) return;
+
+            let parsedMetadata: Record<string, unknown> | null = null;
+            if (data.metadata) {
+              if (typeof data.metadata === "string") {
+                try {
+                  parsedMetadata = JSON.parse(data.metadata);
+                } catch {
+                  parsedMetadata = null;
+                }
+              } else if (typeof data.metadata === "object") {
+                parsedMetadata = data.metadata as Record<string, unknown>;
+              }
+            }
+
+            const hasInteractive = parsedMetadata &&
+              (parsedMetadata as any).interactive;
+            const messageType: Message["type"] = hasInteractive
+              ? "interactive"
+              : data.type || "text";
+
+            const direction: Message["direction"] =
+              data.direction === "incoming" ? "incoming" : "outgoing";
+
+            const newMessage: Message = {
+              id: data.id?.toString() || `msg-${Date.now()}`,
+              client_id: clientId,
+              conversation_id: String(data.conversation_id || phone),
+              phone: String(data.phone || phone),
+              name: direction === "incoming" ? "Cliente" : "Bot",
+              content: cleanMessageContent(data.content || ""),
+              type: messageType,
+              direction,
+              status: (data.status || "sent") as Message["status"],
+              timestamp: data.timestamp || new Date().toISOString(),
+              metadata: parsedMetadata,
+              transcription: data.transcription || null,
+              audio_duration_seconds: data.audio_duration_seconds || null,
+            };
+
+            if (onNewMessageRef.current) {
+              onNewMessageRef.current(newMessage);
+            }
+          } catch (error) {
+          }
+        },
+      )
       .subscribe((status, err) => {
         isReconnectingRef.current = false;
         if (status === "SUBSCRIBED") {
@@ -148,9 +207,11 @@ export const useRealtimeMessages = ({
     // Schedule reconnection with 500ms debounce
     reconnectTimeoutRef.current = setTimeout(() => {
       reconnectTimeoutRef.current = null;
-      
+
       // Double-check conditions before reconnecting
-      if (!isReconnectingRef.current && channelRef.current?.state === "closed") {
+      if (
+        !isReconnectingRef.current && channelRef.current?.state === "closed"
+      ) {
         hasAttemptedRef.current = false;
         setupRealtimeSubscription();
       }
