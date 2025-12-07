@@ -538,6 +538,13 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                 <ArrowRight className="h-3 w-3" />
                 Transferido
               </TabsTrigger>
+              <TabsTrigger
+                value="fluxo_inicial"
+                className="flex items-center gap-1 data-[state=active]:border-b-2 data-[state=active]:border-purple-600 rounded-none text-xs px-3"
+              >
+                <ArrowRight className="h-3 w-3" />
+                Em Flow
+              </TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -658,6 +665,12 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                         Transferido
                       </div>
                     </SelectItem>
+                    <SelectItem value="fluxo_inicial">
+                      <div className="flex items-center gap-2">
+                        <ArrowRight className="h-4 w-4 text-purple-500" />
+                        Em Flow
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
@@ -665,7 +678,9 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                     ? 'Este contato será atendido pelo bot automaticamente'
                     : selectedContact.status === 'humano'
                     ? 'Este contato será atendido por um humano'
-                    : 'Este contato foi transferido para atendimento humano'}
+                    : selectedContact.status === 'transferido'
+                    ? 'Este contato foi transferido para atendimento humano'
+                    : 'Este contato está em um fluxo interativo'}
                 </p>
               </div>
 
