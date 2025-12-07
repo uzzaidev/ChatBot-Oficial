@@ -104,7 +104,7 @@ export default function HumanHandoffBlockProperties({ node, onUpdate }: HumanHan
       <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
         <p className="text-xs text-purple-900 font-medium mb-1">ℹ️ Como funciona:</p>
         <ul className="text-xs text-purple-800 space-y-1 ml-4 list-disc">
-          <li>O status do contato muda de "fluxo_inicial" para "humano"</li>
+          <li>O status do contato muda de &quot;fluxo_inicial&quot; para &quot;humano&quot;</li>
           <li>O fluxo é marcado como concluído (transferred_human)</li>
           {notifyAgent && <li>Os atendentes são notificados sobre a nova conversa</li>}
           <li>A conversa fica disponível no painel de atendimento</li>
