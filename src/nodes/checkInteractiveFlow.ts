@@ -33,6 +33,22 @@ export interface CheckInteractiveFlowOutput {
   flowName?: string;
 }
 
+// Type for active execution with joined interactive_flows
+type ActiveExecutionWithFlow = {
+  interactive_flows: {
+    name: string;
+  };
+} | null;
+
+// Type for flow data
+type FlowData = {
+  id: string;
+  name: string;
+  trigger_type?: string;
+  trigger_keywords?: string[];
+  is_active?: boolean;
+};
+
 /**
  * Check if interactive flow should be executed
  *
@@ -59,13 +75,13 @@ export const checkInteractiveFlow = async (
 
   try {
     // 1. Check for active execution
-    const { data: activeExecution, error: executionError } = await supabase
+    const { data: activeExecution, error: executionError } = (await supabase
       .from("flow_executions")
       .select("*, interactive_flows(name)")
       .eq("client_id", clientId)
       .eq("phone", phone)
       .eq("status", "active")
-      .maybeSingle();
+      .maybeSingle()) as { data: ActiveExecutionWithFlow; error: any };
 
     console.log(
       `🔍 [NODE 15] Active execution query result:`,
@@ -108,13 +124,13 @@ export const checkInteractiveFlow = async (
     // 2. Check if a new flow should be started
 
     // 2a. Check for flows with trigger "always" (always active)
-    const { data: alwaysFlows, error: alwaysError } = await supabase
+    const { data: alwaysFlows, error: alwaysError } = (await supabase
       .from("interactive_flows")
       .select("id, name")
       .eq("client_id", clientId)
       .eq("is_active", true)
       .eq("trigger_type", "always")
-      .limit(1);
+      .limit(1)) as { data: FlowData[] | null; error: any };
 
     console.log(
       `🔍 [NODE 15] Always flows query result:`,
@@ -143,12 +159,15 @@ export const checkInteractiveFlow = async (
     if (content && content.trim().length > 0) {
       const contentLower = content.toLowerCase().trim();
 
-      const { data: keywordFlows, error: keywordError } = await supabase
+      const { data: keywordFlows, error: keywordError } = (await supabase
         .from("interactive_flows")
         .select("id, name, trigger_keywords")
         .eq("client_id", clientId)
         .eq("is_active", true)
-        .eq("trigger_type", "keyword");
+        .eq("trigger_type", "keyword")) as {
+        data: FlowData[] | null;
+        error: any;
+      };
 
       if (keywordError) {
         console.error(
@@ -185,12 +204,12 @@ export const checkInteractiveFlow = async (
     );
     console.log(`🔍 [NODE 15] Querying with client_id: ${clientId}`);
 
-    const { data: anyActiveFlow, error: anyFlowError } = await supabase
+    const { data: anyActiveFlow, error: anyFlowError } = (await supabase
       .from("interactive_flows")
       .select("id, name, trigger_type, is_active")
       .eq("client_id", clientId)
       .eq("is_active", true)
-      .limit(1);
+      .limit(1)) as { data: FlowData[] | null; error: any };
 
     console.log(
       `🔍 [NODE 15] Any active flow query result:`,

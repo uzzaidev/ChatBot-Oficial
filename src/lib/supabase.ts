@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { createBrowserClient, createServerClient as createSSRServerClient } from '@supabase/ssr'
+import type { Database } from './types'
 
 const getSupabaseUrl = (): string => {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -66,7 +67,7 @@ export const createServerClient = () => {
  * Usa service role key (bypass RLS)
  */
 // Singleton global do cliente Supabase (reutilizado em toda a execução)
-let serviceRoleClientInstance: ReturnType<typeof createClient> | null = null
+let serviceRoleClientInstance: ReturnType<typeof createClient<Database>> | null = null
 
 // Reset forçado da conexão (útil no início de cada workflow)
 export const resetServiceRoleClient = () => {
@@ -79,7 +80,7 @@ export const createServiceRoleClient = () => {
     return serviceRoleClientInstance
   }
 
-  serviceRoleClientInstance = createClient(getSupabaseUrl(), getSupabaseServiceRoleKey(), {
+  serviceRoleClientInstance = createClient<Database>(getSupabaseUrl(), getSupabaseServiceRoleKey(), {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
