@@ -79,8 +79,8 @@ export default function FlowCanvas() {
       ...edge,
       style: {
         ...edge.style,
-        strokeWidth: edge.selected ? 3 : 2,
-        stroke: edge.selected ? '#F59E0B' : '#3B82F6'
+        strokeWidth: edge.selected === true ? 3 : 2,
+        stroke: edge.selected === true ? '#F59E0B' : '#3B82F6'
       }
     }))
     setLocalEdges(edgesWithStyle as Edge[])
