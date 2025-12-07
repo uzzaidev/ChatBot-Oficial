@@ -54,6 +54,37 @@ const nodeTypes = {
   end: EndBlock
 }
 
+// Helper to keep nextBlockId in sync with edges for interactive blocks
+const updateNextBlockReference = (
+  nodes: FlowNode[],
+  sourceId: string,
+  sourceHandle: string,
+  targetId: string
+): FlowNode[] => {
+  return nodes.map((node) => {
+    if (node.id !== sourceId) return node
+
+    if (node.type === 'interactive_buttons') {
+      const buttons = (node.data?.buttons || []).map((button: any) =>
+        button.id === sourceHandle ? { ...button, nextBlockId: targetId } : button
+      )
+      return { ...node, data: { ...node.data, buttons } }
+    }
+
+    if (node.type === 'interactive_list') {
+      const listSections = (node.data?.listSections || []).map((section: any) => ({
+        ...section,
+        rows: (section.rows || []).map((row: any) =>
+          row.id === sourceHandle ? { ...row, nextBlockId: targetId } : row
+        )
+      }))
+      return { ...node, data: { ...node.data, listSections } }
+    }
+
+    return node
+  })
+}
+
 export default function FlowCanvas() {
   const {
     nodes,
@@ -112,6 +143,29 @@ export default function FlowCanvas() {
   // Handle edge changes
   const handleEdgesChange: OnEdgesChange = useCallback((changes) => {
     onEdgesChange(changes)
+
+    // Clear nextBlockId when an edge is removed from interactive handles
+    let updatedNodes = nodes
+    let hasNodeUpdates = false
+
+    changes.forEach((change) => {
+      if (change.type === 'remove') {
+        const removedEdge = localEdges.find((edge) => edge.id === change.id)
+        if (removedEdge?.source && removedEdge.sourceHandle) {
+          updatedNodes = updateNextBlockReference(
+            updatedNodes,
+            removedEdge.source,
+            removedEdge.sourceHandle,
+            ''
+          )
+          hasNodeUpdates = true
+        }
+      }
+    })
+
+    if (hasNodeUpdates) {
+      setNodes(updatedNodes as FlowNode[])
+    }
     
     // Check if there are actual changes that should be saved
     const shouldUpdateStore = changes.some(change => 
@@ -125,7 +179,7 @@ export default function FlowCanvas() {
         setEdges(localEdges as FlowNodeEdge[])
       }, 0)
     }
-  }, [onEdgesChange, setEdges, localEdges])
+  }, [onEdgesChange, setEdges, localEdges, nodes, setNodes])
 
   // Handle new connections
   const onConnect: OnConnect = useCallback((connection: Connection) => {
@@ -137,6 +191,12 @@ export default function FlowCanvas() {
     const handleSuffix = connection.sourceHandle 
       ? `-${connection.sourceHandle.slice(0, HANDLE_ID_LENGTH)}` 
       : ''
+    const existingFilteredEdges = connection.sourceHandle
+      ? localEdges.filter((edge) =>
+          !(edge.source === connection.source && edge.sourceHandle === connection.sourceHandle)
+        )
+      : localEdges
+
     const edge: Edge = {
       ...connection,
       id: `e-${connection.source?.slice(-NODE_ID_LENGTH)}${handleSuffix}-${connection.target?.slice(-NODE_ID_LENGTH)}`,
@@ -155,10 +215,21 @@ export default function FlowCanvas() {
       interactionWidth: 20
     }
 
-    const newEdges = addEdge(edge, localEdges)
+    const newEdges = addEdge(edge, existingFilteredEdges)
     setLocalEdges(newEdges)
     setEdges(newEdges as FlowNodeEdge[])
-  }, [localEdges, setLocalEdges, setEdges])
+
+    // Persist nextBlockId inside interactive blocks (buttons/lists)
+    if (connection.source && connection.sourceHandle) {
+      const updatedNodes = updateNextBlockReference(
+        nodes,
+        connection.source,
+        connection.sourceHandle,
+        connection.target || ''
+      )
+      setNodes(updatedNodes as FlowNode[])
+    }
+  }, [localEdges, setLocalEdges, setEdges, nodes, setNodes])
 
   // Handle node click (select)
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
