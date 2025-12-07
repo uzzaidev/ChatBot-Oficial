@@ -27,6 +27,7 @@ import {
   OnNodesChange,
   OnEdgesChange
 } from '@xyflow/react'
+import { Trash2 } from 'lucide-react'
 import { useFlowStore } from '@/stores/flowStore'
 import type { FlowNode, FlowNodeEdge } from '@/stores/flowStore'
 
@@ -85,6 +86,34 @@ const updateNextBlockReference = (
   })
 }
 
+const deleteNodeWithCleanup = (
+  nodeId: string,
+  localNodes: FlowNode[],
+  localEdges: FlowNodeEdge[],
+  setLocalNodes: (nodes: FlowNode[]) => void,
+  setLocalEdges: (edges: FlowNodeEdge[]) => void,
+  setNodes: (nodes: FlowNode[]) => void,
+  setEdges: (edges: FlowNodeEdge[]) => void,
+  setSelectedNode: (id: string | null) => void
+) => {
+  // Clear nextBlockId for interactive handles pointing through removed edges
+  let updatedNodes = localNodes
+  localEdges.forEach((edge) => {
+    if (edge.sourceHandle && (edge.source === nodeId || edge.target === nodeId)) {
+      updatedNodes = updateNextBlockReference(updatedNodes, edge.source, edge.sourceHandle, '')
+    }
+  })
+
+  const filteredNodes = updatedNodes.filter((n) => n.id !== nodeId)
+  const filteredEdges = localEdges.filter((e) => e.source !== nodeId && e.target !== nodeId)
+
+  setLocalNodes(filteredNodes)
+  setLocalEdges(filteredEdges)
+  setNodes(filteredNodes as FlowNode[])
+  setEdges(filteredEdges as FlowNodeEdge[])
+  setSelectedNode(null)
+}
+
 export default function FlowCanvas() {
   const {
     nodes,
@@ -98,6 +127,28 @@ export default function FlowCanvas() {
 
   const [localNodes, setLocalNodes, onNodesChange] = useNodesState([])
   const [localEdges, setLocalEdges, onEdgesChange] = useEdgesState([])
+
+  // Delete selected node via keyboard
+  useEffect(() => {
+    const handleKey = (event: KeyboardEvent) => {
+      if ((event.key === 'Delete' || event.key === 'Backspace') && selectedNodeId) {
+        event.preventDefault()
+        deleteNodeWithCleanup(
+          selectedNodeId,
+          localNodes as FlowNode[],
+          localEdges as FlowNodeEdge[],
+          setLocalNodes,
+          setLocalEdges,
+          setNodes,
+          setEdges,
+          setSelectedNode
+        )
+      }
+    }
+
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [selectedNodeId, localNodes, localEdges, setLocalNodes, setLocalEdges, setNodes, setEdges, setSelectedNode])
 
   // Sync store with local state
   useEffect(() => {
@@ -268,8 +319,33 @@ export default function FlowCanvas() {
     event.dataTransfer.dropEffect = 'move'
   }, [])
 
+  const handleDeleteClick = useCallback(() => {
+    if (!selectedNodeId) return
+    deleteNodeWithCleanup(
+      selectedNodeId,
+      localNodes as FlowNode[],
+      localEdges as FlowNodeEdge[],
+      setLocalNodes,
+      setLocalEdges,
+      setNodes,
+      setEdges,
+      setSelectedNode
+    )
+  }, [selectedNodeId, localNodes, localEdges, setLocalNodes, setLocalEdges, setNodes, setEdges, setSelectedNode])
+
   return (
-    <div className="w-full h-full" onDrop={onDrop} onDragOver={onDragOver}>
+    <div className="w-full h-full relative" onDrop={onDrop} onDragOver={onDragOver}>
+      {selectedNodeId && (
+        <button
+          onClick={handleDeleteClick}
+          className="absolute top-3 right-3 z-20 inline-flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded shadow hover:bg-red-700"
+          title="Excluir bloco selecionado"
+        >
+          <Trash2 className="w-4 h-4" />
+          Excluir bloco
+        </button>
+      )}
+
       <ReactFlow
         nodes={localNodes}
         edges={localEdges}
