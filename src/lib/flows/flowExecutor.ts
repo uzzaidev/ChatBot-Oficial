@@ -1427,6 +1427,16 @@ IMPORTANTE: Use este histórico para entender o contexto completo da conversa.`;
         `🤖 [FlowExecutor] Triggering bot response for ${phone} with context`,
       );
 
+      // Buscar nome real do cliente
+      const { data: customer } = await this.supabase
+        .from("clientes_whatsapp")
+        .select("nome")
+        .eq("telefone", phone)
+        .eq("client_id", clientId)
+        .single();
+
+      const customerName = customer?.nome || phone;
+
       // Salvar contexto do flow no histórico de chat
       // Isso permite que o bot veja o contexto quando gerar resposta
       if (flowContext) {
@@ -1457,7 +1467,7 @@ IMPORTANTE: Use este histórico para entender o contexto completo da conversa.`;
                   },
                   contacts: [
                     {
-                      profile: { name: phone },
+                      profile: { name: customerName },
                       wa_id: phone,
                     },
                   ],
