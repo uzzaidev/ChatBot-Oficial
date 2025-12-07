@@ -271,11 +271,15 @@ export class FlowExecutor {
 
       case 'interactive_list':
         await this.executeInteractiveListBlock(execution.phone, execution.client_id, block)
+        // Keep execution pointing to this interactive block while waiting for reply
+        await this.setCurrentBlock(executionId, block.id)
         // Wait for user response
         break
 
       case 'interactive_buttons':
         await this.executeInteractiveButtonsBlock(execution.phone, execution.client_id, block)
+        // Keep execution pointing to this interactive block while waiting for reply
+        await this.setCurrentBlock(executionId, block.id)
         // Wait for user response
         break
 
@@ -909,6 +913,16 @@ export class FlowExecutor {
       lastStepAt: new Date(executionDB.last_step_at),
       completedAt: executionDB.completed_at ? new Date(executionDB.completed_at) : undefined,
     }
+  }
+
+  /**
+   * 🧭 Persist current block so the next user response is routed correctly
+   */
+  private async setCurrentBlock(executionId: string, blockId: string): Promise<void> {
+    await this.supabase
+      .from('flow_executions')
+      .update({ current_block_id: blockId, last_step_at: new Date().toISOString() })
+      .eq('id', executionId)
   }
 
   /**
