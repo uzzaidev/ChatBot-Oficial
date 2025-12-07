@@ -46,6 +46,12 @@ const statusConfig: Record<string, StatusConfig> = {
     color: 'bg-orange-500/10 text-orange-700 border-orange-200',
     description: 'Aguardando atendimento humano',
   },
+  fluxo_inicial: {
+    label: 'Em Flow',
+    icon: ArrowRight,
+    color: 'bg-purple-500/10 text-purple-700 border-purple-200',
+    description: 'Em fluxo interativo',
+  },
   // Legacy status values (for backward compatibility)
   human: {
     label: 'Humano',
@@ -73,7 +79,7 @@ export const StatusToggle = ({ phone, currentStatus }: StatusToggleProps) => {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
-  const handleStatusChange = async (newStatus: 'bot' | 'humano' | 'transferido') => {
+  const handleStatusChange = async (newStatus: 'bot' | 'humano' | 'transferido' | 'fluxo_inicial') => {
     if (newStatus === status) return
 
     setIsLoading(true)

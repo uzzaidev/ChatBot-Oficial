@@ -398,6 +398,18 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                             Humano (Manual)
                           </div>
                         </SelectItem>
+                        <SelectItem value="transferido">
+                          <div className="flex items-center gap-2">
+                            <ArrowRight className="h-4 w-4" />
+                            Transferido
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="fluxo_inicial">
+                          <div className="flex items-center gap-2">
+                            <ArrowRight className="h-4 w-4" />
+                            Em Flow
+                          </div>
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
