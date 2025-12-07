@@ -68,7 +68,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         [phone, clientId],
       ),
       query<any>(
-        `SELECT id, conversation_id, client_id, phone, content, type, direction, status, metadata, created_at, timestamp
+        `SELECT id, conversation_id, client_id, phone, content, type, direction, status, metadata, created_at
          FROM messages
          WHERE phone = $1
          AND client_id = $2
