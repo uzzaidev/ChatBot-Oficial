@@ -131,6 +131,39 @@ export const useRealtimeConversations = ({
           }
         },
       )
+      // Escutar novas mensagens na tabela messages (flows)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `client_id=eq.${clientId}`,
+        },
+        (payload) => {
+          try {
+            const data = payload.new as any;
+            const phone = data.phone;
+
+            // Criar um update fake de UPDATE para triggerar refetch
+            const update: ConversationUpdate = {
+              eventType: "UPDATE",
+              conversation: {
+                telefone: phone,
+                client_id: clientId,
+                // Outros campos virão do refetch
+              },
+              old: null,
+            };
+
+            if (onConversationUpdateRef.current) {
+              onConversationUpdateRef.current(update);
+            }
+          } catch (error) {
+            // Error processing messages - non-critical
+          }
+        },
+      )
       .subscribe((status, err) => {
         isReconnectingRef.current = false;
         if (status === "SUBSCRIBED") {

@@ -37,6 +37,8 @@ export async function GET(request: NextRequest) {
           c.last_read_at,
           COUNT(h.id) as message_count,
           MAX(h.created_at) as last_message_time,
+          m.msg_ts as last_message_time_messages,
+          m.content as last_message_from_messages,
           -- Count unread messages (messages after last_read_at)
           COUNT(CASE 
             WHEN c.last_read_at IS NULL OR h.created_at > c.last_read_at 
@@ -54,18 +56,40 @@ export async function GET(request: NextRequest) {
         FROM clientes_whatsapp c
         LEFT JOIN n8n_chat_histories h ON CAST(c.telefone AS TEXT) = h.session_id
           AND h.client_id = $1
+        LEFT JOIN LATERAL (
+          SELECT content, "timestamp" as msg_ts, direction
+          FROM messages
+          WHERE phone = CAST(c.telefone AS TEXT)
+            AND client_id = $1
+          ORDER BY "timestamp" DESC NULLS LAST
+          LIMIT 1
+        ) m ON true
         WHERE c.client_id = $1
-          AND EXISTS (
-            SELECT 1 
-            FROM n8n_chat_histories h3 
-            WHERE h3.session_id = CAST(c.telefone AS TEXT)
-              AND h3.client_id = $1
+          AND (
+            EXISTS (
+              SELECT 1 
+              FROM n8n_chat_histories h3 
+              WHERE h3.session_id = CAST(c.telefone AS TEXT)
+                AND h3.client_id = $1
+            )
+            OR EXISTS (
+              SELECT 1
+              FROM messages m2
+              WHERE m2.phone = CAST(c.telefone AS TEXT)
+                AND m2.client_id = $1
+            )
           )
         ${status ? "AND c.status = $2" : ""}
         GROUP BY c.telefone, c.nome, c.status, c.created_at, c.last_read_at
+        , m.msg_ts, m.content, m.direction
       )
       SELECT * FROM customer_stats
-      ORDER BY last_message_time DESC NULLS LAST
+      ORDER BY COALESCE(
+        GREATEST(last_message_time, last_message_time_messages),
+        last_message_time,
+        last_message_time_messages,
+        customer_created_at
+      ) DESC NULLS LAST
       LIMIT $${status ? "3" : "2"} OFFSET $${status ? "4" : "3"}
     `;
 
@@ -77,47 +101,67 @@ export async function GET(request: NextRequest) {
     const conversations: ConversationWithCount[] = result.rows.map((row) => {
       const telefoneStr = String(row.telefone);
 
-      // Parse última mensagem (JSON do LangChain)
+      // Parse última mensagem (JSON do LangChain) e fallback para messages
       let lastMessageContent = "";
       if (row.last_message_json) {
         try {
           const msgData = typeof row.last_message_json === "string"
             ? JSON.parse(row.last_message_json)
             : row.last_message_json;
-
-          // Extrai conteúdo da mensagem (formato LangChain)
           lastMessageContent = msgData.data?.content || msgData.content || "";
         } catch (error) {
           lastMessageContent = "";
         }
       }
+      if (
+        (!lastMessageContent || lastMessageContent.length === 0) &&
+        row.last_message_from_messages
+      ) {
+        lastMessageContent = row.last_message_from_messages;
+      }
+
+      const lastUpdate = (() => {
+        const t1 = row.last_message_time
+          ? new Date(row.last_message_time)
+          : null;
+        const t2 = row.last_message_time_messages
+          ? new Date(row.last_message_time_messages)
+          : null;
+        if (t1 && t2) return (t1 > t2 ? t1 : t2).toISOString();
+        if (t1) return new Date(t1).toISOString();
+        if (t2) return new Date(t2).toISOString();
+        return row.customer_created_at || new Date().toISOString();
+      })();
 
       return {
-        id: telefoneStr,
+        // Required Conversation fields
+        id: `${clientId}-${telefoneStr}`, // Generate unique ID
         client_id: clientId,
         phone: telefoneStr,
-        name: row.nome || "Sem nome",
+        name: row.nome || null,
         status: row.status || "bot",
-        last_message: lastMessageContent.substring(0, 100),
-        last_update: row.last_message_time || row.customer_created_at ||
-          new Date().toISOString(),
+        assigned_to: null,
+        last_message: lastMessageContent || null,
+        last_update: lastUpdate,
         last_read_at: row.last_read_at || null,
         created_at: row.customer_created_at || new Date().toISOString(),
+        // ConversationWithCount fields
         message_count: parseInt(row.message_count) || 0,
         unread_count: parseInt(row.unread_count) || 0,
-        assigned_to: null,
       };
     });
 
-    const duration = Date.now() - startTime;
+    const queryTime = Date.now() - startTime;
 
     return NextResponse.json({
       conversations,
       total: conversations.length,
       limit,
       offset,
+      queryTime: `${queryTime}ms`,
     });
   } catch (error) {
+    console.error("[API] Error fetching conversations:", error);
     return NextResponse.json(
       { error: "Erro interno do servidor" },
       { status: 500 },
