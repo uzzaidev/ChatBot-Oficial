@@ -54,6 +54,13 @@ export interface FlowBlockData {
   webhookMethod?: 'GET' | 'POST';
   webhookHeaders?: Record<string, string>;
   webhookBody?: Record<string, any>;
+  // AI Handoff (Transfer to Bot)
+  transitionMessage?: string;        // Mensagem antes de transferir
+  autoRespond?: boolean;             // Bot responde automaticamente (default: true)
+  includeFlowContext?: boolean;      // Incluir contexto do flow (default: true)
+  contextFormat?: 'summary' | 'full'; // Formato do contexto (default: 'summary')
+  // Human Handoff (Transfer to Human)
+  notifyAgent?: boolean;             // Enviar notificação para agente (default: true)
 }
 
 export interface FlowEdge {

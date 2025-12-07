@@ -15,6 +15,8 @@ import InteractiveListProperties from './properties/InteractiveListProperties'
 import InteractiveButtonsProperties from './properties/InteractiveButtonsProperties'
 import ConditionBlockProperties from './properties/ConditionBlockProperties'
 import ActionBlockProperties from './properties/ActionBlockProperties'
+import AIHandoffBlockProperties from './properties/AIHandoffBlockProperties'
+import HumanHandoffBlockProperties from './properties/HumanHandoffBlockProperties'
 
 export default function FlowPropertiesPanel() {
   const { nodes, selectedNodeId, updateNode } = useFlowStore()
@@ -70,13 +72,19 @@ export default function FlowPropertiesPanel() {
         <ActionBlockProperties node={selectedNode} onUpdate={handleUpdate} />
       )}
 
+      {selectedNode.type === 'ai_handoff' && (
+        <AIHandoffBlockProperties node={selectedNode} onUpdate={handleUpdate} />
+      )}
+
+      {selectedNode.type === 'human_handoff' && (
+        <HumanHandoffBlockProperties node={selectedNode} onUpdate={handleUpdate} />
+      )}
+
       {/* Info for blocks without property panels */}
-      {['start', 'end', 'ai_handoff', 'human_handoff', 'delay', 'webhook'].includes(selectedNode.type) && (
+      {['start', 'end', 'delay', 'webhook'].includes(selectedNode.type) && (
         <div className="text-sm text-gray-500">
           {selectedNode.type === 'start' && 'Este é o bloco inicial do flow. Conecte-o ao próximo bloco.'}
           {selectedNode.type === 'end' && 'Este bloco finaliza o flow.'}
-          {selectedNode.type === 'ai_handoff' && 'Este bloco transfere a conversa para o bot/IA.'}
-          {selectedNode.type === 'human_handoff' && 'Este bloco transfere a conversa para um atendente humano.'}
           {(selectedNode.type === 'delay' || selectedNode.type === 'webhook') && 'Propriedades para este bloco serão implementadas em breve.'}
         </div>
       )}
