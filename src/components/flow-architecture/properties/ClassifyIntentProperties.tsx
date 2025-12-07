@@ -29,7 +29,24 @@ export default function ClassifyIntentProperties({ nodeId, config }: { nodeId: s
       </div>
       <div className="space-y-2">
         <Label>Intenções Suportadas (JSON)</Label>
-        <Textarea value={JSON.stringify(localConfig.intents || [], null, 2)} onChange={(e) => { try { setLocalConfig({ ...localConfig, intents: JSON.parse(e.target.value) }) } catch {} }} rows={6} className="font-mono text-xs" />
+        <Textarea 
+          value={JSON.stringify(localConfig.intents || [], null, 2)} 
+          onChange={(e) => { 
+            try { 
+              const parsed = JSON.parse(e.target.value)
+              setLocalConfig({ ...localConfig, intents: parsed })
+            } catch (err) {
+              // Keep current value on invalid JSON - will show visual feedback
+              console.warn('Invalid JSON for intents:', err)
+            }
+          }} 
+          rows={6} 
+          className="font-mono text-xs" 
+          placeholder='["intent1", "intent2", "intent3"]'
+        />
+        <p className="text-xs text-gray-500">
+          Array de strings em formato JSON
+        </p>
       </div>
       <Button onClick={() => updateNodeConfig(nodeId, localConfig)} disabled={saving} className="w-full gap-2">
         <Save className="w-4 h-4" />{saving ? 'Salvando...' : 'Salvar'}
