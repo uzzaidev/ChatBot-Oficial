@@ -15,6 +15,10 @@ import { immer } from "zustand/middleware/immer";
 import { FLOW_METADATA, type FlowNodeMetadata } from "@/flows/flowMetadata";
 import { apiFetch } from "@/lib/api";
 
+// Constants
+const NOTIFICATION_TIMEOUT_MS = 3000;
+const STORAGE_KEY_NODE_POSITIONS = "flowArchitectureNodePositions";
+
 // ReactFlow Node type for architecture visualization
 export interface FlowArchitectureNode {
   id: string;
@@ -67,6 +71,7 @@ interface FlowArchitectureState {
     type: "success" | "error";
     message: string;
   } | null;
+  notificationTimeout: NodeJS.Timeout | null;
 
   // Actions
   loadNodesFromMetadata: () => void;
@@ -295,6 +300,7 @@ const initialState = {
   loading: false,
   saving: false,
   notification: null,
+  notificationTimeout: null,
 };
 
 export const useFlowArchitectureStore = create<FlowArchitectureState>()(
@@ -305,7 +311,7 @@ export const useFlowArchitectureStore = create<FlowArchitectureState>()(
       // Try to load saved positions from localStorage
       let savedPositions: Record<string, { x: number; y: number }> | undefined;
       try {
-        const saved = localStorage.getItem("flowArchitectureNodePositions");
+        const saved = localStorage.getItem(STORAGE_KEY_NODE_POSITIONS);
         if (saved) {
           savedPositions = JSON.parse(saved);
         }
@@ -335,7 +341,8 @@ export const useFlowArchitectureStore = create<FlowArchitectureState>()(
             const response = await apiFetch(`/api/flow/nodes/${node.id}`);
             if (response.ok) {
               const data = await response.json();
-              // Match backend logic: explicitly check for true values
+              // NOTE: Backend may return string "true"/"false" due to database storage
+              // This ensures we always get a boolean value
               const enabledValue = data.config?.enabled;
               const computedEnabled = enabledValue === true || enabledValue === "true";
               
@@ -409,6 +416,11 @@ export const useFlowArchitectureStore = create<FlowArchitectureState>()(
         }
 
         set((state) => {
+          // Clear any existing timeout
+          if (state.notificationTimeout) {
+            clearTimeout(state.notificationTimeout);
+          }
+
           // Update node enabled state
           const nodeIndex = state.nodes.findIndex((n) => n.id === nodeId);
           if (nodeIndex !== -1) {
@@ -429,24 +441,30 @@ export const useFlowArchitectureStore = create<FlowArchitectureState>()(
             type: "success",
             message: `Node ${enabled ? "ativado" : "desativado"} com sucesso!`,
           };
-        });
 
-        // Clear notification after 3 seconds
-        setTimeout(() => {
-          set({ notification: null });
-        }, 3000);
+          // Set new timeout
+          state.notificationTimeout = setTimeout(() => {
+            set({ notification: null, notificationTimeout: null });
+          }, NOTIFICATION_TIMEOUT_MS) as any;
+        });
       } catch (error) {
         console.error("Failed to toggle node:", error);
-        set({
-          notification: {
+        set((state) => {
+          // Clear any existing timeout
+          if (state.notificationTimeout) {
+            clearTimeout(state.notificationTimeout);
+          }
+
+          state.notification = {
             type: "error",
             message: "Erro ao atualizar node",
-          },
-        });
+          };
 
-        setTimeout(() => {
-          set({ notification: null });
-        }, 3000);
+          // Set new timeout
+          state.notificationTimeout = setTimeout(() => {
+            set({ notification: null, notificationTimeout: null });
+          }, NOTIFICATION_TIMEOUT_MS) as any;
+        });
       } finally {
         set({ saving: false });
       }
@@ -470,28 +488,40 @@ export const useFlowArchitectureStore = create<FlowArchitectureState>()(
         }
 
         set((state) => {
+          // Clear any existing timeout
+          if (state.notificationTimeout) {
+            clearTimeout(state.notificationTimeout);
+          }
+
           state.nodeConfigs[nodeId] = updatedConfig;
           state.notification = {
             type: "success",
             message: "Configuração salva com sucesso!",
           };
-        });
 
-        setTimeout(() => {
-          set({ notification: null });
-        }, 3000);
+          // Set new timeout
+          state.notificationTimeout = setTimeout(() => {
+            set({ notification: null, notificationTimeout: null });
+          }, NOTIFICATION_TIMEOUT_MS) as any;
+        });
       } catch (error) {
         console.error("Failed to update node config:", error);
-        set({
-          notification: {
+        set((state) => {
+          // Clear any existing timeout
+          if (state.notificationTimeout) {
+            clearTimeout(state.notificationTimeout);
+          }
+
+          state.notification = {
             type: "error",
             message: "Erro ao salvar configuração",
-          },
-        });
+          };
 
-        setTimeout(() => {
-          set({ notification: null });
-        }, 3000);
+          // Set new timeout
+          state.notificationTimeout = setTimeout(() => {
+            set({ notification: null, notificationTimeout: null });
+          }, NOTIFICATION_TIMEOUT_MS) as any;
+        });
       } finally {
         set({ saving: false });
       }
@@ -521,7 +551,7 @@ export const useFlowArchitectureStore = create<FlowArchitectureState>()(
         }, {} as Record<string, { x: number; y: number }>);
 
         localStorage.setItem(
-          "flowArchitectureNodePositions",
+          STORAGE_KEY_NODE_POSITIONS,
           JSON.stringify(positions)
         );
       } catch (error) {
@@ -536,6 +566,11 @@ export const useFlowArchitectureStore = create<FlowArchitectureState>()(
     },
 
     reset: () => {
+      const state = get();
+      // Clear any pending timeout
+      if (state.notificationTimeout) {
+        clearTimeout(state.notificationTimeout);
+      }
       set(initialState);
     },
   }))
