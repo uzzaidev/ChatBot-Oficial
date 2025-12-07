@@ -196,10 +196,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           : "outgoing";
 
         // Evitar duplicar mensagens de texto do usuário já salvas em n8n_chat_histories
-        const isDuplicableIncomingText =
-          direction === "incoming" &&
+        const isDuplicableIncomingText = direction === "incoming" &&
           msgType === "text" &&
-          !((metadata as any)?.interactive_response_id || (metadata as any)?.interactive);
+          !((metadata as any)?.interactive_response_id ||
+            (metadata as any)?.interactive);
 
         if (isDuplicableIncomingText) {
           return null;
