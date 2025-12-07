@@ -101,21 +101,30 @@ export class FlowExecutor {
 
       console.log(`✅ [FlowExecutor] Execution created: ${executionDB.id}`);
 
-      // 4. ⭐ CHANGE STATUS TO 'fluxo_inicial'
+      // 4. ⭐ CREATE OR UPDATE customer record with status 'fluxo_inicial'
       const { error: statusError } = await this.supabase
         .from("clientes_whatsapp")
-        .update({ status: "fluxo_inicial" })
-        .eq("telefone", phone)
-        .eq("client_id", clientId);
+        .upsert(
+          {
+            telefone: phone,
+            client_id: clientId,
+            status: "fluxo_inicial",
+            nome: phone, // Will be updated later if we get the real name
+          },
+          {
+            onConflict: "telefone,client_id",
+            ignoreDuplicates: false,
+          },
+        );
 
       if (statusError) {
         console.error(
-          `❌ [FlowExecutor] Failed to update status to fluxo_inicial: ${statusError.message}`,
+          `❌ [FlowExecutor] Failed to upsert customer record: ${statusError.message}`,
         );
         // Continue anyway - status update is not critical for execution
       } else {
         console.log(
-          `✅ [FlowExecutor] Status changed: bot → fluxo_inicial (${phone})`,
+          `✅ [FlowExecutor] Customer record ensured in clientes_whatsapp (${phone})`,
         );
       }
 
