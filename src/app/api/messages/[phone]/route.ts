@@ -68,11 +68,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         [phone, clientId],
       ),
       query<any>(
-        `SELECT id, conversation_id, client_id, phone, content, type, direction, status, metadata, created_at
+        `SELECT id, client_id, phone, content, metadata, "timestamp"
          FROM messages
          WHERE phone = $1
          AND client_id = $2
-         ORDER BY created_at DESC`,
+         ORDER BY "timestamp" DESC NULLS LAST`,
         [phone, clientId],
       ),
     ]);
@@ -175,19 +175,22 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           return item.metadata;
         })();
 
-        const msgType: MessageType =
-          VALID_MESSAGE_TYPES.has(item.type as MessageType)
-            ? (item.type as MessageType)
-            : "text";
-
         const metadata = parsedMetadata && typeof parsedMetadata === "object"
           ? parsedMetadata as Record<string, unknown>
           : null;
 
+        const msgType: MessageType = (() => {
+          if (metadata && (metadata as any).interactive) return "interactive";
+          if (item.type && VALID_MESSAGE_TYPES.has(item.type as MessageType)) {
+            return item.type as MessageType;
+          }
+          return "text";
+        })();
+
         return {
           id: item.id?.toString() || `saved-${index}`,
           client_id: item.client_id || clientId,
-          conversation_id: String(item.conversation_id || phone),
+          conversation_id: String(phone),
           phone: String(item.phone || phone),
           name: item.direction === "incoming" ? "Cliente" : "Bot",
           content: cleanMessageContent(item.content || ""),
@@ -196,8 +199,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             ? ("incoming" as const)
             : ("outgoing" as const),
           status: (item.status || "sent") as Message["status"],
-          timestamp: item.timestamp || item.created_at ||
-            new Date().toISOString(),
+          timestamp: item.timestamp || new Date().toISOString(),
           metadata,
           transcription: item.transcription || null,
           audio_duration_seconds: item.audio_duration_seconds || null,
@@ -223,6 +225,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       },
     });
   } catch (error) {
+    console.error("/api/messages error", error);
     return NextResponse.json(
       { error: "Erro interno do servidor" },
       { status: 500 },
