@@ -151,7 +151,12 @@ export class FlowExecutor {
       );
 
       // Persist a user reply so it appears in the conversation history
-      await this.saveIncomingMessage(phone, clientId, userResponse, interactiveResponseId);
+      await this.saveIncomingMessage(
+        phone,
+        clientId,
+        userResponse,
+        interactiveResponseId,
+      );
 
       // 1. Get active execution with flow data
       const { data: executionDB, error: executionError } = await this.supabase
