@@ -10,7 +10,7 @@
  * 4. Handling user responses and determining next blocks
  */
 
-import { createServerClient } from '@/lib/supabase-server'
+import { createServiceRoleClient } from '@/lib/supabase'
 import {
   InteractiveFlow,
   FlowExecution,
@@ -30,7 +30,7 @@ import {
 } from '@/lib/whatsapp/interactiveMessages'
 
 export class FlowExecutor {
-  private supabase = createServerClient()
+  private supabase = createServiceRoleClient() as any
 
   /**
    * 🚀 Start a new flow execution
