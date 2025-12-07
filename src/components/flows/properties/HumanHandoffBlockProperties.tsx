@@ -56,6 +56,7 @@ export default function HumanHandoffBlockProperties({ node, onUpdate }: HumanHan
             setTransitionMessage(value)
             handleUpdate({ transitionMessage: value })
           }}
+          onKeyDown={(e) => e.stopPropagation()}
           placeholder="Ex: Um atendente humano vai te responder em breve..."
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 min-h-[100px]"
           maxLength={1024}

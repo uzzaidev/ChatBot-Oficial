@@ -37,6 +37,7 @@ export default function MessageBlockProperties({ node, onUpdate }: MessageBlockP
           value={messageText}
           onChange={(e) => setMessageText(e.target.value)}
           onBlur={handleSave}
+          onKeyDown={(e) => e.stopPropagation()}
           placeholder="Digite a mensagem..."
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[120px]"
           maxLength={1024}
