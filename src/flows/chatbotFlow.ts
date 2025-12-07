@@ -30,6 +30,7 @@ import { detectRepetition } from "@/nodes/detectRepetition";
 import { checkInteractiveFlow } from "@/nodes/checkInteractiveFlow";
 import { createExecutionLogger } from "@/lib/logger";
 import { setWithExpiry } from "@/lib/redis";
+import { createServiceRoleClient } from "@/lib/supabase";
 import {
   logGroqUsage,
   logOpenAIUsage,
@@ -201,8 +202,8 @@ export const processChatbotMessage = async (
         await saveChatMessage({
           clientId: config.id,
           phone: parsedMessage.phone,
-          content: parsedMessage.content,
-          role: "human",
+          message: parsedMessage.content,
+          type: "user",
         });
 
         // Also save to messages table (for frontend display)
