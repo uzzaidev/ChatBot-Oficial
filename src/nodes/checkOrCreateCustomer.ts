@@ -88,13 +88,13 @@ const upsertClienteWhatsApp = async (
     return { data: existingCustomer, error: null };
   }
 
-  // Cliente não existe, criar novo com status 'bot'
+  // Cliente não existe, criar novo com status 'fluxo_inicial'
   const result = await supabaseAny
     .from("clientes_whatsapp")
     .insert({
       telefone: phone,
       nome: name,
-      status: "bot",
+      status: "fluxo_inicial", // 🔄 Novos contatos iniciam em flow automaticamente
       client_id: clientId, // 🔐 Multi-tenant: Associa customer ao cliente
     })
     .select()

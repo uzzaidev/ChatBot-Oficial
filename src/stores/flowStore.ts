@@ -1,82 +1,97 @@
 /**
  * Flow Editor Store - Zustand with Immer
- * 
+ *
  * Manages state for the interactive flow editor:
  * - Nodes (blocks)
  * - Edges (connections)
  * - Selected node
  * - Flow metadata
- * 
+ *
  * @phase Phase 5 - Interface Drag-and-Drop
  * @created 2025-12-06
  */
 
-import { create } from 'zustand'
-import { immer } from 'zustand/middleware/immer'
-import type { InteractiveFlow, FlowBlock, FlowEdge } from '@/types/interactiveFlows'
+import { create } from "zustand";
+import { immer } from "zustand/middleware/immer";
+import type {
+  FlowBlock,
+  FlowEdge,
+  InteractiveFlow,
+} from "@/types/interactiveFlows";
 
 // ReactFlow Node type (compatible with @xyflow/react)
 export interface FlowNode {
-  id: string
-  type: string
-  position: { x: number; y: number }
-  data: any
+  id: string;
+  type: string;
+  position: { x: number; y: number };
+  data: any;
 }
 
 // ReactFlow Edge type
 export interface FlowNodeEdge {
-  id: string
-  source: string
-  target: string
-  sourceHandle?: string
-  targetHandle?: string
-  label?: string
-  type?: string
-  animated?: boolean
-  selected?: boolean
-  style?: Record<string, any>
-  markerEnd?: any
+  id: string;
+  source: string;
+  target: string;
+  sourceHandle?: string;
+  targetHandle?: string;
+  label?: string;
+  type?: string;
+  animated?: boolean;
+  selected?: boolean;
+  style?: Record<string, any>;
+  markerEnd?: any;
 }
 
 interface FlowState {
   // Flow metadata
-  flowId: string | null
-  flowName: string
-  flowDescription: string
-  isActive: boolean
-  triggerType: 'keyword' | 'qr_code' | 'link' | 'manual' | 'always'
-  triggerKeywords: string[]
-  
+  flowId: string | null;
+  flowName: string;
+  flowDescription: string;
+  isActive: boolean;
+  triggerType: "keyword" | "qr_code" | "link" | "manual" | "always";
+  triggerKeywords: string[];
+
   // Flow structure
-  nodes: FlowNode[]
-  edges: FlowNodeEdge[]
-  startBlockId: string | null
-  
+  nodes: FlowNode[];
+  edges: FlowNodeEdge[];
+  startBlockId: string | null;
+
   // UI state
-  selectedNodeId: string | null
-  isSaving: boolean
-  lastSavedAt: Date | null
-  hasUnsavedChanges: boolean
-  
+  selectedNodeId: string | null;
+  isSaving: boolean;
+  lastSavedAt: Date | null;
+  hasUnsavedChanges: boolean;
+
   // Actions
-  loadFlow: (flowId: string) => Promise<void>
-  saveFlow: () => Promise<void>
-  setNodes: (nodes: FlowNode[]) => void
-  setEdges: (edges: FlowNodeEdge[]) => void
-  addNode: (type: string, position: { x: number; y: number }) => void
-  updateNode: (nodeId: string, data: any) => void
-  deleteNode: (nodeId: string) => void
-  setSelectedNode: (nodeId: string | null) => void
-  updateFlowMetadata: (metadata: Partial<Pick<FlowState, 'flowName' | 'flowDescription' | 'isActive' | 'triggerType' | 'triggerKeywords'>>) => void
-  reset: () => void
+  loadFlow: (flowId: string) => Promise<void>;
+  saveFlow: () => Promise<void>;
+  setNodes: (nodes: FlowNode[]) => void;
+  setEdges: (edges: FlowNodeEdge[]) => void;
+  addNode: (type: string, position: { x: number; y: number }) => void;
+  updateNode: (nodeId: string, data: any) => void;
+  deleteNode: (nodeId: string) => void;
+  setSelectedNode: (nodeId: string | null) => void;
+  updateFlowMetadata: (
+    metadata: Partial<
+      Pick<
+        FlowState,
+        | "flowName"
+        | "flowDescription"
+        | "isActive"
+        | "triggerType"
+        | "triggerKeywords"
+      >
+    >,
+  ) => void;
+  reset: () => void;
 }
 
 const initialState = {
   flowId: null,
-  flowName: 'Novo Flow',
-  flowDescription: '',
+  flowName: "Novo Flow",
+  flowDescription: "",
   isActive: true,
-  triggerType: 'keyword' as const,
+  triggerType: "keyword" as const,
   triggerKeywords: [],
   nodes: [],
   edges: [],
@@ -84,8 +99,8 @@ const initialState = {
   selectedNodeId: null,
   isSaving: false,
   lastSavedAt: null,
-  hasUnsavedChanges: false
-}
+  hasUnsavedChanges: false,
+};
 
 export const useFlowStore = create<FlowState>()(
   immer((set, get) => ({
@@ -93,31 +108,31 @@ export const useFlowStore = create<FlowState>()(
 
     loadFlow: async (flowId: string) => {
       try {
-        const response = await fetch(`/api/flows/${flowId}`)
-        
+        const response = await fetch(`/api/flows/${flowId}`);
+
         if (!response.ok) {
-          throw new Error('Failed to load flow')
+          throw new Error("Failed to load flow");
         }
 
-        const { flow }: { flow: InteractiveFlow } = await response.json()
+        const { flow }: { flow: InteractiveFlow } = await response.json();
 
         set((state) => {
-          state.flowId = flow.id
-          state.flowName = flow.name
-          state.flowDescription = flow.description || ''
-          state.isActive = flow.isActive
-          state.triggerType = flow.triggerType
-          state.triggerKeywords = flow.triggerKeywords || []
-          state.startBlockId = flow.startBlockId
-          
+          state.flowId = flow.id;
+          state.flowName = flow.name;
+          state.flowDescription = flow.description || "";
+          state.isActive = flow.isActive;
+          state.triggerType = flow.triggerType;
+          state.triggerKeywords = flow.triggerKeywords || [];
+          state.startBlockId = flow.startBlockId;
+
           // Transform FlowBlock[] to FlowNode[]
           state.nodes = flow.blocks.map((block) => ({
             id: block.id,
             type: block.type,
             position: block.position,
-            data: block.data
-          }))
-          
+            data: block.data,
+          }));
+
           // Transform FlowEdge[] to FlowNodeEdge[]
           state.edges = flow.edges.map((edge) => ({
             id: edge.id,
@@ -126,36 +141,36 @@ export const useFlowStore = create<FlowState>()(
             sourceHandle: edge.sourceHandle,
             targetHandle: edge.targetHandle,
             label: edge.label,
-            type: 'smoothstep',
+            type: "smoothstep",
             animated: true,
-            style: { stroke: '#3B82F6', strokeWidth: 2 },
+            style: { stroke: "#3B82F6", strokeWidth: 2 },
             markerEnd: {
-              type: 'arrowclosed' as any,
+              type: "arrowclosed" as any,
               width: 20,
               height: 20,
-              color: '#3B82F6'
-            }
-          }))
-          
-          state.hasUnsavedChanges = false
-          state.lastSavedAt = new Date()
-        })
+              color: "#3B82F6",
+            },
+          }));
+
+          state.hasUnsavedChanges = false;
+          state.lastSavedAt = new Date();
+        });
       } catch (error: any) {
-        console.error('Error loading flow:', error)
-        throw error
+        console.error("Error loading flow:", error);
+        throw error;
       }
     },
 
     saveFlow: async () => {
-      const state = get()
-      
+      const state = get();
+
       // Transform FlowNode[] back to FlowBlock[]
       const blocks: FlowBlock[] = state.nodes.map((node) => ({
         id: node.id,
         type: node.type as any,
         position: node.position,
-        data: node.data
-      }))
+        data: node.data,
+      }));
 
       // Transform FlowNodeEdge[] back to FlowEdge[]
       const edges: FlowEdge[] = state.edges.map((edge) => ({
@@ -165,65 +180,66 @@ export const useFlowStore = create<FlowState>()(
         sourceHandle: edge.sourceHandle,
         targetHandle: edge.targetHandle,
         label: edge.label,
-        type: edge.type === 'smoothstep' ? 'default' : (edge.type as any)
-      }))
+        type: edge.type === "smoothstep" ? "default" : (edge.type as any),
+      }));
 
-      const startBlockId = state.startBlockId || blocks.find(b => b.type === 'start')?.id
+      const startBlockId = state.startBlockId ||
+        blocks.find((b) => b.type === "start")?.id;
 
       // Validate we have required data
       if (!state.flowName || state.flowName.trim().length === 0) {
-        throw new Error('Nome do flow é obrigatório')
+        throw new Error("Nome do flow é obrigatório");
       }
 
       if (blocks.length === 0) {
-        throw new Error('Adicione pelo menos um bloco ao flow')
+        throw new Error("Adicione pelo menos um bloco ao flow");
       }
 
       if (!startBlockId) {
-        throw new Error('Adicione um bloco de início ao flow')
+        throw new Error("Adicione um bloco de início ao flow");
       }
 
-      set({ isSaving: true })
+      set({ isSaving: true });
 
       try {
         // Check if creating new or updating existing
-        if (!state.flowId || state.flowId === 'new') {
+        if (!state.flowId || state.flowId === "new") {
           // Create new flow
-          const response = await fetch('/api/flows', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+          const response = await fetch("/api/flows", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               name: state.flowName,
               description: state.flowDescription,
               isActive: state.isActive,
-              triggerType: state.triggerType || 'keyword',
+              triggerType: state.triggerType || "keyword",
               triggerKeywords: state.triggerKeywords,
               blocks,
               edges,
-              startBlockId
-            })
-          })
+              startBlockId,
+            }),
+          });
 
           if (!response.ok) {
-            const errorData = await response.json()
-            throw new Error(errorData.error || 'Failed to create flow')
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Failed to create flow");
           }
 
-          const { flow } = await response.json()
-          
+          const { flow } = await response.json();
+
           // Update store with new flow ID
           set((state) => {
-            state.flowId = flow.id
-            state.hasUnsavedChanges = false
-            state.lastSavedAt = new Date()
-          })
+            state.flowId = flow.id;
+            state.hasUnsavedChanges = false;
+            state.lastSavedAt = new Date();
+          });
 
-          console.log('✅ Flow created successfully')
+          console.log("✅ Flow created successfully");
         } else {
           // Update existing flow
           const response = await fetch(`/api/flows/${state.flowId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               name: state.flowName,
               description: state.flowDescription,
@@ -232,41 +248,41 @@ export const useFlowStore = create<FlowState>()(
               triggerKeywords: state.triggerKeywords,
               blocks,
               edges,
-              startBlockId
-            })
-          })
+              startBlockId,
+            }),
+          });
 
           if (!response.ok) {
-            throw new Error('Failed to save flow')
+            throw new Error("Failed to save flow");
           }
 
           set((state) => {
-            state.hasUnsavedChanges = false
-            state.lastSavedAt = new Date()
-          })
+            state.hasUnsavedChanges = false;
+            state.lastSavedAt = new Date();
+          });
 
-          console.log('✅ Flow saved successfully')
+          console.log("✅ Flow saved successfully");
         }
       } catch (error: any) {
-        console.error('Error saving flow:', error)
-        throw error
+        console.error("Error saving flow:", error);
+        throw error;
       } finally {
-        set({ isSaving: false })
+        set({ isSaving: false });
       }
     },
 
     setNodes: (nodes) => {
       set((state) => {
-        state.nodes = nodes
-        state.hasUnsavedChanges = true
-      })
+        state.nodes = nodes;
+        state.hasUnsavedChanges = true;
+      });
     },
 
     setEdges: (edges) => {
       set((state) => {
-        state.edges = edges
-        state.hasUnsavedChanges = true
-      })
+        state.edges = edges;
+        state.hasUnsavedChanges = true;
+      });
     },
 
     addNode: (type, position) => {
@@ -275,65 +291,68 @@ export const useFlowStore = create<FlowState>()(
         type,
         position,
         data: {
-          label: type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-        }
-      }
+          label: type.replace(/_/g, " ").replace(
+            /\b\w/g,
+            (l) => l.toUpperCase(),
+          ),
+        },
+      };
 
       set((state) => {
-        state.nodes.push(newNode)
-        state.hasUnsavedChanges = true
-        
+        state.nodes.push(newNode);
+        state.hasUnsavedChanges = true;
+
         // If this is the first node and it's a start node, set as start block
-        if (type === 'start' && !state.startBlockId) {
-          state.startBlockId = newNode.id
+        if (type === "start" && !state.startBlockId) {
+          state.startBlockId = newNode.id;
         }
-      })
+      });
     },
 
     updateNode: (nodeId, data) => {
       set((state) => {
-        const node = state.nodes.find((n) => n.id === nodeId)
+        const node = state.nodes.find((n) => n.id === nodeId);
         if (node) {
-          node.data = { ...node.data, ...data }
-          state.hasUnsavedChanges = true
+          node.data = { ...node.data, ...data };
+          state.hasUnsavedChanges = true;
         }
-      })
+      });
     },
 
     deleteNode: (nodeId) => {
       set((state) => {
-        state.nodes = state.nodes.filter((n) => n.id !== nodeId)
+        state.nodes = state.nodes.filter((n) => n.id !== nodeId);
         state.edges = state.edges.filter(
-          (e) => e.source !== nodeId && e.target !== nodeId
-        )
-        
+          (e) => e.source !== nodeId && e.target !== nodeId,
+        );
+
         if (state.selectedNodeId === nodeId) {
-          state.selectedNodeId = null
+          state.selectedNodeId = null;
         }
-        
+
         if (state.startBlockId === nodeId) {
           // Find another start block or reset
-          const startNode = state.nodes.find(n => n.type === 'start')
-          state.startBlockId = startNode?.id || null
+          const startNode = state.nodes.find((n) => n.type === "start");
+          state.startBlockId = startNode?.id || null;
         }
-        
-        state.hasUnsavedChanges = true
-      })
+
+        state.hasUnsavedChanges = true;
+      });
     },
 
     setSelectedNode: (nodeId) => {
-      set({ selectedNodeId: nodeId })
+      set({ selectedNodeId: nodeId });
     },
 
     updateFlowMetadata: (metadata) => {
       set((state) => {
-        Object.assign(state, metadata)
-        state.hasUnsavedChanges = true
-      })
+        Object.assign(state, metadata);
+        state.hasUnsavedChanges = true;
+      });
     },
 
     reset: () => {
-      set(initialState)
-    }
-  }))
-)
+      set(initialState);
+    },
+  })),
+);

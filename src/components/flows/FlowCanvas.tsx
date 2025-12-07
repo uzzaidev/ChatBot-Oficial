@@ -74,9 +74,13 @@ export default function FlowCanvas() {
   }, [nodes, setLocalNodes])
 
   useEffect(() => {
-    // Add selection styling to edges
+    // Add selection styling and interaction properties to edges
     const edgesWithStyle = edges.map(edge => ({
       ...edge,
+      selectable: true,
+      focusable: true,
+      deletable: true,
+      interactionWidth: 20,
       style: {
         ...edge.style,
         strokeWidth: edge.selected === true ? 3 : 2,
@@ -138,13 +142,17 @@ export default function FlowCanvas() {
       id: `e-${connection.source?.slice(-NODE_ID_LENGTH)}${handleSuffix}-${connection.target?.slice(-NODE_ID_LENGTH)}`,
       type: 'smoothstep',
       animated: true,
+      selectable: true,
+      focusable: true,
+      deletable: true,
       markerEnd: {
         type: MarkerType.ArrowClosed,
         width: 20,
         height: 20,
         color: '#3B82F6'
       },
-      style: { stroke: '#3B82F6', strokeWidth: 2 }
+      style: { stroke: '#3B82F6', strokeWidth: 2 },
+      interactionWidth: 20
     }
 
     const newEdges = addEdge(edge, localEdges)
@@ -157,6 +165,12 @@ export default function FlowCanvas() {
     event.stopPropagation()
     setSelectedNode(node.id)
   }, [setSelectedNode])
+
+  // Handle edge click (for selection)
+  const onEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
+    event.stopPropagation()
+    console.log('Edge clicked:', edge.id)
+  }, [])
 
   // Handle canvas click (deselect)
   const onPaneClick = useCallback(() => {
@@ -192,12 +206,16 @@ export default function FlowCanvas() {
         onEdgesChange={handleEdgesChange}
         onConnect={onConnect}
         onNodeClick={onNodeClick}
+        onEdgeClick={onEdgeClick}
         onPaneClick={onPaneClick}
         nodeTypes={nodeTypes}
         fitView
         attributionPosition="bottom-left"
         snapToGrid
         snapGrid={[15, 15]}
+        deleteKeyCode="Delete"
+        elementsSelectable={true}
+        selectNodesOnDrag={false}
         defaultEdgeOptions={{
           type: 'smoothstep',
           animated: true,
