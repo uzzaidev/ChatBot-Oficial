@@ -15,7 +15,7 @@
  */
 
 import { FlowExecutor } from "@/lib/flows/flowExecutor";
-import { createServerClient } from "@/lib/supabase-server";
+import { createServiceRoleClient } from "@/lib/supabase";
 
 export interface CheckInteractiveFlowInput {
   clientId: string;
@@ -54,7 +54,7 @@ export const checkInteractiveFlow = async (
   console.log(`🔍 [NODE 15] Checking interactive flow for ${phone}`);
   console.log(`🔍 [NODE 15] Client ID: ${clientId}`);
 
-  const supabase = createServerClient();
+  const supabase = createServiceRoleClient();
   const executor = new FlowExecutor();
 
   try {
