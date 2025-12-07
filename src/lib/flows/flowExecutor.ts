@@ -28,6 +28,8 @@ import {
   sendInteractiveButtons,
   sendInteractiveList,
 } from "@/lib/whatsapp/interactiveMessages";
+import { sendTextMessage as sendWhatsAppText } from "@/lib/meta";
+import { getClientConfig } from "@/lib/config";
 
 export class FlowExecutor {
   private supabase = createServiceRoleClient() as any;
@@ -349,6 +351,7 @@ export class FlowExecutor {
           executionId,
           execution.phone,
           execution.client_id,
+          block,
         );
         break;
 
@@ -357,6 +360,7 @@ export class FlowExecutor {
           executionId,
           execution.phone,
           execution.client_id,
+          block,
         );
         break;
 
@@ -651,10 +655,40 @@ export class FlowExecutor {
     executionId: string,
     phone: string,
     clientId: string,
+    block: FlowBlock,
   ): Promise<void> {
     console.log(`🤖 [FlowExecutor] Transferring ${phone} to Bot/AI`);
 
-    // 1. Update contact status
+    const {
+      transitionMessage,
+      autoRespond = true,
+      includeFlowContext = true,
+      contextFormat = "summary",
+    } = block.data;
+
+    // 1. Get execution with history
+    const { data: executionDB, error: execError } = await this.supabase
+      .from("flow_executions")
+      .select("*")
+      .eq("id", executionId)
+      .single();
+
+    if (execError || !executionDB) {
+      console.error(
+        `❌ [FlowExecutor] Failed to fetch execution: ${execError?.message}`,
+      );
+      return;
+    }
+
+    const execution = this.dbToExecution(executionDB);
+
+    // 2. Send transition message (if configured)
+    if (transitionMessage) {
+      await this.sendTextMessage(phone, clientId, transitionMessage);
+      await this.saveOutgoingMessage(phone, clientId, transitionMessage);
+    }
+
+    // 3. Update contact status
     const { error: statusError } = await this.supabase
       .from("clientes_whatsapp")
       .update({ status: "bot" })
@@ -671,7 +705,7 @@ export class FlowExecutor {
       );
     }
 
-    // 2. Mark flow as completed
+    // 4. Mark flow as completed
     const { error: flowError } = await this.supabase
       .from("flow_executions")
       .update({
@@ -685,6 +719,25 @@ export class FlowExecutor {
         `❌ [FlowExecutor] Failed to mark flow as transferred_ai: ${flowError.message}`,
       );
     }
+
+    // 5. AUTO-RESPONSE FROM BOT
+    if (autoRespond) {
+      // Format flow context
+      const flowContext = includeFlowContext
+        ? this.formatFlowContext(execution, contextFormat)
+        : null;
+
+      // Get last user message
+      const lastUserMessage = this.getLastUserMessage(execution);
+
+      // Trigger bot response
+      await this.triggerBotResponse(
+        phone,
+        clientId,
+        lastUserMessage,
+        flowContext,
+      );
+    }
   }
 
   /**
@@ -696,10 +749,38 @@ export class FlowExecutor {
     executionId: string,
     phone: string,
     clientId: string,
+    block: FlowBlock,
   ): Promise<void> {
     console.log(`👤 [FlowExecutor] Transferring ${phone} to Human Agent`);
 
-    // 1. Update contact status
+    const {
+      transitionMessage,
+      notifyAgent = true,
+    } = block.data;
+
+    // 1. Get execution with history
+    const { data: executionDB, error: execError } = await this.supabase
+      .from("flow_executions")
+      .select("*")
+      .eq("id", executionId)
+      .single();
+
+    if (execError || !executionDB) {
+      console.error(
+        `❌ [FlowExecutor] Failed to fetch execution: ${execError?.message}`,
+      );
+      return;
+    }
+
+    const execution = this.dbToExecution(executionDB);
+
+    // 2. Send transition message (if configured)
+    if (transitionMessage) {
+      await this.sendTextMessage(phone, clientId, transitionMessage);
+      await this.saveOutgoingMessage(phone, clientId, transitionMessage);
+    }
+
+    // 3. Update contact status
     const { error: statusError } = await this.supabase
       .from("clientes_whatsapp")
       .update({ status: "humano" })
@@ -716,7 +797,7 @@ export class FlowExecutor {
       );
     }
 
-    // 2. Mark flow as completed
+    // 4. Mark flow as completed
     const { error: flowError } = await this.supabase
       .from("flow_executions")
       .update({
@@ -731,8 +812,10 @@ export class FlowExecutor {
       );
     }
 
-    // 3. Notify agent
-    await this.notifyAgent(phone, clientId);
+    // 5. Notify agent (if configured)
+    if (notifyAgent) {
+      await this.notifyAgent(phone, clientId);
+    }
   }
 
   /**
@@ -798,6 +881,68 @@ export class FlowExecutor {
     console.log(
       `📧 [FlowExecutor] Notifying agent: new conversation from ${phone}`,
     );
+  }
+
+  /**
+   * 📤 Send text message via WhatsApp
+   *
+   * @private
+   */
+  private async sendTextMessage(
+    phone: string,
+    clientId: string,
+    message: string,
+  ): Promise<void> {
+    try {
+      const config = await getClientConfig(clientId);
+      await sendWhatsAppText(phone, message, config || undefined);
+    } catch (error) {
+      console.error(
+        `❌ [FlowExecutor] Failed to send text message:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * 💾 Save outgoing message to database
+   *
+   * @private
+   */
+  private async saveOutgoingMessage(
+    phone: string,
+    clientId: string,
+    content: string,
+  ): Promise<void> {
+    try {
+      const { data: conversation } = await this.supabase
+        .from("conversations")
+        .select("id")
+        .eq("client_id", clientId)
+        .eq("phone", phone)
+        .maybeSingle();
+
+      const conversationId = conversation?.id;
+
+      await this.supabase.from("messages").insert({
+        client_id: clientId,
+        conversation_id: conversationId,
+        phone,
+        content,
+        type: "text",
+        direction: "outgoing",
+        status: "sent",
+        timestamp: new Date().toISOString(),
+      });
+
+      console.log(`✅ [FlowExecutor] Outgoing message saved to database`);
+    } catch (error) {
+      console.error(
+        `❌ [FlowExecutor] Error saving outgoing message:`,
+        error,
+      );
+    }
   }
 
   /**
@@ -1166,6 +1311,200 @@ export class FlowExecutor {
         `❌ [FlowExecutor] Error saving incoming message:`,
         error,
       );
+    }
+  }
+
+  /**
+   * 📝 Format flow execution context for bot
+   *
+   * @private
+   */
+  private formatFlowContext(
+    execution: FlowExecution,
+    format: "summary" | "full" = "summary",
+  ): string {
+    if (format === "summary") {
+      // Resumo: apenas variáveis coletadas e última interação
+      const vars = execution.variables;
+      const lastStep = execution.history[execution.history.length - 1];
+
+      const varsText =
+        Object.keys(vars).length > 0
+          ? Object.entries(vars)
+            .map(([k, v]) => `- ${k}: ${v}`)
+            .join("\n")
+          : "Nenhuma variável coletada.";
+
+      const lastInteraction = lastStep
+        ? lastStep.userResponse || lastStep.interactiveResponseId || "N/A"
+        : "N/A";
+
+      const context = `[CONTEXTO DO FLUXO INTERATIVO]
+O cliente acabou de passar por um fluxo interativo automatizado.
+
+Dados coletados:
+${varsText}
+
+Última interação do cliente: ${lastInteraction}
+
+IMPORTANTE: O cliente já forneceu essas informações. Use-as no contexto da conversa.`;
+
+      // Limitar a 1000 caracteres
+      return context.length > 1000
+        ? context.substring(0, 1000) + "... [contexto truncado]"
+        : context;
+    } else {
+      // Full: histórico completo de interações
+      const steps = execution.history
+        .map((step, i) => {
+          const response = step.userResponse || step.interactiveResponseId || "-";
+          return `${i + 1}. [${step.blockType}] ${response}`;
+        })
+        .join("\n");
+
+      const vars = execution.variables;
+      const varsText =
+        Object.keys(vars).length > 0
+          ? Object.entries(vars)
+            .map(([k, v]) => `- ${k}: ${v}`)
+            .join("\n")
+          : "Nenhuma variável coletada.";
+
+      const context = `[HISTÓRICO COMPLETO DO FLUXO INTERATIVO]
+
+Sequência de interações:
+${steps}
+
+Variáveis coletadas:
+${varsText}
+
+IMPORTANTE: Use este histórico para entender o contexto completo da conversa.`;
+
+      // Limitar a 2000 caracteres para formato full
+      return context.length > 2000
+        ? context.substring(0, 2000) + "... [contexto truncado]"
+        : context;
+    }
+  }
+
+  /**
+   * 💬 Get last user message from flow execution
+   *
+   * @private
+   */
+  private getLastUserMessage(execution: FlowExecution): string {
+    const history = execution.history;
+
+    // Procurar de trás para frente a última resposta do usuário
+    for (let i = history.length - 1; i >= 0; i--) {
+      const step = history[i];
+      if (step.userResponse) {
+        return step.userResponse;
+      }
+      if (step.interactiveResponseId) {
+        // Se for resposta interativa, retornar formatado
+        return `[Selecionou: ${step.interactiveResponseId}]`;
+      }
+    }
+
+    // Fallback: usuário não respondeu nada (improvável)
+    return "Olá";
+  }
+
+  /**
+   * 🤖 Trigger bot response after transfer
+   *
+   * @private
+   */
+  private async triggerBotResponse(
+    phone: string,
+    clientId: string,
+    userMessage: string,
+    flowContext: string | null,
+  ): Promise<void> {
+    try {
+      console.log(
+        `🤖 [FlowExecutor] Triggering bot response for ${phone} with context`,
+      );
+
+      // Salvar contexto do flow no histórico de chat
+      // Isso permite que o bot veja o contexto quando gerar resposta
+      if (flowContext) {
+        await this.supabase.from("n8n_chat_histories").insert({
+          session_id: phone,
+          client_id: clientId,
+          message: {
+            type: "system",
+            content: flowContext,
+          },
+          created_at: new Date().toISOString(),
+        });
+      }
+
+      // Criar mock payload como se fosse webhook do WhatsApp
+      const mockPayload = {
+        object: "whatsapp_business_account" as const,
+        entry: [
+          {
+            id: "mock",
+            changes: [
+              {
+                value: {
+                  messaging_product: "whatsapp" as const,
+                  metadata: {
+                    display_phone_number: phone,
+                    phone_number_id: "mock",
+                  },
+                  contacts: [
+                    {
+                      profile: { name: phone },
+                      wa_id: phone,
+                    },
+                  ],
+                  messages: [
+                    {
+                      from: phone,
+                      id: `mock_${Date.now()}`,
+                      timestamp: Math.floor(Date.now() / 1000).toString(),
+                      type: "text" as const,
+                      text: {
+                        body: userMessage,
+                      },
+                    },
+                  ],
+                },
+                field: "messages" as const,
+              },
+            ],
+          },
+        ],
+      };
+
+      // Importar dinamicamente para evitar dependência circular
+      const { processChatbotMessage } = await import("@/flows/chatbotFlow");
+
+      // Get client config
+      const config = await getClientConfig(clientId);
+
+      if (!config) {
+        console.error(
+          `❌ [FlowExecutor] No config found for client ${clientId}`,
+        );
+        return;
+      }
+
+      // Chamar chatbotFlow com o payload mock
+      await processChatbotMessage(mockPayload, config);
+
+      console.log(
+        `✅ [FlowExecutor] Bot response triggered successfully for ${phone}`,
+      );
+    } catch (error) {
+      console.error(
+        `❌ [FlowExecutor] Error triggering bot response:`,
+        error,
+      );
+      // Não lançar erro - transferência ainda foi feita
     }
   }
 }

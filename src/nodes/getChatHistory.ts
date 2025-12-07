@@ -81,8 +81,18 @@ export const getChatHistory = async (input: GetChatHistoryInput): Promise<GetCha
           parsedMessage = { type: 'human', content: record.message }
         }
 
+        // Map message type to role (ai -> assistant, human -> user, system -> system)
+        let role: "user" | "assistant" | "system" = "user";
+        if (parsedMessage.type === "ai") {
+          role = "assistant";
+        } else if (parsedMessage.type === "system") {
+          role = "system";
+        } else {
+          role = "user"; // human or any other type defaults to user
+        }
+
         return {
-          role: parsedMessage.type === 'ai' ? 'assistant' : 'user',
+          role,
           content: parsedMessage.content || parsedMessage.data?.content || '',
           timestamp: record.created_at,
         }
