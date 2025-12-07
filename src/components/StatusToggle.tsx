@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { toast } from '@/hooks/use-toast'
-import { Bot, User, ArrowRight, HelpCircle } from 'lucide-react'
+import { Bot, User, ArrowRight, HelpCircle, Workflow } from 'lucide-react'
 import { LucideIcon } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 
@@ -48,7 +48,7 @@ const statusConfig: Record<string, StatusConfig> = {
   },
   fluxo_inicial: {
     label: 'Em Flow',
-    icon: ArrowRight,
+    icon: Workflow,
     color: 'bg-purple-500/10 text-purple-700 border-purple-200',
     description: 'Em fluxo interativo',
   },
