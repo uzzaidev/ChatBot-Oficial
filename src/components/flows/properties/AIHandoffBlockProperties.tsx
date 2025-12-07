@@ -152,7 +152,7 @@ export default function AIHandoffBlockProperties({ node, onUpdate }: AIHandoffBl
       <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-lg">
         <p className="text-xs text-cyan-900 font-medium mb-1">ℹ️ Como funciona:</p>
         <ul className="text-xs text-cyan-800 space-y-1 ml-4 list-disc">
-          <li>O status do contato muda de "fluxo_inicial" para "bot"</li>
+          <li>O status do contato muda de &quot;fluxo_inicial&quot; para &quot;bot&quot;</li>
           <li>O fluxo é marcado como concluído (transferred_ai)</li>
           {autoRespond && <li>O bot recebe o contexto e responde automaticamente</li>}
         </ul>
