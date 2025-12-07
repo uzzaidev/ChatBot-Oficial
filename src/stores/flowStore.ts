@@ -33,6 +33,7 @@ export interface FlowNodeEdge {
   label?: string
   type?: string
   animated?: boolean
+  selected?: boolean
   style?: Record<string, any>
   markerEnd?: any
 }
