@@ -73,15 +73,14 @@ export const useRealtimeConversations = ({
           private: false,
         },
       })
-      // Escutar mudanças em clientes_whatsapp (status, etc)
       .on(
-        "postgres_changes",
-        {
-          event: "*", // INSERT, UPDATE, DELETE
-          schema: "public",
-          table: "clientes_whatsapp",
-          filter: `client_id=eq.${clientId}`,
-        },
+      "postgres_changes",
+      {
+        event: "*", // INSERT, UPDATE, DELETE
+        schema: "public",
+        table: "clientes_whatsapp",
+        filter: `client_id=eq.${clientId}`,
+      },
         (payload) => {
           try {
             const update: ConversationUpdate = {
@@ -98,15 +97,14 @@ export const useRealtimeConversations = ({
           }
         },
       )
-      // Escutar novas mensagens em n8n_chat_histories
       .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "n8n_chat_histories",
-          filter: `client_id=eq.${clientId}`,
-        },
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "n8n_chat_histories",
+        filter: `client_id=eq.${clientId}`,
+      },
         (payload) => {
           try {
             const data = payload.new as any;
@@ -131,7 +129,6 @@ export const useRealtimeConversations = ({
           }
         },
       )
-      // Escutar novas mensagens na tabela messages (flows)
       .on(
         "postgres_changes",
         {
