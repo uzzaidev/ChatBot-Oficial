@@ -150,6 +150,9 @@ export class FlowExecutor {
         }`,
       );
 
+      // Persist a user reply so it appears in the conversation history
+      await this.saveIncomingMessage(phone, clientId, userResponse, interactiveResponseId);
+
       // 1. Get active execution with flow data
       const { data: executionDB, error: executionError } = await this.supabase
         .from("flow_executions")
@@ -1105,6 +1108,48 @@ export class FlowExecutor {
     } catch (error) {
       console.error(
         `❌ [FlowExecutor] Error saving interactive message:`,
+        error,
+      );
+    }
+  }
+
+  /**
+   * 💾 Save the user's reply (text or interactive selection) into the messages table
+   */
+  private async saveIncomingMessage(
+    phone: string,
+    clientId: string,
+    content: string,
+    interactiveResponseId?: string,
+  ): Promise<void> {
+    try {
+      const { data: conversation } = await this.supabase
+        .from("conversations")
+        .select("id")
+        .eq("client_id", clientId)
+        .eq("phone", phone)
+        .maybeSingle();
+
+      const conversationId = conversation?.id;
+      const metadata: Record<string, unknown> = {};
+      if (interactiveResponseId) {
+        metadata.interactive_response_id = interactiveResponseId;
+      }
+
+      await this.supabase.from("messages").insert({
+        client_id: clientId,
+        conversation_id: conversationId,
+        phone,
+        content: content || "",
+        type: "text",
+        direction: "incoming",
+        status: "sent",
+        metadata: Object.keys(metadata).length ? metadata : null,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error(
+        `❌ [FlowExecutor] Error saving incoming message:`,
         error,
       );
     }
