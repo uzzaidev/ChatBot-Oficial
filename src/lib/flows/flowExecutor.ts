@@ -174,7 +174,8 @@ export class FlowExecutor {
         currentBlock,
         userResponse,
         interactiveResponseId,
-        execution.variables
+        execution.variables,
+        flow
       )
 
       if (!nextBlockId) {
@@ -695,6 +696,8 @@ export class FlowExecutor {
   /**
    * ➡️ Advance to next block automatically
    * 
+   * Used for blocks without user interaction (message, action, delay, webhook)
+   * 
    * @private
    */
   private async advanceToNextBlock(
@@ -702,12 +705,16 @@ export class FlowExecutor {
     currentBlockId: string,
     flow: InteractiveFlow
   ): Promise<void> {
+    // Find any edge from current block (for blocks without sourceHandle like message, action, delay)
+    // Note: Buttons and lists use determineNextBlock() instead, which handles sourceHandle
     const nextEdge = flow.edges.find((e) => e.source === currentBlockId)
 
     if (nextEdge) {
+      console.log(`➡️ [FlowExecutor] Advancing to next block: ${nextEdge.target}`)
       await this.executeBlock(executionId, nextEdge.target, flow)
     } else {
       // No next block - complete flow
+      console.log(`⚠️ [FlowExecutor] No outgoing edge found for block ${currentBlockId}, completing flow`)
       await this.completeFlow(executionId)
     }
   }
@@ -715,31 +722,69 @@ export class FlowExecutor {
   /**
    * 🔍 Determine next block based on current block and user response
    * 
+   * For interactive buttons and lists, this finds the next block by:
+   * 1. Matching the user's response ID to a button/list item
+   * 2. Finding the edge with that sourceHandle
+   * 3. Returning the target block ID from the edge
+   * 
    * @private
    */
   private determineNextBlock(
     currentBlock: FlowBlock,
     userResponse: string,
     interactiveResponseId: string | undefined,
-    variables: Record<string, any>
+    variables: Record<string, any>,
+    flow: InteractiveFlow
   ): string | null {
     // For interactive lists and buttons, match by ID
     if (currentBlock.type === 'interactive_list' && interactiveResponseId) {
       const sections = currentBlock.data.listSections || []
+      
+      // First check if nextBlockId is set in the row data (legacy approach)
       for (const section of sections) {
         const row = section.rows.find((r) => r.id === interactiveResponseId)
-        if (row) {
+        if (row && row.nextBlockId) {
+          console.log(`📋 [FlowExecutor] Found nextBlockId in list row data: ${row.nextBlockId}`)
           return row.nextBlockId
         }
       }
+      
+      // If not found in data, look for edge with matching sourceHandle
+      const edge = flow.edges.find(
+        (e) => e.source === currentBlock.id && e.sourceHandle === interactiveResponseId
+      )
+      
+      if (edge) {
+        console.log(`📋 [FlowExecutor] Found edge for list item ${interactiveResponseId} -> ${edge.target}`)
+        return edge.target
+      }
+      
+      console.warn(`⚠️ [FlowExecutor] No connection found for list item: ${interactiveResponseId}`)
+      return null
     }
 
     if (currentBlock.type === 'interactive_buttons' && interactiveResponseId) {
       const buttons = currentBlock.data.buttons || []
+      
+      // First check if nextBlockId is set in button data (legacy approach)
       const button = buttons.find((b) => b.id === interactiveResponseId)
-      if (button) {
+      if (button && button.nextBlockId) {
+        console.log(`🔘 [FlowExecutor] Found nextBlockId in button data: ${button.nextBlockId}`)
         return button.nextBlockId
       }
+      
+      // If not found in data, look for edge with matching sourceHandle
+      const edge = flow.edges.find(
+        (e) => e.source === currentBlock.id && e.sourceHandle === interactiveResponseId
+      )
+      
+      if (edge) {
+        console.log(`🔘 [FlowExecutor] Found edge for button ${interactiveResponseId} -> ${edge.target}`)
+        return edge.target
+      }
+      
+      console.warn(`⚠️ [FlowExecutor] No connection found for button: ${interactiveResponseId}`)
+      return null
     }
 
     // For other block types, return null (let executeBlock handle it)
