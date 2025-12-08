@@ -91,89 +91,79 @@ interface FlowArchitectureState {
 
 /**
  * Calculate automatic layout positions for nodes
- * Uses a strict hierarchical top-to-bottom flow following execution order
+ * Uses a simple top-to-bottom vertical flow (like Mermaid's graph TD)
  */
 const calculateNodePositions = (
   metadata: FlowNodeMetadata[]
 ): Record<string, { x: number; y: number }> => {
   const positions: Record<string, { x: number; y: number }> = {};
   
-  // Layout configuration - optimized for clarity
-  const VERTICAL_SPACING = 200;
-  const HORIZONTAL_SPACING = 400;
-  const CENTER_X = 600; // Center column
-  const START_Y = 100;
+  // Simple vertical layout configuration
+  const VERTICAL_SPACING = 220; // More space between nodes
+  const HORIZONTAL_SPACING = 450; // Space for side-by-side nodes
+  const CENTER_X = 700; // Center column
+  const START_Y = 120;
 
-  // Build dependency graph to understand flow
-  const dependencyMap = new Map<string, string[]>();
+  // Use the natural order from FLOW_METADATA (execution order)
+  // This creates a simple top-to-bottom flow
+  let currentY = START_Y;
+  
+  // Group nodes that have the same dependencies (can be parallel)
+  const processed = new Set<string>();
+  const layers: FlowNodeMetadata[][] = [];
+  
   metadata.forEach((node) => {
-    dependencyMap.set(node.id, node.dependencies || []);
+    if (processed.has(node.id)) return;
+    
+    // Find all nodes at this level (same dependencies)
+    const sameLevelNodes = metadata.filter((n) => {
+      if (processed.has(n.id)) return false;
+      
+      // Nodes with same dependencies can be at same level
+      const nDeps = (n.dependencies || []).sort().join(',');
+      const nodeDeps = (node.dependencies || []).sort().join(',');
+      return nDeps === nodeDeps;
+    });
+    
+    layers.push(sameLevelNodes);
+    sameLevelNodes.forEach(n => processed.add(n.id));
   });
 
-  // Calculate depth (layer) for each node based on dependencies
-  const nodeDepths = new Map<string, number>();
-  const calculateDepth = (nodeId: string, visited = new Set<string>()): number => {
-    if (nodeDepths.has(nodeId)) return nodeDepths.get(nodeId)!;
-    if (visited.has(nodeId)) return 0; // Circular dependency guard
+  // Position each layer
+  layers.forEach((layerNodes) => {
+    const layerSize = layerNodes.length;
     
-    visited.add(nodeId);
-    const deps = dependencyMap.get(nodeId) || [];
-    const maxDepth = deps.length > 0 
-      ? Math.max(...deps.map(d => calculateDepth(d, new Set(visited))))
-      : -1;
-    
-    const depth = maxDepth + 1;
-    nodeDepths.set(nodeId, depth);
-    return depth;
-  };
-
-  metadata.forEach(node => calculateDepth(node.id));
-
-  // Group nodes by depth (layer)
-  const layers = new Map<number, FlowNodeMetadata[]>();
-  metadata.forEach((node) => {
-    const depth = nodeDepths.get(node.id) || 0;
-    if (!layers.has(depth)) layers.set(depth, []);
-    layers.get(depth)!.push(node);
-  });
-
-  // Sort layers by depth
-  const sortedLayers = Array.from(layers.entries()).sort((a, b) => a[0] - b[0]);
-
-  // Position nodes layer by layer
-  sortedLayers.forEach(([depth, nodesInLayer]) => {
-    const layerY = START_Y + depth * VERTICAL_SPACING;
-    const layerWidth = nodesInLayer.length;
-
-    // For layers with multiple nodes, distribute horizontally
-    if (layerWidth === 1) {
+    if (layerSize === 1) {
       // Single node - center it
-      positions[nodesInLayer[0].id] = {
+      positions[layerNodes[0].id] = {
         x: CENTER_X,
-        y: layerY,
+        y: currentY,
       };
-    } else if (layerWidth === 2) {
-      // Two nodes - place side by side
-      positions[nodesInLayer[0].id] = {
+    } else if (layerSize === 2) {
+      // Two nodes - side by side
+      positions[layerNodes[0].id] = {
         x: CENTER_X - HORIZONTAL_SPACING / 2,
-        y: layerY,
+        y: currentY,
       };
-      positions[nodesInLayer[1].id] = {
+      positions[layerNodes[1].id] = {
         x: CENTER_X + HORIZONTAL_SPACING / 2,
-        y: layerY,
+        y: currentY,
       };
     } else {
       // Multiple nodes - distribute evenly
-      const totalWidth = (layerWidth - 1) * HORIZONTAL_SPACING;
+      const totalWidth = (layerSize - 1) * (HORIZONTAL_SPACING * 0.7);
       const startX = CENTER_X - totalWidth / 2;
+      const spacing = totalWidth / (layerSize - 1);
       
-      nodesInLayer.forEach((node, index) => {
+      layerNodes.forEach((node, index) => {
         positions[node.id] = {
-          x: startX + index * HORIZONTAL_SPACING,
-          y: layerY,
+          x: startX + index * spacing,
+          y: currentY,
         };
       });
     }
+    
+    currentY += VERTICAL_SPACING;
   });
 
   return positions;
@@ -227,7 +217,7 @@ const calculateEdges = (nodes: FlowArchitectureNode[]): FlowArchitectureEdge[] =
           id: `e-${depId}-${node.id}`,
           source: depId,
           target: node.id,
-          type: "smoothstep",
+          type: "default", // Simple bezier curves
           animated: !isDisabled,
           style: {
             stroke: isDisabled ? "#d1d5db" : "#3B82F6",
@@ -267,12 +257,12 @@ const calculateEdges = (nodes: FlowArchitectureNode[]): FlowArchitectureEdge[] =
                 id: `e-bypass-${optDepId}-${node.id}`,
                 source: optDepId,
                 target: node.id,
-                type: "smoothstep",
+                type: "default", // Simple bezier curves
                 animated: isActive,
                 style: {
                   stroke: isActive ? "#f97316" : "#d1d5db",
                   strokeWidth: isActive ? 3 : 2,
-                  strokeDasharray: "3",
+                  strokeDasharray: "5,5",
                 },
                 markerEnd: {
                   type: "arrowclosed",
