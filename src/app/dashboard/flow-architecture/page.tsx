@@ -72,7 +72,7 @@ export default function FlowArchitecturePage() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
+    <div className="h-screen w-full">
       <FlowArchitectureReact />
     </div>
   )

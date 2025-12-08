@@ -40,7 +40,7 @@ export default function FlowArchitecturePropertiesPanel() {
 
   if (!selectedNode) {
     return (
-      <aside className="w-80 bg-white border-l border-gray-200 p-4 overflow-y-auto">
+      <aside className="w-96 bg-white border-l border-gray-200 p-4 overflow-y-auto">
         <div className="text-center py-8">
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
             <span className="text-2xl">✏️</span>
@@ -57,7 +57,7 @@ export default function FlowArchitecturePropertiesPanel() {
 
   return (
     <aside
-      className="w-80 bg-white border-l border-gray-200 p-4 overflow-y-auto"
+      className="w-96 bg-white border-l border-gray-200 p-4 overflow-y-auto"
       onKeyDown={(e) => {
         // Prevent ReactFlow from capturing keyboard events when editing
         e.stopPropagation()
