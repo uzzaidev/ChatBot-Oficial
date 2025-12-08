@@ -75,40 +75,40 @@ export default function FlowArchitectureReact({ className = '' }: FlowArchitectu
 
   const containerClassName = isFullscreen
     ? 'fixed inset-0 z-50 bg-white'
-    : `${className}`
+    : 'w-full h-full'
 
   if (initializing) {
     return (
-      <Card className={containerClassName}>
-        <CardContent className="p-6">
+      <div className={containerClassName}>
+        <div className="p-6">
           <Alert>
             <RefreshCw className="h-4 w-4 animate-spin" />
             <AlertDescription>
               Carregando arquitetura do fluxo...
             </AlertDescription>
           </Alert>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     )
   }
 
   if (nodes.length === 0) {
     return (
-      <Card className={containerClassName}>
-        <CardContent className="p-6">
+      <div className={containerClassName}>
+        <div className="p-6">
           <Alert variant="destructive">
             <AlertDescription>
               Nenhum node encontrado. Verifique se FLOW_METADATA está definido corretamente.
             </AlertDescription>
           </Alert>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     )
   }
 
   return (
     <ReactFlowProvider>
-      <div className={`flex flex-col ${containerClassName}`} style={{ height: isFullscreen ? '100vh' : '800px' }}>
+      <div className={`flex flex-col ${containerClassName}`}>
         {/* Toolbar */}
         <FlowArchitectureToolbar
           onRefresh={handleRefresh}

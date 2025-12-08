@@ -91,20 +91,20 @@ interface FlowArchitectureState {
 
 /**
  * Calculate automatic layout positions for nodes
- * Uses a simple hierarchical layout
+ * Uses a hierarchical top-to-bottom flow layout for clarity
  */
 const calculateNodePositions = (
   metadata: FlowNodeMetadata[]
 ): Record<string, { x: number; y: number }> => {
   const positions: Record<string, { x: number; y: number }> = {};
   
-  // Layout configuration
-  const VERTICAL_SPACING = 150;
-  const HORIZONTAL_SPACING = 300;
-  const START_X = 100;
-  const START_Y = 100;
+  // Layout configuration - increased spacing for clarity
+  const VERTICAL_SPACING = 180;
+  const HORIZONTAL_SPACING = 350;
+  const START_X = 150;
+  const START_Y = 80;
 
-  // Group nodes by category for better layout
+  // Group nodes by category for hierarchical layout
   const categoryGroups: Record<string, FlowNodeMetadata[]> = {
     preprocessing: [],
     analysis: [],
@@ -118,9 +118,9 @@ const calculateNodePositions = (
   });
 
   let currentY = START_Y;
-  let currentColumn = 0;
 
-  // Layout preprocessing nodes (vertical column)
+  // LAYER 1: Preprocessing nodes (top, vertical flow)
+  const preprocessingCount = categoryGroups.preprocessing.length;
   categoryGroups.preprocessing.forEach((node, index) => {
     positions[node.id] = {
       x: START_X,
@@ -128,47 +128,44 @@ const calculateNodePositions = (
     };
   });
 
-  currentY = START_Y + categoryGroups.preprocessing.length * VERTICAL_SPACING;
-  currentColumn = 1;
+  currentY = START_Y + preprocessingCount * VERTICAL_SPACING + 100;
 
-  // Layout analysis and auxiliary nodes (side by side)
-  const maxAnalysisAux = Math.max(
-    categoryGroups.analysis.length + categoryGroups.auxiliary.length
-  );
+  // LAYER 2: Analysis and Auxiliary nodes (side by side)
+  const analysisCount = categoryGroups.analysis.length;
+  const auxiliaryCount = categoryGroups.auxiliary.length;
   
-  let auxIndex = 0;
+  // Position analysis nodes on the left
   categoryGroups.analysis.forEach((node, index) => {
     positions[node.id] = {
-      x: START_X + currentColumn * HORIZONTAL_SPACING,
-      y: START_Y + index * VERTICAL_SPACING,
-    };
-  });
-
-  categoryGroups.auxiliary.forEach((node, index) => {
-    positions[node.id] = {
-      x: START_X + (currentColumn + 1) * HORIZONTAL_SPACING,
-      y: START_Y + index * VERTICAL_SPACING,
-    };
-    auxIndex = index;
-  });
-
-  currentY = START_Y + Math.max(auxIndex + 1, categoryGroups.analysis.length) * VERTICAL_SPACING;
-  currentColumn = 1;
-
-  // Layout generation node (centered below analysis)
-  categoryGroups.generation.forEach((node, index) => {
-    positions[node.id] = {
-      x: START_X + currentColumn * HORIZONTAL_SPACING,
+      x: START_X - HORIZONTAL_SPACING / 2,
       y: currentY + index * VERTICAL_SPACING,
     };
   });
 
-  currentY = currentY + categoryGroups.generation.length * VERTICAL_SPACING;
+  // Position auxiliary nodes on the right
+  categoryGroups.auxiliary.forEach((node, index) => {
+    positions[node.id] = {
+      x: START_X + HORIZONTAL_SPACING / 2,
+      y: currentY + index * VERTICAL_SPACING,
+    };
+  });
 
-  // Layout output nodes (vertical column)
+  currentY = currentY + Math.max(analysisCount, auxiliaryCount) * VERTICAL_SPACING + 100;
+
+  // LAYER 3: Generation node (centered, below layer 2)
+  categoryGroups.generation.forEach((node, index) => {
+    positions[node.id] = {
+      x: START_X,
+      y: currentY + index * VERTICAL_SPACING,
+    };
+  });
+
+  currentY = currentY + categoryGroups.generation.length * VERTICAL_SPACING + 100;
+
+  // LAYER 4: Output nodes (bottom, vertical flow)
   categoryGroups.output.forEach((node, index) => {
     positions[node.id] = {
-      x: START_X + currentColumn * HORIZONTAL_SPACING,
+      x: START_X,
       y: currentY + index * VERTICAL_SPACING,
     };
   });
