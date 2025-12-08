@@ -29,7 +29,7 @@ import FlowNodeBlock from './blocks/FlowNodeBlock'
 // Map node types to components
 const nodeTypes = {
   flowNode: FlowNodeBlock
-}
+} as const
 
 export default function FlowArchitectureCanvas() {
   const {
@@ -46,11 +46,11 @@ export default function FlowArchitectureCanvas() {
 
   // Sync store with local state
   useEffect(() => {
-    setLocalNodes(nodes as Node[])
+    setLocalNodes(nodes)
   }, [nodes, setLocalNodes])
 
   useEffect(() => {
-    setLocalEdges(edges as Edge[])
+    setLocalEdges(edges)
   }, [edges, setLocalEdges])
 
   // Handle node changes (mainly position updates)

@@ -36,11 +36,7 @@ import {
   FileCode,
   Send
 } from 'lucide-react'
-import type { FlowNodeMetadata } from '@/flows/flowMetadata'
-
-interface FlowNodeBlockData extends FlowNodeMetadata {
-  isLoading?: boolean
-}
+import type { FlowArchitectureNodeData } from '@/stores/flowArchitectureStore'
 
 // Icon mapping for different nodes
 const getNodeIcon = (nodeId: string) => {
@@ -70,7 +66,7 @@ const getNodeIcon = (nodeId: string) => {
 }
 
 // Color scheme for categories
-const getCategoryColors = (category: FlowNodeMetadata['category'], enabled: boolean) => {
+const getCategoryColors = (category: FlowArchitectureNodeData['category'], enabled: boolean) => {
   if (!enabled) {
     return {
       bg: 'bg-gray-50',
@@ -123,7 +119,7 @@ const getCategoryColors = (category: FlowNodeMetadata['category'], enabled: bool
 }
 
 const FlowNodeBlock = memo(({ id, data, selected }: NodeProps) => {
-  const nodeData = data as FlowNodeBlockData
+  const nodeData = data as unknown as FlowArchitectureNodeData
   const Icon = getNodeIcon(id)
   const colors = getCategoryColors(nodeData.category, nodeData.enabled)
 

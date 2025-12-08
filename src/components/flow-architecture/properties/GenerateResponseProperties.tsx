@@ -47,8 +47,8 @@ export default function GenerateResponseProperties({
 
   const provider = localConfig.primary_model_provider || 'groq'
   const currentModel = provider === 'openai'
-    ? localConfig.openai_model || 'gpt-4o'
-    : localConfig.groq_model || 'llama-3.3-70b-versatile'
+    ? (localConfig.openai_model as string | undefined) || 'gpt-4o'
+    : (localConfig.groq_model as string | undefined) || 'llama-3.3-70b-versatile'
 
   const groqModels = [
     'llama-3.3-70b-versatile',
@@ -75,10 +75,10 @@ export default function GenerateResponseProperties({
             const newConfig = { ...localConfig, primary_model_provider: value }
             
             // Set default model for provider if not set
-            if (value === 'openai' && !localConfig.openai_model) {
-              newConfig.openai_model = 'gpt-4o'
-            } else if (value === 'groq' && !localConfig.groq_model) {
-              newConfig.groq_model = 'llama-3.3-70b-versatile'
+            if (value === 'openai' && !(localConfig as any).openai_model) {
+              (newConfig as any).openai_model = 'gpt-4o'
+            } else if (value === 'groq' && !(localConfig as any).groq_model) {
+              (newConfig as any).groq_model = 'llama-3.3-70b-versatile'
             }
             
             setLocalConfig(newConfig)
@@ -106,9 +106,9 @@ export default function GenerateResponseProperties({
           value={currentModel}
           onValueChange={(value) => {
             if (provider === 'openai') {
-              setLocalConfig({ ...localConfig, openai_model: value })
+              setLocalConfig({ ...localConfig, openai_model: value } as any)
             } else {
-              setLocalConfig({ ...localConfig, groq_model: value })
+              setLocalConfig({ ...localConfig, groq_model: value } as any)
             }
           }}
         >
