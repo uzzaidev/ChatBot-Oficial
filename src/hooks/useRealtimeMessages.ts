@@ -30,6 +30,7 @@ interface UseRealtimeMessagesOptions {
  * Otimizado para mobile:
  * - Debounce de 500ms para reconexões (evita race conditions)
  * - Lock de reconexão para evitar chamadas simultâneas
+ * - Deduplicação de mensagens com Set de IDs processados
  */
 export const useRealtimeMessages = ({
   clientId,
@@ -42,11 +43,42 @@ export const useRealtimeMessages = ({
   const hasAttemptedRef = useRef(false);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isReconnectingRef = useRef(false);
+  
+  // Track processed message IDs to prevent duplicates
+  // Using Map to store timestamp when message was processed (for cleanup)
+  const processedMessageIdsRef = useRef<Map<string, number>>(new Map());
 
   // Keep the callback ref up to date
   useEffect(() => {
     onNewMessageRef.current = onNewMessage;
   }, [onNewMessage]);
+
+  // Cleanup old processed message IDs (older than 5 minutes)
+  useEffect(() => {
+    const cleanupInterval = setInterval(() => {
+      const now = Date.now();
+      const FIVE_MINUTES = 5 * 60 * 1000;
+      
+      processedMessageIdsRef.current.forEach((timestamp, id) => {
+        if (now - timestamp > FIVE_MINUTES) {
+          processedMessageIdsRef.current.delete(id);
+        }
+      });
+    }, 60000); // Run cleanup every minute
+
+    return () => clearInterval(cleanupInterval);
+  }, []);
+
+  // Helper function to check and mark message as processed
+  const shouldProcessMessage = useCallback((messageId: string): boolean => {
+    if (processedMessageIdsRef.current.has(messageId)) {
+      return false; // Already processed
+    }
+    
+    // Mark as processed with current timestamp
+    processedMessageIdsRef.current.set(messageId, Date.now());
+    return true;
+  }, []);
 
   // Setup da subscription - UMA VEZ, sem retry loops
   const setupRealtimeSubscription = useCallback(() => {
@@ -84,6 +116,14 @@ export const useRealtimeMessages = ({
               return;
             }
 
+            // Generate consistent message ID
+            const messageId = data.id?.toString() || `msg-${data.created_at || Date.now()}`;
+            
+            // Check if message was already processed (deduplication)
+            if (!shouldProcessMessage(messageId)) {
+              return; // Skip duplicate
+            }
+
             // Parse message JSON
             let messageData: any;
             if (typeof data.message === "string") {
@@ -101,7 +141,7 @@ export const useRealtimeMessages = ({
             const cleanedContent = cleanMessageContent(messageContent);
 
             const newMessage: Message = {
-              id: data.id?.toString() || `msg-${Date.now()}`,
+              id: messageId,
               client_id: clientId,
               conversation_id: String(phone),
               phone: phone,
@@ -135,6 +175,14 @@ export const useRealtimeMessages = ({
 
             if (!data || data.phone !== phone) return;
 
+            // Generate consistent message ID
+            const messageId = data.id?.toString() || `msg-${data.timestamp || Date.now()}`;
+            
+            // Check if message was already processed (deduplication)
+            if (!shouldProcessMessage(messageId)) {
+              return; // Skip duplicate
+            }
+
             let parsedMetadata: Record<string, unknown> | null = null;
             if (data.metadata) {
               if (typeof data.metadata === "string") {
@@ -158,7 +206,7 @@ export const useRealtimeMessages = ({
               data.direction === "incoming" ? "incoming" : "outgoing";
 
             const newMessage: Message = {
-              id: data.id?.toString() || `msg-${Date.now()}`,
+              id: messageId,
               client_id: clientId,
               conversation_id: String(data.conversation_id || phone),
               phone: String(data.phone || phone),
@@ -190,7 +238,7 @@ export const useRealtimeMessages = ({
       });
 
     channelRef.current = channel;
-  }, [clientId, phone]);
+  }, [clientId, phone, shouldProcessMessage]);
 
   // Debounced reconnection - prevents race conditions on mobile
   const scheduleReconnect = useCallback(() => {
@@ -222,6 +270,9 @@ export const useRealtimeMessages = ({
   useEffect(() => {
     if (!clientId || !phone) return;
 
+    // Clear processed message IDs when conversation changes
+    processedMessageIdsRef.current.clear();
+
     setupRealtimeSubscription();
 
     return () => {
@@ -245,6 +296,9 @@ export const useRealtimeMessages = ({
         hasAttemptedRef.current = false;
         isReconnectingRef.current = false;
       }
+      
+      // Clear processed message IDs on cleanup
+      processedMessageIdsRef.current.clear();
     };
   }, [clientId, phone, setupRealtimeSubscription]);
 
