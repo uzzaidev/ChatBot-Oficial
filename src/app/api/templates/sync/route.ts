@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get unique WABA IDs
-    const wabaIds = [...new Set(templates.map(t => t.waba_id))];
+    const wabaIds = Array.from(new Set(templates.map(t => t.waba_id)));
     
     const syncedTemplates: Array<{
       id: string;
