@@ -91,83 +91,89 @@ interface FlowArchitectureState {
 
 /**
  * Calculate automatic layout positions for nodes
- * Uses a hierarchical top-to-bottom flow layout for clarity
+ * Uses a strict hierarchical top-to-bottom flow following execution order
  */
 const calculateNodePositions = (
   metadata: FlowNodeMetadata[]
 ): Record<string, { x: number; y: number }> => {
   const positions: Record<string, { x: number; y: number }> = {};
   
-  // Layout configuration - increased spacing for clarity
-  const VERTICAL_SPACING = 180;
-  const HORIZONTAL_SPACING = 350;
-  const START_X = 150;
-  const START_Y = 80;
+  // Layout configuration - optimized for clarity
+  const VERTICAL_SPACING = 200;
+  const HORIZONTAL_SPACING = 400;
+  const CENTER_X = 600; // Center column
+  const START_Y = 100;
 
-  // Group nodes by category for hierarchical layout
-  const categoryGroups: Record<string, FlowNodeMetadata[]> = {
-    preprocessing: [],
-    analysis: [],
-    auxiliary: [],
-    generation: [],
-    output: [],
+  // Build dependency graph to understand flow
+  const dependencyMap = new Map<string, string[]>();
+  metadata.forEach((node) => {
+    dependencyMap.set(node.id, node.dependencies || []);
+  });
+
+  // Calculate depth (layer) for each node based on dependencies
+  const nodeDepths = new Map<string, number>();
+  const calculateDepth = (nodeId: string, visited = new Set<string>()): number => {
+    if (nodeDepths.has(nodeId)) return nodeDepths.get(nodeId)!;
+    if (visited.has(nodeId)) return 0; // Circular dependency guard
+    
+    visited.add(nodeId);
+    const deps = dependencyMap.get(nodeId) || [];
+    const maxDepth = deps.length > 0 
+      ? Math.max(...deps.map(d => calculateDepth(d, new Set(visited))))
+      : -1;
+    
+    const depth = maxDepth + 1;
+    nodeDepths.set(nodeId, depth);
+    return depth;
   };
 
+  metadata.forEach(node => calculateDepth(node.id));
+
+  // Group nodes by depth (layer)
+  const layers = new Map<number, FlowNodeMetadata[]>();
   metadata.forEach((node) => {
-    categoryGroups[node.category].push(node);
+    const depth = nodeDepths.get(node.id) || 0;
+    if (!layers.has(depth)) layers.set(depth, []);
+    layers.get(depth)!.push(node);
   });
 
-  let currentY = START_Y;
+  // Sort layers by depth
+  const sortedLayers = Array.from(layers.entries()).sort((a, b) => a[0] - b[0]);
 
-  // LAYER 1: Preprocessing nodes (top, vertical flow)
-  const preprocessingCount = categoryGroups.preprocessing.length;
-  categoryGroups.preprocessing.forEach((node, index) => {
-    positions[node.id] = {
-      x: START_X,
-      y: currentY + index * VERTICAL_SPACING,
-    };
-  });
+  // Position nodes layer by layer
+  sortedLayers.forEach(([depth, nodesInLayer]) => {
+    const layerY = START_Y + depth * VERTICAL_SPACING;
+    const layerWidth = nodesInLayer.length;
 
-  currentY = START_Y + preprocessingCount * VERTICAL_SPACING + 100;
-
-  // LAYER 2: Analysis and Auxiliary nodes (side by side)
-  const analysisCount = categoryGroups.analysis.length;
-  const auxiliaryCount = categoryGroups.auxiliary.length;
-  
-  // Position analysis nodes on the left
-  categoryGroups.analysis.forEach((node, index) => {
-    positions[node.id] = {
-      x: START_X - HORIZONTAL_SPACING / 2,
-      y: currentY + index * VERTICAL_SPACING,
-    };
-  });
-
-  // Position auxiliary nodes on the right
-  categoryGroups.auxiliary.forEach((node, index) => {
-    positions[node.id] = {
-      x: START_X + HORIZONTAL_SPACING / 2,
-      y: currentY + index * VERTICAL_SPACING,
-    };
-  });
-
-  currentY = currentY + Math.max(analysisCount, auxiliaryCount) * VERTICAL_SPACING + 100;
-
-  // LAYER 3: Generation node (centered, below layer 2)
-  categoryGroups.generation.forEach((node, index) => {
-    positions[node.id] = {
-      x: START_X,
-      y: currentY + index * VERTICAL_SPACING,
-    };
-  });
-
-  currentY = currentY + categoryGroups.generation.length * VERTICAL_SPACING + 100;
-
-  // LAYER 4: Output nodes (bottom, vertical flow)
-  categoryGroups.output.forEach((node, index) => {
-    positions[node.id] = {
-      x: START_X,
-      y: currentY + index * VERTICAL_SPACING,
-    };
+    // For layers with multiple nodes, distribute horizontally
+    if (layerWidth === 1) {
+      // Single node - center it
+      positions[nodesInLayer[0].id] = {
+        x: CENTER_X,
+        y: layerY,
+      };
+    } else if (layerWidth === 2) {
+      // Two nodes - place side by side
+      positions[nodesInLayer[0].id] = {
+        x: CENTER_X - HORIZONTAL_SPACING / 2,
+        y: layerY,
+      };
+      positions[nodesInLayer[1].id] = {
+        x: CENTER_X + HORIZONTAL_SPACING / 2,
+        y: layerY,
+      };
+    } else {
+      // Multiple nodes - distribute evenly
+      const totalWidth = (layerWidth - 1) * HORIZONTAL_SPACING;
+      const startX = CENTER_X - totalWidth / 2;
+      
+      nodesInLayer.forEach((node, index) => {
+        positions[node.id] = {
+          x: startX + index * HORIZONTAL_SPACING,
+          y: layerY,
+        };
+      });
+    }
   });
 
   return positions;
