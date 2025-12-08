@@ -8,13 +8,14 @@
  * Client Component (Mobile Compatible)
  * Motivo: Static Export (Capacitor) não suporta Server Components
  * 
- * Usa o componente FlowArchitectureManager implementado pelo desenvolvedor sênior
+ * Usa o componente FlowArchitectureReact com ReactFlow
+ * (Migrado de FlowArchitectureManager baseado em Mermaid)
  */
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClientBrowser } from '@/lib/supabase'
-import FlowArchitectureManager from '@/components/FlowArchitectureManager'
+import FlowArchitectureReact from '@/components/flow-architecture/FlowArchitectureReact'
 
 export default function FlowArchitecturePage() {
   const [loading, setLoading] = useState(true)
@@ -71,8 +72,8 @@ export default function FlowArchitecturePage() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-5xl">
-      <FlowArchitectureManager />
+    <div className="h-screen w-full">
+      <FlowArchitectureReact />
     </div>
   )
 }
