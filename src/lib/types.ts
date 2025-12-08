@@ -492,6 +492,159 @@ export interface AcceptInviteRequest {
   phone?: string;
 }
 
+/**
+ * ======================================================
+ * 📋 WhatsApp Template Messages Types
+ * ======================================================
+ */
+
+export type TemplateCategory = "UTILITY" | "AUTHENTICATION" | "MARKETING";
+
+export type TemplateStatus = 
+  | "DRAFT"       // Created locally, not submitted
+  | "PENDING"     // Submitted to Meta, awaiting approval
+  | "APPROVED"    // Approved by Meta, ready to use
+  | "REJECTED"    // Rejected by Meta
+  | "PAUSED"      // Paused by Meta due to quality issues
+  | "DISABLED";   // Disabled by Meta
+
+export type TemplateComponentType = "HEADER" | "BODY" | "FOOTER" | "BUTTONS";
+
+export type TemplateHeaderFormat = "TEXT" | "IMAGE" | "VIDEO" | "DOCUMENT";
+
+export type TemplateButtonType = "URL" | "QUICK_REPLY" | "PHONE_NUMBER";
+
+/**
+ * Template Button
+ */
+export interface TemplateButton {
+  type: TemplateButtonType;
+  text: string;
+  url?: string; // For URL buttons, can include {{1}} variable
+  phone_number?: string; // For PHONE_NUMBER buttons
+}
+
+/**
+ * Template Component (HEADER, BODY, FOOTER, BUTTONS)
+ */
+export interface TemplateComponent {
+  type: TemplateComponentType;
+  format?: TemplateHeaderFormat; // Only for HEADER
+  text?: string; // Text content (can include {{1}}, {{2}}, etc)
+  example?: {
+    header_text?: string[];
+    body_text?: string[][]; // Array of arrays for multiple examples
+  };
+  buttons?: TemplateButton[]; // Only for BUTTONS type
+}
+
+/**
+ * WhatsApp Message Template
+ */
+export interface MessageTemplate {
+  id: string;
+  client_id: string;
+  created_by: string | null;
+  
+  // Meta API fields
+  meta_template_id: string | null;
+  waba_id: string;
+  
+  // Template definition
+  name: string;
+  category: TemplateCategory;
+  language: string;
+  components: TemplateComponent[];
+  
+  // Status & approval
+  status: TemplateStatus;
+  rejection_reason: string | null;
+  
+  // Timestamps
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Template parameter for sending messages
+ */
+export interface TemplateParameter {
+  type: "text" | "currency" | "date_time" | "image" | "document" | "video";
+  text?: string;
+  currency?: {
+    fallback_value: string;
+    code: string;
+    amount_1000: number;
+  };
+  date_time?: {
+    fallback_value: string;
+  };
+  image?: {
+    link: string;
+  };
+  document?: {
+    link: string;
+    filename?: string;
+  };
+  video?: {
+    link: string;
+  };
+}
+
+/**
+ * Component parameters when sending template
+ */
+export interface TemplateComponentPayload {
+  type: string; // "header" | "body" | "button"
+  parameters: TemplateParameter[];
+  sub_type?: string; // For buttons: "url" | "quick_reply"
+  index?: number; // Button index
+}
+
+/**
+ * Payload for sending a template message
+ */
+export interface TemplateSendPayload {
+  messaging_product: "whatsapp";
+  recipient_type: "individual";
+  to: string; // Phone number
+  type: "template";
+  template: {
+    name: string;
+    language: {
+      code: string;
+    };
+    components?: TemplateComponentPayload[];
+  };
+}
+
+/**
+ * Request body for sending template
+ */
+export interface SendTemplateRequest {
+  phone: string;
+  parameters?: string[]; // Simple text parameters for body variables
+  headerParameters?: TemplateParameter[]; // Complex parameters for header
+  buttonParameters?: Record<number, string[]>; // URL button variables by button index
+}
+
+/**
+ * Create/Update template request
+ */
+export interface CreateTemplateRequest {
+  name: string;
+  category: TemplateCategory;
+  language: string;
+  waba_id: string;
+  components: TemplateComponent[];
+}
+
+export interface UpdateTemplateRequest {
+  components?: TemplateComponent[];
+  status?: TemplateStatus;
+  rejection_reason?: string | null;
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -541,6 +694,11 @@ export interface Database {
         Update: Partial<
           Omit<CustomerRecord, "id" | "created_at" | "updated_at">
         >;
+      };
+      message_templates: {
+        Row: MessageTemplate;
+        Insert: Omit<MessageTemplate, "id" | "created_at" | "updated_at">;
+        Update: Partial<Omit<MessageTemplate, "id" | "created_at" | "updated_at">>;
       };
     };
     Views: {};
