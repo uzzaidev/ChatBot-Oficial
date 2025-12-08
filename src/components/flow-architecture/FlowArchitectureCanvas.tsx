@@ -113,12 +113,13 @@ export default function FlowArchitectureCanvas() {
         edgesFocusable={false}
         edgesReconnectable={false}
         defaultEdgeOptions={{
-          type: 'smoothstep',
+          type: 'default', // Use default straight/bezier edges
           animated: true,
           style: { stroke: '#3B82F6', strokeWidth: 2 }
         }}
         minZoom={0.1}
         maxZoom={2}
+        connectionLineStyle={{ stroke: '#3B82F6', strokeWidth: 2 }}
       >
         <Background color="#aaa" gap={16} />
         <Controls />
