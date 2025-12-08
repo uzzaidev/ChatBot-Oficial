@@ -27,6 +27,7 @@ interface UseRealtimeMessagesBroadcastOptions {
  * usa broadcast channels + database triggers para notificações em tempo real.
  *
  * Funciona 100% no FREE tier do Supabase!
+ * - Deduplicação de mensagens com Map de IDs processados
  */
 export const useRealtimeMessagesBroadcast = ({
   clientId,
@@ -38,11 +39,42 @@ export const useRealtimeMessagesBroadcast = ({
   const onNewMessageRef = useRef(onNewMessage)
   const channelRef = useRef<RealtimeChannel | null>(null)
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  
+  // Track processed message IDs to prevent duplicates
+  // Using Map to store timestamp when message was processed (for cleanup)
+  const processedMessageIdsRef = useRef<Map<string, number>>(new Map())
 
   // Keep the callback ref up to date
   useEffect(() => {
     onNewMessageRef.current = onNewMessage
   }, [onNewMessage])
+
+  // Cleanup old processed message IDs (older than 5 minutes)
+  useEffect(() => {
+    const cleanupInterval = setInterval(() => {
+      const now = Date.now()
+      const FIVE_MINUTES = 5 * 60 * 1000
+      
+      processedMessageIdsRef.current.forEach((timestamp, id) => {
+        if (now - timestamp > FIVE_MINUTES) {
+          processedMessageIdsRef.current.delete(id)
+        }
+      })
+    }, 60000) // Run cleanup every minute
+
+    return () => clearInterval(cleanupInterval)
+  }, [])
+
+  // Helper function to check and mark message as processed
+  const shouldProcessMessage = useCallback((messageId: string): boolean => {
+    if (processedMessageIdsRef.current.has(messageId)) {
+      return false // Already processed
+    }
+    
+    // Mark as processed with current timestamp
+    processedMessageIdsRef.current.set(messageId, Date.now())
+    return true
+  }, [])
 
   const setupBroadcastSubscription = useCallback(() => {
     if (!clientId || !phone) return
@@ -70,6 +102,14 @@ export const useRealtimeMessagesBroadcast = ({
             return
           }
 
+          // Generate consistent message ID
+          const messageId = data.id?.toString() || `msg-${data.created_at || Date.now()}`
+          
+          // Check if message was already processed (deduplication)
+          if (!shouldProcessMessage(messageId)) {
+            return // Skip duplicate
+          }
+
           // Parse message JSON
           let messageData: any
           if (typeof data.message === 'string') {
@@ -87,7 +127,7 @@ export const useRealtimeMessagesBroadcast = ({
           const cleanedContent = cleanMessageContent(messageContent)
 
           const newMessage: Message = {
-            id: data.id?.toString() || `msg-${Date.now()}`,
+            id: messageId,
             client_id: clientId,
             conversation_id: String(phone),
             phone: phone,
@@ -129,11 +169,14 @@ export const useRealtimeMessagesBroadcast = ({
       })
 
     channelRef.current = channel
-  }, [clientId, phone, retryCount])
+  }, [clientId, phone, retryCount, shouldProcessMessage])
 
   // Setup inicial e cleanup
   useEffect(() => {
     if (!clientId || !phone) return
+
+    // Clear processed message IDs when conversation changes
+    processedMessageIdsRef.current.clear()
 
     setupBroadcastSubscription()
 
@@ -147,6 +190,9 @@ export const useRealtimeMessagesBroadcast = ({
         supabase.removeChannel(channelRef.current)
         setIsConnected(false)
       }
+      
+      // Clear processed message IDs on cleanup
+      processedMessageIdsRef.current.clear()
     }
   }, [clientId, phone, setupBroadcastSubscription])
 
