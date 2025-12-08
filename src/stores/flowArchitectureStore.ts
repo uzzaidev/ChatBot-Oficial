@@ -14,24 +14,32 @@ import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { FLOW_METADATA, type FlowNodeMetadata } from "@/flows/flowMetadata";
 import { apiFetch } from "@/lib/api";
+import type { Node, Edge } from "@xyflow/react";
 
 // Constants
 const NOTIFICATION_TIMEOUT_MS = 3000;
 const STORAGE_KEY_NODE_POSITIONS = "flowArchitectureNodePositions";
 
 // ReactFlow Node type for architecture visualization
-export interface FlowArchitectureNode {
+export interface FlowArchitectureNodeData extends FlowNodeMetadata {
+  // Additional runtime data
+  isLoading?: boolean;
+}
+
+export interface FlowArchitectureNode extends Omit<Node, 'data'> {
   id: string;
   type: string; // Always 'flowNode' for this architecture
   position: { x: number; y: number };
-  data: FlowNodeMetadata & {
-    // Additional runtime data
-    isLoading?: boolean;
-  };
+  data: FlowArchitectureNodeData;
 }
 
 // ReactFlow Edge type for architecture connections
-export interface FlowArchitectureEdge {
+export interface FlowArchitectureEdgeData {
+  isBypass?: boolean;
+  isDisabled?: boolean;
+}
+
+export interface FlowArchitectureEdge extends Omit<Edge, 'data'> {
   id: string;
   source: string;
   target: string;
@@ -42,11 +50,7 @@ export interface FlowArchitectureEdge {
   animated?: boolean;
   style?: Record<string, any>;
   markerEnd?: any;
-  // Custom data for bypass routes
-  data?: {
-    isBypass?: boolean;
-    isDisabled?: boolean;
-  };
+  data?: FlowArchitectureEdgeData;
 }
 
 // Node configuration structure
