@@ -42,6 +42,13 @@ export default function AIGatewayPage() {
       description: 'Métricas agregadas de uso do Gateway',
       color: 'text-orange-600 bg-orange-50',
     },
+    {
+      href: '/dashboard/ai-gateway/budget',
+      icon: DollarSign,
+      title: 'Budget',
+      description: 'Controle de limites e custos por cliente',
+      color: 'text-emerald-600 bg-emerald-50',
+    },
   ]
 
   return (
