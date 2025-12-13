@@ -22,22 +22,42 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from('ai_models_registry')
       .select('*')
-      .eq('enabled', true)
+      .eq('is_active', true)
       .order('provider')
       .order('model_name')
 
     // Filter by capability if specified
     if (capability === 'vision') {
-      query = query.eq('supports_vision', true)
+      query = query.contains('capabilities', { vision: true })
     } else if (capability === 'tools') {
-      query = query.eq('supports_tools', true)
+      query = query.contains('capabilities', { tools: true })
     }
 
     const { data: models, error } = await query
 
     if (error) throw error
 
-    return NextResponse.json({ models: models || [] })
+    // Transform to match frontend expectations
+    const transformedModels = (models || []).map((model: any) => ({
+      id: model.id,
+      provider: model.provider,
+      modelName: model.model_name,
+      displayName: model.gateway_identifier,
+      gatewayIdentifier: model.gateway_identifier,
+      costPer1kInputTokens: parseFloat(model.input_price_per_million) / 1000,
+      costPer1kOutputTokens: parseFloat(model.output_price_per_million) / 1000,
+      maxContextWindow: model.context_window,
+      maxOutputTokens: model.max_output_tokens,
+      supportsVision: model.capabilities?.vision === true,
+      supportsTools: model.capabilities?.tools === true,
+      supportsStreaming: model.capabilities?.streaming === true,
+      supportsCaching: model.capabilities?.caching === true,
+      enabled: model.is_active,
+      verified: true, // All seeded models are verified
+      description: model.description,
+    }))
+
+    return NextResponse.json({ models: transformedModels })
   } catch (error: any) {
     console.error('Error fetching models:', error)
     return NextResponse.json(
@@ -53,20 +73,21 @@ export async function POST(request: NextRequest) {
     const {
       provider,
       modelName,
-      displayName,
-      costPer1kInputTokens,
-      costPer1kOutputTokens,
-      maxContextWindow,
+      gatewayIdentifier,
+      capabilities,
+      contextWindow,
       maxOutputTokens,
-      supportsVision,
-      supportsTools,
-      enabled,
+      inputPricePerMillion,
+      outputPricePerMillion,
+      cachedInputPricePerMillion,
+      isActive,
+      description,
     } = body
 
     // Validate required fields
-    if (!provider || !modelName || !displayName) {
+    if (!provider || !modelName || !gatewayIdentifier) {
       return NextResponse.json(
-        { error: 'Missing required fields: provider, modelName, displayName' },
+        { error: 'Missing required fields: provider, modelName, gatewayIdentifier' },
         { status: 400 }
       )
     }
@@ -79,15 +100,15 @@ export async function POST(request: NextRequest) {
       .insert({
         provider,
         model_name: modelName,
-        display_name: displayName,
-        cost_per_1k_input_tokens: costPer1kInputTokens || 0,
-        cost_per_1k_output_tokens: costPer1kOutputTokens || 0,
-        max_context_window: maxContextWindow || 4096,
+        gateway_identifier: gatewayIdentifier,
+        capabilities: capabilities || { text: true, streaming: true },
+        context_window: contextWindow || 4096,
         max_output_tokens: maxOutputTokens || 2048,
-        supports_vision: supportsVision || false,
-        supports_tools: supportsTools || false,
-        enabled: enabled !== false, // Default true
-        verified: false, // Becomes true after testing
+        input_price_per_million: inputPricePerMillion || 0,
+        output_price_per_million: outputPricePerMillion || 0,
+        cached_input_price_per_million: cachedInputPricePerMillion,
+        is_active: isActive !== false,
+        description: description || '',
       })
       .select()
       .single()
@@ -118,20 +139,24 @@ export async function PUT(request: NextRequest) {
 
     const supabase = createServerClient()
 
+    // Build update object
+    const updateData: any = {}
+    
+    if (updates.capabilities !== undefined) updateData.capabilities = updates.capabilities
+    if (updates.contextWindow !== undefined) updateData.context_window = updates.contextWindow
+    if (updates.maxOutputTokens !== undefined) updateData.max_output_tokens = updates.maxOutputTokens
+    if (updates.inputPricePerMillion !== undefined) updateData.input_price_per_million = updates.inputPricePerMillion
+    if (updates.outputPricePerMillion !== undefined) updateData.output_price_per_million = updates.outputPricePerMillion
+    if (updates.cachedInputPricePerMillion !== undefined) updateData.cached_input_price_per_million = updates.cachedInputPricePerMillion
+    if (updates.isActive !== undefined) updateData.is_active = updates.isActive
+    if (updates.description !== undefined) updateData.description = updates.description
+    
+    updateData.updated_at = new Date().toISOString()
+
     // Update model
     const { data, error } = await supabase
       .from('ai_models_registry')
-      .update({
-        display_name: updates.displayName,
-        cost_per_1k_input_tokens: updates.costPer1kInputTokens,
-        cost_per_1k_output_tokens: updates.costPer1kOutputTokens,
-        max_context_window: updates.maxContextWindow,
-        max_output_tokens: updates.maxOutputTokens,
-        supports_vision: updates.supportsVision,
-        supports_tools: updates.supportsTools,
-        enabled: updates.enabled,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq('id', id)
       .select()
       .single()
@@ -165,7 +190,7 @@ export async function DELETE(request: NextRequest) {
     // Soft delete - just disable the model
     const { error } = await supabase
       .from('ai_models_registry')
-      .update({ enabled: false })
+      .update({ is_active: false })
       .eq('id', id)
 
     if (error) throw error
