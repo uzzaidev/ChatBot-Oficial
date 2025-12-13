@@ -141,13 +141,30 @@ const callAIViaGateway = async (
     const requestId = headers['x-vercel-ai-data-stream-id'] || headers['x-vercel-ai-request-id']
 
     const usage = result.usage as any
+    
+    // Handle token counting - some providers don't separate prompt/completion tokens
+    const promptTokens = usage.promptTokens || 0
+    const completionTokens = usage.completionTokens || 0
+    const totalTokens = usage.totalTokens || 0
+    
+    // If total is provided but breakdown isn't, estimate the split
+    // Typically ~70% prompt, ~30% completion for most interactions
+    let inputTokens = promptTokens
+    let outputTokens = completionTokens
+    
+    if (totalTokens > 0 && promptTokens === 0 && completionTokens === 0) {
+      // Estimate: 70% input, 30% output (rough approximation)
+      inputTokens = Math.floor(totalTokens * 0.7)
+      outputTokens = totalTokens - inputTokens
+    }
+    
     const response: AIResponse = {
       text: result.text,
       usage: {
-        promptTokens: usage.promptTokens || 0,
-        completionTokens: usage.completionTokens || 0,
-        totalTokens: usage.totalTokens || 0,
-        cachedTokens: wasCached ? (usage.promptTokens || 0) : 0,
+        promptTokens: inputTokens,
+        completionTokens: outputTokens,
+        totalTokens: totalTokens,
+        cachedTokens: wasCached ? inputTokens : 0,
       },
       model: actualModel,
       provider: actualProvider,
@@ -166,8 +183,8 @@ const callAIViaGateway = async (
         phone: config.phone || 'test-call',
         provider: actualProvider,
         modelName: actualModel,
-        inputTokens: response.usage.promptTokens,
-        outputTokens: response.usage.completionTokens,
+        inputTokens: inputTokens,
+        outputTokens: outputTokens,
         cachedTokens: response.usage.cachedTokens || 0,
         latencyMs: response.latencyMs,
         wasCached: response.wasCached,
@@ -237,13 +254,28 @@ const callAIWithFallback = async (
       const wasCached = result.response?.headers?.['x-vercel-ai-cache-status'] === 'hit'
       const usage = result.usage as any
 
+      // Handle token counting - some providers don't separate prompt/completion tokens
+      const promptTokens = usage.promptTokens || 0
+      const completionTokens = usage.completionTokens || 0
+      const totalTokens = usage.totalTokens || 0
+      
+      // If total is provided but breakdown isn't, estimate the split
+      let inputTokens = promptTokens
+      let outputTokens = completionTokens
+      
+      if (totalTokens > 0 && promptTokens === 0 && completionTokens === 0) {
+        // Estimate: 70% input, 30% output (rough approximation)
+        inputTokens = Math.floor(totalTokens * 0.7)
+        outputTokens = totalTokens - inputTokens
+      }
+
       const response: AIResponse = {
         text: result.text,
         usage: {
-          promptTokens: usage.promptTokens || 0,
-          completionTokens: usage.completionTokens || 0,
-          totalTokens: usage.totalTokens || 0,
-          cachedTokens: wasCached ? (usage.promptTokens || 0) : 0,
+          promptTokens: inputTokens,
+          completionTokens: outputTokens,
+          totalTokens: totalTokens,
+          cachedTokens: wasCached ? inputTokens : 0,
         },
         model,
         provider,
@@ -263,8 +295,8 @@ const callAIWithFallback = async (
           phone: config.phone || 'test-call',
           provider,
           modelName: model,
-          inputTokens: response.usage.promptTokens,
-          outputTokens: response.usage.completionTokens,
+          inputTokens: inputTokens,
+          outputTokens: outputTokens,
           cachedTokens: response.usage.cachedTokens || 0,
           latencyMs: response.latencyMs,
           wasCached: response.wasCached,
