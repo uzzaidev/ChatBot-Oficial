@@ -10,6 +10,11 @@ import { createServerClient } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 
+// Configuration constants
+const CACHE_DEFAULT_TTL_SECONDS = 3600 // 1 hour
+const ESTIMATED_COST_PER_TOKEN_BRL = 0.0002 // Fallback average cost
+// TODO: Fetch actual pricing from ai_models_registry table dynamically
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = createServerClient()
@@ -60,11 +65,10 @@ export async function GET(request: NextRequest) {
     const entries = Array.from(cacheMap.entries()).map(([cacheKey, data]) => {
       // Estimate savings (dynamic pricing would be better)
       // TODO: Fetch actual pricing from ai_models_registry instead of using fixed rate
-      const estimatedCostPerToken = 0.0002 // BRL - approximate average
-      const savingsBRL = data.tokensSaved * estimatedCostPerToken
+      const savingsBRL = data.tokensSaved * ESTIMATED_COST_PER_TOKEN_BRL
 
-      // Assume 1 hour TTL for cached entries
-      const ttlSeconds = 3600
+      // Assume default TTL for cached entries
+      const ttlSeconds = CACHE_DEFAULT_TTL_SECONDS
 
       return {
         cacheKey,
@@ -103,20 +107,13 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    // NOTE: Cache invalidation is not directly supported as caching is handled
-    // by Vercel AI SDK. This endpoint returns success but doesn't actually
-    // invalidate the cache. In a production system, you would need to:
-    // 1. Use Vercel AI SDK's cache invalidation APIs
-    // 2. Implement custom cache storage with Redis/Memcached
-    // 3. Track cache keys in a separate table
-
-    // For now, we'll just return success
-    // TODO: Implement proper cache invalidation
-
+    // Cache invalidation is not supported - caching is handled by Vercel AI SDK
+    // which doesn't provide direct cache invalidation APIs in the current implementation
     return NextResponse.json({ 
-      success: true,
-      message: 'Cache invalidation requested (note: actual invalidation depends on cache backend)'
-    })
+      error: 'Cache invalidation not implemented',
+      message: 'Cache is managed by Vercel AI SDK and does not support direct invalidation. Cache entries expire automatically based on TTL.',
+      suggestion: 'Wait for automatic cache expiration or implement custom cache storage with Redis/Memcached for invalidation support.'
+    }, { status: 501 })
   } catch (error: any) {
     console.error('Error invalidating cache:', error)
     return NextResponse.json(
