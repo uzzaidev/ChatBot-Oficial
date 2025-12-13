@@ -172,6 +172,7 @@ export async function POST(request: NextRequest) {
         const aiCallStart = Date.now()
         const response = await callAI({
           clientId,
+          phone: '+5500000000000', // Test phone number for usage logs
           clientConfig: {
             id: client.id,
             name: client.name,
@@ -227,6 +228,7 @@ export async function POST(request: NextRequest) {
         
         const cachedResponse = await callAI({
           clientId,
+          phone: '+5500000000000', // Test phone number for usage logs
           clientConfig: {
             id: client.id,
             name: client.name,
@@ -265,24 +267,45 @@ export async function POST(request: NextRequest) {
     // Step 5: Check Usage Logs
     testResults.tests.usageLogs = { status: 'testing' }
     try {
+      // Wait a moment for async logging to complete
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
       const { data: recentLogs, error: logsError } = await supabase
         .from('gateway_usage_logs')
         .select('*')
+        .eq('client_id', clientId)
         .order('created_at', { ascending: false })
-        .limit(5)
+        .limit(10)
       
       if (logsError) throw logsError
       
+      // Filter logs from the last minute (recent test calls)
+      const oneMinuteAgo = new Date(Date.now() - 60000).toISOString()
+      const testLogs = recentLogs?.filter(log => log.created_at >= oneMinuteAgo) || []
+      
       testResults.tests.usageLogs = {
-        status: 'passed',
-        recentCount: recentLogs?.length || 0,
-        mostRecent: recentLogs && recentLogs.length > 0 ? {
-          provider: recentLogs[0].provider,
-          model: recentLogs[0].model_name,
-          tokens: recentLogs[0].total_tokens,
-          wasCached: recentLogs[0].was_cached,
-          createdAt: recentLogs[0].created_at,
+        status: testLogs.length > 0 ? 'passed' : 'warning',
+        recentCount: testLogs.length,
+        expectedCount: body.testCache ? 2 : 1,
+        message: testLogs.length === 0 
+          ? 'No logs found from this test run. Usage logging may be delayed.'
+          : `Found ${testLogs.length} log(s) from this test`,
+        mostRecent: testLogs.length > 0 ? {
+          provider: testLogs[0].provider,
+          model: testLogs[0].model_name,
+          tokens: testLogs[0].total_tokens,
+          wasCached: testLogs[0].was_cached,
+          costBRL: testLogs[0].cost_brl,
+          createdAt: testLogs[0].created_at,
         } : null,
+        allTestLogs: testLogs.map(log => ({
+          provider: log.provider,
+          model: log.model_name,
+          tokens: log.total_tokens,
+          costBRL: log.cost_brl,
+          wasCached: log.was_cached,
+          createdAt: log.created_at,
+        })),
       }
     } catch (error: any) {
       testResults.tests.usageLogs = {
