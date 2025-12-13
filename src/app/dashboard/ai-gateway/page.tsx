@@ -9,7 +9,7 @@
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Settings, Database, Boxes, BarChart3, DollarSign, ArrowRight } from 'lucide-react'
+import { Settings, Database, Boxes, BarChart3, DollarSign, ArrowRight, Play } from 'lucide-react'
 import { AIGatewayNav } from '@/components/AIGatewayNav'
 
 export default function AIGatewayPage() {
@@ -48,6 +48,13 @@ export default function AIGatewayPage() {
       title: 'Budget',
       description: 'Controle de limites e custos por cliente',
       color: 'text-emerald-600 bg-emerald-50',
+    },
+    {
+      href: '/dashboard/ai-gateway/test',
+      icon: Play,
+      title: 'Test',
+      description: 'Teste o funcionamento completo do Gateway',
+      color: 'text-indigo-600 bg-indigo-50',
     },
   ]
 

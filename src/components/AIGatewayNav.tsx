@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { Settings, Database, Boxes, BarChart3, DollarSign } from 'lucide-react'
+import { Settings, Database, Boxes, BarChart3, DollarSign, Play } from 'lucide-react'
 
 interface AIGatewayNavProps {
   className?: string
@@ -37,6 +37,11 @@ export function AIGatewayNav({ className }: AIGatewayNavProps) {
       href: '/dashboard/ai-gateway/budget',
       label: 'Budget',
       icon: DollarSign,
+    },
+    {
+      href: '/dashboard/ai-gateway/test',
+      label: 'Test',
+      icon: Play,
     },
   ]
 
