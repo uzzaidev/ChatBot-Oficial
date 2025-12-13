@@ -35,7 +35,7 @@ export const ProviderBreakdownChart = ({ data }: ProviderBreakdownChartProps) =>
           cx="50%"
           cy="50%"
           labelLine={false}
-          label={({ provider, percentage }) => `${provider}: ${percentage.toFixed(1)}%`}
+          label={(entry: any) => `${entry.provider}: ${entry.percentage.toFixed(1)}%`}
           outerRadius={80}
           fill="#8884d8"
           dataKey="requests"
