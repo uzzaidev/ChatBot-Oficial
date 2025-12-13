@@ -68,8 +68,9 @@ export const useBudget = ({
       const data = await response.json()
       setUsage(data)
 
-      // Alert if approaching limit
+      // Alert if approaching limit (in production, this would trigger notifications)
       if (data.percentage >= 80 && data.percentage < 90) {
+        // TODO: Replace with proper notification system (email, webhook, etc.)
         console.warn(`[Budget Alert] Client ${clientId} at ${data.percentage.toFixed(1)}% usage`)
       } else if (data.percentage >= 90 && data.percentage < 100) {
         console.error(`[Budget Critical] Client ${clientId} at ${data.percentage.toFixed(1)}% usage`)

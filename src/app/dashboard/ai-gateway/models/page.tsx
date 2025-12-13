@@ -123,6 +123,8 @@ export default function AIGatewayModelsPage() {
           </p>
         </div>
 
+        {/* Note: Add model functionality coming in future update */}
+        {/* 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -137,12 +139,12 @@ export default function AIGatewayModelsPage() {
                 Configure um novo modelo de IA para uso no Gateway
               </DialogDescription>
             </DialogHeader>
-            {/* Add model form would go here */}
             <p className="text-sm text-muted-foreground">
               Form implementation pending...
             </p>
           </DialogContent>
         </Dialog>
+        */}
       </div>
 
       {/* Alerts */}

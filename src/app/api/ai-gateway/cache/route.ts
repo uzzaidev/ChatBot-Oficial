@@ -30,8 +30,9 @@ export async function GET(request: NextRequest) {
       const expiresAt = new Date(entry.expires_at)
       const ttlSeconds = Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / 1000))
 
-      // Estimate savings (rough calculation)
-      const estimatedCostPerToken = 0.0002 // BRL
+      // Estimate savings (dynamic pricing would be better)
+      // TODO: Fetch actual pricing from ai_models_registry instead of using fixed rate
+      const estimatedCostPerToken = 0.0002 // BRL - approximate average
       const savingsBRL = (entry.tokens_saved || 0) * estimatedCostPerToken
 
       return {
