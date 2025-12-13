@@ -33,6 +33,7 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Plus, Edit, Trash2, Check, AlertTriangle } from 'lucide-react'
 import { ModelSelector } from '@/components/ModelSelector'
+import { AIGatewayNav } from '@/components/AIGatewayNav'
 
 interface AIModel {
   id: string
@@ -113,15 +114,17 @@ export default function AIGatewayModelsPage() {
   }, {} as Record<string, AIModel[]>)
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">AI Models Registry</h1>
-          <p className="text-muted-foreground">
-            Gerencie os modelos de IA disponíveis no AI Gateway
-          </p>
-        </div>
+    <>
+      <AIGatewayNav />
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">AI Models Registry</h1>
+            <p className="text-muted-foreground">
+              Gerencie os modelos de IA disponíveis no AI Gateway
+            </p>
+          </div>
 
         {/* Note: Add model functionality coming in future update */}
         {/* 
@@ -264,6 +267,7 @@ export default function AIGatewayModelsPage() {
           ))}
         </div>
       )}
-    </div>
+      </div>
+    </>
   )
 }

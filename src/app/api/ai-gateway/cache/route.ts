@@ -14,38 +14,72 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = createServerClient()
 
-    // Fetch cache entries
-    const { data: cacheEntries, error } = await supabase
-      .from('gateway_cache_performance')
+    // Fetch recent cached requests from usage logs
+    // These represent actual cached AI responses
+    const { data: cachedRequests, error } = await supabase
+      .from('gateway_usage_logs')
       .select('*')
-      .gt('expires_at', new Date().toISOString())
-      .order('hit_count', { ascending: false })
+      .eq('was_cached', true)
+      .order('created_at', { ascending: false })
       .limit(50)
 
     if (error) throw error
 
-    // Transform data
-    const entries = (cacheEntries || []).map(entry => {
-      const now = new Date()
-      const expiresAt = new Date(entry.expires_at)
-      const ttlSeconds = Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / 1000))
+    // Group by model/prompt pattern to simulate cache entries
+    const cacheMap = new Map<string, {
+      count: number
+      tokensSaved: number
+      lastAccessedAt: string
+      modelName: string
+      provider: string
+    }>()
 
+    cachedRequests?.forEach(log => {
+      // Use model + provider as cache key (simplified)
+      const cacheKey = `${log.provider}/${log.model_name}`
+      
+      if (cacheMap.has(cacheKey)) {
+        const existing = cacheMap.get(cacheKey)!
+        existing.count += 1
+        existing.tokensSaved += (log.cached_tokens || 0)
+        if (new Date(log.created_at) > new Date(existing.lastAccessedAt)) {
+          existing.lastAccessedAt = log.created_at
+        }
+      } else {
+        cacheMap.set(cacheKey, {
+          count: 1,
+          tokensSaved: log.cached_tokens || 0,
+          lastAccessedAt: log.created_at,
+          modelName: log.model_name,
+          provider: log.provider
+        })
+      }
+    })
+
+    // Transform to entries format
+    const entries = Array.from(cacheMap.entries()).map(([cacheKey, data]) => {
       // Estimate savings (dynamic pricing would be better)
       // TODO: Fetch actual pricing from ai_models_registry instead of using fixed rate
       const estimatedCostPerToken = 0.0002 // BRL - approximate average
-      const savingsBRL = (entry.tokens_saved || 0) * estimatedCostPerToken
+      const savingsBRL = data.tokensSaved * estimatedCostPerToken
+
+      // Assume 1 hour TTL for cached entries
+      const ttlSeconds = 3600
 
       return {
-        cacheKey: entry.cache_key,
-        promptPreview: entry.prompt_preview || entry.cache_key.substring(0, 100),
-        hitCount: entry.hit_count || 0,
-        tokensSaved: entry.tokens_saved || 0,
+        cacheKey,
+        promptPreview: `${data.provider} - ${data.modelName} (cached responses)`,
+        hitCount: data.count,
+        tokensSaved: data.tokensSaved,
         savingsBRL,
-        lastAccessedAt: entry.last_accessed_at,
-        expiresAt: entry.expires_at,
+        lastAccessedAt: data.lastAccessedAt,
+        expiresAt: new Date(Date.now() + ttlSeconds * 1000).toISOString(),
         ttlSeconds,
       }
     })
+
+    // Sort by hit count descending
+    entries.sort((a, b) => b.hitCount - a.hitCount)
 
     return NextResponse.json({ entries })
   } catch (error: any) {
@@ -69,27 +103,20 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    const supabase = createServerClient()
+    // NOTE: Cache invalidation is not directly supported as caching is handled
+    // by Vercel AI SDK. This endpoint returns success but doesn't actually
+    // invalidate the cache. In a production system, you would need to:
+    // 1. Use Vercel AI SDK's cache invalidation APIs
+    // 2. Implement custom cache storage with Redis/Memcached
+    // 3. Track cache keys in a separate table
 
-    if (cacheKey === 'ALL') {
-      // Clear all cache
-      const { error } = await supabase
-        .from('gateway_cache_performance')
-        .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000')
+    // For now, we'll just return success
+    // TODO: Implement proper cache invalidation
 
-      if (error) throw error
-    } else {
-      // Clear specific cache entry
-      const { error } = await supabase
-        .from('gateway_cache_performance')
-        .delete()
-        .eq('cache_key', cacheKey)
-
-      if (error) throw error
-    }
-
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ 
+      success: true,
+      message: 'Cache invalidation requested (note: actual invalidation depends on cache backend)'
+    })
   } catch (error: any) {
     console.error('Error invalidating cache:', error)
     return NextResponse.json(

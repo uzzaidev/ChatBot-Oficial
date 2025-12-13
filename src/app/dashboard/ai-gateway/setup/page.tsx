@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Switch } from '@/components/ui/switch'
 import { Loader2, Save, Check, AlertTriangle, Shield, Key, Trash2 } from 'lucide-react'
+import { AIGatewayNav } from '@/components/AIGatewayNav'
 
 export default function AIGatewaySetupPage() {
   const [loading, setLoading] = useState(false)
@@ -196,15 +197,17 @@ export default function AIGatewaySetupPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold mb-2">AI Gateway - Configuração</h1>
-        <p className="text-muted-foreground">
-          Configure as API keys compartilhadas para o Vercel AI Gateway. As keys são criptografadas
-          no Supabase Vault e compartilhadas por todos os clientes.
-        </p>
-      </div>
+    <>
+      <AIGatewayNav />
+      <div className="max-w-4xl mx-auto p-6 space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold mb-2">AI Gateway - Configuração</h1>
+          <p className="text-muted-foreground">
+            Configure as API keys compartilhadas para o Vercel AI Gateway. As keys são criptografadas
+            no Supabase Vault e compartilhadas por todos os clientes.
+          </p>
+        </div>
 
       {/* Alerts */}
       {error && (
@@ -391,7 +394,8 @@ export default function AIGatewaySetupPage() {
           </ul>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </>
   )
 }
 
