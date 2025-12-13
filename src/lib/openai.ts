@@ -1,5 +1,6 @@
 import OpenAI from 'openai'
 import { AIResponse, ChatMessage } from './types'
+import { logAPIUsage } from './ai-gateway/api-tracking'
 
 const getRequiredEnvVariable = (key: string): string => {
   const value = process.env[key]
@@ -27,13 +28,17 @@ export const getOpenAIClient = (): OpenAI => {
 
 export const transcribeAudio = async (
   audioBuffer: Buffer,
-  apiKey?: string
+  apiKey?: string,
+  clientId?: string,
+  phone?: string
 ): Promise<{
   text: string
   usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number }
   model: string
   durationSeconds?: number
 }> => {
+  const startTime = Date.now()
+
   try {
     // 🔐 REQUIRES client-specific OpenAI API key (no fallback to global)
     if (!apiKey) {
@@ -65,6 +70,23 @@ export const transcribeAudio = async (
     // 1000 tokens por minuto de áudio (estimativa rough)
     const estimatedTokens = Math.ceil((estimatedDurationSeconds / 60) * 1000)
 
+    const latencyMs = Date.now() - startTime
+
+    // 📊 Log API usage for tracking and budgets
+    if (clientId) {
+      await logAPIUsage({
+        clientId,
+        phone,
+        apiType: 'whisper',
+        provider: 'openai',
+        modelName: 'whisper-1',
+        inputUnits: estimatedDurationSeconds, // seconds of audio
+        latencyMs,
+      }).catch(err => {
+        console.error('[Whisper] Failed to log usage:', err)
+        // Continue execution even if logging fails
+      })
+    }
 
     return {
       text: transcription.text,
@@ -135,12 +157,16 @@ export const analyzeImageFromBuffer = async (
   imageBuffer: Buffer,
   prompt: string,
   mimeType: string = 'image/jpeg',
-  apiKey?: string
+  apiKey?: string,
+  clientId?: string,
+  phone?: string
 ): Promise<{
   text: string
   usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number }
   model: string
 }> => {
+  const startTime = Date.now()
+
   try {
     // 🔐 REQUIRES client-specific OpenAI API key (no fallback to global)
     if (!apiKey) {
@@ -192,6 +218,25 @@ export const analyzeImageFromBuffer = async (
         }
       : { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }
 
+    const latencyMs = Date.now() - startTime
+
+    // 📊 Log API usage for tracking and budgets
+    if (clientId) {
+      await logAPIUsage({
+        clientId,
+        phone,
+        apiType: 'vision',
+        provider: 'openai',
+        modelName: 'gpt-4o',
+        inputTokens: usage.prompt_tokens,
+        outputTokens: usage.completion_tokens,
+        outputUnits: 1, // 1 image analyzed
+        latencyMs,
+      }).catch(err => {
+        console.error('[Vision] Failed to log usage:', err)
+        // Continue execution even if logging fails
+      })
+    }
 
     return {
       text: content,
@@ -206,12 +251,15 @@ export const analyzeImageFromBuffer = async (
 
 export const generateEmbedding = async (
   text: string,
-  apiKey?: string
+  apiKey?: string,
+  clientId?: string
 ): Promise<{
   embedding: number[]
   usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number }
   model: string
 }> => {
+  const startTime = Date.now()
+
   try {
     // 🔐 REQUIRES client-specific OpenAI API key (no fallback to global)
     if (!apiKey) {
@@ -242,6 +290,23 @@ export const generateEmbedding = async (
         }
       : { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }
 
+    const latencyMs = Date.now() - startTime
+
+    // 📊 Log API usage for tracking and budgets
+    if (clientId) {
+      await logAPIUsage({
+        clientId,
+        apiType: 'embeddings',
+        provider: 'openai',
+        modelName: 'text-embedding-3-small',
+        inputTokens: usage.prompt_tokens,
+        outputTokens: 0,
+        latencyMs,
+      }).catch(err => {
+        console.error('[Embeddings] Failed to log usage:', err)
+        // Continue execution even if logging fails
+      })
+    }
 
     return {
       embedding,
