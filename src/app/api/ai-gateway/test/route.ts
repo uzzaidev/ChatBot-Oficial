@@ -42,14 +42,35 @@ export async function POST(request: NextRequest) {
     const testPrompt = body.prompt || 'Hello! This is a test message. Please respond briefly.'
     let clientId = body.clientId
     
+    // Step 0: Check Environment Configuration
+    testResults.tests.environment = { status: 'testing' }
+    const isGatewayEnabled = process.env.ENABLE_AI_GATEWAY === 'true'
+    
+    if (!isGatewayEnabled) {
+      testResults.tests.environment = {
+        status: 'failed',
+        error: 'ENABLE_AI_GATEWAY environment variable is not set to "true"',
+        fix: 'Add ENABLE_AI_GATEWAY=true to your .env.local file and restart the server',
+        envVarValue: process.env.ENABLE_AI_GATEWAY || 'not set',
+      }
+      testResults.errors.push('Environment check failed: ENABLE_AI_GATEWAY must be set to "true"')
+      testResults.success = false
+    } else {
+      testResults.tests.environment = {
+        status: 'passed',
+        message: 'ENABLE_AI_GATEWAY is correctly set to "true"',
+      }
+    }
+    
     // Step 1: Get or create test client
     testResults.tests.client = { status: 'testing' }
     
     if (!clientId) {
-      // Try to find the first client or create a test one
+      // Try to find a client with AI Gateway enabled
       const { data: clients, error: clientError } = await supabase
         .from('clients')
-        .select('id, name')
+        .select('id, name, use_ai_gateway')
+        .eq('use_ai_gateway', true)
         .limit(1)
       
       if (clientError) throw new Error(`Client fetch failed: ${clientError.message}`)
@@ -60,13 +81,48 @@ export async function POST(request: NextRequest) {
           status: 'passed',
           clientId,
           clientName: clients[0].name,
+          useAiGateway: clients[0].use_ai_gateway,
         }
       } else {
-        testResults.tests.client = {
-          status: 'failed',
-          error: 'No clients found in database. Create a client first.',
+        // Try any client
+        const { data: anyClients } = await supabase
+          .from('clients')
+          .select('id, name, use_ai_gateway')
+          .limit(1)
+        
+        if (anyClients && anyClients.length > 0) {
+          clientId = anyClients[0].id
+          testResults.tests.client = {
+            status: 'warning',
+            clientId,
+            clientName: anyClients[0].name,
+            useAiGateway: anyClients[0].use_ai_gateway,
+            warning: 'Client found but use_ai_gateway is not enabled. Enable it in the database.',
+          }
+        } else {
+          testResults.tests.client = {
+            status: 'failed',
+            error: 'No clients found in database. Create a client first.',
+          }
+          testResults.success = false
         }
-        testResults.success = false
+      }
+    } else {
+      // Verify the provided client exists and check gateway status
+      const { data: client } = await supabase
+        .from('clients')
+        .select('id, name, use_ai_gateway')
+        .eq('id', clientId)
+        .single()
+      
+      if (client) {
+        testResults.tests.client = {
+          status: client.use_ai_gateway ? 'passed' : 'warning',
+          clientId: client.id,
+          clientName: client.name,
+          useAiGateway: client.use_ai_gateway,
+          warning: !client.use_ai_gateway ? 'Client exists but use_ai_gateway is not enabled' : undefined,
+        }
       }
     }
 
@@ -336,10 +392,29 @@ export async function POST(request: NextRequest) {
 
 // GET endpoint for test documentation
 export async function GET(request: NextRequest) {
+  const isGatewayEnabled = process.env.ENABLE_AI_GATEWAY === 'true'
+  
   return NextResponse.json({
     endpoint: '/api/ai-gateway/test',
     description: 'Test endpoint for AI Gateway functionality',
     method: 'POST',
+    prerequisites: {
+      environmentVariable: {
+        name: 'ENABLE_AI_GATEWAY',
+        required: true,
+        currentValue: process.env.ENABLE_AI_GATEWAY || 'not set',
+        isConfigured: isGatewayEnabled,
+        instructions: 'Add ENABLE_AI_GATEWAY=true to your .env.local file and restart the server',
+      },
+      clientConfiguration: {
+        required: true,
+        instructions: 'Ensure at least one client has use_ai_gateway=true in the database',
+      },
+      gatewaySetup: {
+        required: true,
+        instructions: 'Configure API keys at /dashboard/ai-gateway/setup',
+      },
+    },
     usage: {
       basic: {
         description: 'Run basic test with defaults',
@@ -375,7 +450,8 @@ export async function GET(request: NextRequest) {
       },
     },
     testsPerformed: [
-      '1. Client Configuration - Validates client exists',
+      '0. Environment - Checks ENABLE_AI_GATEWAY=true',
+      '1. Client Configuration - Validates client exists and has gateway enabled',
       '2. Models Registry - Lists available AI models',
       '3. AI Gateway Call - Makes actual AI request',
       '4. Cache Test - Tests cache hit (if testCache=true)',
