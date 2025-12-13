@@ -5,14 +5,16 @@ const IMAGE_ANALYSIS_PROMPT = 'Descreva detalhadamente o que você vê nesta ima
 export const analyzeImage = async (
   imageBuffer: Buffer,
   mimeType: string = 'image/jpeg',
-  apiKey?: string
+  apiKey?: string,
+  clientId?: string,
+  phone?: string
 ): Promise<{
   text: string
   usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number }
   model: string
 }> => {
   try {
-    return await analyzeImageFromBuffer(imageBuffer, IMAGE_ANALYSIS_PROMPT, mimeType, apiKey)
+    return await analyzeImageFromBuffer(imageBuffer, IMAGE_ANALYSIS_PROMPT, mimeType, apiKey, clientId, phone)
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     throw new Error(`Failed to analyze image: ${errorMessage}`)
