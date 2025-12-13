@@ -12,6 +12,24 @@ This PR fixes critical issues in the AI Gateway implementation:
 
 ### 1. Setup & Prerequisites
 
+**REQUIRED**: Enable AI Gateway in environment variables
+
+Create or update `.env.local` file:
+
+```bash
+# AI Gateway - REQUIRED for AI Gateway to work
+ENABLE_AI_GATEWAY=true
+
+# Supabase credentials
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGc...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGc...
+```
+
+**Important**: Without `ENABLE_AI_GATEWAY=true`, the gateway will not work even if clients have `use_ai_gateway=true` in the database.
+
+Install dependencies and start server:
+
 ```bash
 # Install dependencies
 npm install
