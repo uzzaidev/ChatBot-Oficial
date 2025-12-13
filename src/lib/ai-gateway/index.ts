@@ -237,7 +237,7 @@ const callAIWithFallback = async (
       const wasCached = result.response?.headers?.['x-vercel-ai-cache-status'] === 'hit'
       const usage = result.usage as any
 
-      return {
+      const response: AIResponse = {
         text: result.text,
         usage: {
           promptTokens: usage.promptTokens || 0,
