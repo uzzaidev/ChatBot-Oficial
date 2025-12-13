@@ -351,10 +351,10 @@ export const generateAIResponse = async (
 
     // 🚫 LEGACY PATH REMOVED: AI Gateway is now required
     // If we reach here, it means AI Gateway is disabled for this client
-    throw new Error(
-      'AI Gateway is required but disabled for this client. ' +
-      'Please enable AI Gateway in client settings or contact support.'
-    );
+    const errorMessage = `AI Gateway is required but disabled for client: ${config.id} (${config.name}). ` +
+      `Please enable AI Gateway in client settings or contact support.`;
+    console.error(`[AI Gateway Error] ${errorMessage}`);
+    throw new Error(errorMessage);
   } catch (error) {
     const errorMessage = error instanceof Error
       ? error.message

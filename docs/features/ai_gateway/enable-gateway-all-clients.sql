@@ -11,6 +11,7 @@
 -- =====================================================
 
 -- 1. Check current status BEFORE enabling
+-- Note: FILTER clause requires PostgreSQL 9.4+
 SELECT
   COUNT(*) FILTER (WHERE use_ai_gateway = true) as gateway_enabled,
   COUNT(*) FILTER (WHERE use_ai_gateway = false) as gateway_disabled,
