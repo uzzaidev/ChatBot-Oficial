@@ -19,6 +19,10 @@
     "cap:open:ios": "npx cap open ios"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^2.0.56",
+    "@ai-sdk/google": "^2.0.46",
+    "@ai-sdk/groq": "^2.0.33",
+    "@ai-sdk/openai": "^2.0.85",
     "@aparajita/capacitor-biometric-auth": "^9.1.2",
     "@capacitor/android": "^7.4.4",
     "@capacitor/app": "^7.1.0",
@@ -50,6 +54,7 @@
     "@upstash/ratelimit": "^2.0.7",
     "@upstash/redis": "^1.35.6",
     "@xyflow/react": "^12.10.0",
+    "ai": "^5.0.112",
     "axios": "^1.12.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
@@ -74,7 +79,7 @@
     "redis": "^5.9.0",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
-    "zod": "^4.1.12",
+    "zod": "^4.1.13",
     "zustand": "^5.0.9"
   },
   "devDependencies": {
