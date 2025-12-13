@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Trash2, RefreshCw, Search, Zap, Clock } from 'lucide-react'
+import { AIGatewayNav } from '@/components/AIGatewayNav'
 
 interface CacheEntry {
   cacheKey: string
@@ -131,15 +132,17 @@ export default function AIGatewayCachePage() {
   const totalHits = cacheEntries.reduce((sum, entry) => sum + entry.hitCount, 0)
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Cache do AI Gateway</h1>
-          <p className="text-muted-foreground">
-            Visualize e gerencie o cache de respostas do AI Gateway
-          </p>
-        </div>
+    <>
+      <AIGatewayNav />
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Cache do AI Gateway</h1>
+            <p className="text-muted-foreground">
+              Visualize e gerencie o cache de respostas do AI Gateway
+            </p>
+          </div>
 
         <div className="flex gap-2">
           <Button variant="outline" onClick={fetchCacheEntries}>
@@ -267,6 +270,7 @@ export default function AIGatewayCachePage() {
           </CardContent>
         </Card>
       )}
-    </div>
+      </div>
+    </>
   )
 }

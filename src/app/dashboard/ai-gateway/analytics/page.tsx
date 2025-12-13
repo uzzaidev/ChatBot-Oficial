@@ -13,6 +13,7 @@ import { Loader2, TrendingUp, DollarSign, Zap, Users, Activity } from 'lucide-re
 import { GatewayMetricsDashboard } from '@/components/GatewayMetricsDashboard'
 import { ProviderBreakdownChart } from '@/components/ProviderBreakdownChart'
 import { LatencyChart } from '@/components/LatencyChart'
+import { AIGatewayNav } from '@/components/AIGatewayNav'
 
 interface AggregatedMetrics {
   totalRequests: number
@@ -90,15 +91,17 @@ export default function AIGatewayAnalyticsPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">AI Gateway Analytics</h1>
-          <p className="text-muted-foreground">
-            Métricas agregadas de todos os clientes usando o AI Gateway
-          </p>
-        </div>
+    <>
+      <AIGatewayNav />
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">AI Gateway Analytics</h1>
+            <p className="text-muted-foreground">
+              Métricas agregadas de todos os clientes usando o AI Gateway
+            </p>
+          </div>
 
         {/* Period Selector */}
         <Tabs value={period} onValueChange={(v) => setPeriod(v as typeof period)}>
@@ -257,6 +260,7 @@ export default function AIGatewayAnalyticsPage() {
 
       {/* Metrics Dashboard */}
       <GatewayMetricsDashboard period={period} aggregated={true} />
-    </div>
+      </div>
+    </>
   )
 }
