@@ -132,7 +132,7 @@ export function DashboardNavigation({
         />
 
         <NavItem
-          href="/dashboard/ai-gateway/setup"
+          href="/dashboard/ai-gateway"
           icon={<Zap className="h-5 w-5 flex-shrink-0" />}
           label="AI Gateway"
           isCollapsed={isCollapsed}
