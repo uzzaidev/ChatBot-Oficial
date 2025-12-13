@@ -64,8 +64,10 @@ export const GatewayMetricsDashboard = ({
         </CardHeader>
         <CardContent>
           <div className="h-64 flex items-center justify-center text-muted-foreground">
-            {/* Chart implementation would go here */}
-            Timeline chart - {data.totalRequests} total requests
+            <div className="text-center">
+              <p className="font-medium">Timeline Chart - Coming Soon</p>
+              <p className="text-sm mt-2">{data.totalRequests} total requests in this period</p>
+            </div>
           </div>
         </CardContent>
       </Card>
