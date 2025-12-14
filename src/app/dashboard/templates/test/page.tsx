@@ -184,7 +184,7 @@ export default function TestTemplatePage() {
                   <div className="flex items-center justify-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-blue-500"></div>
                   </div>
-                ) : !templates || templates.length === 0 ? (
+                ) : (!templates?.length) ? (
                   <div className="text-center py-8">
                     <p className="text-sm text-erie-black-600 mb-4">
                       Nenhum template aprovado encontrado.
