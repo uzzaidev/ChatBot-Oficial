@@ -184,10 +184,16 @@ export const TemplateForm = ({ initialData, onSubmit, loading = false }: Templat
 
   const addButton = () => {
     if (buttons.length >= 3) {
-      alert("Máximo de 3 botões permitidos");
+      setErrors({ ...errors, buttons: "Máximo de 3 botões permitidos" });
       return;
     }
     setButtons([...buttons, { type: "QUICK_REPLY", text: "" }]);
+    // Clear error when adding button
+    if (errors.buttons) {
+      const newErrors = { ...errors };
+      delete newErrors.buttons;
+      setErrors(newErrors);
+    }
   };
 
   const removeButton = (index: number) => {
@@ -196,7 +202,19 @@ export const TemplateForm = ({ initialData, onSubmit, loading = false }: Templat
 
   const updateButton = (index: number, field: keyof TemplateButton, value: string) => {
     const newButtons = [...buttons];
-    (newButtons[index] as any)[field] = value;
+    const button = newButtons[index];
+    
+    // Type-safe field assignment
+    if (field === "type") {
+      button.type = value as TemplateButton["type"];
+    } else if (field === "text") {
+      button.text = value;
+    } else if (field === "url") {
+      button.url = value;
+    } else if (field === "phone_number") {
+      button.phone_number = value;
+    }
+    
     setButtons(newButtons);
   };
 
