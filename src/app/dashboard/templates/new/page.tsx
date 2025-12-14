@@ -14,12 +14,7 @@ export default function NewTemplatePage() {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [previewData, setPreviewData] = useState<{
-    name: string;
-    category: TemplateCategory;
-    language: string;
-    components: TemplateComponent[];
-  } | null>(null);
+  const [previewData, setPreviewData] = useState<any>(null);
 
   const handleSubmit = async (data: {
     name: string;
@@ -98,20 +93,11 @@ export default function NewTemplatePage() {
               <h2 className="text-lg font-semibold text-erie-black-900 mb-4">
                 Pré-visualização
               </h2>
-              {previewData ? (
-                <TemplatePreview
-                  name={previewData.name}
-                  category={previewData.category}
-                  language={previewData.language}
-                  components={previewData.components}
-                />
-              ) : (
-                <div className="flex items-center justify-center py-12 text-center">
-                  <p className="text-sm text-erie-black-500">
-                    Preencha o formulário para ver a pré-visualização
-                  </p>
-                </div>
-              )}
+              <div className="flex items-center justify-center py-12 text-center">
+                <p className="text-sm text-erie-black-500">
+                  Preencha o formulário para ver a pré-visualização
+                </p>
+              </div>
             </div>
           </div>
         </div>
