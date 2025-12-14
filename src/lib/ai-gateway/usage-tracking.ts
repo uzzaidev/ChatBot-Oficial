@@ -7,6 +7,7 @@
 
 import { createServerClient } from '@/lib/supabase-server'
 import { convertUSDtoBRL, getExchangeRate } from '@/lib/currency'
+import { trackUnifiedUsage } from '@/lib/unified-tracking'
 
 // =====================================================
 // TYPES
@@ -127,8 +128,25 @@ export const logGatewayUsage = async (params: UsageLogParams): Promise<void> => 
       return
     }
 
-    // 5. Update client budget usage
-    await updateBudgetUsage(clientId, inputTokens + outputTokens, totalCostBRL)
+    // 5. Update unified budget (modular: tokens + BRL)
+    await trackUnifiedUsage({
+      clientId,
+      conversationId,
+      phone,
+      apiType: 'chat',
+      provider: provider as 'openai' | 'groq' | 'anthropic' | 'google',
+      modelName,
+      inputTokens,
+      outputTokens,
+      cachedTokens,
+      latencyMs,
+      wasCached,
+      wasFallback,
+      fallbackReason,
+      requestId,
+      costUSD: totalCostUSD,
+      metadata,
+    })
 
     // 6. Update cache performance (if applicable)
     if (wasCached) {
@@ -143,59 +161,6 @@ export const logGatewayUsage = async (params: UsageLogParams): Promise<void> => 
     console.log(`[Usage Tracking] Logged usage: ${inputTokens + outputTokens} tokens, R$ ${totalCostBRL.toFixed(4)}`)
   } catch (error) {
     console.error('[Usage Tracking] Error logging gateway usage:', error)
-  }
-}
-
-// =====================================================
-// BUDGET MANAGEMENT
-// =====================================================
-
-/**
- * Update client budget usage
- */
-const updateBudgetUsage = async (
-  clientId: string,
-  tokens: number,
-  costBRL: number
-): Promise<void> => {
-  try {
-    const supabase = createServerClient()
-
-    // Get client budget config
-    const { data: budget, error: budgetError } = await supabase
-      .from('client_budgets')
-      .select('budget_type')
-      .eq('client_id', clientId)
-      .single()
-
-    if (budgetError || !budget) {
-      // No budget configured for this client
-      return
-    }
-
-    // Determine amount to increment based on budget type
-    let incrementAmount = 0
-
-    if (budget.budget_type === 'tokens') {
-      incrementAmount = tokens
-    } else if (budget.budget_type === 'brl') {
-      incrementAmount = costBRL
-    } else if (budget.budget_type === 'usd') {
-      const rate = await getExchangeRate('BRL', 'USD')
-      incrementAmount = costBRL * rate
-    }
-
-    // Increment budget usage (using helper function from migration)
-    const { error: incrementError } = await supabase.rpc('increment_budget_usage', {
-      p_client_id: clientId,
-      p_amount: incrementAmount,
-    })
-
-    if (incrementError) {
-      console.error('[Budget] Error incrementing usage:', incrementError)
-    }
-  } catch (error) {
-    console.error('[Budget] Error updating budget usage:', error)
   }
 }
 
