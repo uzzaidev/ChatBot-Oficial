@@ -29,7 +29,7 @@ export function AIGatewayNav({ className }: AIGatewayNavProps) {
       icon: Boxes,
     },
     {
-      href: '/dashboard/ai-gateway/analytics',
+      href: '/dashboard/analytics',
       label: 'Analytics',
       icon: BarChart3,
     },

@@ -13,6 +13,7 @@
 
 import { createServerClient } from '@/lib/supabase-server'
 import { convertUSDtoBRL, getExchangeRate } from '@/lib/currency'
+import { trackUnifiedUsage } from '@/lib/unified-tracking'
 
 // =====================================================
 // TYPES
@@ -189,15 +190,26 @@ export const logAPIUsage = async (params: APIUsageParams): Promise<void> => {
       return
     }
 
-    // 4. Increment multi-dimensional budget
-    await incrementBudgetUsage({
+    // 4. Track unified usage (modular budget: tokens + BRL)
+    await trackUnifiedUsage({
       clientId,
+      conversationId,
+      phone: phone || 'system',
       apiType,
-      costBRL,
-      tokens: inputTokens + outputTokens,
-      minutes: Math.ceil(inputUnits / 60), // Convert seconds to minutes
-      images: outputUnits,
-      requests: 1,
+      provider: provider as 'openai' | 'groq' | 'anthropic' | 'google',
+      modelName,
+      inputTokens: apiType === 'chat' || apiType === 'embeddings' ? inputTokens : undefined,
+      outputTokens: apiType === 'chat' ? outputTokens : undefined,
+      cachedTokens: apiType === 'chat' ? cachedTokens : undefined,
+      seconds: apiType === 'whisper' ? inputUnits : undefined,
+      images: apiType === 'vision' ? outputUnits : undefined,
+      latencyMs,
+      wasCached,
+      wasFallback,
+      fallbackReason,
+      requestId,
+      costUSD,
+      metadata,
     })
 
     // 5. Check budget limits (auto-pause handled by database function)
@@ -355,39 +367,6 @@ const calculateImageGenCost = (provider: string, modelName: string, images: numb
 // =====================================================
 // BUDGET MANAGEMENT
 // =====================================================
-
-/**
- * Increment budget usage (calls database function)
- */
-const incrementBudgetUsage = async (params: {
-  clientId: string
-  apiType: APIType
-  costBRL: number
-  tokens: number
-  minutes: number
-  images: number
-  requests: number
-}): Promise<void> => {
-  try {
-    const supabase = createServerClient()
-
-    const { error } = await supabase.rpc('increment_budget_usage', {
-      p_client_id: params.clientId,
-      p_api_type: params.apiType,
-      p_cost_brl: params.costBRL,
-      p_tokens: params.tokens,
-      p_minutes: params.minutes,
-      p_images: params.images,
-      p_requests: params.requests,
-    })
-
-    if (error) {
-      console.error('[Budget] Error incrementing usage:', error)
-    }
-  } catch (error) {
-    console.error('[Budget] Error:', error)
-  }
-}
 
 /**
  * Check if client has budget available for API type

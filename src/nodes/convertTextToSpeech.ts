@@ -3,6 +3,7 @@ import OpenAI from "openai";
 import crypto from "crypto";
 import { createServerClient } from "@/lib/supabase-server";
 import { getClientSecrets } from "@/lib/vault";
+import { trackUnifiedUsage } from "@/lib/unified-tracking";
 
 export interface ConvertTextToSpeechInput {
   text: string;
@@ -184,13 +185,29 @@ export const convertTextToSpeech = async (
     }
   }
 
-  // 5. Log generation
+  // 5. Log generation (legacy)
   await supabase.from("tts_usage_logs").insert({
     client_id: clientId,
     phone: "system",
     event_type: "generated",
     text_length: text.length,
     from_cache: false,
+  });
+
+  // 6. Track unified usage (new - increments budget)
+  const costUSD = selectedModel === 'tts-1-hd'
+    ? (text.length / 1_000_000) * 15.0  // $15/1M characters
+    : (text.length / 1_000_000) * 7.5   // $7.5/1M characters
+
+  await trackUnifiedUsage({
+    clientId,
+    phone: 'system',
+    apiType: 'tts',
+    provider: 'openai',
+    modelName: selectedModel,
+    characters: text.length,
+    costUSD,
+    latencyMs: 0,
   });
 
   return {
