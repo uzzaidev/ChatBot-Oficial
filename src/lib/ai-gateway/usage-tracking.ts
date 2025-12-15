@@ -5,29 +5,29 @@
  * Updates budget usage and cache performance metrics
  */
 
-import { createServerClient } from '@/lib/supabase-server'
-import { convertUSDtoBRL, getExchangeRate } from '@/lib/currency'
-import { trackUnifiedUsage } from '@/lib/unified-tracking'
+import { createServerClient } from "@/lib/supabase-server";
+import { convertUSDtoBRL, getExchangeRate } from "@/lib/currency";
+import { trackUnifiedUsage } from "@/lib/unified-tracking";
 
 // =====================================================
 // TYPES
 // =====================================================
 
 export interface UsageLogParams {
-  clientId: string
-  conversationId?: string
-  phone: string
-  provider: string
-  modelName: string
-  inputTokens: number
-  outputTokens: number
-  cachedTokens?: number
-  latencyMs: number
-  wasCached: boolean
-  wasFallback: boolean
-  fallbackReason?: string
-  requestId?: string
-  metadata?: Record<string, any>
+  clientId: string;
+  conversationId?: string;
+  phone: string;
+  provider: string;
+  modelName: string;
+  inputTokens: number;
+  outputTokens: number;
+  cachedTokens?: number;
+  latencyMs: number;
+  wasCached: boolean;
+  wasFallback: boolean;
+  fallbackReason?: string;
+  requestId?: string;
+  metadata?: Record<string, any>;
 }
 
 // =====================================================
@@ -45,7 +45,9 @@ export interface UsageLogParams {
  * 5. Update client budget usage
  * 6. Update cache performance metrics (if cached)
  */
-export const logGatewayUsage = async (params: UsageLogParams): Promise<void> => {
+export const logGatewayUsage = async (
+  params: UsageLogParams,
+): Promise<void> => {
   const {
     clientId,
     conversationId,
@@ -61,71 +63,78 @@ export const logGatewayUsage = async (params: UsageLogParams): Promise<void> => 
     fallbackReason,
     requestId,
     metadata = {},
-  } = params
+  } = params;
 
   try {
-    const supabase = createServerClient()
+    const supabase = createServerClient();
 
     // 1. Get model pricing from registry
     const { data: modelData, error: modelError } = await supabase
-      .from('ai_models_registry')
-      .select('id, input_price_per_million, output_price_per_million, cached_input_price_per_million')
-      .eq('provider', provider)
-      .eq('model_name', modelName)
-      .single()
+      .from("ai_models_registry")
+      .select(
+        "id, input_price_per_million, output_price_per_million, cached_input_price_per_million",
+      )
+      .eq("provider", provider)
+      .eq("model_name", modelName)
+      .single();
 
     if (modelError || !modelData) {
-      console.error('[Usage Tracking] Model not found in registry:', provider, modelName)
+      console.error(
+        "[Usage Tracking] Model not found in registry:",
+        provider,
+        modelName,
+      );
       // Continue without pricing data
     }
 
     // 2. Calculate cost in USD
     const inputCostUSD = modelData
       ? (inputTokens / 1_000_000) * modelData.input_price_per_million
-      : 0
+      : 0;
 
     const outputCostUSD = modelData
       ? (outputTokens / 1_000_000) * modelData.output_price_per_million
-      : 0
+      : 0;
 
     // If tokens were cached, use cached pricing (Anthropic models)
     const cachedCostUSD =
       modelData?.cached_input_price_per_million && cachedTokens > 0
         ? (cachedTokens / 1_000_000) * modelData.cached_input_price_per_million
-        : 0
+        : 0;
 
-    const totalCostUSD = inputCostUSD + outputCostUSD - cachedCostUSD
+    const totalCostUSD = inputCostUSD + outputCostUSD - cachedCostUSD;
 
     // 3. Convert to BRL
-    const usdToBrlRate = await getExchangeRate('USD', 'BRL')
-    const totalCostBRL = await convertUSDtoBRL(totalCostUSD)
+    const usdToBrlRate = await getExchangeRate("USD", "BRL");
+    const totalCostBRL = await convertUSDtoBRL(totalCostUSD);
 
     // 4. Insert log to gateway_usage_logs
-    const { error: logError } = await supabase.from('gateway_usage_logs').insert({
-      client_id: clientId,
-      conversation_id: conversationId,
-      phone,
-      request_id: requestId,
-      model_registry_id: modelData?.id,
-      provider,
-      model_name: modelName,
-      input_tokens: inputTokens,
-      output_tokens: outputTokens,
-      cached_tokens: cachedTokens,
-      total_tokens: inputTokens + outputTokens,
-      latency_ms: latencyMs,
-      was_cached: wasCached,
-      was_fallback: wasFallback,
-      fallback_reason: fallbackReason,
-      cost_usd: totalCostUSD,
-      cost_brl: totalCostBRL,
-      usd_to_brl_rate: usdToBrlRate,
-      metadata,
-    })
+    const { error: logError } = await supabase.from("gateway_usage_logs")
+      .insert({
+        client_id: clientId,
+        conversation_id: conversationId,
+        phone,
+        request_id: requestId,
+        model_registry_id: modelData?.id,
+        provider,
+        model_name: modelName,
+        input_tokens: inputTokens,
+        output_tokens: outputTokens,
+        cached_tokens: cachedTokens,
+        total_tokens: inputTokens + outputTokens,
+        latency_ms: latencyMs,
+        was_cached: wasCached,
+        was_fallback: wasFallback,
+        fallback_reason: fallbackReason,
+        cost_usd: totalCostUSD,
+        cost_brl: totalCostBRL,
+        usd_to_brl_rate: usdToBrlRate,
+        metadata,
+      });
 
     if (logError) {
-      console.error('[Usage Tracking] Error inserting log:', logError)
-      return
+      console.error("[Usage Tracking] Error inserting log:", logError);
+      return;
     }
 
     // 5. Update unified budget (modular: tokens + BRL)
@@ -133,8 +142,8 @@ export const logGatewayUsage = async (params: UsageLogParams): Promise<void> => 
       clientId,
       conversationId,
       phone,
-      apiType: 'chat',
-      provider: provider as 'openai' | 'groq' | 'anthropic' | 'google',
+      apiType: "chat",
+      provider: provider as "openai" | "groq" | "anthropic" | "google",
       modelName,
       inputTokens,
       outputTokens,
@@ -146,7 +155,7 @@ export const logGatewayUsage = async (params: UsageLogParams): Promise<void> => 
       requestId,
       costUSD: totalCostUSD,
       metadata,
-    })
+    });
 
     // 6. Update cache performance (if applicable)
     if (wasCached) {
@@ -155,14 +164,20 @@ export const logGatewayUsage = async (params: UsageLogParams): Promise<void> => 
         costSavedUSD: cachedCostUSD,
         costSavedBRL: await convertUSDtoBRL(cachedCostUSD),
         latencyMs,
-      })
+      });
     }
 
-    console.log(`[Usage Tracking] Logged usage: ${inputTokens + outputTokens} tokens, R$ ${totalCostBRL.toFixed(4)}`)
+    if (process.env.USAGE_TRACKING_DEBUG === "true") {
+      console.log(
+        `[Usage Tracking] Logged usage: ${
+          inputTokens + outputTokens
+        } tokens, R$ ${totalCostBRL.toFixed(4)}`,
+      );
+    }
   } catch (error) {
-    console.error('[Usage Tracking] Error logging gateway usage:', error)
+    console.error("[Usage Tracking] Error logging gateway usage:", error);
   }
-}
+};
 
 // =====================================================
 // CACHE PERFORMANCE TRACKING
@@ -174,22 +189,22 @@ export const logGatewayUsage = async (params: UsageLogParams): Promise<void> => 
 const updateCachePerformance = async (
   clientId: string,
   stats: {
-    tokensSaved: number
-    costSavedUSD: number
-    costSavedBRL: number
-    latencyMs: number
-  }
+    tokensSaved: number;
+    costSavedUSD: number;
+    costSavedBRL: number;
+    latencyMs: number;
+  },
 ): Promise<void> => {
   try {
-    const supabase = createServerClient()
+    const supabase = createServerClient();
 
-    const now = new Date()
-    const date = now.toISOString().split('T')[0] // YYYY-MM-DD
-    const hour = now.getHours()
+    const now = new Date();
+    const date = now.toISOString().split("T")[0]; // YYYY-MM-DD
+    const hour = now.getHours();
 
     // Upsert cache performance (hourly aggregation)
     const { error } = await supabase
-      .from('gateway_cache_performance')
+      .from("gateway_cache_performance")
       .upsert(
         {
           client_id: clientId,
@@ -204,18 +219,18 @@ const updateCachePerformance = async (
           avg_latency_cached_ms: stats.latencyMs,
         },
         {
-          onConflict: 'client_id,date,hour',
+          onConflict: "client_id,date,hour",
           // Increment counters on conflict
-        }
-      )
+        },
+      );
 
     if (error) {
-      console.error('[Cache Performance] Error updating metrics:', error)
+      console.error("[Cache Performance] Error updating metrics:", error);
     }
   } catch (error) {
-    console.error('[Cache Performance] Error:', error)
+    console.error("[Cache Performance] Error:", error);
   }
-}
+};
 
 // =====================================================
 // ANALYTICS HELPERS
@@ -227,29 +242,32 @@ const updateCachePerformance = async (
 export const getUsageSummary = async (
   clientId: string,
   startDate: string,
-  endDate: string
+  endDate: string,
 ) => {
   try {
-    const supabase = createServerClient()
+    const supabase = createServerClient();
 
     const { data, error } = await supabase
-      .from('gateway_usage_logs')
-      .select('*')
-      .eq('client_id', clientId)
-      .gte('created_at', startDate)
-      .lte('created_at', endDate)
+      .from("gateway_usage_logs")
+      .select("*")
+      .eq("client_id", clientId)
+      .gte("created_at", startDate)
+      .lte("created_at", endDate);
 
     if (error) {
-      console.error('[Analytics] Error fetching usage summary:', error)
-      return null
+      console.error("[Analytics] Error fetching usage summary:", error);
+      return null;
     }
 
     // Aggregate data
-    const totalRequests = data.length
-    const totalTokens = data.reduce((sum, log) => sum + log.total_tokens, 0)
-    const totalCostBRL = data.reduce((sum, log) => sum + (log.cost_brl || 0), 0)
-    const cacheHits = data.filter((log) => log.was_cached).length
-    const fallbacks = data.filter((log) => log.was_fallback).length
+    const totalRequests = data.length;
+    const totalTokens = data.reduce((sum, log) => sum + log.total_tokens, 0);
+    const totalCostBRL = data.reduce(
+      (sum, log) => sum + (log.cost_brl || 0),
+      0,
+    );
+    const cacheHits = data.filter((log) => log.was_cached).length;
+    const fallbacks = data.filter((log) => log.was_fallback).length;
 
     return {
       totalRequests,
@@ -257,14 +275,14 @@ export const getUsageSummary = async (
       totalCostBRL,
       cacheHitRate: totalRequests > 0 ? (cacheHits / totalRequests) * 100 : 0,
       fallbackRate: totalRequests > 0 ? (fallbacks / totalRequests) * 100 : 0,
-      avgLatencyMs:
-        data.reduce((sum, log) => sum + (log.latency_ms || 0), 0) / totalRequests,
-    }
+      avgLatencyMs: data.reduce((sum, log) => sum + (log.latency_ms || 0), 0) /
+        totalRequests,
+    };
   } catch (error) {
-    console.error('[Analytics] Error:', error)
-    return null
+    console.error("[Analytics] Error:", error);
+    return null;
   }
-}
+};
 
 /**
  * Get usage by provider
@@ -272,43 +290,43 @@ export const getUsageSummary = async (
 export const getUsageByProvider = async (
   clientId: string,
   startDate: string,
-  endDate: string
+  endDate: string,
 ) => {
   try {
-    const supabase = createServerClient()
+    const supabase = createServerClient();
 
     const { data, error } = await supabase
-      .from('gateway_usage_logs')
-      .select('provider, total_tokens, cost_brl')
-      .eq('client_id', clientId)
-      .gte('created_at', startDate)
-      .lte('created_at', endDate)
+      .from("gateway_usage_logs")
+      .select("provider, total_tokens, cost_brl")
+      .eq("client_id", clientId)
+      .gte("created_at", startDate)
+      .lte("created_at", endDate);
 
     if (error) {
-      console.error('[Analytics] Error fetching provider usage:', error)
-      return []
+      console.error("[Analytics] Error fetching provider usage:", error);
+      return [];
     }
 
     // Group by provider
     const providerStats = data.reduce(
       (acc, log) => {
         if (!acc[log.provider]) {
-          acc[log.provider] = { tokens: 0, cost: 0, requests: 0 }
+          acc[log.provider] = { tokens: 0, cost: 0, requests: 0 };
         }
-        acc[log.provider].tokens += log.total_tokens
-        acc[log.provider].cost += log.cost_brl || 0
-        acc[log.provider].requests += 1
-        return acc
+        acc[log.provider].tokens += log.total_tokens;
+        acc[log.provider].cost += log.cost_brl || 0;
+        acc[log.provider].requests += 1;
+        return acc;
       },
-      {} as Record<string, { tokens: number; cost: number; requests: number }>
-    )
+      {} as Record<string, { tokens: number; cost: number; requests: number }>,
+    );
 
     return Object.entries(providerStats).map(([provider, stats]) => ({
       provider,
       ...stats,
-    }))
+    }));
   } catch (error) {
-    console.error('[Analytics] Error:', error)
-    return []
+    console.error("[Analytics] Error:", error);
+    return [];
   }
-}
+};
