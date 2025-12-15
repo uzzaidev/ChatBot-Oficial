@@ -317,10 +317,12 @@ export interface AIResponse {
     prompt_tokens: number;
     completion_tokens: number;
     total_tokens: number;
+    cached_tokens?: number;
   };
   model?: string;
   provider?: "openai" | "groq" | "anthropic" | "google";
   requestId?: string;
+  wasCached?: boolean;
   wasFallback?: boolean;
   fallbackReason?: string;
   primaryAttemptedProvider?: "openai" | "groq" | "anthropic" | "google";

@@ -317,6 +317,8 @@ export default function BackendPage() {
     const fallbackUsedProvider = output.fallbackUsedProvider
     const fallbackUsedModel = output.fallbackUsedModel
     const wasFallback = output.wasFallback === true
+    const hasWasCached = typeof output.wasCached === 'boolean'
+    const wasCached = output.wasCached === true
 
     const finalLabel = provider && model ? `${provider}:${model}` : null
 
@@ -328,7 +330,7 @@ export default function BackendPage() {
       ? `${fallbackUsedProvider}:${fallbackUsedModel}`
       : null
 
-    if (!finalLabel && !primaryLabel && !fallbackLabel) return null
+    if (!finalLabel && !primaryLabel && !fallbackLabel && !hasWasCached) return null
 
     return (
       <div className="flex flex-wrap items-center gap-2">
@@ -345,6 +347,11 @@ export default function BackendPage() {
         {!primaryLabel && finalLabel && (
           <Badge variant="outline" className="text-xs">
             Model: {finalLabel}
+          </Badge>
+        )}
+        {hasWasCached && (
+          <Badge variant={wasCached ? 'secondary' : 'outline'} className="text-xs">
+            Cache: {wasCached ? 'HIT' : 'MISS'}
           </Badge>
         )}
       </div>

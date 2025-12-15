@@ -10,9 +10,23 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Trash2, RefreshCw, Search, Zap, Clock } from 'lucide-react'
 import { AIGatewayNav } from '@/components/AIGatewayNav'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { createClientBrowser } from '@/lib/supabase'
+
+interface AdminClient {
+  id: string
+  name: string
+}
 
 interface CacheEntry {
   cacheKey: string
@@ -33,9 +47,59 @@ export default function AIGatewayCachePage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
+  const [checkingAdmin, setCheckingAdmin] = useState(true)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [adminClients, setAdminClients] = useState<AdminClient[]>([])
+  const [selectedClientId, setSelectedClientId] = useState<string>('ALL')
+
   useEffect(() => {
     fetchCacheEntries()
   }, [])
+
+  useEffect(() => {
+    const checkAdminRole = async () => {
+      try {
+        const supabase = createClientBrowser()
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+
+        if (!user) {
+          setIsAdmin(false)
+          return
+        }
+
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('role, is_active')
+          .eq('id', user.id)
+          .single()
+
+        const hasAdminAccess = !!profile && profile.role === 'admin' && !!profile.is_active
+        setIsAdmin(hasAdminAccess)
+
+        if (hasAdminAccess) {
+          const response = await fetch('/api/admin/clients')
+          if (response.ok) {
+            const data = await response.json().catch(() => ({}))
+            setAdminClients(Array.isArray(data.clients) ? data.clients : [])
+          }
+        }
+      } catch {
+        setIsAdmin(false)
+      } finally {
+        setCheckingAdmin(false)
+      }
+    }
+
+    checkAdminRole()
+  }, [])
+
+  useEffect(() => {
+    if (!checkingAdmin && isAdmin) {
+      fetchCacheEntries()
+    }
+  }, [checkingAdmin, isAdmin, selectedClientId])
 
   useEffect(() => {
     if (searchQuery.trim()) {
@@ -53,7 +117,10 @@ export default function AIGatewayCachePage() {
     setError(null)
 
     try {
-      const response = await fetch('/api/ai-gateway/cache')
+      const query = isAdmin && selectedClientId !== 'ALL'
+        ? `?clientId=${encodeURIComponent(selectedClientId)}`
+        : ''
+      const response = await fetch(`/api/ai-gateway/cache${query}`)
 
       if (!response.ok) {
         const data = await response.json()
@@ -167,6 +234,35 @@ export default function AIGatewayCachePage() {
         <Alert className="bg-green-50 border-green-200">
           <AlertDescription className="text-green-800">{success}</AlertDescription>
         </Alert>
+      )}
+
+      {/* Admin Client Filter */}
+      {!checkingAdmin && isAdmin && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+              <div className="space-y-2">
+                <Label>Filtrar por cliente</Label>
+                <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">Todos</SelectItem>
+                    {adminClients.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="text-sm text-muted-foreground md:col-span-2">
+                Admin vê cache de todos; selecione um cliente para filtrar.
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Summary Cards */}

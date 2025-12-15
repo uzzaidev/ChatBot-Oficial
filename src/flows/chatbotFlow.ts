@@ -800,6 +800,7 @@ export const processChatbotMessage = async (
       provider: aiResponse.provider || null,
       model: aiResponse.model || null,
       requestId: aiResponse.requestId || null,
+      wasCached: aiResponse.wasCached || false,
       wasFallback: aiResponse.wasFallback || false,
       fallbackReason: aiResponse.fallbackReason || null,
       primaryAttemptedProvider: aiResponse.primaryAttemptedProvider || null,
