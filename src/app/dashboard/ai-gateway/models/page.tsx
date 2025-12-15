@@ -11,14 +11,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import {
   Table,
@@ -31,9 +29,9 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, Plus, Edit, Trash2, Check, AlertTriangle } from 'lucide-react'
-import { ModelSelector } from '@/components/ModelSelector'
+import { Loader2, Edit, Trash2, Check, AlertTriangle, Save } from 'lucide-react'
 import { AIGatewayNav } from '@/components/AIGatewayNav'
+import { createClientBrowser } from '@/lib/supabase'
 
 interface AIModel {
   id: string
@@ -55,12 +53,63 @@ export default function AIGatewayModelsPage() {
   const [models, setModels] = useState<AIModel[]>([])
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingModel, setEditingModel] = useState<AIModel | null>(null)
+
+  const [checkingAdmin, setCheckingAdmin] = useState(true)
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  const [priceForm, setPriceForm] = useState({
+    inputPricePerMillion: '',
+    outputPricePerMillion: '',
+    cachedInputPricePerMillion: '',
+  })
+
+  const canEdit = !checkingAdmin && isAdmin
 
   useEffect(() => {
     fetchModels()
   }, [])
+
+  useEffect(() => {
+    const checkAdminRole = async () => {
+      try {
+        const supabase = createClientBrowser()
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+
+        if (!user) {
+          setIsAdmin(false)
+          return
+        }
+
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('role, is_active')
+          .eq('id', user.id)
+          .single()
+
+        const hasAdminAccess = !!profile && profile.role === 'admin' && !!profile.is_active
+        setIsAdmin(hasAdminAccess)
+      } catch {
+        setIsAdmin(false)
+      } finally {
+        setCheckingAdmin(false)
+      }
+    }
+
+    checkAdminRole()
+  }, [])
+
+  useEffect(() => {
+    if (!editingModel) return
+
+    setPriceForm({
+      inputPricePerMillion: String(editingModel.costPer1kInputTokens * 1000),
+      outputPricePerMillion: String(editingModel.costPer1kOutputTokens * 1000),
+      cachedInputPricePerMillion: '',
+    })
+  }, [editingModel])
 
   const fetchModels = async () => {
     setLoading(true)
@@ -99,6 +148,56 @@ export default function AIGatewayModelsPage() {
       }
 
       setSuccess('Modelo desabilitado com sucesso')
+      fetchModels()
+    } catch (err: any) {
+      setError(err.message)
+    }
+  }
+
+  const handleSavePricing = async () => {
+    if (!editingModel) return
+
+    setError(null)
+    setSuccess(null)
+
+    const input = Number(priceForm.inputPricePerMillion)
+    const output = Number(priceForm.outputPricePerMillion)
+    const cached = priceForm.cachedInputPricePerMillion.trim()
+
+    if (!Number.isFinite(input) || input < 0) {
+      setError('Preço de input inválido (USD por 1M tokens)')
+      return
+    }
+    if (!Number.isFinite(output) || output < 0) {
+      setError('Preço de output inválido (USD por 1M tokens)')
+      return
+    }
+
+    const cachedValue = cached === '' ? undefined : Number(cached)
+    if (cachedValue !== undefined && (!Number.isFinite(cachedValue) || cachedValue < 0)) {
+      setError('Preço de cached input inválido (USD por 1M tokens)')
+      return
+    }
+
+    try {
+      const response = await fetch('/api/ai-gateway/models', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingModel.id,
+          inputPricePerMillion: input,
+          outputPricePerMillion: output,
+          cachedInputPricePerMillion: cachedValue,
+        }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to update pricing')
+      }
+
+      setSuccess('Preços atualizados com sucesso')
+      setEditingModel(null)
       fetchModels()
     } catch (err: any) {
       setError(err.message)
@@ -246,6 +345,7 @@ export default function AIGatewayModelsPage() {
                               variant="ghost"
                               size="sm"
                               onClick={() => setEditingModel(model)}
+                              disabled={!canEdit}
                             >
                               <Edit className="w-4 h-4" />
                             </Button>
@@ -253,6 +353,7 @@ export default function AIGatewayModelsPage() {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleDelete(model.id)}
+                              disabled={!canEdit}
                             >
                               <Trash2 className="w-4 h-4 text-red-500" />
                             </Button>
@@ -267,6 +368,90 @@ export default function AIGatewayModelsPage() {
           ))}
         </div>
       )}
+
+      {/* Edit Pricing Dialog */}
+      <Dialog open={!!editingModel} onOpenChange={(open) => !open && setEditingModel(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Editar Preços</DialogTitle>
+            <DialogDescription>
+              Valores em USD por 1M tokens (usado no cálculo de custo).
+            </DialogDescription>
+          </DialogHeader>
+
+          {editingModel && (
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-medium">{editingModel.displayName}</p>
+                <p className="text-xs text-muted-foreground font-mono">{editingModel.modelName}</p>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="inputPrice">Input (USD / 1M tokens)</Label>
+                <Input
+                  id="inputPrice"
+                  type="number"
+                  step="0.0001"
+                  value={priceForm.inputPricePerMillion}
+                  onChange={(e) =>
+                    setPriceForm((prev) => ({ ...prev, inputPricePerMillion: e.target.value }))
+                  }
+                  disabled={!canEdit}
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="outputPrice">Output (USD / 1M tokens)</Label>
+                <Input
+                  id="outputPrice"
+                  type="number"
+                  step="0.0001"
+                  value={priceForm.outputPricePerMillion}
+                  onChange={(e) =>
+                    setPriceForm((prev) => ({ ...prev, outputPricePerMillion: e.target.value }))
+                  }
+                  disabled={!canEdit}
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="cachedInputPrice">Cached Input (opcional, USD / 1M tokens)</Label>
+                <Input
+                  id="cachedInputPrice"
+                  type="number"
+                  step="0.0001"
+                  value={priceForm.cachedInputPricePerMillion}
+                  onChange={(e) =>
+                    setPriceForm((prev) => ({
+                      ...prev,
+                      cachedInputPricePerMillion: e.target.value,
+                    }))
+                  }
+                  placeholder="(deixe vazio se não aplica)"
+                  disabled={!canEdit}
+                />
+              </div>
+
+              {!canEdit && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>Somente admin pode editar preços.</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={() => setEditingModel(null)}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleSavePricing} disabled={!canEdit}>
+                  <Save className="w-4 h-4 mr-2" />
+                  Salvar
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
       </div>
     </>
   )
