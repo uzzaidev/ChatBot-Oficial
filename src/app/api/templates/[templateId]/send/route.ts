@@ -137,6 +137,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         const metadata = {
           template_id: template.id,
           template_name: template.name,
+          template_components: template.components, // Include template structure for display
           whatsapp_message_id: result.messageId,
           parameters,
         };
