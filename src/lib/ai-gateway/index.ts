@@ -181,16 +181,16 @@ const callAIViaGateway = async (
   const { messages, tools, settings = {} } = config;
   const normalizedTools = normalizeToolsForAISDK(tools);
 
+  // Determine which model to use (from client config)
+  const primaryModel = config.clientConfig.openaiModel ||
+    config.clientConfig.groqModel || "gpt-4o-mini";
+  const provider =
+    (config.clientConfig.primaryModelProvider || "openai") as any;
+
+  const primaryAttemptedProvider = provider;
+  const primaryAttemptedModel = primaryModel;
+
   try {
-    // Determine which model to use (from client config)
-    const primaryModel = config.clientConfig.openaiModel ||
-      config.clientConfig.groqModel || "gpt-4o-mini";
-    const provider =
-      (config.clientConfig.primaryModelProvider || "openai") as any;
-
-    const primaryAttemptedProvider = provider;
-    const primaryAttemptedModel = primaryModel;
-
     // Get provider-specific API key (NOT gateway key!)
     const providerApiKey = gatewayConfig.providerKeys[provider];
 
@@ -208,7 +208,6 @@ const callAIViaGateway = async (
       model: providerInstance(primaryModel),
       messages,
       tools: normalizedTools,
-      temperature: settings.temperature ?? 0.7,
       experimental_telemetry: { isEnabled: true }, // ✅ Enable telemetry
     });
 
@@ -323,7 +322,7 @@ const callAIWithFallback = async (
   primaryAttemptedProvider?: string,
   primaryAttemptedModel?: string,
 ): Promise<AIResponse> => {
-  const { messages, tools, settings = {} } = config;
+  const { messages, tools } = config;
   const normalizedTools = normalizeToolsForAISDK(tools);
 
   // Try each model in fallback chain
@@ -356,7 +355,6 @@ const callAIWithFallback = async (
         model: providerInstance(model),
         messages,
         tools: normalizedTools,
-        temperature: settings.temperature ?? 0.7,
       });
 
       const latencyMs = Date.now() - startTime;
