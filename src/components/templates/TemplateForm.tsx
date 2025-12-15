@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Trash2, FileText, Image as ImageIcon, Video, File } from "lucide-react";
+import { apiFetch } from "@/lib/api";
 import type { TemplateComponent, TemplateCategory, TemplateButton } from "@/lib/types";
 
 interface TemplateFormProps {
@@ -39,6 +40,7 @@ export const TemplateForm = ({ initialData, onSubmit, loading = false }: Templat
   const [category, setCategory] = useState<TemplateCategory>(initialData?.category || "UTILITY");
   const [language, setLanguage] = useState(initialData?.language || "pt_BR");
   const [wabaId, setWabaId] = useState(initialData?.waba_id || "");
+  const [fetchingWabaId, setFetchingWabaId] = useState(!initialData?.waba_id);
   
   // Components state
   const [hasHeader, setHasHeader] = useState(
@@ -69,6 +71,31 @@ export const TemplateForm = ({ initialData, onSubmit, loading = false }: Templat
   );
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Fetch WABA ID from client configuration
+  useEffect(() => {
+    if (!initialData?.waba_id) {
+      const fetchWabaId = async () => {
+        try {
+          setFetchingWabaId(true);
+          const response = await apiFetch("/api/client/config");
+          const data = await response.json();
+          
+          if (data.whatsapp_business_account_id) {
+            setWabaId(data.whatsapp_business_account_id);
+          }
+        } catch (error) {
+          console.error("Error fetching WABA ID:", error);
+          // Allow user to manually enter if fetch fails
+        } finally {
+          setFetchingWabaId(false);
+        }
+      };
+      
+      fetchWabaId();
+    }
+  }, [initialData]);
+
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -285,11 +312,17 @@ export const TemplateForm = ({ initialData, onSubmit, loading = false }: Templat
               id="wabaId"
               value={wabaId}
               onChange={(e) => setWabaId(e.target.value)}
-              placeholder="123456789012345"
+              placeholder={fetchingWabaId ? "Carregando..." : "123456789012345"}
+              disabled={fetchingWabaId || loading || !!initialData}
             />
             {errors.wabaId && (
               <p className="text-sm text-red-600 mt-1">{errors.wabaId}</p>
             )}
+            <p className="text-xs text-erie-black-500 mt-1">
+              {fetchingWabaId 
+                ? "Buscando WABA ID da configuração do cliente..." 
+                : "ID da conta comercial do WhatsApp configurada nas configurações"}
+            </p>
           </div>
         </CardContent>
       </Card>
