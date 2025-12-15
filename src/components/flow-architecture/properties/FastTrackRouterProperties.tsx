@@ -6,7 +6,7 @@
  * Configuration panel for the Fast Track Router node in Flow Architecture.
  * Allows tenant to configure FAQ detection settings, catalog, and thresholds.
  * 
- * @created 2025-12-15
+ * @updated 2025-12-15 - Improved UI with form-based FAQ management
  */
 
 import { useState, useEffect } from 'react'
@@ -17,7 +17,8 @@ import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Save, AlertCircle, Info } from 'lucide-react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Save, AlertCircle, Info, Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -32,6 +33,129 @@ interface FastTrackCatalogItem {
   examples: string[]
 }
 
+interface FAQItemEditorProps {
+  item: FastTrackCatalogItem
+  index: number
+  onUpdate: (index: number, item: FastTrackCatalogItem) => void
+  onDelete: (index: number) => void
+  isExpanded: boolean
+  onToggle: () => void
+}
+
+const FAQItemEditor = ({ item, index, onUpdate, onDelete, isExpanded, onToggle }: FAQItemEditorProps) => {
+  const [localItem, setLocalItem] = useState(item)
+  const [examplesText, setExamplesText] = useState(item.examples.join('\n'))
+
+  useEffect(() => {
+    setLocalItem(item)
+    setExamplesText(item.examples.join('\n'))
+  }, [item])
+
+  const handleUpdate = () => {
+    const examples = examplesText
+      .split('\n')
+      .map(e => e.trim())
+      .filter(e => e.length > 0)
+    
+    onUpdate(index, {
+      ...localItem,
+      examples,
+    })
+  }
+
+  const handleExamplesBlur = () => {
+    const examples = examplesText
+      .split('\n')
+      .map(e => e.trim())
+      .filter(e => e.length > 0)
+    
+    setLocalItem({ ...localItem, examples })
+    onUpdate(index, { ...localItem, examples })
+  }
+
+  return (
+    <Card className="mb-3">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex-1 flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onToggle}
+              className="p-1 h-auto"
+            >
+              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </Button>
+            <CardTitle className="text-sm font-medium">
+              FAQ {index + 1}: {localItem.topic || '(sem tópico)'}
+            </CardTitle>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onDelete(index)}
+            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+        {!isExpanded && (
+          <CardDescription className="text-xs mt-1">
+            {localItem.canonical || '(sem pergunta canônica)'}
+          </CardDescription>
+        )}
+      </CardHeader>
+      
+      {isExpanded && (
+        <CardContent className="space-y-3 pt-0">
+          <div className="space-y-2">
+            <Label htmlFor={`topic-${index}`}>Tópico *</Label>
+            <Input
+              id={`topic-${index}`}
+              value={localItem.topic}
+              onChange={(e) => setLocalItem({ ...localItem, topic: e.target.value })}
+              onBlur={handleUpdate}
+              placeholder="Ex: faq_planos, faq_servicos"
+            />
+            <p className="text-xs text-gray-500">
+              Identificador do tópico (ex: faq_planos, faq_servicos, faq_horario)
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor={`canonical-${index}`}>Pergunta Canônica *</Label>
+            <Input
+              id={`canonical-${index}`}
+              value={localItem.canonical}
+              onChange={(e) => setLocalItem({ ...localItem, canonical: e.target.value })}
+              onBlur={handleUpdate}
+              placeholder="Ex: Quais são os planos disponíveis?"
+            />
+            <p className="text-xs text-gray-500">
+              Forma base da pergunta FAQ
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor={`examples-${index}`}>Exemplos de Variações *</Label>
+            <Textarea
+              id={`examples-${index}`}
+              value={examplesText}
+              onChange={(e) => setExamplesText(e.target.value)}
+              onBlur={handleExamplesBlur}
+              placeholder="pode me mandar o plano?&#10;quero ver os planos&#10;tem plano disponível?&#10;quanto custa?"
+              rows={5}
+            />
+            <p className="text-xs text-gray-500">
+              Uma variação por linha (3-5 exemplos recomendados). Inclua gírias e variações reais.
+            </p>
+          </div>
+        </CardContent>
+      )}
+    </Card>
+  )
+}
+
 export default function FastTrackRouterProperties({ 
   nodeId, 
   config 
@@ -41,20 +165,23 @@ export default function FastTrackRouterProperties({
 }) {
   const { updateNodeConfig, saving } = useFlowArchitectureStore()
   const [localConfig, setLocalConfig] = useState(config)
-  const [catalogJson, setCatalogJson] = useState('')
+  const [catalogItems, setCatalogItems] = useState<FastTrackCatalogItem[]>([])
   const [keywordsText, setKeywordsText] = useState('')
-  const [catalogError, setCatalogError] = useState<string | null>(null)
+  const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set([0]))
+  const [validationError, setValidationError] = useState<string | null>(null)
 
-  // Initialize catalog and keywords text from config
+  // Initialize from config
   useEffect(() => {
     setLocalConfig(config)
     
-    // Initialize catalog JSON
+    // Initialize catalog items
     if (config.catalog && Array.isArray(config.catalog)) {
-      setCatalogJson(JSON.stringify(config.catalog, null, 2))
+      setCatalogItems(config.catalog)
+      // Expand first item by default
+      setExpandedItems(new Set([0]))
     } else {
-      // Default example catalog
-      const defaultCatalog: FastTrackCatalogItem[] = [
+      // Default example
+      setCatalogItems([
         {
           topic: "faq_servicos",
           canonical: "Quais são os serviços disponíveis?",
@@ -64,19 +191,9 @@ export default function FastTrackRouterProperties({
             "o que vocês fazem?",
             "quais são suas especialidades?"
           ]
-        },
-        {
-          topic: "faq_planos",
-          canonical: "Quais são os planos?",
-          examples: [
-            "pode me mandar o plano?",
-            "quero ver os planos",
-            "tem plano disponível?",
-            "quanto custa?"
-          ]
         }
-      ]
-      setCatalogJson(JSON.stringify(defaultCatalog, null, 2))
+      ])
+      setExpandedItems(new Set([0]))
     }
 
     // Initialize keywords text
@@ -87,20 +204,70 @@ export default function FastTrackRouterProperties({
     }
   }, [config])
 
-  const handleSave = () => {
-    // Parse catalog JSON
-    let catalogData: FastTrackCatalogItem[] = []
-    try {
-      catalogData = JSON.parse(catalogJson)
-      if (!Array.isArray(catalogData)) {
-        setCatalogError('O catálogo deve ser um array JSON')
-        return
-      }
-      setCatalogError(null)
-    } catch (error) {
-      setCatalogError('JSON inválido. Verifique a sintaxe.')
+  const handleAddFAQ = () => {
+    const newItem: FastTrackCatalogItem = {
+      topic: `faq_${catalogItems.length + 1}`,
+      canonical: "",
+      examples: []
+    }
+    const newItems = [...catalogItems, newItem]
+    setCatalogItems(newItems)
+    // Expand the new item
+    setExpandedItems(new Set([...expandedItems, newItems.length - 1]))
+  }
+
+  const handleUpdateFAQ = (index: number, item: FastTrackCatalogItem) => {
+    const newItems = [...catalogItems]
+    newItems[index] = item
+    setCatalogItems(newItems)
+  }
+
+  const handleDeleteFAQ = (index: number) => {
+    const newItems = catalogItems.filter((_, i) => i !== index)
+    setCatalogItems(newItems)
+    // Update expanded items
+    const newExpanded = new Set<number>()
+    expandedItems.forEach(i => {
+      if (i < index) newExpanded.add(i)
+      else if (i > index) newExpanded.add(i - 1)
+    })
+    setExpandedItems(newExpanded)
+  }
+
+  const toggleExpanded = (index: number) => {
+    const newExpanded = new Set(expandedItems)
+    if (newExpanded.has(index)) {
+      newExpanded.delete(index)
+    } else {
+      newExpanded.add(index)
+    }
+    setExpandedItems(newExpanded)
+  }
+
+  const validateAndSave = () => {
+    // Validate catalog
+    if (catalogItems.length === 0) {
+      setValidationError('Adicione pelo menos 1 FAQ ao catálogo')
       return
     }
+
+    for (let i = 0; i < catalogItems.length; i++) {
+      const item = catalogItems[i]
+      if (!item.topic || item.topic.trim().length === 0) {
+        setValidationError(`FAQ ${i + 1}: Tópico é obrigatório`)
+        return
+      }
+      if (!item.canonical || item.canonical.trim().length === 0) {
+        setValidationError(`FAQ ${i + 1}: Pergunta canônica é obrigatória`)
+        return
+      }
+      if (!item.examples || item.examples.length === 0) {
+        setValidationError(`FAQ ${i + 1}: Adicione pelo menos 1 exemplo`)
+        return
+      }
+    }
+
+    setValidationError(null)
 
     // Parse keywords (one per line)
     const keywords = keywordsText
@@ -108,10 +275,10 @@ export default function FastTrackRouterProperties({
       .map(k => k.trim())
       .filter(k => k.length > 0)
 
-    // Update config
+    // Update config (model is removed - will use client's configured models)
     const updatedConfig = {
       ...localConfig,
-      catalog: catalogData,
+      catalog: catalogItems,
       keywords,
     }
 
@@ -124,32 +291,10 @@ export default function FastTrackRouterProperties({
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription className="text-xs">
-          <strong>Fast Track:</strong> Detecta perguntas FAQ usando similaridade semântica.
-          Quando detecta, pula histórico/RAG/data-hora para habilitar cache de prompt da LLM.
+          <strong>Fast Track:</strong> Detecta perguntas FAQ para habilitar cache de prompt da LLM.
+          Usa os mesmos modelos já configurados no AI Gateway.
         </AlertDescription>
       </Alert>
-
-      {/* Router Model */}
-      <div className="space-y-2">
-        <Label>Modelo do Roteador</Label>
-        <Select
-          value={localConfig.router_model || 'gpt-4o-mini'}
-          onValueChange={(value) => setLocalConfig({ ...localConfig, router_model: value })}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="gpt-4o-mini">GPT-4o Mini (recomendado - mais barato)</SelectItem>
-            <SelectItem value="gpt-4o">GPT-4o</SelectItem>
-            <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
-            <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
-          </SelectContent>
-        </Select>
-        <p className="text-xs text-gray-500">
-          Modelo usado para classificar se a mensagem é FAQ. GPT-4o Mini é o mais barato ($0.15/1M tokens).
-        </p>
-      </div>
 
       {/* Similarity Threshold */}
       <div className="space-y-2">
@@ -169,25 +314,50 @@ export default function FastTrackRouterProperties({
         </p>
       </div>
 
-      {/* Catalog (JSON) */}
+      {/* FAQ Catalog */}
       <div className="space-y-2">
-        <Label>Catálogo de FAQs (JSON)</Label>
-        <Textarea
-          value={catalogJson}
-          onChange={(e) => setCatalogJson(e.target.value)}
-          placeholder='[{"topic": "faq_servicos", "canonical": "Quais são os serviços?", "examples": ["que serviços vocês oferecem?"]}]'
-          className="font-mono text-sm"
-          rows={12}
-        />
-        {catalogError && (
+        <div className="flex items-center justify-between">
+          <Label>Catálogo de FAQs</Label>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleAddFAQ}
+            className="gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Adicionar FAQ
+          </Button>
+        </div>
+        
+        {catalogItems.length === 0 ? (
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="text-xs">
+              Nenhuma FAQ cadastrada. Clique em &quot;Adicionar FAQ&quot; para começar.
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <div className="space-y-2">
+            {catalogItems.map((item, index) => (
+              <FAQItemEditor
+                key={index}
+                item={item}
+                index={index}
+                onUpdate={handleUpdateFAQ}
+                onDelete={handleDeleteFAQ}
+                isExpanded={expandedItems.has(index)}
+                onToggle={() => toggleExpanded(index)}
+              />
+            ))}
+          </div>
+        )}
+
+        {validationError && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="text-xs">{catalogError}</AlertDescription>
+            <AlertDescription className="text-xs">{validationError}</AlertDescription>
           </Alert>
         )}
-        <p className="text-xs text-gray-500">
-          Array JSON com objetos: <code>{'{"topic": "...", "canonical": "...", "examples": [...]}'}</code>
-        </p>
       </div>
 
       {/* Keywords (Optional Prefilter) */}
@@ -200,7 +370,7 @@ export default function FastTrackRouterProperties({
           rows={4}
         />
         <p className="text-xs text-gray-500">
-          Uma keyword por linha. Se a mensagem contém alguma keyword, roda fast track sem chamar IA (mais rápido).
+          Uma keyword por linha. Se detectar keyword, roda fast track sem chamar IA (mais rápido).
         </p>
       </div>
 
@@ -229,7 +399,7 @@ export default function FastTrackRouterProperties({
         <div>
           <Label>Desabilitar Tools no Fast Track</Label>
           <p className="text-xs text-gray-500 mt-1">
-            Recomendado: desabilita tools (transferência, busca docs) para prompts mais estáveis
+            Recomendado: desabilita tools para prompts mais estáveis e cache melhor
           </p>
         </div>
         <Switch
@@ -240,8 +410,8 @@ export default function FastTrackRouterProperties({
 
       {/* Save Button */}
       <Button
-        onClick={handleSave}
-        disabled={saving || !!catalogError}
+        onClick={validateAndSave}
+        disabled={saving || !!validationError}
         className="w-full gap-2"
       >
         <Save className="w-4 h-4" />
@@ -256,7 +426,7 @@ export default function FastTrackRouterProperties({
           <ol className="list-decimal list-inside mt-2 space-y-1">
             <li>Mensagem é normalizada (lowercase, sem pontuação)</li>
             <li>Se tiver keyword, roda fast track imediatamente</li>
-            <li>Se não, chama IA para calcular similaridade com catálogo</li>
+            <li>Se não, chama IA (modelo do AI Gateway) para calcular similaridade</li>
             <li>Se similaridade &gt; threshold, roda fast track (pula histórico/RAG)</li>
             <li>Fast track = prompt estável = cache da LLM funciona!</li>
           </ol>

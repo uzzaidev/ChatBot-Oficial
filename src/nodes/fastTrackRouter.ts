@@ -21,12 +21,12 @@ export interface FastTrackCatalogItem {
 
 export interface FastTrackConfig {
   enabled: boolean;
-  router_model?: string; // Model for semantic classification (default: "gpt-4o-mini")
   similarity_threshold?: number; // 0-1, default 0.80
   catalog?: FastTrackCatalogItem[]; // FAQ catalog
   keywords?: string[]; // Optional prefilter keywords
   match_mode?: "contains" | "starts_with"; // Keyword match mode
   disable_tools?: boolean; // Whether to disable tools in fast track
+  // Note: router_model removed - now uses client's configured OpenAI model from clients table
 }
 
 export interface FastTrackRouterInput {
@@ -50,10 +50,10 @@ export interface FastTrackRouterOutput {
 
 /**
  * Default configuration for fast track router
+ * Note: Model is now fetched from client's configuration (clients.openai_model)
  */
 const DEFAULT_CONFIG: FastTrackConfig = {
   enabled: false, // Disabled by default - tenant must opt-in
-  router_model: "gpt-4o-mini", // Cheapest GPT-4 model for classification
   similarity_threshold: 0.80, // High threshold to avoid false positives
   catalog: [],
   keywords: [],
@@ -126,12 +126,12 @@ const buildCatalogText = (catalog: FastTrackCatalogItem[]): string => {
 
 /**
  * Call LLM to determine if message matches any FAQ in catalog
+ * Uses the client's configured models from the clients table (same as AI Gateway)
  */
 const classifyWithAI = async (
   clientId: string,
   message: string,
   catalog: FastTrackCatalogItem[],
-  routerModel: string,
   threshold: number,
 ): Promise<{
   shouldFastTrack: boolean;
@@ -139,6 +139,7 @@ const classifyWithAI = async (
   similarity?: number;
   matchedCanonical?: string;
   matchedExample?: string;
+  modelUsed?: string;
 }> => {
   // Build system prompt for classification
   const systemPrompt = `Você é um classificador semântico de perguntas FAQ.
@@ -175,13 +176,37 @@ Analise se a mensagem corresponde a alguma FAQ do catálogo. Responda com JSON.`
   ];
 
   try {
+    // Fetch client configuration to get the configured models
+    const supabase = createServiceRoleClient();
+    const { data: client, error: clientError } = await supabase
+      .from("clients")
+      .select("openai_model, groq_model, primary_model_provider, openai_api_key")
+      .eq("id", clientId)
+      .single() as { 
+        data: { 
+          openai_model: string | null
+          groq_model: string | null
+          primary_model_provider: string | null
+          openai_api_key: string | null
+        } | null
+        error: any 
+      };
+
+    if (clientError || !client) {
+      throw new Error("Client configuration not found");
+    }
+
+    // Use client's configured OpenAI model (or default to gpt-4o-mini)
+    const routerModel = client.openai_model || "gpt-4o-mini";
+    
     // Use AI Gateway if enabled
     const useGateway = await shouldUseGateway(clientId);
 
     let responseText = "";
+    let modelUsed = routerModel;
 
     if (useGateway) {
-      // Route through AI Gateway
+      // Route through AI Gateway using client's configured models
       const result = await callAI({
         clientId,
         clientConfig: {
@@ -190,7 +215,7 @@ Analise se a mensagem corresponde a alguma FAQ do catálogo. Responda com JSON.`
           slug: "fast-track-router",
           primaryModelProvider: "openai", // Force OpenAI for consistency
           openaiModel: routerModel,
-          groqModel: "llama-3.3-70b-versatile",
+          groqModel: client.groq_model || "llama-3.3-70b-versatile",
         },
         messages,
         settings: {
@@ -200,16 +225,10 @@ Analise se a mensagem corresponde a alguma FAQ do catálogo. Responda com JSON.`
       });
 
       responseText = result.text;
+      modelUsed = result.model || routerModel;
     } else {
       // Direct OpenAI call (fallback)
-      const supabase = createServiceRoleClient();
-      const { data: client, error: clientError } = await supabase
-        .from("clients")
-        .select("openai_api_key")
-        .eq("id", clientId)
-        .single() as { data: { openai_api_key: string } | null, error: any };
-
-      if (clientError || !client || !client.openai_api_key) {
+      if (!client.openai_api_key) {
         throw new Error("OpenAI API key not configured");
       }
 
@@ -250,6 +269,7 @@ Analise se a mensagem corresponde a alguma FAQ do catálogo. Responda com JSON.`
       similarity: result.similarity,
       matchedCanonical: result.matched_canonical,
       matchedExample: result.matched_example,
+      modelUsed, // Return the model used for classification
     };
   } catch (error) {
     console.error("[FastTrack] AI classification error:", error);
@@ -269,10 +289,9 @@ export const fastTrackRouter = async (
   const { clientId, message, config: configOverride } = input;
 
   try {
-    // Fetch configuration from database
+    // Fetch configuration from database (removed router_model - uses client's configured models)
     const configs = await getBotConfigs(clientId, [
       "fast_track:enabled",
-      "fast_track:router_model",
       "fast_track:similarity_threshold",
       "fast_track:catalog",
       "fast_track:keywords",
@@ -289,9 +308,6 @@ export const fastTrackRouter = async (
     // Override with DB values if present
     if (configs["fast_track:enabled"] !== undefined) {
       config.enabled = configs["fast_track:enabled"];
-    }
-    if (configs["fast_track:router_model"]) {
-      config.router_model = configs["fast_track:router_model"];
     }
     if (configs["fast_track:similarity_threshold"] !== undefined) {
       config.similarity_threshold = configs["fast_track:similarity_threshold"];
@@ -345,12 +361,11 @@ export const fastTrackRouter = async (
       }
     }
 
-    // STEP 2: Semantic similarity using AI
+    // STEP 2: Semantic similarity using AI (uses client's configured models)
     const aiResult = await classifyWithAI(
       clientId,
       message,
       config.catalog,
-      config.router_model || DEFAULT_CONFIG.router_model!,
       config.similarity_threshold || DEFAULT_CONFIG.similarity_threshold!,
     );
 
@@ -363,7 +378,7 @@ export const fastTrackRouter = async (
         matchedCanonical: aiResult.matchedCanonical,
         matchedExample: aiResult.matchedExample,
         catalogSize: config.catalog.length,
-        routerModel: config.router_model,
+        routerModel: aiResult.modelUsed, // Model used from client's config
       };
     }
 
@@ -373,7 +388,7 @@ export const fastTrackRouter = async (
       reason: "low_similarity",
       similarity: aiResult.similarity,
       catalogSize: config.catalog.length,
-      routerModel: config.router_model,
+      routerModel: aiResult.modelUsed, // Model used from client's config
     };
   } catch (error) {
     console.error("[FastTrack] Router error:", error);
