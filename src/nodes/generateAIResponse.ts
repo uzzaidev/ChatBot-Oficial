@@ -305,7 +305,7 @@ export const generateAIResponse = async (
           ? {
             transferir_atendimento: {
               description: HUMAN_HANDOFF_TOOL_DEFINITION.function.description,
-              parameters: z.object({
+              inputSchema: z.object({
                 motivo: z
                   .string()
                   .describe(
@@ -315,7 +315,7 @@ export const generateAIResponse = async (
             },
             buscar_documento: {
               description: SEARCH_DOCUMENT_TOOL_DEFINITION.function.description,
-              parameters: z.object({
+              inputSchema: z.object({
                 query: z
                   .string()
                   .describe(
@@ -331,7 +331,7 @@ export const generateAIResponse = async (
             },
             enviar_resposta_em_audio: {
               description: TTS_AUDIO_TOOL_DEFINITION.function.description,
-              parameters: z.object({
+              inputSchema: z.object({
                 texto_para_audio: z
                   .string()
                   .describe(
