@@ -1,6 +1,16 @@
-export type ConversationStatus = "bot" | "humano" | "transferido" | "fluxo_inicial";
+export type ConversationStatus =
+  | "bot"
+  | "humano"
+  | "transferido"
+  | "fluxo_inicial";
 
-export type MessageType = "text" | "audio" | "image" | "document" | "video" | "interactive";
+export type MessageType =
+  | "text"
+  | "audio"
+  | "image"
+  | "document"
+  | "video"
+  | "interactive";
 
 export type StoredMediaType = "image" | "audio" | "document" | "video";
 
@@ -285,7 +295,7 @@ export interface ParsedMessage {
   messageId: string;
   metadata?: MediaMetadata;
   // Interactive message fields
-  interactiveType?: 'button_reply' | 'list_reply';
+  interactiveType?: "button_reply" | "list_reply";
   interactiveResponseId?: string;
   interactiveResponseTitle?: string;
 }
@@ -503,13 +513,13 @@ export interface AcceptInviteRequest {
 
 export type TemplateCategory = "UTILITY" | "AUTHENTICATION" | "MARKETING";
 
-export type TemplateStatus = 
-  | "DRAFT"       // Created locally, not submitted
-  | "PENDING"     // Submitted to Meta, awaiting approval
-  | "APPROVED"    // Approved by Meta, ready to use
-  | "REJECTED"    // Rejected by Meta
-  | "PAUSED"      // Paused by Meta due to quality issues
-  | "DISABLED";   // Disabled by Meta
+export type TemplateStatus =
+  | "DRAFT" // Created locally, not submitted
+  | "PENDING" // Submitted to Meta, awaiting approval
+  | "APPROVED" // Approved by Meta, ready to use
+  | "REJECTED" // Rejected by Meta
+  | "PAUSED" // Paused by Meta due to quality issues
+  | "DISABLED"; // Disabled by Meta
 
 export type TemplateComponentType = "HEADER" | "BODY" | "FOOTER" | "BUTTONS";
 
@@ -548,21 +558,21 @@ export interface MessageTemplate {
   id: string;
   client_id: string;
   created_by: string | null;
-  
+
   // Meta API fields
   meta_template_id: string | null;
   waba_id: string;
-  
+
   // Template definition
   name: string;
   category: TemplateCategory;
   language: string;
   components: TemplateComponent[];
-  
+
   // Status & approval
   status: TemplateStatus;
   rejection_reason: string | null;
-  
+
   // Timestamps
   created_at: string;
   updated_at: string;
@@ -701,7 +711,9 @@ export interface Database {
       message_templates: {
         Row: MessageTemplate;
         Insert: Omit<MessageTemplate, "id" | "created_at" | "updated_at">;
-        Update: Partial<Omit<MessageTemplate, "id" | "created_at" | "updated_at">>;
+        Update: Partial<
+          Omit<MessageTemplate, "id" | "created_at" | "updated_at">
+        >;
       };
     };
     Views: {};

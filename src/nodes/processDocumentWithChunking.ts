@@ -1,85 +1,90 @@
 /**
  * Node: Process Document with Semantic Chunking
- * 
+ *
  * Processa documentos (PDFs, texto) com chunking semântico e overlap
  * para melhor precisão em RAG (Retrieval-Augmented Generation).
- * 
+ *
  * Features:
  * - Chunking semântico (respeita parágrafos/sentenças)
  * - Overlap configurável (15-20% recomendado)
  * - Geração de embeddings para cada chunk
  * - Salvamento no vector store (documents table)
- * 
+ *
  * Configurações usadas:
  * - rag:chunk_size (tokens por chunk)
  * - rag:chunk_overlap_percentage (% overlap)
  * - rag:embedding_model (modelo OpenAI)
  */
 
-import { semanticChunkText, chunkDocumentForRAG, getChunkingStats, type ChunkingConfig } from '@/lib/chunking'
-import { generateEmbedding } from '@/lib/openai'
-import { createServiceRoleClient } from '@/lib/supabase'
-import { getBotConfigs } from '@/lib/config'
+import {
+  chunkDocumentForRAG,
+  type ChunkingConfig,
+  getChunkingStats,
+  semanticChunkText,
+} from "@/lib/chunking";
+import { generateEmbedding } from "@/lib/openai";
+import { createServiceRoleClient } from "@/lib/supabase";
+import { getBotConfigs } from "@/lib/config";
 
 export interface ProcessDocumentInput {
   /** Texto completo do documento */
-  text: string
-  
+  text: string;
+
   /** ID do cliente (para multi-tenant) */
-  clientId: string
-  
+  clientId: string;
+
   /** Metadados do documento */
   metadata: {
-    filename?: string
-    documentType?: string // 'pdf', 'txt', 'catalog', 'manual', etc
-    source?: string // 'upload', 'whatsapp', 'api'
-    uploadedBy?: string
-    [key: string]: any
-  }
-  
+    filename?: string;
+    documentType?: string; // 'pdf', 'txt', 'catalog', 'manual', etc
+    source?: string; // 'upload', 'whatsapp', 'api'
+    uploadedBy?: string;
+    [key: string]: any;
+  };
+
   /** API key OpenAI opcional (do config do cliente) */
-  openaiApiKey?: string
+  openaiApiKey?: string;
 }
 
 export interface ProcessDocumentOutput {
   /** Número de chunks criados */
-  chunksCreated: number
-  
+  chunksCreated: number;
+
   /** Número de embeddings gerados */
-  embeddingsGenerated: number
-  
+  embeddingsGenerated: number;
+
   /** IDs dos documentos salvos no vector store */
-  documentIds: string[]
-  
+  documentIds: string[];
+
   /** Estatísticas de chunking */
   stats: {
-    avgTokensPerChunk: number
-    minTokensPerChunk: number
-    maxTokensPerChunk: number
-    totalTokens: number
-    overlapPercentage: number
-  }
-  
+    avgTokensPerChunk: number;
+    minTokensPerChunk: number;
+    maxTokensPerChunk: number;
+    totalTokens: number;
+    overlapPercentage: number;
+  };
+
   /** Usage da API OpenAI */
   usage: {
-    embeddingTokens: number
-    totalCost: number // Estimado em USD
-  }
+    embeddingTokens: number;
+    totalCost: number; // Estimado em USD
+  };
 }
 
 /**
  * Processa documento com chunking semântico e salva no vector store
- * 
+ *
  * Fluxo:
  * 1. Busca configurações de chunking (rag:chunk_size, rag:chunk_overlap_percentage)
  * 2. Divide documento em chunks semânticos com overlap
  * 3. Gera embedding para cada chunk
  * 4. Salva chunks + embeddings no vector store (documents table)
  * 5. Retorna estatísticas
- * 
+ *
  * @param input - Dados do documento
  * @returns Resultado do processamento
- * 
+ *
  * @example
  * ```typescript
  * const result = await processDocumentWithChunking({
@@ -92,63 +97,65 @@ export interface ProcessDocumentOutput {
  *   },
  *   openaiApiKey: clientConfig.openai_api_key
  * })
- * 
+ *
  * console.log(`Created ${result.chunksCreated} chunks`)
  * console.log(`Avg tokens: ${result.stats.avgTokensPerChunk}`)
  * ```
  */
 export const processDocumentWithChunking = async (
-  input: ProcessDocumentInput
+  input: ProcessDocumentInput,
 ): Promise<ProcessDocumentOutput> => {
-  const { text, clientId, metadata, openaiApiKey } = input
-
+  const { text, clientId, metadata, openaiApiKey } = input;
 
   try {
     // 1. Buscar configurações de chunking
     const configs = await getBotConfigs(clientId, [
-      'rag:chunk_size',
-      'rag:chunk_overlap_percentage',
-      'rag:embedding_model'
-    ])
+      "rag:chunk_size",
+      "rag:chunk_overlap_percentage",
+      "rag:embedding_model",
+    ]);
 
-    const chunkSize = Number(configs['rag:chunk_size']) || 500
-    const overlapPercentage = Number(configs['rag:chunk_overlap_percentage']) || 20
-    const embeddingModel = String(configs['rag:embedding_model']) || 'text-embedding-3-small'
-
+    const chunkSize = Number(configs["rag:chunk_size"]) || 500;
+    const overlapPercentage = Number(configs["rag:chunk_overlap_percentage"]) ||
+      20;
+    const embeddingModel = String(configs["rag:embedding_model"]) ||
+      "text-embedding-3-small";
 
     // 2. Dividir documento em chunks semânticos
     const chunkingConfig: ChunkingConfig = {
       chunkSize,
-      overlapPercentage
-    }
+      overlapPercentage,
+    };
 
     const chunks = chunkDocumentForRAG(text, chunkingConfig, {
       ...metadata,
       clientId,
-      uploadedAt: new Date()
-    })
-
+      uploadedAt: new Date(),
+    });
 
     // Calcular estatísticas
-    const stats = getChunkingStats(chunks)
+    const stats = getChunkingStats(chunks);
 
     // 3. Gerar embeddings e salvar no vector store
-    const supabase = createServiceRoleClient() // Service role bypassa RLS
-    const supabaseAny = supabase as any // TypeScript bypass para tabela documents
-    const documentIds: string[] = []
-    let totalEmbeddingTokens = 0
+    const supabase = createServiceRoleClient(); // Service role bypassa RLS
+    const supabaseAny = supabase as any; // TypeScript bypass para tabela documents
+    const documentIds: string[] = [];
+    let totalEmbeddingTokens = 0;
 
     for (let i = 0; i < chunks.length; i++) {
-      const chunk = chunks[i]
-
+      const chunk = chunks[i];
 
       // Gerar embedding
-      const embeddingResult = await generateEmbedding(chunk.content, openaiApiKey, clientId)
-      totalEmbeddingTokens += embeddingResult.usage.total_tokens
+      const embeddingResult = await generateEmbedding(
+        chunk.content,
+        openaiApiKey,
+        clientId,
+      );
+      totalEmbeddingTokens += embeddingResult.usage.total_tokens;
 
       // Salvar no vector store (includes original file metadata)
-      const { data, error} = await supabaseAny
-        .from('documents')
+      const { data, error } = await supabaseAny
+        .from("documents")
         .insert({
           content: chunk.content,
           embedding: embeddingResult.embedding,
@@ -158,17 +165,17 @@ export const processDocumentWithChunking = async (
           original_file_url: metadata.original_file_url || null,
           original_file_path: metadata.original_file_path || null,
           original_file_size: metadata.original_file_size || null,
-          original_mime_type: metadata.original_mime_type || null
+          original_mime_type: metadata.original_mime_type || null,
         })
-        .select('id')
-        .single()
+        .select("id")
+        .single();
 
       if (error) {
-        throw new Error(`Failed to save chunk: ${error.message}`)
+        throw new Error(`Failed to save chunk: ${error.message}`);
       }
 
       if (data?.id) {
-        documentIds.push(data.id)
+        documentIds.push(data.id);
       }
 
       // Log progresso a cada 10 chunks
@@ -178,8 +185,7 @@ export const processDocumentWithChunking = async (
 
     // Calcular custo estimado
     // text-embedding-3-small: $0.02 por 1M tokens
-    const totalCost = (totalEmbeddingTokens / 1_000_000) * 0.02
-
+    const totalCost = (totalEmbeddingTokens / 1_000_000) * 0.02;
 
     return {
       chunksCreated: chunks.length,
@@ -187,30 +193,32 @@ export const processDocumentWithChunking = async (
       documentIds,
       stats: {
         ...stats,
-        totalTokens: chunks.reduce((sum, c) => sum + c.tokenCount, 0)
+        totalTokens: chunks.reduce((sum, c) => sum + c.tokenCount, 0),
       },
       usage: {
         embeddingTokens: totalEmbeddingTokens,
-        totalCost
-      }
-    }
+        totalCost,
+      },
+    };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    throw new Error(`Failed to process document: ${errorMessage}`)
+    const errorMessage = error instanceof Error
+      ? error.message
+      : "Unknown error";
+    throw new Error(`Failed to process document: ${errorMessage}`);
   }
-}
+};
 
 /**
  * Deleta documentos do vector store por filtros
- * 
+ *
  * Útil para:
  * - Remover documento antigo antes de re-processar
  * - Limpar documentos de um cliente
  * - Limpar documentos por tipo
- * 
+ *
  * @param filters - Filtros para deletar
  * @returns Número de documentos deletados
- * 
+ *
  * @example
  * ```typescript
  * // Deletar documento específico
@@ -218,7 +226,7 @@ export const processDocumentWithChunking = async (
  *   clientId: 'client-123',
  *   filename: 'catalogo-antigo.pdf'
  * })
- * 
+ *
  * // Deletar todos de um tipo
  * await deleteDocuments({
  *   clientId: 'client-123',
@@ -227,54 +235,55 @@ export const processDocumentWithChunking = async (
  * ```
  */
 export const deleteDocuments = async (filters: {
-  clientId: string
-  filename?: string
-  documentType?: string
-  source?: string
+  clientId: string;
+  filename?: string;
+  documentType?: string;
+  source?: string;
 }): Promise<number> => {
-  const { clientId, filename, documentType, source } = filters
-
+  const { clientId, filename, documentType, source } = filters;
 
   try {
-    const supabase = createServiceRoleClient() // Service role bypassa RLS
-    const supabaseAny = supabase as any // TypeScript bypass para tabela documents
+    const supabase = createServiceRoleClient(); // Service role bypassa RLS
+    const supabaseAny = supabase as any; // TypeScript bypass para tabela documents
 
     // Construir query com filtros
     let query = supabaseAny
-      .from('documents')
+      .from("documents")
       .delete()
-      .eq('client_id', clientId)
+      .eq("client_id", clientId);
 
     if (filename) {
-      query = query.eq('metadata->>filename', filename)
+      query = query.eq("metadata->>filename", filename);
     }
     if (documentType) {
-      query = query.eq('metadata->>documentType', documentType)
+      query = query.eq("metadata->>documentType", documentType);
     }
     if (source) {
-      query = query.eq('metadata->>source', source)
+      query = query.eq("metadata->>source", source);
     }
 
-    const { data, error, count } = await query.select('id')
+    const { data, error, count } = await query.select("id");
 
     if (error) {
-      throw new Error(`Failed to delete documents: ${error.message}`)
+      throw new Error(`Failed to delete documents: ${error.message}`);
     }
 
-    const deletedCount = data?.length || 0
+    const deletedCount = data?.length || 0;
 
-    return deletedCount
+    return deletedCount;
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    throw new Error(`Failed to delete documents: ${errorMessage}`)
+    const errorMessage = error instanceof Error
+      ? error.message
+      : "Unknown error";
+    throw new Error(`Failed to delete documents: ${errorMessage}`);
   }
-}
+};
 
 /**
  * Lista documentos do vector store por cliente
- * 
+ *
  * Útil para dashboard de administração
- * 
+ *
  * @param clientId - ID do cliente
  * @param filters - Filtros opcionais
  * @returns Lista de documentos
@@ -282,62 +291,65 @@ export const deleteDocuments = async (filters: {
 export const listDocuments = async (
   clientId: string,
   filters?: {
-    documentType?: string
-    source?: string
-    limit?: number
-  }
-): Promise<Array<{
-  id: string
-  filename: string
-  documentType: string
-  chunkCount: number
-  uploadedAt: string
-  uploadedBy: string
-  originalFileUrl?: string // NEW
-}>> => {
-
+    documentType?: string;
+    source?: string;
+    limit?: number;
+  },
+): Promise<
+  Array<{
+    id: string;
+    filename: string;
+    documentType: string;
+    chunkCount: number;
+    uploadedAt: string;
+    uploadedBy: string;
+    originalFileUrl?: string; // NEW
+  }>
+> => {
   try {
-    const supabase = createServiceRoleClient() // Service role bypassa RLS
-    const supabaseAny = supabase as any // TypeScript bypass para tabela documents
+    const supabase = createServiceRoleClient(); // Service role bypassa RLS
+    const supabaseAny = supabase as any; // TypeScript bypass para tabela documents
 
     // Buscar documentos agrupados por filename (includes original_file_url)
     const { data, error } = await supabaseAny
-      .from('documents')
-      .select('id, metadata, original_file_url')
-      .eq('client_id', clientId)
-      .limit(filters?.limit || 100)
+      .from("documents")
+      .select("id, metadata, original_file_url")
+      .eq("client_id", clientId)
+      .limit(filters?.limit || 100);
 
     if (error) {
-      throw new Error(`Failed to list documents: ${error.message}`)
+      throw new Error(`Failed to list documents: ${error.message}`);
     }
 
     // Agrupar chunks por documento
-    const documentsMap = new Map<string, any>()
+    const documentsMap = new Map<string, any>();
 
     data?.forEach((row: any) => {
-      const filename = row.metadata?.filename || 'unnamed'
+      const filename = row.metadata?.filename || "unnamed";
 
       if (!documentsMap.has(filename)) {
         documentsMap.set(filename, {
           id: row.id,
           filename,
-          documentType: row.metadata?.documentType || 'unknown',
+          documentType: row.metadata?.documentType || "unknown",
           chunkCount: 0,
           uploadedAt: row.metadata?.uploadedAt || new Date().toISOString(),
-          uploadedBy: row.metadata?.uploadedBy || 'unknown',
-          originalFileUrl: row.original_file_url || undefined // NEW: URL do Storage
-        })
+          uploadedBy: row.metadata?.uploadedBy || "unknown",
+          originalFileUrl: row.original_file_url || undefined, // NEW: URL do Storage
+        });
       }
 
-      const doc = documentsMap.get(filename)
-      doc.chunkCount++
-    })
+      const doc = documentsMap.get(filename);
+      doc.chunkCount++;
+    });
 
-    const documents = Array.from(documentsMap.values())
+    const documents = Array.from(documentsMap.values());
 
-    return documents
+    return documents;
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    throw new Error(`Failed to list documents: ${errorMessage}`)
+    const errorMessage = error instanceof Error
+      ? error.message
+      : "Unknown error";
+    throw new Error(`Failed to list documents: ${errorMessage}`);
   }
-}
+};
