@@ -173,7 +173,7 @@ export const searchDocumentInKnowledge = async (
     totalDocumentsInBase = uniqueUrls.size
 
     // 2. Gerar embedding da query
-    const embeddingResult = await generateEmbedding(query, openaiApiKey)
+    const embeddingResult = await generateEmbedding(query, openaiApiKey, clientId)
 
     // Verificar se embedding está vazio ou todo zeros
     const isAllZeros = embeddingResult.embedding.every(val => val === 0)

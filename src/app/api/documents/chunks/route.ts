@@ -18,6 +18,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase'
+import { getSharedGatewayConfig } from '@/lib/ai-gateway/config'
 
 export const dynamic = 'force-dynamic'
 
@@ -113,6 +114,47 @@ export async function GET(request: NextRequest) {
   }
 }
 
+const resolveOpenAIApiKey = async (
+  clientId: string,
+  supabaseServiceRole: ReturnType<typeof createServiceRoleClient>
+): Promise<string> => {
+  const supabaseAny = supabaseServiceRole as any
+
+  const { data: client, error } = await supabaseAny
+    .from('clients')
+    .select('ai_keys_mode, openai_api_key_secret_id')
+    .eq('id', clientId)
+    .single()
+
+  if (error || !client) {
+    throw new Error('Client config not found')
+  }
+
+  const aiKeysMode = (client.ai_keys_mode === 'byok_allowed'
+    ? 'byok_allowed'
+    : 'platform_only') as 'platform_only' | 'byok_allowed'
+
+  const sharedGatewayConfig = await getSharedGatewayConfig()
+  const sharedOpenaiKey = sharedGatewayConfig?.providerKeys?.openai || null
+
+  const byokOpenaiKey = aiKeysMode === 'byok_allowed' && client.openai_api_key_secret_id
+    ? await supabaseAny
+      .rpc('get_client_secret', { secret_id: client.openai_api_key_secret_id })
+      .then((res: any) => (res?.data as string | null) || null)
+      .catch(() => null)
+    : null
+
+  const finalOpenaiKey = aiKeysMode === 'byok_allowed'
+    ? (byokOpenaiKey || sharedOpenaiKey)
+    : sharedOpenaiKey
+
+  if (!finalOpenaiKey) {
+    throw new Error('Shared OpenAI API key not configured')
+  }
+
+  return finalOpenaiKey
+}
+
 /**
  * POST /api/documents/chunks
  *
@@ -169,36 +211,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 4. Get OpenAI API key from config
+    // 4. Resolve OpenAI API key (platform-only default; BYOK optional)
     const supabaseServiceRole = createServiceRoleClient()
-    const supabaseConfigAny = supabaseServiceRole as any
-    const { data: clientConfig, error: configError } = await supabaseConfigAny
-      .from('clients')
-      .select('openai_api_key_secret_id')
-      .eq('id', clientId)
-      .single()
 
-    if (configError || !clientConfig || !clientConfig.openai_api_key_secret_id) {
+    let openaiApiKey: string
+    try {
+      openaiApiKey = await resolveOpenAIApiKey(clientId, supabaseServiceRole)
+    } catch (resolveError) {
       return NextResponse.json(
-        { error: 'OpenAI API key not configured' },
+        { error: 'Shared OpenAI API key not configured' },
         { status: 400 }
-      )
-    }
-
-    const { data: openaiApiKey, error: vaultError } = await supabaseConfigAny.rpc('get_client_secret', {
-      secret_id: clientConfig.openai_api_key_secret_id
-    })
-
-    if (vaultError || !openaiApiKey) {
-      return NextResponse.json(
-        { error: 'Failed to get OpenAI API key from vault' },
-        { status: 500 }
       )
     }
 
     // 5. Generate embedding for the manual chunk
     const { generateEmbedding } = await import('@/lib/openai')
-    const embeddingResult = await generateEmbedding(content, openaiApiKey)
+    const embeddingResult = await generateEmbedding(content, openaiApiKey, clientId)
 
     // 6. Get existing document info
     const supabaseAny = supabaseServiceRole as any

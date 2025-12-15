@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
     const { data: client, error: clientError } = await supabase
       .from('clients')
       .select(
-        'id, slug, meta_access_token_secret_id, meta_verify_token_secret_id, meta_app_secret_secret_id, meta_phone_number_id, openai_api_key_secret_id, groq_api_key_secret_id'
+        'id, slug, ai_keys_mode, meta_access_token_secret_id, meta_verify_token_secret_id, meta_app_secret_secret_id, meta_phone_number_id, openai_api_key_secret_id, groq_api_key_secret_id'
       )
       .eq('id', clientId)
       .single()
@@ -141,6 +141,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       client_id: client.id,
       slug: client.slug,
+      ai_keys_mode: client.ai_keys_mode || 'platform_only',
       secrets: {
         meta_access_token: maskSecret(metaAccessToken),
         meta_verify_token: maskSecret(metaVerifyToken),

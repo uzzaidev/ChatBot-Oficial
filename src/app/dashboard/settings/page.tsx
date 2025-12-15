@@ -68,6 +68,8 @@ export default function SettingsPage() {
   const [showRevalidationModal, setShowRevalidationModal] = useState(false)
   const [revalidating, setRevalidating] = useState(false)
 
+  const [aiKeysMode, setAiKeysMode] = useState<'platform_only' | 'byok_allowed'>('platform_only')
+
   // Estado de visibilidade de senhas
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({})
 
@@ -145,6 +147,9 @@ export default function SettingsPage() {
 
         if (response.ok) {
           setSecrets(data.secrets || {})
+          if (data.ai_keys_mode === 'platform_only' || data.ai_keys_mode === 'byok_allowed') {
+            setAiKeysMode(data.ai_keys_mode)
+          }
         }
       } catch (error) {
       }
@@ -180,6 +185,10 @@ export default function SettingsPage() {
               message_delay_ms: 2000,
             },
           })
+
+          if (data.config.ai_keys_mode === 'platform_only' || data.config.ai_keys_mode === 'byok_allowed') {
+            setAiKeysMode(data.config.ai_keys_mode)
+          }
           
           // Also update WABA ID from client config if present
           if (data.whatsapp_business_account_id) {
@@ -339,6 +348,9 @@ export default function SettingsPage() {
           const refreshData = await refreshResponse.json()
           if (refreshResponse.ok) {
             setSecrets(refreshData.secrets || {})
+            if (refreshData.ai_keys_mode === 'platform_only' || refreshData.ai_keys_mode === 'byok_allowed') {
+              setAiKeysMode(refreshData.ai_keys_mode)
+            }
           }
         } else {
           const errorMessage = data.details
@@ -349,6 +361,33 @@ export default function SettingsPage() {
       }
     } catch (error) {
       setNotification({ type: 'error', message: 'Erro ao atualizar variável' })
+    } finally {
+      setLoadingSecrets(false)
+    }
+  }
+
+  const handleUpdateAIKeysMode = async (mode: 'platform_only' | 'byok_allowed') => {
+    setLoadingSecrets(true)
+    setNotification(null)
+
+    try {
+      const { apiFetch } = await import('@/lib/api')
+      const response = await apiFetch('/api/client/config', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ai_keys_mode: mode }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setAiKeysMode(mode)
+        setNotification({ type: 'success', message: 'Modo de chaves de IA atualizado com sucesso!' })
+      } else {
+        setNotification({ type: 'error', message: data.error || 'Erro ao atualizar modo de chaves de IA' })
+      }
+    } catch (error) {
+      setNotification({ type: 'error', message: 'Erro ao atualizar modo de chaves de IA' })
     } finally {
       setLoadingSecrets(false)
     }
@@ -1435,83 +1474,120 @@ export default function SettingsPage() {
               </p>
             </div>
 
-            {/* OpenAI API Key */}
+            {/* Modo de Chaves de IA */}
             <div>
-              <Label htmlFor="openai_api_key">OpenAI API Key (opcional)</Label>
-              <div className="flex gap-2 mt-2">
-                <div className="relative flex-1">
-                  <Input
-                    id="openai_api_key"
-                    type={showPasswords['openai_api_key'] ? 'text' : 'password'}
-                    value={secrets.openai_api_key}
-                    onChange={(e) =>
-                      setSecrets({ ...secrets, openai_api_key: e.target.value })
+              <Label>Modo de chaves de IA</Label>
+              <div className="mt-2">
+                <Select
+                  value={aiKeysMode}
+                  onValueChange={(value) => {
+                    if (value === 'platform_only' || value === 'byok_allowed') {
+                      handleUpdateAIKeysMode(value)
                     }
-                    disabled={!editingSecrets}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => togglePasswordVisibility('openai_api_key')}
-                    className="absolute right-2 top-2"
-                  >
-                    {showPasswords['openai_api_key'] ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
-                {editingSecrets && (
-                  <Button
-                    onClick={() =>
-                      handleUpdateSecret('openai_api_key', secrets.openai_api_key)
-                    }
-                    disabled={loadingSecrets}
-                  >
-                    Salvar
-                  </Button>
-                )}
+                  }}
+                  disabled={!editingSecrets || loadingSecrets}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="platform_only">Usar chaves da plataforma (recomendado)</SelectItem>
+                    <SelectItem value="byok_allowed">Permitir BYOK (cliente fornece)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
+
+              {aiKeysMode === 'platform_only' && (
+                <Alert className="mt-3">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    As chaves de IA são gerenciadas pela plataforma. As chaves OpenAI/Groq do cliente não são necessárias.
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
 
-            {/* Groq API Key */}
-            <div>
-              <Label htmlFor="groq_api_key">Groq API Key (opcional)</Label>
-              <div className="flex gap-2 mt-2">
-                <div className="relative flex-1">
-                  <Input
-                    id="groq_api_key"
-                    type={showPasswords['groq_api_key'] ? 'text' : 'password'}
-                    value={secrets.groq_api_key}
-                    onChange={(e) =>
-                      setSecrets({ ...secrets, groq_api_key: e.target.value })
-                    }
-                    disabled={!editingSecrets}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => togglePasswordVisibility('groq_api_key')}
-                    className="absolute right-2 top-2"
-                  >
-                    {showPasswords['groq_api_key'] ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
+            {aiKeysMode === 'byok_allowed' && (
+              <>
+                {/* OpenAI API Key */}
+                <div>
+                  <Label htmlFor="openai_api_key">OpenAI API Key (opcional)</Label>
+                  <div className="flex gap-2 mt-2">
+                    <div className="relative flex-1">
+                      <Input
+                        id="openai_api_key"
+                        type={showPasswords['openai_api_key'] ? 'text' : 'password'}
+                        value={secrets.openai_api_key}
+                        onChange={(e) =>
+                          setSecrets({ ...secrets, openai_api_key: e.target.value })
+                        }
+                        disabled={!editingSecrets}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => togglePasswordVisibility('openai_api_key')}
+                        className="absolute right-2 top-2"
+                      >
+                        {showPasswords['openai_api_key'] ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                    {editingSecrets && (
+                      <Button
+                        onClick={() =>
+                          handleUpdateSecret('openai_api_key', secrets.openai_api_key)
+                        }
+                        disabled={loadingSecrets}
+                      >
+                        Salvar
+                      </Button>
                     )}
-                  </button>
+                  </div>
                 </div>
-                {editingSecrets && (
-                  <Button
-                    onClick={() =>
-                      handleUpdateSecret('groq_api_key', secrets.groq_api_key)
-                    }
-                    disabled={loadingSecrets}
-                  >
-                    Salvar
-                  </Button>
-                )}
-              </div>
-            </div>
+
+                {/* Groq API Key */}
+                <div>
+                  <Label htmlFor="groq_api_key">Groq API Key (opcional)</Label>
+                  <div className="flex gap-2 mt-2">
+                    <div className="relative flex-1">
+                      <Input
+                        id="groq_api_key"
+                        type={showPasswords['groq_api_key'] ? 'text' : 'password'}
+                        value={secrets.groq_api_key}
+                        onChange={(e) =>
+                          setSecrets({ ...secrets, groq_api_key: e.target.value })
+                        }
+                        disabled={!editingSecrets}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => togglePasswordVisibility('groq_api_key')}
+                        className="absolute right-2 top-2"
+                      >
+                        {showPasswords['groq_api_key'] ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                    {editingSecrets && (
+                      <Button
+                        onClick={() =>
+                          handleUpdateSecret('groq_api_key', secrets.groq_api_key)
+                        }
+                        disabled={loadingSecrets}
+                      >
+                        Salvar
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* Webhook URL (readonly) */}
             <div>

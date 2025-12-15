@@ -143,7 +143,7 @@ export const processDocumentWithChunking = async (
 
 
       // Gerar embedding
-      const embeddingResult = await generateEmbedding(chunk.content, openaiApiKey)
+      const embeddingResult = await generateEmbedding(chunk.content, openaiApiKey, clientId)
       totalEmbeddingTokens += embeddingResult.usage.total_tokens
 
       // Salvar no vector store (includes original file metadata)

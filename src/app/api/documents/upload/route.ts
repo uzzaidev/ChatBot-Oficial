@@ -23,7 +23,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase'
 import { processDocumentWithChunking } from '@/nodes/processDocumentWithChunking'
-import OpenAI from 'openai'
+import { getSharedGatewayConfig } from '@/lib/ai-gateway/config'
+import { analyzeImageFromBuffer } from '@/lib/openai'
 // pdf-parse v1.1.0 uses a function-based API that works in serverless environments
 // It bundles an older version of pdf.js (v1.9.426) that doesn't require browser APIs like DOMMatrix
 import * as pdfParseModule from 'pdf-parse'
@@ -50,6 +51,47 @@ const EMPTY_TEXT_ERROR_MESSAGES: Record<string, string> = {
   'image/png': 'Não foi possível extrair texto da imagem.',
   'image/webp': 'Não foi possível extrair texto da imagem.',
   'image/jpg': 'Não foi possível extrair texto da imagem.',
+}
+
+const resolveOpenAIApiKey = async (
+  clientId: string,
+  supabaseServiceRole: ReturnType<typeof createServiceRoleClient>
+): Promise<string> => {
+  const supabaseAny = supabaseServiceRole as any
+
+  const { data: client, error } = await supabaseAny
+    .from('clients')
+    .select('ai_keys_mode, openai_api_key_secret_id')
+    .eq('id', clientId)
+    .single()
+
+  if (error || !client) {
+    throw new Error('Client config not found')
+  }
+
+  const aiKeysMode = (client.ai_keys_mode === 'byok_allowed'
+    ? 'byok_allowed'
+    : 'platform_only') as 'platform_only' | 'byok_allowed'
+
+  const sharedGatewayConfig = await getSharedGatewayConfig()
+  const sharedOpenaiKey = sharedGatewayConfig?.providerKeys?.openai || null
+
+  const byokOpenaiKey = aiKeysMode === 'byok_allowed' && client.openai_api_key_secret_id
+    ? await supabaseAny
+      .rpc('get_client_secret', { secret_id: client.openai_api_key_secret_id })
+      .then((res: any) => (res?.data as string | null) || null)
+      .catch(() => null)
+    : null
+
+  const finalOpenaiKey = aiKeysMode === 'byok_allowed'
+    ? (byokOpenaiKey || sharedOpenaiKey)
+    : sharedOpenaiKey
+
+  if (!finalOpenaiKey) {
+    throw new Error('Shared OpenAI API key not configured')
+  }
+
+  return finalOpenaiKey
 }
 
 /**
@@ -162,36 +204,25 @@ const categorizeOpenAIError = (error: unknown): { type: string; message: string 
  * Serverless-compatible, no canvas dependencies
  * REQUIRES client to have OpenAI API key configured in Vault
  */
-const extractTextFromImage = async (buffer: Buffer, openaiApiKey: string): Promise<string> => {
-  const openai = new OpenAI({ apiKey: openaiApiKey })
+const extractTextFromImage = async (
+  buffer: Buffer,
+  mimeType: string,
+  openaiApiKey: string,
+  clientId: string,
+): Promise<string> => {
+  const OCR_PROMPT =
+    'Extraia TODO o texto desta imagem. Retorne APENAS o texto extraído, sem explicações. ' +
+    'Se não houver texto, retorne exatamente: "No text found".'
 
-  // Convert buffer to base64
-  const base64Image = buffer.toString('base64')
-  const mimeType = 'image/jpeg' // OpenAI accepts various formats
+  const result = await analyzeImageFromBuffer(
+    buffer,
+    OCR_PROMPT,
+    mimeType,
+    openaiApiKey,
+    clientId,
+  )
 
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o',
-    messages: [
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: 'Extract all text from this image. Return ONLY the extracted text, nothing else. If there is no text, return "No text found".',
-          },
-          {
-            type: 'image_url',
-            image_url: {
-              url: `data:${mimeType};base64,${base64Image}`,
-            },
-          },
-        ],
-      },
-    ],
-    max_tokens: 4096,
-  })
-
-  const extractedText = response.choices[0]?.message?.content || ''
+  const extractedText = result.text || ''
 
   if (extractedText === 'No text found' || !extractedText.trim()) {
     throw new Error('No text found in image')
@@ -280,39 +311,13 @@ export async function POST(request: NextRequest) {
         )
       }
     } else if (file.type.startsWith('image/')) {
-      // Get OpenAI key from Vault (REQUIRED for image OCR)
-      const { data: clientConfigTemp } = await supabase
-        .from('clients')
-        .select('openai_api_key_secret_id')
-        .eq('id', clientId)
-        .single()
-
-      if (!clientConfigTemp?.openai_api_key_secret_id) {
+      let openaiKeyForOCR: string
+      try {
+        openaiKeyForOCR = await resolveOpenAIApiKey(clientId, supabaseServiceRole)
+      } catch (resolveError) {
         return NextResponse.json(
           {
-            error: 'API da OpenAI não configurada. Por favor, configure sua chave da OpenAI em Configurações para usar o serviço de OCR em imagens.'
-          },
-          { status: 400 }
-        )
-      }
-
-      const { data: openaiKeyForOCR, error: vaultErrorOCR } = await supabase.rpc('get_client_secret', {
-        secret_id: clientConfigTemp.openai_api_key_secret_id
-      })
-
-      if (vaultErrorOCR) {
-        return NextResponse.json(
-          {
-            error: 'Erro ao acessar o cofre de segredos. Contate o suporte se o problema persistir.'
-          },
-          { status: 500 }
-        )
-      }
-
-      if (!openaiKeyForOCR) {
-        return NextResponse.json(
-          {
-            error: 'Chave da OpenAI não encontrada no cofre. Por favor, reconfigure sua chave em Configurações.'
+            error: 'Chave compartilhada da OpenAI não configurada. Contate o suporte para habilitar OCR/embeddings.'
           },
           { status: 400 }
         )
@@ -321,7 +326,7 @@ export async function POST(request: NextRequest) {
       // Image OCR extraction using OpenAI Vision (serverless-compatible)
       const buffer = Buffer.from(await file.arrayBuffer())
       try {
-        text = await extractTextFromImage(buffer, openaiKeyForOCR)
+        text = await extractTextFromImage(buffer, file.type, openaiKeyForOCR, clientId)
       } catch (ocrError) {
         const { message: ocrErrorMessage } = categorizeOpenAIError(ocrError)
         return NextResponse.json(
@@ -374,38 +379,13 @@ export async function POST(request: NextRequest) {
     const originalFileUrl = publicUrlData.publicUrl
 
     // 8. Get client config for OpenAI API key (REQUIRED for embeddings)
-    const { data: clientConfig } = await supabase
-      .from('clients')
-      .select('openai_api_key_secret_id')
-      .eq('id', clientId)
-      .single()
-
-    if (!clientConfig?.openai_api_key_secret_id) {
+    let openaiApiKey: string
+    try {
+      openaiApiKey = await resolveOpenAIApiKey(clientId, supabaseServiceRole)
+    } catch (resolveError) {
       return NextResponse.json(
         {
-          error: 'API da OpenAI não configurada. Por favor, configure sua chave da OpenAI em Configurações para usar o serviço de embeddings.'
-        },
-        { status: 400 }
-      )
-    }
-
-    const { data: openaiApiKey, error: vaultError } = await supabase.rpc('get_client_secret', {
-      secret_id: clientConfig.openai_api_key_secret_id
-    })
-
-    if (vaultError) {
-      return NextResponse.json(
-        {
-          error: 'Erro ao acessar o cofre de segredos. Contate o suporte se o problema persistir.'
-        },
-        { status: 500 }
-      )
-    }
-
-    if (!openaiApiKey) {
-      return NextResponse.json(
-        {
-          error: 'Chave da OpenAI não encontrada no cofre. Por favor, reconfigure sua chave em Configurações.'
+          error: 'Chave compartilhada da OpenAI não configurada. Contate o suporte para habilitar embeddings.'
         },
         { status: 400 }
       )
