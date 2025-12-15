@@ -373,6 +373,7 @@ export const generateAIResponse = async (
         model: result.model,
         provider: result.provider as any,
         requestId: result.requestId,
+        wasCached: result.wasCached,
         wasFallback: result.wasFallback,
         fallbackReason: result.fallbackReason,
         primaryAttemptedProvider: result.primaryAttemptedProvider as any,
@@ -383,6 +384,7 @@ export const generateAIResponse = async (
           prompt_tokens: result.usage.promptTokens,
           completion_tokens: result.usage.completionTokens,
           total_tokens: result.usage.totalTokens,
+          cached_tokens: result.usage.cachedTokens,
         },
       };
     }
