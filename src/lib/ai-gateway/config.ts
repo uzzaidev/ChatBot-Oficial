@@ -8,6 +8,7 @@
 import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
+import { createServiceClient } from "@/lib/supabase-server";
 
 // =====================================================
 // TYPES
