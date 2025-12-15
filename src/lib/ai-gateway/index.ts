@@ -215,7 +215,7 @@ const callAIViaGateway = async (
 
     // ✅ Extract gateway headers
     const headers = result.response?.headers || {};
-    const wasCached = headers["x-vercel-cache"] === "HIT" ||
+    const headerIndicatesCache = headers["x-vercel-cache"] === "HIT" ||
       headers["x-vercel-ai-cache-status"] === "hit";
     const actualProvider = headers["x-vercel-ai-provider"] || provider;
     const actualModel = headers["x-vercel-ai-model"] || primaryModel;
@@ -241,6 +241,22 @@ const callAIViaGateway = async (
       outputTokens = totalTokens - inputTokens;
     }
 
+    // Some providers report cached tokens (e.g., OpenAI prompt caching).
+    const cachedTokensFromUsageRaw = usage?.cachedTokens ??
+      usage?.cached_tokens;
+    const cachedTokensFromUsage =
+      Number.isFinite(Number(cachedTokensFromUsageRaw))
+        ? Number(cachedTokensFromUsageRaw)
+        : 0;
+
+    const cachedTokens = cachedTokensFromUsage > 0
+      ? cachedTokensFromUsage
+      : headerIndicatesCache
+      ? inputTokens
+      : 0;
+
+    const wasCached = headerIndicatesCache || cachedTokensFromUsage > 0;
+
     const response: AIResponse = {
       text: result.text,
       toolCalls: normalizedToolCalls,
@@ -248,7 +264,7 @@ const callAIViaGateway = async (
         promptTokens: inputTokens,
         completionTokens: outputTokens,
         totalTokens: totalTokens,
-        cachedTokens: wasCached ? inputTokens : 0,
+        cachedTokens,
       },
       model: actualModel,
       provider: actualProvider,
@@ -358,7 +374,7 @@ const callAIWithFallback = async (
       });
 
       const latencyMs = Date.now() - startTime;
-      const wasCached =
+      const headerIndicatesCache =
         result.response?.headers?.["x-vercel-ai-cache-status"] === "hit";
       const usage = result.usage as any;
       const normalizedToolCalls = normalizeToolCalls((result as any).toolCalls);
@@ -378,6 +394,21 @@ const callAIWithFallback = async (
         outputTokens = totalTokens - inputTokens;
       }
 
+      const cachedTokensFromUsageRaw = usage?.cachedTokens ??
+        usage?.cached_tokens;
+      const cachedTokensFromUsage =
+        Number.isFinite(Number(cachedTokensFromUsageRaw))
+          ? Number(cachedTokensFromUsageRaw)
+          : 0;
+
+      const cachedTokens = cachedTokensFromUsage > 0
+        ? cachedTokensFromUsage
+        : headerIndicatesCache
+        ? inputTokens
+        : 0;
+
+      const wasCached = headerIndicatesCache || cachedTokensFromUsage > 0;
+
       const response: AIResponse = {
         text: result.text,
         toolCalls: normalizedToolCalls,
@@ -385,7 +416,7 @@ const callAIWithFallback = async (
           promptTokens: inputTokens,
           completionTokens: outputTokens,
           totalTokens: totalTokens,
-          cachedTokens: wasCached ? inputTokens : 0,
+          cachedTokens,
         },
         model,
         provider,

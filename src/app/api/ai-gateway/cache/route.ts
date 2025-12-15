@@ -69,6 +69,15 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error;
 
+    const totalCachedLogs = cachedRequests?.length || 0;
+    const totalCachedTokens = (cachedRequests || []).reduce(
+      (sum: number, log: any) => sum + (log.cached_tokens || 0),
+      0,
+    );
+    const lastCachedAt = cachedRequests && cachedRequests.length > 0
+      ? cachedRequests[0].created_at
+      : null;
+
     // Group by model/prompt pattern to simulate cache entries
     const cacheMap = new Map<string, {
       count: number;
@@ -125,7 +134,19 @@ export async function GET(request: NextRequest) {
     // Sort by hit count descending
     entries.sort((a, b) => b.hitCount - a.hitCount);
 
-    return NextResponse.json({ entries });
+    return NextResponse.json({
+      entries,
+      summary: {
+        totalCachedLogs,
+        totalCachedTokens,
+        estimatedSavingsBRL: totalCachedTokens * ESTIMATED_COST_PER_TOKEN_BRL,
+        lastCachedAt,
+        scope: {
+          isAdmin,
+          clientId: effectiveClientId,
+        },
+      },
+    });
   } catch (error: any) {
     console.error("Error fetching cache entries:", error);
     return NextResponse.json(

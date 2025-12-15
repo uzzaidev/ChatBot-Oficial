@@ -6,7 +6,7 @@
  * View and manage AI Gateway cache
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -39,6 +39,17 @@ interface CacheEntry {
   ttlSeconds: number
 }
 
+interface CacheSummary {
+  totalCachedLogs: number
+  totalCachedTokens: number
+  estimatedSavingsBRL: number
+  lastCachedAt: string | null
+  scope?: {
+    isAdmin: boolean
+    clientId: string | null
+  }
+}
+
 export default function AIGatewayCachePage() {
   const [loading, setLoading] = useState(true)
   const [cacheEntries, setCacheEntries] = useState<CacheEntry[]>([])
@@ -46,15 +57,38 @@ export default function AIGatewayCachePage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [summary, setSummary] = useState<CacheSummary | null>(null)
 
   const [checkingAdmin, setCheckingAdmin] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
   const [adminClients, setAdminClients] = useState<AdminClient[]>([])
   const [selectedClientId, setSelectedClientId] = useState<string>('ALL')
 
-  useEffect(() => {
-    fetchCacheEntries()
-  }, [])
+  const fetchCacheEntries = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      const query = isAdmin && selectedClientId !== 'ALL'
+        ? `?clientId=${encodeURIComponent(selectedClientId)}`
+        : ''
+      const response = await fetch(`/api/ai-gateway/cache${query}`)
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to fetch cache')
+      }
+
+      const data = await response.json()
+      setCacheEntries(data.entries || [])
+      setFilteredEntries(data.entries || [])
+      setSummary(data.summary || null)
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }, [isAdmin, selectedClientId])
 
   useEffect(() => {
     const checkAdminRole = async () => {
@@ -96,10 +130,12 @@ export default function AIGatewayCachePage() {
   }, [])
 
   useEffect(() => {
-    if (!checkingAdmin && isAdmin) {
-      fetchCacheEntries()
+    if (checkingAdmin) {
+      return
     }
-  }, [checkingAdmin, isAdmin, selectedClientId])
+
+    fetchCacheEntries()
+  }, [checkingAdmin, fetchCacheEntries])
 
   useEffect(() => {
     if (searchQuery.trim()) {
@@ -111,31 +147,6 @@ export default function AIGatewayCachePage() {
       setFilteredEntries(cacheEntries)
     }
   }, [searchQuery, cacheEntries])
-
-  const fetchCacheEntries = async () => {
-    setLoading(true)
-    setError(null)
-
-    try {
-      const query = isAdmin && selectedClientId !== 'ALL'
-        ? `?clientId=${encodeURIComponent(selectedClientId)}`
-        : ''
-      const response = await fetch(`/api/ai-gateway/cache${query}`)
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Failed to fetch cache')
-      }
-
-      const data = await response.json()
-      setCacheEntries(data.entries || [])
-      setFilteredEntries(data.entries || [])
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleInvalidate = async (cacheKey: string) => {
     if (!confirm('Tem certeza que deseja invalidar este cache entry?')) {
@@ -195,8 +206,9 @@ export default function AIGatewayCachePage() {
     return `${minutes}m`
   }
 
-  const totalSavings = cacheEntries.reduce((sum, entry) => sum + entry.savingsBRL, 0)
-  const totalHits = cacheEntries.reduce((sum, entry) => sum + entry.hitCount, 0)
+  const totalSavings = summary?.estimatedSavingsBRL ?? cacheEntries.reduce((sum, entry) => sum + entry.savingsBRL, 0)
+  const totalHits = summary?.totalCachedLogs ?? cacheEntries.reduce((sum, entry) => sum + entry.hitCount, 0)
+  const totalTokensSaved = summary?.totalCachedTokens ?? cacheEntries.reduce((sum, entry) => sum + entry.tokensSaved, 0)
 
   return (
     <>
@@ -285,7 +297,9 @@ export default function AIGatewayCachePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalHits.toLocaleString('pt-BR')}</div>
-            <p className="text-xs text-muted-foreground mt-1">Respostas servidas do cache</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Respostas servidas do cache{summary?.lastCachedAt ? ` • Último HIT: ${new Date(summary.lastCachedAt).toLocaleString('pt-BR')}` : ''}
+            </p>
           </CardContent>
         </Card>
 
@@ -296,7 +310,9 @@ export default function AIGatewayCachePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">R$ {totalSavings.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground mt-1">Economia estimada</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Economia estimada • Tokens salvos: {totalTokensSaved.toLocaleString('pt-BR')}
+            </p>
           </CardContent>
         </Card>
       </div>
