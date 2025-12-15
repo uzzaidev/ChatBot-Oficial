@@ -14,14 +14,38 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Switch } from '@/components/ui/switch'
-import { Loader2, Save, Check, AlertTriangle, Shield, Key, Trash2 } from 'lucide-react'
+import {
+  Loader2,
+  Save,
+  Check,
+  AlertTriangle,
+  Shield,
+  Key,
+  Trash2,
+  ChevronUp,
+  ChevronDown,
+  X,
+  Plus,
+} from 'lucide-react'
 import { AIGatewayNav } from '@/components/AIGatewayNav'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 export default function AIGatewaySetupPage() {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+
+  const [availableModels, setAvailableModels] = useState<
+    Array<{ gatewayIdentifier: string; displayName: string }>
+  >([])
+  const [selectedFallbackToAdd, setSelectedFallbackToAdd] = useState<string>('')
 
   // Configuration state
   const [config, setConfig] = useState({
@@ -89,6 +113,62 @@ export default function AIGatewaySetupPage() {
   useEffect(() => {
     fetchCurrentConfig()
   }, [])
+
+  // Fetch available models for fallback chain editor
+  useEffect(() => {
+    const fetchModels = async () => {
+      try {
+        const response = await fetch('/api/ai-gateway/models')
+        if (!response.ok) return
+
+        const data = await response.json()
+        const models = Array.isArray(data.models) ? data.models : []
+
+        const normalized = models
+          .map((m: any) => ({
+            gatewayIdentifier: String(m.gatewayIdentifier || m.displayName || ''),
+            displayName: String(m.displayName || m.gatewayIdentifier || ''),
+          }))
+          .filter((m: any) => m.gatewayIdentifier)
+
+        setAvailableModels(normalized)
+      } catch {
+        // ignore model list fetch errors; editor will still work with existing chain
+      }
+    }
+
+    fetchModels()
+  }, [])
+
+  const moveFallbackItem = (index: number, direction: -1 | 1) => {
+    setConfig((prev) => {
+      const next = [...prev.defaultFallbackChain]
+      const targetIndex = index + direction
+      if (targetIndex < 0 || targetIndex >= next.length) return prev
+      const tmp = next[index]
+      next[index] = next[targetIndex]
+      next[targetIndex] = tmp
+      return { ...prev, defaultFallbackChain: next }
+    })
+  }
+
+  const removeFallbackItem = (index: number) => {
+    setConfig((prev) => {
+      const next = prev.defaultFallbackChain.filter((_, i) => i !== index)
+      return { ...prev, defaultFallbackChain: next }
+    })
+  }
+
+  const addFallbackItem = () => {
+    const value = selectedFallbackToAdd.trim()
+    if (!value) return
+
+    setConfig((prev) => {
+      if (prev.defaultFallbackChain.includes(value)) return prev
+      return { ...prev, defaultFallbackChain: [...prev.defaultFallbackChain, value] }
+    })
+    setSelectedFallbackToAdd('')
+  }
 
   // =====================================================
   // SAVE CONFIGURATION
@@ -355,6 +435,86 @@ export default function AIGatewaySetupPage() {
                 setConfig({ ...config, cacheTTLSeconds: parseInt(e.target.value) || 3600 })
               }
             />
+          </div>
+
+          <hr className="my-6" />
+
+          {/* Fallback Chain */}
+          <div className="space-y-3">
+            <div>
+              <Label>Fallback de Modelos (ordem)</Label>
+              <p className="text-sm text-muted-foreground">
+                Quando o modelo principal falhar, o Gateway tentará na ordem abaixo (de cima para
+                baixo).
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              {config.defaultFallbackChain.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhum fallback configurado.</p>
+              ) : (
+                config.defaultFallbackChain.map((item, index) => (
+                  <div key={`${item}-${index}`} className="flex items-center gap-2 p-2 border rounded">
+                    <div className="flex flex-col gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => moveFallbackItem(index, -1)}
+                        disabled={index === 0}
+                      >
+                        <ChevronUp className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => moveFallbackItem(index, 1)}
+                        disabled={index === config.defaultFallbackChain.length - 1}
+                      >
+                        <ChevronDown className="w-4 h-4" />
+                      </Button>
+                    </div>
+
+                    <div className="flex-1">
+                      <p className="text-sm font-medium font-mono">{item}</p>
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeFallbackItem(index)}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Select value={selectedFallbackToAdd} onValueChange={setSelectedFallbackToAdd}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Adicionar modelo ao fallback" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableModels
+                      .filter((m) => !config.defaultFallbackChain.includes(m.gatewayIdentifier))
+                      .map((m) => (
+                        <SelectItem key={m.gatewayIdentifier} value={m.gatewayIdentifier}>
+                          {m.displayName}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button type="button" variant="outline" onClick={addFallbackItem} disabled={!selectedFallbackToAdd}>
+                <Plus className="w-4 h-4 mr-2" />
+                Adicionar
+              </Button>
+            </div>
           </div>
 
           {/* Actions */}

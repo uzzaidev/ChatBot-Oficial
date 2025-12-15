@@ -12,6 +12,43 @@ import { createServerClient } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 
+async function requireAdmin(supabase: ReturnType<typeof createServerClient>) {
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    return { ok: false as const, response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from('user_profiles')
+    .select('role, is_active')
+    .eq('id', user.id)
+    .single()
+
+  if (profileError || !profile) {
+    return {
+      ok: false as const,
+      response: NextResponse.json({ error: 'User profile not found' }, { status: 404 }),
+    }
+  }
+
+  if (!profile.is_active) {
+    return { ok: false as const, response: NextResponse.json({ error: 'Account disabled' }, { status: 403 }) }
+  }
+
+  if (profile.role !== 'admin') {
+    return {
+      ok: false as const,
+      response: NextResponse.json({ error: 'Admin access required' }, { status: 403 }),
+    }
+  }
+
+  return { ok: true as const }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -94,6 +131,9 @@ export async function POST(request: NextRequest) {
 
     const supabase = createServerClient()
 
+  const adminCheck = await requireAdmin(supabase)
+  if (!adminCheck.ok) return adminCheck.response
+
     // Insert new model
     const { data, error } = await supabase
       .from('ai_models_registry')
@@ -138,6 +178,9 @@ export async function PUT(request: NextRequest) {
     }
 
     const supabase = createServerClient()
+
+  const adminCheck = await requireAdmin(supabase)
+  if (!adminCheck.ok) return adminCheck.response
 
     // Build update object
     const updateData: any = {}
@@ -186,6 +229,9 @@ export async function DELETE(request: NextRequest) {
     }
 
     const supabase = createServerClient()
+
+  const adminCheck = await requireAdmin(supabase)
+  if (!adminCheck.ok) return adminCheck.response
 
     // Soft delete - just disable the model
     const { error } = await supabase
