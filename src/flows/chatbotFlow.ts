@@ -594,7 +594,7 @@ export const processChatbotMessage = async (
       config.settings.messageSplitEnabled
     ) {
       logger.logNodeStart("9. Batch Messages", { phone: parsedMessage.phone });
-      batchedContent = await batchMessages(parsedMessage.phone);
+      batchedContent = await batchMessages(parsedMessage.phone, config.id);
       logger.logNodeSuccess("9. Batch Messages", {
         contentLength: batchedContent?.length || 0,
       });
