@@ -5,7 +5,9 @@
  * Keys are shared across all clients, control is done via budget per client
  */
 
-import { createServerClient } from '@/lib/supabase-server'
+import 'server-only'
+
+import { createServiceClient } from '@/lib/supabase-server'
 
 // =====================================================
 // TYPES
@@ -56,16 +58,16 @@ export const getSharedGatewayConfig = async (): Promise<SharedGatewayConfig | nu
       return cachedConfig
     }
 
-    const supabase = createServerClient()
+    const supabase = createServiceClient()
 
     // Fetch shared config (only 1 record exists)
     const { data: config, error } = await supabase
       .from('shared_gateway_config')
       .select('*')
-      .single()
+      .maybeSingle()
 
     if (error || !config) {
-      console.error('[AI Gateway] No shared configuration found:', error)
+      console.error('[AI Gateway] No shared configuration found:', error || 'shared_gateway_config returned 0 rows')
       return null
     }
 
@@ -191,13 +193,13 @@ export const getSharedGatewayConfig = async (): Promise<SharedGatewayConfig | nu
  */
 export const isClientGatewayEnabled = async (clientId: string): Promise<boolean> => {
   try {
-    const supabase = createServerClient()
+    const supabase = createServiceClient()
 
     const { data } = await supabase
       .from('clients')
       .select('use_ai_gateway')
       .eq('id', clientId)
-      .single()
+      .maybeSingle()
 
     return data?.use_ai_gateway === true
   } catch (error) {
@@ -237,7 +239,7 @@ export const clearConfigCache = (): void => {
  */
 export const isBudgetExceeded = async (clientId: string): Promise<boolean> => {
   try {
-    const supabase = createServerClient()
+    const supabase = createServiceClient()
 
     const { data, error } = await supabase.rpc('is_budget_exceeded', {
       p_client_id: clientId,
@@ -267,13 +269,13 @@ export const getBudgetUsage = async (
   isPaused: boolean
 } | null> => {
   try {
-    const supabase = createServerClient()
+    const supabase = createServiceClient()
 
     const { data, error } = await supabase
       .from('client_budgets')
       .select('current_usage, budget_limit, usage_percentage, is_paused')
       .eq('client_id', clientId)
-      .single()
+      .maybeSingle()
 
     if (error || !data) {
       return null

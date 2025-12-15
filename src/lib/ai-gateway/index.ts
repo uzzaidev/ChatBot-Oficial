@@ -80,8 +80,11 @@ export const callAI = async (config: AICallConfig): Promise<AIResponse> => {
       const gatewayConfig = await getSharedGatewayConfig()
 
       if (!gatewayConfig) {
-        console.warn('[AI Gateway] Gateway enabled but no config found, using direct SDK')
-        return await callAIDirectly(config, startTime)
+        throw new Error(
+          'AI Gateway is enabled for this environment/client, but the shared gateway configuration was not found or is not accessible. ' +
+            'Ensure the production database has exactly one row in shared_gateway_config, the Vault RPC functions are deployed, and ' +
+            'the server has SUPABASE_SERVICE_ROLE_KEY configured.'
+        )
       }
 
       // Route through AI Gateway
@@ -337,7 +340,7 @@ const callAIDirectly = async (
 ): Promise<AIResponse> => {
   // Legacy path disabled - use original generateAIResponse.ts instead
   throw new Error(
-    'AI Gateway disabled. Enable ENABLE_AI_GATEWAY=true and configure at /dashboard/ai-gateway/setup'
+    'AI Gateway is disabled for this environment/client. Enable ENABLE_AI_GATEWAY=true and enable use_ai_gateway for the client.'
   )
 }
 
