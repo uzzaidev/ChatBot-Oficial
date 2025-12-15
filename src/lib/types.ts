@@ -319,7 +319,10 @@ export interface AIResponse {
     total_tokens: number;
   };
   model?: string;
-  provider?: "openai" | "groq";
+  provider?: "openai" | "groq" | "anthropic" | "google";
+  requestId?: string;
+  wasFallback?: boolean;
+  fallbackReason?: string;
 }
 
 export interface ToolCall {

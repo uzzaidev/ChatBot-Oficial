@@ -11,12 +11,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog'
 import {
   Table,
@@ -29,7 +31,7 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, Edit, Trash2, Check, AlertTriangle, Save } from 'lucide-react'
+import { Loader2, Edit, Trash2, Check, AlertTriangle, Save, Plus } from 'lucide-react'
 import { AIGatewayNav } from '@/components/AIGatewayNav'
 import { createClientBrowser } from '@/lib/supabase'
 
@@ -54,6 +56,8 @@ export default function AIGatewayModelsPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [editingModel, setEditingModel] = useState<AIModel | null>(null)
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [creating, setCreating] = useState(false)
 
   const [checkingAdmin, setCheckingAdmin] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
@@ -62,6 +66,25 @@ export default function AIGatewayModelsPage() {
     inputPricePerMillion: '',
     outputPricePerMillion: '',
     cachedInputPricePerMillion: '',
+  })
+
+  const [newModelForm, setNewModelForm] = useState({
+    provider: '',
+    modelName: '',
+    gatewayIdentifier: '',
+    contextWindow: 4096,
+    maxOutputTokens: 2048,
+    inputPricePerMillion: 0,
+    outputPricePerMillion: 0,
+    cachedInputPricePerMillion: '' as string,
+    description: '',
+    isActive: true,
+    capabilities: {
+      vision: false,
+      tools: true,
+      streaming: true,
+      caching: false,
+    },
   })
 
   const canEdit = !checkingAdmin && isAdmin
@@ -204,6 +227,89 @@ export default function AIGatewayModelsPage() {
     }
   }
 
+  const handleCreateModel = async () => {
+    setError(null)
+    setSuccess(null)
+
+    if (!canEdit) {
+      setError('Somente admin pode adicionar modelos.')
+      return
+    }
+
+    const provider = newModelForm.provider.trim()
+    const modelName = newModelForm.modelName.trim()
+    const gatewayIdentifier = newModelForm.gatewayIdentifier.trim()
+
+    if (!provider || !modelName || !gatewayIdentifier) {
+      setError('Preencha provider, modelName e gatewayIdentifier')
+      return
+    }
+
+    setCreating(true)
+    try {
+      const cachedRaw = newModelForm.cachedInputPricePerMillion.trim()
+      const cachedValue = cachedRaw === '' ? undefined : Number(cachedRaw)
+      if (cachedValue !== undefined && (!Number.isFinite(cachedValue) || cachedValue < 0)) {
+        throw new Error('cachedInputPricePerMillion inválido')
+      }
+
+      const response = await fetch('/api/ai-gateway/models', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider,
+          modelName,
+          gatewayIdentifier,
+          capabilities: {
+            text: true,
+            vision: newModelForm.capabilities.vision,
+            tools: newModelForm.capabilities.tools,
+            streaming: newModelForm.capabilities.streaming,
+            caching: newModelForm.capabilities.caching,
+          },
+          contextWindow: newModelForm.contextWindow,
+          maxOutputTokens: newModelForm.maxOutputTokens,
+          inputPricePerMillion: newModelForm.inputPricePerMillion,
+          outputPricePerMillion: newModelForm.outputPricePerMillion,
+          cachedInputPricePerMillion: cachedValue,
+          isActive: newModelForm.isActive,
+          description: newModelForm.description,
+        }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Falha ao criar modelo')
+      }
+
+      setSuccess('Modelo criado com sucesso')
+      setIsAddDialogOpen(false)
+      setNewModelForm({
+        provider: '',
+        modelName: '',
+        gatewayIdentifier: '',
+        contextWindow: 4096,
+        maxOutputTokens: 2048,
+        inputPricePerMillion: 0,
+        outputPricePerMillion: 0,
+        cachedInputPricePerMillion: '',
+        description: '',
+        isActive: true,
+        capabilities: {
+          vision: false,
+          tools: true,
+          streaming: true,
+          caching: false,
+        },
+      })
+      fetchModels()
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setCreating(false)
+    }
+  }
+
   const groupedModels = models.reduce((acc, model) => {
     if (!acc[model.provider]) {
       acc[model.provider] = []
@@ -225,28 +331,264 @@ export default function AIGatewayModelsPage() {
             </p>
           </div>
 
-        {/* Note: Add model functionality coming in future update */}
-        {/* 
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Adicionar Modelo
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Adicionar Novo Modelo</DialogTitle>
-              <DialogDescription>
-                Configure um novo modelo de IA para uso no Gateway
-              </DialogDescription>
-            </DialogHeader>
-            <p className="text-sm text-muted-foreground">
-              Form implementation pending...
-            </p>
-          </DialogContent>
-        </Dialog>
-        */}
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button disabled={!canEdit}>
+                <Plus className="w-4 h-4 mr-2" />
+                Adicionar Modelo
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Adicionar Novo Modelo</DialogTitle>
+                <DialogDescription>
+                  Crie um modelo no registry (somente admin). Ex.: provider=openai, modelName=gpt-4o-mini,
+                  gatewayIdentifier=openai/gpt-4o-mini
+                </DialogDescription>
+              </DialogHeader>
+
+              {!canEdit && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>Somente admin pode adicionar modelos.</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="provider">Provider</Label>
+                    <Input
+                      id="provider"
+                      placeholder="openai | groq | anthropic | google"
+                      value={newModelForm.provider}
+                      onChange={(e) => setNewModelForm((p) => ({ ...p, provider: e.target.value }))}
+                      disabled={!canEdit}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="modelName">Model Name</Label>
+                    <Input
+                      id="modelName"
+                      placeholder="gpt-4o-mini"
+                      value={newModelForm.modelName}
+                      onChange={(e) => setNewModelForm((p) => ({ ...p, modelName: e.target.value }))}
+                      disabled={!canEdit}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="gatewayIdentifier">Gateway Identifier</Label>
+                    <Input
+                      id="gatewayIdentifier"
+                      placeholder="openai/gpt-4o-mini"
+                      value={newModelForm.gatewayIdentifier}
+                      onChange={(e) =>
+                        setNewModelForm((p) => ({ ...p, gatewayIdentifier: e.target.value }))
+                      }
+                      disabled={!canEdit}
+                      className="font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="contextWindow">Context Window</Label>
+                    <Input
+                      id="contextWindow"
+                      type="number"
+                      value={newModelForm.contextWindow}
+                      onChange={(e) =>
+                        setNewModelForm((p) => ({
+                          ...p,
+                          contextWindow: Number(e.target.value) || 0,
+                        }))
+                      }
+                      disabled={!canEdit}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="maxOutputTokens">Max Output Tokens</Label>
+                    <Input
+                      id="maxOutputTokens"
+                      type="number"
+                      value={newModelForm.maxOutputTokens}
+                      onChange={(e) =>
+                        setNewModelForm((p) => ({
+                          ...p,
+                          maxOutputTokens: Number(e.target.value) || 0,
+                        }))
+                      }
+                      disabled={!canEdit}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="inputPricePerMillion">Input (USD / 1M)</Label>
+                    <Input
+                      id="inputPricePerMillion"
+                      type="number"
+                      step="0.0001"
+                      value={newModelForm.inputPricePerMillion}
+                      onChange={(e) =>
+                        setNewModelForm((p) => ({
+                          ...p,
+                          inputPricePerMillion: Number(e.target.value) || 0,
+                        }))
+                      }
+                      disabled={!canEdit}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="outputPricePerMillion">Output (USD / 1M)</Label>
+                    <Input
+                      id="outputPricePerMillion"
+                      type="number"
+                      step="0.0001"
+                      value={newModelForm.outputPricePerMillion}
+                      onChange={(e) =>
+                        setNewModelForm((p) => ({
+                          ...p,
+                          outputPricePerMillion: Number(e.target.value) || 0,
+                        }))
+                      }
+                      disabled={!canEdit}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cachedInputPricePerMillion">Cached Input (opcional)</Label>
+                    <Input
+                      id="cachedInputPricePerMillion"
+                      type="number"
+                      step="0.0001"
+                      value={newModelForm.cachedInputPricePerMillion}
+                      onChange={(e) =>
+                        setNewModelForm((p) => ({
+                          ...p,
+                          cachedInputPricePerMillion: e.target.value,
+                        }))
+                      }
+                      placeholder="(vazio se não aplica)"
+                      disabled={!canEdit}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description">Descrição</Label>
+                  <Input
+                    id="description"
+                    value={newModelForm.description}
+                    onChange={(e) => setNewModelForm((p) => ({ ...p, description: e.target.value }))}
+                    disabled={!canEdit}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="flex items-center justify-between p-3 border rounded">
+                    <div>
+                      <Label>Vision</Label>
+                      <p className="text-xs text-muted-foreground">Suporta imagem</p>
+                    </div>
+                    <Switch
+                      checked={newModelForm.capabilities.vision}
+                      onCheckedChange={(checked) =>
+                        setNewModelForm((p) => ({
+                          ...p,
+                          capabilities: { ...p.capabilities, vision: checked },
+                        }))
+                      }
+                      disabled={!canEdit}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-3 border rounded">
+                    <div>
+                      <Label>Tools</Label>
+                      <p className="text-xs text-muted-foreground">Function calling</p>
+                    </div>
+                    <Switch
+                      checked={newModelForm.capabilities.tools}
+                      onCheckedChange={(checked) =>
+                        setNewModelForm((p) => ({
+                          ...p,
+                          capabilities: { ...p.capabilities, tools: checked },
+                        }))
+                      }
+                      disabled={!canEdit}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-3 border rounded">
+                    <div>
+                      <Label>Ativo</Label>
+                      <p className="text-xs text-muted-foreground">Disponível no gateway</p>
+                    </div>
+                    <Switch
+                      checked={newModelForm.isActive}
+                      onCheckedChange={(checked) => setNewModelForm((p) => ({ ...p, isActive: checked }))}
+                      disabled={!canEdit}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="flex items-center justify-between p-3 border rounded">
+                    <div>
+                      <Label>Streaming</Label>
+                      <p className="text-xs text-muted-foreground">Respostas em streaming</p>
+                    </div>
+                    <Switch
+                      checked={newModelForm.capabilities.streaming}
+                      onCheckedChange={(checked) =>
+                        setNewModelForm((p) => ({
+                          ...p,
+                          capabilities: { ...p.capabilities, streaming: checked },
+                        }))
+                      }
+                      disabled={!canEdit}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-3 border rounded">
+                    <div>
+                      <Label>Caching</Label>
+                      <p className="text-xs text-muted-foreground">Prompt caching</p>
+                    </div>
+                    <Switch
+                      checked={newModelForm.capabilities.caching}
+                      onCheckedChange={(checked) =>
+                        setNewModelForm((p) => ({
+                          ...p,
+                          capabilities: { ...p.capabilities, caching: checked },
+                        }))
+                      }
+                      disabled={!canEdit}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button onClick={handleCreateModel} disabled={!canEdit || creating}>
+                    {creating ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Criando...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Criar Modelo
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
       </div>
 
       {/* Alerts */}
