@@ -69,6 +69,65 @@ export interface AIResponse {
 }
 
 // =====================================================
+// INTERNAL HELPERS
+// =====================================================
+
+const normalizeToolsForAISDK = (
+  tools: AICallConfig["tools"],
+): AICallConfig["tools"] | undefined => {
+  if (!tools) {
+    return undefined;
+  }
+
+  const entries = Object.entries(tools);
+  const normalizedEntries = entries
+    .map(([name, toolDef]) => {
+      if (!toolDef || typeof toolDef !== "object") {
+        return null;
+      }
+
+      // AI SDK v5 expects `inputSchema`. Older code may still use `parameters`.
+      const inputSchema = (toolDef as any).inputSchema ??
+        (toolDef as any).parameters;
+
+      if (!inputSchema) {
+        return null;
+      }
+
+      return [name, { ...(toolDef as any), inputSchema }] as const;
+    })
+    .filter(Boolean) as Array<readonly [string, any]>;
+
+  if (normalizedEntries.length === 0) {
+    return undefined;
+  }
+
+  return Object.fromEntries(normalizedEntries);
+};
+
+const logToolsDebug = (tools: AICallConfig["tools"] | undefined) => {
+  if (process.env.AI_GATEWAY_DEBUG_TOOLS !== "true") {
+    return;
+  }
+
+  const toolNames = tools ? Object.keys(tools) : [];
+  console.log(
+    `[AI Gateway][Tools] toolCount=${toolNames.length} tools=${
+      toolNames.join(",")
+    }`,
+  );
+
+  toolNames.forEach((name) => {
+    const toolDef: any = tools?.[name];
+    const schema = toolDef?.inputSchema;
+    const schemaType = schema?.constructor?.name ?? typeof schema;
+    console.log(
+      `[AI Gateway][Tools] ${name}: hasInputSchema=${!!schema} schemaType=${schemaType}`,
+    );
+  });
+};
+
+// =====================================================
 // MAIN FUNCTION: callAI
 // =====================================================
 /**
@@ -116,6 +175,7 @@ const callAIViaGateway = async (
   startTime: number,
 ): Promise<AIResponse> => {
   const { messages, tools, settings = {} } = config;
+  const normalizedTools = normalizeToolsForAISDK(tools);
 
   try {
     // Determine which model to use (from client config)
@@ -134,11 +194,13 @@ const callAIViaGateway = async (
     // Get provider instance with provider-specific key
     const providerInstance = getGatewayProvider(provider, providerApiKey);
 
+    logToolsDebug(normalizedTools);
+
     // Generate response using Vercel AI SDK with telemetry
     const result = await generateText({
       model: providerInstance(primaryModel),
       messages,
-      tools,
+      tools: normalizedTools,
       temperature: settings.temperature ?? 0.7,
       experimental_telemetry: { isEnabled: true }, // ✅ Enable telemetry
     });
@@ -249,6 +311,7 @@ const callAIWithFallback = async (
   primaryError: string,
 ): Promise<AIResponse> => {
   const { messages, tools, settings = {} } = config;
+  const normalizedTools = normalizeToolsForAISDK(tools);
 
   // Try each model in fallback chain
   for (const fallbackModelIdentifier of gatewayConfig.defaultFallbackChain) {
@@ -273,11 +336,13 @@ const callAIWithFallback = async (
       // Get provider instance with provider-specific key
       const providerInstance = getGatewayProvider(provider, providerApiKey);
 
+      logToolsDebug(normalizedTools);
+
       // Generate response
       const result = await generateText({
         model: providerInstance(model),
         messages,
-        tools,
+        tools: normalizedTools,
         temperature: settings.temperature ?? 0.7,
       });
 
