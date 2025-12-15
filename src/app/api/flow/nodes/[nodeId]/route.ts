@@ -47,6 +47,7 @@ export async function GET(
       detect_repetition: "repetition_detector:similarity_threshold",
       search_document: "doc_search:config",
       handle_audio_tool: "tts:config",
+      fast_track_router: "fast_track:enabled", // 🚀 Fast Track Router
     };
 
     const configKey = configKeyMap[nodeId];
@@ -262,6 +263,7 @@ export async function PATCH(
       detect_repetition: "repetition_detector:similarity_threshold",
       search_document: "doc_search:config",
       handle_audio_tool: "tts:config",
+      fast_track_router: "fast_track:enabled", // 🚀 Fast Track Router
     };
 
     const configKey = configKeyMap[nodeId];
@@ -505,6 +507,15 @@ function getRelatedConfigKeys(nodeId: string): string[] {
       "tts:speed",
       "tts:auto_offer",
     ],
+    fast_track_router: [
+      "fast_track:enabled",
+      "fast_track:router_model",
+      "fast_track:similarity_threshold",
+      "fast_track:catalog",
+      "fast_track:keywords",
+      "fast_track:match_mode",
+      "fast_track:disable_tools",
+    ],
   };
 
   return relatedKeysMap[nodeId] || [];
@@ -608,6 +619,26 @@ function getDefaultConfig(nodeId: string): Record<string, any> {
       voice: "alloy",
       speed: 1.0,
       auto_offer: true,
+    },
+    fast_track_router: {
+      enabled: false, // Disabled by default - tenant must opt-in
+      router_model: "gpt-4o-mini", // Cheapest GPT-4 model
+      similarity_threshold: 0.80, // High threshold to avoid false positives
+      catalog: [
+        // Example catalog (tenant should customize this)
+        {
+          topic: "faq_example",
+          canonical: "Quais são os serviços disponíveis?",
+          examples: [
+            "que serviços vocês oferecem?",
+            "me fala sobre os serviços",
+            "o que vocês fazem?",
+          ],
+        },
+      ],
+      keywords: [], // Optional prefilter keywords
+      match_mode: "contains", // 'contains' or 'starts_with'
+      disable_tools: true, // Disable tools for more stable prompts
     },
   };
 
