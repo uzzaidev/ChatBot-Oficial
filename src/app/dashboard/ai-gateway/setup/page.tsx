@@ -180,12 +180,15 @@ export default function AIGatewaySetupPage() {
     setSuccess(null)
 
     try {
-      // Validate required field
-      if (!config.gatewayApiKey.trim()) {
-        throw new Error('Gateway API Key é obrigatória')
+      const gatewayKey = config.gatewayApiKey.trim()
+      const needsGatewayKey = !currentStatus.hasGatewayKey
+
+      // Only required for first-time setup
+      if (needsGatewayKey && !gatewayKey) {
+        throw new Error('Gateway API Key é obrigatória na primeira configuração')
       }
 
-      if (!config.gatewayApiKey.startsWith('vck_')) {
+      if (gatewayKey && !gatewayKey.startsWith('vck_')) {
         throw new Error('Gateway API Key deve começar com vck_')
       }
 
@@ -193,7 +196,7 @@ export default function AIGatewaySetupPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          gatewayApiKey: config.gatewayApiKey.trim(),
+          gatewayApiKey: gatewayKey || undefined,
           openaiApiKey: config.openaiApiKey.trim() || undefined,
           groqApiKey: config.groqApiKey.trim() || undefined,
           anthropicApiKey: config.anthropicApiKey.trim() || undefined,
@@ -343,7 +346,9 @@ export default function AIGatewaySetupPage() {
           {/* Gateway API Key (required) */}
           <div>
             <Label htmlFor="gatewayKey">
-              Gateway API Key (vck_...) <span className="text-red-500">*</span>
+              Gateway API Key (vck_...) {!currentStatus.hasGatewayKey && (
+                <span className="text-red-500">*</span>
+              )}
             </Label>
             <Input
               id="gatewayKey"
@@ -354,7 +359,9 @@ export default function AIGatewaySetupPage() {
               className="font-mono"
             />
             <p className="text-sm text-muted-foreground mt-1">
-              Obtenha em: https://vercel.com/[seu-usuario]/~/ai
+              {currentStatus.hasGatewayKey
+                ? 'Deixe em branco para manter a key existente.'
+                : 'Obrigatória na primeira configuração. Obtenha em: https://vercel.com/[seu-usuario]/~/ai'}
             </p>
           </div>
 

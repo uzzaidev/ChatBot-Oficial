@@ -242,6 +242,8 @@ export default function BackendPage() {
       : <Loader2 className="h-3 w-3 animate-spin" />
     const statusColor = getStatusColor(log.status)
     const whatsappStatus = extractWhatsAppStatus(log)
+    const aiProvider = (log.output_data && typeof log.output_data === 'object') ? (log.output_data.provider as string | undefined) : undefined
+    const aiModel = (log.output_data && typeof log.output_data === 'object') ? (log.output_data.model as string | undefined) : undefined
 
     return (
       <div key={log.id} className="font-mono text-xs mb-2">
@@ -251,6 +253,11 @@ export default function BackendPage() {
           <span className="font-bold break-all">{log.node_name}</span>
           {log.duration_ms && (
             <span className="text-gray-400 text-[10px] sm:text-xs">({log.duration_ms}ms)</span>
+          )}
+          {aiProvider && aiModel && (
+            <span className="ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs bg-slate-700 text-white">
+              {aiProvider}:{aiModel}
+            </span>
           )}
           {whatsappStatus && (
             <span className="ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs bg-purple-600 text-white flex items-center gap-1">

@@ -797,6 +797,11 @@ export const processChatbotMessage = async (
       contentLength: aiResponse.content?.length || 0,
       hasToolCalls: !!aiResponse.toolCalls,
       toolCount: aiResponse.toolCalls?.length || 0,
+      provider: aiResponse.provider || null,
+      model: aiResponse.model || null,
+      requestId: aiResponse.requestId || null,
+      wasFallback: aiResponse.wasFallback || false,
+      fallbackReason: aiResponse.fallbackReason || null,
     });
 
     // 🔧 Phase 3: Detect Repetition and regenerate if needed (configurable)

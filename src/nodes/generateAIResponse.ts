@@ -372,6 +372,9 @@ export const generateAIResponse = async (
           result.finishReason === "end_turn",
         model: result.model,
         provider: result.provider as any,
+        requestId: result.requestId,
+        wasFallback: result.wasFallback,
+        fallbackReason: result.fallbackReason,
         usage: {
           prompt_tokens: result.usage.promptTokens,
           completion_tokens: result.usage.completionTokens,
