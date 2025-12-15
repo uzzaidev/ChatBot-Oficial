@@ -2,7 +2,8 @@ import { AIResponse, ChatMessage, ClientConfig } from "@/lib/types";
 import { callAI } from "@/lib/ai-gateway";
 import { logGatewayUsage } from "@/lib/ai-gateway/usage-tracking";
 import { shouldUseGateway } from "@/lib/ai-gateway/config";
-import { type CoreMessage, jsonSchema } from "ai";
+import type { CoreMessage } from "ai";
+import { z } from "zod";
 
 // 📝 PROMPT PADRÃO (usado apenas como fallback se config não tiver systemPrompt)
 const DEFAULT_SYSTEM_PROMPT = `## Papel
@@ -304,21 +305,39 @@ export const generateAIResponse = async (
           ? {
             transferir_atendimento: {
               description: HUMAN_HANDOFF_TOOL_DEFINITION.function.description,
-              parameters: jsonSchema(
-                HUMAN_HANDOFF_TOOL_DEFINITION.function.parameters as any,
-              ),
+              parameters: z.object({
+                motivo: z
+                  .string()
+                  .describe(
+                    "Motivo da transferência solicitada pelo usuário",
+                  ),
+              }),
             },
             buscar_documento: {
               description: SEARCH_DOCUMENT_TOOL_DEFINITION.function.description,
-              parameters: jsonSchema(
-                SEARCH_DOCUMENT_TOOL_DEFINITION.function.parameters as any,
-              ),
+              parameters: z.object({
+                query: z
+                  .string()
+                  .describe(
+                    "Termo de busca extraído da solicitação do usuário (nome do arquivo, tipo de documento ou assunto relacionado)",
+                  ),
+                document_type: z
+                  .enum(["any", "catalog", "manual", "faq", "image"])
+                  .default("any")
+                  .describe(
+                    "Tipo de documento a buscar. Use 'any' para buscar em todos os tipos.",
+                  ),
+              }),
             },
             enviar_resposta_em_audio: {
               description: TTS_AUDIO_TOOL_DEFINITION.function.description,
-              parameters: jsonSchema(
-                TTS_AUDIO_TOOL_DEFINITION.function.parameters as any,
-              ),
+              parameters: z.object({
+                texto_para_audio: z
+                  .string()
+                  .describe(
+                    "Texto que será convertido em áudio (sua resposta completa para o cliente)",
+                  ),
+              }),
             },
           }
           : undefined,
@@ -348,6 +367,7 @@ export const generateAIResponse = async (
       // Convert back to AIResponse format
       return {
         content: result.text,
+        toolCalls: result.toolCalls,
         finished: result.finishReason === "stop" ||
           result.finishReason === "end_turn",
         model: result.model,

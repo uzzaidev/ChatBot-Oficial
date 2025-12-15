@@ -44,6 +44,14 @@ export interface AICallConfig {
 
 export interface AIResponse {
   text: string;
+  toolCalls?: Array<{
+    id: string;
+    type: string;
+    function: {
+      name: string;
+      arguments: string;
+    };
+  }>;
   usage: {
     promptTokens: number;
     completionTokens: number;
@@ -63,7 +71,6 @@ export interface AIResponse {
 // =====================================================
 // MAIN FUNCTION: callAI
 // =====================================================
-
 /**
  * Main abstraction layer for AI calls
  * Routes to gateway or direct SDK based on configuration
@@ -148,6 +155,7 @@ const callAIViaGateway = async (
       headers["x-vercel-ai-request-id"];
 
     const usage = result.usage as any;
+    const normalizedToolCalls = normalizeToolCalls((result as any).toolCalls);
 
     // Handle token counting - some providers don't separate prompt/completion tokens
     const promptTokens = usage.promptTokens || 0;
@@ -167,6 +175,7 @@ const callAIViaGateway = async (
 
     const response: AIResponse = {
       text: result.text,
+      toolCalls: normalizedToolCalls,
       usage: {
         promptTokens: inputTokens,
         completionTokens: outputTokens,
@@ -276,6 +285,7 @@ const callAIWithFallback = async (
       const wasCached =
         result.response?.headers?.["x-vercel-ai-cache-status"] === "hit";
       const usage = result.usage as any;
+      const normalizedToolCalls = normalizeToolCalls((result as any).toolCalls);
 
       // Handle token counting - some providers don't separate prompt/completion tokens
       const promptTokens = usage.promptTokens || 0;
@@ -294,6 +304,7 @@ const callAIWithFallback = async (
 
       const response: AIResponse = {
         text: result.text,
+        toolCalls: normalizedToolCalls,
         usage: {
           promptTokens: inputTokens,
           completionTokens: outputTokens,
@@ -375,4 +386,45 @@ const callAIDirectly = async (
 export const streamAI = async (config: AICallConfig) => {
   // Not implemented yet - return regular call for now
   return callAI(config);
+};
+
+const normalizeToolCalls = (
+  toolCalls: unknown,
+): AIResponse["toolCalls"] | undefined => {
+  if (!Array.isArray(toolCalls)) {
+    return undefined;
+  }
+
+  return toolCalls
+    .map((toolCall: any, index: number) => {
+      const name = toolCall?.toolName ||
+        toolCall?.name ||
+        toolCall?.function?.name ||
+        toolCall?.functionName;
+
+      if (!name || typeof name !== "string") {
+        return null;
+      }
+
+      const rawArgs = toolCall?.args ??
+        toolCall?.arguments ??
+        toolCall?.function?.arguments ??
+        toolCall?.input;
+
+      const argsString = typeof rawArgs === "string"
+        ? rawArgs
+        : JSON.stringify(rawArgs ?? {});
+
+      const id = toolCall?.toolCallId || toolCall?.id || `${name}-${index}`;
+
+      return {
+        id,
+        type: "function",
+        function: {
+          name,
+          arguments: argsString,
+        },
+      };
+    })
+    .filter(Boolean) as any;
 };
