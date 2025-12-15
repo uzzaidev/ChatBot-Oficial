@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, Edit, Trash2, Check, AlertTriangle, Save, Plus } from 'lucide-react'
+import { Loader2, Edit, Trash2, Check, AlertTriangle, Save, Plus, Play } from 'lucide-react'
 import { AIGatewayNav } from '@/components/AIGatewayNav'
 import { createClientBrowser } from '@/lib/supabase'
 
@@ -58,6 +58,8 @@ export default function AIGatewayModelsPage() {
   const [editingModel, setEditingModel] = useState<AIModel | null>(null)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [creating, setCreating] = useState(false)
+
+  const [testingModelId, setTestingModelId] = useState<string | null>(null)
 
   const [checkingAdmin, setCheckingAdmin] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
@@ -174,6 +176,51 @@ export default function AIGatewayModelsPage() {
       fetchModels()
     } catch (err: any) {
       setError(err.message)
+    }
+  }
+
+  const handleTestModel = async (model: AIModel) => {
+    if (!canEdit) {
+      setError('Somente admin pode testar modelos.')
+      return
+    }
+
+    setError(null)
+    setSuccess(null)
+    setTestingModelId(model.id)
+
+    try {
+      const response = await fetch('/api/ai-gateway/models/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: model.id,
+          gatewayIdentifier: model.displayName,
+        }),
+      })
+
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        throw new Error(data.error || 'Falha ao testar modelo')
+      }
+
+      if (data.ok === true) {
+        const info = typeof data.info === 'string' && data.info.trim() ? ` ${data.info.trim()}` : ''
+        const requestId = typeof data.requestId === 'string' && data.requestId.trim() ? ` requestId=${data.requestId.trim()}` : ''
+        const finishReason = typeof data.finishReason === 'string' && data.finishReason.trim() ? ` finish=${data.finishReason.trim()}` : ''
+        const usage = data.usage && typeof data.usage === 'object' && typeof data.usage.totalTokens === 'number'
+          ? ` tokens=${data.usage.totalTokens}`
+          : ''
+        setSuccess(
+          `Teste OK: ${data.provider}/${data.model} (${data.latencyMs}ms). Preview: ${data.outputPreview || 'OK'}.${info}${requestId}${finishReason}${usage}`,
+        )
+      } else {
+        setError(data.error || 'Falha ao testar modelo')
+      }
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setTestingModelId(null)
     }
   }
 
@@ -683,6 +730,19 @@ export default function AIGatewayModelsPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex gap-2 justify-end">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleTestModel(model)}
+                              disabled={!canEdit || testingModelId === model.id}
+                              title="Testar este modelo"
+                            >
+                              {testingModelId === model.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Play className="w-4 h-4" />
+                              )}
+                            </Button>
                             <Button
                               variant="ghost"
                               size="sm"

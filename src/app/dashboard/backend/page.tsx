@@ -242,8 +242,7 @@ export default function BackendPage() {
       : <Loader2 className="h-3 w-3 animate-spin" />
     const statusColor = getStatusColor(log.status)
     const whatsappStatus = extractWhatsAppStatus(log)
-    const aiProvider = (log.output_data && typeof log.output_data === 'object') ? (log.output_data.provider as string | undefined) : undefined
-    const aiModel = (log.output_data && typeof log.output_data === 'object') ? (log.output_data.model as string | undefined) : undefined
+    const aiBadges = renderAIModelBadges(log)
 
     return (
       <div key={log.id} className="font-mono text-xs mb-2">
@@ -254,9 +253,9 @@ export default function BackendPage() {
           {log.duration_ms && (
             <span className="text-gray-400 text-[10px] sm:text-xs">({log.duration_ms}ms)</span>
           )}
-          {aiProvider && aiModel && (
-            <span className="ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs bg-slate-700 text-white">
-              {aiProvider}:{aiModel}
+          {aiBadges && (
+            <span className="ml-1 sm:ml-2">
+              {aiBadges}
             </span>
           )}
           {whatsappStatus && (
@@ -303,6 +302,50 @@ export default function BackendPage() {
               {formatJSON(log.error)}
             </pre>
           </div>
+        )}
+      </div>
+    )
+  }
+
+  const renderAIModelBadges = (log: ExecutionLog) => {
+    const output = log.output_data || {}
+    const provider = output.provider
+    const model = output.model
+
+    const primaryAttemptedProvider = output.primaryAttemptedProvider
+    const primaryAttemptedModel = output.primaryAttemptedModel
+    const fallbackUsedProvider = output.fallbackUsedProvider
+    const fallbackUsedModel = output.fallbackUsedModel
+    const wasFallback = output.wasFallback === true
+
+    const finalLabel = provider && model ? `${provider}:${model}` : null
+
+    const primaryLabel = primaryAttemptedProvider && primaryAttemptedModel
+      ? `${primaryAttemptedProvider}:${primaryAttemptedModel}`
+      : null
+
+    const fallbackLabel = fallbackUsedProvider && fallbackUsedModel
+      ? `${fallbackUsedProvider}:${fallbackUsedModel}`
+      : null
+
+    if (!finalLabel && !primaryLabel && !fallbackLabel) return null
+
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        {primaryLabel && (
+          <Badge variant="outline" className="text-xs">
+            Primary: {primaryLabel}
+          </Badge>
+        )}
+        {wasFallback && fallbackLabel && (
+          <Badge variant="secondary" className="text-xs">
+            Fallback: {fallbackLabel}
+          </Badge>
+        )}
+        {!primaryLabel && finalLabel && (
+          <Badge variant="outline" className="text-xs">
+            Model: {finalLabel}
+          </Badge>
         )}
       </div>
     )

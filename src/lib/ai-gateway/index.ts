@@ -63,6 +63,10 @@ export interface AIResponse {
   wasCached: boolean;
   wasFallback: boolean;
   fallbackReason?: string;
+  primaryAttemptedProvider?: string;
+  primaryAttemptedModel?: string;
+  fallbackUsedProvider?: string;
+  fallbackUsedModel?: string;
   latencyMs: number;
   requestId?: string;
   finishReason?: string;
@@ -184,6 +188,9 @@ const callAIViaGateway = async (
     const provider =
       (config.clientConfig.primaryModelProvider || "openai") as any;
 
+    const primaryAttemptedProvider = provider;
+    const primaryAttemptedModel = primaryModel;
+
     // Get provider-specific API key (NOT gateway key!)
     const providerApiKey = gatewayConfig.providerKeys[provider];
 
@@ -248,6 +255,8 @@ const callAIViaGateway = async (
       provider: actualProvider,
       wasCached,
       wasFallback: false,
+      primaryAttemptedProvider,
+      primaryAttemptedModel,
       latencyMs,
       requestId,
       finishReason: result.finishReason,
@@ -293,6 +302,8 @@ const callAIViaGateway = async (
         gatewayConfig,
         startTime,
         error.message,
+        primaryAttemptedProvider,
+        primaryAttemptedModel,
       );
     }
 
@@ -309,6 +320,8 @@ const callAIWithFallback = async (
   gatewayConfig: any,
   startTime: number,
   primaryError: string,
+  primaryAttemptedProvider?: string,
+  primaryAttemptedModel?: string,
 ): Promise<AIResponse> => {
   const { messages, tools, settings = {} } = config;
   const normalizedTools = normalizeToolsForAISDK(tools);
@@ -381,6 +394,10 @@ const callAIWithFallback = async (
         wasCached,
         wasFallback: true,
         fallbackReason: primaryError,
+        primaryAttemptedProvider,
+        primaryAttemptedModel,
+        fallbackUsedProvider: provider,
+        fallbackUsedModel: model,
         latencyMs,
         requestId: result.response?.headers?.["x-vercel-ai-request-id"],
         finishReason: result.finishReason,
