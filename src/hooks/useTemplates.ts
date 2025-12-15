@@ -41,10 +41,11 @@ export const useTemplates = ({
       const queryString = params.toString();
       const url = `/api/templates${queryString ? `?${queryString}` : ""}`;
 
-      const response = await apiFetch<{
+      const res = await apiFetch(url);
+      const response = (await res.json()) as {
         templates: MessageTemplate[];
         count: number;
-      }>(url);
+      };
 
       setTemplates(response.templates);
       setTotal(response.count);
@@ -63,12 +64,13 @@ export const useTemplates = ({
       try {
         setError(null);
 
-        const response = await apiFetch<{
-          message: string;
-          template: MessageTemplate;
-        }>(`/api/templates/${templateId}/submit`, {
+        const res = await apiFetch(`/api/templates/${templateId}/submit`, {
           method: "POST",
         });
+        const response = (await res.json()) as {
+          message: string;
+          template: MessageTemplate;
+        };
 
         // Update the template in the list
         setTemplates((prev) =>
@@ -118,16 +120,7 @@ export const useTemplates = ({
     try {
       setError(null);
 
-      await apiFetch<{
-        message: string;
-        synced: number;
-        templates: Array<{
-          id: string;
-          name: string;
-          old_status: string;
-          new_status: string;
-        }>;
-      }>("/api/templates/sync", {
+      await apiFetch("/api/templates/sync", {
         method: "POST",
       });
 

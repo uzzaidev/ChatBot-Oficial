@@ -106,7 +106,7 @@ export const TemplateList = ({
     );
   }
 
-  if (templates.length === 0) {
+  if (!templates || templates.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center px-4">
         <FileText className="h-16 w-16 text-silver-300 mb-4" />

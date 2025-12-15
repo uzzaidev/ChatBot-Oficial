@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { createServerClient } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,10 +14,13 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = createServerClient()
 
+    console.log('[Admin Clients] Starting request...')
 
     // Verificar autenticação
     const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
+
+    console.log('[Admin Clients] User:', user?.id, 'Auth Error:', authError?.message)
+
     if (authError || !user) {
       return NextResponse.json(
         { error: 'Não autenticado' },
@@ -32,6 +35,8 @@ export async function GET(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
+    console.log('[Admin Clients] User Profile:', currentUserProfile, 'Profile Error:', profileError?.message)
+
     if (profileError || !currentUserProfile) {
       return NextResponse.json(
         { error: 'Perfil de usuário não encontrado' },
@@ -45,21 +50,30 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const statusFilter = searchParams.get('status')
 
+    console.log('[Admin Clients] User role:', currentUserProfile.role)
+    console.log('[Admin Clients] User client_id:', currentUserProfile.client_id)
+
     let query = (supabase.from('clients') as any)
       .select('id, name, slug, status, created_at')
       .order('name', { ascending: true })
 
     // Client admin vê apenas o próprio client
     if (currentUserProfile.role === 'client_admin') {
+      console.log('[Admin Clients] Filtering by client_id (client_admin mode):', currentUserProfile.client_id)
       query = query.eq('id', currentUserProfile.client_id)
+    } else {
+      console.log('[Admin Clients] Fetching ALL clients (admin mode)')
     }
 
     // Aplicar filtro de status se fornecido
     if (statusFilter) {
+      console.log('[Admin Clients] Filtering by status:', statusFilter)
       query = query.eq('status', statusFilter)
     }
 
     const { data: clients, error: clientsError } = await query
+
+    console.log('[Admin Clients] Query result - Clients:', clients?.length || 0, 'Error:', clientsError?.message)
 
     if (clientsError) {
       return NextResponse.json(
@@ -68,6 +82,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    console.log('[Admin Clients] Returning clients:', clients?.map(c => ({ id: c.id, name: c.name })))
 
     return NextResponse.json({
       clients: clients || [],
