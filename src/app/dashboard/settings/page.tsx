@@ -770,7 +770,7 @@ export default function SettingsPage() {
                     <div className="flex items-center gap-2">
                       <Bot className="h-4 w-4 flex-shrink-0" />
                       <div className="flex flex-col items-start">
-                        <span className="font-semibold">OpenAI (GPT-4o)</span>
+                        <span className="font-semibold">OpenAI (GPT)</span>
                         <span className="text-xs text-gray-500">
                           Mais inteligente • Mais lento • Mais caro (~$5/1M tokens)
                         </span>
@@ -867,6 +867,17 @@ export default function SettingsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  {agentConfig.openai_model &&
+                    ![
+                      'gpt-4o',
+                      'gpt-4o-mini',
+                      'gpt-4-turbo',
+                      'gpt-3.5-turbo',
+                    ].includes(agentConfig.openai_model) && (
+                      <SelectItem value={agentConfig.openai_model}>
+                        {agentConfig.openai_model} (Atual)
+                      </SelectItem>
+                    )}
                   <SelectItem value="gpt-4o">GPT-4o (Recomendado)</SelectItem>
                   <SelectItem value="gpt-4o-mini">GPT-4o Mini (Mais rápido)</SelectItem>
                   <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
@@ -914,6 +925,17 @@ export default function SettingsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  {agentConfig.groq_model &&
+                    ![
+                      'llama-3.3-70b-versatile',
+                      'llama-3.1-70b-versatile',
+                      'llama-3.1-8b-instant',
+                      'mixtral-8x7b-32768',
+                    ].includes(agentConfig.groq_model) && (
+                      <SelectItem value={agentConfig.groq_model}>
+                        {agentConfig.groq_model} (Atual)
+                      </SelectItem>
+                    )}
                   <SelectItem value="llama-3.3-70b-versatile">Llama 3.3 70B (Recomendado)</SelectItem>
                   <SelectItem value="llama-3.1-70b-versatile">Llama 3.1 70B</SelectItem>
                   <SelectItem value="llama-3.1-8b-instant">Llama 3.1 8B (Mais rápido)</SelectItem>

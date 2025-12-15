@@ -375,6 +375,10 @@ export const generateAIResponse = async (
         requestId: result.requestId,
         wasFallback: result.wasFallback,
         fallbackReason: result.fallbackReason,
+        primaryAttemptedProvider: result.primaryAttemptedProvider as any,
+        primaryAttemptedModel: result.primaryAttemptedModel,
+        fallbackUsedProvider: result.fallbackUsedProvider as any,
+        fallbackUsedModel: result.fallbackUsedModel,
         usage: {
           prompt_tokens: result.usage.promptTokens,
           completion_tokens: result.usage.completionTokens,

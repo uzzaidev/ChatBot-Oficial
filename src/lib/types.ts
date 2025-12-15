@@ -323,6 +323,10 @@ export interface AIResponse {
   requestId?: string;
   wasFallback?: boolean;
   fallbackReason?: string;
+  primaryAttemptedProvider?: "openai" | "groq" | "anthropic" | "google";
+  primaryAttemptedModel?: string;
+  fallbackUsedProvider?: "openai" | "groq" | "anthropic" | "google";
+  fallbackUsedModel?: string;
 }
 
 export interface ToolCall {

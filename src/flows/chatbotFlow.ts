@@ -802,6 +802,10 @@ export const processChatbotMessage = async (
       requestId: aiResponse.requestId || null,
       wasFallback: aiResponse.wasFallback || false,
       fallbackReason: aiResponse.fallbackReason || null,
+      primaryAttemptedProvider: aiResponse.primaryAttemptedProvider || null,
+      primaryAttemptedModel: aiResponse.primaryAttemptedModel || null,
+      fallbackUsedProvider: aiResponse.fallbackUsedProvider || null,
+      fallbackUsedModel: aiResponse.fallbackUsedModel || null,
     });
 
     // 🔧 Phase 3: Detect Repetition and regenerate if needed (configurable)
