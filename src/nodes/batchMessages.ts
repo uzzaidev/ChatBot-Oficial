@@ -28,15 +28,13 @@ export const batchMessages = async (phone: string, clientId: string): Promise<st
   const messagesKey = `messages:${phone}`
   
   // Generate unique execution ID for this flow
-  const executionId = `${Date.now()}-${Math.random().toString(36).substring(7)}`
+  const executionId = crypto.randomUUID()
 
   try {
     // Get configurable delay from bot_configurations (default 10s)
     const delayConfig = await getBotConfig(clientId, 'batching:delay_seconds')
     const delaySeconds = delayConfig?.config_value 
-      ? (typeof delayConfig.config_value === 'number' 
-          ? delayConfig.config_value 
-          : parseInt(String(delayConfig.config_value), 10))
+      ? Number(delayConfig.config_value) || 10
       : 10
     const BATCH_DELAY_MS = delaySeconds * 1000
 
@@ -105,8 +103,8 @@ export const batchMessages = async (phone: string, clientId: string): Promise<st
     // Always release lock on error
     try {
       await deleteKey(lockKey)
-    } catch {
-      // Ignore cleanup errors
+    } catch (cleanupError) {
+      console.error(`[batchMessages] Failed to cleanup lock for ${phone}:`, cleanupError)
     }
     
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
