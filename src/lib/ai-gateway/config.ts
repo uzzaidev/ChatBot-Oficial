@@ -29,6 +29,20 @@ export interface SharedGatewayConfig {
   maxTokensPerMinute: number;
 }
 
+type SharedGatewayConfigRow = {
+  id: string;
+  gateway_api_key_secret_id: string | null;
+  openai_api_key_secret_id: string | null;
+  groq_api_key_secret_id: string | null;
+  anthropic_api_key_secret_id: string | null;
+  google_api_key_secret_id: string | null;
+  cache_enabled: boolean | null;
+  cache_ttl_seconds: number | null;
+  default_fallback_chain: unknown;
+  max_requests_per_minute: number | null;
+  max_tokens_per_minute: number | null;
+};
+
 // =====================================================
 // CACHE (in-memory)
 // =====================================================
@@ -63,10 +77,12 @@ export const getSharedGatewayConfig = async (): Promise<
     const supabase = createServiceClient();
 
     // Fetch shared config (only 1 record exists)
-    const { data: config, error } = await supabase
-      .from("shared_gateway_config")
+    const { data: config, error } = (await supabase
+      // The Database types in this repo may not include this table yet.
+      // Casting here keeps strict TS builds working without requiring regenerated types.
+      .from("shared_gateway_config" as any)
       .select("*")
-      .maybeSingle();
+      .maybeSingle()) as { data: SharedGatewayConfigRow | null; error: any };
 
     if (error || !config) {
       console.error(
@@ -83,7 +99,7 @@ export const getSharedGatewayConfig = async (): Promise<
     let gatewayApiKey = "";
     if (config.gateway_api_key_secret_id) {
       try {
-        const { data: decryptedKey, error } = await supabase.rpc(
+        const { data: decryptedKey, error } = await (supabase as any).rpc(
           "get_vault_secret",
           {
             p_name: "shared_gateway_api_key",
@@ -103,7 +119,7 @@ export const getSharedGatewayConfig = async (): Promise<
     // OpenAI key - use RPC function
     if (config.openai_api_key_secret_id) {
       try {
-        const { data: decryptedKey, error } = await supabase.rpc(
+        const { data: decryptedKey, error } = await (supabase as any).rpc(
           "get_vault_secret",
           {
             p_name: "shared_openai_api_key",
@@ -123,7 +139,7 @@ export const getSharedGatewayConfig = async (): Promise<
     // Groq key - use RPC function
     if (config.groq_api_key_secret_id) {
       try {
-        const { data: decryptedKey, error } = await supabase.rpc(
+        const { data: decryptedKey, error } = await (supabase as any).rpc(
           "get_vault_secret",
           {
             p_name: "shared_groq_api_key",
@@ -143,7 +159,7 @@ export const getSharedGatewayConfig = async (): Promise<
     // Anthropic key - use RPC function
     if (config.anthropic_api_key_secret_id) {
       try {
-        const { data: decryptedKey, error } = await supabase.rpc(
+        const { data: decryptedKey, error } = await (supabase as any).rpc(
           "get_vault_secret",
           {
             p_name: "shared_anthropic_api_key",
@@ -166,7 +182,7 @@ export const getSharedGatewayConfig = async (): Promise<
     // Google key - use RPC function
     if (config.google_api_key_secret_id) {
       try {
-        const { data: decryptedKey, error } = await supabase.rpc(
+        const { data: decryptedKey, error } = await (supabase as any).rpc(
           "get_vault_secret",
           {
             p_name: "shared_google_api_key",
@@ -220,11 +236,13 @@ export const isClientGatewayEnabled = async (
   try {
     const supabase = createServiceClient();
 
-    const { data } = await supabase
-      .from("clients")
+    const { data } = (await supabase
+      // Supabase generated types may be behind DB migrations (e.g. missing `use_ai_gateway`).
+      // Cast keeps strict builds working until types are regenerated.
+      .from("clients" as any)
       .select("use_ai_gateway")
       .eq("id", clientId)
-      .maybeSingle();
+      .maybeSingle()) as { data: { use_ai_gateway: boolean | null } | null };
 
     return data?.use_ai_gateway === true;
   } catch (error) {
@@ -266,7 +284,7 @@ export const isBudgetExceeded = async (clientId: string): Promise<boolean> => {
   try {
     const supabase = createServiceClient();
 
-    const { data, error } = await supabase.rpc("is_budget_exceeded", {
+    const { data, error } = await (supabase as any).rpc("is_budget_exceeded", {
       p_client_id: clientId,
     });
 
@@ -298,11 +316,22 @@ export const getBudgetUsage = async (
   try {
     const supabase = createServiceClient();
 
-    const { data, error } = await supabase
-      .from("client_budgets")
+    const { data, error } = (await supabase
+      // Supabase generated types may be behind DB migrations for `client_budgets`.
+      .from("client_budgets" as any)
       .select("current_usage, budget_limit, usage_percentage, is_paused")
       .eq("client_id", clientId)
-      .maybeSingle();
+      .maybeSingle()) as {
+        data:
+          | {
+            current_usage: number;
+            budget_limit: number;
+            usage_percentage: number;
+            is_paused: boolean;
+          }
+          | null;
+        error: any;
+      };
 
     if (error || !data) {
       return null;
