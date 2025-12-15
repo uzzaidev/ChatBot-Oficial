@@ -180,3 +180,21 @@ export const get = async (key: string): Promise<string | null> => {
     throw new Error(`Failed to get key from Redis: ${errorMessage}`)
   }
 }
+
+/**
+ * Atomically sets a key with expiry only if it doesn't exist (lock mechanism)
+ * @returns true if lock was acquired, false if lock already exists
+ */
+export const acquireLock = async (key: string, value: string, expirySeconds: number): Promise<boolean> => {
+  try {
+    const client = await getRedisClient()
+    const result = await client.set(key, value, {
+      NX: true, // Only set if key doesn't exist
+      EX: expirySeconds, // Set expiry in seconds
+    })
+    return result === 'OK'
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    throw new Error(`Failed to acquire lock in Redis: ${errorMessage}`)
+  }
+}
