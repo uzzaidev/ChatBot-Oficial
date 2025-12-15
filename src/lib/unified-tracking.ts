@@ -13,47 +13,53 @@
  * - Backward compatible with usage_logs
  */
 
-import { createServerClient } from '@/lib/supabase-server'
-import { convertUSDtoBRL, getExchangeRate } from '@/lib/currency'
+import { createServerClient } from "@/lib/supabase-server";
+import { convertUSDtoBRL, getExchangeRate } from "@/lib/currency";
 
 // =====================================================
 // TYPES
 // =====================================================
 
-export type APIType = 'chat' | 'tts' | 'whisper' | 'vision' | 'embeddings' | 'image-gen'
-export type Provider = 'openai' | 'groq' | 'anthropic' | 'google'
+export type APIType =
+  | "chat"
+  | "tts"
+  | "whisper"
+  | "vision"
+  | "embeddings"
+  | "image-gen";
+export type Provider = "openai" | "groq" | "anthropic" | "google";
 
 export interface UnifiedTrackingParams {
   // Client context
-  clientId: string
-  conversationId?: string
-  phone: string
+  clientId: string;
+  conversationId?: string;
+  phone: string;
 
   // API identification
-  apiType: APIType
-  provider: Provider
-  modelName: string
+  apiType: APIType;
+  provider: Provider;
+  modelName: string;
 
   // Token-based usage (chat, embeddings)
-  inputTokens?: number
-  outputTokens?: number
-  cachedTokens?: number
+  inputTokens?: number;
+  outputTokens?: number;
+  cachedTokens?: number;
 
   // Unit-based usage
-  characters?: number // TTS: character count
-  seconds?: number // Whisper: audio duration in seconds
-  images?: number // Vision/Image-gen: number of images
+  characters?: number; // TTS: character count
+  seconds?: number; // Whisper: audio duration in seconds
+  images?: number; // Vision/Image-gen: number of images
 
   // Performance
-  latencyMs?: number
-  wasCached?: boolean
-  wasFallback?: boolean
-  fallbackReason?: string
-  requestId?: string
-  metadata?: Record<string, any>
+  latencyMs?: number;
+  wasCached?: boolean;
+  wasFallback?: boolean;
+  fallbackReason?: string;
+  requestId?: string;
+  metadata?: Record<string, any>;
 
   // Optional: Pre-calculated cost (if already known)
-  costUSD?: number
+  costUSD?: number;
 }
 
 // =====================================================
@@ -72,7 +78,9 @@ export interface UnifiedTrackingParams {
  * 6. Increment modular budget (tokens + BRL)
  * 7. Check budget limits
  */
-export const trackUnifiedUsage = async (params: UnifiedTrackingParams): Promise<void> => {
+export const trackUnifiedUsage = async (
+  params: UnifiedTrackingParams,
+): Promise<void> => {
   const {
     clientId,
     conversationId,
@@ -93,34 +101,36 @@ export const trackUnifiedUsage = async (params: UnifiedTrackingParams): Promise<
     requestId,
     metadata = {},
     costUSD: providedCostUSD,
-  } = params
+  } = params;
 
   try {
-    const supabase = createServerClient()
+    const supabase = createServerClient();
 
     // =====================================================
     // 1. CALCULATE TOTAL TOKENS
     // =====================================================
 
-    const totalTokens = inputTokens + outputTokens
+    const totalTokens = inputTokens + outputTokens;
 
     // =====================================================
     // 2. GET PRICING FROM ai_models_registry
     // =====================================================
 
-    const gatewayIdentifier = `${provider}/${modelName}`
+    const gatewayIdentifier = `${provider}/${modelName}`;
 
     const { data: modelData, error: modelError } = await supabase
-      .from('ai_models_registry')
-      .select('id, input_price_per_million, output_price_per_million, cached_input_price_per_million')
-      .eq('gateway_identifier', gatewayIdentifier)
-      .single()
+      .from("ai_models_registry")
+      .select(
+        "id, input_price_per_million, output_price_per_million, cached_input_price_per_million",
+      )
+      .eq("gateway_identifier", gatewayIdentifier)
+      .single();
 
     // =====================================================
     // 3. CALCULATE COST USD
     // =====================================================
 
-    let costUSD = providedCostUSD || 0
+    let costUSD = providedCostUSD || 0;
 
     if (!providedCostUSD) {
       costUSD = calculateCostFromRegistry({
@@ -132,24 +142,24 @@ export const trackUnifiedUsage = async (params: UnifiedTrackingParams): Promise<
         characters,
         seconds,
         images,
-      })
+      });
     }
 
     // =====================================================
     // 4. CONVERT TO BRL
     // =====================================================
 
-    const usdToBrlRate = await getExchangeRate('USD', 'BRL')
-    const costBRL = await convertUSDtoBRL(costUSD)
+    const usdToBrlRate = await getExchangeRate("USD", "BRL");
+    const costBRL = await convertUSDtoBRL(costUSD);
 
     // =====================================================
     // 5. INSERT TO gateway_usage_logs
     // =====================================================
 
-    const { error: logError } = await supabase.from('gateway_usage_logs').insert({
+    const baseInsertPayload = {
       client_id: clientId,
       conversation_id: conversationId,
-      phone: phone || 'system',
+      phone: phone || "system",
       request_id: requestId,
       api_type: apiType,
       provider,
@@ -169,10 +179,33 @@ export const trackUnifiedUsage = async (params: UnifiedTrackingParams): Promise<
       cost_brl: costBRL,
       usd_to_brl_rate: usdToBrlRate,
       metadata,
-    })
+    };
+
+    const { error: logError } = await supabase.from("gateway_usage_logs")
+      .insert(baseInsertPayload);
 
     if (logError) {
-      console.error('[Unified Tracking] Error inserting log:', logError)
+      // Backward compatibility: older DB may not have api_type column yet.
+      const isMissingApiTypeColumn = (logError as any)?.code === "PGRST204" &&
+        typeof (logError as any)?.message === "string" &&
+        (logError as any).message.includes("'api_type'");
+
+      if (isMissingApiTypeColumn) {
+        const { api_type: _apiType, ...payloadWithoutApiType } =
+          baseInsertPayload as any;
+        const { error: retryError } = await supabase
+          .from("gateway_usage_logs")
+          .insert(payloadWithoutApiType);
+
+        if (retryError) {
+          console.error(
+            "[Unified Tracking] Error inserting log (retry without api_type):",
+            retryError,
+          );
+        }
+      } else {
+        console.error("[Unified Tracking] Error inserting log:", logError);
+      }
       // Continue anyway - tracking failure shouldn't break API calls
     }
 
@@ -180,24 +213,32 @@ export const trackUnifiedUsage = async (params: UnifiedTrackingParams): Promise<
     // 6. INCREMENT MODULAR BUDGET (tokens + BRL)
     // =====================================================
 
-    const { error: budgetError } = await supabase.rpc('increment_unified_budget', {
-      p_client_id: clientId,
-      p_tokens: totalTokens,
-      p_cost_brl: costBRL,
-    })
+    const { error: budgetError } = await supabase.rpc(
+      "increment_unified_budget",
+      {
+        p_client_id: clientId,
+        p_tokens: totalTokens,
+        p_cost_brl: costBRL,
+      },
+    );
 
     if (budgetError) {
-      console.error('[Unified Tracking] Error incrementing budget:', budgetError)
+      console.error(
+        "[Unified Tracking] Error incrementing budget:",
+        budgetError,
+      );
     }
 
     // =====================================================
     // 7. CHECK BUDGET STATUS
     // =====================================================
 
-    const budgetAvailable = await checkBudgetAvailable(clientId)
+    const budgetAvailable = await checkBudgetAvailable(clientId);
 
     if (!budgetAvailable) {
-      console.warn(`[Unified Tracking] Budget limit reached for client ${clientId}`)
+      console.warn(
+        `[Unified Tracking] Budget limit reached for client ${clientId}`,
+      );
       // TODO: Send alert email/webhook
     }
 
@@ -217,31 +258,33 @@ export const trackUnifiedUsage = async (params: UnifiedTrackingParams): Promise<
         totalTokens,
         costUSD,
         metadata,
-      })
+      });
     }
 
     console.log(
-      `[Unified Tracking] ${apiType.toUpperCase()}: ${formatUsageAmount(params)} → ${totalTokens} tokens, R$ ${costBRL.toFixed(4)}`
-    )
+      `[Unified Tracking] ${apiType.toUpperCase()}: ${
+        formatUsageAmount(params)
+      } → ${totalTokens} tokens, R$ ${costBRL.toFixed(4)}`,
+    );
   } catch (error: any) {
-    console.error('[Unified Tracking] Error:', error)
+    console.error("[Unified Tracking] Error:", error);
     // Don't throw - tracking failure shouldn't break API calls
   }
-}
+};
 
 // =====================================================
 // COST CALCULATION
 // =====================================================
 
 interface CostCalculationParams {
-  apiType: APIType
-  modelData: any
-  inputTokens: number
-  outputTokens: number
-  cachedTokens: number
-  characters: number
-  seconds: number
-  images: number
+  apiType: APIType;
+  modelData: any;
+  inputTokens: number;
+  outputTokens: number;
+  cachedTokens: number;
+  characters: number;
+  seconds: number;
+  images: number;
 }
 
 const calculateCostFromRegistry = (params: CostCalculationParams): number => {
@@ -254,130 +297,147 @@ const calculateCostFromRegistry = (params: CostCalculationParams): number => {
     characters,
     seconds,
     images,
-  } = params
+  } = params;
 
   // If no pricing data, use hardcoded fallback
   if (!modelData) {
-    return calculateFallbackCost(params)
+    return calculateFallbackCost(params);
   }
 
   switch (apiType) {
-    case 'chat':
-    case 'embeddings':
+    case "chat":
+    case "embeddings":
       // Token-based pricing
-      const inputCost = (inputTokens / 1_000_000) * (modelData.input_price_per_million || 0)
-      const outputCost = (outputTokens / 1_000_000) * (modelData.output_price_per_million || 0)
-      const cachedCost = cachedTokens > 0 && modelData.cached_input_price_per_million
-        ? (cachedTokens / 1_000_000) * modelData.cached_input_price_per_million
-        : 0
+      const inputCost = (inputTokens / 1_000_000) *
+        (modelData.input_price_per_million || 0);
+      const outputCost = (outputTokens / 1_000_000) *
+        (modelData.output_price_per_million || 0);
+      const cachedCost =
+        cachedTokens > 0 && modelData.cached_input_price_per_million
+          ? (cachedTokens / 1_000_000) *
+            modelData.cached_input_price_per_million
+          : 0;
 
-      return inputCost + outputCost - cachedCost
+      return inputCost + outputCost - cachedCost;
 
-    case 'tts':
+    case "tts":
       // TTS pricing: ~$15/1M characters (tts-1-hd) or $7.50/1M (tts-1)
       // Convert to per-character cost
-      const costPerMillion = modelData.input_price_per_million || 15.0
-      return (characters / 1_000_000) * costPerMillion
+      const costPerMillion = modelData.input_price_per_million || 15.0;
+      return (characters / 1_000_000) * costPerMillion;
 
-    case 'whisper':
+    case "whisper":
       // Whisper: $0.006 per minute
-      const minutes = seconds / 60
-      const costPerMinute = modelData.input_price_per_million || 0.006
-      return minutes * costPerMinute
+      const minutes = seconds / 60;
+      const costPerMinute = modelData.input_price_per_million || 0.006;
+      return minutes * costPerMinute;
 
-    case 'vision':
-    case 'image-gen':
+    case "vision":
+    case "image-gen":
       // Per-image pricing
-      const costPerImage = modelData.output_price_per_million || 0.01275
-      return images * costPerImage
+      const costPerImage = modelData.output_price_per_million || 0.01275;
+      return images * costPerImage;
 
     default:
-      return 0
+      return 0;
   }
-}
+};
 
 /**
  * Fallback pricing when ai_models_registry doesn't have data
  */
 const calculateFallbackCost = (params: CostCalculationParams): number => {
-  const { apiType, inputTokens, outputTokens, cachedTokens, characters, seconds, images } = params
+  const {
+    apiType,
+    inputTokens,
+    outputTokens,
+    cachedTokens,
+    characters,
+    seconds,
+    images,
+  } = params;
 
   switch (apiType) {
-    case 'chat':
+    case "chat":
       // GPT-4o default: $2.5 input, $10 output per 1M tokens
-      return ((inputTokens / 1_000_000) * 2.5) + ((outputTokens / 1_000_000) * 10.0)
+      return ((inputTokens / 1_000_000) * 2.5) +
+        ((outputTokens / 1_000_000) * 10.0);
 
-    case 'tts':
+    case "tts":
       // TTS-1-HD: $15/1M characters
-      return (characters / 1_000_000) * 15.0
+      return (characters / 1_000_000) * 15.0;
 
-    case 'whisper':
+    case "whisper":
       // Whisper: $0.006/minute
-      return (seconds / 60) * 0.006
+      return (seconds / 60) * 0.006;
 
-    case 'vision':
+    case "vision":
       // GPT-4o Vision: $0.01275 per image
-      return images * 0.01275
+      return images * 0.01275;
 
-    case 'embeddings':
+    case "embeddings":
       // text-embedding-3-small: $0.02/1M tokens
-      return (inputTokens / 1_000_000) * 0.02
+      return (inputTokens / 1_000_000) * 0.02;
 
-    case 'image-gen':
+    case "image-gen":
       // DALL-E 3: $0.04 per image (1024x1024)
-      return images * 0.04
+      return images * 0.04;
 
     default:
-      console.warn(`[Unified Tracking] Unknown API type for fallback pricing: ${apiType}`)
-      return 0
+      console.warn(
+        `[Unified Tracking] Unknown API type for fallback pricing: ${apiType}`,
+      );
+      return 0;
   }
-}
+};
 
 // =====================================================
 // BUDGET CHECKING
 // =====================================================
 
-export const checkBudgetAvailable = async (clientId: string): Promise<boolean> => {
+export const checkBudgetAvailable = async (
+  clientId: string,
+): Promise<boolean> => {
   try {
-    const supabase = createServerClient()
+    const supabase = createServerClient();
 
-    const { data, error } = await supabase.rpc('check_budget_available', {
+    const { data, error } = await supabase.rpc("check_budget_available", {
       p_client_id: clientId,
-    })
+    });
 
     if (error) {
-      console.error('[Budget Check] Error:', error)
-      return true // Graceful degradation: allow on error
+      console.error("[Budget Check] Error:", error);
+      return true; // Graceful degradation: allow on error
     }
 
-    return data === true
+    return data === true;
   } catch (error) {
-    console.error('[Budget Check] Exception:', error)
-    return true
+    console.error("[Budget Check] Exception:", error);
+    return true;
   }
-}
+};
 
 /**
  * Get budget status for a client
  */
 export const getBudgetStatus = async (clientId: string) => {
   try {
-    const supabase = createServerClient()
+    const supabase = createServerClient();
 
     const { data, error } = await supabase
-      .from('budget_status')
-      .select('*')
-      .eq('client_id', clientId)
-      .single()
+      .from("budget_status")
+      .select("*")
+      .eq("client_id", clientId)
+      .single();
 
-    if (error) throw error
+    if (error) throw error;
 
-    return data
+    return data;
   } catch (error) {
-    console.error('[Budget Status] Error:', error)
-    return null
+    console.error("[Budget Status] Error:", error);
+    return null;
   }
-}
+};
 
 // =====================================================
 // HELPERS
@@ -387,37 +447,37 @@ export const getBudgetStatus = async (clientId: string) => {
  * Check if API type should also log to legacy usage_logs
  */
 const isLegacyAPI = (apiType: APIType): boolean => {
-  return ['chat', 'whisper'].includes(apiType)
-}
+  return ["chat", "whisper"].includes(apiType);
+};
 
 /**
  * Map API type to legacy source field
  */
 const mapAPITypeToSource = (apiType: APIType, provider: Provider): string => {
-  if (apiType === 'whisper') return 'whisper'
-  if (provider === 'groq') return 'groq'
-  return 'openai'
-}
+  if (apiType === "whisper") return "whisper";
+  if (provider === "groq") return "groq";
+  return "openai";
+};
 
 /**
  * Insert to legacy usage_logs table (backward compatibility)
  */
 const insertLegacyLog = async (params: {
-  clientId: string
-  conversationId?: string
-  phone: string
-  source: string
-  model: string
-  promptTokens: number
-  completionTokens: number
-  totalTokens: number
-  costUSD: number
-  metadata?: any
+  clientId: string;
+  conversationId?: string;
+  phone: string;
+  source: string;
+  model: string;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  costUSD: number;
+  metadata?: any;
 }): Promise<void> => {
   try {
-    const supabase = createServerClient()
+    const supabase = createServerClient();
 
-    await supabase.from('usage_logs').insert({
+    await supabase.from("usage_logs").insert({
       client_id: params.clientId,
       conversation_id: params.conversationId,
       phone: params.phone,
@@ -428,31 +488,31 @@ const insertLegacyLog = async (params: {
       total_tokens: params.totalTokens,
       cost_usd: params.costUSD,
       metadata: params.metadata,
-    })
+    });
   } catch (error) {
-    console.error('[Legacy Log] Error:', error)
+    console.error("[Legacy Log] Error:", error);
     // Non-critical - don't throw
   }
-}
+};
 
 /**
  * Format usage amount for logging
  */
 const formatUsageAmount = (params: UnifiedTrackingParams): string => {
   switch (params.apiType) {
-    case 'chat':
-      return `${(params.inputTokens || 0) + (params.outputTokens || 0)} tokens`
-    case 'tts':
-      return `${params.characters} chars`
-    case 'whisper':
-      return `${Math.ceil((params.seconds || 0) / 60)} min`
-    case 'vision':
-      return `${params.images} images`
-    case 'embeddings':
-      return `${params.inputTokens} tokens`
-    case 'image-gen':
-      return `${params.images} images`
+    case "chat":
+      return `${(params.inputTokens || 0) + (params.outputTokens || 0)} tokens`;
+    case "tts":
+      return `${params.characters} chars`;
+    case "whisper":
+      return `${Math.ceil((params.seconds || 0) / 60)} min`;
+    case "vision":
+      return `${params.images} images`;
+    case "embeddings":
+      return `${params.inputTokens} tokens`;
+    case "image-gen":
+      return `${params.images} images`;
     default:
-      return 'unknown'
+      return "unknown";
   }
-}
+};

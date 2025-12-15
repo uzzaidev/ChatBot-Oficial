@@ -2,7 +2,7 @@ import { AIResponse, ChatMessage, ClientConfig } from "@/lib/types";
 import { callAI } from "@/lib/ai-gateway";
 import { logGatewayUsage } from "@/lib/ai-gateway/usage-tracking";
 import { shouldUseGateway } from "@/lib/ai-gateway/config";
-import type { CoreMessage } from "ai";
+import { type CoreMessage, jsonSchema } from "ai";
 
 // 📝 PROMPT PADRÃO (usado apenas como fallback se config não tiver systemPrompt)
 const DEFAULT_SYSTEM_PROMPT = `## Papel
@@ -125,11 +125,13 @@ const SEARCH_DOCUMENT_TOOL_DEFINITION = {
       properties: {
         query: {
           type: "string",
-          description: "Termo de busca extraído da solicitação do usuário (nome do arquivo, tipo de documento ou assunto relacionado)",
+          description:
+            "Termo de busca extraído da solicitação do usuário (nome do arquivo, tipo de documento ou assunto relacionado)",
         },
         document_type: {
           type: "string",
-          description: "Tipo de documento a buscar. SEMPRE use 'any' para buscar em todos os tipos de documentos. Outros valores: 'catalog', 'manual', 'image', 'faq' (use apenas se o usuário for muito específico sobre o tipo)",
+          description:
+            "Tipo de documento a buscar. SEMPRE use 'any' para buscar em todos os tipos de documentos. Outros valores: 'catalog', 'manual', 'image', 'faq' (use apenas se o usuário for muito específico sobre o tipo)",
           enum: ["any", "catalog", "manual", "faq", "image"],
           default: "any",
         },
@@ -143,7 +145,8 @@ const TTS_AUDIO_TOOL_DEFINITION = {
   type: "function",
   function: {
     name: "enviar_resposta_em_audio",
-    description: `Converte sua resposta em mensagem de voz (áudio) ao invés de enviar como texto.
+    description:
+      `Converte sua resposta em mensagem de voz (áudio) ao invés de enviar como texto.
 
 IMPORTANTE: Passe o texto que deseja converter como argumento 'texto_para_audio'.
 
@@ -153,7 +156,8 @@ A decisão de quando usar esta tool deve ser configurada no prompt do sistema pe
       properties: {
         texto_para_audio: {
           type: "string",
-          description: "Texto que será convertido em áudio (sua resposta completa para o cliente)",
+          description:
+            "Texto que será convertido em áudio (sua resposta completa para o cliente)",
         },
       },
       required: ["texto_para_audio"],
@@ -298,19 +302,25 @@ export const generateAIResponse = async (
         messages: coreMessages,
         tools: config.settings.enableTools
           ? {
-              transferir_atendimento: {
-                description: HUMAN_HANDOFF_TOOL_DEFINITION.function.description,
-                parameters: HUMAN_HANDOFF_TOOL_DEFINITION.function.parameters as any,
-              },
-              buscar_documento: {
-                description: SEARCH_DOCUMENT_TOOL_DEFINITION.function.description,
-                parameters: SEARCH_DOCUMENT_TOOL_DEFINITION.function.parameters as any,
-              },
-              enviar_resposta_em_audio: {
-                description: TTS_AUDIO_TOOL_DEFINITION.function.description,
-                parameters: TTS_AUDIO_TOOL_DEFINITION.function.parameters as any,
-              },
-            }
+            transferir_atendimento: {
+              description: HUMAN_HANDOFF_TOOL_DEFINITION.function.description,
+              parameters: jsonSchema(
+                HUMAN_HANDOFF_TOOL_DEFINITION.function.parameters as any,
+              ),
+            },
+            buscar_documento: {
+              description: SEARCH_DOCUMENT_TOOL_DEFINITION.function.description,
+              parameters: jsonSchema(
+                SEARCH_DOCUMENT_TOOL_DEFINITION.function.parameters as any,
+              ),
+            },
+            enviar_resposta_em_audio: {
+              description: TTS_AUDIO_TOOL_DEFINITION.function.description,
+              parameters: jsonSchema(
+                TTS_AUDIO_TOOL_DEFINITION.function.parameters as any,
+              ),
+            },
+          }
           : undefined,
         settings: {
           temperature: config.settings.temperature,
@@ -338,7 +348,8 @@ export const generateAIResponse = async (
       // Convert back to AIResponse format
       return {
         content: result.text,
-        finished: result.finishReason === 'stop' || result.finishReason === 'end_turn',
+        finished: result.finishReason === "stop" ||
+          result.finishReason === "end_turn",
         model: result.model,
         provider: result.provider as any,
         usage: {
@@ -351,7 +362,8 @@ export const generateAIResponse = async (
 
     // 🚫 LEGACY PATH REMOVED: AI Gateway is now required
     // If we reach here, it means AI Gateway is disabled for this client
-    const errorMessage = `AI Gateway is required but disabled for client: ${config.id} (${config.name}). ` +
+    const errorMessage =
+      `AI Gateway is required but disabled for client: ${config.id} (${config.name}). ` +
       `Please enable AI Gateway in client settings or contact support.`;
     console.error(`[AI Gateway Error] ${errorMessage}`);
     throw new Error(errorMessage);
