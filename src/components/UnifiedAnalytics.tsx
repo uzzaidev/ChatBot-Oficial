@@ -32,12 +32,16 @@ interface UnifiedAnalyticsData {
 
   gatewayMetrics: {
     totalGatewayRequests: number
+    totalTokens: number
+    totalUnits: number
     cacheHitRate: number
     averageLatencyMs: number
     totalCostBRL: number
     byApiType: Array<{
       apiType: string
       requests: number
+      tokens: number
+      units: number
       costBRL: number
       percentage: number
     }>
@@ -256,9 +260,11 @@ export function UnifiedAnalytics() {
               <SelectContent>
                 <SelectItem value="all">Todas as APIs</SelectItem>
                 <SelectItem value="chat">Chat (Texto)</SelectItem>
+                <SelectItem value="tts">TTS (Áudio)</SelectItem>
                 <SelectItem value="whisper">Whisper (Áudio)</SelectItem>
                 <SelectItem value="vision">Vision (Imagem)</SelectItem>
                 <SelectItem value="embeddings">Embeddings</SelectItem>
+                <SelectItem value="image-gen">Image Gen</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -400,6 +406,9 @@ export function UnifiedAnalytics() {
             <p className="text-xs text-muted-foreground mt-1">
               {data.gatewayMetrics.totalGatewayRequests.toLocaleString('pt-BR')} via Gateway
             </p>
+            <p className="text-xs text-muted-foreground">
+              {data.gatewayMetrics.totalTokens.toLocaleString('pt-BR')} tokens · {data.gatewayMetrics.totalUnits.toLocaleString('pt-BR')} units
+            </p>
           </CardContent>
         </Card>
 
@@ -478,6 +487,9 @@ export function UnifiedAnalytics() {
                           <p className="font-medium capitalize">{item.apiType}</p>
                           <p className="text-sm text-muted-foreground">
                             {item.requests.toLocaleString('pt-BR')} requests
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {item.tokens.toLocaleString('pt-BR')} tokens · {item.units.toLocaleString('pt-BR')} units
                           </p>
                         </div>
                       </div>

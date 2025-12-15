@@ -190,6 +190,12 @@ export const trackUnifiedUsage = async (
         typeof (logError as any)?.message === "string" &&
         (logError as any).message.includes("'api_type'");
 
+      // Backward compatibility: DB constraint might not include newer api types (e.g. 'tts').
+      const isApiTypeConstraintViolation =
+        (logError as any)?.code === "23514" &&
+        typeof (logError as any)?.message === "string" &&
+        (logError as any).message.includes("gateway_usage_logs_api_type_check");
+
       if (isMissingApiTypeColumn) {
         const { api_type: _apiType, ...payloadWithoutApiType } =
           baseInsertPayload as any;
@@ -200,6 +206,30 @@ export const trackUnifiedUsage = async (
         if (retryError) {
           console.error(
             "[Unified Tracking] Error inserting log (retry without api_type):",
+            retryError,
+          );
+        }
+      } else if (isApiTypeConstraintViolation) {
+        // Retry without api_type so the column default ('chat') is applied.
+        // Preserve the original apiType in metadata so we can diagnose and backfill after migration.
+        const { api_type: _apiType, ...payloadWithoutApiType } =
+          baseInsertPayload as any;
+
+        const retryPayload = {
+          ...payloadWithoutApiType,
+          metadata: {
+            ...(payloadWithoutApiType.metadata ?? {}),
+            api_type_fallback: apiType,
+          },
+        };
+
+        const { error: retryError } = await supabase
+          .from("gateway_usage_logs")
+          .insert(retryPayload);
+
+        if (retryError) {
+          console.error(
+            "[Unified Tracking] Error inserting log (retry without api_type after constraint violation):",
             retryError,
           );
         }
@@ -261,11 +291,13 @@ export const trackUnifiedUsage = async (
       });
     }
 
-    console.log(
-      `[Unified Tracking] ${apiType.toUpperCase()}: ${
-        formatUsageAmount(params)
-      } → ${totalTokens} tokens, R$ ${costBRL.toFixed(4)}`,
-    );
+    if (process.env.UNIFIED_TRACKING_DEBUG === "true") {
+      console.log(
+        `[Unified Tracking] ${apiType.toUpperCase()}: ${
+          formatUsageAmount(params)
+        } → ${totalTokens} tokens, R$ ${costBRL.toFixed(4)}`,
+      );
+    }
   } catch (error: any) {
     console.error("[Unified Tracking] Error:", error);
     // Don't throw - tracking failure shouldn't break API calls
