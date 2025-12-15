@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
-import { Plus, Image as ImageIcon, FileText, Loader2 } from 'lucide-react'
+import { Plus, Image as ImageIcon, FileText, Loader2, MessageSquare } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import {
   DropdownMenu,
@@ -13,9 +13,10 @@ import {
 
 interface MediaUploadButtonProps {
   onFileSelect: (file: File, type: 'image' | 'document') => void
+  onTemplateSelect?: () => void
 }
 
-export const MediaUploadButton = ({ onFileSelect }: MediaUploadButtonProps) => {
+export const MediaUploadButton = ({ onFileSelect, onTemplateSelect }: MediaUploadButtonProps) => {
   const imageInputRef = useRef<HTMLInputElement>(null)
   const documentInputRef = useRef<HTMLInputElement>(null)
 
@@ -43,7 +44,7 @@ export const MediaUploadButton = ({ onFileSelect }: MediaUploadButtonProps) => {
             variant="ghost"
             size="icon"
             className="flex-shrink-0"
-            title="Anexar arquivo"
+            title="Anexar arquivo ou enviar template"
           >
             <Plus className="h-5 w-5" />
           </Button>
@@ -57,6 +58,12 @@ export const MediaUploadButton = ({ onFileSelect }: MediaUploadButtonProps) => {
             <FileText className="h-4 w-4 mr-2" />
             Documento
           </DropdownMenuItem>
+          {onTemplateSelect && (
+            <DropdownMenuItem onClick={onTemplateSelect}>
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Template
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 

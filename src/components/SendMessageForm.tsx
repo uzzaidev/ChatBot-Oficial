@@ -7,6 +7,7 @@ import { toast } from '@/hooks/use-toast'
 import { MediaUploadButton } from '@/components/MediaUploadButton'
 import { AudioRecorder } from '@/components/AudioRecorder'
 import { MediaPreview, type MediaAttachment } from '@/components/MediaPreview'
+import { TemplateSelectorDialog } from '@/components/TemplateSelectorDialog'
 import type { Message } from '@/lib/types'
 
 const MAX_TEXTAREA_HEIGHT = 120 // Maximum height for textarea expansion (about 5 lines)
@@ -39,6 +40,7 @@ export const SendMessageForm = ({
   const [sending, setSending] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
   const [hasRecordedAudio, setHasRecordedAudio] = useState(false)
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Auto-expand textarea like WhatsApp
@@ -189,6 +191,15 @@ export const SendMessageForm = ({
 
   return (
     <div className="flex flex-col gap-2">
+      {/* Template Selector Dialog */}
+      <TemplateSelectorDialog
+        open={showTemplateDialog}
+        onOpenChange={setShowTemplateDialog}
+        phone={phone}
+        clientId={clientId}
+        onTemplateSent={onMessageSent}
+      />
+
       {/* Preview de anexos */}
       <MediaPreview
         attachments={attachments}
@@ -201,6 +212,7 @@ export const SendMessageForm = ({
           <div className="flex-shrink-0">
             <MediaUploadButton
               onFileSelect={onAddAttachment}
+              onTemplateSelect={() => setShowTemplateDialog(true)}
             />
           </div>
         )}

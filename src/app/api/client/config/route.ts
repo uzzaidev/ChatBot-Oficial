@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     // Buscar configurações do client (incluindo settings JSON e provider)
     const { data: client, error: clientError } = await supabase
       .from('clients')
-      .select('system_prompt, formatter_prompt, openai_model, groq_model, primary_model_provider, settings')
+      .select('system_prompt, formatter_prompt, openai_model, groq_model, primary_model_provider, settings, whatsapp_business_account_id')
       .eq('id', clientId)
       .single()
 
@@ -65,6 +65,7 @@ export async function GET(request: NextRequest) {
           message_delay_ms: 2000, // Delay between split messages (default: 2000ms)
         },
       },
+      whatsapp_business_account_id: client.whatsapp_business_account_id || null,
     })
   } catch (error) {
     return NextResponse.json(
