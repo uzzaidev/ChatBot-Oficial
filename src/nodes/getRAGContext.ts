@@ -37,7 +37,7 @@ export const getRAGContext = async (input: GetRAGContextInput): Promise<string> 
 
 
     // Gerar embedding da query
-    const embeddingResult = await generateEmbedding(query, openaiApiKey)
+    const embeddingResult = await generateEmbedding(query, openaiApiKey, clientId)
     const supabase = createServerClient()
 
     // Buscar documentos similares (multi-tenant)

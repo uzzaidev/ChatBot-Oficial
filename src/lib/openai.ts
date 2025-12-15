@@ -1,6 +1,7 @@
 import OpenAI from 'openai'
 import { AIResponse, ChatMessage } from './types'
 import { logAPIUsage } from './ai-gateway/api-tracking'
+import { getSharedGatewayConfig } from './ai-gateway/config'
 
 const getRequiredEnvVariable = (key: string): string => {
   const value = process.env[key]
@@ -11,6 +12,24 @@ const getRequiredEnvVariable = (key: string): string => {
 }
 
 let openaiClient: OpenAI | null = null
+
+const getSharedOpenAIApiKey = async (): Promise<string> => {
+  const sharedGatewayConfig = await getSharedGatewayConfig()
+  const sharedOpenaiKey = sharedGatewayConfig?.providerKeys?.openai
+
+  if (!sharedOpenaiKey) {
+    throw new Error(
+      'Shared OpenAI API key is not configured. ' +
+        'Configure shared_openai_api_key in shared_gateway_config (Vault).'
+    )
+  }
+
+  return sharedOpenaiKey
+}
+
+const resolveOpenAIApiKey = async (apiKey?: string): Promise<string> => {
+  return apiKey || await getSharedOpenAIApiKey()
+}
 
 export const getOpenAIClient = (): OpenAI => {
   if (openaiClient) {
@@ -40,15 +59,8 @@ export const transcribeAudio = async (
   const startTime = Date.now()
 
   try {
-    // 🔐 REQUIRES client-specific OpenAI API key (no fallback to global)
-    if (!apiKey) {
-      throw new Error(
-        'OpenAI API key is required for audio transcription. ' +
-        'Please configure your OpenAI API key in Settings to use this service.'
-      )
-    }
-
-    const client = new OpenAI({ apiKey })
+    const resolvedApiKey = await resolveOpenAIApiKey(apiKey)
+    const client = new OpenAI({ apiKey: resolvedApiKey })
 
     const uint8Array = new Uint8Array(audioBuffer)
     const blob = new Blob([uint8Array], { type: 'audio/ogg' })
@@ -110,14 +122,8 @@ export const analyzeImage = async (
   apiKey?: string
 ): Promise<string> => {
   try {
-    // 🔐 Criar cliente OpenAI (dinâmico ou cached)
-    let client: OpenAI
-    
-    if (apiKey) {
-      client = new OpenAI({ apiKey })
-    } else {
-      client = getOpenAIClient()
-    }
+    const resolvedApiKey = await resolveOpenAIApiKey(apiKey)
+    const client = new OpenAI({ apiKey: resolvedApiKey })
 
     const response = await client.chat.completions.create({
       model: 'gpt-4o',
@@ -168,15 +174,8 @@ export const analyzeImageFromBuffer = async (
   const startTime = Date.now()
 
   try {
-    // 🔐 REQUIRES client-specific OpenAI API key (no fallback to global)
-    if (!apiKey) {
-      throw new Error(
-        'OpenAI API key is required for image analysis. ' +
-        'Please configure your OpenAI API key in Settings to use this service.'
-      )
-    }
-
-    const client = new OpenAI({ apiKey })
+    const resolvedApiKey = await resolveOpenAIApiKey(apiKey)
+    const client = new OpenAI({ apiKey: resolvedApiKey })
 
     // Converter buffer para base64
     const base64Image = imageBuffer.toString('base64')
@@ -261,15 +260,8 @@ export const generateEmbedding = async (
   const startTime = Date.now()
 
   try {
-    // 🔐 REQUIRES client-specific OpenAI API key (no fallback to global)
-    if (!apiKey) {
-      throw new Error(
-        'OpenAI API key is required for embeddings. ' +
-        'Please configure your OpenAI API key in Settings to use this service.'
-      )
-    }
-
-    const client = new OpenAI({ apiKey })
+    const resolvedApiKey = await resolveOpenAIApiKey(apiKey)
+    const client = new OpenAI({ apiKey: resolvedApiKey })
 
     const response = await client.embeddings.create({
       model: 'text-embedding-3-small',
@@ -337,21 +329,19 @@ export const extractTextFromPDF = async (pdfBuffer: Buffer): Promise<string> => 
 export const summarizePDFContent = async (
   pdfText: string,
   filename?: string,
-  apiKey?: string
+  apiKey?: string,
+  clientId?: string,
+  phone?: string
 ): Promise<{
   content: string
   usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number }
   model: string
 }> => {
   try {
-    // 🔐 Criar cliente OpenAI (dinâmico ou cached)
-    let client: OpenAI
-    
-    if (apiKey) {
-      client = new OpenAI({ apiKey })
-    } else {
-      client = getOpenAIClient()
-    }
+    const startTime = Date.now()
+
+    const resolvedApiKey = await resolveOpenAIApiKey(apiKey)
+    const client = new OpenAI({ apiKey: resolvedApiKey })
 
     const prompt = `Você recebeu um documento PDF${filename ? ` chamado "${filename}"` : ''}.
 Analise o conteúdo e forneça um resumo detalhado em português, incluindo:
@@ -386,6 +376,27 @@ ${pdfText.substring(0, 12000)}`
           total_tokens: response.usage.total_tokens || 0,
         }
       : { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }
+
+    const latencyMs = Date.now() - startTime
+
+    if (clientId) {
+      await logAPIUsage({
+        clientId,
+        phone,
+        apiType: 'chat',
+        provider: 'openai',
+        modelName: 'gpt-4o',
+        inputTokens: usage.prompt_tokens,
+        outputTokens: usage.completion_tokens,
+        latencyMs,
+        metadata: {
+          feature: 'pdf_summary',
+          filename,
+        },
+      }).catch(err => {
+        console.error('[PDF Summary] Failed to log usage:', err)
+      })
+    }
 
 
     return {
@@ -422,16 +433,9 @@ export const generateChatCompletionOpenAI = async (
   }
 ): Promise<AIResponse> => {
   try {
-    // 1. Criar cliente OpenAI (dinâmico ou cached)
-    let client: OpenAI
-    
-    if (apiKey) {
-      // Se apiKey fornecida, criar novo client (não cachear)
-      client = new OpenAI({ apiKey })
-    } else {
-      // Fallback: usar client cacheado do env
-      client = getOpenAIClient()
-    }
+    // 1. Criar cliente OpenAI (dinâmico)
+    const resolvedApiKey = await resolveOpenAIApiKey(apiKey)
+    const client = new OpenAI({ apiKey: resolvedApiKey })
 
     // 2. Converter mensagens para formato OpenAI
     const openaiMessages = messages.map((msg) => ({

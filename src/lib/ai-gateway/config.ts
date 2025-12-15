@@ -7,7 +7,7 @@
 
 import "server-only";
 
-import { createServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@supabase/supabase-js";
 
 // =====================================================
 // TYPES
@@ -74,7 +74,10 @@ export const getSharedGatewayConfig = async (): Promise<
       return cachedConfig;
     }
 
-    const supabase = createServiceClient();
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    );
 
     // Fetch shared config (only 1 record exists)
     const { data: config, error } = (await supabase

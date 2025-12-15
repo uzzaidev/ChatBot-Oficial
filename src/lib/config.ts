@@ -111,18 +111,13 @@ export const getEnvironmentInfo = () => {
 import { createServerClient } from "./supabase";
 import { getClientSecrets } from "./vault";
 import type { ClientConfig } from "./types";
+import { getSharedGatewayConfig } from "./ai-gateway/config";
 
 /**
  * 🔐 Busca configuração completa do cliente com secrets descriptografados do Vault
  *
- * Esta função é o coração do sistema multi-tenant. Ela:
- * 1. Busca dados do cliente no banco
- * 2. Descriptografa secrets do Vault em paralelo
- * 3. Faz fallback para env vars globais quando necessário
- * 4. Retorna config pronto para uso
- *
- * @param clientId - UUID do cliente
- * @returns Configuração completa ou null se não encontrado
+ * - Meta credentials: always per-client (Vault)
+ * - AI provider keys: platform-only by default (shared_gateway_config), BYOK optional
  */
 export const getClientConfig = async (
   clientId: string,
@@ -130,7 +125,6 @@ export const getClientConfig = async (
   try {
     const supabase = createServerClient();
 
-    // 1. Buscar config do cliente (incluindo colunas TTS diretas)
     const { data: client, error } = await supabase
       .from("clients")
       .select("*")
@@ -142,7 +136,6 @@ export const getClientConfig = async (
       return null;
     }
 
-    // 2. Descriptografar secrets do Vault em paralelo
     const secrets = await getClientSecrets(supabase, {
       meta_access_token_secret_id: client.meta_access_token_secret_id,
       meta_verify_token_secret_id: client.meta_verify_token_secret_id,
@@ -150,24 +143,6 @@ export const getClientConfig = async (
       openai_api_key_secret_id: client.openai_api_key_secret_id,
       groq_api_key_secret_id: client.groq_api_key_secret_id,
     });
-
-    // 3. Validar que secrets obrigatórios existem no Vault (SEM fallback para .env)
-    const finalOpenaiKey = secrets.openaiApiKey;
-    const finalGroqKey = secrets.groqApiKey;
-
-    if (!finalOpenaiKey) {
-      throw new Error(
-        `[getClientConfig] No OpenAI key configured for client ${clientId}. ` +
-          `Please configure in Settings: /dashboard/settings`,
-      );
-    }
-
-    if (!finalGroqKey) {
-      throw new Error(
-        `[getClientConfig] No Groq key configured for client ${clientId}. ` +
-          `Please configure in Settings: /dashboard/settings`,
-      );
-    }
 
     if (!secrets.metaAccessToken) {
       throw new Error(
@@ -186,23 +161,55 @@ export const getClientConfig = async (
       );
     }
 
-    // 4. Retornar config completo (transformar snake_case do DB para camelCase)
+    const aiKeysMode = (client.ai_keys_mode === "byok_allowed"
+      ? "byok_allowed"
+      : "platform_only") as "platform_only" | "byok_allowed";
+
+    const sharedGatewayConfig = await getSharedGatewayConfig();
+    const sharedOpenaiKey = sharedGatewayConfig?.providerKeys?.openai || null;
+    const sharedGroqKey = sharedGatewayConfig?.providerKeys?.groq || null;
+
+    const finalOpenaiKey = aiKeysMode === "byok_allowed"
+      ? (secrets.openaiApiKey || sharedOpenaiKey)
+      : sharedOpenaiKey;
+
+    const finalGroqKey = aiKeysMode === "byok_allowed"
+      ? (secrets.groqApiKey || sharedGroqKey)
+      : sharedGroqKey;
+
+    if (!finalOpenaiKey) {
+      throw new Error(
+        `[getClientConfig] Missing OpenAI API key for client ${clientId}. ` +
+          `Configure shared OpenAI key in shared_gateway_config (Vault).`,
+      );
+    }
+
+    const primaryProvider = (client.primary_model_provider ||
+      "groq") as ClientConfig["primaryProvider"];
+
+    if (primaryProvider === "groq" && !finalGroqKey) {
+      throw new Error(
+        `[getClientConfig] Missing Groq API key for client ${clientId}. ` +
+          `Configure shared Groq key in shared_gateway_config (Vault) or switch primary provider to OpenAI.`,
+      );
+    }
+
     const config: ClientConfig = {
       id: client.id,
       name: client.name,
       slug: client.slug,
       status: client.status,
 
-      // 🤖 Provider principal (NOVO)
-      primaryProvider: client.primary_model_provider || "groq",
+      aiKeysMode,
+      primaryProvider,
 
       apiKeys: {
         metaAccessToken: secrets.metaAccessToken,
         metaVerifyToken: secrets.metaVerifyToken,
-        metaAppSecret: secrets.metaAppSecret, // SECURITY FIX (VULN-012): App Secret for HMAC
+        metaAppSecret: secrets.metaAppSecret,
         metaPhoneNumberId: client.meta_phone_number_id,
         openaiApiKey: finalOpenaiKey,
-        groqApiKey: finalGroqKey,
+        groqApiKey: finalGroqKey || "",
       },
       prompts: {
         systemPrompt: client.system_prompt,
@@ -221,8 +228,7 @@ export const getClientConfig = async (
         enableHumanHandoff: client.settings.enable_human_handoff,
         messageSplitEnabled: client.settings.message_split_enabled,
         maxChatHistory: client.settings.max_chat_history,
-        messageDelayMs: client.settings.message_delay_ms ?? 2000, // Delay between split messages (default: 2000ms)
-        // TTS settings vêm das colunas diretas, não do JSONB
+        messageDelayMs: client.settings.message_delay_ms ?? 2000,
         tts_enabled: client.tts_enabled ?? false,
         tts_provider: client.tts_provider ?? "openai",
         tts_model: client.tts_model ?? "tts-1-hd",
@@ -234,55 +240,40 @@ export const getClientConfig = async (
     };
 
     return config;
-  } catch (error) {
+  } catch {
     return null;
   }
 };
 
-/**
- * Valida se config tem todos os campos obrigatórios
- *
- * @param config - Configuração do cliente
- * @returns true se válida, false caso contrário
- */
 export const validateClientConfig = (config: ClientConfig): boolean => {
-  const required = [
+  const baseRequired = [
     config.id,
     config.apiKeys.metaAccessToken,
     config.apiKeys.metaPhoneNumberId,
     config.apiKeys.openaiApiKey,
-    config.apiKeys.groqApiKey,
     config.prompts.systemPrompt,
   ];
 
-  const isValid = required.every((field) => field && field.length > 0);
+  const needsGroq = config.primaryProvider === "groq";
+  const required = needsGroq
+    ? [...baseRequired, config.apiKeys.groqApiKey]
+    : baseRequired;
 
-  return isValid;
+  return required.every((field) => field && field.length > 0);
 };
 
 /**
  * 🔄 Busca config do cliente com fallback para .env (compatibilidade retroativa)
  *
- * ⚠️ DEPRECATED: Esta função será removida em breve.
- * Não use .env fallback - configure todas as credenciais no Vault via /dashboard/settings
- *
- * Esta função permite transição gradual:
- * - Se clientId fornecido: usa multi-tenant (recomendado)
- * - Se clientId null: lança erro (não mais suportado)
- *
- * @param clientId - UUID do cliente ou null
- * @returns Config do cliente ou lança erro se null
- * @deprecated Use getClientConfig(clientId) diretamente e configure credenciais no Vault
+ * ⚠️ DEPRECATED: .env fallback não é mais suportado.
  */
 export const getClientConfigWithFallback = async (
   clientId?: string | null,
 ): Promise<ClientConfig | null> => {
-  // Se clientId fornecido, usa multi-tenant
   if (clientId) {
     return await getClientConfig(clientId);
   }
 
-  // DEPRECATED: .env fallback não é mais suportado
   throw new Error(
     "Legacy .env config is no longer supported. " +
       "Please update your webhook URL to: " +

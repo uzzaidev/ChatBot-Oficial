@@ -2,8 +2,9 @@
 import OpenAI from "openai";
 import crypto from "crypto";
 import { createServerClient } from "@/lib/supabase-server";
-import { getClientSecrets } from "@/lib/vault";
+import { getSecret } from "@/lib/vault";
 import { trackUnifiedUsage } from "@/lib/unified-tracking";
+import { getSharedGatewayConfig } from "@/lib/ai-gateway/config";
 
 export interface ConvertTextToSpeechInput {
   text: string;
@@ -95,30 +96,36 @@ export const convertTextToSpeech = async (
   const { data: client } = await supabase
     .from("clients")
     .select(
-      "openai_api_key_secret_id, meta_access_token_secret_id, meta_verify_token_secret_id",
+      "openai_api_key_secret_id, ai_keys_mode",
     )
     .eq("id", clientId)
     .single();
 
-  if (!client?.openai_api_key_secret_id) {
+  const aiKeysMode = (client?.ai_keys_mode === "byok_allowed"
+    ? "byok_allowed"
+    : "platform_only") as "platform_only" | "byok_allowed";
+
+  const sharedGatewayConfig = await getSharedGatewayConfig();
+  const sharedOpenaiKey = sharedGatewayConfig?.providerKeys?.openai || null;
+
+  const byokOpenaiKey = aiKeysMode === "byok_allowed" && client?.openai_api_key_secret_id
+    ? await getSecret(client.openai_api_key_secret_id)
+    : null;
+
+  const finalOpenaiKey = aiKeysMode === "byok_allowed"
+    ? (byokOpenaiKey || sharedOpenaiKey)
+    : sharedOpenaiKey;
+
+  if (!finalOpenaiKey) {
     throw new Error(
-      `Client ${clientId} does not have OpenAI API key configured`,
+      `No OpenAI API key available for TTS (client ${clientId}). ` +
+        `Configure shared OpenAI key in shared_gateway_config (Vault).`,
     );
-  }
-
-  const secrets = await getClientSecrets(supabase, {
-    meta_access_token_secret_id: client.meta_access_token_secret_id,
-    meta_verify_token_secret_id: client.meta_verify_token_secret_id,
-    openai_api_key_secret_id: client.openai_api_key_secret_id,
-  });
-
-  if (!secrets.openaiApiKey) {
-    throw new Error(`Failed to retrieve OpenAI API key for client ${clientId}`);
   }
 
   // 3. Gerar novo áudio via OpenAI TTS
   const openai = new OpenAI({
-    apiKey: secrets.openaiApiKey,
+    apiKey: finalOpenaiKey,
   });
 
   const validVoices = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"];

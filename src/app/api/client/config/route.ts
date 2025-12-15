@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     // Buscar configurações do client (incluindo settings JSON e provider)
     const { data: client, error: clientError } = await supabase
       .from('clients')
-      .select('system_prompt, formatter_prompt, openai_model, groq_model, primary_model_provider, settings, whatsapp_business_account_id')
+      .select('system_prompt, formatter_prompt, openai_model, groq_model, primary_model_provider, settings, whatsapp_business_account_id, ai_keys_mode')
       .eq('id', clientId)
       .single()
 
@@ -53,6 +53,7 @@ export async function GET(request: NextRequest) {
         openai_model: client.openai_model || 'gpt-4o',
         groq_model: client.groq_model || 'llama-3.3-70b-versatile',
         primary_model_provider: client.primary_model_provider || 'groq', // NOVO
+        ai_keys_mode: client.ai_keys_mode || 'platform_only',
         settings: client.settings || {
           enable_rag: false,
           max_tokens: 2000,
@@ -91,7 +92,7 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json()
-    const { system_prompt, formatter_prompt, openai_model, groq_model, primary_model_provider, settings } = body
+    const { system_prompt, formatter_prompt, openai_model, groq_model, primary_model_provider, settings, ai_keys_mode } = body
 
     const supabase = createRouteHandlerClient(request as any)
 
@@ -129,6 +130,16 @@ export async function PATCH(request: NextRequest) {
     if (groq_model !== undefined) updateData.groq_model = groq_model
     if (primary_model_provider !== undefined) updateData.primary_model_provider = primary_model_provider // NOVO
     if (settings !== undefined) updateData.settings = settings
+
+    if (ai_keys_mode !== undefined) {
+      if (ai_keys_mode !== 'platform_only' && ai_keys_mode !== 'byok_allowed') {
+        return NextResponse.json(
+          { error: 'ai_keys_mode inválido' },
+          { status: 400 }
+        )
+      }
+      updateData.ai_keys_mode = ai_keys_mode
+    }
 
     // Atualizar client
     const { error: updateError } = await supabase

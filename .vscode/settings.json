@@ -20,5 +20,6 @@
     "fs",
     "http",
     "net"
-  ]
+  ],
+  "github.copilot.chat.customAgents.showOrganizationAndEnterpriseAgents": true
 }

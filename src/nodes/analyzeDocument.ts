@@ -4,7 +4,9 @@ export const analyzeDocument = async (
   documentBuffer: Buffer,
   mimeType: string,
   filename?: string,
-  apiKey?: string
+  apiKey?: string,
+  clientId?: string,
+  phone?: string
 ): Promise<{
   content: string
   usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number }
@@ -22,7 +24,7 @@ export const analyzeDocument = async (
         }
       }
 
-      const result = await summarizePDFContent(pdfText, filename, apiKey)
+      const result = await summarizePDFContent(pdfText, filename, apiKey, clientId, phone)
       return {
         content: `📄 Documento recebido${filename ? ` (${filename})` : ''}:\n\n${result.content}`,
         usage: result.usage,

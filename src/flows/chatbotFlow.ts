@@ -320,6 +320,8 @@ export const processChatbotMessage = async (
         const transcriptionResult = await transcribeAudio(
           audioBuffer,
           config.apiKeys.openaiApiKey,
+          config.id,
+          parsedMessage.phone,
         );
         processedContent = transcriptionResult.text;
         logger.logNodeSuccess("4b. Transcribe Audio", {
@@ -377,6 +379,8 @@ export const processChatbotMessage = async (
           imageBuffer,
           parsedMessage.metadata.mimeType || "image/jpeg",
           config.apiKeys.openaiApiKey,
+          config.id,
+          parsedMessage.phone,
         );
 
         // Passar apenas a descrição da IA (a legenda será adicionada pelo normalizeMessage)
@@ -439,6 +443,8 @@ export const processChatbotMessage = async (
           parsedMessage.metadata.mimeType,
           parsedMessage.metadata.filename,
           config.apiKeys.openaiApiKey,
+          config.id,
+          parsedMessage.phone,
         );
 
         processedContent = documentResult.content;

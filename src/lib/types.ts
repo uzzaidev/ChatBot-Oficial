@@ -334,6 +334,9 @@ export interface ClientConfig {
   slug: string;
   status: "active" | "suspended" | "trial" | "cancelled";
 
+  // 🔐 API key strategy (platform-only default)
+  aiKeysMode?: "platform_only" | "byok_allowed";
+
   // 🤖 Provider principal do agente (NOVO)
   primaryProvider: "openai" | "groq";
 
