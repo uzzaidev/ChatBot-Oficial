@@ -193,9 +193,9 @@ Analise se a mensagem corresponde a alguma FAQ do catálogo. Responda com JSON.`
           groqModel: "llama-3.3-70b-versatile",
         },
         messages,
-        options: {
+        settings: {
           temperature: 0.1, // Low temperature for consistent classification
-          max_tokens: 150,
+          maxTokens: 150,
         },
       });
 
@@ -203,13 +203,13 @@ Analise se a mensagem corresponde a alguma FAQ do catálogo. Responda com JSON.`
     } else {
       // Direct OpenAI call (fallback)
       const supabase = createServiceRoleClient();
-      const { data: client } = await supabase
+      const { data: client, error: clientError } = await supabase
         .from("clients")
         .select("openai_api_key")
         .eq("id", clientId)
-        .single();
+        .single() as { data: { openai_api_key: string } | null, error: any };
 
-      if (!client?.openai_api_key) {
+      if (clientError || !client || !client.openai_api_key) {
         throw new Error("OpenAI API key not configured");
       }
 
