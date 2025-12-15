@@ -618,6 +618,44 @@ export const processChatbotMessage = async (
     }
 
     // ═════════════════════════════════════════════════════════════════
+    // 🚀 NODE 9.5: FAST TRACK ROUTER (Optional - Cache-Friendly FAQ Detection)
+    // ═════════════════════════════════════════════════════════════════
+    let fastTrackResult: any = null;
+    let isFastTrack = false;
+
+    if (shouldExecuteNode("fast_track_router", nodeStates)) {
+      logger.logNodeStart("9.5. Fast Track Router", {
+        messageLength: batchedContent.length,
+      });
+
+      const { fastTrackRouter } = await import("@/nodes/fastTrackRouter");
+      fastTrackResult = await fastTrackRouter({
+        clientId: config.id,
+        phone: parsedMessage.phone,
+        message: batchedContent,
+      });
+
+      isFastTrack = fastTrackResult.shouldFastTrack;
+
+      logger.logNodeSuccess("9.5. Fast Track Router", {
+        shouldFastTrack: fastTrackResult.shouldFastTrack,
+        reason: fastTrackResult.reason,
+        topic: fastTrackResult.topic,
+        similarity: fastTrackResult.similarity,
+        matchedCanonical: fastTrackResult.matchedCanonical,
+        matchedExample: fastTrackResult.matchedExample,
+        matchedKeyword: fastTrackResult.matchedKeyword,
+        catalogSize: fastTrackResult.catalogSize,
+        routerModel: fastTrackResult.routerModel,
+      });
+    } else {
+      logger.logNodeSuccess("9.5. Fast Track Router", {
+        skipped: true,
+        reason: "node disabled",
+      });
+    }
+
+    // ═════════════════════════════════════════════════════════════════
     // 🚀 NODE 15: CHECK INTERACTIVE FLOW (Phase 4)
     // ═════════════════════════════════════════════════════════════════
     // REMOVED: Triggers are no longer checked here
@@ -625,21 +663,36 @@ export const processChatbotMessage = async (
     // Status must be manually set to 'fluxo_inicial' to enter a flow
 
     // NODE 10 & 11: Get Chat History + RAG Context (configurable)
+    // 🚀 Fast Track: Skip if in fast track mode
     let chatHistory2: any[] = [];
     let ragContext: string = "";
 
     // Check if we should fetch chat history
-    const shouldGetHistory = shouldExecuteNode("get_chat_history", nodeStates);
+    const shouldGetHistory = shouldExecuteNode("get_chat_history", nodeStates) &&
+      !isFastTrack; // Skip if fast track
 
     if (shouldGetHistory) {
       logger.logNodeStart("10. Get Chat History", {
         phone: parsedMessage.phone,
       });
+    } else if (isFastTrack) {
+      logger.logNodeSuccess("10. Get Chat History", {
+        skipped: true,
+        reason: "fast_track",
+      });
     }
 
     // Check if we should fetch RAG context
     const shouldGetRAG = shouldExecuteNode("get_rag_context", nodeStates) &&
-      config.settings.enableRAG;
+      config.settings.enableRAG &&
+      !isFastTrack; // Skip if fast track
+
+    if (shouldGetRAG && isFastTrack) {
+      logger.logNodeSuccess("11. Get RAG Context", {
+        skipped: true,
+        reason: "fast_track",
+      });
+    }
 
     if (shouldGetHistory || shouldGetRAG) {
       if (shouldGetHistory && shouldGetRAG) {
@@ -725,9 +778,10 @@ export const processChatbotMessage = async (
     }
 
     // 🔧 Phase 1: Check Conversation Continuity (configurable)
+    // 🚀 Fast Track: Skip if in fast track mode
     let continuityInfo: any;
 
-    if (shouldExecuteNode("check_continuity", nodeStates)) {
+    if (shouldExecuteNode("check_continuity", nodeStates) && !isFastTrack) {
       logger.logNodeStart("10.5. Check Continuity", {
         phone: parsedMessage.phone,
       });
@@ -740,9 +794,10 @@ export const processChatbotMessage = async (
         hoursSince: continuityInfo.hoursSinceLastMessage,
       });
     } else {
+      const skipReason = isFastTrack ? "fast_track" : "node disabled";
       logger.logNodeSuccess("10.5. Check Continuity", {
         skipped: true,
-        reason: "node disabled",
+        reason: skipReason,
       });
       continuityInfo = {
         isNewConversation: false,
@@ -752,9 +807,10 @@ export const processChatbotMessage = async (
     }
 
     // 🔧 Phase 2: Classify User Intent (configurable)
+    // 🚀 Fast Track: Skip if in fast track mode
     let intentInfo: any;
 
-    if (shouldExecuteNode("classify_intent", nodeStates)) {
+    if (shouldExecuteNode("classify_intent", nodeStates) && !isFastTrack) {
       logger.logNodeStart("10.6. Classify Intent", {
         messageLength: batchedContent.length,
       });
@@ -769,9 +825,10 @@ export const processChatbotMessage = async (
         usedLLM: intentInfo.usedLLM,
       });
     } else {
+      const skipReason = isFastTrack ? "fast_track" : "node disabled";
       logger.logNodeSuccess("10.6. Classify Intent", {
         skipped: true,
-        reason: "node disabled",
+        reason: skipReason,
       });
       intentInfo = {
         intent: "outro",
@@ -781,9 +838,11 @@ export const processChatbotMessage = async (
     }
 
     // NODE 12: Generate AI Response (com config do cliente + greeting instruction)
+    // 🚀 Fast Track: Disable datetime and tools if in fast track mode
     logger.logNodeStart("12. Generate AI Response", {
       messageLength: batchedContent.length,
       historyCount: chatHistory2.length,
+      fastTrack: isFastTrack,
     });
     const aiResponse = await generateAIResponse({
       message: batchedContent,
@@ -792,6 +851,8 @@ export const processChatbotMessage = async (
       customerName: parsedMessage.name,
       config, // 🔐 Passa config com systemPrompt e groqApiKey
       greetingInstruction: continuityInfo.greetingInstruction, // 🔧 Phase 1: Inject greeting
+      includeDateTimeInfo: !isFastTrack, // 🚀 Fast Track: Disable datetime for cache
+      enableTools: !isFastTrack || !fastTrackResult?.catalogSize, // 🚀 Fast Track: Disable tools for cache
     });
     logger.logNodeSuccess("12. Generate AI Response", {
       contentLength: aiResponse.content?.length || 0,

@@ -173,6 +173,8 @@ export interface GenerateAIResponseInput {
   customerName: string;
   config: ClientConfig; // 🔐 Config dinâmica do cliente
   greetingInstruction?: string; // 🔧 Phase 1: Continuity greeting instruction
+  includeDateTimeInfo?: boolean; // 🚀 Fast Track: Whether to include date/time in prompt (default: true)
+  enableTools?: boolean; // 🚀 Fast Track: Whether to enable tools (default: true)
 }
 
 /**
@@ -193,35 +195,41 @@ export const generateAIResponse = async (
       customerName,
       config,
       greetingInstruction,
+      includeDateTimeInfo = true, // 🚀 Fast Track: default to true for backward compatibility
+      enableTools = true, // 🚀 Fast Track: default to true for backward compatibility
     } = input;
 
     // Usar systemPrompt do config do cliente (ou fallback)
     const systemPrompt = config.prompts.systemPrompt || DEFAULT_SYSTEM_PROMPT;
-
-    // Data e hora atual (para contexto da IA)
-    const now = new Date();
-    const dateTimeInfo = `Data e hora atual: ${
-      now.toLocaleDateString("pt-BR", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        timeZone: "America/Sao_Paulo",
-      })
-    } (horário de Brasília)`;
 
     const messages: ChatMessage[] = [
       {
         role: "system",
         content: systemPrompt, // 🔐 Usa prompt do config do cliente
       },
-      {
+    ];
+
+    // 🚀 Fast Track: Only add date/time if enabled (for cache-friendly prompts)
+    if (includeDateTimeInfo) {
+      // Data e hora atual (para contexto da IA)
+      const now = new Date();
+      const dateTimeInfo = `Data e hora atual: ${
+        now.toLocaleDateString("pt-BR", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          timeZone: "America/Sao_Paulo",
+        })
+      } (horário de Brasília)`;
+
+      messages.push({
         role: "system",
         content: dateTimeInfo,
-      },
-    ];
+      });
+    }
 
     // 🔧 Phase 1: Add continuity greeting instruction if provided
     if (greetingInstruction && greetingInstruction.trim().length > 0) {
@@ -270,11 +278,14 @@ export const generateAIResponse = async (
 
     // Log para debug
 
-    const tools = [
-      HUMAN_HANDOFF_TOOL_DEFINITION,
-      SEARCH_DOCUMENT_TOOL_DEFINITION, // NEW: Buscar documentos da base de conhecimento
-      TTS_AUDIO_TOOL_DEFINITION, // NEW: Enviar resposta em áudio (TTS)
-    ];
+    // 🚀 Fast Track: Conditionally include tools
+    const tools = enableTools
+      ? [
+          HUMAN_HANDOFF_TOOL_DEFINITION,
+          SEARCH_DOCUMENT_TOOL_DEFINITION, // NEW: Buscar documentos da base de conhecimento
+          TTS_AUDIO_TOOL_DEFINITION, // NEW: Enviar resposta em áudio (TTS)
+        ]
+      : []; // Empty tools array for fast track
 
     // 🌐 CHECK: AI Gateway enabled?
     const useGateway = await shouldUseGateway(config.id);
@@ -301,7 +312,7 @@ export const generateAIResponse = async (
           systemPrompt: config.prompts.systemPrompt,
         },
         messages: coreMessages,
-        tools: config.settings.enableTools
+        tools: enableTools && config.settings.enableTools
           ? {
             transferir_atendimento: {
               description: HUMAN_HANDOFF_TOOL_DEFINITION.function.description,

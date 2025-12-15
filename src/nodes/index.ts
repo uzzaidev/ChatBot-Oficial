@@ -45,3 +45,7 @@ export { searchDocumentInKnowledge } from './searchDocumentInKnowledge'
 export type { SearchDocumentInput, DocumentSearchResult } from './searchDocumentInKnowledge'
 export { handleDocumentSearchToolCall } from './handleDocumentSearchToolCall'
 export type { HandleDocumentSearchInput, HandleDocumentSearchOutput } from './handleDocumentSearchToolCall'
+
+// 🚀 Fast Track Router: Cache-friendly FAQ detection
+export { fastTrackRouter } from './fastTrackRouter'
+export type { FastTrackRouterInput, FastTrackRouterOutput, FastTrackConfig, FastTrackCatalogItem } from './fastTrackRouter'
