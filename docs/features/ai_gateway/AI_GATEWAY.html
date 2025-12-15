@@ -1,0 +1,1131 @@
+<!DOCTYPE html><html><head>
+      <title>AI_GATEWAY</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="file:///c:\Users\Luisf\.vscode\extensions\shd101wyy.markdown-preview-enhanced-0.8.20\crossnote\dependencies\katex\katex.min.css">
+      
+      
+      
+      
+      
+      <style>
+      code[class*=language-],pre[class*=language-]{color:#333;background:0 0;font-family:Consolas,"Liberation Mono",Menlo,Courier,monospace;text-align:left;white-space:pre;word-spacing:normal;word-break:normal;word-wrap:normal;line-height:1.4;-moz-tab-size:8;-o-tab-size:8;tab-size:8;-webkit-hyphens:none;-moz-hyphens:none;-ms-hyphens:none;hyphens:none}pre[class*=language-]{padding:.8em;overflow:auto;border-radius:3px;background:#f5f5f5}:not(pre)>code[class*=language-]{padding:.1em;border-radius:.3em;white-space:normal;background:#f5f5f5}.token.blockquote,.token.comment{color:#969896}.token.cdata{color:#183691}.token.doctype,.token.macro.property,.token.punctuation,.token.variable{color:#333}.token.builtin,.token.important,.token.keyword,.token.operator,.token.rule{color:#a71d5d}.token.attr-value,.token.regex,.token.string,.token.url{color:#183691}.token.atrule,.token.boolean,.token.code,.token.command,.token.constant,.token.entity,.token.number,.token.property,.token.symbol{color:#0086b3}.token.prolog,.token.selector,.token.tag{color:#63a35c}.token.attr-name,.token.class,.token.class-name,.token.function,.token.id,.token.namespace,.token.pseudo-class,.token.pseudo-element,.token.url-reference .token.variable{color:#795da3}.token.entity{cursor:help}.token.title,.token.title .token.punctuation{font-weight:700;color:#1d3e81}.token.list{color:#ed6a43}.token.inserted{background-color:#eaffea;color:#55a532}.token.deleted{background-color:#ffecec;color:#bd2c00}.token.bold{font-weight:700}.token.italic{font-style:italic}.language-json .token.property{color:#183691}.language-markup .token.tag .token.punctuation{color:#333}.language-css .token.function,code.language-css{color:#0086b3}.language-yaml .token.atrule{color:#63a35c}code.language-yaml{color:#183691}.language-ruby .token.function{color:#333}.language-markdown .token.url{color:#795da3}.language-makefile .token.symbol{color:#795da3}.language-makefile .token.variable{color:#183691}.language-makefile .token.builtin{color:#0086b3}.language-bash .token.keyword{color:#0086b3}pre[data-line]{position:relative;padding:1em 0 1em 3em}pre[data-line] .line-highlight-wrapper{position:absolute;top:0;left:0;background-color:transparent;display:block;width:100%}pre[data-line] .line-highlight{position:absolute;left:0;right:0;padding:inherit 0;margin-top:1em;background:hsla(24,20%,50%,.08);background:linear-gradient(to right,hsla(24,20%,50%,.1) 70%,hsla(24,20%,50%,0));pointer-events:none;line-height:inherit;white-space:pre}pre[data-line] .line-highlight:before,pre[data-line] .line-highlight[data-end]:after{content:attr(data-start);position:absolute;top:.4em;left:.6em;min-width:1em;padding:0 .5em;background-color:hsla(24,20%,50%,.4);color:#f4f1ef;font:bold 65%/1.5 sans-serif;text-align:center;vertical-align:.3em;border-radius:999px;text-shadow:none;box-shadow:0 1px #fff}pre[data-line] .line-highlight[data-end]:after{content:attr(data-end);top:auto;bottom:.4em}html body{font-family:'Helvetica Neue',Helvetica,'Segoe UI',Arial,freesans,sans-serif;font-size:16px;line-height:1.6;color:#333;background-color:#fff;overflow:initial;box-sizing:border-box;word-wrap:break-word}html body>:first-child{margin-top:0}html body h1,html body h2,html body h3,html body h4,html body h5,html body h6{line-height:1.2;margin-top:1em;margin-bottom:16px;color:#000}html body h1{font-size:2.25em;font-weight:300;padding-bottom:.3em}html body h2{font-size:1.75em;font-weight:400;padding-bottom:.3em}html body h3{font-size:1.5em;font-weight:500}html body h4{font-size:1.25em;font-weight:600}html body h5{font-size:1.1em;font-weight:600}html body h6{font-size:1em;font-weight:600}html body h1,html body h2,html body h3,html body h4,html body h5{font-weight:600}html body h5{font-size:1em}html body h6{color:#5c5c5c}html body strong{color:#000}html body del{color:#5c5c5c}html body a:not([href]){color:inherit;text-decoration:none}html body a{color:#08c;text-decoration:none}html body a:hover{color:#00a3f5;text-decoration:none}html body img{max-width:100%}html body>p{margin-top:0;margin-bottom:16px;word-wrap:break-word}html body>ol,html body>ul{margin-bottom:16px}html body ol,html body ul{padding-left:2em}html body ol.no-list,html body ul.no-list{padding:0;list-style-type:none}html body ol ol,html body ol ul,html body ul ol,html body ul ul{margin-top:0;margin-bottom:0}html body li{margin-bottom:0}html body li.task-list-item{list-style:none}html body li>p{margin-top:0;margin-bottom:0}html body .task-list-item-checkbox{margin:0 .2em .25em -1.8em;vertical-align:middle}html body .task-list-item-checkbox:hover{cursor:pointer}html body blockquote{margin:16px 0;font-size:inherit;padding:0 15px;color:#5c5c5c;background-color:#f0f0f0;border-left:4px solid #d6d6d6}html body blockquote>:first-child{margin-top:0}html body blockquote>:last-child{margin-bottom:0}html body hr{height:4px;margin:32px 0;background-color:#d6d6d6;border:0 none}html body table{margin:10px 0 15px 0;border-collapse:collapse;border-spacing:0;display:block;width:100%;overflow:auto;word-break:normal;word-break:keep-all}html body table th{font-weight:700;color:#000}html body table td,html body table th{border:1px solid #d6d6d6;padding:6px 13px}html body dl{padding:0}html body dl dt{padding:0;margin-top:16px;font-size:1em;font-style:italic;font-weight:700}html body dl dd{padding:0 16px;margin-bottom:16px}html body code{font-family:Menlo,Monaco,Consolas,'Courier New',monospace;font-size:.85em;color:#000;background-color:#f0f0f0;border-radius:3px;padding:.2em 0}html body code::after,html body code::before{letter-spacing:-.2em;content:'\00a0'}html body pre>code{padding:0;margin:0;word-break:normal;white-space:pre;background:0 0;border:0}html body .highlight{margin-bottom:16px}html body .highlight pre,html body pre{padding:1em;overflow:auto;line-height:1.45;border:#d6d6d6;border-radius:3px}html body .highlight pre{margin-bottom:0;word-break:normal}html body pre code,html body pre tt{display:inline;max-width:initial;padding:0;margin:0;overflow:initial;line-height:inherit;word-wrap:normal;background-color:transparent;border:0}html body pre code:after,html body pre code:before,html body pre tt:after,html body pre tt:before{content:normal}html body blockquote,html body dl,html body ol,html body p,html body pre,html body ul{margin-top:0;margin-bottom:16px}html body kbd{color:#000;border:1px solid #d6d6d6;border-bottom:2px solid #c7c7c7;padding:2px 4px;background-color:#f0f0f0;border-radius:3px}@media print{html body{background-color:#fff}html body h1,html body h2,html body h3,html body h4,html body h5,html body h6{color:#000;page-break-after:avoid}html body blockquote{color:#5c5c5c}html body pre{page-break-inside:avoid}html body table{display:table}html body img{display:block;max-width:100%;max-height:100%}html body code,html body pre{word-wrap:break-word;white-space:pre}}.markdown-preview{width:100%;height:100%;box-sizing:border-box}.markdown-preview ul{list-style:disc}.markdown-preview ul ul{list-style:circle}.markdown-preview ul ul ul{list-style:square}.markdown-preview ol{list-style:decimal}.markdown-preview ol ol,.markdown-preview ul ol{list-style-type:lower-roman}.markdown-preview ol ol ol,.markdown-preview ol ul ol,.markdown-preview ul ol ol,.markdown-preview ul ul ol{list-style-type:lower-alpha}.markdown-preview .newpage,.markdown-preview .pagebreak{page-break-before:always}.markdown-preview pre.line-numbers{position:relative;padding-left:3.8em;counter-reset:linenumber}.markdown-preview pre.line-numbers>code{position:relative}.markdown-preview pre.line-numbers .line-numbers-rows{position:absolute;pointer-events:none;top:1em;font-size:100%;left:0;width:3em;letter-spacing:-1px;border-right:1px solid #999;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}.markdown-preview pre.line-numbers .line-numbers-rows>span{pointer-events:none;display:block;counter-increment:linenumber}.markdown-preview pre.line-numbers .line-numbers-rows>span:before{content:counter(linenumber);color:#999;display:block;padding-right:.8em;text-align:right}.markdown-preview .mathjax-exps .MathJax_Display{text-align:center!important}.markdown-preview:not([data-for=preview]) .code-chunk .code-chunk-btn-group{display:none}.markdown-preview:not([data-for=preview]) .code-chunk .status{display:none}.markdown-preview:not([data-for=preview]) .code-chunk .output-div{margin-bottom:16px}.markdown-preview .md-toc{padding:0}.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link{display:inline;padding:.25rem 0}.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link div,.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link p{display:inline}.markdown-preview .md-toc .md-toc-link-wrapper.highlighted .md-toc-link{font-weight:800}.scrollbar-style::-webkit-scrollbar{width:8px}.scrollbar-style::-webkit-scrollbar-track{border-radius:10px;background-color:transparent}.scrollbar-style::-webkit-scrollbar-thumb{border-radius:5px;background-color:rgba(150,150,150,.66);border:4px solid rgba(150,150,150,.66);background-clip:content-box}html body[for=html-export]:not([data-presentation-mode]){position:relative;width:100%;height:100%;top:0;left:0;margin:0;padding:0;overflow:auto}html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{position:relative;top:0;min-height:100vh}@media screen and (min-width:914px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{padding:2em calc(50% - 457px + 2em)}}@media screen and (max-width:914px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{padding:2em}}@media screen and (max-width:450px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{font-size:14px!important;padding:1em}}@media print{html body[for=html-export]:not([data-presentation-mode]) #sidebar-toc-btn{display:none}}html body[for=html-export]:not([data-presentation-mode]) #sidebar-toc-btn{position:fixed;bottom:8px;left:8px;font-size:28px;cursor:pointer;color:inherit;z-index:99;width:32px;text-align:center;opacity:.4}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] #sidebar-toc-btn{opacity:1}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc{position:fixed;top:0;left:0;width:300px;height:100%;padding:32px 0 48px 0;font-size:14px;box-shadow:0 0 4px rgba(150,150,150,.33);box-sizing:border-box;overflow:auto;background-color:inherit}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar{width:8px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar-track{border-radius:10px;background-color:transparent}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar-thumb{border-radius:5px;background-color:rgba(150,150,150,.66);border:4px solid rgba(150,150,150,.66);background-clip:content-box}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc a{text-decoration:none}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc{padding:0 16px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link{display:inline;padding:.25rem 0}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link div,html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link p{display:inline}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper.highlighted .md-toc-link{font-weight:800}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{left:300px;width:calc(100% - 300px);padding:2em calc(50% - 457px - 300px / 2);margin:0;box-sizing:border-box}@media screen and (max-width:1274px){html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{padding:2em}}@media screen and (max-width:450px){html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{width:100%}}html body[for=html-export]:not([data-presentation-mode]):not([html-show-sidebar-toc]) .markdown-preview{left:50%;transform:translateX(-50%)}html body[for=html-export]:not([data-presentation-mode]):not([html-show-sidebar-toc]) .md-sidebar-toc{display:none}
+/* Please visit the URL below for more information: */
+/*   https://shd101wyy.github.io/markdown-preview-enhanced/#/customize-css */
+
+      </style>
+      <!-- The content below will be included at the end of the <head> element. --><script type="text/javascript">
+  document.addEventListener("DOMContentLoaded", function () {
+    // your code here
+  });
+</script></head><body for="html-export">
+    
+    
+      <div class="crossnote markdown-preview  ">
+      
+<h1 id="vercel-ai-gateway---guia-completo">Vercel AI Gateway - Guia Completo </h1>
+<h2 id="-índice">📋 Índice </h2>
+<ul>
+<li><a href="#o-que-%C3%A9-vercel-ai-gateway">O que é Vercel AI Gateway?</a></li>
+<li><a href="#vantagens-e-benef%C3%ADcios">Vantagens e Benefícios</a></li>
+<li><a href="#compara%C3%A7%C3%A3o-com-a-arquitetura-atual">Comparação com a Arquitetura Atual</a></li>
+<li><a href="#como-funciona">Como Funciona</a></li>
+<li><a href="#guia-de-implementa%C3%A7%C3%A3o">Guia de Implementação</a></li>
+<li><a href="#exemplos-de-c%C3%B3digo">Exemplos de Código</a></li>
+<li><a href="#migra%C3%A7%C3%A3o-da-arquitetura-atual">Migração da Arquitetura Atual</a></li>
+<li><a href="#considera%C3%A7%C3%B5es-multi-tenant">Considerações Multi-Tenant</a></li>
+<li><a href="#seguran%C3%A7a-e-boas-pr%C3%A1ticas">Segurança e Boas Práticas</a></li>
+<li><a href="#custos-e-pricing">Custos e Pricing</a></li>
+<li><a href="#monitoramento-e-m%C3%A9tricas">Monitoramento e Métricas</a></li>
+<li><a href="#refer%C3%AAncias">Referências</a></li>
+</ul>
+<hr>
+<h2 id="o-que-é-vercel-ai-gateway">O que é Vercel AI Gateway? </h2>
+<p><strong>Vercel AI Gateway</strong> é uma plataforma unificada que simplifica o acesso e gerenciamento de <strong>centenas de modelos de IA</strong> de diversos provedores (OpenAI, Anthropic, Google, Meta, xAI, Groq, Mistral e mais) através de um <strong>único endpoint de API</strong>.</p>
+<h3 id="problema-que-resolve">Problema que Resolve </h3>
+<p>Atualmente, ao trabalhar com múltiplos provedores de IA, você precisa:</p>
+<ul>
+<li>❌ Gerenciar múltiplos SDKs (OpenAI SDK, Groq SDK, Anthropic SDK, etc.)</li>
+<li>❌ Manter diferentes formatos de API e autenticação</li>
+<li>❌ Implementar lógica de fallback manualmente</li>
+<li>❌ Criar seu próprio sistema de métricas e tracking</li>
+<li>❌ Lidar com rate limiting de cada provedor separadamente</li>
+<li>❌ Implementar cache e retry logic para cada SDK</li>
+</ul>
+<h3 id="solução">Solução </h3>
+<p>Com Vercel AI Gateway:</p>
+<ul>
+<li>✅ <strong>Um único SDK</strong> para todos os provedores</li>
+<li>✅ <strong>Uma interface unificada</strong> para todos os modelos</li>
+<li>✅ <strong>Fallback automático</strong> quando um provedor está down</li>
+<li>✅ <strong>Métricas built-in</strong> em dashboard centralizado</li>
+<li>✅ <strong>Rate limiting global</strong> gerenciado automaticamente</li>
+<li>✅ <strong>Caching inteligente</strong> para reduzir custos e latência</li>
+<li>✅ <strong>Observabilidade completa</strong> de todos os requests</li>
+</ul>
+<hr>
+<h2 id="vantagens-e-benefícios">Vantagens e Benefícios </h2>
+<h3 id="1--acesso-unificado-a-múltiplos-modelos">1. 🔄 Acesso Unificado a Múltiplos Modelos </h3>
+<p><strong>Benefício:</strong> Acesse <strong>mais de 100 modelos de IA</strong> com uma única API.</p>
+<pre data-role="codeBlock" data-info="typescript" class="language-typescript typescript"><code><span class="token comment">// Antes: Código diferente para cada provedor</span>
+<span class="token keyword keyword-import">import</span> OpenAI <span class="token keyword keyword-from">from</span> <span class="token string">'openai'</span>
+<span class="token keyword keyword-import">import</span> Groq <span class="token keyword keyword-from">from</span> <span class="token string">'groq-sdk'</span>
+<span class="token keyword keyword-import">import</span> Anthropic <span class="token keyword keyword-from">from</span> <span class="token string">'@anthropic-ai/sdk'</span>
+
+<span class="token keyword keyword-const">const</span> openai <span class="token operator">=</span> <span class="token keyword keyword-new">new</span> <span class="token class-name">OpenAI</span><span class="token punctuation">(</span><span class="token punctuation">{</span> apiKey<span class="token operator">:</span> process<span class="token punctuation">.</span>env<span class="token punctuation">.</span><span class="token constant">OPENAI_API_KEY</span> <span class="token punctuation">}</span><span class="token punctuation">)</span>
+<span class="token keyword keyword-const">const</span> groq <span class="token operator">=</span> <span class="token keyword keyword-new">new</span> <span class="token class-name">Groq</span><span class="token punctuation">(</span><span class="token punctuation">{</span> apiKey<span class="token operator">:</span> process<span class="token punctuation">.</span>env<span class="token punctuation">.</span><span class="token constant">GROQ_API_KEY</span> <span class="token punctuation">}</span><span class="token punctuation">)</span>
+<span class="token keyword keyword-const">const</span> anthropic <span class="token operator">=</span> <span class="token keyword keyword-new">new</span> <span class="token class-name">Anthropic</span><span class="token punctuation">(</span><span class="token punctuation">{</span> apiKey<span class="token operator">:</span> process<span class="token punctuation">.</span>env<span class="token punctuation">.</span><span class="token constant">ANTHROPIC_API_KEY</span> <span class="token punctuation">}</span><span class="token punctuation">)</span>
+
+<span class="token comment">// Depois: Uma única interface</span>
+<span class="token class-name"><span class="token keyword keyword-import">import</span></span> <span class="token punctuation">{</span> streamText <span class="token punctuation">}</span> <span class="token keyword keyword-from">from</span> <span class="token string">'ai'</span>
+
+<span class="token comment">// Trocar de modelo é só mudar o nome</span>
+<span class="token keyword keyword-const">const</span> result <span class="token operator">=</span> <span class="token function">streamText</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+  model<span class="token operator">:</span> <span class="token string">'openai/gpt-4'</span><span class="token punctuation">,</span>  <span class="token comment">// ou 'anthropic/claude-3-5-sonnet', 'groq/llama-3.3-70b'</span>
+  messages
+<span class="token punctuation">}</span><span class="token punctuation">)</span>
+</code></pre><p><strong>Vantagem:</strong> Experimente e troque modelos <strong>sem reescrever código</strong> - apenas mude o nome do modelo.</p>
+<h3 id="2--métricas-e-observabilidade-built-in">2. 📊 Métricas e Observabilidade Built-in </h3>
+<p><strong>Benefício:</strong> Dashboard centralizado com métricas detalhadas de <strong>todos os requests</strong>.</p>
+<p><strong>O que você obtém:</strong></p>
+<ul>
+<li>📈 Uso por modelo (requests, tokens, custos)</li>
+<li>⏱️ Latência média e P95/P99</li>
+<li>🚨 Taxa de erro por provedor</li>
+<li>💰 Distribuição de custos em tempo real</li>
+<li>🔍 Logs granulares de cada request</li>
+<li>📉 Tendências de uso ao longo do tempo</li>
+</ul>
+<p><strong>Comparação com implementação manual:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Recurso</th>
+<th>Implementação Atual</th>
+<th>Com AI Gateway</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tracking de tokens</td>
+<td>Manual (usageTracking.ts)</td>
+<td>✅ Automático</td>
+</tr>
+<tr>
+<td>Custos por modelo</td>
+<td>Cálculo manual</td>
+<td>✅ Dashboard em tempo real</td>
+</tr>
+<tr>
+<td>Latência de requests</td>
+<td>Sem tracking</td>
+<td>✅ P50/P95/P99 automáticos</td>
+</tr>
+<tr>
+<td>Logs de erro</td>
+<td>Console logs</td>
+<td>✅ Dashboard centralizado</td>
+</tr>
+<tr>
+<td>Analytics histórico</td>
+<td>Precisa construir</td>
+<td>✅ Built-in</td>
+</tr>
+</tbody>
+</table>
+<h3 id="3--caching-inteligente">3. 💾 Caching Inteligente </h3>
+<p><strong>Benefício:</strong> Reduza <strong>custos e latência</strong> automaticamente.</p>
+<p><strong>Como funciona:</strong></p>
+<ul>
+<li>Requests idênticos retornam resposta cacheada (latência ~20ms)</li>
+<li>Cache gerenciado automaticamente pelo Gateway</li>
+<li>Configurável por modelo e tempo de expiração</li>
+</ul>
+<p><strong>Exemplo de economia:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Sem cache:
+- 1000 requests idênticos/dia = 1000 × $0.03 = $30/dia
+- Latência média: 800ms
+
+Com cache (hit rate 70%):
+- 300 requests reais + 700 cache = 300 × $0.03 = $9/dia
+- Latência média: 200ms (700 requests em 20ms)
+- Economia: 70% de custos + 75% menos latência
+</code></pre><h3 id="4--failover-automático">4. 🔄 Failover Automático </h3>
+<p><strong>Benefício:</strong> Alta disponibilidade <strong>sem código adicional</strong>.</p>
+<p><strong>Funcionamento:</strong></p>
+<ul>
+<li>Se OpenAI está rate-limited → automaticamente tenta Groq</li>
+<li>Se um provedor está down → redireciona para backup</li>
+<li>Load balancing entre provedores para distribuir carga</li>
+</ul>
+<pre data-role="codeBlock" data-info="typescript" class="language-typescript typescript"><code><span class="token comment">// Configuração de fallback</span>
+<span class="token keyword keyword-const">const</span> result <span class="token operator">=</span> <span class="token function">streamText</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+  model<span class="token operator">:</span> <span class="token string">'openai/gpt-4'</span><span class="token punctuation">,</span>
+  fallbacks<span class="token operator">:</span> <span class="token punctuation">[</span><span class="token string">'anthropic/claude-3-5-sonnet'</span><span class="token punctuation">,</span> <span class="token string">'groq/llama-3.3-70b'</span><span class="token punctuation">]</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span>
+
+<span class="token comment">// Gateway tenta automaticamente na ordem definida</span>
+<span class="token comment">// Você não precisa tratar falhas manualmente</span>
+</code></pre><h3 id="5-️-rate-limiting-global">5. 🛡️ Rate Limiting Global </h3>
+<p><strong>Benefício:</strong> Evite ultrapassar limites de API <strong>automaticamente</strong>.</p>
+<ul>
+<li>Rate limiting inteligente por provedor</li>
+<li>Distribuição automática de requests entre provedores</li>
+<li>Proteção contra burst traffic</li>
+</ul>
+<h3 id="6--transparência-de-custos">6. 💰 Transparência de Custos </h3>
+<p><strong>Benefício:</strong> Visibilidade total de gastos <strong>em tempo real</strong>.</p>
+<ul>
+<li>Custos por modelo, por cliente, por dia</li>
+<li>Sem markup (Vercel cobra preços de mercado)</li>
+<li>Suporte a BYOK (Bring Your Own Key) para billing direto</li>
+<li>Alertas de budget configuráveis</li>
+</ul>
+<h3 id="7--performance">7. 🚀 Performance </h3>
+<p><strong>Benefício:</strong> Latência ultra-baixa de <strong>~20ms</strong> para gerenciamento.</p>
+<ul>
+<li>Overhead mínimo (20ms) comparado aos requests diretos</li>
+<li>Edge network global da Vercel</li>
+<li>Otimização de rotas para menor latência</li>
+</ul>
+<hr>
+<h2 id="comparação-com-a-arquitetura-atual">Comparação com a Arquitetura Atual </h2>
+<h3 id="arquitetura-atual-srclibopenaits--groqts">Arquitetura Atual (src/lib/openai.ts + groq.ts) </h3>
+<pre data-role="codeBlock" data-info="typescript" class="language-typescript typescript"><code><span class="token comment">// ❌ Múltiplos SDKs para gerenciar</span>
+<span class="token keyword keyword-import">import</span> OpenAI <span class="token keyword keyword-from">from</span> <span class="token string">'openai'</span>
+<span class="token keyword keyword-import">import</span> Groq <span class="token keyword keyword-from">from</span> <span class="token string">'groq-sdk'</span>
+
+<span class="token comment">// ❌ Lógica de seleção manual</span>
+<span class="token keyword keyword-const">const</span> client <span class="token operator">=</span> config<span class="token punctuation">.</span>aiProvider <span class="token operator">===</span> <span class="token string">'openai'</span> 
+  <span class="token operator">?</span> <span class="token keyword keyword-new">new</span> <span class="token class-name">OpenAI</span><span class="token punctuation">(</span><span class="token punctuation">{</span> apiKey <span class="token punctuation">}</span><span class="token punctuation">)</span> 
+  <span class="token operator">:</span> <span class="token keyword keyword-new">new</span> <span class="token class-name">Groq</span><span class="token punctuation">(</span><span class="token punctuation">{</span> apiKey <span class="token punctuation">}</span><span class="token punctuation">)</span>
+
+<span class="token comment">// ❌ Tracking manual de uso</span>
+<span class="token keyword keyword-await">await</span> <span class="token function">trackUsage</span><span class="token punctuation">(</span>clientId<span class="token punctuation">,</span> <span class="token punctuation">{</span>
+  model<span class="token operator">:</span> response<span class="token punctuation">.</span>model<span class="token punctuation">,</span>
+  inputTokens<span class="token operator">:</span> response<span class="token punctuation">.</span>usage<span class="token punctuation">.</span>prompt_tokens<span class="token punctuation">,</span>
+  outputTokens<span class="token operator">:</span> response<span class="token punctuation">.</span>usage<span class="token punctuation">.</span>completion_tokens
+<span class="token punctuation">}</span><span class="token punctuation">)</span>
+
+<span class="token comment">// ❌ Sem fallback automático</span>
+<span class="token comment">// ❌ Sem métricas centralizadas</span>
+<span class="token comment">// ❌ Sem cache automático</span>
+</code></pre><p><strong>Problemas:</strong></p>
+<ul>
+<li>🔴 Código duplicado entre provedores</li>
+<li>🔴 Sem failover automático</li>
+<li>🔴 Métricas fragmentadas (precisa consultar Supabase)</li>
+<li>🔴 Sem cache inteligente</li>
+<li>🔴 Rate limiting manual</li>
+<li>🔴 Difícil adicionar novos provedores</li>
+</ul>
+<h3 id="arquitetura-com-ai-gateway">Arquitetura com AI Gateway </h3>
+<pre data-role="codeBlock" data-info="typescript" class="language-typescript typescript"><code><span class="token comment">// ✅ SDK único</span>
+<span class="token keyword keyword-import">import</span> <span class="token punctuation">{</span> streamText <span class="token punctuation">}</span> <span class="token keyword keyword-from">from</span> <span class="token string">'ai'</span>
+
+<span class="token comment">// ✅ Seleção simplificada</span>
+<span class="token keyword keyword-const">const</span> result <span class="token operator">=</span> <span class="token function">streamText</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+  model<span class="token operator">:</span> <span class="token template-string"><span class="token template-punctuation string">`</span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${</span>config<span class="token punctuation">.</span>aiProvider<span class="token interpolation-punctuation punctuation">}</span></span><span class="token string">/</span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${</span>config<span class="token punctuation">.</span>modelName<span class="token interpolation-punctuation punctuation">}</span></span><span class="token template-punctuation string">`</span></span><span class="token punctuation">,</span>
+  messages<span class="token punctuation">,</span>
+  <span class="token comment">// ✅ Fallback automático</span>
+  fallbacks<span class="token operator">:</span> config<span class="token punctuation">.</span>fallbackModels
+<span class="token punctuation">}</span><span class="token punctuation">)</span>
+
+<span class="token comment">// ✅ Métricas automáticas no dashboard Vercel</span>
+<span class="token comment">// ✅ Cache gerenciado automaticamente</span>
+<span class="token comment">// ✅ Rate limiting global</span>
+<span class="token comment">// ✅ Failover sem código adicional</span>
+</code></pre><p><strong>Vantagens:</strong></p>
+<ul>
+<li>🟢 Código 70% menor</li>
+<li>🟢 Failover automático</li>
+<li>🟢 Métricas em tempo real no dashboard</li>
+<li>🟢 Cache inteligente built-in</li>
+<li>🟢 Rate limiting gerenciado</li>
+<li>🟢 Adicionar provedor = mudar string</li>
+</ul>
+<hr>
+<h2 id="como-funciona">Como Funciona </h2>
+<h3 id="fluxo-de-request">Fluxo de Request </h3>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>┌─────────────┐
+│  Next.js    │  1. Request com model name
+│  App        │──────────────────────┐
+└─────────────┘                      │
+                                     ▼
+                            ┌────────────────┐
+                            │ Vercel AI      │
+                            │ Gateway        │
+                            │                │
+                            │ • Routing      │
+                            │ • Cache check  │
+                            │ • Metrics      │
+                            │ • Fallback     │
+                            └────────────────┘
+                                     │
+                    ┌────────────────┼────────────────┐
+                    ▼                ▼                ▼
+              ┌──────────┐    ┌──────────┐    ┌──────────┐
+              │ OpenAI   │    │  Groq    │    │Anthropic │
+              │ GPT-4    │    │ Llama 3  │    │ Claude   │
+              └──────────┘    └──────────┘    └──────────┘
+</code></pre><h3 id="recursos-automáticos">Recursos Automáticos </h3>
+<ol>
+<li><strong>Request Routing:</strong> Gateway encaminha para o provedor correto</li>
+<li><strong>Cache Lookup:</strong> Verifica se resposta está em cache</li>
+<li><strong>Metrics Collection:</strong> Registra tokens, latência, custos</li>
+<li><strong>Automatic Retry:</strong> Tenta novamente em caso de falha</li>
+<li><strong>Fallback:</strong> Troca de provedor se necessário</li>
+<li><strong>Response Streaming:</strong> Retorna tokens progressivamente</li>
+</ol>
+<hr>
+<h2 id="guia-de-implementação">Guia de Implementação </h2>
+<h3 id="passo-1-instalar-dependências">Passo 1: Instalar Dependências </h3>
+<pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code><span class="token function">npm</span> <span class="token function">install</span> ai @ai-sdk/react zod
+</code></pre><p><strong>Pacotes:</strong></p>
+<ul>
+<li><code>ai</code> - Core do Vercel AI SDK</li>
+<li><code>@ai-sdk/react</code> - React hooks para IA (useChat, useCompletion)</li>
+<li><code>zod</code> - Validação de schemas (para tool calls)</li>
+</ul>
+<h3 id="passo-2-configurar-variáveis-de-ambiente">Passo 2: Configurar Variáveis de Ambiente </h3>
+<pre data-role="codeBlock" data-info="env" class="language-env env"><code># .env.local
+
+# Vercel AI Gateway (substitui chaves individuais)
+AI_GATEWAY_API_KEY=your-vercel-ai-gateway-key
+
+# Ou BYOK (Bring Your Own Key) - billing direto com provedores
+OPENAI_API_KEY=sk-...
+GROQ_API_KEY=gsk_...
+ANTHROPIC_API_KEY=sk-ant-...
+</code></pre><p><strong>Onde obter a chave:</strong></p>
+<ol>
+<li>Acesse <a href="https://vercel.com/dashboard">Vercel Dashboard</a></li>
+<li>Vá em <strong>AI Gateway</strong> no menu lateral</li>
+<li>Clique em <strong>Get API Key</strong></li>
+<li>Copie e adicione ao <code>.env.local</code></li>
+</ol>
+<h3 id="passo-3-criar-api-route">Passo 3: Criar API Route </h3>
+<pre data-role="codeBlock" data-info="typescript" class="language-typescript typescript"><code><span class="token comment">// src/app/api/chat/route.ts</span>
+
+<span class="token keyword keyword-import">import</span> <span class="token punctuation">{</span> streamText <span class="token punctuation">}</span> <span class="token keyword keyword-from">from</span> <span class="token string">'ai'</span>
+
+<span class="token keyword keyword-export">export</span> <span class="token keyword keyword-const">const</span> runtime <span class="token operator">=</span> <span class="token string">'edge'</span> <span class="token comment">// Opcional: edge runtime para menor latência</span>
+<span class="token keyword keyword-export">export</span> <span class="token keyword keyword-const">const</span> dynamic <span class="token operator">=</span> <span class="token string">'force-dynamic'</span>
+
+<span class="token keyword keyword-export">export</span> <span class="token keyword keyword-async">async</span> <span class="token keyword keyword-function">function</span> <span class="token constant">POST</span><span class="token punctuation">(</span>req<span class="token operator">:</span> Request<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword keyword-try">try</span> <span class="token punctuation">{</span>
+    <span class="token keyword keyword-const">const</span> <span class="token punctuation">{</span> messages<span class="token punctuation">,</span> model <span class="token operator">=</span> <span class="token string">'openai/gpt-4'</span> <span class="token punctuation">}</span> <span class="token operator">=</span> <span class="token keyword keyword-await">await</span> req<span class="token punctuation">.</span><span class="token function">json</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+    <span class="token keyword keyword-const">const</span> result <span class="token operator">=</span> <span class="token function">streamText</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+      model<span class="token punctuation">,</span> <span class="token comment">// Ex: 'groq/llama-3.3-70b', 'anthropic/claude-3-5-sonnet'</span>
+      messages<span class="token punctuation">,</span>
+      temperature<span class="token operator">:</span> <span class="token number">0.7</span><span class="token punctuation">,</span>
+      maxTokens<span class="token operator">:</span> <span class="token number">1000</span><span class="token punctuation">,</span>
+      <span class="token comment">// Fallback automático</span>
+      fallbacks<span class="token operator">:</span> <span class="token punctuation">[</span>
+        <span class="token string">'anthropic/claude-3-5-sonnet'</span><span class="token punctuation">,</span>
+        <span class="token string">'groq/llama-3.3-70b'</span>
+      <span class="token punctuation">]</span>
+    <span class="token punctuation">}</span><span class="token punctuation">)</span>
+
+    <span class="token comment">// Retorna stream de resposta</span>
+    <span class="token keyword keyword-return">return</span> result<span class="token punctuation">.</span><span class="token function">toDataStreamResponse</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+  <span class="token punctuation">}</span> <span class="token keyword keyword-catch">catch</span> <span class="token punctuation">(</span>error<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token builtin">console</span><span class="token punctuation">.</span><span class="token function">error</span><span class="token punctuation">(</span><span class="token string">'AI Gateway error:'</span><span class="token punctuation">,</span> error<span class="token punctuation">)</span>
+    <span class="token keyword keyword-return">return</span> <span class="token keyword keyword-new">new</span> <span class="token class-name">Response</span><span class="token punctuation">(</span><span class="token string">'Error generating response'</span><span class="token punctuation">,</span> <span class="token punctuation">{</span> status<span class="token operator">:</span> <span class="token number">500</span> <span class="token punctuation">}</span><span class="token punctuation">)</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre><h3 id="passo-4-usar-no-frontend">Passo 4: Usar no Frontend </h3>
+<pre data-role="codeBlock" data-info="tsx" class="language-tsx tsx"><code><span class="token comment">// src/components/ChatInterface.tsx</span>
+
+<span class="token string">'use client'</span>
+
+<span class="token keyword keyword-import">import</span> <span class="token imports"><span class="token punctuation">{</span> useChat <span class="token punctuation">}</span></span> <span class="token keyword keyword-from">from</span> <span class="token string">'@ai-sdk/react'</span>
+
+<span class="token keyword keyword-export">export</span> <span class="token keyword keyword-const">const</span> <span class="token function-variable function">ChatInterface</span> <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token arrow operator">=&gt;</span> <span class="token punctuation">{</span>
+  <span class="token keyword keyword-const">const</span> <span class="token punctuation">{</span> messages<span class="token punctuation">,</span> input<span class="token punctuation">,</span> handleInputChange<span class="token punctuation">,</span> handleSubmit<span class="token punctuation">,</span> isLoading <span class="token punctuation">}</span> <span class="token operator">=</span> <span class="token function">useChat</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+    api<span class="token operator">:</span> <span class="token string">'/api/chat'</span><span class="token punctuation">,</span>
+    body<span class="token operator">:</span> <span class="token punctuation">{</span>
+      model<span class="token operator">:</span> <span class="token string">'groq/llama-3.3-70b'</span> <span class="token comment">// Configurável por cliente</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span><span class="token punctuation">)</span>
+
+  <span class="token keyword keyword-return">return</span> <span class="token punctuation">(</span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token attr-name">className</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>flex flex-col h-screen<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span><span class="token plain-text">
+      </span><span class="token punctuation">{</span><span class="token comment">/* Messages */</span><span class="token punctuation">}</span><span class="token plain-text">
+      </span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token attr-name">className</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>flex-1 overflow-y-auto p-4<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span><span class="token plain-text">
+        </span><span class="token punctuation">{</span>messages<span class="token punctuation">.</span><span class="token method function property-access">map</span><span class="token punctuation">(</span><span class="token punctuation">(</span>msg<span class="token punctuation">)</span> <span class="token arrow operator">=&gt;</span> <span class="token punctuation">(</span>
+          <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token attr-name">key</span><span class="token script language-javascript"><span class="token script-punctuation punctuation">=</span><span class="token punctuation">{</span>msg<span class="token punctuation">.</span><span class="token property-access">id</span><span class="token punctuation">}</span></span> <span class="token attr-name">className</span><span class="token script language-javascript"><span class="token script-punctuation punctuation">=</span><span class="token punctuation">{</span>msg<span class="token punctuation">.</span><span class="token property-access">role</span> <span class="token operator">===</span> <span class="token string">'user'</span> <span class="token operator">?</span> <span class="token string">'text-right'</span> <span class="token operator">:</span> <span class="token string">'text-left'</span><span class="token punctuation">}</span></span><span class="token punctuation">&gt;</span></span><span class="token plain-text">
+            </span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span> <span class="token attr-name">className</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>inline-block p-3 rounded-lg bg-gray-100<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span><span class="token plain-text">
+              </span><span class="token punctuation">{</span>msg<span class="token punctuation">.</span><span class="token property-access">content</span><span class="token punctuation">}</span><span class="token plain-text">
+            </span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span><span class="token plain-text">
+          </span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+        <span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">}</span><span class="token plain-text">
+        </span><span class="token punctuation">{</span>isLoading <span class="token operator">&amp;&amp;</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>div</span><span class="token punctuation">&gt;</span></span><span class="token plain-text">IA está pensando...</span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span><span class="token punctuation">}</span><span class="token plain-text">
+      </span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span><span class="token plain-text">
+
+      </span><span class="token punctuation">{</span><span class="token comment">/* Input */</span><span class="token punctuation">}</span><span class="token plain-text">
+      </span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>form</span> <span class="token attr-name">onSubmit</span><span class="token script language-javascript"><span class="token script-punctuation punctuation">=</span><span class="token punctuation">{</span>handleSubmit<span class="token punctuation">}</span></span> <span class="token attr-name">className</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>p-4 border-t<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span><span class="token plain-text">
+        </span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>input</span>
+          <span class="token attr-name">value</span><span class="token script language-javascript"><span class="token script-punctuation punctuation">=</span><span class="token punctuation">{</span>input<span class="token punctuation">}</span></span>
+          <span class="token attr-name">onChange</span><span class="token script language-javascript"><span class="token script-punctuation punctuation">=</span><span class="token punctuation">{</span>handleInputChange<span class="token punctuation">}</span></span>
+          <span class="token attr-name">placeholder</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>Digite sua mensagem...<span class="token punctuation">"</span></span>
+          <span class="token attr-name">className</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>w-full p-2 border rounded<span class="token punctuation">"</span></span>
+        <span class="token punctuation">/&gt;</span></span><span class="token plain-text">
+        </span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>button</span> <span class="token attr-name">type</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>submit<span class="token punctuation">"</span></span> <span class="token attr-name">className</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">"</span>mt-2 px-4 py-2 bg-blue-500 text-white rounded<span class="token punctuation">"</span></span><span class="token punctuation">&gt;</span></span><span class="token plain-text">
+          Enviar
+        </span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>button</span><span class="token punctuation">&gt;</span></span><span class="token plain-text">
+      </span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>form</span><span class="token punctuation">&gt;</span></span><span class="token plain-text">
+    </span><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>div</span><span class="token punctuation">&gt;</span></span>
+  <span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+</code></pre><hr>
+<h2 id="exemplos-de-código">Exemplos de Código </h2>
+<h3 id="exemplo-1-chat-completion-com-streaming">Exemplo 1: Chat Completion com Streaming </h3>
+<pre data-role="codeBlock" data-info="typescript" class="language-typescript typescript"><code><span class="token comment">// src/app/api/chat/route.ts</span>
+
+<span class="token keyword keyword-import">import</span> <span class="token punctuation">{</span> streamText <span class="token punctuation">}</span> <span class="token keyword keyword-from">from</span> <span class="token string">'ai'</span>
+
+<span class="token keyword keyword-export">export</span> <span class="token keyword keyword-async">async</span> <span class="token keyword keyword-function">function</span> <span class="token constant">POST</span><span class="token punctuation">(</span>req<span class="token operator">:</span> Request<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword keyword-const">const</span> <span class="token punctuation">{</span> messages<span class="token punctuation">,</span> clientId <span class="token punctuation">}</span> <span class="token operator">=</span> <span class="token keyword keyword-await">await</span> req<span class="token punctuation">.</span><span class="token function">json</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+  <span class="token comment">// Buscar configuração do cliente do Supabase Vault</span>
+  <span class="token keyword keyword-const">const</span> config <span class="token operator">=</span> <span class="token keyword keyword-await">await</span> <span class="token function">getClientConfig</span><span class="token punctuation">(</span>clientId<span class="token punctuation">)</span>
+
+  <span class="token keyword keyword-const">const</span> result <span class="token operator">=</span> <span class="token function">streamText</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+    model<span class="token operator">:</span> <span class="token template-string"><span class="token template-punctuation string">`</span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${</span>config<span class="token punctuation">.</span>aiProvider<span class="token interpolation-punctuation punctuation">}</span></span><span class="token string">/</span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${</span>config<span class="token punctuation">.</span>modelName<span class="token interpolation-punctuation punctuation">}</span></span><span class="token template-punctuation string">`</span></span><span class="token punctuation">,</span>
+    messages<span class="token punctuation">,</span>
+    temperature<span class="token operator">:</span> config<span class="token punctuation">.</span>temperature <span class="token operator">||</span> <span class="token number">0.7</span><span class="token punctuation">,</span>
+    maxTokens<span class="token operator">:</span> config<span class="token punctuation">.</span>maxTokens <span class="token operator">||</span> <span class="token number">1000</span><span class="token punctuation">,</span>
+    systemPrompt<span class="token operator">:</span> config<span class="token punctuation">.</span>systemPrompt<span class="token punctuation">,</span>
+    
+    <span class="token comment">// Callbacks para tracking custom (opcional)</span>
+    <span class="token function-variable function">onFinish</span><span class="token operator">:</span> <span class="token keyword keyword-async">async</span> <span class="token punctuation">(</span><span class="token punctuation">{</span> usage<span class="token punctuation">,</span> response <span class="token punctuation">}</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">{</span>
+      <span class="token comment">// Ainda pode fazer tracking no Supabase se necessário</span>
+      <span class="token keyword keyword-await">await</span> <span class="token function">trackUsageInSupabase</span><span class="token punctuation">(</span>clientId<span class="token punctuation">,</span> <span class="token punctuation">{</span>
+        model<span class="token operator">:</span> response<span class="token punctuation">.</span>model<span class="token punctuation">,</span>
+        inputTokens<span class="token operator">:</span> usage<span class="token punctuation">.</span>promptTokens<span class="token punctuation">,</span>
+        outputTokens<span class="token operator">:</span> usage<span class="token punctuation">.</span>completionTokens
+      <span class="token punctuation">}</span><span class="token punctuation">)</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span><span class="token punctuation">)</span>
+
+  <span class="token keyword keyword-return">return</span> result<span class="token punctuation">.</span><span class="token function">toDataStreamResponse</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+</code></pre><h3 id="exemplo-2-tool-calls-sub-agentes">Exemplo 2: Tool Calls (Sub-agentes) </h3>
+<pre data-role="codeBlock" data-info="typescript" class="language-typescript typescript"><code><span class="token keyword keyword-import">import</span> <span class="token punctuation">{</span> streamText<span class="token punctuation">,</span> tool <span class="token punctuation">}</span> <span class="token keyword keyword-from">from</span> <span class="token string">'ai'</span>
+<span class="token keyword keyword-import">import</span> <span class="token punctuation">{</span> z <span class="token punctuation">}</span> <span class="token keyword keyword-from">from</span> <span class="token string">'zod'</span>
+
+<span class="token keyword keyword-export">export</span> <span class="token keyword keyword-async">async</span> <span class="token keyword keyword-function">function</span> <span class="token constant">POST</span><span class="token punctuation">(</span>req<span class="token operator">:</span> Request<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword keyword-const">const</span> <span class="token punctuation">{</span> messages <span class="token punctuation">}</span> <span class="token operator">=</span> <span class="token keyword keyword-await">await</span> req<span class="token punctuation">.</span><span class="token function">json</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+  <span class="token keyword keyword-const">const</span> result <span class="token operator">=</span> <span class="token function">streamText</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+    model<span class="token operator">:</span> <span class="token string">'openai/gpt-4'</span><span class="token punctuation">,</span>
+    messages<span class="token punctuation">,</span>
+    tools<span class="token operator">:</span> <span class="token punctuation">{</span>
+      <span class="token comment">// Tool para transferir para humano</span>
+      transfer_to_human<span class="token operator">:</span> <span class="token function">tool</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+        description<span class="token operator">:</span> <span class="token string">'Transfer conversation to human agent'</span><span class="token punctuation">,</span>
+        parameters<span class="token operator">:</span> z<span class="token punctuation">.</span><span class="token function">object</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+          reason<span class="token operator">:</span> z<span class="token punctuation">.</span><span class="token function">string</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">describe</span><span class="token punctuation">(</span><span class="token string">'Reason for transfer'</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+          urgency<span class="token operator">:</span> z<span class="token punctuation">.</span><span class="token function">enum</span><span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token string">'low'</span><span class="token punctuation">,</span> <span class="token string">'medium'</span><span class="token punctuation">,</span> <span class="token string">'high'</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+        <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+        <span class="token function-variable function">execute</span><span class="token operator">:</span> <span class="token keyword keyword-async">async</span> <span class="token punctuation">(</span><span class="token punctuation">{</span> reason<span class="token punctuation">,</span> urgency <span class="token punctuation">}</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">{</span>
+          <span class="token keyword keyword-await">await</span> <span class="token function">createTransferRequest</span><span class="token punctuation">(</span>reason<span class="token punctuation">,</span> urgency<span class="token punctuation">)</span>
+          <span class="token keyword keyword-return">return</span> <span class="token punctuation">{</span> success<span class="token operator">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span> message<span class="token operator">:</span> <span class="token string">'Transferido para atendimento humano'</span> <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+      <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+      
+      <span class="token comment">// Tool para buscar documentos</span>
+      search_knowledge<span class="token operator">:</span> <span class="token function">tool</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+        description<span class="token operator">:</span> <span class="token string">'Search in knowledge base'</span><span class="token punctuation">,</span>
+        parameters<span class="token operator">:</span> z<span class="token punctuation">.</span><span class="token function">object</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+          query<span class="token operator">:</span> z<span class="token punctuation">.</span><span class="token function">string</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+        <span class="token function-variable function">execute</span><span class="token operator">:</span> <span class="token keyword keyword-async">async</span> <span class="token punctuation">(</span><span class="token punctuation">{</span> query <span class="token punctuation">}</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">{</span>
+          <span class="token keyword keyword-const">const</span> results <span class="token operator">=</span> <span class="token keyword keyword-await">await</span> <span class="token function">searchInVectorStore</span><span class="token punctuation">(</span>query<span class="token punctuation">)</span>
+          <span class="token keyword keyword-return">return</span> <span class="token punctuation">{</span> results <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+      <span class="token punctuation">}</span><span class="token punctuation">)</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span><span class="token punctuation">)</span>
+
+  <span class="token keyword keyword-return">return</span> result<span class="token punctuation">.</span><span class="token function">toDataStreamResponse</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+</code></pre><h3 id="exemplo-3-transcrição-de-áudio">Exemplo 3: Transcrição de Áudio </h3>
+<pre data-role="codeBlock" data-info="typescript" class="language-typescript typescript"><code><span class="token keyword keyword-import">import</span> <span class="token punctuation">{</span> transcribeAudio <span class="token punctuation">}</span> <span class="token keyword keyword-from">from</span> <span class="token string">'ai'</span>
+
+<span class="token keyword keyword-export">export</span> <span class="token keyword keyword-async">async</span> <span class="token keyword keyword-function">function</span> <span class="token constant">POST</span><span class="token punctuation">(</span>req<span class="token operator">:</span> Request<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword keyword-const">const</span> formData <span class="token operator">=</span> <span class="token keyword keyword-await">await</span> req<span class="token punctuation">.</span><span class="token function">formData</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+  <span class="token keyword keyword-const">const</span> audioFile <span class="token operator">=</span> formData<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token string">'audio'</span><span class="token punctuation">)</span> <span class="token keyword keyword-as">as</span> File
+
+  <span class="token keyword keyword-const">const</span> result <span class="token operator">=</span> <span class="token keyword keyword-await">await</span> <span class="token function">transcribeAudio</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+    model<span class="token operator">:</span> <span class="token string">'openai/whisper-1'</span><span class="token punctuation">,</span>
+    file<span class="token operator">:</span> audioFile<span class="token punctuation">,</span>
+    language<span class="token operator">:</span> <span class="token string">'pt'</span><span class="token punctuation">,</span> <span class="token comment">// Português</span>
+    responseFormat<span class="token operator">:</span> <span class="token string">'json'</span>
+  <span class="token punctuation">}</span><span class="token punctuation">)</span>
+
+  <span class="token keyword keyword-return">return</span> Response<span class="token punctuation">.</span><span class="token function">json</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+    text<span class="token operator">:</span> result<span class="token punctuation">.</span>text<span class="token punctuation">,</span>
+    duration<span class="token operator">:</span> result<span class="token punctuation">.</span>duration<span class="token punctuation">,</span>
+    language<span class="token operator">:</span> result<span class="token punctuation">.</span>language
+  <span class="token punctuation">}</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+</code></pre><h3 id="exemplo-4-análise-de-imagem">Exemplo 4: Análise de Imagem </h3>
+<pre data-role="codeBlock" data-info="typescript" class="language-typescript typescript"><code><span class="token keyword keyword-import">import</span> <span class="token punctuation">{</span> generateText <span class="token punctuation">}</span> <span class="token keyword keyword-from">from</span> <span class="token string">'ai'</span>
+
+<span class="token keyword keyword-export">export</span> <span class="token keyword keyword-async">async</span> <span class="token keyword keyword-function">function</span> <span class="token constant">POST</span><span class="token punctuation">(</span>req<span class="token operator">:</span> Request<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword keyword-const">const</span> <span class="token punctuation">{</span> imageUrl<span class="token punctuation">,</span> prompt <span class="token punctuation">}</span> <span class="token operator">=</span> <span class="token keyword keyword-await">await</span> req<span class="token punctuation">.</span><span class="token function">json</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+  <span class="token keyword keyword-const">const</span> result <span class="token operator">=</span> <span class="token keyword keyword-await">await</span> <span class="token function">generateText</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+    model<span class="token operator">:</span> <span class="token string">'openai/gpt-4o'</span><span class="token punctuation">,</span> <span class="token comment">// Modelo com vision</span>
+    messages<span class="token operator">:</span> <span class="token punctuation">[</span>
+      <span class="token punctuation">{</span>
+        role<span class="token operator">:</span> <span class="token string">'user'</span><span class="token punctuation">,</span>
+        content<span class="token operator">:</span> <span class="token punctuation">[</span>
+          <span class="token punctuation">{</span> type<span class="token operator">:</span> <span class="token string">'text'</span><span class="token punctuation">,</span> text<span class="token operator">:</span> prompt <span class="token punctuation">}</span><span class="token punctuation">,</span>
+          <span class="token punctuation">{</span> type<span class="token operator">:</span> <span class="token string">'image'</span><span class="token punctuation">,</span> image<span class="token operator">:</span> imageUrl <span class="token punctuation">}</span>
+        <span class="token punctuation">]</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">]</span>
+  <span class="token punctuation">}</span><span class="token punctuation">)</span>
+
+  <span class="token keyword keyword-return">return</span> Response<span class="token punctuation">.</span><span class="token function">json</span><span class="token punctuation">(</span><span class="token punctuation">{</span> description<span class="token operator">:</span> result<span class="token punctuation">.</span>text <span class="token punctuation">}</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+</code></pre><hr>
+<h2 id="migração-da-arquitetura-atual">Migração da Arquitetura Atual </h2>
+<h3 id="fase-1-preparação-sem-breaking-changes">Fase 1: Preparação (Sem Breaking Changes) </h3>
+<p><strong>Objetivo:</strong> Adicionar AI Gateway como opção paralela.</p>
+<pre data-role="codeBlock" data-info="typescript" class="language-typescript typescript"><code><span class="token comment">// src/lib/ai-gateway.ts (NOVO ARQUIVO)</span>
+
+<span class="token keyword keyword-import">import</span> <span class="token punctuation">{</span> streamText<span class="token punctuation">,</span> generateText <span class="token punctuation">}</span> <span class="token keyword keyword-from">from</span> <span class="token string">'ai'</span>
+
+<span class="token keyword keyword-export">export</span> <span class="token keyword keyword-const">const</span> <span class="token function-variable function">generateAIResponseWithGateway</span> <span class="token operator">=</span> <span class="token keyword keyword-async">async</span> <span class="token punctuation">(</span>
+  messages<span class="token operator">:</span> ChatMessage<span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+  config<span class="token operator">:</span> ClientConfig
+<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">{</span>
+  <span class="token keyword keyword-const">const</span> result <span class="token operator">=</span> <span class="token keyword keyword-await">await</span> <span class="token function">streamText</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+    model<span class="token operator">:</span> <span class="token template-string"><span class="token template-punctuation string">`</span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${</span>config<span class="token punctuation">.</span>aiProvider<span class="token interpolation-punctuation punctuation">}</span></span><span class="token string">/</span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${</span>config<span class="token punctuation">.</span>modelName<span class="token interpolation-punctuation punctuation">}</span></span><span class="token template-punctuation string">`</span></span><span class="token punctuation">,</span>
+    messages<span class="token punctuation">,</span>
+    temperature<span class="token operator">:</span> config<span class="token punctuation">.</span>temperature<span class="token punctuation">,</span>
+    maxTokens<span class="token operator">:</span> config<span class="token punctuation">.</span>maxTokens<span class="token punctuation">,</span>
+    systemPrompt<span class="token operator">:</span> config<span class="token punctuation">.</span>systemPrompt
+  <span class="token punctuation">}</span><span class="token punctuation">)</span>
+
+  <span class="token keyword keyword-return">return</span> result
+<span class="token punctuation">}</span>
+</code></pre><p><strong>Modificar apenas a API route para testar:</strong></p>
+<pre data-role="codeBlock" data-info="typescript" class="language-typescript typescript"><code><span class="token comment">// src/app/api/webhook/[clientId]/route.ts</span>
+
+<span class="token keyword keyword-const">const</span> <span class="token constant">USE_AI_GATEWAY</span> <span class="token operator">=</span> process<span class="token punctuation">.</span>env<span class="token punctuation">.</span><span class="token constant">ENABLE_AI_GATEWAY</span> <span class="token operator">===</span> <span class="token string">'true'</span> <span class="token comment">// Feature flag</span>
+
+<span class="token keyword keyword-if">if</span> <span class="token punctuation">(</span><span class="token constant">USE_AI_GATEWAY</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  response <span class="token operator">=</span> <span class="token keyword keyword-await">await</span> <span class="token function">generateAIResponseWithGateway</span><span class="token punctuation">(</span>messages<span class="token punctuation">,</span> config<span class="token punctuation">)</span>
+<span class="token punctuation">}</span> <span class="token keyword keyword-else">else</span> <span class="token punctuation">{</span>
+  <span class="token comment">// Mantém lógica atual</span>
+  response <span class="token operator">=</span> <span class="token keyword keyword-await">await</span> <span class="token function">generateAIResponse</span><span class="token punctuation">(</span>messages<span class="token punctuation">,</span> config<span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+</code></pre><p><strong>Vantagens desta abordagem:</strong></p>
+<ul>
+<li>✅ Zero downtime</li>
+<li>✅ Pode testar em staging primeiro</li>
+<li>✅ Rollback instantâneo (mudar feature flag)</li>
+<li>✅ Comparar performance lado a lado</li>
+</ul>
+<h3 id="fase-2-migração-gradual">Fase 2: Migração Gradual </h3>
+<ol>
+<li>
+<p><strong>Migrar 10% do tráfego:</strong></p>
+<pre data-role="codeBlock" data-info="typescript" class="language-typescript typescript"><code><span class="token keyword keyword-const">const</span> <span class="token constant">USE_AI_GATEWAY</span> <span class="token operator">=</span> Math<span class="token punctuation">.</span><span class="token function">random</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&lt;</span> <span class="token number">0.1</span> <span class="token comment">// 10% de chance</span>
+</code></pre></li>
+<li>
+<p><strong>Monitorar métricas:</strong></p>
+<ul>
+<li>Latência (Gateway vs. direto)</li>
+<li>Taxa de erro</li>
+<li>Custos</li>
+<li>Satisfação de resposta</li>
+</ul>
+</li>
+<li>
+<p><strong>Aumentar gradualmente:</strong></p>
+<ul>
+<li>10% → 25% → 50% → 100%</li>
+</ul>
+</li>
+</ol>
+<h3 id="fase-3-consolidação">Fase 3: Consolidação </h3>
+<p><strong>Remover código legado após validação completa:</strong></p>
+<pre data-role="codeBlock" data-info="typescript" class="language-typescript typescript"><code><span class="token comment">// ❌ REMOVER (após migração 100%)</span>
+<span class="token comment">// src/lib/openai.ts</span>
+<span class="token comment">// src/lib/groq.ts</span>
+
+<span class="token comment">// ✅ MANTER (simplificado)</span>
+<span class="token comment">// src/lib/ai-gateway.ts (único arquivo para todos os provedores)</span>
+</code></pre><p><strong>Benefícios após migração:</strong></p>
+<ul>
+<li>📉 ~500 linhas de código a menos</li>
+<li>🚀 Manutenção 70% mais simples</li>
+<li>📊 Métricas unificadas</li>
+<li>💰 Melhor controle de custos</li>
+</ul>
+<h3 id="exemplo-de-código-migrado">Exemplo de Código Migrado </h3>
+<p><strong>Antes (generateAIResponse.ts - 200 linhas):</strong></p>
+<pre data-role="codeBlock" data-info="typescript" class="language-typescript typescript"><code><span class="token comment">// Lógica complexa de seleção de provedor</span>
+<span class="token keyword keyword-if">if</span> <span class="token punctuation">(</span>config<span class="token punctuation">.</span>aiProvider <span class="token operator">===</span> <span class="token string">'openai'</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword keyword-const">const</span> client <span class="token operator">=</span> <span class="token function">getOpenAIClient</span><span class="token punctuation">(</span>config<span class="token punctuation">.</span>openaiApiKey<span class="token punctuation">)</span>
+  <span class="token keyword keyword-const">const</span> response <span class="token operator">=</span> <span class="token keyword keyword-await">await</span> client<span class="token punctuation">.</span>chat<span class="token punctuation">.</span>completions<span class="token punctuation">.</span><span class="token function">create</span><span class="token punctuation">(</span><span class="token punctuation">{</span><span class="token operator">...</span><span class="token punctuation">}</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span> <span class="token keyword keyword-else">else</span> <span class="token keyword keyword-if">if</span> <span class="token punctuation">(</span>config<span class="token punctuation">.</span>aiProvider <span class="token operator">===</span> <span class="token string">'groq'</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword keyword-const">const</span> client <span class="token operator">=</span> <span class="token function">getGroqClient</span><span class="token punctuation">(</span>config<span class="token punctuation">.</span>groqApiKey<span class="token punctuation">)</span>
+  <span class="token keyword keyword-const">const</span> response <span class="token operator">=</span> <span class="token keyword keyword-await">await</span> client<span class="token punctuation">.</span>chat<span class="token punctuation">.</span>completions<span class="token punctuation">.</span><span class="token function">create</span><span class="token punctuation">(</span><span class="token punctuation">{</span><span class="token operator">...</span><span class="token punctuation">}</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// Tracking manual</span>
+<span class="token keyword keyword-await">await</span> <span class="token function">trackUsage</span><span class="token punctuation">(</span><span class="token operator">...</span><span class="token punctuation">)</span>
+
+<span class="token comment">// Sem fallback automático</span>
+<span class="token comment">// Sem cache</span>
+<span class="token comment">// Sem métricas centralizadas</span>
+</code></pre><p><strong>Depois (ai-gateway.ts - 50 linhas):</strong></p>
+<pre data-role="codeBlock" data-info="typescript" class="language-typescript typescript"><code><span class="token keyword keyword-import">import</span> <span class="token punctuation">{</span> streamText <span class="token punctuation">}</span> <span class="token keyword keyword-from">from</span> <span class="token string">'ai'</span>
+
+<span class="token keyword keyword-export">export</span> <span class="token keyword keyword-const">const</span> <span class="token function-variable function">generateAIResponse</span> <span class="token operator">=</span> <span class="token keyword keyword-async">async</span> <span class="token punctuation">(</span>messages<span class="token punctuation">,</span> config<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">{</span>
+  <span class="token keyword keyword-return">return</span> <span class="token function">streamText</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+    model<span class="token operator">:</span> <span class="token template-string"><span class="token template-punctuation string">`</span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${</span>config<span class="token punctuation">.</span>aiProvider<span class="token interpolation-punctuation punctuation">}</span></span><span class="token string">/</span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${</span>config<span class="token punctuation">.</span>modelName<span class="token interpolation-punctuation punctuation">}</span></span><span class="token template-punctuation string">`</span></span><span class="token punctuation">,</span>
+    messages<span class="token punctuation">,</span>
+    temperature<span class="token operator">:</span> config<span class="token punctuation">.</span>temperature<span class="token punctuation">,</span>
+    <span class="token comment">// Gateway cuida de: fallback, cache, metrics, rate limiting</span>
+  <span class="token punctuation">}</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment">// Métricas automáticas no dashboard Vercel</span>
+<span class="token comment">// Fallback automático configurado</span>
+<span class="token comment">// Cache gerenciado pelo Gateway</span>
+</code></pre><hr>
+<h2 id="considerações-multi-tenant">Considerações Multi-Tenant </h2>
+<h3 id="problema-gerenciar-api-keys-por-cliente">Problema: Gerenciar API Keys por Cliente </h3>
+<p><strong>Arquitetura atual:</strong></p>
+<ul>
+<li>Cada cliente tem suas próprias API keys no Supabase Vault</li>
+<li>Diferentes provedores (OpenAI, Groq) por cliente</li>
+</ul>
+<p><strong>Solução com AI Gateway:</strong></p>
+<h3 id="opção-1-gateway-key-única-recomendado-para-custo">Opção 1: Gateway Key Única (Recomendado para Custo) </h3>
+<pre data-role="codeBlock" data-info="typescript" class="language-typescript typescript"><code><span class="token comment">// Todos os clientes usam a mesma Gateway Key</span>
+<span class="token comment">// Vercel gerencia billing e você cobra os clientes</span>
+
+<span class="token keyword keyword-export">export</span> <span class="token keyword keyword-async">async</span> <span class="token keyword keyword-function">function</span> <span class="token constant">POST</span><span class="token punctuation">(</span>req<span class="token operator">:</span> Request<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword keyword-const">const</span> <span class="token punctuation">{</span> clientId<span class="token punctuation">,</span> messages <span class="token punctuation">}</span> <span class="token operator">=</span> <span class="token keyword keyword-await">await</span> req<span class="token punctuation">.</span><span class="token function">json</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+  
+  <span class="token comment">// Buscar configuração do cliente (modelo preferido)</span>
+  <span class="token keyword keyword-const">const</span> config <span class="token operator">=</span> <span class="token keyword keyword-await">await</span> <span class="token function">getClientConfig</span><span class="token punctuation">(</span>clientId<span class="token punctuation">)</span>
+  
+  <span class="token keyword keyword-const">const</span> result <span class="token operator">=</span> <span class="token function">streamText</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+    model<span class="token operator">:</span> <span class="token template-string"><span class="token template-punctuation string">`</span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${</span>config<span class="token punctuation">.</span>aiProvider<span class="token interpolation-punctuation punctuation">}</span></span><span class="token string">/</span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${</span>config<span class="token punctuation">.</span>modelName<span class="token interpolation-punctuation punctuation">}</span></span><span class="token template-punctuation string">`</span></span><span class="token punctuation">,</span>
+    messages<span class="token punctuation">,</span>
+    <span class="token comment">// Gateway Key única (do env)</span>
+    <span class="token comment">// Vercel cobra você pelo uso total</span>
+    <span class="token function-variable function">onFinish</span><span class="token operator">:</span> <span class="token keyword keyword-async">async</span> <span class="token punctuation">(</span><span class="token punctuation">{</span> usage <span class="token punctuation">}</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">{</span>
+      <span class="token comment">// Calcular custo e cobrar cliente</span>
+      <span class="token keyword keyword-const">const</span> cost <span class="token operator">=</span> <span class="token function">calculateCost</span><span class="token punctuation">(</span>usage<span class="token punctuation">,</span> config<span class="token punctuation">.</span>modelName<span class="token punctuation">)</span>
+      <span class="token keyword keyword-await">await</span> billingService<span class="token punctuation">.</span><span class="token function">chargeClient</span><span class="token punctuation">(</span>clientId<span class="token punctuation">,</span> cost<span class="token punctuation">)</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span><span class="token punctuation">)</span>
+  
+  <span class="token keyword keyword-return">return</span> result<span class="token punctuation">.</span><span class="token function">toDataStreamResponse</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+</code></pre><p><strong>Vantagens:</strong></p>
+<ul>
+<li>✅ Simplificado (uma key apenas)</li>
+<li>✅ Você controla pricing markup</li>
+<li>✅ Métricas consolidadas</li>
+</ul>
+<p><strong>Desvantagens:</strong></p>
+<ul>
+<li>❌ Você assume risco de billing</li>
+<li>❌ Precisa gerenciar cobranças</li>
+</ul>
+<h3 id="opção-2-byok-bring-your-own-key-por-cliente">Opção 2: BYOK (Bring Your Own Key) por Cliente </h3>
+<pre data-role="codeBlock" data-info="typescript" class="language-typescript typescript"><code><span class="token comment">// Cada cliente usa suas próprias keys</span>
+<span class="token comment">// Billing direto com provedores</span>
+
+<span class="token keyword keyword-export">export</span> <span class="token keyword keyword-async">async</span> <span class="token keyword keyword-function">function</span> <span class="token constant">POST</span><span class="token punctuation">(</span>req<span class="token operator">:</span> Request<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword keyword-const">const</span> <span class="token punctuation">{</span> clientId<span class="token punctuation">,</span> messages <span class="token punctuation">}</span> <span class="token operator">=</span> <span class="token keyword keyword-await">await</span> req<span class="token punctuation">.</span><span class="token function">json</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+  
+  <span class="token keyword keyword-const">const</span> config <span class="token operator">=</span> <span class="token keyword keyword-await">await</span> <span class="token function">getClientConfig</span><span class="token punctuation">(</span>clientId<span class="token punctuation">)</span>
+  
+  <span class="token comment">// Passar API key do cliente para o Gateway</span>
+  <span class="token keyword keyword-const">const</span> result <span class="token operator">=</span> <span class="token function">streamText</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+    model<span class="token operator">:</span> <span class="token template-string"><span class="token template-punctuation string">`</span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${</span>config<span class="token punctuation">.</span>aiProvider<span class="token interpolation-punctuation punctuation">}</span></span><span class="token string">/</span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${</span>config<span class="token punctuation">.</span>modelName<span class="token interpolation-punctuation punctuation">}</span></span><span class="token template-punctuation string">`</span></span><span class="token punctuation">,</span>
+    messages<span class="token punctuation">,</span>
+    <span class="token comment">// Gateway usa a key do cliente</span>
+    apiKey<span class="token operator">:</span> config<span class="token punctuation">.</span>openaiApiKey<span class="token punctuation">,</span> <span class="token comment">// ou groqApiKey</span>
+    <span class="token function-variable function">onFinish</span><span class="token operator">:</span> <span class="token keyword keyword-async">async</span> <span class="token punctuation">(</span><span class="token punctuation">{</span> usage <span class="token punctuation">}</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">{</span>
+      <span class="token comment">// Apenas tracking (billing já é direto com provedor)</span>
+      <span class="token keyword keyword-await">await</span> <span class="token function">trackUsage</span><span class="token punctuation">(</span>clientId<span class="token punctuation">,</span> usage<span class="token punctuation">)</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span><span class="token punctuation">)</span>
+  
+  <span class="token keyword keyword-return">return</span> result<span class="token punctuation">.</span><span class="token function">toDataStreamResponse</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+</code></pre><p><strong>Vantagens:</strong></p>
+<ul>
+<li>✅ Zero risco de billing</li>
+<li>✅ Cliente paga diretamente provedor</li>
+<li>✅ Clientes podem usar seus próprios créditos</li>
+</ul>
+<p><strong>Desvantagens:</strong></p>
+<ul>
+<li>❌ Precisa gerenciar múltiplas keys</li>
+<li>❌ Clientes precisam criar contas nos provedores</li>
+</ul>
+<h3 id="recomendação-para-o-projeto">Recomendação para o Projeto </h3>
+<p><strong>Híbrido:</strong></p>
+<ul>
+<li>Clientes free/starter → Gateway Key única (você gerencia)</li>
+<li>Clientes enterprise → BYOK (billing direto)</li>
+</ul>
+<pre data-role="codeBlock" data-info="typescript" class="language-typescript typescript"><code><span class="token keyword keyword-const">const</span> config <span class="token operator">=</span> <span class="token keyword keyword-await">await</span> <span class="token function">getClientConfig</span><span class="token punctuation">(</span>clientId<span class="token punctuation">)</span>
+
+<span class="token keyword keyword-const">const</span> apiConfig <span class="token operator">=</span> config<span class="token punctuation">.</span>plan <span class="token operator">===</span> <span class="token string">'enterprise'</span>
+  <span class="token operator">?</span> <span class="token punctuation">{</span> apiKey<span class="token operator">:</span> config<span class="token punctuation">.</span>openaiApiKey <span class="token punctuation">}</span> <span class="token comment">// BYOK</span>
+  <span class="token operator">:</span> <span class="token punctuation">{</span><span class="token punctuation">}</span> <span class="token comment">// Gateway Key padrão</span>
+
+<span class="token keyword keyword-const">const</span> result <span class="token operator">=</span> <span class="token function">streamText</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+  model<span class="token operator">:</span> <span class="token template-string"><span class="token template-punctuation string">`</span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${</span>config<span class="token punctuation">.</span>aiProvider<span class="token interpolation-punctuation punctuation">}</span></span><span class="token string">/</span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${</span>config<span class="token punctuation">.</span>modelName<span class="token interpolation-punctuation punctuation">}</span></span><span class="token template-punctuation string">`</span></span><span class="token punctuation">,</span>
+  messages<span class="token punctuation">,</span>
+  <span class="token operator">...</span>apiConfig
+<span class="token punctuation">}</span><span class="token punctuation">)</span>
+</code></pre><hr>
+<h2 id="segurança-e-boas-práticas">Segurança e Boas Práticas </h2>
+<h3 id="1-autenticação">1. Autenticação </h3>
+<pre data-role="codeBlock" data-info="typescript" class="language-typescript typescript"><code><span class="token comment">// middleware.ts - Proteger API routes</span>
+
+<span class="token keyword keyword-import">import</span> <span class="token punctuation">{</span> createServerClient <span class="token punctuation">}</span> <span class="token keyword keyword-from">from</span> <span class="token string">'@/lib/supabase'</span>
+
+<span class="token keyword keyword-export">export</span> <span class="token keyword keyword-async">async</span> <span class="token keyword keyword-function">function</span> <span class="token function">middleware</span><span class="token punctuation">(</span>req<span class="token operator">:</span> NextRequest<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword keyword-const">const</span> supabase <span class="token operator">=</span> <span class="token function">createServerClient</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+  <span class="token keyword keyword-const">const</span> <span class="token punctuation">{</span> data<span class="token operator">:</span> <span class="token punctuation">{</span> user <span class="token punctuation">}</span> <span class="token punctuation">}</span> <span class="token operator">=</span> <span class="token keyword keyword-await">await</span> supabase<span class="token punctuation">.</span>auth<span class="token punctuation">.</span><span class="token function">getUser</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+  
+  <span class="token keyword keyword-if">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>user <span class="token operator">&amp;&amp;</span> req<span class="token punctuation">.</span>nextUrl<span class="token punctuation">.</span>pathname<span class="token punctuation">.</span><span class="token function">startsWith</span><span class="token punctuation">(</span><span class="token string">'/api/chat'</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword keyword-return">return</span> <span class="token keyword keyword-new">new</span> <span class="token class-name">Response</span><span class="token punctuation">(</span><span class="token string">'Unauthorized'</span><span class="token punctuation">,</span> <span class="token punctuation">{</span> status<span class="token operator">:</span> <span class="token number">401</span> <span class="token punctuation">}</span><span class="token punctuation">)</span>
+  <span class="token punctuation">}</span>
+  
+  <span class="token keyword keyword-return">return</span> NextResponse<span class="token punctuation">.</span><span class="token function">next</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+</code></pre><h3 id="2-rate-limiting-por-cliente">2. Rate Limiting por Cliente </h3>
+<pre data-role="codeBlock" data-info="typescript" class="language-typescript typescript"><code><span class="token keyword keyword-import">import</span> <span class="token punctuation">{</span> Ratelimit <span class="token punctuation">}</span> <span class="token keyword keyword-from">from</span> <span class="token string">'@upstash/ratelimit'</span>
+<span class="token keyword keyword-import">import</span> <span class="token punctuation">{</span> Redis <span class="token punctuation">}</span> <span class="token keyword keyword-from">from</span> <span class="token string">'@upstash/redis'</span>
+
+<span class="token keyword keyword-const">const</span> ratelimit <span class="token operator">=</span> <span class="token keyword keyword-new">new</span> <span class="token class-name">Ratelimit</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+  redis<span class="token operator">:</span> Redis<span class="token punctuation">.</span><span class="token function">fromEnv</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+  limiter<span class="token operator">:</span> Ratelimit<span class="token punctuation">.</span><span class="token function">slidingWindow</span><span class="token punctuation">(</span><span class="token number">100</span><span class="token punctuation">,</span> <span class="token string">'1 h'</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token comment">// 100 requests/hora</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span>
+
+<span class="token keyword keyword-export">export</span> <span class="token keyword keyword-async">async</span> <span class="token keyword keyword-function">function</span> <span class="token constant">POST</span><span class="token punctuation">(</span>req<span class="token operator">:</span> Request<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword keyword-const">const</span> <span class="token punctuation">{</span> clientId <span class="token punctuation">}</span> <span class="token operator">=</span> <span class="token keyword keyword-await">await</span> req<span class="token punctuation">.</span><span class="token function">json</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+  
+  <span class="token keyword keyword-const">const</span> <span class="token punctuation">{</span> success<span class="token punctuation">,</span> limit<span class="token punctuation">,</span> remaining <span class="token punctuation">}</span> <span class="token operator">=</span> <span class="token keyword keyword-await">await</span> ratelimit<span class="token punctuation">.</span><span class="token function">limit</span><span class="token punctuation">(</span>clientId<span class="token punctuation">)</span>
+  
+  <span class="token keyword keyword-if">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>success<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword keyword-return">return</span> <span class="token keyword keyword-new">new</span> <span class="token class-name">Response</span><span class="token punctuation">(</span><span class="token string">'Rate limit exceeded'</span><span class="token punctuation">,</span> <span class="token punctuation">{</span> status<span class="token operator">:</span> <span class="token number">429</span> <span class="token punctuation">}</span><span class="token punctuation">)</span>
+  <span class="token punctuation">}</span>
+  
+  <span class="token comment">// Continue com o request...</span>
+<span class="token punctuation">}</span>
+</code></pre><h3 id="3-sanitização-de-input">3. Sanitização de Input </h3>
+<pre data-role="codeBlock" data-info="typescript" class="language-typescript typescript"><code><span class="token keyword keyword-import">import</span> <span class="token punctuation">{</span> z <span class="token punctuation">}</span> <span class="token keyword keyword-from">from</span> <span class="token string">'zod'</span>
+
+<span class="token keyword keyword-const">const</span> messageSchema <span class="token operator">=</span> z<span class="token punctuation">.</span><span class="token function">object</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+  messages<span class="token operator">:</span> z<span class="token punctuation">.</span><span class="token function">array</span><span class="token punctuation">(</span>z<span class="token punctuation">.</span><span class="token function">object</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+    role<span class="token operator">:</span> z<span class="token punctuation">.</span><span class="token function">enum</span><span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token string">'user'</span><span class="token punctuation">,</span> <span class="token string">'assistant'</span><span class="token punctuation">,</span> <span class="token string">'system'</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    content<span class="token operator">:</span> z<span class="token punctuation">.</span><span class="token function">string</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">max</span><span class="token punctuation">(</span><span class="token number">4000</span><span class="token punctuation">)</span> <span class="token comment">// Limite de caracteres</span>
+  <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+  clientId<span class="token operator">:</span> z<span class="token punctuation">.</span><span class="token function">string</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">uuid</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span>
+
+<span class="token keyword keyword-export">export</span> <span class="token keyword keyword-async">async</span> <span class="token keyword keyword-function">function</span> <span class="token constant">POST</span><span class="token punctuation">(</span>req<span class="token operator">:</span> Request<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword keyword-const">const</span> body <span class="token operator">=</span> <span class="token keyword keyword-await">await</span> req<span class="token punctuation">.</span><span class="token function">json</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+  
+  <span class="token comment">// Validar input</span>
+  <span class="token keyword keyword-const">const</span> validation <span class="token operator">=</span> messageSchema<span class="token punctuation">.</span><span class="token function">safeParse</span><span class="token punctuation">(</span>body<span class="token punctuation">)</span>
+  
+  <span class="token keyword keyword-if">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>validation<span class="token punctuation">.</span>success<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword keyword-return">return</span> <span class="token keyword keyword-new">new</span> <span class="token class-name">Response</span><span class="token punctuation">(</span><span class="token string">'Invalid input'</span><span class="token punctuation">,</span> <span class="token punctuation">{</span> status<span class="token operator">:</span> <span class="token number">400</span> <span class="token punctuation">}</span><span class="token punctuation">)</span>
+  <span class="token punctuation">}</span>
+  
+  <span class="token keyword keyword-const">const</span> <span class="token punctuation">{</span> messages<span class="token punctuation">,</span> clientId <span class="token punctuation">}</span> <span class="token operator">=</span> validation<span class="token punctuation">.</span>data
+  <span class="token comment">// Continue...</span>
+<span class="token punctuation">}</span>
+</code></pre><h3 id="4-timeout-e-error-handling">4. Timeout e Error Handling </h3>
+<pre data-role="codeBlock" data-info="typescript" class="language-typescript typescript"><code><span class="token keyword keyword-export">export</span> <span class="token keyword keyword-async">async</span> <span class="token keyword keyword-function">function</span> <span class="token constant">POST</span><span class="token punctuation">(</span>req<span class="token operator">:</span> Request<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword keyword-try">try</span> <span class="token punctuation">{</span>
+    <span class="token keyword keyword-const">const</span> result <span class="token operator">=</span> <span class="token function">streamText</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+      model<span class="token operator">:</span> <span class="token string">'openai/gpt-4'</span><span class="token punctuation">,</span>
+      messages<span class="token punctuation">,</span>
+      maxRetries<span class="token operator">:</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token comment">// Tenta 2 vezes se falhar</span>
+      abortSignal<span class="token operator">:</span> AbortSignal<span class="token punctuation">.</span><span class="token function">timeout</span><span class="token punctuation">(</span><span class="token number">30000</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token comment">// 30s timeout</span>
+      fallbacks<span class="token operator">:</span> <span class="token punctuation">[</span><span class="token string">'anthropic/claude-3-5-sonnet'</span><span class="token punctuation">]</span>
+    <span class="token punctuation">}</span><span class="token punctuation">)</span>
+    
+    <span class="token keyword keyword-return">return</span> result<span class="token punctuation">.</span><span class="token function">toDataStreamResponse</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+  <span class="token punctuation">}</span> <span class="token keyword keyword-catch">catch</span> <span class="token punctuation">(</span>error<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword keyword-if">if</span> <span class="token punctuation">(</span>error<span class="token punctuation">.</span>name <span class="token operator">===</span> <span class="token string">'TimeoutError'</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token keyword keyword-return">return</span> <span class="token keyword keyword-new">new</span> <span class="token class-name">Response</span><span class="token punctuation">(</span><span class="token string">'Request timeout'</span><span class="token punctuation">,</span> <span class="token punctuation">{</span> status<span class="token operator">:</span> <span class="token number">408</span> <span class="token punctuation">}</span><span class="token punctuation">)</span>
+    <span class="token punctuation">}</span>
+    
+    <span class="token keyword keyword-if">if</span> <span class="token punctuation">(</span>error<span class="token punctuation">.</span>status <span class="token operator">===</span> <span class="token number">429</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token keyword keyword-return">return</span> <span class="token keyword keyword-new">new</span> <span class="token class-name">Response</span><span class="token punctuation">(</span><span class="token string">'Rate limit exceeded'</span><span class="token punctuation">,</span> <span class="token punctuation">{</span> status<span class="token operator">:</span> <span class="token number">429</span> <span class="token punctuation">}</span><span class="token punctuation">)</span>
+    <span class="token punctuation">}</span>
+    
+    <span class="token comment">// Log error mas não exponha detalhes</span>
+    <span class="token builtin">console</span><span class="token punctuation">.</span><span class="token function">error</span><span class="token punctuation">(</span><span class="token string">'AI Gateway error:'</span><span class="token punctuation">,</span> error<span class="token punctuation">)</span>
+    <span class="token keyword keyword-return">return</span> <span class="token keyword keyword-new">new</span> <span class="token class-name">Response</span><span class="token punctuation">(</span><span class="token string">'Error generating response'</span><span class="token punctuation">,</span> <span class="token punctuation">{</span> status<span class="token operator">:</span> <span class="token number">500</span> <span class="token punctuation">}</span><span class="token punctuation">)</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre><h3 id="5-content-moderation">5. Content Moderation </h3>
+<pre data-role="codeBlock" data-info="typescript" class="language-typescript typescript"><code><span class="token keyword keyword-import">import</span> <span class="token punctuation">{</span> moderate <span class="token punctuation">}</span> <span class="token keyword keyword-from">from</span> <span class="token string">'ai'</span>
+
+<span class="token keyword keyword-export">export</span> <span class="token keyword keyword-async">async</span> <span class="token keyword keyword-function">function</span> <span class="token constant">POST</span><span class="token punctuation">(</span>req<span class="token operator">:</span> Request<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword keyword-const">const</span> <span class="token punctuation">{</span> messages <span class="token punctuation">}</span> <span class="token operator">=</span> <span class="token keyword keyword-await">await</span> req<span class="token punctuation">.</span><span class="token function">json</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+  
+  <span class="token comment">// Moderar conteúdo antes de enviar para IA</span>
+  <span class="token keyword keyword-const">const</span> lastMessage <span class="token operator">=</span> messages<span class="token punctuation">[</span>messages<span class="token punctuation">.</span>length <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">.</span>content
+  
+  <span class="token keyword keyword-const">const</span> moderation <span class="token operator">=</span> <span class="token keyword keyword-await">await</span> <span class="token function">moderate</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+    model<span class="token operator">:</span> <span class="token string">'openai/text-moderation-latest'</span><span class="token punctuation">,</span>
+    input<span class="token operator">:</span> lastMessage
+  <span class="token punctuation">}</span><span class="token punctuation">)</span>
+  
+  <span class="token keyword keyword-if">if</span> <span class="token punctuation">(</span>moderation<span class="token punctuation">.</span>flagged<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword keyword-return">return</span> <span class="token keyword keyword-new">new</span> <span class="token class-name">Response</span><span class="token punctuation">(</span><span class="token string">'Content violates policy'</span><span class="token punctuation">,</span> <span class="token punctuation">{</span> 
+      status<span class="token operator">:</span> <span class="token number">400</span><span class="token punctuation">,</span>
+      body<span class="token operator">:</span> <span class="token constant">JSON</span><span class="token punctuation">.</span><span class="token function">stringify</span><span class="token punctuation">(</span><span class="token punctuation">{</span> categories<span class="token operator">:</span> moderation<span class="token punctuation">.</span>categories <span class="token punctuation">}</span><span class="token punctuation">)</span>
+    <span class="token punctuation">}</span><span class="token punctuation">)</span>
+  <span class="token punctuation">}</span>
+  
+  <span class="token comment">// Continue com request...</span>
+<span class="token punctuation">}</span>
+</code></pre><hr>
+<h2 id="custos-e-pricing">Custos e Pricing </h2>
+<h3 id="modelo-de-pricing-do-vercel-ai-gateway">Modelo de Pricing do Vercel AI Gateway </h3>
+<p><strong>Gateway:</strong></p>
+<ul>
+<li>✅ <strong>Sem markup</strong> sobre preços dos provedores</li>
+<li>✅ <strong>Billing transparente</strong> - paga apenas o que usa</li>
+<li>✅ <strong>BYOK suportado</strong> - use suas próprias keys</li>
+</ul>
+<p><strong>Custos típicos (por 1M tokens):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Provedor</th>
+<th>Modelo</th>
+<th>Input</th>
+<th>Output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OpenAI</td>
+<td>GPT-4o</td>
+<td>$2.50</td>
+<td>$10.00</td>
+</tr>
+<tr>
+<td>OpenAI</td>
+<td>GPT-4o-mini</td>
+<td>$0.15</td>
+<td>$0.60</td>
+</tr>
+<tr>
+<td>Anthropic</td>
+<td>Claude 3.5 Sonnet</td>
+<td>$3.00</td>
+<td>$15.00</td>
+</tr>
+<tr>
+<td>Groq</td>
+<td>Llama 3.3 70B</td>
+<td>$0.59</td>
+<td>$0.79</td>
+</tr>
+<tr>
+<td>Groq</td>
+<td>Llama 3.1 8B</td>
+<td>$0.05</td>
+<td>$0.08</td>
+</tr>
+</tbody>
+</table>
+<h3 id="estimativa-de-economia-com-cache">Estimativa de Economia com Cache </h3>
+<p><strong>Cenário:</strong> 10.000 requests/dia, 70% hit rate de cache</p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Sem cache:
+- 10.000 requests × 1000 tokens × $0.001/1k tokens = $10/dia
+- Total: $300/mês
+
+Com cache (70% hit):
+- 3.000 requests reais × 1000 tokens × $0.001/1k tokens = $3/dia
+- Total: $90/mês
+- Economia: $210/mês (70%)
+</code></pre><h3 id="comparação-de-custos-implementação-atual-vs-ai-gateway">Comparação de Custos: Implementação Atual vs. AI Gateway </h3>
+<p><strong>Implementação Atual:</strong></p>
+<ul>
+<li>API keys diretas com provedores</li>
+<li>Sem cache automático</li>
+<li>Tracking manual (custos de infraestrutura Supabase)</li>
+<li>Sem otimização de rotas</li>
+</ul>
+<p><strong>Com AI Gateway:</strong></p>
+<ul>
+<li>Billing consolidado</li>
+<li>Cache automático (economia ~50-70%)</li>
+<li>Métricas incluídas</li>
+<li>Roteamento otimizado (menor latência = menos re-requests)</li>
+</ul>
+<p><strong>Exemplo para 100k requests/mês:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Atual</th>
+<th>Com Gateway</th>
+<th>Economia</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>API calls</td>
+<td>$500</td>
+<td>$200</td>
+<td>$300 (cache)</td>
+</tr>
+<tr>
+<td>Tracking infra</td>
+<td>$50</td>
+<td>$0</td>
+<td>$50</td>
+</tr>
+<tr>
+<td>Métricas/logs</td>
+<td>$30</td>
+<td>$0</td>
+<td>$30</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>$580</strong></td>
+<td><strong>$200</strong></td>
+<td><strong>$380 (65%)</strong></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="monitoramento-e-métricas">Monitoramento e Métricas </h2>
+<h3 id="dashboard-do-vercel-ai-gateway">Dashboard do Vercel AI Gateway </h3>
+<p>Acesse: <a href="https://vercel.com/dashboard/ai-gateway">Vercel Dashboard → AI Gateway</a></p>
+<p><strong>Métricas disponíveis:</strong></p>
+<h4 id="1-overview">1. Overview </h4>
+<ul>
+<li>📊 Total de requests (últimas 24h, 7d, 30d)</li>
+<li>💰 Custos totais e por modelo</li>
+<li>⚡ Latência média (P50, P95, P99)</li>
+<li>🎯 Taxa de sucesso vs. erros</li>
+</ul>
+<h4 id="2-por-modelo">2. Por Modelo </h4>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>┌─────────────────────────────────────────┐
+│ Model Performance                       │
+├─────────────────────────────────────────┤
+│ openai/gpt-4         12,450 requests    │
+│ ├─ Avg latency: 850ms                   │
+│ ├─ Success rate: 99.2%                  │
+│ └─ Cost: $245.50                        │
+│                                         │
+│ groq/llama-3.3-70b   8,320 requests     │
+│ ├─ Avg latency: 320ms                   │
+│ ├─ Success rate: 99.8%                  │
+│ └─ Cost: $12.40                         │
+└─────────────────────────────────────────┘
+</code></pre><h4 id="3-cache-performance">3. Cache Performance </h4>
+<ul>
+<li>🎯 Hit rate (%)</li>
+<li>💾 Requests servidos do cache</li>
+<li>💰 Economia estimada</li>
+</ul>
+<h4 id="4-logs-detalhados">4. Logs Detalhados </h4>
+<ul>
+<li>Cada request individual</li>
+<li>Timestamps, latência, tokens usados</li>
+<li>Erros e stack traces</li>
+<li>User/client ID (se configurado)</li>
+</ul>
+<h3 id="integração-com-ferramentas-existentes">Integração com Ferramentas Existentes </h3>
+<p><strong>Continuar usando Supabase Analytics:</strong></p>
+<pre data-role="codeBlock" data-info="typescript" class="language-typescript typescript"><code><span class="token comment">// src/app/api/chat/route.ts</span>
+
+<span class="token keyword keyword-import">import</span> <span class="token punctuation">{</span> trackUsage <span class="token punctuation">}</span> <span class="token keyword keyword-from">from</span> <span class="token string">'@/lib/usageTracking'</span>
+
+<span class="token keyword keyword-const">const</span> result <span class="token operator">=</span> <span class="token function">streamText</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+  model<span class="token operator">:</span> <span class="token string">'openai/gpt-4'</span><span class="token punctuation">,</span>
+  messages<span class="token punctuation">,</span>
+  <span class="token function-variable function">onFinish</span><span class="token operator">:</span> <span class="token keyword keyword-async">async</span> <span class="token punctuation">(</span><span class="token punctuation">{</span> usage<span class="token punctuation">,</span> response <span class="token punctuation">}</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">{</span>
+    <span class="token comment">// Ainda pode salvar no Supabase para analytics custom</span>
+    <span class="token keyword keyword-await">await</span> <span class="token function">trackUsage</span><span class="token punctuation">(</span>clientId<span class="token punctuation">,</span> <span class="token punctuation">{</span>
+      model<span class="token operator">:</span> response<span class="token punctuation">.</span>model<span class="token punctuation">,</span>
+      inputTokens<span class="token operator">:</span> usage<span class="token punctuation">.</span>promptTokens<span class="token punctuation">,</span>
+      outputTokens<span class="token operator">:</span> usage<span class="token punctuation">.</span>completionTokens<span class="token punctuation">,</span>
+      cost<span class="token operator">:</span> <span class="token function">calculateCost</span><span class="token punctuation">(</span>usage<span class="token punctuation">,</span> response<span class="token punctuation">.</span>model<span class="token punctuation">)</span><span class="token punctuation">,</span>
+      conversationId<span class="token punctuation">,</span>
+      messageId
+    <span class="token punctuation">}</span><span class="token punctuation">)</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span>
+</code></pre><p><strong>Benefícios de dual tracking:</strong></p>
+<ul>
+<li>✅ Vercel: Métricas técnicas (latência, erros, cache)</li>
+<li>✅ Supabase: Analytics de negócio (uso por cliente, ROI, trends)</li>
+</ul>
+<hr>
+<h2 id="próximos-passos-recomendados">Próximos Passos Recomendados </h2>
+<h3 id="fase-1-exploração-1-2-dias">Fase 1: Exploração (1-2 dias) </h3>
+<ol>
+<li>✅ Criar conta Vercel (se ainda não tem)</li>
+<li>✅ Ativar AI Gateway no dashboard</li>
+<li>✅ Obter API key de teste</li>
+<li>✅ Testar com exemplo simples</li>
+</ol>
+<h3 id="fase-2-proof-of-concept-1-semana">Fase 2: Proof of Concept (1 semana) </h3>
+<ol>
+<li>✅ Criar branch <code>feature/ai-gateway-poc</code></li>
+<li>✅ Implementar API route paralela (<code>/api/chat-gateway</code>)</li>
+<li>✅ Testar com 1 cliente em staging</li>
+<li>✅ Comparar métricas: latência, custos, taxa de erro</li>
+</ol>
+<h3 id="fase-3-migração-gradual-2-3-semanas">Fase 3: Migração Gradual (2-3 semanas) </h3>
+<ol>
+<li>✅ Feature flag para habilitar Gateway por cliente</li>
+<li>✅ Migrar 10% do tráfego</li>
+<li>✅ Monitorar métricas por 1 semana</li>
+<li>✅ Aumentar para 50% se tudo ok</li>
+<li>✅ Migrar 100% após validação</li>
+</ol>
+<h3 id="fase-4-otimização-ongoing">Fase 4: Otimização (ongoing) </h3>
+<ol>
+<li>✅ Configurar cache policies</li>
+<li>✅ Ajustar fallback strategies</li>
+<li>✅ Implementar alertas de budget</li>
+<li>✅ Remover código legado</li>
+</ol>
+<hr>
+<h2 id="referências">Referências </h2>
+<h3 id="documentação-oficial">Documentação Oficial </h3>
+<ul>
+<li><a href="https://vercel.com/docs/ai-gateway">Vercel AI Gateway - Docs</a></li>
+<li><a href="https://ai-sdk.dev/">Vercel AI SDK - Docs</a></li>
+<li><a href="https://ai-sdk.dev/providers/ai-sdk-providers/ai-gateway">AI Gateway Providers</a></li>
+<li><a href="https://ai-sdk.dev/docs/getting-started/nextjs-app-router">Next.js App Router Integration</a></li>
+</ul>
+<h3 id="templates-e-exemplos">Templates e Exemplos </h3>
+<ul>
+<li><a href="https://vercel.com/templates/next.js/vercel-ai-gateway-demo">Vercel AI Gateway Demo</a></li>
+<li><a href="https://vercel.com/templates/next.js/nextjs-ai-chatbot">AI Chatbot Template</a></li>
+</ul>
+<h3 id="artigos-e-tutoriais">Artigos e Tutoriais </h3>
+<ul>
+<li><a href="https://benseymour.com/blog/2025-09-13-Building-an-AI-Chatbot-with-Vercel-AI-SDK-and-AI-Gateway">Building an AI Chatbot with Vercel AI SDK</a></li>
+<li><a href="https://blog.logrocket.com/nextjs-vercel-ai-sdk-streaming/">Real-time AI in Next.js with Vercel AI SDK</a></li>
+<li><a href="https://www.infoq.com/news/2025/09/vercel-ai-gateway/">Vercel Introduces AI Gateway - InfoQ</a></li>
+</ul>
+<h3 id="comunidade">Comunidade </h3>
+<ul>
+<li><a href="https://github.com/vercel/ai">Vercel AI SDK GitHub</a></li>
+<li><a href="https://vercel.com/discord">Discord da Vercel</a></li>
+</ul>
+<hr>
+<h2 id="perguntas-frequentes">Perguntas Frequentes </h2>
+<h3 id="p-preciso-migrar-tudo-de-uma-vez">P: Preciso migrar tudo de uma vez? </h3>
+<p><strong>R:</strong> Não! Use feature flags para migrar gradualmente. Pode começar com 10% do tráfego.</p>
+<h3 id="p-vou-perder-as-métricas-atuais-do-supabase">P: Vou perder as métricas atuais do Supabase? </h3>
+<p><strong>R:</strong> Não. Pode continuar salvando no Supabase em paralelo para analytics de negócio.</p>
+<h3 id="p-como-funcionam-os-custos-com-múltiplos-clientes">P: Como funcionam os custos com múltiplos clientes? </h3>
+<p><strong>R:</strong> Você pode usar uma Gateway Key única (você gerencia billing) ou BYOK (cliente paga direto).</p>
+<h3 id="p-e-se-eu-quiser-voltar-para-a-implementação-atual">P: E se eu quiser voltar para a implementação atual? </h3>
+<p><strong>R:</strong> Basta mudar a feature flag. Zero vendor lock-in.</p>
+<h3 id="p-cache-funciona-com-mensagens-diferentes">P: Cache funciona com mensagens diferentes? </h3>
+<p><strong>R:</strong> Cache é inteligente - funciona para requests idênticos (mesmo prompt + contexto).</p>
+<h3 id="p-como-funciona-fallback-automático">P: Como funciona fallback automático? </h3>
+<p><strong>R:</strong> Configure array de fallbacks. Gateway tenta na ordem se o primeiro falhar.</p>
+<h3 id="p-posso-usar-modelos-locaiscustom">P: Posso usar modelos locais/custom? </h3>
+<p><strong>R:</strong> Sim, AI Gateway suporta endpoints custom além dos provedores principais.</p>
+<hr>
+<h2 id="conclusão">Conclusão </h2>
+<p><strong>Vercel AI Gateway é uma solução moderna e poderosa</strong> para gerenciar múltiplos modelos de IA em produção. Para este projeto, os principais benefícios seriam:</p>
+<h3 id="benefícios-principais-para-o-projeto">Benefícios Principais para o Projeto </h3>
+<ol>
+<li>
+<p><strong>🔄 Simplificação de Código</strong></p>
+<ul>
+<li>Redução de ~500 linhas de código</li>
+<li>Manutenção 70% mais simples</li>
+<li>Menos SDKs para gerenciar</li>
+</ul>
+</li>
+<li>
+<p><strong>📊 Métricas Unificadas</strong></p>
+<ul>
+<li>Dashboard centralizado</li>
+<li>Visibilidade total de custos</li>
+<li>Analytics em tempo real</li>
+</ul>
+</li>
+<li>
+<p><strong>💰 Redução de Custos</strong></p>
+<ul>
+<li>Cache automático (economia ~50-70%)</li>
+<li>Roteamento inteligente</li>
+<li>Sem custos de infraestrutura de tracking</li>
+</ul>
+</li>
+<li>
+<p><strong>🛡️ Maior Confiabilidade</strong></p>
+<ul>
+<li>Failover automático</li>
+<li>Rate limiting global</li>
+<li>Alta disponibilidade (99.9%+)</li>
+</ul>
+</li>
+<li>
+<p><strong>🚀 Melhor Performance</strong></p>
+<ul>
+<li>Latência otimizada</li>
+<li>Edge network global</li>
+<li>Streaming eficiente</li>
+</ul>
+</li>
+</ol>
+<h3 id="recomendação-final">Recomendação Final </h3>
+<p><strong>✅ Recomendo a adoção</strong> do Vercel AI Gateway para este projeto, com migração gradual:</p>
+<ul>
+<li><strong>Curto prazo (1 mês):</strong> POC com 10% do tráfego</li>
+<li><strong>Médio prazo (3 meses):</strong> Migração completa</li>
+<li><strong>Longo prazo:</strong> Otimização e economia contínua</li>
+</ul>
+<p>O investimento inicial de tempo é compensado pela <strong>redução de manutenção, melhor observabilidade e economia de custos</strong> a longo prazo.</p>
+<hr>
+<p><strong>Documento criado em:</strong> 2024-12-11<br>
+<strong>Última atualização:</strong> 2024-12-11<br>
+<strong>Versão:</strong> 1.0</p>
+
+      </div>
+      
+      
+    
+    
+    
+    
+    
+    
+  
+    </body></html>

@@ -1,6 +1,8 @@
 import { AIResponse, ChatMessage, ClientConfig } from "@/lib/types";
-import { generateChatCompletion } from "@/lib/groq";
-import { generateChatCompletionOpenAI } from "@/lib/openai";
+import { callAI } from "@/lib/ai-gateway";
+import { logGatewayUsage } from "@/lib/ai-gateway/usage-tracking";
+import { shouldUseGateway } from "@/lib/ai-gateway/config";
+import type { CoreMessage } from "ai";
 
 // 📝 PROMPT PADRÃO (usado apenas como fallback se config não tiver systemPrompt)
 const DEFAULT_SYSTEM_PROMPT = `## Papel
@@ -269,33 +271,90 @@ export const generateAIResponse = async (
       TTS_AUDIO_TOOL_DEFINITION, // NEW: Enviar resposta em áudio (TTS)
     ];
 
-    // 🔐 Escolher provider dinamicamente baseado na config do cliente
+    // 🌐 CHECK: AI Gateway enabled?
+    const useGateway = await shouldUseGateway(config.id);
 
-    if (config.primaryProvider === "openai") {
-      // Usar OpenAI Chat Completion
-      return await generateChatCompletionOpenAI(
-        messages,
-        config.settings.enableTools ? tools : undefined,
-        config.apiKeys.openaiApiKey,
-        {
-          temperature: config.settings.temperature,
-          max_tokens: config.settings.maxTokens,
-          model: config.models.openaiModel, // gpt-4o, gpt-4o-mini, etc
+    if (useGateway) {
+      console.log("[AI Gateway] Routing request through AI Gateway");
+
+      // Convert ChatMessage[] to CoreMessage[]
+      const coreMessages: CoreMessage[] = messages.map((msg) => ({
+        role: msg.role as "system" | "user" | "assistant",
+        content: msg.content,
+      }));
+
+      // Call AI via Gateway
+      const result = await callAI({
+        clientId: config.id,
+        clientConfig: {
+          id: config.id,
+          name: config.name,
+          slug: config.slug,
+          primaryModelProvider: config.primaryProvider,
+          openaiModel: config.models.openaiModel,
+          groqModel: config.models.groqModel,
+          systemPrompt: config.prompts.systemPrompt,
         },
-      );
-    } else {
-      // Usar Groq Chat Completion (padrão)
-      return await generateChatCompletion(
-        messages,
-        config.settings.enableTools ? tools : undefined,
-        config.apiKeys.groqApiKey,
-        {
+        messages: coreMessages,
+        tools: config.settings.enableTools
+          ? {
+              transferir_atendimento: {
+                description: HUMAN_HANDOFF_TOOL_DEFINITION.function.description,
+                parameters: HUMAN_HANDOFF_TOOL_DEFINITION.function.parameters as any,
+              },
+              buscar_documento: {
+                description: SEARCH_DOCUMENT_TOOL_DEFINITION.function.description,
+                parameters: SEARCH_DOCUMENT_TOOL_DEFINITION.function.parameters as any,
+              },
+              enviar_resposta_em_audio: {
+                description: TTS_AUDIO_TOOL_DEFINITION.function.description,
+                parameters: TTS_AUDIO_TOOL_DEFINITION.function.parameters as any,
+              },
+            }
+          : undefined,
+        settings: {
           temperature: config.settings.temperature,
-          max_tokens: config.settings.maxTokens,
-          model: config.models.groqModel,
+          maxTokens: config.settings.maxTokens,
         },
-      );
+      });
+
+      // Log usage to gateway_usage_logs
+      await logGatewayUsage({
+        clientId: config.id,
+        conversationId: undefined, // TODO: Pass from flow
+        phone: customerName, // TODO: Pass actual phone number
+        provider: result.provider,
+        modelName: result.model,
+        inputTokens: result.usage.promptTokens,
+        outputTokens: result.usage.completionTokens,
+        cachedTokens: result.usage.cachedTokens,
+        latencyMs: result.latencyMs,
+        wasCached: result.wasCached,
+        wasFallback: result.wasFallback,
+        fallbackReason: result.fallbackReason,
+        requestId: result.requestId,
+      });
+
+      // Convert back to AIResponse format
+      return {
+        content: result.text,
+        finished: result.finishReason === 'stop' || result.finishReason === 'end_turn',
+        model: result.model,
+        provider: result.provider as any,
+        usage: {
+          prompt_tokens: result.usage.promptTokens,
+          completion_tokens: result.usage.completionTokens,
+          total_tokens: result.usage.totalTokens,
+        },
+      };
     }
+
+    // 🚫 LEGACY PATH REMOVED: AI Gateway is now required
+    // If we reach here, it means AI Gateway is disabled for this client
+    const errorMessage = `AI Gateway is required but disabled for client: ${config.id} (${config.name}). ` +
+      `Please enable AI Gateway in client settings or contact support.`;
+    console.error(`[AI Gateway Error] ${errorMessage}`);
+    throw new Error(errorMessage);
   } catch (error) {
     const errorMessage = error instanceof Error
       ? error.message

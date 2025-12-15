@@ -1,24 +1,28 @@
 'use client'
 
 /**
- * Analytics Page
+ * UNIFIED ANALYTICS PAGE
  *
  * /dashboard/analytics
  *
- * Client Component (Mobile Compatible)
- * Motivo: Static Export (Capacitor) não suporta Server Components
- * 
- * Usa o componente AnalyticsClient implementado pelo desenvolvedor sênior
+ * Single analytics page combining:
+ * - AI Gateway metrics (new)
+ * - Chatbot metrics (legacy)
+ *
+ * Features:
+ * - Auto-detects admin vs tenant role
+ * - Admin: See all clients + filters
+ * - Tenant: See only their data
  */
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClientBrowser } from '@/lib/supabase'
-import { AnalyticsClient } from '@/components/AnalyticsClient'
+import { UnifiedAnalytics } from '@/components/UnifiedAnalytics'
 
 export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true)
-  const [clientId, setClientId] = useState<string | null>(null)
+  const [authenticated, setAuthenticated] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -33,17 +37,10 @@ export default function AnalyticsPage() {
           return
         }
 
-        const { data: profile } = await supabase
-          .from('user_profiles')
-          .select('client_id')
-          .eq('id', user.id)
-          .single()
-
-        if (profile?.client_id) {
-          setClientId(profile.client_id)
-        } else {
-        }
+        setAuthenticated(true)
       } catch (error) {
+        console.error('Auth check error:', error)
+        router.push('/login')
       } finally {
         setLoading(false)
       }
@@ -60,7 +57,7 @@ export default function AnalyticsPage() {
     )
   }
 
-  if (!clientId) {
+  if (!authenticated) {
     return (
       <div className="container mx-auto p-6 max-w-5xl">
         <div className="text-center py-8">
@@ -70,10 +67,6 @@ export default function AnalyticsPage() {
     )
   }
 
-  return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <AnalyticsClient clientId={clientId} />
-    </div>
-  )
+  return <UnifiedAnalytics />
 }
 

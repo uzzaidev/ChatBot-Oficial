@@ -45,6 +45,16 @@ npm run dev                      # Start dev server (localhost:3000)
 - Create `.env.local` from `.env.example`
 - Apply migrations: `supabase db push`
 
+### AI Gateway Setup (NEW!)
+
+**Quick Start:**
+1. Get keys: OpenAI (`sk-proj-...`), Groq (`gsk_...`)
+2. Configure: `/dashboard/ai-gateway/setup`
+3. Test: `curl http://localhost:3000/api/test/gateway`
+4. Enable for client: `UPDATE clients SET use_ai_gateway = true WHERE id = '...'`
+
+**Docs:** See `AI_GATEWAY_QUICKSTART.md` for detailed setup
+
 ### Key Entry Points
 
 | Task | File |
@@ -58,6 +68,8 @@ npm run dev                      # Start dev server (localhost:3000)
 | **RAG Knowledge** | `/dashboard/knowledge` (PDF/TXT upload) |
 | **Database Schema** | `docs/tables/tabelas.md` ⚠️ CRITICAL |
 | **Migrations** | `supabase/migrations/*`, `db/MIGRATION_WORKFLOW.md` |
+| **AI Gateway Setup** | `/dashboard/ai-gateway/setup` (admin only) |
+| **AI Gateway Test** | `/api/test/gateway` (validates config) |
 
 ### Common Commands
 
@@ -162,6 +174,56 @@ Top 5 chunks injected into AI prompt
 - Multi-message response: Splits on `\n\n`, 2s delay between messages
 
 **Human Handoff:** Tool call → Update status → Summarize conversation → Email → Stop bot
+
+### AI Gateway (NEW!)
+
+**Status:** ✅ Backend Ready | ⏳ Awaiting Configuration
+
+**Architecture:** Shared keys with multi-tenant tracking
+- ✅ ONE gateway key (`vck_...`) for all clients
+- ✅ Provider keys shared (OpenAI, Groq, Anthropic, Google)
+- ✅ Per-client control via feature flag (`use_ai_gateway`)
+- ✅ Multi-tenant usage tracking (`gateway_usage_logs`)
+- ✅ Cache grátis (70% economia em requests repetidos)
+- ✅ Fallback automático entre providers
+- ✅ ZERO markup sobre preços dos providers
+
+**Setup (5 minutos):**
+1. Get keys: OpenAI (`sk-proj-...`), Groq (`gsk_...`)
+2. Configure: http://localhost:3000/dashboard/ai-gateway/setup
+3. Test: `curl http://localhost:3000/api/test/gateway`
+4. Enable for client: `UPDATE clients SET use_ai_gateway = true WHERE id = '...'`
+
+**Key Files:**
+- `src/lib/ai-gateway/index.ts` - Main interface (`callAI()`)
+- `src/lib/ai-gateway/config.ts` - Shared config manager
+- `src/lib/ai-gateway/providers.ts` - Provider factory
+- `src/lib/ai-gateway/usage-tracking.ts` - Multi-tenant tracking
+- `src/lib/currency.ts` - USD→BRL conversion (24h cache)
+
+**Database Tables:**
+- `shared_gateway_config` - Global config (1 record only)
+- `ai_models_registry` - Model catalog with pricing
+- `gateway_usage_logs` - Per-request tracking (multi-tenant)
+- `gateway_cache_performance` - Cache metrics
+- `client_budgets` - Budget control per client
+
+**Monitoring:**
+```sql
+-- Ver uso por cliente (últimas 24h)
+SELECT
+  c.name,
+  COUNT(*) as requests,
+  SUM(gul.total_tokens) as tokens,
+  SUM(gul.cost_brl) as cost_brl
+FROM gateway_usage_logs gul
+JOIN clients c ON gul.client_id = c.id
+WHERE gul.created_at > NOW() - INTERVAL '24 hours'
+GROUP BY c.name
+ORDER BY cost_brl DESC;
+```
+
+**Docs:** `AI_GATEWAY_QUICKSTART.md` para setup detalhado
 
 ---
 

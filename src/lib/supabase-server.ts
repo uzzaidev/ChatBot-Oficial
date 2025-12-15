@@ -61,6 +61,25 @@ export const createServerClient = () => {
 }
 
 /**
+ * Cria cliente Supabase com SERVICE ROLE (bypass RLS)
+ *
+ * IMPORTANTE: Use APENAS para operações admin/system que precisam bypass RLS
+ *
+ * @returns Supabase client com service role key (acesso total, ignora RLS)
+ *
+ * @example
+ * // Em API Routes admin
+ * const supabase = createServiceClient()
+ * const { data } = await supabase.from('usage_logs').select('*') // Bypass RLS
+ */
+export const createServiceClient = () => {
+  return createClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
+
+/**
  * Cria cliente Supabase para API Routes (Route Handlers)
  *
  * IMPORTANTE: Só funciona em Route Handlers (app/api/[path]/route.ts)

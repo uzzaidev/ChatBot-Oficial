@@ -57,6 +57,7 @@ export default function SettingsPage() {
     meta_verify_token: '',
     meta_app_secret: '', // SECURITY FIX (VULN-012)
     meta_phone_number_id: '',
+    whatsapp_business_account_id: '', // WABA ID
     openai_api_key: '',
     groq_api_key: '',
     webhook_url: '',
@@ -179,6 +180,14 @@ export default function SettingsPage() {
               message_delay_ms: 2000,
             },
           })
+          
+          // Also update WABA ID from client config if present
+          if (data.whatsapp_business_account_id) {
+            setSecrets(prev => ({
+              ...prev,
+              whatsapp_business_account_id: data.whatsapp_business_account_id
+            }))
+          }
         }
       } catch (error) {
       }
@@ -295,27 +304,48 @@ export default function SettingsPage() {
 
     try {
       const { apiFetch } = await import('@/lib/api')
-      const response = await apiFetch('/api/vault/secrets', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key, value }),
-      })
+      
+      // WABA ID is stored in clients table, not vault
+      if (key === 'whatsapp_business_account_id') {
+        const response = await apiFetch('/api/client/waba-id', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ whatsapp_business_account_id: value }),
+        })
 
-      const data = await response.json()
+        const data = await response.json()
 
-      if (response.ok) {
-        setNotification({ type: 'success', message: `${key} atualizado com sucesso!` })
-        // Recarregar secrets para mostrar valor atualizado (mascarado)
-        const refreshResponse = await apiFetch('/api/vault/secrets')
-        const refreshData = await refreshResponse.json()
-        if (refreshResponse.ok) {
-          setSecrets(refreshData.secrets || {})
+        if (response.ok) {
+          setNotification({ type: 'success', message: 'WABA ID atualizado com sucesso!' })
+          // Update local state
+          setSecrets(prev => ({ ...prev, whatsapp_business_account_id: value }))
+        } else {
+          setNotification({ type: 'error', message: data.error || 'Erro ao atualizar WABA ID' })
         }
       } else {
-        const errorMessage = data.details
-          ? `${data.error}: ${data.details}`
-          : data.error || 'Erro ao atualizar variável'
-        setNotification({ type: 'error', message: errorMessage })
+        // Other secrets go to vault
+        const response = await apiFetch('/api/vault/secrets', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key, value }),
+        })
+
+        const data = await response.json()
+
+        if (response.ok) {
+          setNotification({ type: 'success', message: `${key} atualizado com sucesso!` })
+          // Recarregar secrets para mostrar valor atualizado (mascarado)
+          const refreshResponse = await apiFetch('/api/vault/secrets')
+          const refreshData = await refreshResponse.json()
+          if (refreshResponse.ok) {
+            setSecrets(refreshData.secrets || {})
+          }
+        } else {
+          const errorMessage = data.details
+            ? `${data.error}: ${data.details}`
+            : data.error || 'Erro ao atualizar variável'
+          setNotification({ type: 'error', message: errorMessage })
+        }
       }
     } catch (error) {
       setNotification({ type: 'error', message: 'Erro ao atualizar variável' })
@@ -1374,6 +1404,35 @@ export default function SettingsPage() {
                   </Button>
                 )}
               </div>
+            </div>
+
+            {/* WhatsApp Business Account ID */}
+            <div>
+              <Label htmlFor="whatsapp_business_account_id">WhatsApp Business Account ID (WABA ID)</Label>
+              <div className="flex gap-2 mt-2">
+                <Input
+                  id="whatsapp_business_account_id"
+                  value={secrets.whatsapp_business_account_id}
+                  onChange={(e) =>
+                    setSecrets({ ...secrets, whatsapp_business_account_id: e.target.value })
+                  }
+                  disabled={!editingSecrets}
+                  placeholder="123456789012345"
+                />
+                {editingSecrets && (
+                  <Button
+                    onClick={() =>
+                      handleUpdateSecret('whatsapp_business_account_id', secrets.whatsapp_business_account_id)
+                    }
+                    disabled={loadingSecrets}
+                  >
+                    Salvar
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                ID da conta comercial do WhatsApp (usado para criar templates)
+              </p>
             </div>
 
             {/* OpenAI API Key */}

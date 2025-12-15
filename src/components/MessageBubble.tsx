@@ -47,6 +47,20 @@ interface InteractiveListMetadata {
   }>
 }
 
+// Type guard for template message metadata
+interface TemplateMessageMetadata {
+  template_id: string
+  template_name: string
+  template_components?: Array<{
+    type: string
+    text?: string
+    format?: string
+    buttons?: Array<{ type: string; text: string }>
+  }>
+  parameters?: string[]
+  whatsapp_message_id?: string
+}
+
 type InteractiveMetadata = InteractiveButtonsMetadata | InteractiveListMetadata
 
 const isInteractiveMetadata = (obj: unknown): obj is InteractiveMetadata => {
@@ -55,6 +69,15 @@ const isInteractiveMetadata = (obj: unknown): obj is InteractiveMetadata => {
   return (
     typeof meta.type === 'string' &&
     (meta.type === 'button' || meta.type === 'list')
+  )
+}
+
+const isTemplateMetadata = (obj: unknown): obj is TemplateMessageMetadata => {
+  if (!obj || typeof obj !== 'object') return false
+  const meta = obj as Record<string, unknown>
+  return (
+    typeof meta.template_id === 'string' &&
+    typeof meta.template_name === 'string'
   )
 }
 
@@ -77,6 +100,12 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
   const interactiveMetadata: InteractiveMetadata | null = isInteractiveMetadata(rawInteractiveMetadata) 
     ? rawInteractiveMetadata 
     : null
+
+  // 📝 Extract template message metadata
+  const templateMetadata: TemplateMessageMetadata | null = 
+    message.metadata && typeof message.metadata === 'object' && isTemplateMetadata(message.metadata)
+      ? message.metadata as TemplateMessageMetadata
+      : null
 
   // 📱 Extract wamid for WhatsApp reactions
   const wamid = message.metadata && typeof message.metadata === 'object'
@@ -193,9 +222,83 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
     )
   }
 
+  // Render template message content
+  const renderTemplateMessage = () => {
+    if (!templateMetadata) return null
+
+    // Get the body component from template
+    const bodyComponent = templateMetadata.template_components?.find(c => c.type === 'BODY')
+    let bodyText = bodyComponent?.text || ''
+
+    // Replace variables with parameters
+    if (templateMetadata.parameters && bodyComponent?.text) {
+      templateMetadata.parameters.forEach((param, index) => {
+        const placeholder = `{{${index + 1}}}`
+        bodyText = bodyText.replace(new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g'), param)
+      })
+    }
+
+    return (
+      <div className="space-y-2">
+        {/* Template header with badge */}
+        <div className={`flex items-center gap-2 pb-2 border-b ${isIncoming ? 'border-silver-200' : 'border-white/20'}`}>
+          <div className={`px-2 py-0.5 rounded text-xs font-medium ${
+            isIncoming ? 'bg-blue-100 text-blue-700' : 'bg-white/20 text-white'
+          }`}>
+            Template
+          </div>
+          <span className={`text-xs font-medium ${isIncoming ? 'text-erie-black-600' : 'text-white/80'}`}>
+            {templateMetadata.template_name}
+          </span>
+        </div>
+
+        {/* Template body content */}
+        {bodyText && (
+          <div className="text-sm md:text-base whitespace-pre-wrap">
+            {bodyText}
+          </div>
+        )}
+
+        {/* Footer if exists */}
+        {templateMetadata.template_components?.find(c => c.type === 'FOOTER') && (
+          <div className={`text-xs pt-2 border-t ${
+            isIncoming ? 'border-silver-200 text-erie-black-500' : 'border-white/20 text-white/70'
+          }`}>
+            {templateMetadata.template_components.find(c => c.type === 'FOOTER')?.text}
+          </div>
+        )}
+
+        {/* Buttons if exist */}
+        {templateMetadata.template_components?.find(c => c.type === 'BUTTONS')?.buttons && (
+          <div className="flex flex-col gap-1 pt-2">
+            {templateMetadata.template_components
+              .find(c => c.type === 'BUTTONS')
+              ?.buttons?.map((button, index) => (
+                <div
+                  key={index}
+                  className={`text-center py-2 px-3 rounded text-sm font-medium ${
+                    isIncoming 
+                      ? 'bg-silver-100 text-erie-black-700' 
+                      : 'bg-white/10 text-white'
+                  }`}
+                >
+                  {button.text}
+                </div>
+              ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   // Render media content based on type
   const renderMediaContent = () => {
-    // Handle interactive messages first
+    // Handle template messages first
+    if (templateMetadata) {
+      return renderTemplateMessage()
+    }
+
+    // Handle interactive messages
     if (message.type === 'interactive' && interactiveMetadata) {
       if (interactiveMetadata.type === 'button') {
         return (
@@ -242,6 +345,11 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
 
   // Get text content to display
   const getTextContent = () => {
+    // For template messages, don't show text content (it's in the template component)
+    if (templateMetadata) {
+      return ''
+    }
+    
     // For interactive messages, don't show text content (it's in the interactive component)
     if (message.type === 'interactive' && interactiveMetadata) {
       return ''
