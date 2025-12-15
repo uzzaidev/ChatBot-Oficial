@@ -809,88 +809,116 @@ export const processChatbotMessage = async (
       fallbackUsedModel: aiResponse.fallbackUsedModel || null,
     });
 
+    // If the user repeats the same message, a cached identical response is expected.
+    // In those cases, we should not force variation (which breaks cache and UX).
+    const normalizedCurrentMessage = batchedContent.trim();
+    const lastUserMessage = [...chatHistory2]
+      .reverse()
+      .find(
+        (msg) =>
+          msg?.role === "user" &&
+          typeof msg?.content === "string" &&
+          msg.content.trim().length > 0,
+      )?.content
+      ?.trim();
+    const isSameUserMessageAsLast = typeof lastUserMessage === "string" &&
+      lastUserMessage.length > 0 &&
+      lastUserMessage === normalizedCurrentMessage;
+    const skipRepetitionDetectionReason = aiResponse.wasCached === true
+      ? "cache_hit"
+      : isSameUserMessageAsLast
+      ? "same_user_message"
+      : null;
+
     // 🔧 Phase 3: Detect Repetition and regenerate if needed (configurable)
     if (
       shouldExecuteNode("detect_repetition", nodeStates) &&
       aiResponse.content && aiResponse.content.trim().length > 0
     ) {
-      logger.logNodeStart("12.5. Detect Repetition", {
-        responseLength: aiResponse.content.length,
-      });
-
-      const repetitionCheck = await detectRepetition({
-        phone: parsedMessage.phone,
-        clientId: config.id,
-        proposedResponse: aiResponse.content,
-      });
-
-      logger.logNodeSuccess("12.5. Detect Repetition", {
-        isRepetition: repetitionCheck.isRepetition,
-        similarity: repetitionCheck.similarityScore,
-      });
-
-      if (repetitionCheck.isRepetition) {
-        const originalResponse = aiResponse.content;
-
-        // Regenerate with anti-repetition instruction
-        logger.logNodeStart("12.6. Regenerate with Variation", {
-          originalResponsePreview: originalResponse.substring(0, 150) + "...",
+      if (skipRepetitionDetectionReason) {
+        logger.logNodeSuccess("12.5. Detect Repetition", {
+          skipped: true,
+          reason: skipRepetitionDetectionReason,
+        });
+      } else {
+        logger.logNodeStart("12.5. Detect Repetition", {
+          responseLength: aiResponse.content.length,
         });
 
-        // Create a stronger variation instruction
-        const variationInstruction =
-          (continuityInfo.greetingInstruction || "") +
-          "\n\n🔴 ALERTA CRÍTICO DE REPETIÇÃO: Você DEVE criar uma resposta COMPLETAMENTE DIFERENTE da anterior. " +
-          "Sua resposta anterior foi muito similar às respostas passadas. " +
-          "REQUISITOS OBRIGATÓRIOS:\n" +
-          "1. Use palavras e frases DIFERENTES\n" +
-          "2. Mude a ESTRUTURA da resposta (ordem das ideias, número de parágrafos)\n" +
-          "3. Varie o ESTILO (mais formal/informal, mais direta/explicativa)\n" +
-          "4. Se possível, aborde o assunto por um ÂNGULO DIFERENTE\n" +
-          "5. NÃO copie frases ou expressões que você já usou recentemente";
-
-        const variedResponse = await generateAIResponse({
-          message: batchedContent,
-          chatHistory: chatHistory2,
-          ragContext,
-          customerName: parsedMessage.name,
-          config: {
-            ...config,
-            settings: {
-              ...config.settings,
-              temperature: Math.min(
-                1.0,
-                (config.settings.temperature || 0.7) + 0.3,
-              ), // Increase temperature for more variation
-            },
-          },
-          greetingInstruction: variationInstruction,
-        });
-
-        // Check if the regenerated response is still too similar
-        const newSimilarity = await detectRepetition({
+        const repetitionCheck = await detectRepetition({
           phone: parsedMessage.phone,
           clientId: config.id,
-          proposedResponse: variedResponse.content || "",
+          proposedResponse: aiResponse.content,
         });
 
-        // Use the varied response
-        aiResponse.content = variedResponse.content;
-        aiResponse.toolCalls = variedResponse.toolCalls;
-
-        logger.logNodeSuccess("12.6. Regenerate with Variation", {
-          originalLength: originalResponse.length,
-          newLength: variedResponse.content?.length || 0,
-          originalPreview: originalResponse.substring(0, 100),
-          newPreview: (variedResponse.content || "").substring(0, 100),
-          newSimilarity: newSimilarity.similarityScore,
-          stillRepetitive: newSimilarity.isRepetition,
+        logger.logNodeSuccess("12.5. Detect Repetition", {
+          isRepetition: repetitionCheck.isRepetition,
+          similarity: repetitionCheck.similarityScore,
         });
 
-        if (newSimilarity.isRepetition) {
+        if (repetitionCheck.isRepetition) {
+          const originalResponse = aiResponse.content;
+
+          // Regenerate with anti-repetition instruction
+          logger.logNodeStart("12.6. Regenerate with Variation", {
+            originalResponsePreview: originalResponse.substring(0, 150) + "...",
+          });
+
+          // Create a stronger variation instruction
+          const variationInstruction =
+            (continuityInfo.greetingInstruction || "") +
+            "\n\n🔴 ALERTA CRÍTICO DE REPETIÇÃO: Você DEVE criar uma resposta COMPLETAMENTE DIFERENTE da anterior. " +
+            "Sua resposta anterior foi muito similar às respostas passadas. " +
+            "REQUISITOS OBRIGATÓRIOS:\n" +
+            "1. Use palavras e frases DIFERENTES\n" +
+            "2. Mude a ESTRUTURA da resposta (ordem das ideias, número de parágrafos)\n" +
+            "3. Varie o ESTILO (mais formal/informal, mais direta/explicativa)\n" +
+            "4. Se possível, aborde o assunto por um ÂNGULO DIFERENTE\n" +
+            "5. NÃO copie frases ou expressões que você já usou recentemente";
+
+          const variedResponse = await generateAIResponse({
+            message: batchedContent,
+            chatHistory: chatHistory2,
+            ragContext,
+            customerName: parsedMessage.name,
+            config: {
+              ...config,
+              settings: {
+                ...config.settings,
+                temperature: Math.min(
+                  1.0,
+                  (config.settings.temperature || 0.7) + 0.3,
+                ), // Increase temperature for more variation
+              },
+            },
+            greetingInstruction: variationInstruction,
+          });
+
+          // Check if the regenerated response is still too similar
+          const newSimilarity = await detectRepetition({
+            phone: parsedMessage.phone,
+            clientId: config.id,
+            proposedResponse: variedResponse.content || "",
+          });
+
+          // Use the varied response
+          aiResponse.content = variedResponse.content;
+          aiResponse.toolCalls = variedResponse.toolCalls;
+
+          logger.logNodeSuccess("12.6. Regenerate with Variation", {
+            originalLength: originalResponse.length,
+            newLength: variedResponse.content?.length || 0,
+            originalPreview: originalResponse.substring(0, 100),
+            newPreview: (variedResponse.content || "").substring(0, 100),
+            newSimilarity: newSimilarity.similarityScore,
+            stillRepetitive: newSimilarity.isRepetition,
+          });
+
+          if (newSimilarity.isRepetition) {
+          } else {
+          }
         } else {
         }
-      } else {
       }
     } else if (!shouldExecuteNode("detect_repetition", nodeStates)) {
       logger.logNodeSuccess("12.5. Detect Repetition", {
