@@ -13,13 +13,14 @@ export async function POST(request: NextRequest) {
 
     if (!input) {
       return NextResponse.json(
-        { error: 'Input required (phone as string)' },
+        { error: 'Input required (phone as string or object with phone and clientId)' },
         { status: 400 }
       )
     }
 
-    // Input pode ser string (phone) ou objeto com phone
+    // Input pode ser string (phone) ou objeto com phone e clientId
     const phone = typeof input === 'string' ? input : input.phone
+    const clientId = typeof input === 'object' ? input.clientId : 'default_client_id'
 
     if (!phone) {
       return NextResponse.json(
@@ -29,14 +30,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Executa o node
-    const output = await batchMessages(phone)
+    const output = await batchMessages(phone, clientId)
 
     return NextResponse.json({
       success: true,
       output,
       info: output 
         ? `Batched content (${output.length} caracteres)` 
-        : 'Nenhuma mensagem no batch',
+        : 'Nenhuma mensagem no batch (lock exists ou delay não atingido)',
     })
   } catch (error: any) {
     return NextResponse.json(
