@@ -7,6 +7,7 @@
  * Allows tenant to configure FAQ detection settings, catalog, and thresholds.
  * 
  * @updated 2025-12-15 - Improved UI with form-based FAQ management
+ * @updated 2025-12-15 - Added model selector populated from AI Gateway models
  */
 
 import { useState, useEffect } from 'react'
@@ -18,7 +19,7 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Save, AlertCircle, Info, Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
+import { Save, AlertCircle, Info, Plus, Trash2, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -31,6 +32,14 @@ interface FastTrackCatalogItem {
   topic: string
   canonical: string
   examples: string[]
+}
+
+interface AIModel {
+  id: string
+  provider: string
+  modelName: string
+  displayName: string
+  gatewayIdentifier: string
 }
 
 interface FAQItemEditorProps {
@@ -169,6 +178,35 @@ export default function FastTrackRouterProperties({
   const [keywordsText, setKeywordsText] = useState('')
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set([0]))
   const [validationError, setValidationError] = useState<string | null>(null)
+  
+  // AI Gateway models state
+  const [aiModels, setAIModels] = useState<AIModel[]>([])
+  const [loadingModels, setLoadingModels] = useState(true)
+  const [modelsError, setModelsError] = useState<string | null>(null)
+
+  // Fetch AI Gateway models
+  useEffect(() => {
+    const fetchModels = async () => {
+      try {
+        setLoadingModels(true)
+        const response = await fetch('/api/ai-gateway/models')
+        if (!response.ok) {
+          throw new Error('Failed to fetch models')
+        }
+        const data = await response.json()
+        setAIModels(data || [])
+        setModelsError(null)
+      } catch (error) {
+        console.error('Error fetching AI models:', error)
+        setModelsError('Não foi possível carregar os modelos do AI Gateway')
+        setAIModels([])
+      } finally {
+        setLoadingModels(false)
+      }
+    }
+
+    fetchModels()
+  }, [])
 
   // Initialize from config
   useEffect(() => {
@@ -275,7 +313,7 @@ export default function FastTrackRouterProperties({
       .map(k => k.trim())
       .filter(k => k.length > 0)
 
-    // Update config (model is removed - will use client's configured models)
+    // Update config with router_model
     const updatedConfig = {
       ...localConfig,
       catalog: catalogItems,
@@ -292,9 +330,51 @@ export default function FastTrackRouterProperties({
         <Info className="h-4 w-4" />
         <AlertDescription className="text-xs">
           <strong>Fast Track:</strong> Detecta perguntas FAQ para habilitar cache de prompt da LLM.
-          Usa os mesmos modelos já configurados no AI Gateway.
+          Selecione o modelo a ser usado para classificação semântica.
         </AlertDescription>
       </Alert>
+
+      {/* Router Model Selector */}
+      <div className="space-y-2">
+        <Label>Modelo do Roteador</Label>
+        {loadingModels ? (
+          <div className="flex items-center gap-2 p-2 border rounded-md bg-gray-50">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span className="text-sm text-gray-600">Carregando modelos...</span>
+          </div>
+        ) : modelsError ? (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="text-xs">{modelsError}</AlertDescription>
+          </Alert>
+        ) : aiModels.length === 0 ? (
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="text-xs">
+              Nenhum modelo encontrado no AI Gateway. Configure modelos em /dashboard/ai-gateway/models
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <Select
+            value={localConfig.router_model || 'gpt-4o-mini'}
+            onValueChange={(value) => setLocalConfig({ ...localConfig, router_model: value })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione o modelo" />
+            </SelectTrigger>
+            <SelectContent>
+              {aiModels.map((model) => (
+                <SelectItem key={model.id} value={model.modelName}>
+                  {model.provider} - {model.displayName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        <p className="text-xs text-gray-500">
+          Modelo usado para classificar se a mensagem é FAQ. Será rastreado em budget/analytics.
+        </p>
+      </div>
 
       {/* Similarity Threshold */}
       <div className="space-y-2">
