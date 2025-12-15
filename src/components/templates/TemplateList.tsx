@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MessageTemplate } from "@/lib/types";
 import { TemplateStatusBadge } from "./TemplateStatusBadge";
+import { TemplateViewDialog } from "./TemplateViewDialog";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -57,9 +58,12 @@ export const TemplateList = ({
 }: TemplateListProps) => {
   const router = useRouter();
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<MessageTemplate | null>(null);
 
-  const handleView = (templateId: string) => {
-    router.push(`/dashboard/templates/${templateId}`);
+  const handleView = (template: MessageTemplate) => {
+    setSelectedTemplate(template);
+    setViewDialogOpen(true);
   };
 
   const handleEdit = (templateId: string) => {
@@ -124,8 +128,14 @@ export const TemplateList = ({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow border border-silver-200">
-      <Table>
+    <>
+      <TemplateViewDialog
+        template={selectedTemplate}
+        open={viewDialogOpen}
+        onOpenChange={setViewDialogOpen}
+      />
+      <div className="bg-white rounded-lg shadow border border-silver-200">
+        <Table>
         <TableHeader>
           <TableRow>
             <TableHead className="w-[250px]">Nome</TableHead>
@@ -180,7 +190,7 @@ export const TemplateList = ({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleView(template.id)}>
+                    <DropdownMenuItem onClick={() => handleView(template)}>
                       <Eye className="mr-2 h-4 w-4" />
                       Visualizar
                     </DropdownMenuItem>
@@ -219,5 +229,6 @@ export const TemplateList = ({
         </TableBody>
       </Table>
     </div>
+    </>
   );
 };
