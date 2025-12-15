@@ -509,6 +509,7 @@ function getRelatedConfigKeys(nodeId: string): string[] {
     ],
     fast_track_router: [
       "fast_track:enabled",
+      "fast_track:router_model",
       "fast_track:similarity_threshold",
       "fast_track:catalog",
       "fast_track:keywords",
@@ -621,6 +622,7 @@ function getDefaultConfig(nodeId: string): Record<string, any> {
     },
     fast_track_router: {
       enabled: false, // Disabled by default - tenant must opt-in
+      router_model: "gpt-4o-mini", // Default model (from AI Gateway models registry)
       similarity_threshold: 0.80, // High threshold to avoid false positives
       catalog: [
         // Example catalog (tenant should customize this)
@@ -637,7 +639,6 @@ function getDefaultConfig(nodeId: string): Record<string, any> {
       keywords: [], // Optional prefilter keywords
       match_mode: "contains", // 'contains' or 'starts_with'
       disable_tools: true, // Disable tools for more stable prompts
-      // Note: router_model removed - now uses client's configured OpenAI model from clients table
     },
   };
 
