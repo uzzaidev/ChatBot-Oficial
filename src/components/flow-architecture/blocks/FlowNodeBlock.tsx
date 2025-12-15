@@ -34,7 +34,8 @@ import {
   RotateCcw,
   Save,
   FileCode,
-  Send
+  Send,
+  Zap
 } from 'lucide-react'
 import type { FlowArchitectureNodeData } from '@/stores/flowArchitectureStore'
 
@@ -50,6 +51,7 @@ const getNodeIcon = (nodeId: string) => {
     push_to_redis: Database,
     save_user_message: MessageSquare,
     batch_messages: Clock,
+    fast_track_router: Zap, // 🚀 Fast Track Router icon
     get_chat_history: History,
     get_rag_context: BookOpen,
     check_continuity: CheckCircle,
