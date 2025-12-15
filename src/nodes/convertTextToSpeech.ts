@@ -101,16 +101,18 @@ export const convertTextToSpeech = async (
     .eq("id", clientId)
     .single();
 
-  const aiKeysMode = (client?.ai_keys_mode === "byok_allowed"
-    ? "byok_allowed"
-    : "platform_only") as "platform_only" | "byok_allowed";
+  const aiKeysMode =
+    (client?.ai_keys_mode === "byok_allowed"
+      ? "byok_allowed"
+      : "platform_only") as "platform_only" | "byok_allowed";
 
   const sharedGatewayConfig = await getSharedGatewayConfig();
   const sharedOpenaiKey = sharedGatewayConfig?.providerKeys?.openai || null;
 
-  const byokOpenaiKey = aiKeysMode === "byok_allowed" && client?.openai_api_key_secret_id
-    ? await getSecret(client.openai_api_key_secret_id)
-    : null;
+  const byokOpenaiKey =
+    aiKeysMode === "byok_allowed" && client?.openai_api_key_secret_id
+      ? await getSecret(client.openai_api_key_secret_id)
+      : null;
 
   const finalOpenaiKey = aiKeysMode === "byok_allowed"
     ? (byokOpenaiKey || sharedOpenaiKey)
@@ -202,15 +204,15 @@ export const convertTextToSpeech = async (
   });
 
   // 6. Track unified usage (new - increments budget)
-  const costUSD = selectedModel === 'tts-1-hd'
-    ? (text.length / 1_000_000) * 15.0  // $15/1M characters
-    : (text.length / 1_000_000) * 7.5   // $7.5/1M characters
+  const costUSD = selectedModel === "tts-1-hd"
+    ? (text.length / 1_000_000) * 15.0 // $15/1M characters
+    : (text.length / 1_000_000) * 7.5; // $7.5/1M characters
 
   await trackUnifiedUsage({
     clientId,
-    phone: 'system',
-    apiType: 'tts',
-    provider: 'openai',
+    phone: "system",
+    apiType: "tts",
+    provider: "openai",
     modelName: selectedModel,
     characters: text.length,
     costUSD,
