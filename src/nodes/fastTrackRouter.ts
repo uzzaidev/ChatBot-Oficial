@@ -221,7 +221,7 @@ Analise se a mensagem corresponde a alguma FAQ do catálogo. Responda com JSON.`
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `******
+          Authorization: `Bearer ${client.openai_api_key}`,
         },
         body: JSON.stringify({
           model: routerModel,
