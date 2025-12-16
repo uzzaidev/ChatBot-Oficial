@@ -172,7 +172,7 @@ export default function FastTrackRouterProperties({
   nodeId: string
   config: NodeConfig 
 }) {
-  const { updateNodeConfig, saving } = useFlowArchitectureStore()
+  const { updateNodeConfig, toggleNodeEnabled, saving } = useFlowArchitectureStore()
   const [localConfig, setLocalConfig] = useState(config)
   const [catalogItems, setCatalogItems] = useState<FastTrackCatalogItem[]>([])
   const [keywordsText, setKeywordsText] = useState('')
