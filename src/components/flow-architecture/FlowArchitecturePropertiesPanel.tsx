@@ -25,6 +25,7 @@ import GetChatHistoryProperties from './properties/GetChatHistoryProperties'
 import BatchMessagesProperties from './properties/BatchMessagesProperties'
 import GetRagContextProperties from './properties/GetRagContextProperties'
 import SearchDocumentProperties from './properties/SearchDocumentProperties'
+import FastTrackRouterProperties from './properties/FastTrackRouterProperties'
 
 export default function FlowArchitecturePropertiesPanel() {
   const {
@@ -193,9 +194,16 @@ export default function FlowArchitecturePropertiesPanel() {
             />
           )}
 
+          {selectedNode.id === 'fast_track_router' && (
+            <FastTrackRouterProperties
+              nodeId={selectedNode.id}
+              config={nodeConfig || { enabled: false }}
+            />
+          )}
+
           {/* Fallback for nodes with config but no specific panel yet */}
           {!['generate_response', 'check_continuity', 'classify_intent', 'detect_repetition',
-               'get_chat_history', 'batch_messages', 'get_rag_context', 'search_document'].includes(selectedNode.id) && (
+               'get_chat_history', 'batch_messages', 'get_rag_context', 'search_document', 'fast_track_router'].includes(selectedNode.id) && (
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription className="text-xs">
