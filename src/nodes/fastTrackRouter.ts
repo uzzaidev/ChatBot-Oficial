@@ -296,36 +296,36 @@ export const fastTrackRouter = async (
 
     // 🐛 DEBUG: Log configs para diagnosticar problema
     console.log("[Fast Track DEBUG] configs from DB:", {
-      "fast_track:enabled": configs["fast_track:enabled"],
-      "fast_track:router_model": configs["fast_track:router_model"],
-      "fast_track:catalog_length": configs["fast_track:catalog"]?.length || 0,
+      "fast_track:enabled": configs.get("fast_track:enabled"),
+      "fast_track:router_model": configs.get("fast_track:router_model"),
+      "fast_track:catalog_length": configs.get("fast_track:catalog")?.length || 0,
       allConfigKeys: Array.from(configs.keys()),
     });
 
-    // Override with DB values if present
-    if (configs["fast_track:enabled"] !== undefined) {
-      config.enabled = configs["fast_track:enabled"];
+    // Override with DB values if present (using Map.get())
+    if (configs.get("fast_track:enabled") !== undefined) {
+      config.enabled = configs.get("fast_track:enabled");
       console.log("[Fast Track DEBUG] config.enabled set to:", config.enabled);
     } else {
       console.log("[Fast Track DEBUG] fast_track:enabled is UNDEFINED in configs!");
     }
-    if (configs["fast_track:router_model"]) {
-      config.router_model = configs["fast_track:router_model"];
+    if (configs.get("fast_track:router_model")) {
+      config.router_model = configs.get("fast_track:router_model");
     }
-    if (configs["fast_track:similarity_threshold"] !== undefined) {
-      config.similarity_threshold = configs["fast_track:similarity_threshold"];
+    if (configs.get("fast_track:similarity_threshold") !== undefined) {
+      config.similarity_threshold = configs.get("fast_track:similarity_threshold");
     }
-    if (configs["fast_track:catalog"]) {
-      config.catalog = configs["fast_track:catalog"];
+    if (configs.get("fast_track:catalog")) {
+      config.catalog = configs.get("fast_track:catalog");
     }
-    if (configs["fast_track:keywords"]) {
-      config.keywords = configs["fast_track:keywords"];
+    if (configs.get("fast_track:keywords")) {
+      config.keywords = configs.get("fast_track:keywords");
     }
-    if (configs["fast_track:match_mode"]) {
-      config.match_mode = configs["fast_track:match_mode"];
+    if (configs.get("fast_track:match_mode")) {
+      config.match_mode = configs.get("fast_track:match_mode");
     }
-    if (configs["fast_track:disable_tools"] !== undefined) {
-      config.disable_tools = configs["fast_track:disable_tools"];
+    if (configs.get("fast_track:disable_tools") !== undefined) {
+      config.disable_tools = configs.get("fast_track:disable_tools");
     }
 
     // Check if enabled
