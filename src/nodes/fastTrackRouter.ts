@@ -291,9 +291,20 @@ export const fastTrackRouter = async (
       ...(configOverride || {}),
     };
 
+    // 🐛 DEBUG: Log configs para diagnosticar problema
+    console.log("[Fast Track DEBUG] configs from DB:", {
+      "fast_track:enabled": configs["fast_track:enabled"],
+      "fast_track:router_model": configs["fast_track:router_model"],
+      "fast_track:catalog_length": configs["fast_track:catalog"]?.length || 0,
+      allConfigKeys: Array.from(configs.keys()),
+    });
+
     // Override with DB values if present
     if (configs["fast_track:enabled"] !== undefined) {
       config.enabled = configs["fast_track:enabled"];
+      console.log("[Fast Track DEBUG] config.enabled set to:", config.enabled);
+    } else {
+      console.log("[Fast Track DEBUG] fast_track:enabled is UNDEFINED in configs!");
     }
     if (configs["fast_track:router_model"]) {
       config.router_model = configs["fast_track:router_model"];
