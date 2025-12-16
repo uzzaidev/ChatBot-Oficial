@@ -386,6 +386,12 @@ export const getBotConfigs = async (
   configKeys: string[],
 ): Promise<Map<string, any>> => {
   try {
+    // 🐛 DEBUG: Log input
+    console.log("[getBotConfigs DEBUG] Input:", {
+      clientId,
+      configKeys,
+    });
+
     const supabase = createServerClient();
 
     const { data, error } = await supabase
@@ -394,7 +400,20 @@ export const getBotConfigs = async (
       .in("config_key", configKeys)
       .or(`client_id.eq.${clientId},is_default.eq.true`);
 
+    // 🐛 DEBUG: Log query result
+    console.log("[getBotConfigs DEBUG] Query result:", {
+      rowCount: data?.length || 0,
+      hasError: !!error,
+      error: error?.message,
+      data: data?.map((d) => ({
+        key: d.config_key,
+        isDefault: d.is_default,
+        valueType: typeof d.config_value,
+      })),
+    });
+
     if (error || !data) {
+      console.log("[getBotConfigs DEBUG] Returning empty Map due to error or no data");
       return new Map();
     }
 
@@ -418,8 +437,15 @@ export const getBotConfigs = async (
       });
     });
 
+    // 🐛 DEBUG: Log final Map
+    console.log("[getBotConfigs DEBUG] Final Map:", {
+      size: configMap.size,
+      keys: Array.from(configMap.keys()),
+    });
+
     return configMap;
   } catch (error) {
+    console.log("[getBotConfigs DEBUG] Exception caught:", error);
     return new Map();
   }
 };

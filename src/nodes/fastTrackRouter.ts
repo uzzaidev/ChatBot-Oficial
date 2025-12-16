@@ -274,6 +274,9 @@ export const fastTrackRouter = async (
   const { clientId, message, config: configOverride } = input;
 
   try {
+    // 🐛 DEBUG: Ver qual clientId está sendo passado
+    console.log("[Fast Track DEBUG] clientId recebido:", clientId);
+
     // Fetch configuration from database
     const configs = await getBotConfigs(clientId, [
       "fast_track:enabled",
