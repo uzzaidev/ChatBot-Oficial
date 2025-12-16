@@ -407,7 +407,7 @@ export const getBotConfigs = async (
       rowCount: data?.length || 0,
       hasError: !!error,
       error: error?.message,
-      data: data?.map((d) => ({
+      data: data?.map((d: any) => ({
         key: d.config_key,
         isDefault: d.is_default,
         valueType: typeof d.config_value,
@@ -423,12 +423,12 @@ export const getBotConfigs = async (
     const configMap = new Map<string, any>();
 
     // Primeiro adicionar defaults
-    data.filter((c) => c.is_default).forEach((c) => {
+    (data as any[]).filter((c: any) => c.is_default).forEach((c: any) => {
       configMap.set(c.config_key, c.config_value);
     });
 
     // Depois sobrescrever com configs do cliente (se existir)
-    data.filter((c) => !c.is_default).forEach((c) => {
+    (data as any[]).filter((c: any) => !c.is_default).forEach((c: any) => {
       configMap.set(c.config_key, c.config_value);
 
       // Cachear também
