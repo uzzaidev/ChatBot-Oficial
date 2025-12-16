@@ -162,6 +162,23 @@ export const FLOW_METADATA: FlowNodeMetadata[] = [
   },
   
   // ========================================
+  // FAST TRACK ROUTER (9.5)
+  // ========================================
+  {
+    id: 'fast_track_router',
+    name: 'Fast Track Router (FAQ Cache)',
+    description: '🚀 Detecta perguntas FAQ usando similaridade semântica. Se detectar FAQ, pula histórico/RAG/data-hora para habilitar cache de prompt da LLM. Configurável em /dashboard/flow',
+    category: 'auxiliary',
+    enabled: false, // Disabled by default - tenant must opt-in
+    hasConfig: true,
+    configurable: true, // Can be enabled/disabled
+    configKey: 'fast_track:enabled',
+    bypassable: true,
+    dependencies: ['batch_messages'],
+    optionalDependencies: ['save_user_message'], // Bypass if batch is disabled
+  },
+  
+  // ========================================
   // ANALYSIS NODES (10-11)
   // ========================================
   {
@@ -174,8 +191,8 @@ export const FLOW_METADATA: FlowNodeMetadata[] = [
     configurable: true, // Can be disabled
     configKey: 'chat_history:max_messages',
     bypassable: true,
-    dependencies: ['batch_messages'],
-    optionalDependencies: ['save_user_message'], // Bypass if batch is disabled
+    dependencies: ['fast_track_router'], // Depends on fast track router
+    optionalDependencies: ['batch_messages', 'save_user_message'], // Bypass if fast track or batch is disabled
   },
   {
     id: 'get_rag_context',
@@ -187,8 +204,8 @@ export const FLOW_METADATA: FlowNodeMetadata[] = [
     configurable: true, // Can be disabled
     configKey: 'rag:enabled',
     bypassable: true,
-    dependencies: ['batch_messages'],
-    optionalDependencies: ['save_user_message'], // Bypass if batch is disabled
+    dependencies: ['fast_track_router'], // Depends on fast track router
+    optionalDependencies: ['batch_messages', 'save_user_message'], // Bypass if fast track or batch is disabled
   },
 
   // ========================================
@@ -217,8 +234,8 @@ export const FLOW_METADATA: FlowNodeMetadata[] = [
     configurable: true, // Can be disabled
     configKey: 'intent_classifier:use_llm',
     bypassable: true,
-    dependencies: ['batch_messages'],
-    optionalDependencies: ['save_user_message'], // Bypass if batch is disabled
+    dependencies: ['fast_track_router'], // Depends on fast track router
+    optionalDependencies: ['batch_messages', 'save_user_message'], // Bypass if fast track or batch is disabled
   },
   
   // ========================================
