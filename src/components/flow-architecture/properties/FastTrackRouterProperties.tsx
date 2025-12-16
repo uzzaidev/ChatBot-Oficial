@@ -283,7 +283,7 @@ export default function FastTrackRouterProperties({
     setExpandedItems(newExpanded)
   }
 
-  const validateAndSave = () => {
+  const validateAndSave = async () => {
     // Validate catalog
     if (catalogItems.length === 0) {
       setValidationError('Adicione pelo menos 1 FAQ ao catálogo')
@@ -321,7 +321,11 @@ export default function FastTrackRouterProperties({
       keywords,
     }
 
-    updateNodeConfig(nodeId, updatedConfig)
+    // 🔧 FIX: Auto-enable the node when saving config
+    // This ensures the node is enabled even if the toggle doesn't work
+    await toggleNodeEnabled(nodeId, true)
+
+    await updateNodeConfig(nodeId, updatedConfig)
   }
 
   return (
