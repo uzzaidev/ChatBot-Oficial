@@ -207,6 +207,19 @@ const callAIViaGateway = async (
   // Format model as "provider/model" (required by Vercel AI Gateway)
   const modelIdentifier = `${provider}/${primaryModel}`; // e.g., "openai/gpt-4o-mini"
 
+  // 🔍 DEBUG: Log request details for cache debugging
+  console.log("[AI Gateway] Request Details:", {
+    model: modelIdentifier,
+    messageCount: messages.length,
+    messagesPreview: messages.map(m => ({
+      role: m.role,
+      contentLength: typeof m.content === 'string' ? m.content.length : 0,
+      contentPreview: typeof m.content === 'string' ? m.content.substring(0, 100) : '[complex]'
+    })),
+    hasTools: !!normalizedTools && Object.keys(normalizedTools).length > 0,
+    toolCount: normalizedTools ? Object.keys(normalizedTools).length : 0,
+  });
+
   // Generate response using Vercel AI Gateway
   // Gateway handles: cache, fallback, telemetry automatically
   const result = await generateText({
@@ -220,6 +233,20 @@ const callAIViaGateway = async (
 
   // ✅ Extract gateway headers
   const headers = result.response?.headers || {};
+
+  // 🔍 DEBUG: Log ALL headers for cache debugging
+  console.log("[AI Gateway] Response Headers:", {
+    allHeaders: Object.keys(headers),
+    cacheHeaders: {
+      'x-vercel-cache': headers["x-vercel-cache"],
+      'x-vercel-ai-cache-status': headers["x-vercel-ai-cache-status"],
+      'x-vercel-ai-provider': headers["x-vercel-ai-provider"],
+      'x-vercel-ai-model': headers["x-vercel-ai-model"],
+      'x-vercel-ai-request-id': headers["x-vercel-ai-request-id"],
+      'x-vercel-ai-data-stream-id': headers["x-vercel-ai-data-stream-id"],
+    }
+  });
+
   const headerIndicatesCache = headers["x-vercel-cache"] === "HIT" ||
     headers["x-vercel-ai-cache-status"] === "hit";
   const actualProvider = headers["x-vercel-ai-provider"] || provider;
