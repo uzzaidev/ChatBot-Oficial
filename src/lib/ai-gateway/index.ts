@@ -202,13 +202,9 @@ const callAIViaGateway = async (
 
   logToolsDebug(normalizedTools);
 
-  // Format model identifier as "provider/model" (required by Vercel AI Gateway)
-  const modelIdentifier = `${provider}/${primaryModel}`;
-
   // Generate response using Vercel AI SDK with telemetry
-  // Vercel AI Gateway handles automatic fallback, cache, and telemetry
   const result = await generateText({
-    model: providerInstance(modelIdentifier), // e.g., "openai/gpt-4o-mini"
+    model: providerInstance(primaryModel), // e.g., "gpt-4o-mini"
     messages,
     tools: normalizedTools,
     experimental_telemetry: { isEnabled: true }, // ✅ Enable telemetry

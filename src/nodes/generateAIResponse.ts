@@ -295,7 +295,6 @@ export const generateAIResponse = async (
       clientId: config.id,
       clientName: config.name,
       primaryProvider: config.primaryProvider,
-      baseURL: useGateway ? "https://ai-gateway.vercel.sh/v1" : "direct",
       messageCount: messages.length,
       toolsEnabled: enableTools && config.settings.enableTools,
       includeDateTimeInfo,
