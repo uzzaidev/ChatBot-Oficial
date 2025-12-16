@@ -7,7 +7,7 @@
 
 import { generateText, streamText } from "ai";
 import type { CoreMessage } from "ai";
-import { getGatewayProvider } from "./providers";
+import { getGatewayProvider, createGatewayInstance } from "./providers";
 import { getSharedGatewayConfig, shouldUseGateway } from "./config";
 import { logGatewayUsage } from "./usage-tracking";
 
@@ -190,24 +190,30 @@ const callAIViaGateway = async (
   const primaryAttemptedProvider = provider;
   const primaryAttemptedModel = primaryModel;
 
-  // Get provider-specific API key (NOT gateway key!)
-  const providerApiKey = gatewayConfig.providerKeys[provider];
+  // Use Vercel AI Gateway with single gateway key
+  const gatewayApiKey = gatewayConfig.gatewayApiKey;
 
-  if (!providerApiKey) {
-    throw new Error(`No API key configured for provider: ${provider}`);
+  if (!gatewayApiKey) {
+    throw new Error(
+      "Gateway API key not configured. Please add it in /dashboard/ai-gateway/setup"
+    );
   }
 
-  // Get provider instance with provider-specific key
-  const providerInstance = getGatewayProvider(provider, providerApiKey);
+  // Create gateway instance
+  const gateway = createGatewayInstance(gatewayApiKey);
 
   logToolsDebug(normalizedTools);
 
-  // Generate response using Vercel AI SDK with telemetry
+  // Format model as "provider/model" (required by Vercel AI Gateway)
+  const modelIdentifier = `${provider}/${primaryModel}`; // e.g., "openai/gpt-4o-mini"
+
+  // Generate response using Vercel AI Gateway
+  // Gateway handles: cache, fallback, telemetry automatically
   const result = await generateText({
-    model: providerInstance(primaryModel), // e.g., "gpt-4o-mini"
+    model: gateway(modelIdentifier), // ✅ Routes through Vercel AI Gateway
     messages,
     tools: normalizedTools,
-    experimental_telemetry: { isEnabled: true }, // ✅ Enable telemetry
+    experimental_telemetry: { isEnabled: true },
   });
 
   const latencyMs = Date.now() - startTime;

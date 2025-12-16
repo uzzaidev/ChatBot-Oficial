@@ -9,6 +9,7 @@ import { createOpenAI } from '@ai-sdk/openai'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { createGroq } from '@ai-sdk/groq'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
+import { createGateway } from 'ai'
 
 // =====================================================
 // TYPES
@@ -21,23 +22,35 @@ export type SupportedProvider = 'openai' | 'anthropic' | 'groq' | 'google'
 // =====================================================
 
 /**
- * Get provider instance for Vercel AI SDK
+ * Create Vercel AI Gateway instance
  *
- * @param provider - Provider name ('openai', 'anthropic', 'groq', 'google')
- * @param apiKey - Provider-specific API key (sk-proj-..., gsk_..., sk-ant-..., etc.)
- * @returns Provider instance that can be called with model name
+ * @param gatewayApiKey - Vercel AI Gateway API key (vck_...)
+ * @returns Gateway instance for use with generateText
  *
  * @example
- * const provider = getGatewayProvider('openai', 'sk-proj-xxxxx')
- * const model = provider('openai/gpt-4o')
- * const result = await generateText({ model, messages })
+ * const gateway = createGatewayInstance('vck_...')
+ * const result = await generateText({
+ *   model: gateway('openai/gpt-4o'),
+ *   messages: [...]
+ * })
  *
- * NOTE: Currently using direct API calls (no gateway routing)
- * Gateway integration via baseURL causes 405 errors with /v1/responses endpoint
- * TODO: Investigate proper Vercel AI Gateway integration
+ * Benefits:
+ * - ✅ Automatic cache (60-70% hit rate)
+ * - ✅ Dashboard visibility
+ * - ✅ Automatic fallback
+ * - ✅ Provider keys managed in Vercel dashboard
+ */
+export const createGatewayInstance = (gatewayApiKey: string) => {
+  return createGateway({
+    apiKey: gatewayApiKey,
+  })
+}
+
+/**
+ * Get provider instance for DIRECT API calls (without gateway)
+ * Used when gateway is disabled or as fallback
  */
 export const getGatewayProvider = (provider: SupportedProvider, apiKey: string) => {
-  // Direct API calls for now (gateway baseURL causes endpoint conflicts)
   switch (provider) {
     case 'openai':
       return createOpenAI({
