@@ -68,6 +68,9 @@ export const logGatewayUsage = async (
   try {
     const supabase = createServerClient();
 
+    // Normalize model name to lowercase for registry lookup
+    const normalizedModelName = modelName.toLowerCase();
+
     // 1. Get model pricing from registry
     const { data: modelData, error: modelError } = await supabase
       .from("ai_models_registry")
@@ -75,7 +78,7 @@ export const logGatewayUsage = async (
         "id, input_price_per_million, output_price_per_million, cached_input_price_per_million",
       )
       .eq("provider", provider)
-      .eq("model_name", modelName)
+      .eq("model_name", normalizedModelName)
       .single();
 
     if (modelError || !modelData) {
@@ -117,7 +120,7 @@ export const logGatewayUsage = async (
         request_id: requestId,
         model_registry_id: modelData?.id,
         provider,
-        model_name: modelName,
+        model_name: normalizedModelName, // Use normalized name for consistency
         input_tokens: inputTokens,
         output_tokens: outputTokens,
         cached_tokens: cachedTokens,
@@ -144,7 +147,7 @@ export const logGatewayUsage = async (
       phone,
       apiType: "chat",
       provider: provider as "openai" | "groq" | "anthropic" | "google",
-      modelName,
+      modelName: normalizedModelName, // Use normalized name
       inputTokens,
       outputTokens,
       cachedTokens,
