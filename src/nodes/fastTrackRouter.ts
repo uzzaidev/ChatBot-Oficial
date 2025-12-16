@@ -296,7 +296,8 @@ export const fastTrackRouter = async (
       config.enabled = configs.get("fast_track:enabled");
     }
     if (configs.get("fast_track:router_model")) {
-      config.router_model = configs.get("fast_track:router_model");
+      // Normalize model name to lowercase for cache consistency
+      config.router_model = configs.get("fast_track:router_model").toLowerCase();
     }
     if (configs.get("fast_track:similarity_threshold") !== undefined) {
       config.similarity_threshold = configs.get("fast_track:similarity_threshold");
