@@ -190,287 +190,129 @@ const callAIViaGateway = async (
   const primaryAttemptedProvider = provider;
   const primaryAttemptedModel = primaryModel;
 
-  try {
-    // Get provider-specific API key (NOT gateway key!)
-    const providerApiKey = gatewayConfig.providerKeys[provider];
+  // Get provider-specific API key (NOT gateway key!)
+  const providerApiKey = gatewayConfig.providerKeys[provider];
 
-    if (!providerApiKey) {
-      throw new Error(`No API key configured for provider: ${provider}`);
-    }
+  if (!providerApiKey) {
+    throw new Error(`No API key configured for provider: ${provider}`);
+  }
 
-    // Get provider instance with provider-specific key
-    const providerInstance = getGatewayProvider(provider, providerApiKey);
+  // Get provider instance with provider-specific key
+  const providerInstance = getGatewayProvider(provider, providerApiKey);
 
-    logToolsDebug(normalizedTools);
+  logToolsDebug(normalizedTools);
 
-    // Generate response using Vercel AI SDK with telemetry
-    const result = await generateText({
-      model: providerInstance(primaryModel),
-      messages,
-      tools: normalizedTools,
-      experimental_telemetry: { isEnabled: true }, // ✅ Enable telemetry
-    });
+  // Format model identifier as "provider/model" (required by Vercel AI Gateway)
+  const modelIdentifier = `${provider}/${primaryModel}`;
 
-    const latencyMs = Date.now() - startTime;
+  // Generate response using Vercel AI SDK with telemetry
+  // Vercel AI Gateway handles automatic fallback, cache, and telemetry
+  const result = await generateText({
+    model: providerInstance(modelIdentifier), // e.g., "openai/gpt-4o-mini"
+    messages,
+    tools: normalizedTools,
+    experimental_telemetry: { isEnabled: true }, // ✅ Enable telemetry
+  });
 
-    // ✅ Extract gateway headers
-    const headers = result.response?.headers || {};
-    const headerIndicatesCache = headers["x-vercel-cache"] === "HIT" ||
-      headers["x-vercel-ai-cache-status"] === "hit";
-    const actualProvider = headers["x-vercel-ai-provider"] || provider;
-    const actualModel = headers["x-vercel-ai-model"] || primaryModel;
-    const requestId = headers["x-vercel-ai-data-stream-id"] ||
-      headers["x-vercel-ai-request-id"];
+  const latencyMs = Date.now() - startTime;
 
-    const usage = result.usage as any;
-    const normalizedToolCalls = normalizeToolCalls((result as any).toolCalls);
+  // ✅ Extract gateway headers
+  const headers = result.response?.headers || {};
+  const headerIndicatesCache = headers["x-vercel-cache"] === "HIT" ||
+    headers["x-vercel-ai-cache-status"] === "hit";
+  const actualProvider = headers["x-vercel-ai-provider"] || provider;
+  const actualModel = headers["x-vercel-ai-model"] || primaryModel;
+  const requestId = headers["x-vercel-ai-data-stream-id"] ||
+    headers["x-vercel-ai-request-id"];
 
-    // Handle token counting - some providers don't separate prompt/completion tokens
-    const promptTokens = usage.promptTokens || 0;
-    const completionTokens = usage.completionTokens || 0;
-    const totalTokens = usage.totalTokens || 0;
+  const usage = result.usage as any;
+  const normalizedToolCalls = normalizeToolCalls((result as any).toolCalls);
 
-    // If total is provided but breakdown isn't, estimate the split
-    // Typically ~70% prompt, ~30% completion for most interactions
-    let inputTokens = promptTokens;
-    let outputTokens = completionTokens;
+  // Handle token counting - some providers don't separate prompt/completion tokens
+  const promptTokens = usage.promptTokens || 0;
+  const completionTokens = usage.completionTokens || 0;
+  const totalTokens = usage.totalTokens || 0;
 
-    if (totalTokens > 0 && promptTokens === 0 && completionTokens === 0) {
-      // Estimate: 70% input, 30% output (rough approximation)
-      inputTokens = Math.floor(totalTokens * 0.7);
-      outputTokens = totalTokens - inputTokens;
-    }
+  // If total is provided but breakdown isn't, estimate the split
+  // Typically ~70% prompt, ~30% completion for most interactions
+  let inputTokens = promptTokens;
+  let outputTokens = completionTokens;
 
-    // Some providers report cached tokens (e.g., OpenAI prompt caching).
-    const cachedTokensFromUsageRaw = usage?.cachedTokens ??
-      usage?.cached_tokens;
-    const cachedTokensFromUsage =
-      Number.isFinite(Number(cachedTokensFromUsageRaw))
-        ? Number(cachedTokensFromUsageRaw)
-        : 0;
+  if (totalTokens > 0 && promptTokens === 0 && completionTokens === 0) {
+    // Estimate: 70% input, 30% output (rough approximation)
+    inputTokens = Math.floor(totalTokens * 0.7);
+    outputTokens = totalTokens - inputTokens;
+  }
 
-    const cachedTokens = cachedTokensFromUsage > 0
-      ? cachedTokensFromUsage
-      : headerIndicatesCache
-      ? inputTokens
+  // Some providers report cached tokens (e.g., OpenAI prompt caching).
+  const cachedTokensFromUsageRaw = usage?.cachedTokens ??
+    usage?.cached_tokens;
+  const cachedTokensFromUsage =
+    Number.isFinite(Number(cachedTokensFromUsageRaw))
+      ? Number(cachedTokensFromUsageRaw)
       : 0;
 
-    const wasCached = headerIndicatesCache || cachedTokensFromUsage > 0;
+  const cachedTokens = cachedTokensFromUsage > 0
+    ? cachedTokensFromUsage
+    : headerIndicatesCache
+    ? inputTokens
+    : 0;
 
-    const response: AIResponse = {
-      text: result.text,
-      toolCalls: normalizedToolCalls,
-      usage: {
-        promptTokens: inputTokens,
-        completionTokens: outputTokens,
-        totalTokens: totalTokens,
-        cachedTokens,
-      },
-      model: actualModel,
+  const wasCached = headerIndicatesCache || cachedTokensFromUsage > 0;
+
+  const response: AIResponse = {
+    text: result.text,
+    toolCalls: normalizedToolCalls,
+    usage: {
+      promptTokens: inputTokens,
+      completionTokens: outputTokens,
+      totalTokens: totalTokens,
+      cachedTokens,
+    },
+    model: actualModel,
+    provider: actualProvider,
+    wasCached,
+    wasFallback: false,
+    primaryAttemptedProvider,
+    primaryAttemptedModel,
+    latencyMs,
+    requestId,
+    finishReason: result.finishReason,
+  };
+
+  // ✅ Log usage to database (async, don't block response)
+  if (!config.skipUsageLogging) {
+    logGatewayUsage({
+      clientId: config.clientId,
+      conversationId: config.conversationId,
+      phone: config.phone || "test-call",
       provider: actualProvider,
-      wasCached,
+      modelName: actualModel,
+      inputTokens: inputTokens,
+      outputTokens: outputTokens,
+      cachedTokens: response.usage.cachedTokens || 0,
+      latencyMs: response.latencyMs,
+      wasCached: response.wasCached,
       wasFallback: false,
-      primaryAttemptedProvider,
-      primaryAttemptedModel,
-      latencyMs,
-      requestId,
-      finishReason: result.finishReason,
-    };
-
-    // ✅ Log usage to database (async, don't block response)
-    if (!config.skipUsageLogging) {
-      logGatewayUsage({
-        clientId: config.clientId,
-        conversationId: config.conversationId,
-        phone: config.phone || "test-call",
-        provider: actualProvider,
-        modelName: actualModel,
-        inputTokens: inputTokens,
-        outputTokens: outputTokens,
-        cachedTokens: response.usage.cachedTokens || 0,
-        latencyMs: response.latencyMs,
-        wasCached: response.wasCached,
-        wasFallback: false,
-        requestId: response.requestId,
-        metadata: {
-          source: "ai-gateway",
-          fallbackReason: undefined,
-        },
-      }).catch((error) => {
-        console.error("[AI Gateway] Failed to log usage:", error);
-      });
-    }
-
-    return response;
-  } catch (error: any) {
-    // If primary model fails and fallback chain exists, try fallback
-    if (
-      gatewayConfig.defaultFallbackChain &&
-      gatewayConfig.defaultFallbackChain.length > 0
-    ) {
-      console.warn(
-        "[AI Gateway] Primary model failed, trying fallback:",
-        error.message,
-      );
-      return await callAIWithFallback(
-        config,
-        gatewayConfig,
-        startTime,
-        error.message,
-        primaryAttemptedProvider,
-        primaryAttemptedModel,
-      );
-    }
-
-    throw error;
+      requestId: response.requestId,
+      metadata: {
+        source: "ai-gateway",
+        fallbackReason: undefined,
+      },
+    }).catch((error) => {
+      console.error("[AI Gateway] Failed to log usage:", error);
+    });
   }
+
+  return response;
 };
 
 // =====================================================
 // FALLBACK LOGIC
 // =====================================================
-
-const callAIWithFallback = async (
-  config: AICallConfig,
-  gatewayConfig: any,
-  startTime: number,
-  primaryError: string,
-  primaryAttemptedProvider?: string,
-  primaryAttemptedModel?: string,
-): Promise<AIResponse> => {
-  const { messages, tools } = config;
-  const normalizedTools = normalizeToolsForAISDK(tools);
-
-  // Try each model in fallback chain
-  for (const fallbackModelIdentifier of gatewayConfig.defaultFallbackChain) {
-    try {
-      console.log(
-        `[AI Gateway] Trying fallback model: ${fallbackModelIdentifier}`,
-      );
-
-      // Parse provider and model from identifier (e.g., "openai/gpt-4o-mini")
-      const [provider, model] = fallbackModelIdentifier.split("/");
-
-      // Get provider-specific API key (NOT gateway key!)
-      const providerApiKey = gatewayConfig.providerKeys[provider];
-
-      if (!providerApiKey) {
-        console.warn(
-          `[AI Gateway] No API key for fallback provider: ${provider}`,
-        );
-        continue; // Skip to next fallback
-      }
-
-      // Get provider instance with provider-specific key
-      const providerInstance = getGatewayProvider(provider, providerApiKey);
-
-      logToolsDebug(normalizedTools);
-
-      // Generate response
-      const result = await generateText({
-        model: providerInstance(model),
-        messages,
-        tools: normalizedTools,
-      });
-
-      const latencyMs = Date.now() - startTime;
-      const headerIndicatesCache =
-        result.response?.headers?.["x-vercel-ai-cache-status"] === "hit";
-      const usage = result.usage as any;
-      const normalizedToolCalls = normalizeToolCalls((result as any).toolCalls);
-
-      // Handle token counting - some providers don't separate prompt/completion tokens
-      const promptTokens = usage.promptTokens || 0;
-      const completionTokens = usage.completionTokens || 0;
-      const totalTokens = usage.totalTokens || 0;
-
-      // If total is provided but breakdown isn't, estimate the split
-      let inputTokens = promptTokens;
-      let outputTokens = completionTokens;
-
-      if (totalTokens > 0 && promptTokens === 0 && completionTokens === 0) {
-        // Estimate: 70% input, 30% output (rough approximation)
-        inputTokens = Math.floor(totalTokens * 0.7);
-        outputTokens = totalTokens - inputTokens;
-      }
-
-      const cachedTokensFromUsageRaw = usage?.cachedTokens ??
-        usage?.cached_tokens;
-      const cachedTokensFromUsage =
-        Number.isFinite(Number(cachedTokensFromUsageRaw))
-          ? Number(cachedTokensFromUsageRaw)
-          : 0;
-
-      const cachedTokens = cachedTokensFromUsage > 0
-        ? cachedTokensFromUsage
-        : headerIndicatesCache
-        ? inputTokens
-        : 0;
-
-      const wasCached = headerIndicatesCache || cachedTokensFromUsage > 0;
-
-      const response: AIResponse = {
-        text: result.text,
-        toolCalls: normalizedToolCalls,
-        usage: {
-          promptTokens: inputTokens,
-          completionTokens: outputTokens,
-          totalTokens: totalTokens,
-          cachedTokens,
-        },
-        model,
-        provider,
-        wasCached,
-        wasFallback: true,
-        fallbackReason: primaryError,
-        primaryAttemptedProvider,
-        primaryAttemptedModel,
-        fallbackUsedProvider: provider,
-        fallbackUsedModel: model,
-        latencyMs,
-        requestId: result.response?.headers?.["x-vercel-ai-request-id"],
-        finishReason: result.finishReason,
-      };
-
-      // ✅ Log usage to database (async, don't block response)
-      if (!config.skipUsageLogging) {
-        logGatewayUsage({
-          clientId: config.clientId,
-          conversationId: config.conversationId,
-          phone: config.phone || "test-call",
-          provider,
-          modelName: model,
-          inputTokens: inputTokens,
-          outputTokens: outputTokens,
-          cachedTokens: response.usage.cachedTokens || 0,
-          latencyMs: response.latencyMs,
-          wasCached: response.wasCached,
-          wasFallback: true,
-          fallbackReason: primaryError,
-          requestId: response.requestId,
-          metadata: {
-            source: "ai-gateway",
-            primaryError,
-          },
-        }).catch((error) => {
-          console.error("[AI Gateway] Failed to log usage:", error);
-        });
-      }
-
-      return response;
-    } catch (fallbackError: any) {
-      console.warn(
-        `[AI Gateway] Fallback model ${fallbackModelIdentifier} failed:`,
-        fallbackError.message,
-      );
-      // Continue to next fallback
-      continue;
-    }
-  }
-
-  // All fallbacks failed
-  throw new Error(`All models failed. Primary: ${primaryError}`);
-};
+// NOTE: Custom fallback removed - Vercel AI Gateway handles automatic fallback
+// If a model fails, the gateway automatically tries alternative models
+// This simplifies our code and leverages Vercel's intelligent routing
 
 // =====================================================
 // DIRECT SDK PATH (Legacy)

@@ -839,13 +839,22 @@ export const processChatbotMessage = async (
 
     // NODE 12: Generate AI Response (com config do cliente + greeting instruction)
     // 🚀 Fast Track: Disable datetime and tools if in fast track mode
+    // 🚀 Fast Track: Use canonical question for cache-friendly prompts
+    const messageForAI = isFastTrack && fastTrackResult?.matchedCanonical
+      ? fastTrackResult.matchedCanonical
+      : batchedContent;
+
     logger.logNodeStart("12. Generate AI Response", {
-      messageLength: batchedContent.length,
+      messageLength: messageForAI.length,
       historyCount: chatHistory2.length,
       fastTrack: isFastTrack,
+      usedCanonical: isFastTrack && fastTrackResult?.matchedCanonical ? true : false,
+      promptPreview: messageForAI.substring(0, 100) + (messageForAI.length > 100 ? "..." : ""),
+      includeDateTimeInfo: !isFastTrack,
+      enableTools: !isFastTrack || !fastTrackResult?.catalogSize,
     });
     const aiResponse = await generateAIResponse({
-      message: batchedContent,
+      message: messageForAI, // 🚀 Use canonical for cache hits
       chatHistory: chatHistory2,
       ragContext,
       customerName: parsedMessage.name,
