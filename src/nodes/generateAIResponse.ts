@@ -290,6 +290,17 @@ export const generateAIResponse = async (
     // 🌐 CHECK: AI Gateway enabled?
     const useGateway = await shouldUseGateway(config.id);
 
+    console.log("[AI Gateway] Decision:", {
+      useGateway,
+      clientId: config.id,
+      clientName: config.name,
+      primaryProvider: config.primaryProvider,
+      baseURL: useGateway ? "https://ai-gateway.vercel.sh/v1" : "direct",
+      messageCount: messages.length,
+      toolsEnabled: enableTools && config.settings.enableTools,
+      includeDateTimeInfo,
+    });
+
     if (useGateway) {
       console.log("[AI Gateway] Routing request through AI Gateway");
 
@@ -356,6 +367,21 @@ export const generateAIResponse = async (
           temperature: config.settings.temperature,
           maxTokens: config.settings.maxTokens,
         },
+      });
+
+      // 🔍 Log response details
+      console.log("[AI Gateway] Response received:", {
+        provider: result.provider,
+        model: result.model,
+        wasCached: result.wasCached,
+        wasFallback: result.wasFallback,
+        fallbackReason: result.fallbackReason,
+        promptTokens: result.usage.promptTokens,
+        completionTokens: result.usage.completionTokens,
+        cachedTokens: result.usage.cachedTokens,
+        latencyMs: result.latencyMs,
+        requestId: result.requestId,
+        contentLength: result.text?.length || 0,
       });
 
       // Log usage to gateway_usage_logs

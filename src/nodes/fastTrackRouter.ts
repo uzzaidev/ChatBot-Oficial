@@ -274,9 +274,6 @@ export const fastTrackRouter = async (
   const { clientId, message, config: configOverride } = input;
 
   try {
-    // 🐛 DEBUG: Ver qual clientId está sendo passado
-    console.log("[Fast Track DEBUG] clientId recebido:", clientId);
-
     // Fetch configuration from database
     const configs = await getBotConfigs(clientId, [
       "fast_track:enabled",
@@ -294,20 +291,9 @@ export const fastTrackRouter = async (
       ...(configOverride || {}),
     };
 
-    // 🐛 DEBUG: Log configs para diagnosticar problema
-    console.log("[Fast Track DEBUG] configs from DB:", {
-      "fast_track:enabled": configs.get("fast_track:enabled"),
-      "fast_track:router_model": configs.get("fast_track:router_model"),
-      "fast_track:catalog_length": configs.get("fast_track:catalog")?.length || 0,
-      allConfigKeys: Array.from(configs.keys()),
-    });
-
     // Override with DB values if present (using Map.get())
     if (configs.get("fast_track:enabled") !== undefined) {
       config.enabled = configs.get("fast_track:enabled");
-      console.log("[Fast Track DEBUG] config.enabled set to:", config.enabled);
-    } else {
-      console.log("[Fast Track DEBUG] fast_track:enabled is UNDEFINED in configs!");
     }
     if (configs.get("fast_track:router_model")) {
       config.router_model = configs.get("fast_track:router_model");
