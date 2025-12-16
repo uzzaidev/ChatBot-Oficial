@@ -194,7 +194,8 @@ export default function FastTrackRouterProperties({
           throw new Error('Failed to fetch models')
         }
         const data = await response.json()
-        setAIModels(data || [])
+        // API returns { models: [...] }, not array directly
+        setAIModels(data.models || [])
         setModelsError(null)
       } catch (error) {
         console.error('Error fetching AI models:', error)
@@ -251,7 +252,7 @@ export default function FastTrackRouterProperties({
     const newItems = [...catalogItems, newItem]
     setCatalogItems(newItems)
     // Expand the new item
-    setExpandedItems(new Set([...expandedItems, newItems.length - 1]))
+    setExpandedItems(new Set([...Array.from(expandedItems), newItems.length - 1]))
   }
 
   const handleUpdateFAQ = (index: number, item: FastTrackCatalogItem) => {
