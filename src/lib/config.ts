@@ -108,7 +108,7 @@ export const getEnvironmentInfo = () => {
 // 🔐 MULTI-TENANT CONFIG WITH VAULT
 // ============================================================================
 
-import { createServerClient } from "./supabase";
+import { createServerClient, createServiceRoleClient } from "./supabase";
 import { getClientSecrets } from "./vault";
 import type { ClientConfig } from "./types";
 import { getSharedGatewayConfig } from "./ai-gateway/config";
@@ -392,7 +392,9 @@ export const getBotConfigs = async (
       configKeys,
     });
 
-    const supabase = createServerClient();
+    // 🔧 FIX: Use createServiceRoleClient() para bypass RLS
+    // Bot configurations são configs do sistema, não dados de usuário
+    const supabase = createServiceRoleClient();
 
     const { data, error } = await supabase
       .from("bot_configurations")
