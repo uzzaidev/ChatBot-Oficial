@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@/lib/supabase-server'
-import { generateChatCompletion } from '@/lib/groq'
-import { generateChatCompletionOpenAI } from '@/lib/openai'
-import { getClientSecrets } from '@/lib/vault'
+import { callAI } from '@/lib/ai-gateway'
+import type { CoreMessage } from 'ai'
 
 export const dynamic = 'force-dynamic'
 
 /**
  * POST /api/client/test-model
  *
- * Testa se um modelo de IA está configurado corretamente
+ * 🚀 MIGRATED TO AI GATEWAY
+ *
+ * Testa se um modelo de IA está configurado corretamente através do AI Gateway
  *
  * Body:
  * {
@@ -71,183 +72,105 @@ export async function POST(request: NextRequest) {
 
     const clientId = profile.client_id
 
-    // Buscar client para pegar secret IDs
-    const { data: client, error: clientError } = await supabase
-      .from('clients')
-      .select('meta_access_token_secret_id, meta_verify_token_secret_id, openai_api_key_secret_id, groq_api_key_secret_id')
-      .eq('id', clientId)
-      .single()
-
-    if (clientError || !client) {
-      return NextResponse.json({ error: 'Cliente não encontrado' }, { status: 404 })
-    }
-
-    // Descriptografar secrets do Vault (apenas OpenAI e Groq necessários para teste)
-    const secrets = await getClientSecrets(supabase, {
-      meta_access_token_secret_id: client.meta_access_token_secret_id,
-      meta_verify_token_secret_id: client.meta_verify_token_secret_id,
-      openai_api_key_secret_id: client.openai_api_key_secret_id,
-      groq_api_key_secret_id: client.groq_api_key_secret_id,
-    })
-
     // Mensagem de teste simples
-    const testMessages = [
+    const testMessages: CoreMessage[] = [
       {
-        role: 'system' as const,
+        role: 'system',
         content: 'Você é um assistente de teste. Responda de forma concisa.',
       },
       {
-        role: 'user' as const,
+        role: 'user',
         content: 'Responda apenas: "Teste OK"',
       },
     ]
 
-    let response: any
+    try {
+      // 🚀 Test via AI Gateway (uses shared config)
+      const response = await callAI({
+        clientId,
+        clientConfig: {
+          id: clientId,
+          name: 'test-model',
+          slug: 'test-model',
+          primaryModelProvider: provider,
+          openaiModel: provider === 'openai' ? model : undefined,
+          groqModel: provider === 'groq' ? model : undefined,
+          systemPrompt: '',
+        },
+        messages: testMessages,
+        settings: {
+          temperature: 0.5,
+          maxTokens: 50,
+        },
+        stream: false,
+        skipUsageLogging: true, // Don't log test calls
+      })
 
-    // Testar provider específico
-    if (provider === 'openai') {
-      if (!secrets.openaiApiKey) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: 'API Key da OpenAI não configurada no Vault',
-            message: 'Configure sua API Key em Segredos & Variáveis',
-          },
-          { status: 400 }
-        )
-      }
+      const endTime = Date.now()
+      const latency = endTime - startTime
 
-      try {
-        response = await generateChatCompletionOpenAI(
-          testMessages,
-          undefined, // sem tools
-          secrets.openaiApiKey,
-          {
-            model,
-            temperature: 0.5,
-            max_tokens: 50,
-          }
-        )
-      } catch (error: any) {
-        const errorMessage = error.message || 'Unknown error'
-        
-        // Identificar tipo de erro
-        if (errorMessage.includes('invalid_api_key') || errorMessage.includes('Incorrect API key')) {
-          return NextResponse.json({
-            success: false,
-            error: 'API Key inválida',
-            message: 'A API Key da OpenAI está incorreta. Verifique em Segredos & Variáveis.',
-          })
-        }
-        
-        if (errorMessage.includes('model_not_found') || errorMessage.includes('does not exist')) {
-          return NextResponse.json({
-            success: false,
-            error: 'Modelo não encontrado',
-            message: `O modelo "${model}" não existe ou não está disponível na sua conta OpenAI.`,
-          })
-        }
-        
-        if (errorMessage.includes('insufficient_quota') || errorMessage.includes('quota')) {
-          return NextResponse.json({
-            success: false,
-            error: 'Quota excedida',
-            message: 'Sua conta OpenAI atingiu o limite de uso. Verifique seu billing.',
-          })
-        }
+      return NextResponse.json({
+        success: true,
+        message: `✅ Modelo ${provider.toUpperCase()} funcionando corretamente via Gateway!`,
+        latency_ms: latency,
+        response: response.text,
+        model,
+        provider,
+        usage: {
+          prompt_tokens: response.usage.promptTokens,
+          completion_tokens: response.usage.completionTokens,
+          total_tokens: response.usage.totalTokens,
+        },
+      })
+    } catch (error: any) {
+      const errorMessage = error.message || 'Unknown error'
 
-        if (errorMessage.includes('rate_limit')) {
-          return NextResponse.json({
-            success: false,
-            error: 'Rate limit',
-            message: 'Muitas requisições. Aguarde alguns segundos e tente novamente.',
-          })
-        }
-
+      // Identificar tipo de erro
+      if (errorMessage.includes('invalid_api_key') || errorMessage.includes('Incorrect API key') || errorMessage.includes('Invalid API Key')) {
         return NextResponse.json({
           success: false,
-          error: 'Erro ao testar modelo',
-          message: errorMessage,
+          error: 'API Key inválida',
+          message: `A API Key do ${provider.toUpperCase()} está incorreta. Verifique a configuração do Gateway.`,
         })
       }
-    } else {
-      // Groq
-      if (!secrets.groqApiKey) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: 'API Key do Groq não configurada no Vault',
-            message: 'Configure sua API Key em Segredos & Variáveis',
-          },
-          { status: 400 }
-        )
-      }
 
-      try {
-        response = await generateChatCompletion(
-          testMessages,
-          undefined, // sem tools
-          secrets.groqApiKey,
-          {
-            model,
-            temperature: 0.5,
-            max_tokens: 50,
-          }
-        )
-      } catch (error: any) {
-        const errorMessage = error.message || 'Unknown error'
-        
-        // Identificar tipo de erro
-        if (errorMessage.includes('invalid_api_key') || errorMessage.includes('Invalid API Key')) {
-          return NextResponse.json({
-            success: false,
-            error: 'API Key inválida',
-            message: 'A API Key do Groq está incorreta. Verifique em Segredos & Variáveis.',
-          })
-        }
-        
-        if (errorMessage.includes('model_not_found') || errorMessage.includes('does not exist')) {
-          return NextResponse.json({
-            success: false,
-            error: 'Modelo não encontrado',
-            message: `O modelo "${model}" não existe ou não está disponível no Groq.`,
-          })
-        }
-        
-        if (errorMessage.includes('rate_limit')) {
-          return NextResponse.json({
-            success: false,
-            error: 'Rate limit',
-            message: 'Muitas requisições. Aguarde alguns segundos e tente novamente.',
-          })
-        }
-
+      if (errorMessage.includes('model_not_found') || errorMessage.includes('does not exist')) {
         return NextResponse.json({
           success: false,
-          error: 'Erro ao testar modelo',
-          message: errorMessage,
+          error: 'Modelo não encontrado',
+          message: `O modelo "${model}" não existe ou não está disponível no ${provider.toUpperCase()}.`,
         })
       }
+
+      if (errorMessage.includes('insufficient_quota') || errorMessage.includes('quota')) {
+        return NextResponse.json({
+          success: false,
+          error: 'Quota excedida',
+          message: `Sua conta ${provider.toUpperCase()} atingiu o limite de uso. Verifique seu billing.`,
+        })
+      }
+
+      if (errorMessage.includes('rate_limit')) {
+        return NextResponse.json({
+          success: false,
+          error: 'Rate limit',
+          message: 'Muitas requisições. Aguarde alguns segundos e tente novamente.',
+        })
+      }
+
+      return NextResponse.json({
+        success: false,
+        error: 'Erro ao testar modelo',
+        message: errorMessage,
+      })
     }
-
-    const endTime = Date.now()
-    const latency = endTime - startTime
-
-    return NextResponse.json({
-      success: true,
-      message: `✅ Modelo ${provider.toUpperCase()} funcionando corretamente!`,
-      latency_ms: latency,
-      response: response.content,
-      model,
-      provider,
-    })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
-    
+
     return NextResponse.json(
       {
         success: false,
-        error: 'Erro ao testar modelo',
+        error: 'Erro interno',
         message: errorMessage,
       },
       { status: 500 }

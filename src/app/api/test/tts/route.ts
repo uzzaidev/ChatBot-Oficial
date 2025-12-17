@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { text, voice = "alloy", speed = 1.0 } = body;
+    const { text, voice = "alloy", speed = 1.0, provider = "openai", model } = body;
 
     if (!text || typeof text !== "string") {
       return NextResponse.json(
@@ -57,6 +57,8 @@ export async function POST(request: NextRequest) {
         clientId: profile.client_id,
         voice,
         speed,
+        provider,
+        model,
         useCache: false, // Não usar cache em testes
       });
 
