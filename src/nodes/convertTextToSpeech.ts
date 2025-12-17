@@ -83,7 +83,9 @@ export const convertTextToSpeech = async (
         const audioBuffer = Buffer.from(await response.arrayBuffer());
 
         // 🚀 FASE 7: Log cache hit to unified tracking
-        const { logGatewayUsage } = await import("@/lib/ai-gateway/usage-tracking");
+        const { logGatewayUsage } = await import(
+          "@/lib/ai-gateway/usage-tracking"
+        );
         await logGatewayUsage({
           clientId,
           conversationId: conversationId || undefined,
@@ -123,13 +125,14 @@ export const convertTextToSpeech = async (
   const budgetAvailable = await checkBudgetAvailable(clientId);
   if (!budgetAvailable) {
     throw new Error(
-      "❌ Limite de budget atingido. Geração de áudio bloqueada."
+      "❌ Limite de budget atingido. Geração de áudio bloqueada.",
     );
   }
 
   let audioBuffer: Buffer;
   let durationSeconds = 0;
-  let usedProvider: import("@/lib/unified-tracking").Provider = provider as import("@/lib/unified-tracking").Provider;
+  let usedProvider: import("@/lib/unified-tracking").Provider =
+    provider as import("@/lib/unified-tracking").Provider;
 
   if (provider === "elevenlabs") {
     // ElevenLabs API Key do .env
@@ -137,7 +140,9 @@ export const convertTextToSpeech = async (
     if (!apiKey) throw new Error("Missing ELEVENLABS_API_KEY in environment");
     const selectedModel = model || "eleven_multilingual_v1";
     const selectedLanguage = input.language || "pt";
-    console.log(`[TTS] Usando ElevenLabs | voice: ${voice} | model: ${selectedModel} | language: ${selectedLanguage}`);
+    console.log(
+      `[TTS] Usando ElevenLabs | voice: ${voice} | model: ${selectedModel} | language: ${selectedLanguage}`,
+    );
     audioBuffer = await elevenLabsTTS({
       text,
       voice,
@@ -160,10 +165,9 @@ export const convertTextToSpeech = async (
       .eq("id", clientId)
       .single();
 
-    const aiKeysMode =
-      (client?.ai_keys_mode === "byok_allowed"
-        ? "byok_allowed"
-        : "platform_only") as "platform_only" | "byok_allowed";
+    const aiKeysMode = (client?.ai_keys_mode === "byok_allowed"
+      ? "byok_allowed"
+      : "platform_only") as "platform_only" | "byok_allowed";
 
     const sharedGatewayConfig = await getSharedGatewayConfig();
     const sharedOpenaiKey = sharedGatewayConfig?.providerKeys?.openai || null;
