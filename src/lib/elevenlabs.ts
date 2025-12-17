@@ -1,5 +1,4 @@
 // src/lib/elevenlabs.ts
-import fetch from "node-fetch";
 
 export interface ElevenLabsTTSOptions {
     text: string;
