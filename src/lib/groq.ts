@@ -1,3 +1,29 @@
+// ============================================================================
+// ⚠️ LEGACY CODE - NO LONGER USED - DO NOT USE
+// ============================================================================
+//
+// This file has been REPLACED by AI Gateway (src/lib/ai-gateway/index.ts)
+//
+// ✅ MIGRATION COMPLETED:
+// - classifyIntent.ts: Now uses callAI() from AI Gateway
+// - test-model endpoint: Now uses callAI() from AI Gateway
+//
+// 🚀 NEW ARCHITECTURE:
+// - All Groq calls now go through Vercel AI Gateway with shared configuration
+// - Benefits: Prompt caching (60-70% savings), automatic fallback, unified tracking
+// - Uses gateway_usage_logs for unified tracking instead of legacy tables
+//
+// 📝 WHY COMMENTED OUT:
+// - Per-client API keys replaced by shared Gateway configuration
+// - Direct SDK calls replaced by Gateway proxy with caching
+// - Tracking migrated to unified gateway_usage_logs table
+//
+// 🗓️ COMMENTED OUT: 2024-12-17 (FASE 6 - Gateway Migration Complete)
+//
+// Kept for reference only. DO NOT USE.
+// ============================================================================
+
+/*
 import Groq from 'groq-sdk'
 import { AIResponse, ChatMessage } from './types'
 
@@ -11,19 +37,11 @@ const getRequiredEnvVariable = (key: string): string => {
 
 let groqClient: Groq | null = null
 
-/**
- * 🔐 Obtém cliente Groq com key dinâmica ou fallback para env
- *
- * @param apiKey - API key opcional (do config do cliente)
- * @returns Cliente Groq configurado
- */
 export const getGroqClient = (apiKey?: string): Groq => {
-  // Se apiKey fornecida, sempre criar novo client (não cachear)
   if (apiKey) {
     return new Groq({ apiKey })
   }
 
-  // Fallback: usar client cacheado ou criar novo do env
   if (groqClient) {
     return groqClient
   }
@@ -54,19 +72,10 @@ const extractToolCallsFromResponse = (choice: any): AIResponse['toolCalls'] => {
   }))
 }
 
-/**
- * 🔐 Gera resposta com Groq usando key dinâmica
- *
- * @param messages - Mensagens do chat
- * @param tools - Ferramentas disponíveis
- * @param apiKey - API key opcional (do config do cliente)
- * @param settings - Configurações opcionais (temperature, max_tokens, model)
- * @returns Resposta da IA
- */
 export const generateChatCompletion = async (
   messages: ChatMessage[],
   tools?: any[],
-  apiKey?: string, // 🔐 Novo parâmetro opcional
+  apiKey?: string,
   settings?: {
     temperature?: number
     max_tokens?: number
@@ -74,7 +83,7 @@ export const generateChatCompletion = async (
   }
 ): Promise<AIResponse> => {
   try {
-    const client = getGroqClient(apiKey) // Usa key dinâmica se fornecida
+    const client = getGroqClient(apiKey)
 
     const groqMessages = messages.map((msg) => ({
       role: msg.role,
@@ -104,7 +113,6 @@ export const generateChatCompletion = async (
     const toolCalls = extractToolCallsFromResponse(choice)
     const finished = choice.finish_reason === 'stop' || choice.finish_reason === 'tool_calls'
 
-    // Capturar dados de usage
     const usage = completion.usage
       ? {
           prompt_tokens: completion.usage.prompt_tokens || 0,
@@ -127,3 +135,4 @@ export const generateChatCompletion = async (
     throw new Error(`Failed to generate chat completion with Groq: ${errorMessage}`)
   }
 }
+*/

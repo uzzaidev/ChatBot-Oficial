@@ -27,7 +27,7 @@ export type APIType =
   | "vision"
   | "embeddings"
   | "image-gen";
-export type Provider = "openai" | "groq" | "anthropic" | "google";
+export type Provider = "openai" | "groq" | "anthropic" | "google" | "elevenlabs";
 
 export interface UnifiedTrackingParams {
   // Client context

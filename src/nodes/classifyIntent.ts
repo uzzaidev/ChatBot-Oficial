@@ -1,11 +1,11 @@
 import { getBotConfig, getBotConfigs } from '@/lib/config'
-import { generateChatCompletion } from '@/lib/groq'
-import { ChatMessage } from '@/lib/types'
+import { callAI } from '@/lib/ai-gateway'
+import type { CoreMessage } from 'ai'
 
 export interface ClassifyIntentInput {
   message: string
   clientId: string
-  groqApiKey: string
+  // groqApiKey removed - Gateway uses shared config
 }
 
 export interface ClassifyIntentOutput {
@@ -28,8 +28,7 @@ export const classifyIntent = async (input: ClassifyIntentInput): Promise<Classi
   const startTime = Date.now()
 
   try {
-    const { message, clientId, groqApiKey } = input
-
+    const { message, clientId } = input
 
     // 1. Fetch configurations
     const configs = await getBotConfigs(clientId, [
@@ -68,7 +67,7 @@ export const classifyIntent = async (input: ClassifyIntentInput): Promise<Classi
       systemPrompt += `\n\nIntenções disponíveis:\n${intentsList}\n\nResponda APENAS com a chave da intenção.`
     }
 
-    const messages: ChatMessage[] = [
+    const messages: CoreMessage[] = [
       {
         role: 'system',
         content: systemPrompt,
@@ -79,19 +78,27 @@ export const classifyIntent = async (input: ClassifyIntentInput): Promise<Classi
       },
     ]
 
-    // Call LLM
-    const response = await generateChatCompletion(
+    // 🚀 Call via AI Gateway (shared Groq config)
+    const response = await callAI({
+      clientId,
+      clientConfig: {
+        id: clientId,
+        name: 'intent-classifier',
+        slug: 'intent-classifier',
+        primaryModelProvider: 'groq',
+        groqModel: 'llama-3.3-70b-versatile',
+        systemPrompt: '',
+      },
       messages,
-      undefined, // No tools needed
-      groqApiKey,
-      {
+      settings: {
         temperature: promptConfig.temperature || 0.1,
-        max_tokens: promptConfig.max_tokens || 10,
-        model: 'llama-3.3-70b-versatile',
-      }
-    )
+        maxTokens: promptConfig.max_tokens || 10,
+      },
+      stream: false,
+      skipUsageLogging: false, // Track usage
+    })
 
-    const intent = response.content.trim().toLowerCase()
+    const intent = response.text.trim().toLowerCase()
     const duration = Date.now() - startTime
 
 
