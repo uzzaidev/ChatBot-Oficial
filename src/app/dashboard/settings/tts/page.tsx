@@ -1,4 +1,12 @@
-'use client'
+
+"use client";
+
+const ELEVEN_MODELS = [
+  { id: 'eleven_multilingual_v3', name: 'Multilingual v3', description: 'Novo! Melhor qualidade, suporte a múltiplos idiomas' },
+  { id: 'eleven_multilingual_v1', name: 'Multilingual v1', description: 'Alta qualidade, suporta múltiplos idiomas' },
+  { id: 'eleven_turbo_v2', name: 'Turbo v2', description: 'Mais rápido, custo reduzido' },
+  { id: 'eleven_monolingual_v1', name: 'Monolingual v1', description: 'Somente inglês, legacy' },
+];
 
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -25,18 +33,14 @@ interface TTSStats {
   cacheSavings: number
 }
 
-const VOICES = [
-  { id: 'alloy', name: 'Alloy', description: 'Neutro e versátil' },
-  { id: 'echo', name: 'Echo', description: 'Masculino e claro' },
-  { id: 'fable', name: 'Fable', description: 'Feminino e suave' },
-  { id: 'onyx', name: 'Onyx', description: 'Grave e profundo' },
-  { id: 'nova', name: 'Nova', description: 'Feminino e energético' },
-  { id: 'shimmer', name: 'Shimmer', description: 'Suave e caloroso' }
-]
-
-const PREVIEW_TEXT = 'Olá! Eu sou o assistente de inteligência artificial. Como posso ajudar você hoje?'
+type VoiceOption = { id: string; name: string; description?: string };
 
 export default function TTSSettingsPage() {
+  // ...existing code...
+  const [voices, setVoices] = useState<VoiceOption[]>([]);
+const PREVIEW_TEXT = 'Olá! Eu sou o assistente de inteligência artificial. Como posso ajudar você hoje?'
+
+
   const { toast } = useToast()
   const [config, setConfig] = useState<TTSConfig>({
     tts_enabled: false,
@@ -56,10 +60,29 @@ export default function TTSSettingsPage() {
   const [saving, setSaving] = useState(false)
   const [playingVoice, setPlayingVoice] = useState<string | null>(null)
 
+  // Carregar vozes ao abrir ou ao trocar provider
   useEffect(() => {
     loadConfig()
     loadStats()
   }, [])
+
+  useEffect(() => {
+    fetchVoices(config.tts_provider)
+  }, [config.tts_provider])
+
+  const fetchVoices = async (provider: string) => {
+    try {
+      const res = await fetch(`/api/test/tts-voices?provider=${provider}`)
+      if (res.ok) {
+        const data = await res.json()
+        setVoices(data.voices)
+      } else {
+        setVoices([])
+      }
+    } catch {
+      setVoices([])
+    }
+  }
 
   const loadConfig = async () => {
     try {
@@ -234,7 +257,35 @@ export default function TTSSettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Model Selection */}
+      {/* Provider Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Provedor de TTS</CardTitle>
+          <CardDescription>
+            Escolha o provedor de voz: OpenAI (padrão) ou ElevenLabs (mais vozes)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-4">
+            <Button
+              variant={config.tts_provider === 'openai' ? 'default' : 'outline'}
+              onClick={() => setConfig({ ...config, tts_provider: 'openai', tts_voice: 'alloy' })}
+              disabled={!config.tts_enabled}
+            >
+              OpenAI
+            </Button>
+            <Button
+              variant={config.tts_provider === 'elevenlabs' ? 'default' : 'outline'}
+              onClick={() => setConfig({ ...config, tts_provider: 'elevenlabs', tts_voice: voices[0]?.id || '' })}
+              disabled={!config.tts_enabled}
+            >
+              ElevenLabs
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Model Selection (OpenAI) */}
       <Card>
         <CardHeader>
           <CardTitle>Modelo de Geração</CardTitle>
@@ -287,6 +338,46 @@ export default function TTSSettingsPage() {
         </CardContent>
       </Card>
 
+      {/* Model Selection (ElevenLabs) */}
+      {config.tts_provider === 'elevenlabs' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Modelo ElevenLabs</CardTitle>
+            <CardDescription>
+              Escolha o modelo de voz da ElevenLabs
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {ELEVEN_MODELS.map((model) => (
+                <div
+                  key={model.id}
+                  className={`p-4 border-2 rounded-lg cursor-pointer transition ${
+                    config.tts_model === model.id
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  } ${!config.tts_enabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  onClick={() => config.tts_enabled && setConfig({ ...config, tts_model: model.id })}
+                >
+                  <h3 className="font-semibold">{model.name}</h3>
+                  <p className="text-sm text-gray-500">{model.description}</p>
+                  {config.tts_model === model.id && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <CheckCircle2 className="h-5 w-5 text-blue-500" />
+                      <span className="text-xs text-blue-700 font-semibold">Selecionado</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            {/* Exibe modelo salvo/selecionado */}
+            <div className="mt-4 text-sm text-gray-700">
+              <span className="font-semibold">Modelo atual:</span> {ELEVEN_MODELS.find(m => m.id === config.tts_model)?.name || config.tts_model}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Voice Selection */}
       <Card>
         <CardHeader>
@@ -297,7 +388,7 @@ export default function TTSSettingsPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {VOICES.map((voice) => (
+            {voices.map((voice) => (
               <div
                 key={voice.id}
                 className={`p-4 border-2 rounded-lg cursor-pointer transition ${

@@ -114,10 +114,13 @@ LLM recebe:
 
 O cache **SÓ funciona** se:
 
-1. ✅ **Prefixo idêntico** - Início do array de mensagens deve ser IGUAL
-2. ✅ **Mesma ordem** - Não pode reordenar mensagens
-3. ✅ **Mesmo conteúdo** - Nem um caractere diferente
-4. ✅ **Parâmetros iguais** - temperature, model, etc
+1. ✅ **Mínimo de 1024 tokens** - OpenAI requer pelo menos 1024 tokens no prompt! ([Ref](https://platform.openai.com/docs/guides/prompt-caching))
+2. ✅ **Prefixo idêntico** - Início do array de mensagens deve ser IGUAL
+3. ✅ **Mesma ordem** - Não pode reordenar mensagens
+4. ✅ **Mesmo conteúdo** - Nem um caractere diferente
+5. ✅ **Parâmetros iguais** - temperature, model, etc
+
+**⚠️ CRÍTICO:** Se seu prompt tiver menos de 1024 tokens, o cache **NÃO vai funcionar** com OpenAI (gpt-4o, gpt-4o-mini)!
 
 ### O que QUEBRA o cache:
 
@@ -425,6 +428,32 @@ O sistema volta a usar chamadas diretas aos providers.
 - `temperature > 0` = respostas variadas (mesmo com prompt cacheado)
 
 Para cache de **resposta** (se implementar), aí sim precisa de `temperature: 0`.
+
+---
+
+### 9. Por que meu cache mostra sempre cachedInputTokens = 0?
+
+**R:** Causa mais comum: **Prompt muito curto!**
+
+OpenAI requer **pelo menos 1024 tokens** para ativar prompt caching automaticamente.
+
+**Solução:**
+```typescript
+// ❌ CURTO DEMAIS (~500 tokens) - cache não ativa
+const systemPrompt = "Você é um assistente...";
+
+// ✅ LONGO SUFICIENTE (1024+ tokens) - cache ativa!
+const systemPrompt = `Você é um assistente...
+[conteúdo extenso com documentação, FAQs, etc]
+[TOTAL: 1024+ tokens]`;
+```
+
+**Como verificar:**
+1. Conte tokens em https://platform.openai.com/tokenizer
+2. System prompt + RAG context devem somar 1024+
+3. Teste com endpoint: `GET /api/test/cache`
+
+**Referência:** [OpenAI Prompt Caching Docs](https://platform.openai.com/docs/guides/prompt-caching)
 
 ---
 

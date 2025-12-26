@@ -7,6 +7,7 @@ export const analyzeDocument = async (
   apiKey?: string,
   clientId?: string,
   phone?: string,
+  conversationId?: string, // ✨ FASE 8: Conversation ID for tracking
 ): Promise<{
   content: string;
   usage?: {
@@ -36,6 +37,7 @@ export const analyzeDocument = async (
         apiKey,
         clientId,
         phone,
+        conversationId,
       );
       return {
         content: `📄 Documento recebido${
