@@ -2,8 +2,11 @@
  * 🧪 CACHE TEST ENDPOINT - PROMPT CACHING
  *
  * Tests Vercel AI Gateway PROMPT CACHE by sending 3 requests with:
- * - SAME system prompt + RAG context (~800 tokens)
+ * - SAME system prompt + RAG context (1100+ tokens)
  * - DIFFERENT user questions
+ *
+ * CRITICAL: OpenAI requires 1024+ tokens for automatic prompt caching!
+ * Ref: https://platform.openai.com/docs/guides/prompt-caching
  *
  * Expected behavior:
  * - Request 1: cachedInputTokens = 0 (first time, no cache)
@@ -39,41 +42,123 @@ export async function GET() {
     // Test configuration - COMPLEX PROMPT for cache testing
     const testModel = "openai/gpt-4o-mini";
 
-    // Long system prompt (~500 tokens) - will be CACHED in requests 2 & 3
+    // Long system prompt (1024+ tokens REQUIRED for OpenAI prompt cache)
+    // OpenAI automatic prompt caching: https://platform.openai.com/docs/guides/prompt-caching
     const longSystemPrompt = `Você é um assistente especializado em atendimento ao cliente de uma empresa de tecnologia.
 
 DIRETRIZES DE ATENDIMENTO:
 - Sempre seja educado e profissional
 - Use linguagem clara e acessível
-- Confirme entendimento das solicitações
-- Ofereça soluções práticas e detalhadas
-- Se não souber algo, seja honesto e ofereça alternativas
+- Confirme entendimento das solicitações antes de prosseguir
+- Ofereça soluções práticas e detalhadas com exemplos
+- Se não souber algo, seja honesto e ofereça alternativas viáveis
+- Mantenha o tom cordial e empático durante toda a conversa
+- Adapte sua comunicação ao nível técnico do cliente
+- Faça follow-up para garantir a satisfação do cliente
 
 CONHECIMENTO DA EMPRESA:
-Nossa empresa oferece os seguintes serviços:
-1. Suporte Técnico - Disponível 24/7 para resolver problemas técnicos
-2. Consultoria - Análise e recomendações para otimização de sistemas
-3. Treinamento - Capacitação de equipes em tecnologias modernas
-4. Desenvolvimento - Criação de soluções customizadas
+Nossa empresa oferece os seguintes serviços completos:
+
+1. SUPORTE TÉCNICO
+   - Disponível 24 horas por dia, 7 dias por semana
+   - Atendimento remoto e presencial
+   - Tempo de resposta: até 30 minutos para casos urgentes
+   - Resolução de problemas de hardware e software
+   - Manutenção preventiva e corretiva
+   - Monitoramento proativo de sistemas
+   - Backup e recuperação de dados
+   - Segurança da informação
+
+2. CONSULTORIA EM TI
+   - Análise detalhada de infraestrutura atual
+   - Recomendações estratégicas para otimização
+   - Planejamento de migração para cloud
+   - Avaliação de segurança cibernética
+   - Gestão de projetos de transformação digital
+   - Auditoria de sistemas e processos
+   - Redução de custos operacionais
+   - Compliance e adequação regulatória
+
+3. TREINAMENTO CORPORATIVO
+   - Capacitação de equipes em tecnologias modernas
+   - Cursos presenciais e online
+   - Certificações oficiais (Microsoft, AWS, Google Cloud)
+   - Treinamento customizado conforme necessidade
+   - Workshops práticos e hands-on
+   - Acompanhamento pós-treinamento
+   - Material didático incluso
+   - Avaliação de aprendizado
+
+4. DESENVOLVIMENTO DE SOFTWARE
+   - Aplicações web e mobile customizadas
+   - Integração de sistemas legados
+   - APIs e microsserviços
+   - Desenvolvimento ágil (Scrum/Kanban)
+   - Testes automatizados
+   - Deploy e CI/CD
+   - Manutenção evolutiva
+   - Documentação técnica completa
 
 HORÁRIOS DE ATENDIMENTO:
-- Suporte Técnico: 24 horas por dia, 7 dias por semana
-- Consultoria: Segunda a Sexta, 9h às 18h
-- Treinamento: Agendamento prévio necessário
-- Desenvolvimento: Sob demanda
+- Suporte Técnico: 24 horas por dia, 7 dias por semana, incluindo feriados
+- Consultoria: Segunda a Sexta-feira, das 9h às 18h (horário de Brasília)
+- Treinamento: Agendamento prévio necessário, horários flexíveis
+- Desenvolvimento: Sob demanda, com reuniões agendadas conforme projeto
+- Atendimento de Emergência: Disponível 24/7 para clientes Premium
 
-POLÍTICA DE PREÇOS:
+POLÍTICA DE PREÇOS E PACOTES:
+
+PLANO BÁSICO:
 - Suporte Técnico: R$ 150/hora
 - Consultoria: R$ 300/hora
-- Treinamento: R$ 500/dia
-- Desenvolvimento: Sob orçamento
+- Treinamento: R$ 500/dia por participante
+- Desenvolvimento: R$ 120/hora
 
-CONTATOS:
+PLANO PROFISSIONAL (desconto 15%):
+- Suporte Técnico: R$ 127,50/hora
+- Consultoria: R$ 255/hora
+- Treinamento: R$ 425/dia por participante
+- Desenvolvimento: R$ 102/hora
+- Inclui: 5 horas mensais de suporte grátis
+
+PLANO EMPRESARIAL (desconto 25%):
+- Suporte Técnico: R$ 112,50/hora
+- Consultoria: R$ 225/hora
+- Treinamento: R$ 375/dia por participante
+- Desenvolvimento: R$ 90/hora
+- Inclui: 15 horas mensais de suporte grátis
+- Gerente de conta dedicado
+- Prioridade no atendimento
+
+FORMAS DE PAGAMENTO:
+- Cartão de crédito (até 12x sem juros)
+- Boleto bancário (à vista com 5% desconto)
+- Transferência bancária
+- PIX (à vista com 5% desconto)
+- Faturamento mensal para empresas
+
+CONTATOS E CANAIS:
 - Email: suporte@empresa.com
 - Telefone: (11) 9999-9999
-- WhatsApp: (11) 9999-9999
+- WhatsApp Business: (11) 9999-9999
+- Website: www.empresa.com.br
+- Chat Online: Disponível no site 24/7
+- Portal do Cliente: https://portal.empresa.com.br
 
-Lembre-se de sempre coletar informações relevantes antes de sugerir soluções.`;
+POLÍTICAS IMPORTANTES:
+1. Garantia de satisfação de 30 dias
+2. SLA de 99.9% de uptime para clientes Premium
+3. Política de privacidade rigorosa (LGPD compliant)
+4. Contratos flexíveis sem fidelidade mínima
+5. Cancelamento com 30 dias de aviso prévio
+
+Lembre-se de sempre coletar informações relevantes do cliente antes de sugerir soluções específicas, incluindo:
+- Porte da empresa (número de funcionários)
+- Setor de atuação
+- Infraestrutura atual (on-premise, cloud, híbrido)
+- Budget disponível
+- Urgência da demanda
+- Problemas específicos enfrentados`;
 
     // RAG context (~300 tokens) - will also be CACHED
     const ragContext = `
@@ -222,7 +307,8 @@ CASOS DE SUCESSO:
         model: testModel,
         temperature: 0,
         messageCount: 2, // system + user
-        systemTokensApprox: 800, // Long prompt + RAG context
+        systemTokensApprox: 1100, // 1024+ required for OpenAI prompt cache
+        cacheRequirement: "OpenAI requires 1024+ tokens for automatic prompt caching",
       },
       results,
       analysis,

@@ -181,6 +181,15 @@ export const processChatbotMessage = async (
       status: customer.status,
     });
 
+    // ✨ FASE 8: Fetch conversation ID early for unified tracking across all APIs
+    const supabase = createServiceRoleClient() as any;
+    const { data: conversation } = await supabase
+      .from("conversations")
+      .select("id")
+      .eq("client_id", config.id)
+      .eq("phone", parsedMessage.phone)
+      .maybeSingle();
+
     // ═════════════════════════════════════════════════════════════════
     // 🚦 PHASE 4: STATUS-BASED ROUTING (CRITICAL - EXECUTES FIRST)
     // ═════════════════════════════════════════════════════════════════
@@ -381,6 +390,7 @@ export const processChatbotMessage = async (
           config.apiKeys.openaiApiKey,
           config.id,
           parsedMessage.phone,
+          conversation?.id, // ✨ FASE 8: Pass conversation ID
         );
 
         // Passar apenas a descrição da IA (a legenda será adicionada pelo normalizeMessage)
@@ -445,6 +455,7 @@ export const processChatbotMessage = async (
           config.apiKeys.openaiApiKey,
           config.id,
           parsedMessage.phone,
+          conversation?.id, // ✨ FASE 8: Pass conversation ID
         );
 
         processedContent = documentResult.content;
@@ -817,7 +828,7 @@ export const processChatbotMessage = async (
       intentInfo = await classifyIntent({
         message: batchedContent,
         clientId: config.id,
-        groqApiKey: config.apiKeys.groqApiKey,
+        // groqApiKey removed - Gateway uses shared config
       });
       logger.logNodeSuccess("10.6. Classify Intent", {
         intent: intentInfo.intent,
@@ -852,6 +863,7 @@ export const processChatbotMessage = async (
       promptPreview: messageForAI.substring(0, 100) + (messageForAI.length > 100 ? "..." : ""),
       includeDateTimeInfo: !isFastTrack,
       enableTools: !isFastTrack || !fastTrackResult?.catalogSize,
+      conversationId: conversation?.id || null, // ✨ FASE 8: Track conversation
     });
     const aiResponse = await generateAIResponse({
       message: messageForAI, // 🚀 Use canonical for cache hits
@@ -862,6 +874,8 @@ export const processChatbotMessage = async (
       greetingInstruction: continuityInfo.greetingInstruction, // 🔧 Phase 1: Inject greeting
       includeDateTimeInfo: !isFastTrack, // 🚀 Fast Track: Disable datetime for cache
       enableTools: !isFastTrack || !fastTrackResult?.catalogSize, // 🚀 Fast Track: Disable tools for cache
+      conversationId: conversation?.id, // ✨ FASE 8: Conversation ID for unified tracking
+      phone: parsedMessage.phone, // ✨ FASE 8: Phone number for analytics
     });
     logger.logNodeSuccess("12. Generate AI Response", {
       contentLength: aiResponse.content?.length || 0,

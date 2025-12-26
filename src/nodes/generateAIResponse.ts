@@ -2,6 +2,7 @@ import { AIResponse, ChatMessage, ClientConfig } from "@/lib/types";
 import { callAI } from "@/lib/ai-gateway";
 import { logGatewayUsage } from "@/lib/ai-gateway/usage-tracking";
 import { shouldUseGateway } from "@/lib/ai-gateway/config";
+import { checkBudgetAvailable } from "@/lib/unified-tracking";
 import type { CoreMessage } from "ai";
 import { z } from "zod";
 
@@ -175,6 +176,8 @@ export interface GenerateAIResponseInput {
   greetingInstruction?: string; // 🔧 Phase 1: Continuity greeting instruction
   includeDateTimeInfo?: boolean; // 🚀 Fast Track: Whether to include date/time in prompt (default: true)
   enableTools?: boolean; // 🚀 Fast Track: Whether to enable tools (default: true)
+  conversationId?: string; // ✨ FASE 8: Conversation ID for unified tracking
+  phone?: string; // ✨ FASE 8: Phone number for analytics
 }
 
 /**
@@ -300,6 +303,14 @@ export const generateAIResponse = async (
       includeDateTimeInfo,
     });
 
+    // 💰 FASE 1: Budget Enforcement - Check before API call
+    const budgetAvailable = await checkBudgetAvailable(config.id);
+    if (!budgetAvailable) {
+      throw new Error(
+        "❌ Limite de budget atingido. Entre em contato com o suporte para aumentar seu limite."
+      );
+    }
+
     if (useGateway) {
       console.log("[AI Gateway] Routing request through AI Gateway");
 
@@ -386,8 +397,8 @@ export const generateAIResponse = async (
       // Log usage to gateway_usage_logs
       await logGatewayUsage({
         clientId: config.id,
-        conversationId: undefined, // TODO: Pass from flow
-        phone: customerName, // TODO: Pass actual phone number
+        conversationId: input.conversationId, // ✨ FASE 8: Passed from flow
+        phone: input.phone || customerName, // ✨ FASE 8: Actual phone number
         provider: result.provider,
         modelName: result.model,
         inputTokens: result.usage.promptTokens,

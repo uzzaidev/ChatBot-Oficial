@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { cn } from '@/lib/utils'
-import { Settings, Database, Boxes, BarChart3, DollarSign, Play } from 'lucide-react'
+import { Settings, Database, Boxes, BarChart3, DollarSign, Play, CheckCircle2 } from 'lucide-react'
 import { createClientBrowser } from '@/lib/supabase'
 
 interface AIGatewayNavProps {
@@ -64,6 +64,11 @@ export function AIGatewayNav({ className }: AIGatewayNavProps) {
         href: '/dashboard/ai-gateway/budget',
         label: 'Budget',
         icon: DollarSign,
+      },
+      {
+        href: '/dashboard/ai-gateway/validation',
+        label: 'Validation',
+        icon: CheckCircle2,
       },
       {
         href: '/dashboard/ai-gateway/test',
