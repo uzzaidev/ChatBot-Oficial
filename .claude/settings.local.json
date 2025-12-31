@@ -50,7 +50,11 @@
       "Bash(pnpm install:*)",
       "Bash(doppler run:*)",
       "Bash(psql:*)",
-      "Bash(timeout 30 npx tsc:*)"
+      "Bash(timeout 30 npx tsc:*)",
+      "Bash(npx supabase:*)",
+      "Bash(grep:*)",
+      "Bash(supabase db push:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
