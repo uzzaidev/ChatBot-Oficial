@@ -204,37 +204,9 @@ export const processChatbotMessage = async (
         status: customer.status,
       });
 
-      // Save initial user message BEFORE starting flow (if it's the first message)
-      // Interactive replies are saved by FlowExecutor.continueFlow()
-      if (parsedMessage.type !== "interactive") {
-        // Save to n8n_chat_histories (for AI context)
-        await saveChatMessage({
-          clientId: config.id,
-          phone: parsedMessage.phone,
-          message: parsedMessage.content,
-          type: "user",
-        });
-
-        // Also save to messages table (for frontend display)
-        const supabase = createServiceRoleClient() as any;
-        const { data: conversation } = await supabase
-          .from("conversations")
-          .select("id")
-          .eq("client_id", config.id)
-          .eq("phone", parsedMessage.phone)
-          .maybeSingle();
-
-        await supabase.from("messages").insert({
-          client_id: config.id,
-          conversation_id: conversation?.id,
-          phone: parsedMessage.phone,
-          content: parsedMessage.content,
-          type: "text",
-          direction: "incoming",
-          status: "sent",
-          timestamp: new Date().toISOString(),
-        });
-      }
+      // ✅ User messages are saved by NODE 8 (line 596) with full metadata (wamid, mediaMetadata)
+      // ✅ Interactive flow messages are saved by FlowExecutor.continueFlow()
+      // ✅ This ensures single insert per message (no duplicates)
 
       // Check interactive flow
       const flowResult = await checkInteractiveFlow({
