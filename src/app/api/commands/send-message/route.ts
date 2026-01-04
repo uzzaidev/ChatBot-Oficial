@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
-import type { SendMessageRequest } from '@/lib/types'
-import { sendWhatsAppMessage } from '@/nodes/sendWhatsAppMessage'
-import { saveChatMessage } from '@/nodes/saveChatMessage'
-import { getClientIdFromSession } from '@/lib/supabase-server'
+import { NextRequest, NextResponse } from "next/server";
+import type { SendMessageRequest } from "@/lib/types";
+import { sendWhatsAppMessage } from "@/nodes/sendWhatsAppMessage";
+import { saveChatMessage } from "@/nodes/saveChatMessage";
+import { getClientIdFromSession } from "@/lib/supabase-server";
+import { createExecutionLogger } from "@/lib/logger";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 /**
  * POST /api/commands/send-message
@@ -22,39 +23,50 @@ export const dynamic = 'force-dynamic'
  * NOTA: type: 'ai' será mudado para 'atendente' no futuro
  */
 export async function POST(request: NextRequest) {
-  const startTime = Date.now()
+  const startTime = Date.now();
+  const logger = createExecutionLogger();
+  const nodeStartTime = Date.now();
 
   try {
-
     // 🔐 FASE 3: Obter client_id da sessão do usuário autenticado
-    const clientId = await getClientIdFromSession(request as any)
+    const clientId = await getClientIdFromSession(request as any);
 
     if (!clientId) {
       return NextResponse.json(
-        { error: 'Unauthorized - client_id not found in session' },
-        { status: 401 }
-      )
+        { error: "Unauthorized - client_id not found in session" },
+        { status: 401 },
+      );
     }
 
-
-    const body = (await request.json()) as SendMessageRequest
-    const { phone, content } = body
+    const body = (await request.json()) as SendMessageRequest;
+    const { phone, content } = body;
 
     // Validação
     if (!phone || !content) {
       return NextResponse.json(
-        { error: 'phone e content são obrigatórios' },
-        { status: 400 }
-      )
+        { error: "phone e content são obrigatórios" },
+        { status: 400 },
+      );
     }
 
+    // Log execution for Backend Monitor
+    logger.startExecution(
+      {
+        message_type: "manual_send",
+        phone,
+      },
+      clientId,
+    );
+    logger.logNodeStart("Manual Send Message", { phone, content });
 
     // Buscar config do cliente autenticado
-    const { getClientConfig } = await import('@/lib/config')
-    const config = await getClientConfig(clientId)
+    const { getClientConfig } = await import("@/lib/config");
+    const config = await getClientConfig(clientId);
 
     if (!config) {
-      return NextResponse.json({ error: 'Client configuration not found' }, { status: 404 })
+      return NextResponse.json({ error: "Client configuration not found" }, {
+        status: 404,
+      });
     }
 
     // NODE 12: Envia mensagem via WhatsApp
@@ -62,23 +74,38 @@ export async function POST(request: NextRequest) {
       phone,
       messages: [content], // Array com uma mensagem
       config, // 🔐 Passa config
-    })
+    });
 
-    const duration = Date.now() - startTime
+    const duration = Date.now() - startTime;
 
-    // Salvar no histórico com type: 'ai'
+    // Salvar no histórico com wamid + status 'sent'
+    // (Meta já retornou messageId, então a mensagem foi aceita pelo WhatsApp)
     await saveChatMessage({
       phone,
       message: content,
-      type: 'ai', // TODO: Mudar para 'atendente' no futuro
+      type: "ai", // TODO: Mudar para 'atendente' no futuro
       clientId: config.id, // 🔐 Multi-tenant: Associa mensagem ao cliente
-    })
+      wamid: messageIds?.[0] || undefined,
+      status: "sent",
+    });
 
-    const totalDuration = Date.now() - startTime
+    const totalDuration = Date.now() - startTime;
+
+    logger.logNodeSuccess(
+      "Manual Send Message",
+      {
+        phone,
+        messageIds,
+        savedToHistory: true,
+        duration: totalDuration,
+      },
+      nodeStartTime,
+    );
+    logger.finishExecution("success");
 
     return NextResponse.json({
       success: true,
-      message: 'Mensagem enviada com sucesso',
+      message: "Mensagem enviada com sucesso",
       data: {
         messageIds,
         phone,
@@ -86,16 +113,21 @@ export async function POST(request: NextRequest) {
         savedToHistory: true,
         duration: totalDuration,
       },
-    })
+    });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
+    const errorMessage = error instanceof Error
+      ? error.message
+      : "Erro desconhecido";
+
+    logger.logNodeError("Manual Send Message", error);
+    logger.finishExecution("error");
 
     return NextResponse.json(
       {
-        error: 'Erro ao enviar mensagem',
+        error: "Erro ao enviar mensagem",
         details: errorMessage,
       },
-      { status: 500 }
-    )
+      { status: 500 },
+    );
   }
 }
