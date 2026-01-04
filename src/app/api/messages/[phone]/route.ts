@@ -68,7 +68,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         [phone, clientId],
       ),
       query<any>(
-        `SELECT id, client_id, phone, content, direction, metadata, "timestamp"
+        `SELECT id, client_id, phone, content, direction, status, metadata, "timestamp"
          FROM messages
          WHERE phone = $1
          AND client_id = $2
@@ -230,7 +230,49 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     ).filter(Boolean) as Message[];
 
     // Combinar e ordenar por timestamp
-    const messages = [...n8nMessages, ...savedMessages].sort((a, b) => {
+    const combined = [...n8nMessages, ...savedMessages];
+
+    const getWamid = (msg: Message): string | null => {
+      if (!msg.metadata || typeof msg.metadata !== "object") return null;
+      const raw = (msg.metadata as Record<string, unknown>).wamid;
+      return typeof raw === "string" && raw.length > 0 ? raw : null;
+    };
+
+    const preferMessage = (current: Message, next: Message): Message => {
+      // Prefer interactive rendering if either is interactive
+      if (current.type !== "interactive" && next.type === "interactive") {
+        return next;
+      }
+      if (current.type === "interactive" && next.type !== "interactive") {
+        return current;
+      }
+
+      // Prefer richer metadata (wamid/error/media/etc)
+      const currentMetaSize =
+        current.metadata && typeof current.metadata === "object"
+          ? Object.keys(current.metadata as Record<string, unknown>).length
+          : 0;
+      const nextMetaSize = next.metadata && typeof next.metadata === "object"
+        ? Object.keys(next.metadata as Record<string, unknown>).length
+        : 0;
+      if (nextMetaSize > currentMetaSize) return next;
+
+      return current;
+    };
+
+    const byKey = new Map<string, Message>();
+    for (const msg of combined) {
+      const wamid = getWamid(msg);
+      const key = wamid ? `wamid:${wamid}` : `id:${msg.id}`;
+      const existing = byKey.get(key);
+      if (!existing) {
+        byKey.set(key, msg);
+        continue;
+      }
+      byKey.set(key, preferMessage(existing, msg));
+    }
+
+    const messages = Array.from(byKey.values()).sort((a, b) => {
       return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
     });
 

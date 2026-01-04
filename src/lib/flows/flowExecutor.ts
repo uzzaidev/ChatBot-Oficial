@@ -429,7 +429,7 @@ export class FlowExecutor {
       })),
     }));
 
-    await sendInteractiveList(phone, {
+    const { messageId: wamid } = await sendInteractiveList(phone, {
       header: listHeader,
       body: listBody,
       footer: listFooter,
@@ -445,6 +445,7 @@ export class FlowExecutor {
       footer: listFooter,
       buttonText: listButtonText,
       sections: listSections,
+      wamid,
     });
 
     console.log(`✅ [FlowExecutor] Interactive list sent to ${phone}`);
@@ -478,7 +479,7 @@ export class FlowExecutor {
       title: btn.title,
     }));
 
-    await sendInteractiveButtons(phone, {
+    const { messageId: wamid } = await sendInteractiveButtons(phone, {
       body: buttonsBody,
       footer: buttonsFooter,
       buttons: buttonsList,
@@ -490,6 +491,7 @@ export class FlowExecutor {
       body: buttonsBody,
       footer: buttonsFooter,
       buttons: buttonsList,
+      wamid,
     });
 
     console.log(`✅ [FlowExecutor] Interactive buttons sent to ${phone}`);
@@ -1204,6 +1206,7 @@ export class FlowExecutor {
       header?: string;
       buttonText?: string;
       sections?: any[];
+      wamid?: string;
     },
   ): Promise<void> {
     try {
@@ -1251,9 +1254,11 @@ export class FlowExecutor {
           content: interactiveData.body,
           type: "interactive",
           direction: "outgoing",
-          status: "sent",
+          // Use 'queued' to represent pending(clock) in the UI until webhook confirms
+          status: "queued",
           metadata: {
             interactive: interactiveData,
+            ...(interactiveData.wamid ? { wamid: interactiveData.wamid } : {}),
           },
         });
 
@@ -1328,12 +1333,11 @@ export class FlowExecutor {
       const vars = execution.variables;
       const lastStep = execution.history[execution.history.length - 1];
 
-      const varsText =
-        Object.keys(vars).length > 0
-          ? Object.entries(vars)
-            .map(([k, v]) => `- ${k}: ${v}`)
-            .join("\n")
-          : "Nenhuma variável coletada.";
+      const varsText = Object.keys(vars).length > 0
+        ? Object.entries(vars)
+          .map(([k, v]) => `- ${k}: ${v}`)
+          .join("\n")
+        : "Nenhuma variável coletada.";
 
       const lastInteraction = lastStep
         ? lastStep.userResponse || lastStep.interactiveResponseId || "N/A"
@@ -1357,18 +1361,18 @@ IMPORTANTE: O cliente já forneceu essas informações. Use-as no contexto da co
       // Full: histórico completo de interações
       const steps = execution.history
         .map((step, i) => {
-          const response = step.userResponse || step.interactiveResponseId || "-";
+          const response = step.userResponse || step.interactiveResponseId ||
+            "-";
           return `${i + 1}. [${step.blockType}] ${response}`;
         })
         .join("\n");
 
       const vars = execution.variables;
-      const varsText =
-        Object.keys(vars).length > 0
-          ? Object.entries(vars)
-            .map(([k, v]) => `- ${k}: ${v}`)
-            .join("\n")
-          : "Nenhuma variável coletada.";
+      const varsText = Object.keys(vars).length > 0
+        ? Object.entries(vars)
+          .map(([k, v]) => `- ${k}: ${v}`)
+          .join("\n")
+        : "Nenhuma variável coletada.";
 
       const context = `[HISTÓRICO COMPLETO DO FLUXO INTERATIVO]
 
