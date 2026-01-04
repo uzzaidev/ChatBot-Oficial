@@ -73,7 +73,10 @@ export const updateMessageStatus = async (
         : undefined;
 
       if (existingRow) {
-        console.warn("⚠️ Message exists but with different client_id:", existingRow);
+        console.warn(
+          "⚠️ Message exists but with different client_id:",
+          existingRow,
+        );
       } else {
         console.warn("⚠️ Message does not exist in database");
       }

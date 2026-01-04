@@ -32,7 +32,11 @@ export const ConversationDetail = ({
   const [realtimeMessages, setRealtimeMessages] = useState<Message[]>([])
   const [optimisticMessages, setOptimisticMessages] = useState<Message[]>([])
   const [deletedMessageIds, setDeletedMessageIds] = useState<Set<string>>(new Set())
-  const [statusUpdates, setStatusUpdates] = useState<Record<string, Message['status']>>({})
+  const [statusUpdates, setStatusUpdates] = useState<Record<string, {
+    status: Message['status']
+    errorDetails?: unknown
+    statusUpdatedAt?: string
+  }>>({})
   const [stickyDate, setStickyDate] = useState<string | null>(null)
   const [newMessagesCount, setNewMessagesCount] = useState(0)
   const [isUserAtBottom, setIsUserAtBottom] = useState(true)
@@ -99,8 +103,28 @@ export const ConversationDetail = ({
     // Apply status updates even if the message lives in fetchedMessages
     const messagesWithStatusOverrides = uniqueMessages.map(message => {
       const override = statusUpdates[message.id]
-      if (!override || override === message.status) return message
-      return { ...message, status: override }
+      if (!override) return message
+
+      const nextStatus = override.status
+      const shouldUpdateStatus = nextStatus && nextStatus !== message.status
+      const hasExtra = Boolean(override.errorDetails) || Boolean(override.statusUpdatedAt)
+      if (!shouldUpdateStatus && !hasExtra) return message
+
+      const baseMeta = message.metadata && typeof message.metadata === 'object'
+        ? message.metadata as Record<string, unknown>
+        : {}
+
+      const mergedMeta: Record<string, unknown> = {
+        ...baseMeta,
+        ...(override.errorDetails ? { error_details: override.errorDetails } : {}),
+        ...(override.statusUpdatedAt ? { status_updated_at: override.statusUpdatedAt } : {}),
+      }
+
+      return {
+        ...message,
+        ...(shouldUpdateStatus ? { status: nextStatus } : {}),
+        metadata: Object.keys(mergedMeta).length > 0 ? mergedMeta : null,
+      }
     })
 
     return messagesWithStatusOverrides
@@ -140,7 +164,38 @@ export const ConversationDetail = ({
 
   // Stable callback for handling new messages from realtime
   const handleNewMessage = useCallback((newMessage: Message) => {
-    // Add realtime message (optimistic messages are already removed by SendMessageForm on success)
+    // Reconcile optimistic outgoing message to avoid flicker/disappear.
+    // If we receive a confirmed outgoing message that matches an optimistic one,
+    // remove the optimistic entry and keep only the confirmed one.
+    if (newMessage.direction === 'outgoing') {
+      setOptimisticMessages(prev => {
+        if (prev.length === 0) return prev
+
+        const normalizedNew = (newMessage.content || '').trim()
+        const newTs = new Date(newMessage.timestamp).getTime()
+        const MAX_SKEW_MS = 30_000
+
+        let removedOne = false
+        return prev.filter(m => {
+          if (removedOne) return true
+          if (m.direction !== 'outgoing') return true
+
+          const normalizedOld = (m.content || '').trim()
+          const oldTs = new Date(m.timestamp).getTime()
+          const closeInTime = Math.abs(newTs - oldTs) <= MAX_SKEW_MS
+          const sameContent = normalizedOld.length > 0 && normalizedOld === normalizedNew
+
+          if (closeInTime && sameContent) {
+            removedOne = true
+            return false
+          }
+
+          return true
+        })
+      })
+    }
+
+    // Add realtime message
     setRealtimeMessages(prev => {
       // Check if message already exists in realtime messages
       const exists = prev.some(msg => msg.id === newMessage.id)
@@ -235,13 +290,19 @@ export const ConversationDetail = ({
   }, [toast])
 
   // Handle message status update from realtime
-  const handleMessageStatusUpdate = useCallback((messageId: string, status: Message['status']) => {
+  const handleMessageStatusUpdate = useCallback((update: {
+    messageId: string
+    status: Message['status']
+    errorDetails?: unknown
+    statusUpdatedAt?: string
+  }) => {
+    const { messageId, status, errorDetails, statusUpdatedAt } = update
     console.log('📊 Status update received:', { messageId, status })
 
     // Persist the status update so it applies even after realtimeMessages cleanup
     setStatusUpdates(prev => ({
       ...prev,
-      [messageId]: status,
+      [messageId]: { status, errorDetails, statusUpdatedAt },
     }))
 
     // Update status in realtime messages
@@ -249,7 +310,15 @@ export const ConversationDetail = ({
       const updated = prev.map(msg => {
         if (msg.id === messageId) {
           console.log('✅ Updated realtime message:', msg.id)
-          return { ...msg, status }
+          const baseMeta = msg.metadata && typeof msg.metadata === 'object'
+            ? msg.metadata as Record<string, unknown>
+            : {}
+          const mergedMeta: Record<string, unknown> = {
+            ...baseMeta,
+            ...(errorDetails ? { error_details: errorDetails } : {}),
+            ...(statusUpdatedAt ? { status_updated_at: statusUpdatedAt } : {}),
+          }
+          return { ...msg, status, metadata: Object.keys(mergedMeta).length > 0 ? mergedMeta : null }
         }
         return msg
       })
@@ -261,7 +330,15 @@ export const ConversationDetail = ({
       const updated = prev.map(msg => {
         if (msg.id === messageId) {
           console.log('✅ Updated optimistic message:', msg.id)
-          return { ...msg, status }
+          const baseMeta = msg.metadata && typeof msg.metadata === 'object'
+            ? msg.metadata as Record<string, unknown>
+            : {}
+          const mergedMeta: Record<string, unknown> = {
+            ...baseMeta,
+            ...(errorDetails ? { error_details: errorDetails } : {}),
+            ...(statusUpdatedAt ? { status_updated_at: statusUpdatedAt } : {}),
+          }
+          return { ...msg, status, metadata: Object.keys(mergedMeta).length > 0 ? mergedMeta : null }
         }
         return msg
       })
