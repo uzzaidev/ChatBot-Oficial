@@ -60,7 +60,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const [pgMessages, pgInteractiveMessages] = await Promise.all([
       query<any>(
-        `SELECT id, session_id, message, media_metadata, wamid, created_at, transcription, audio_duration_seconds
+        `SELECT id, session_id, message, media_metadata, wamid, status, error_details, updated_at, created_at, transcription, audio_duration_seconds
          FROM n8n_chat_histories
          WHERE session_id = $1
          AND client_id = $2
@@ -143,6 +143,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         if (item.wamid) {
           metadata.wamid = item.wamid;
         }
+        if (item.error_details) {
+          metadata.error_details = item.error_details;
+        }
+        if (item.updated_at) {
+          metadata.status_updated_at = item.updated_at;
+        }
 
         return {
           id: item.id?.toString() || `msg-${index}`,
@@ -155,7 +161,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           direction: messageType === "human"
             ? ("incoming" as const)
             : ("outgoing" as const),
-          status: "sent" as const,
+          status: (item.status || "sent") as Message["status"],
           timestamp: item.created_at || new Date().toISOString(),
           metadata: Object.keys(metadata).length > 0 ? metadata : null,
           transcription: item.transcription || null,
