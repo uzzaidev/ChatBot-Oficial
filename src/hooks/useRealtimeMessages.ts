@@ -18,7 +18,7 @@ interface UseRealtimeMessagesOptions {
   clientId: string;
   phone: string;
   onNewMessage?: (message: Message) => void;
-  onMessageUpdate?: (messageId: string, status: Message['status']) => void;
+  onMessageUpdate?: (messageId: string, status: Message["status"]) => void;
 }
 
 /**
@@ -62,7 +62,7 @@ export const useRealtimeMessages = ({
     const cleanupInterval = setInterval(() => {
       const now = Date.now();
       const FIVE_MINUTES = 5 * 60 * 1000;
-      
+
       processedMessageIdsRef.current.forEach((timestamp, id) => {
         if (now - timestamp > FIVE_MINUTES) {
           processedMessageIdsRef.current.delete(id);
@@ -78,7 +78,7 @@ export const useRealtimeMessages = ({
     if (processedMessageIdsRef.current.has(messageId)) {
       return false; // Already processed
     }
-    
+
     // Mark as processed with current timestamp
     processedMessageIdsRef.current.set(messageId, Date.now());
     return true;
@@ -121,8 +121,9 @@ export const useRealtimeMessages = ({
             }
 
             // Generate consistent message ID
-            const messageId = data.id?.toString() || `msg-${data.created_at || Date.now()}`;
-            
+            const messageId = data.id?.toString() ||
+              `msg-${data.created_at || Date.now()}`;
+
             // Check if message was already processed (deduplication)
             if (!shouldProcessMessage(messageId)) {
               return; // Skip duplicate
@@ -153,7 +154,7 @@ export const useRealtimeMessages = ({
               content: cleanedContent,
               type: "text",
               direction: messageType === "human" ? "incoming" : "outgoing",
-              status: "sent",
+              status: (data.status || "sent") as Message["status"],
               timestamp: data.created_at || new Date().toISOString(),
               metadata: null,
             };
@@ -216,8 +217,9 @@ export const useRealtimeMessages = ({
             if (!data || data.phone !== phone) return;
 
             // Generate consistent message ID
-            const messageId = data.id?.toString() || `msg-${data.timestamp || Date.now()}`;
-            
+            const messageId = data.id?.toString() ||
+              `msg-${data.timestamp || Date.now()}`;
+
             // Check if message was already processed (deduplication)
             if (!shouldProcessMessage(messageId)) {
               return; // Skip duplicate

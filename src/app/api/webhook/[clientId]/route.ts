@@ -23,6 +23,7 @@ import crypto from "crypto";
 import { checkRateLimit, webhookVerifyLimiter } from "@/lib/rate-limit";
 import { parseInteractiveMessage } from "@/lib/whatsapp/interactiveMessages";
 import { processStatusUpdate } from "@/nodes/updateMessageStatus";
+import { createExecutionLogger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -182,24 +183,73 @@ export async function POST(
       const statuses = value?.statuses;
 
       if (statuses && statuses.length > 0) {
-        // This is a status update, not a message
-        console.log('📊 Processing status update:', statuses[0].status);
+        const logger = createExecutionLogger();
+        const executionId = logger.startExecution(
+          {
+            message_type: "status_update",
+            client_id: clientId,
+            wamid: statuses[0]?.id,
+            status: statuses[0]?.status,
+            recipient_id: statuses[0]?.recipient_id,
+          },
+          clientId,
+        );
 
+        const nodeStartTime = Date.now();
+        logger.logNodeStart("Webhook Status Update", body);
+
+        // This is a status update, not a message
+        console.log("📊 Processing status update:", {
+          status: statuses[0].status,
+          wamid: statuses[0].id,
+          recipient: statuses[0].recipient_id,
+          timestamp: statuses[0].timestamp,
+        });
+
+        const results: Array<
+          { wamid: string; status: string; ok: boolean; error?: string }
+        > = [];
+        let hasError = false;
         for (const status of statuses) {
           try {
             await processStatusUpdate({
               statusUpdate: status,
               clientId,
             });
+            console.log("✅ Status update processed successfully");
+            results.push({ wamid: status.id, status: status.status, ok: true });
           } catch (statusError) {
-            console.error('❌ Failed to process status update:', statusError);
+            console.error("❌ Failed to process status update:", statusError);
+            hasError = true;
+            results.push({
+              wamid: status.id,
+              status: status.status,
+              ok: false,
+              error: statusError instanceof Error
+                ? statusError.message
+                : String(statusError),
+            });
           }
+        }
+
+        if (hasError) {
+          logger.logNodeError(
+            "Webhook Status Update",
+            new Error("One or more status updates failed"),
+          );
+          logger.finishExecution("error");
+        } else {
+          logger.logNodeSuccess("Webhook Status Update", {
+            results,
+            executionId,
+          }, nodeStartTime);
+          logger.finishExecution("success");
         }
 
         return new NextResponse("STATUS_UPDATE_PROCESSED", { status: 200 });
       }
     } catch (statusError) {
-      console.error('❌ Error checking for status updates:', statusError);
+      console.error("❌ Error checking for status updates:", statusError);
     }
 
     // 4. Extrair mensagem e adicionar ao cache
@@ -219,7 +269,7 @@ export async function POST(
         const interactiveResponse = parseInteractiveMessage(message);
 
         if (interactiveResponse) {
-          console.log('📱 Interactive message response received:', {
+          console.log("📱 Interactive message response received:", {
             type: interactiveResponse.type,
             id: interactiveResponse.id,
             title: interactiveResponse.title,
