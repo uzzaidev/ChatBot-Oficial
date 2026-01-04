@@ -17,12 +17,13 @@ export type StoredMediaType = "image" | "audio" | "document" | "video";
 export type MessageDirection = "incoming" | "outgoing";
 
 export type MessageStatus =
-  | "sending"
-  | "sent"
-  | "delivered"
-  | "read"
-  | "failed"
-  | "queued";
+  | "pending" // Waiting to be sent (WhatsApp status tracking)
+  | "sending" // Currently being sent
+  | "sent" // Received by WhatsApp servers (WhatsApp status tracking)
+  | "delivered" // Delivered to user's device (WhatsApp status tracking)
+  | "read" // Read by user (WhatsApp status tracking)
+  | "failed" // Failed to send (WhatsApp status tracking)
+  | "queued"; // Queued for processing
 
 export type UsageSource = "openai" | "meta" | "groq" | "whisper";
 

@@ -22,6 +22,7 @@ import { checkDuplicateMessage, markMessageAsProcessed } from "@/lib/dedup";
 import crypto from "crypto";
 import { checkRateLimit, webhookVerifyLimiter } from "@/lib/rate-limit";
 import { parseInteractiveMessage } from "@/lib/whatsapp/interactiveMessages";
+import { processStatusUpdate } from "@/nodes/updateMessageStatus";
 
 export const dynamic = "force-dynamic";
 
@@ -173,7 +174,35 @@ export async function POST(
     // Parse body como JSON agora que validamos
     const body = JSON.parse(rawBody);
 
-    // 3. Extrair mensagem e adicionar ao cache
+    // 3. Check if this is a status update (not a message)
+    try {
+      const entry = body.entry?.[0];
+      const change = entry?.changes?.[0];
+      const value = change?.value;
+      const statuses = value?.statuses;
+
+      if (statuses && statuses.length > 0) {
+        // This is a status update, not a message
+        console.log('📊 Processing status update:', statuses[0].status);
+
+        for (const status of statuses) {
+          try {
+            await processStatusUpdate({
+              statusUpdate: status,
+              clientId,
+            });
+          } catch (statusError) {
+            console.error('❌ Failed to process status update:', statusError);
+          }
+        }
+
+        return new NextResponse("STATUS_UPDATE_PROCESSED", { status: 200 });
+      }
+    } catch (statusError) {
+      console.error('❌ Error checking for status updates:', statusError);
+    }
+
+    // 4. Extrair mensagem e adicionar ao cache
     let messageId: string | null = null;
 
     try {
@@ -188,7 +217,7 @@ export async function POST(
 
         // 🆕 Parse interactive message response
         const interactiveResponse = parseInteractiveMessage(message);
-        
+
         if (interactiveResponse) {
           console.log('📱 Interactive message response received:', {
             type: interactiveResponse.type,
@@ -204,8 +233,8 @@ export async function POST(
           from: message.from,
           name: contact?.profile?.name || "Unknown",
           type: message.type,
-          content: interactiveResponse 
-            ? `[${interactiveResponse.type}] ${interactiveResponse.title}` 
+          content: interactiveResponse
+            ? `[${interactiveResponse.type}] ${interactiveResponse.title}`
             : (message.text?.body ||
               message.image?.caption ||
               message.audio?.id ||

@@ -22,6 +22,7 @@ import { formatResponse } from "@/nodes/formatResponse";
 import { sendWhatsAppMessage } from "@/nodes/sendWhatsAppMessage";
 import { handleHumanHandoff } from "@/nodes/handleHumanHandoff";
 import { saveChatMessage } from "@/nodes/saveChatMessage";
+import { updateMessageWithWamid } from "@/nodes/updateMessageWithWamid";
 // 🔧 Phase 1-3: Configuration-driven nodes
 import { checkContinuity } from "@/nodes/checkContinuity";
 import { classifyIntent } from "@/nodes/classifyIntent";
@@ -1242,6 +1243,30 @@ export const processChatbotMessage = async (
     });
     logger.logNodeSuccess("14. Send WhatsApp Message", {
       sentCount: messageIds.length,
+    });
+
+    // NODE 14.5: Update messages with wamid and change status to 'sent'
+    logger.logNodeStart("14.5. Update Message Status", {
+      messageCount: messageIds.length,
+    });
+    for (let i = 0; i < messageIds.length; i++) {
+      const wamid = messageIds[i];
+      const messageContent = formattedMessages[i];
+
+      try {
+        await updateMessageWithWamid({
+          phone: parsedMessage.phone,
+          clientId: config.id,
+          messageContent,
+          wamid,
+        });
+      } catch (updateError) {
+        console.error(`Failed to update message with wamid ${wamid}:`, updateError);
+        // Don't fail the flow - this is a non-critical update
+      }
+    }
+    logger.logNodeSuccess("14.5. Update Message Status", {
+      updated: messageIds.length,
     });
 
     logger.finishExecution("success");

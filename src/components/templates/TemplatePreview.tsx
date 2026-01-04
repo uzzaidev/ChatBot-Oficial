@@ -2,7 +2,7 @@
 
 import { MessageTemplate, TemplateComponent } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Image, Video, FileIcon } from "lucide-react";
+import { FileText, Image as ImageIcon, Video, FileIcon } from "lucide-react";
 
 interface TemplatePreviewProps {
   template: MessageTemplate;
@@ -31,7 +31,7 @@ const renderComponent = (component: TemplateComponent, parameters?: string[]) =>
           )}
           {component.format === "IMAGE" && (
             <div className="flex items-center gap-2 text-sm text-erie-black-700">
-              <Image className="h-4 w-4" />
+              <ImageIcon className="h-4 w-4" />
               <span>Imagem do cabeçalho</span>
             </div>
           )}

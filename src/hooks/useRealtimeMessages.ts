@@ -18,6 +18,7 @@ interface UseRealtimeMessagesOptions {
   clientId: string;
   phone: string;
   onNewMessage?: (message: Message) => void;
+  onMessageUpdate?: (messageId: string, status: Message['status']) => void;
 }
 
 /**
@@ -36,22 +37,25 @@ export const useRealtimeMessages = ({
   clientId,
   phone,
   onNewMessage,
+  onMessageUpdate,
 }: UseRealtimeMessagesOptions) => {
   const [isConnected, setIsConnected] = useState(false);
   const onNewMessageRef = useRef(onNewMessage);
+  const onMessageUpdateRef = useRef(onMessageUpdate);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const hasAttemptedRef = useRef(false);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isReconnectingRef = useRef(false);
-  
+
   // Track processed message IDs to prevent duplicates
   // Using Map to store timestamp when message was processed (for cleanup)
   const processedMessageIdsRef = useRef<Map<string, number>>(new Map());
 
-  // Keep the callback ref up to date
+  // Keep the callback refs up to date
   useEffect(() => {
     onNewMessageRef.current = onNewMessage;
-  }, [onNewMessage]);
+    onMessageUpdateRef.current = onMessageUpdate;
+  }, [onNewMessage, onMessageUpdate]);
 
   // Cleanup old processed message IDs (older than 5 minutes)
   useEffect(() => {
@@ -164,6 +168,42 @@ export const useRealtimeMessages = ({
       .on(
         "postgres_changes",
         {
+          event: "UPDATE",
+          schema: "public",
+          table: "n8n_chat_histories",
+          filter: `client_id=eq.${clientId}`,
+        },
+        (payload) => {
+          try {
+            const data = payload.new as any;
+
+            // Filter by session_id (phone) - garantir que é a conversa certa
+            if (data.session_id !== phone) {
+              return;
+            }
+
+            // Only process if status changed (status update from WhatsApp)
+            if (!data.status) {
+              return;
+            }
+
+            const messageId = data.id?.toString();
+            if (!messageId) {
+              return;
+            }
+
+            // Notify about status update
+            if (onMessageUpdateRef.current) {
+              onMessageUpdateRef.current(messageId, data.status);
+            }
+          } catch (error) {
+            // Silent fail for status updates
+          }
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
           event: "INSERT",
           schema: "public",
           table: "messages",
@@ -270,8 +310,11 @@ export const useRealtimeMessages = ({
   useEffect(() => {
     if (!clientId || !phone) return;
 
+    // Capture ref value for cleanup
+    const processedMessageIds = processedMessageIdsRef.current;
+
     // Clear processed message IDs when conversation changes
-    processedMessageIdsRef.current.clear();
+    processedMessageIds.clear();
 
     setupRealtimeSubscription();
 
@@ -296,9 +339,9 @@ export const useRealtimeMessages = ({
         hasAttemptedRef.current = false;
         isReconnectingRef.current = false;
       }
-      
-      // Clear processed message IDs on cleanup
-      processedMessageIdsRef.current.clear();
+
+      // Clear processed message IDs on cleanup (use captured value)
+      processedMessageIds.clear();
     };
   }, [clientId, phone, setupRealtimeSubscription]);
 

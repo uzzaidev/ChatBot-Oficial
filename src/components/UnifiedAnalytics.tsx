@@ -120,6 +120,7 @@ export function UnifiedAnalytics() {
   useEffect(() => {
     fetchAnalytics()
     fetchBudget()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [period, selectedClient, selectedApiType, selectedConversation])
 
   const fetchAnalytics = async () => {
