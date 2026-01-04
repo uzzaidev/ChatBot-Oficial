@@ -248,19 +248,6 @@ export const useRealtimeMessages = ({
             const messageId = data.id?.toString() ||
               `msg-${data.timestamp || Date.now()}`;
 
-            // Prefer dedupe by wamid when present (avoids duplicates across tables)
-            const wamid =
-              parsedMetadata &&
-                typeof (parsedMetadata as any).wamid === "string"
-                ? String((parsedMetadata as any).wamid)
-                : null;
-            const dedupeKey = wamid ? `wamid:${wamid}` : `id:${messageId}`;
-
-            // Check if message was already processed (deduplication)
-            if (!shouldProcessMessage(dedupeKey)) {
-              return; // Skip duplicate
-            }
-
             let parsedMetadata: Record<string, unknown> | null = null;
             if (data.metadata) {
               if (typeof data.metadata === "string") {
@@ -272,6 +259,17 @@ export const useRealtimeMessages = ({
               } else if (typeof data.metadata === "object") {
                 parsedMetadata = data.metadata as Record<string, unknown>;
               }
+            }
+
+            // Prefer dedupe by wamid when present (avoids duplicates across tables)
+            const wamid = parsedMetadata && typeof (parsedMetadata as any).wamid === "string"
+              ? String((parsedMetadata as any).wamid)
+              : null;
+            const dedupeKey = wamid ? `wamid:${wamid}` : `id:${messageId}`;
+
+            // Check if message was already processed (deduplication)
+            if (!shouldProcessMessage(dedupeKey)) {
+              return; // Skip duplicate
             }
 
             const hasInteractive = parsedMetadata &&
