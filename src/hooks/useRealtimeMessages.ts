@@ -262,9 +262,11 @@ export const useRealtimeMessages = ({
             }
 
             // Prefer dedupe by wamid when present (avoids duplicates across tables)
-            const wamid = parsedMetadata && typeof (parsedMetadata as any).wamid === "string"
-              ? String((parsedMetadata as any).wamid)
-              : null;
+            const wamid =
+              parsedMetadata &&
+                typeof (parsedMetadata as any).wamid === "string"
+                ? String((parsedMetadata as any).wamid)
+                : null;
             const dedupeKey = wamid ? `wamid:${wamid}` : `id:${messageId}`;
 
             // Check if message was already processed (deduplication)
