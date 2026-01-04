@@ -16,6 +16,8 @@ export const updateMessageStatus = async (input: UpdateMessageStatusInput): Prom
   const { wamid, status, errorDetails, clientId } = input
 
   try {
+    console.log('🔄 Updating message status:', { wamid, status, clientId })
+
     // Update status in n8n_chat_histories
     // Note: We filter by both wamid AND client_id for multi-tenant isolation
     const result = await query(
@@ -25,14 +27,34 @@ export const updateMessageStatus = async (input: UpdateMessageStatusInput): Prom
            updated_at = NOW()
        WHERE wamid = $3
          AND client_id = $4
-       RETURNING id`,
+       RETURNING id, session_id, status`,
       [status, errorDetails ? JSON.stringify(errorDetails) : null, wamid, clientId]
     )
 
     if (result.rows.length === 0) {
       console.warn(`⚠️ Message with wamid ${wamid} not found for client ${clientId}`)
+
+      // Debug: Let's check if the message exists at all
+      const checkResult = await query(
+        `SELECT id, wamid, status, client_id, session_id
+         FROM n8n_chat_histories
+         WHERE wamid = $1
+         LIMIT 1`,
+        [wamid]
+      )
+
+      if (checkResult.rows.length > 0) {
+        console.warn('⚠️ Message exists but with different client_id:', checkResult.rows[0])
+      } else {
+        console.warn('⚠️ Message does not exist in database')
+      }
     } else {
-      console.log(`✅ Updated message status: ${wamid} -> ${status}`)
+      console.log(`✅ Updated message status:`, {
+        id: result.rows[0].id,
+        wamid,
+        status,
+        session_id: result.rows[0].session_id
+      })
     }
   } catch (error) {
     console.error(`❌ Failed to update message status:`, error)

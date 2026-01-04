@@ -389,10 +389,10 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
     switch (message.status) {
       case 'pending':
       case 'queued':
-        // Clock icon for pending
+      case 'sending':
+        // Clock icon for pending/sending
         return <Clock className={`${statusIconClass} text-white/50`} />
 
-      case 'sending':
       case 'sent':
         // Single check for sent
         return <Check className={`${statusIconClass} text-white/70`} />

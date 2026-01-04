@@ -32,6 +32,7 @@ export const ConversationDetail = ({
   const [realtimeMessages, setRealtimeMessages] = useState<Message[]>([])
   const [optimisticMessages, setOptimisticMessages] = useState<Message[]>([])
   const [deletedMessageIds, setDeletedMessageIds] = useState<Set<string>>(new Set())
+  const [statusUpdates, setStatusUpdates] = useState<Record<string, Message['status']>>({})
   const [stickyDate, setStickyDate] = useState<string | null>(null)
   const [newMessagesCount, setNewMessagesCount] = useState(0)
   const [isUserAtBottom, setIsUserAtBottom] = useState(true)
@@ -70,6 +71,7 @@ export const ConversationDetail = ({
     setRealtimeMessages([])
     setOptimisticMessages([])
     setDeletedMessageIds(new Set())
+    setStatusUpdates({})
     setNewMessagesCount(0)
     shouldScrollRef.current = true
     lastFetchedIdsRef.current.clear()
@@ -94,8 +96,15 @@ export const ConversationDetail = ({
       new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     )
 
-    return uniqueMessages
-  }, [fetchedMessages, realtimeMessages, optimisticMessages, deletedMessageIds])
+    // Apply status updates even if the message lives in fetchedMessages
+    const messagesWithStatusOverrides = uniqueMessages.map(message => {
+      const override = statusUpdates[message.id]
+      if (!override || override === message.status) return message
+      return { ...message, status: override }
+    })
+
+    return messagesWithStatusOverrides
+  }, [fetchedMessages, realtimeMessages, optimisticMessages, deletedMessageIds, statusUpdates])
 
   // Check if user is at bottom - uses the state that's updated by scroll handler
   const checkIfUserAtBottom = useCallback(() => {
@@ -227,24 +236,36 @@ export const ConversationDetail = ({
 
   // Handle message status update from realtime
   const handleMessageStatusUpdate = useCallback((messageId: string, status: Message['status']) => {
+    console.log('📊 Status update received:', { messageId, status })
+
+    // Persist the status update so it applies even after realtimeMessages cleanup
+    setStatusUpdates(prev => ({
+      ...prev,
+      [messageId]: status,
+    }))
+
     // Update status in realtime messages
     setRealtimeMessages(prev => {
-      return prev.map(msg => {
+      const updated = prev.map(msg => {
         if (msg.id === messageId) {
+          console.log('✅ Updated realtime message:', msg.id)
           return { ...msg, status }
         }
         return msg
       })
+      return updated
     })
 
     // Also update optimistic messages if needed
     setOptimisticMessages(prev => {
-      return prev.map(msg => {
+      const updated = prev.map(msg => {
         if (msg.id === messageId) {
+          console.log('✅ Updated optimistic message:', msg.id)
           return { ...msg, status }
         }
         return msg
       })
+      return updated
     })
   }, [])
 
