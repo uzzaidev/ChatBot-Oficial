@@ -146,12 +146,8 @@ export const SendMessageForm = ({
 
         const responseData = await response.json()
 
-        // Get wamid from response and replace optimistic message
-        if (responseData.data?.messageIds?.[0] && optimisticMessage && onMessageError) {
-          const wamid = responseData.data.messageIds[0]
-          // Remove optimistic message - realtime will add the confirmed one with wamid
-          onMessageError(tempId)
-        }
+        // Keep optimistic message to avoid flicker.
+        // ConversationDetail will reconcile/remove it when the confirmed message arrives via realtime.
       }
 
       // Sucesso - mensagem confirmada chegará via realtime com wamid

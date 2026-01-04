@@ -18,7 +18,12 @@ interface UseRealtimeMessagesOptions {
   clientId: string;
   phone: string;
   onNewMessage?: (message: Message) => void;
-  onMessageUpdate?: (messageId: string, status: Message["status"]) => void;
+  onMessageUpdate?: (update: {
+    messageId: string;
+    status: Message["status"];
+    errorDetails?: unknown;
+    statusUpdatedAt?: string;
+  }) => void;
 }
 
 /**
@@ -193,9 +198,14 @@ export const useRealtimeMessages = ({
               return;
             }
 
-            // Notify about status update
+            // Notify about status update (include error_details + updated_at for failed tooltips)
             if (onMessageUpdateRef.current) {
-              onMessageUpdateRef.current(messageId, data.status);
+              onMessageUpdateRef.current({
+                messageId,
+                status: data.status,
+                errorDetails: data.error_details ?? undefined,
+                statusUpdatedAt: data.updated_at ?? undefined,
+              });
             }
           } catch (error) {
             // Silent fail for status updates

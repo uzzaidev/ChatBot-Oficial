@@ -8,6 +8,13 @@ import { MessageActionMenu } from '@/components/MessageActionMenu'
 import { AudioMessage } from '@/components/AudioMessage'
 import { InteractiveButtonsMessage } from '@/components/InteractiveButtonsMessage'
 import { InteractiveListMessage } from '@/components/InteractiveListMessage'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 interface MessageBubbleProps {
   message: Message
@@ -111,6 +118,35 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
   const wamid = message.metadata && typeof message.metadata === 'object'
     ? (message.metadata as Record<string, unknown>).wamid as string | undefined
     : undefined
+
+  // ❌ Extract error details for failed status
+  const errorDetails = (() => {
+    if (!message.metadata || typeof message.metadata !== 'object') return null
+    const raw = (message.metadata as Record<string, unknown>).error_details
+    if (!raw) return null
+
+    if (typeof raw === 'string') {
+      try {
+        return JSON.parse(raw) as Record<string, unknown>
+      } catch {
+        return { message: raw }
+      }
+    }
+
+    if (typeof raw === 'object') {
+      return raw as Record<string, unknown>
+    }
+
+    return null
+  })()
+
+  const errorHint = (() => {
+    const code = typeof (errorDetails as any)?.code === 'number' ? (errorDetails as any).code : null
+    if (code === 131047) {
+      return 'Janela de 24h fechada (re-engagement). Envie um template e aguarde o usuário responder para reabrir a janela.'
+    }
+    return null
+  })()
   
   // Fallback for legacy messages without real media
   const hasLegacyMediaTag = message.content.match(/\[(image|imagem|audio|áudio|document|documento|documento:[^\]]*)\]/i)
@@ -406,8 +442,42 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
         return <CheckCheck className={`${statusIconClass} text-blue-400`} />
 
       case 'failed':
-        // Red X for failed
-        return <XCircle className={`${statusIconClass} text-red-400`} />
+        // Red X for failed (click to view error details)
+        if (!errorDetails) {
+          return <XCircle className={`${statusIconClass} text-red-400`} />
+        }
+
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex items-center"
+                aria-label="Ver detalhes do erro"
+              >
+                <XCircle className={`${statusIconClass} text-red-400`} />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="max-w-[320px]">
+              <DropdownMenuLabel>Falha no envio</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <div className="px-2 py-1.5 text-xs space-y-1">
+                {typeof (errorDetails as any)?.code === 'number' && (
+                  <div><span className="font-medium">Código:</span> {(errorDetails as any).code}</div>
+                )}
+                {typeof (errorDetails as any)?.title === 'string' && (
+                  <div><span className="font-medium">Título:</span> {(errorDetails as any).title}</div>
+                )}
+                {typeof (errorDetails as any)?.message === 'string' && (
+                  <div><span className="font-medium">Mensagem:</span> {(errorDetails as any).message}</div>
+                )}
+                {errorHint && (
+                  <div className="pt-1 text-erie-black-600">{errorHint}</div>
+                )}
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )
 
       default:
         return null
