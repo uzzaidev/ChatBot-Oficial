@@ -28,6 +28,7 @@ export const LatencyChart = ({ period, clientId }: LatencyChartProps) => {
 
   useEffect(() => {
     fetchLatencyData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [period, clientId])
 
   const fetchLatencyData = async () => {

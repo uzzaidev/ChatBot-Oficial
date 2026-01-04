@@ -81,7 +81,7 @@ export const SendMessageForm = ({
         direction: 'outgoing',
         status: 'sending',
         timestamp: new Date().toISOString(),
-        metadata: null,
+        metadata: { tempId }, // Store tempId for matching later
       }
 
       // Adicionar mensagem otimisticamente à UI
@@ -135,6 +135,7 @@ export const SendMessageForm = ({
             phone,
             content: content.trim(),
             client_id: clientId,
+            tempId, // Send tempId to backend for tracking
           }),
         })
 
@@ -142,10 +143,18 @@ export const SendMessageForm = ({
           const errorData = await response.json()
           throw new Error(errorData.error || 'Erro ao enviar mensagem')
         }
+
+        const responseData = await response.json()
+
+        // Get wamid from response and replace optimistic message
+        if (responseData.data?.messageIds?.[0] && optimisticMessage && onMessageError) {
+          const wamid = responseData.data.messageIds[0]
+          // Remove optimistic message - realtime will add the confirmed one with wamid
+          onMessageError(tempId)
+        }
       }
 
-      // Sucesso - mensagem já está na UI (otimista)
-      // Realtime vai receber a mensagem confirmada do servidor e substituir
+      // Sucesso - mensagem confirmada chegará via realtime com wamid
 
       // Mostrar toast apenas para anexos (texto já apareceu otimisticamente)
       if (attachments.length > 0) {

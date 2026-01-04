@@ -131,10 +131,7 @@ export const ConversationDetail = ({
 
   // Stable callback for handling new messages from realtime
   const handleNewMessage = useCallback((newMessage: Message) => {
-    // Remove optimistic message if exists (replace with real one)
-    setOptimisticMessages(prev => prev.filter(msg => msg.content !== newMessage.content))
-
-    // Add realtime message
+    // Add realtime message (optimistic messages are already removed by SendMessageForm on success)
     setRealtimeMessages(prev => {
       // Check if message already exists in realtime messages
       const exists = prev.some(msg => msg.id === newMessage.id)
@@ -228,11 +225,35 @@ export const ConversationDetail = ({
     }
   }, [toast])
 
+  // Handle message status update from realtime
+  const handleMessageStatusUpdate = useCallback((messageId: string, status: Message['status']) => {
+    // Update status in realtime messages
+    setRealtimeMessages(prev => {
+      return prev.map(msg => {
+        if (msg.id === messageId) {
+          return { ...msg, status }
+        }
+        return msg
+      })
+    })
+
+    // Also update optimistic messages if needed
+    setOptimisticMessages(prev => {
+      return prev.map(msg => {
+        if (msg.id === messageId) {
+          return { ...msg, status }
+        }
+        return msg
+      })
+    })
+  }, [])
+
   // Realtime subscription para novas mensagens (depois do handleNewMessage)
   const { isConnected: realtimeConnected } = useRealtimeMessages({
     clientId,
     phone,
     onNewMessage: handleNewMessage,
+    onMessageUpdate: handleMessageStatusUpdate,
   })
 
   // Expose optimistic callbacks to parent (after declarations)

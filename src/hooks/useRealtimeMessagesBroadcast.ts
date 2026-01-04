@@ -175,8 +175,11 @@ export const useRealtimeMessagesBroadcast = ({
   useEffect(() => {
     if (!clientId || !phone) return
 
+    // Capture ref value for cleanup
+    const processedMessageIds = processedMessageIdsRef.current
+
     // Clear processed message IDs when conversation changes
-    processedMessageIdsRef.current.clear()
+    processedMessageIds.clear()
 
     setupBroadcastSubscription()
 
@@ -190,9 +193,9 @@ export const useRealtimeMessagesBroadcast = ({
         supabase.removeChannel(channelRef.current)
         setIsConnected(false)
       }
-      
-      // Clear processed message IDs on cleanup
-      processedMessageIdsRef.current.clear()
+
+      // Clear processed message IDs on cleanup (use captured value)
+      processedMessageIds.clear()
     }
   }, [clientId, phone, setupBroadcastSubscription])
 

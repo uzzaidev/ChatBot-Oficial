@@ -49,6 +49,7 @@ export const ModelSelector = ({
 
   useEffect(() => {
     fetchModels()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterByCapability])
 
   const fetchModels = async () => {

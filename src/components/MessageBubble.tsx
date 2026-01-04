@@ -1,7 +1,7 @@
 'use client'
 
 import type { Message, StoredMediaMetadata } from '@/lib/types'
-import { FileText, Download, Play, File } from 'lucide-react'
+import { FileText, Download, Play, File, Check, CheckCheck, Clock, XCircle } from 'lucide-react'
 import Image from 'next/image'
 import { useState } from 'react'
 import { MessageActionMenu } from '@/components/MessageActionMenu'
@@ -379,6 +379,41 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
 
   const textContent = getTextContent()
 
+  // Render WhatsApp-style status icon
+  const renderStatusIcon = () => {
+    // Only show status for outgoing messages
+    if (isIncoming) return null
+
+    const statusIconClass = 'h-4 w-4 inline-block ml-1'
+
+    switch (message.status) {
+      case 'pending':
+      case 'queued':
+        // Clock icon for pending
+        return <Clock className={`${statusIconClass} text-white/50`} />
+
+      case 'sending':
+      case 'sent':
+        // Single check for sent
+        return <Check className={`${statusIconClass} text-white/70`} />
+
+      case 'delivered':
+        // Double check for delivered
+        return <CheckCheck className={`${statusIconClass} text-white/70`} />
+
+      case 'read':
+        // Double check in blue for read
+        return <CheckCheck className={`${statusIconClass} text-blue-400`} />
+
+      case 'failed':
+        // Red X for failed
+        return <XCircle className={`${statusIconClass} text-red-400`} />
+
+      default:
+        return null
+    }
+  }
+
   // Handle reaction - uses wamid if available for WhatsApp API
   const handleReaction = async (emoji: string) => {
     if (onReaction) {
@@ -417,8 +452,9 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
         {textContent && (
           <p className="whitespace-pre-wrap text-sm md:text-base">{textContent}</p>
         )}
-        <p className={'text-xs mt-1 ' + (isIncoming ? 'text-erie-black-500' : 'text-white/70')}>
-          {new Date(message.timestamp).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}
+        <p className={'text-xs mt-1 flex items-center gap-1 ' + (isIncoming ? 'text-erie-black-500' : 'text-white/70')}>
+          <span>{new Date(message.timestamp).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>
+          {renderStatusIcon()}
         </p>
       </div>
     </div>

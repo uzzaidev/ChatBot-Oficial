@@ -71,6 +71,7 @@ export default function ValidationPage() {
 
   useEffect(() => {
     fetchValidation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [period]);
 
   const formatCurrency = (value: number, currency: "USD" | "BRL") => {
