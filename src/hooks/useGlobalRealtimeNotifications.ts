@@ -20,7 +20,7 @@ let globalCallback: ((notification: MessageNotification) => void) | null = null;
 /**
  * Hook global para monitorar TODAS as mensagens em tempo real
  * Usado para mostrar notificações em conversas não abertas
- * 
+ *
  * 🔐 Multi-tenant: Requires clientId to ensure tenant isolation
  * When clientId is null, the subscription is not set up (e.g., user not yet authenticated)
  */
@@ -48,7 +48,7 @@ export const useGlobalRealtimeNotifications = ({
   useEffect(() => {
     // 🔐 Multi-tenant: Don't setup subscription without valid clientId
     // Check for both null/undefined and empty string
-    if (!clientId || clientId === '') return;
+    if (!clientId || clientId === "") return;
 
     const supabase = createClientBrowser();
     let channel: RealtimeChannel;
@@ -70,17 +70,48 @@ export const useGlobalRealtimeNotifications = ({
             try {
               const item = payload.new as any;
               const phone = item.session_id;
-              const role = item.role || "user";
               const timestamp = item.created_at || new Date().toISOString();
 
-              let message = "";
-              if (typeof item.message === "string") {
-                message = item.message;
-              } else if (item.message && typeof item.message === "object") {
-                message = JSON.stringify(item.message);
-              }
+              const role: string | null = typeof item.role === "string"
+                ? item.role
+                : null;
 
-              if (phone && role === "user") {
+              const rawMessage = item.message;
+              const parsedMessage = (() => {
+                if (!rawMessage) return null;
+                if (typeof rawMessage === "object") return rawMessage as any;
+                if (typeof rawMessage !== "string") return null;
+
+                try {
+                  return JSON.parse(rawMessage) as any;
+                } catch {
+                  return null;
+                }
+              })();
+
+              const messageType: string | null =
+                typeof parsedMessage?.type === "string"
+                  ? parsedMessage.type
+                  : null;
+
+              const message: string = (() => {
+                if (typeof rawMessage === "string") return rawMessage;
+                if (rawMessage && typeof rawMessage === "object") {
+                  try {
+                    return JSON.stringify(rawMessage);
+                  } catch {
+                    return "";
+                  }
+                }
+                return "";
+              })();
+
+              // Notify only for incoming messages.
+              // - Prefer explicit role from n8n when available
+              // - Otherwise infer from stored JSON message.type ('human' is incoming)
+              const isIncoming = role === "user" || messageType === "human";
+
+              if (phone && isIncoming) {
                 setLastUpdatePhone(phone);
 
                 const notification: MessageNotification = {

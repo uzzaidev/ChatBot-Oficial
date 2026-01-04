@@ -79,13 +79,13 @@ export const useRealtimeMessages = ({
   }, []);
 
   // Helper function to check and mark message as processed
-  const shouldProcessMessage = useCallback((messageId: string): boolean => {
-    if (processedMessageIdsRef.current.has(messageId)) {
+  const shouldProcessMessage = useCallback((dedupeKey: string): boolean => {
+    if (processedMessageIdsRef.current.has(dedupeKey)) {
       return false; // Already processed
     }
 
     // Mark as processed with current timestamp
-    processedMessageIdsRef.current.set(messageId, Date.now());
+    processedMessageIdsRef.current.set(dedupeKey, Date.now());
     return true;
   }, []);
 
@@ -129,8 +129,15 @@ export const useRealtimeMessages = ({
             const messageId = data.id?.toString() ||
               `msg-${data.created_at || Date.now()}`;
 
+            // Prefer dedupe by wamid when present (avoids duplicates across tables)
+            const wamid =
+              typeof data.wamid === "string" && data.wamid.length > 0
+                ? data.wamid
+                : null;
+            const dedupeKey = wamid ? `wamid:${wamid}` : `id:${messageId}`;
+
             // Check if message was already processed (deduplication)
-            if (!shouldProcessMessage(messageId)) {
+            if (!shouldProcessMessage(dedupeKey)) {
               return; // Skip duplicate
             }
 
@@ -150,6 +157,17 @@ export const useRealtimeMessages = ({
             const messageContent = messageData.content || "";
             const cleanedContent = cleanMessageContent(messageContent);
 
+            const metadata: Record<string, unknown> = {};
+            if (wamid) {
+              metadata.wamid = wamid;
+            }
+            if (data.error_details) {
+              metadata.error_details = data.error_details;
+            }
+            if (data.updated_at) {
+              metadata.status_updated_at = data.updated_at;
+            }
+
             const newMessage: Message = {
               id: messageId,
               client_id: clientId,
@@ -161,7 +179,7 @@ export const useRealtimeMessages = ({
               direction: messageType === "human" ? "incoming" : "outgoing",
               status: (data.status || "sent") as Message["status"],
               timestamp: data.created_at || new Date().toISOString(),
-              metadata: null,
+              metadata: Object.keys(metadata).length > 0 ? metadata : null,
             };
 
             if (onNewMessageRef.current) {
@@ -230,8 +248,16 @@ export const useRealtimeMessages = ({
             const messageId = data.id?.toString() ||
               `msg-${data.timestamp || Date.now()}`;
 
+            // Prefer dedupe by wamid when present (avoids duplicates across tables)
+            const wamid =
+              parsedMetadata &&
+                typeof (parsedMetadata as any).wamid === "string"
+                ? String((parsedMetadata as any).wamid)
+                : null;
+            const dedupeKey = wamid ? `wamid:${wamid}` : `id:${messageId}`;
+
             // Check if message was already processed (deduplication)
-            if (!shouldProcessMessage(messageId)) {
+            if (!shouldProcessMessage(dedupeKey)) {
               return; // Skip duplicate
             }
 
@@ -277,6 +303,57 @@ export const useRealtimeMessages = ({
               onNewMessageRef.current(newMessage);
             }
           } catch (error) {
+          }
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "messages",
+          filter: `client_id=eq.${clientId}`,
+        },
+        (payload) => {
+          try {
+            const data = payload.new as any;
+
+            if (!data || data.phone !== phone) return;
+            if (!data.status) return;
+
+            const messageId = data.id?.toString();
+            if (!messageId) return;
+
+            let parsedMetadata: Record<string, unknown> | null = null;
+            if (data.metadata) {
+              if (typeof data.metadata === "string") {
+                try {
+                  parsedMetadata = JSON.parse(data.metadata);
+                } catch {
+                  parsedMetadata = null;
+                }
+              } else if (typeof data.metadata === "object") {
+                parsedMetadata = data.metadata as Record<string, unknown>;
+              }
+            }
+
+            const errorDetails = parsedMetadata
+              ? (parsedMetadata as any).error_details
+              : undefined;
+            const statusUpdatedAt = parsedMetadata
+              ? (parsedMetadata as any).status_updated_at
+              : undefined;
+
+            if (onMessageUpdateRef.current) {
+              onMessageUpdateRef.current({
+                messageId,
+                status: data.status,
+                errorDetails,
+                statusUpdatedAt,
+              });
+            }
+          } catch (error) {
+            // Silent fail for status updates
           }
         },
       )

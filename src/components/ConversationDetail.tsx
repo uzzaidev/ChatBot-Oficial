@@ -29,6 +29,7 @@ export const ConversationDetail = ({
   onMarkAsRead,
 }: ConversationDetailProps) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const sentDebounceTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map())
   const [realtimeMessages, setRealtimeMessages] = useState<Message[]>([])
   const [optimisticMessages, setOptimisticMessages] = useState<Message[]>([])
   const [deletedMessageIds, setDeletedMessageIds] = useState<Set<string>>(new Set())
@@ -79,21 +80,156 @@ export const ConversationDetail = ({
     setNewMessagesCount(0)
     shouldScrollRef.current = true
     lastFetchedIdsRef.current.clear()
+
+    // Clear any pending sent-debounce timers
+    sentDebounceTimersRef.current.forEach(timeout => clearTimeout(timeout))
+    sentDebounceTimersRef.current.clear()
   }, [phone])
+
+  const statusRank = useCallback((status: Message['status']): number => {
+    const ranks: Record<string, number> = {
+      pending: 0,
+      queued: 0,
+      sending: 0,
+      sent: 1,
+      delivered: 2,
+      read: 3,
+      failed: 4,
+    }
+    return ranks[status] ?? 0
+  }, [])
+
+  const commitStatusUpdate = useCallback((update: {
+    messageId: string
+    status: Message['status']
+    errorDetails?: unknown
+    statusUpdatedAt?: string
+  }) => {
+    const { messageId, status, errorDetails, statusUpdatedAt } = update
+
+    setStatusUpdates(prev => {
+      const current = prev[messageId]
+      const currentRank = current ? statusRank(current.status) : -1
+      const nextRank = statusRank(status)
+      if (current && nextRank < currentRank) {
+        return prev
+      }
+
+      return {
+        ...prev,
+        [messageId]: { status, errorDetails, statusUpdatedAt },
+      }
+    })
+
+    const mergeMeta = (msg: Message): Message => {
+      const currentRank = statusRank(msg.status)
+      const nextRank = statusRank(status)
+      if (nextRank < currentRank) return msg
+
+      const baseMeta = msg.metadata && typeof msg.metadata === 'object'
+        ? msg.metadata as Record<string, unknown>
+        : {}
+      const mergedMeta: Record<string, unknown> = {
+        ...baseMeta,
+        ...(errorDetails ? { error_details: errorDetails } : {}),
+        ...(statusUpdatedAt ? { status_updated_at: statusUpdatedAt } : {}),
+      }
+
+      return {
+        ...msg,
+        status,
+        metadata: Object.keys(mergedMeta).length > 0 ? mergedMeta : null,
+      }
+    }
+
+    setRealtimeMessages(prev => prev.map(msg => (msg.id === messageId ? mergeMeta(msg) : msg)))
+    setOptimisticMessages(prev => prev.map(msg => (msg.id === messageId ? mergeMeta(msg) : msg)))
+  }, [statusRank])
+
+  const applyStatusUpdate = useCallback((update: {
+    messageId: string
+    status: Message['status']
+    errorDetails?: unknown
+    statusUpdatedAt?: string
+  }) => {
+    const { messageId, status } = update
+
+    // Cancel any pending sent-debounce if a stronger status arrives
+    const existingTimer = sentDebounceTimersRef.current.get(messageId)
+    const cancelSentDebounce = existingTimer
+      ? () => {
+        clearTimeout(existingTimer)
+        sentDebounceTimersRef.current.delete(messageId)
+      }
+      : null
+
+    if (status !== 'sent') {
+      if (cancelSentDebounce) cancelSentDebounce()
+      commitStatusUpdate(update)
+      return
+    }
+
+    // Debounce 'sent' so quick failures don't briefly show ✓
+    if (sentDebounceTimersRef.current.has(messageId)) {
+      return
+    }
+
+    const SENT_DEBOUNCE_MS = 1200
+    const timeout = setTimeout(() => {
+      sentDebounceTimersRef.current.delete(messageId)
+      commitStatusUpdate(update)
+    }, SENT_DEBOUNCE_MS)
+
+    sentDebounceTimersRef.current.set(messageId, timeout)
+  }, [commitStatusUpdate])
 
   // Combine fetched + realtime + optimistic messages, removing duplicates and deleted messages
   const messages = useMemo(() => {
     const allMessages = [...fetchedMessages, ...realtimeMessages, ...optimisticMessages]
 
     // Remove duplicates based on message ID and filter out deleted messages
-    const uniqueMessages = allMessages.reduce((acc, message) => {
-      const exists = acc.some(m => m.id === message.id)
+    const getWamid = (msg: Message): string | null => {
+      if (!msg.metadata || typeof msg.metadata !== 'object') return null
+      const raw = (msg.metadata as Record<string, unknown>).wamid
+      return typeof raw === 'string' && raw.length > 0 ? raw : null
+    }
+
+    const preferMessage = (current: Message, next: Message): Message => {
+      // Prefer interactive rendering if either is interactive
+      if (current.type !== 'interactive' && next.type === 'interactive') return next
+      if (current.type === 'interactive' && next.type !== 'interactive') return current
+
+      // Prefer the one with richer metadata (wamid/error details/media)
+      const currentMetaSize = current.metadata && typeof current.metadata === 'object'
+        ? Object.keys(current.metadata as Record<string, unknown>).length
+        : 0
+      const nextMetaSize = next.metadata && typeof next.metadata === 'object'
+        ? Object.keys(next.metadata as Record<string, unknown>).length
+        : 0
+      if (nextMetaSize > currentMetaSize) return next
+
+      // Default: keep current
+      return current
+    }
+
+    const byKey = new Map<string, Message>()
+    for (const message of allMessages) {
       const isDeleted = deletedMessageIds.has(message.id)
-      if (!exists && !isDeleted) {
-        acc.push(message)
+      if (isDeleted) continue
+
+      const wamid = getWamid(message)
+      const key = wamid ? `wamid:${wamid}` : `id:${message.id}`
+
+      const existing = byKey.get(key)
+      if (!existing) {
+        byKey.set(key, message)
+        continue
       }
-      return acc
-    }, [] as Message[])
+
+      byKey.set(key, preferMessage(existing, message))
+    }
+
+    const uniqueMessages = Array.from(byKey.values())
 
     // Sort by timestamp
     uniqueMessages.sort((a, b) =>
@@ -175,10 +311,14 @@ export const ConversationDetail = ({
         const newTs = new Date(newMessage.timestamp).getTime()
         const MAX_SKEW_MS = 30_000
 
-        let removedOne = false
-        return prev.filter(m => {
-          if (removedOne) return true
-          if (m.direction !== 'outgoing') return true
+        const reduced = prev.reduce((acc, m) => {
+          if (acc.removedOne) {
+            return { ...acc, kept: [...acc.kept, m] }
+          }
+
+          if (m.direction !== 'outgoing') {
+            return { ...acc, kept: [...acc.kept, m] }
+          }
 
           const normalizedOld = (m.content || '').trim()
           const oldTs = new Date(m.timestamp).getTime()
@@ -186,16 +326,20 @@ export const ConversationDetail = ({
           const sameContent = normalizedOld.length > 0 && normalizedOld === normalizedNew
 
           if (closeInTime && sameContent) {
-            removedOne = true
-            return false
+            return { ...acc, removedOne: true }
           }
 
-          return true
-        })
+          return { ...acc, kept: [...acc.kept, m] }
+        }, { kept: [] as Message[], removedOne: false })
+
+        return reduced.kept
       })
     }
 
-    // Add realtime message
+    // Add realtime message (hold 'sent' briefly to avoid ✓ flash before ❌)
+    const shouldHoldSent = newMessage.direction === 'outgoing' && newMessage.status === 'sent'
+    const stagedMessage = shouldHoldSent ? { ...newMessage, status: 'pending' as const } : newMessage
+
     setRealtimeMessages(prev => {
       // Check if message already exists in realtime messages
       const exists = prev.some(msg => msg.id === newMessage.id)
@@ -203,8 +347,15 @@ export const ConversationDetail = ({
         return prev
       }
 
-      return [...prev, newMessage]
+      return [...prev, stagedMessage]
     })
+
+    if (shouldHoldSent) {
+      applyStatusUpdate({
+        messageId: newMessage.id,
+        status: 'sent',
+      })
+    }
 
     // Marcar conversa como lida (já que está visualizando)
     if (onMarkAsRead) {
@@ -219,7 +370,7 @@ export const ConversationDetail = ({
       // Se não está no fim, incrementa contador (badge UI handles notification)
       setNewMessagesCount(prev => prev + 1)
     }
-  }, [checkIfUserAtBottom, onMarkAsRead, phone])
+  }, [applyStatusUpdate, checkIfUserAtBottom, onMarkAsRead, phone])
 
   // Handle message reaction via WhatsApp API
   const handleReaction = useCallback(async (messageId: string, emoji: string) => {
@@ -299,52 +450,8 @@ export const ConversationDetail = ({
     const { messageId, status, errorDetails, statusUpdatedAt } = update
     console.log('📊 Status update received:', { messageId, status })
 
-    // Persist the status update so it applies even after realtimeMessages cleanup
-    setStatusUpdates(prev => ({
-      ...prev,
-      [messageId]: { status, errorDetails, statusUpdatedAt },
-    }))
-
-    // Update status in realtime messages
-    setRealtimeMessages(prev => {
-      const updated = prev.map(msg => {
-        if (msg.id === messageId) {
-          console.log('✅ Updated realtime message:', msg.id)
-          const baseMeta = msg.metadata && typeof msg.metadata === 'object'
-            ? msg.metadata as Record<string, unknown>
-            : {}
-          const mergedMeta: Record<string, unknown> = {
-            ...baseMeta,
-            ...(errorDetails ? { error_details: errorDetails } : {}),
-            ...(statusUpdatedAt ? { status_updated_at: statusUpdatedAt } : {}),
-          }
-          return { ...msg, status, metadata: Object.keys(mergedMeta).length > 0 ? mergedMeta : null }
-        }
-        return msg
-      })
-      return updated
-    })
-
-    // Also update optimistic messages if needed
-    setOptimisticMessages(prev => {
-      const updated = prev.map(msg => {
-        if (msg.id === messageId) {
-          console.log('✅ Updated optimistic message:', msg.id)
-          const baseMeta = msg.metadata && typeof msg.metadata === 'object'
-            ? msg.metadata as Record<string, unknown>
-            : {}
-          const mergedMeta: Record<string, unknown> = {
-            ...baseMeta,
-            ...(errorDetails ? { error_details: errorDetails } : {}),
-            ...(statusUpdatedAt ? { status_updated_at: statusUpdatedAt } : {}),
-          }
-          return { ...msg, status, metadata: Object.keys(mergedMeta).length > 0 ? mergedMeta : null }
-        }
-        return msg
-      })
-      return updated
-    })
-  }, [])
+    applyStatusUpdate({ messageId, status, errorDetails, statusUpdatedAt })
+  }, [applyStatusUpdate])
 
   // Realtime subscription para novas mensagens (depois do handleNewMessage)
   const { isConnected: realtimeConnected } = useRealtimeMessages({

@@ -36,9 +36,9 @@ export const updateMessageStatus = async (
   try {
     console.log("🔄 Updating message status:", { wamid, status, clientId });
 
-    // Update status in n8n_chat_histories
+    // 1) Update status in n8n_chat_histories (legacy chat store)
     // Note: We filter by both wamid AND client_id for multi-tenant isolation
-    const result = await query(
+    const historiesResult = await query(
       `UPDATE n8n_chat_histories
        SET status = $1,
            error_details = $2,
@@ -54,53 +54,94 @@ export const updateMessageStatus = async (
       ],
     );
 
-    if (result.rows.length === 0) {
-      console.warn(
-        `⚠️ Message with wamid ${wamid} not found for client ${clientId}`,
-      );
-
-      // Debug: Let's check if the message exists at all (possibly different tenant)
-      const checkResult = await query(
-        `SELECT id, wamid, status, client_id, session_id
-         FROM n8n_chat_histories
-         WHERE wamid = $1
-         LIMIT 1`,
-        [wamid],
-      );
-
-      const existingRow = checkResult.rows.length > 0
-        ? (checkResult.rows[0] as UpdateMessageStatusResult["existingRow"])
-        : undefined;
-
-      if (existingRow) {
-        console.warn(
-          "⚠️ Message exists but with different client_id:",
-          existingRow,
-        );
-      } else {
-        console.warn("⚠️ Message does not exist in database");
-      }
+    if (historiesResult.rows.length > 0) {
+      console.log(`✅ Updated message status (n8n_chat_histories):`, {
+        id: historiesResult.rows[0].id,
+        wamid,
+        status,
+        session_id: historiesResult.rows[0].session_id,
+      });
 
       return {
-        updated: false,
-        existingRow,
+        updated: true,
+        updatedRow: {
+          id: String(historiesResult.rows[0].id),
+          session_id: String(historiesResult.rows[0].session_id),
+          status: String(historiesResult.rows[0].status),
+        },
       };
     }
 
-    console.log(`✅ Updated message status:`, {
-      id: result.rows[0].id,
-      wamid,
-      status,
-      session_id: result.rows[0].session_id,
-    });
+    // 2) Fallback: Update status in messages table (used by interactive flows)
+    // The flow stores Meta messageId (wamid.*) in messages.metadata.wamid
+    const messagesResult = await query(
+      `UPDATE messages
+       SET status = $1,
+           metadata = (
+             COALESCE(metadata, '{}'::jsonb)
+             || jsonb_build_object(
+               'error_details', $2::jsonb,
+               'status_updated_at', NOW()
+             )
+           )
+       WHERE client_id = $3
+         AND metadata->>'wamid' = $4
+       RETURNING id, phone, status`,
+      [
+        status,
+        errorDetails ? JSON.stringify(errorDetails) : null,
+        clientId,
+        wamid,
+      ],
+    );
+
+    if (messagesResult.rows.length > 0) {
+      console.log(`✅ Updated message status (messages):`, {
+        id: messagesResult.rows[0].id,
+        wamid,
+        status,
+        phone: messagesResult.rows[0].phone,
+      });
+
+      return {
+        updated: true,
+        updatedRow: {
+          id: String(messagesResult.rows[0].id),
+          session_id: String(messagesResult.rows[0].phone),
+          status: String(messagesResult.rows[0].status),
+        },
+      };
+    }
+
+    console.warn(
+      `⚠️ Message with wamid ${wamid} not found for client ${clientId} in n8n_chat_histories or messages`,
+    );
+
+    // Debug: Let's check if the message exists at all (possibly different tenant)
+    const checkResult = await query(
+      `SELECT id, wamid, status, client_id, session_id
+       FROM n8n_chat_histories
+       WHERE wamid = $1
+       LIMIT 1`,
+      [wamid],
+    );
+
+    const existingRow = checkResult.rows.length > 0
+      ? (checkResult.rows[0] as UpdateMessageStatusResult["existingRow"])
+      : undefined;
+
+    if (existingRow) {
+      console.warn(
+        "⚠️ Message exists but with different client_id:",
+        existingRow,
+      );
+    } else {
+      console.warn("⚠️ Message does not exist in database");
+    }
 
     return {
-      updated: true,
-      updatedRow: {
-        id: String(result.rows[0].id),
-        session_id: String(result.rows[0].session_id),
-        status: String(result.rows[0].status),
-      },
+      updated: false,
+      existingRow,
     };
   } catch (error) {
     console.error(`❌ Failed to update message status:`, error);

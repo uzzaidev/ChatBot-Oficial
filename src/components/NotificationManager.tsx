@@ -106,6 +106,12 @@ export function NotificationManager({ enabled = true }: NotificationManagerProps
 
   // Callback quando nova mensagem chega - usar refs para evitar dependências instáveis
   const handleNewMessage = useCallback(async (notification: MessageNotification) => {
+    const normalizePhone = (value: string | null | undefined) => {
+      if (!value) return null
+      const digits = value.replace(/\D/g, '')
+      return digits.replace(/^55/, '')
+    }
+
     // 🔐 Multi-tenant: Skip if no clientId available
     const currentClientId = clientIdRef.current
     if (!currentClientId) {
@@ -115,9 +121,25 @@ export function NotificationManager({ enabled = true }: NotificationManagerProps
     const currentPathname = pathnameRef.current
     const currentPhone = currentPathname?.includes('/conversations/') 
       ? currentPathname.split('/conversations/')[1]?.split('?')[0]
-      : null
+      : (currentPathname?.includes('/dashboard/chat') && typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search).get('phone')
+        : null)
 
-    if (currentPhone !== notification.phone) {
+    const normalizedCurrentPhone = normalizePhone(currentPhone)
+    const normalizedNotificationPhone = normalizePhone(notification.phone)
+
+    // Extra safety: only notify for incoming (human) messages.
+    // `notification.message` is typically the JSON stored in n8n_chat_histories.
+    try {
+      const parsed = JSON.parse(notification.message)
+      if (parsed?.type && parsed.type !== 'human') {
+        return
+      }
+    } catch {
+      // If it isn't JSON, keep going (fallback)
+    }
+
+    if (normalizedCurrentPhone !== normalizedNotificationPhone) {
       // Buscar nome do cliente diretamente do banco
       let clientName = notification.phone
       
@@ -186,20 +208,13 @@ export function NotificationManager({ enabled = true }: NotificationManagerProps
         body: `Mensagem: ${truncatedMessage}`,
         tag: `message-${notification.phone}`,
         requireInteraction: false,
-        silent: false, // Garantir que não seja silencioso
+        // Always silent to avoid "sound without notification" behavior on some systems.
+        // If we want sound, it should be explicitly handled in-app.
+        silent: true,
         data: {
           url: `/conversations/${notification.phone}`,
         },
       })
-      
-      // Tocar som manualmente como fallback
-      try {
-        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZSA0PVqzn77BdGAg+ltryxnMpBSp9y/DajzsIGGS57OihUBELTKXh8bllHAU2jdXzzn0vBSp9y/DajzsIGGS57OihUBELTKXh8bllHAU2jdXzzn0vBSp9y/DajzsIGGS57OihUBELTKXh8bllHAU2jdXzzn0vBSp9y/DajzsIGGS57OihUBELTKXh8bllHAU2jdXzzn0vBSp9y/DajzsIGGS57OihUBELTKXh8bllHAU2jdXzzn0vBSp9y/DajzsIGGS57OihUBELTKXh8bllHAU2jdXzzn0vBSp9y/DajzsIGGS57OihUBELTKXh8bllHAU2jdXzzn0vBSp9y/DajzsI')
-        audio.volume = 0.3
-        audio.play().catch(() => {})
-      } catch {
-        // Silenciosamente ignora erro de som
-      }
     }
   }, []) // SEM dependências - usar refs
 

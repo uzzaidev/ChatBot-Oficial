@@ -78,15 +78,15 @@ export async function POST(request: NextRequest) {
 
     const duration = Date.now() - startTime;
 
-    // Salvar no histórico com wamid + status 'sent'
-    // (Meta já retornou messageId, então a mensagem foi aceita pelo WhatsApp)
+    // Salvar no histórico com wamid + status 'pending'
+    // A confirmação de 'sent/delivered/read/failed' vem via webhook de status da Meta.
     await saveChatMessage({
       phone,
       message: content,
       type: "ai", // TODO: Mudar para 'atendente' no futuro
       clientId: config.id, // 🔐 Multi-tenant: Associa mensagem ao cliente
       wamid: messageIds?.[0] || undefined,
-      status: "sent",
+      status: "pending",
     });
 
     const totalDuration = Date.now() - startTime;
