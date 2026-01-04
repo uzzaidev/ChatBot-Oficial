@@ -12,9 +12,25 @@ export interface UpdateMessageStatusInput {
   clientId: string;
 }
 
+export interface UpdateMessageStatusResult {
+  updated: boolean;
+  updatedRow?: {
+    id: string;
+    session_id: string;
+    status: string;
+  };
+  existingRow?: {
+    id: string;
+    wamid: string;
+    status: string | null;
+    client_id: string | null;
+    session_id: string | null;
+  };
+}
+
 export const updateMessageStatus = async (
   input: UpdateMessageStatusInput,
-): Promise<boolean> => {
+): Promise<UpdateMessageStatusResult> => {
   const { wamid, status, errorDetails, clientId } = input;
 
   try {
@@ -43,7 +59,7 @@ export const updateMessageStatus = async (
         `⚠️ Message with wamid ${wamid} not found for client ${clientId}`,
       );
 
-      // Debug: Let's check if the message exists at all
+      // Debug: Let's check if the message exists at all (possibly different tenant)
       const checkResult = await query(
         `SELECT id, wamid, status, client_id, session_id
          FROM n8n_chat_histories
@@ -52,26 +68,37 @@ export const updateMessageStatus = async (
         [wamid],
       );
 
-      if (checkResult.rows.length > 0) {
-        console.warn(
-          "⚠️ Message exists but with different client_id:",
-          checkResult.rows[0],
-        );
+      const existingRow = checkResult.rows.length > 0
+        ? (checkResult.rows[0] as UpdateMessageStatusResult["existingRow"])
+        : undefined;
+
+      if (existingRow) {
+        console.warn("⚠️ Message exists but with different client_id:", existingRow);
       } else {
         console.warn("⚠️ Message does not exist in database");
       }
 
-      return false;
-    } else {
-      console.log(`✅ Updated message status:`, {
-        id: result.rows[0].id,
-        wamid,
-        status,
-        session_id: result.rows[0].session_id,
-      });
-
-      return true;
+      return {
+        updated: false,
+        existingRow,
+      };
     }
+
+    console.log(`✅ Updated message status:`, {
+      id: result.rows[0].id,
+      wamid,
+      status,
+      session_id: result.rows[0].session_id,
+    });
+
+    return {
+      updated: true,
+      updatedRow: {
+        id: String(result.rows[0].id),
+        session_id: String(result.rows[0].session_id),
+        status: String(result.rows[0].status),
+      },
+    };
   } catch (error) {
     console.error(`❌ Failed to update message status:`, error);
     throw new Error(
@@ -113,16 +140,19 @@ export const processStatusUpdate = async (
     ? errors[0]
     : undefined;
 
-  const updated = await updateMessageStatus({
+  const result = await updateMessageStatus({
     wamid,
     status,
     errorDetails,
     clientId,
   });
 
-  if (!updated) {
+  if (!result.updated) {
+    const existing = result.existingRow
+      ? ` existingRow=${JSON.stringify(result.existingRow)}`
+      : "";
     throw new Error(
-      `Status update could not be applied (message not found for wamid=${wamid})`,
+      `Status update could not be applied (message not found for wamid=${wamid}, clientId=${clientId}).${existing}`,
     );
   }
 };
