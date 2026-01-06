@@ -1191,19 +1191,6 @@ export const processChatbotMessage = async (
       return { success: true, messagesSent: 0 };
     }
 
-    // NODE 12.7: Save AI Message
-    logger.logNodeStart("12.7. Save AI Message", {
-      phone: parsedMessage.phone,
-      contentLength: aiResponse.content.length,
-    });
-    await saveChatMessage({
-      phone: parsedMessage.phone,
-      message: aiResponse.content,
-      type: "ai",
-      clientId: config.id, // 🔐 Multi-tenant: Associa mensagem ao cliente
-    });
-    logger.logNodeSuccess("12.7. Save AI Message", { saved: true });
-
     // NODE 13: Format Response (configurável)
     logger.logNodeStart("13. Format Response", {
       contentLength: aiResponse.content.length,
@@ -1245,8 +1232,9 @@ export const processChatbotMessage = async (
       sentCount: messageIds.length,
     });
 
-    // NODE 14.5: Update messages with wamid and change status to 'sent'
-    logger.logNodeStart("14.5. Update Message Status", {
+    // NODE 14.5: Save AI messages with wamid
+    // ✅ FIX: Save AFTER sending, with correct formatted content and wamid
+    logger.logNodeStart("14.5. Save AI Messages with WAMID", {
       messageCount: messageIds.length,
     });
     for (let i = 0; i < messageIds.length; i++) {
@@ -1254,19 +1242,21 @@ export const processChatbotMessage = async (
       const messageContent = formattedMessages[i];
 
       try {
-        await updateMessageWithWamid({
+        await saveChatMessage({
           phone: parsedMessage.phone,
+          message: messageContent, // ✅ Save formatted content (what was actually sent)
+          type: "ai",
           clientId: config.id,
-          messageContent,
-          wamid,
+          wamid, // ✅ Save with wamid immediately
+          status: "sent", // ✅ Mark as sent (message already went through WhatsApp API)
         });
-      } catch (updateError) {
-        console.error(`Failed to update message with wamid ${wamid}:`, updateError);
-        // Don't fail the flow - this is a non-critical update
+      } catch (saveError) {
+        console.error(`Failed to save message with wamid ${wamid}:`, saveError);
+        // Don't fail the flow - this is a non-critical save
       }
     }
-    logger.logNodeSuccess("14.5. Update Message Status", {
-      updated: messageIds.length,
+    logger.logNodeSuccess("14.5. Save AI Messages with WAMID", {
+      saved: messageIds.length,
     });
 
     logger.finishExecution("success");
