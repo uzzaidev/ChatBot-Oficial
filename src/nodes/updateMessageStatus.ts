@@ -192,11 +192,25 @@ export const processStatusUpdate = async (
   });
 
   if (!result.updated) {
+    // ✨ GRACEFUL HANDLING: Status updates are not critical
+    // If message doesn't exist, it could be:
+    // 1. Race condition (status arrived before message was saved)
+    // 2. Old message (before wamid tracking was implemented)
+    // 3. Test/simulation message (not saved in database)
+    //
+    // Instead of throwing error (which breaks webhook), just log warning
     const existing = result.existingRow
       ? ` existingRow=${JSON.stringify(result.existingRow)}`
       : "";
-    throw new Error(
-      `Status update could not be applied (message not found for wamid=${wamid}, clientId=${clientId}).${existing}`,
+
+    console.warn(
+      `⚠️ Status update ignored (message not found): wamid=${wamid}, status=${status}, clientId=${clientId}.${existing}`,
     );
+
+    // ✅ Return successfully - status updates are non-critical
+    // Frontend will handle missing status gracefully
+    return;
   }
+
+  console.log(`✅ Status update processed successfully: wamid=${wamid}, status=${status}`);
 };
