@@ -186,13 +186,22 @@ Top 5 chunks injected into AI prompt
 - ✅ Multi-tenant usage tracking (`gateway_usage_logs`)
 - ✅ Cache grátis (70% economia em requests repetidos)
 - ✅ Fallback automático entre providers
+- ✅ **Fallback para credenciais do cliente** (se Gateway falhar)
 - ✅ ZERO markup sobre preços dos providers
+
+**Fallback Strategy (Auto-Resilience):**
+1. **Try AI Gateway first** (if enabled and configured)
+2. **If Gateway fails** (no credits, API down, etc.) → **Automatically fallback to OpenAI** using client's Vault credentials
+3. **Always uses OpenAI for fallback** (most stable and reliable provider)
+4. **Logs track fallback** (reason, provider, latency) in `gateway_usage_logs`
+5. **Zero downtime** - Users never see errors due to Gateway issues
 
 **Setup (5 minutos):**
 1. Get keys: OpenAI (`sk-proj-...`), Groq (`gsk_...`)
 2. Configure: http://localhost:3000/dashboard/ai-gateway/setup
 3. Test: `curl http://localhost:3000/api/test/gateway`
 4. Enable for client: `UPDATE clients SET use_ai_gateway = true WHERE id = '...'`
+5. **Test fallback:** `curl "http://localhost:3000/api/test/ai-fallback?clientId=YOUR_UUID"`
 
 **Key Files:**
 - `src/lib/ai-gateway/index.ts` - Main interface (`callAI()`)

@@ -137,6 +137,10 @@ const logToolsDebug = (tools: AICallConfig["tools"] | undefined) => {
 /**
  * Main abstraction layer for AI calls
  * Routes to gateway or direct SDK based on configuration
+ *
+ * ✨ FALLBACK STRATEGY:
+ * 1. Try AI Gateway first (if enabled)
+ * 2. If Gateway fails → Fallback to client's Vault credentials
  */
 export const callAI = async (config: AICallConfig): Promise<AIResponse> => {
   const startTime = Date.now();
@@ -146,21 +150,29 @@ export const callAI = async (config: AICallConfig): Promise<AIResponse> => {
     const useGateway = await shouldUseGateway(config.clientId);
 
     if (useGateway) {
-      // Get SHARED gateway configuration
-      const gatewayConfig = await getSharedGatewayConfig();
+      console.log("[AI Gateway] Attempting to use AI Gateway...");
 
-      if (!gatewayConfig) {
-        throw new Error(
-          "AI Gateway is enabled for this environment/client, but the shared gateway configuration was not found or is not accessible. " +
-            "Ensure the production database has exactly one row in shared_gateway_config, the Vault RPC functions are deployed, and " +
-            "the server has SUPABASE_SERVICE_ROLE_KEY configured.",
-        );
+      try {
+        // Get SHARED gateway configuration
+        const gatewayConfig = await getSharedGatewayConfig();
+
+        if (!gatewayConfig) {
+          console.warn("[AI Gateway] Gateway config not found, falling back to client credentials");
+          return await callAIDirectly(config, startTime, "Gateway config not found");
+        }
+
+        // Route through AI Gateway
+        return await callAIViaGateway(config, gatewayConfig, startTime);
+      } catch (gatewayError) {
+        // ✨ FALLBACK: If Gateway fails, use client's Vault credentials
+        const errorMsg = gatewayError instanceof Error ? gatewayError.message : String(gatewayError);
+        console.error("[AI Gateway] Gateway failed, falling back to client credentials:", errorMsg);
+
+        return await callAIDirectly(config, startTime, errorMsg);
       }
-
-      // Route through AI Gateway
-      return await callAIViaGateway(config, gatewayConfig, startTime);
     } else {
-      // Route through direct SDK (legacy path)
+      // Route through direct SDK (Gateway disabled)
+      console.log("[AI Gateway] Gateway disabled, using client credentials");
       return await callAIDirectly(config, startTime);
     }
   } catch (error) {
@@ -344,17 +356,158 @@ const callAIViaGateway = async (
 // This simplifies our code and leverages Vercel's intelligent routing
 
 // =====================================================
-// DIRECT SDK PATH (Legacy)
+// DIRECT SDK PATH (Fallback)
 // =====================================================
 
 const callAIDirectly = async (
   config: AICallConfig,
   startTime: number,
+  fallbackReason?: string,
 ): Promise<AIResponse> => {
-  // Legacy path disabled - use original generateAIResponse.ts instead
-  throw new Error(
-    "AI Gateway is disabled for this environment/client. Enable ENABLE_AI_GATEWAY=true and enable use_ai_gateway for the client.",
-  );
+  console.log("[AI Gateway][Fallback] Using client Vault credentials", {
+    clientId: config.clientId,
+    clientName: config.clientConfig.name,
+    primaryProvider: config.clientConfig.primaryModelProvider,
+    fallbackReason,
+  });
+
+  const { messages, tools, settings = {} } = config;
+  const normalizedTools = normalizeToolsForAISDK(tools);
+
+  // ✨ ALWAYS use OpenAI for fallback (more stable and reliable)
+  const provider = "openai";
+  const model = config.clientConfig.openaiModel || "gpt-4o-mini";
+
+  console.log("[AI Gateway][Fallback] Using OpenAI as fallback provider", {
+    primaryProvider: config.clientConfig.primaryModelProvider,
+    fallbackProvider: provider,
+    fallbackModel: model,
+  });
+
+  // Import OpenAI SDK (always use OpenAI for fallback)
+  const { createOpenAI } = await import("@ai-sdk/openai");
+
+  // ✨ Get OpenAI API key from client's Vault credentials
+  const { getClientConfig } = await import("../config");
+  const fullClientConfig = await getClientConfig(config.clientId);
+
+  if (!fullClientConfig) {
+    throw new Error(
+      `[Fallback] Could not retrieve client config from Vault for client: ${config.clientId}`,
+    );
+  }
+
+  const apiKey = fullClientConfig.apiKeys.openaiApiKey;
+
+  if (!apiKey) {
+    throw new Error(
+      `[Fallback] No OpenAI API key found in Vault for client ${config.clientId}. ` +
+      `Please configure in Settings: /dashboard/settings`,
+    );
+  }
+
+  console.log("[AI Gateway][Fallback] Using OpenAI API key from Vault", {
+    provider,
+    hasKey: !!apiKey,
+    keyPrefix: apiKey.substring(0, 10) + "...",
+  });
+
+  // Create OpenAI provider instance and model
+  const openaiProvider = createOpenAI({ apiKey });
+  const modelInstance = openaiProvider(model);
+
+  logToolsDebug(normalizedTools);
+
+  // Generate response using direct SDK
+  // Note: Only include parameters that are defined
+  const generateParams: any = {
+    model: modelInstance,
+    messages,
+    tools: normalizedTools,
+  };
+
+  // Add optional parameters only if they are defined
+  if (settings.temperature !== undefined) {
+    generateParams.temperature = settings.temperature;
+  }
+  if (settings.topP !== undefined) {
+    generateParams.topP = settings.topP;
+  }
+  if (settings.frequencyPenalty !== undefined) {
+    generateParams.frequencyPenalty = settings.frequencyPenalty;
+  }
+  if (settings.presencePenalty !== undefined) {
+    generateParams.presencePenalty = settings.presencePenalty;
+  }
+
+  const result = await generateText(generateParams);
+
+  const latencyMs = Date.now() - startTime;
+
+  const usage = result.usage as any;
+  const normalizedToolCalls = normalizeToolCalls((result as any).toolCalls);
+
+  // Handle token counting
+  const promptTokens = usage.promptTokens || 0;
+  const completionTokens = usage.completionTokens || 0;
+  const totalTokens = usage.totalTokens || (promptTokens + completionTokens);
+
+  const response: AIResponse = {
+    text: result.text,
+    toolCalls: normalizedToolCalls,
+    usage: {
+      promptTokens,
+      completionTokens,
+      totalTokens,
+      cachedTokens: 0, // Direct SDK doesn't use cache
+    },
+    model,
+    provider,
+    wasCached: false,
+    wasFallback: !!fallbackReason, // Mark as fallback if reason provided
+    fallbackReason,
+    primaryAttemptedProvider: fallbackReason ? "vercel-gateway" : provider,
+    primaryAttemptedModel: fallbackReason ? "gateway" : model,
+    fallbackUsedProvider: fallbackReason ? provider : undefined,
+    fallbackUsedModel: fallbackReason ? model : undefined,
+    latencyMs,
+    finishReason: result.finishReason,
+  };
+
+  // ✅ Log usage to database (async, don't block response)
+  if (!config.skipUsageLogging) {
+    logGatewayUsage({
+      clientId: config.clientId,
+      conversationId: config.conversationId,
+      phone: config.phone || "fallback-call",
+      provider: provider,
+      modelName: model,
+      inputTokens: promptTokens,
+      outputTokens: completionTokens,
+      cachedTokens: 0,
+      latencyMs: response.latencyMs,
+      wasCached: false,
+      wasFallback: !!fallbackReason,
+      requestId: response.requestId,
+      metadata: {
+        source: "direct-sdk-fallback",
+        fallbackReason: fallbackReason || "gateway-disabled",
+      },
+    }).catch((error) => {
+      console.error("[AI Gateway][Fallback] Failed to log usage:", error);
+    });
+  }
+
+  console.log("[AI Gateway][Fallback] Response generated successfully", {
+    provider,
+    model,
+    wasFallback: !!fallbackReason,
+    promptTokens,
+    completionTokens,
+    latencyMs,
+  });
+
+  return response;
 };
 
 // =====================================================
