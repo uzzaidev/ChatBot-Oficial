@@ -1496,120 +1496,118 @@ export default function SettingsPage() {
               </p>
             </div>
 
-            {/* Modo de Chaves de IA */}
-            <div>
-              <Label>Modo de chaves de IA</Label>
-              <div className="mt-2">
-                <Select
-                  value={aiKeysMode}
-                  onValueChange={(value) => {
-                    if (value === 'platform_only' || value === 'byok_allowed') {
-                      handleUpdateAIKeysMode(value)
-                    }
-                  }}
-                  disabled={!editingSecrets || loadingSecrets}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="platform_only">Usar chaves da plataforma (recomendado)</SelectItem>
-                    <SelectItem value="byok_allowed">Permitir BYOK (cliente fornece)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Divisor */}
+            <div className="border-t my-6"></div>
 
-              {aiKeysMode === 'platform_only' && (
-                <Alert className="mt-3">
+            {/* Seção de Credenciais de IA */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-semibold text-base mb-2">🔑 Credenciais de IA (Fallback)</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Configure suas chaves de API da OpenAI e Groq. Estas credenciais são usadas como <strong>fallback automático</strong> caso o AI Gateway falhe ou fique sem créditos.
+                </p>
+                <Alert className="mb-4">
                   <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    As chaves de IA são gerenciadas pela plataforma. As chaves OpenAI/Groq do cliente não são necessárias.
+                  <AlertDescription className="text-xs">
+                    <strong>Como funciona o fallback:</strong> Quando o AI Gateway não está disponível ou apresenta erro,
+                    o sistema automaticamente usa as credenciais abaixo (OpenAI como preferência).
+                    Isto garante que seu chatbot nunca pare de funcionar.
                   </AlertDescription>
                 </Alert>
-              )}
+              </div>
+
+              {/* OpenAI API Key */}
+              <div>
+                <Label htmlFor="openai_api_key">
+                  OpenAI API Key
+                  <span className="text-xs text-blue-600 ml-2">(Usado como fallback principal)</span>
+                </Label>
+                <div className="flex gap-2 mt-2">
+                  <div className="relative flex-1">
+                    <Input
+                      id="openai_api_key"
+                      type={showPasswords['openai_api_key'] ? 'text' : 'password'}
+                      value={secrets.openai_api_key}
+                      onChange={(e) =>
+                        setSecrets({ ...secrets, openai_api_key: e.target.value })
+                      }
+                      disabled={!editingSecrets}
+                      placeholder="sk-proj-..."
+                    />
+                    <button
+                      type="button"
+                      onClick={() => togglePasswordVisibility('openai_api_key')}
+                      className="absolute right-2 top-2"
+                    >
+                      {showPasswords['openai_api_key'] ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                  {editingSecrets && (
+                    <Button
+                      onClick={() =>
+                        handleUpdateSecret('openai_api_key', secrets.openai_api_key)
+                      }
+                      disabled={loadingSecrets}
+                    >
+                      Salvar
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Obtenha em: <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">platform.openai.com/api-keys</a>
+                </p>
+              </div>
+
+              {/* Groq API Key */}
+              <div>
+                <Label htmlFor="groq_api_key">
+                  Groq API Key
+                  <span className="text-xs text-gray-500 ml-2">(Opcional - secundário)</span>
+                </Label>
+                <div className="flex gap-2 mt-2">
+                  <div className="relative flex-1">
+                    <Input
+                      id="groq_api_key"
+                      type={showPasswords['groq_api_key'] ? 'text' : 'password'}
+                      value={secrets.groq_api_key}
+                      onChange={(e) =>
+                        setSecrets({ ...secrets, groq_api_key: e.target.value })
+                      }
+                      disabled={!editingSecrets}
+                      placeholder="gsk_..."
+                    />
+                    <button
+                      type="button"
+                      onClick={() => togglePasswordVisibility('groq_api_key')}
+                      className="absolute right-2 top-2"
+                    >
+                      {showPasswords['groq_api_key'] ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                  {editingSecrets && (
+                    <Button
+                      onClick={() =>
+                        handleUpdateSecret('groq_api_key', secrets.groq_api_key)
+                      }
+                      disabled={loadingSecrets}
+                    >
+                      Salvar
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Obtenha em: <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">console.groq.com/keys</a>
+                </p>
+              </div>
             </div>
-
-            {aiKeysMode === 'byok_allowed' && (
-              <>
-                {/* OpenAI API Key */}
-                <div>
-                  <Label htmlFor="openai_api_key">OpenAI API Key (opcional)</Label>
-                  <div className="flex gap-2 mt-2">
-                    <div className="relative flex-1">
-                      <Input
-                        id="openai_api_key"
-                        type={showPasswords['openai_api_key'] ? 'text' : 'password'}
-                        value={secrets.openai_api_key}
-                        onChange={(e) =>
-                          setSecrets({ ...secrets, openai_api_key: e.target.value })
-                        }
-                        disabled={!editingSecrets}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => togglePasswordVisibility('openai_api_key')}
-                        className="absolute right-2 top-2"
-                      >
-                        {showPasswords['openai_api_key'] ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
-                      </button>
-                    </div>
-                    {editingSecrets && (
-                      <Button
-                        onClick={() =>
-                          handleUpdateSecret('openai_api_key', secrets.openai_api_key)
-                        }
-                        disabled={loadingSecrets}
-                      >
-                        Salvar
-                      </Button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Groq API Key */}
-                <div>
-                  <Label htmlFor="groq_api_key">Groq API Key (opcional)</Label>
-                  <div className="flex gap-2 mt-2">
-                    <div className="relative flex-1">
-                      <Input
-                        id="groq_api_key"
-                        type={showPasswords['groq_api_key'] ? 'text' : 'password'}
-                        value={secrets.groq_api_key}
-                        onChange={(e) =>
-                          setSecrets({ ...secrets, groq_api_key: e.target.value })
-                        }
-                        disabled={!editingSecrets}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => togglePasswordVisibility('groq_api_key')}
-                        className="absolute right-2 top-2"
-                      >
-                        {showPasswords['groq_api_key'] ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
-                      </button>
-                    </div>
-                    {editingSecrets && (
-                      <Button
-                        onClick={() =>
-                          handleUpdateSecret('groq_api_key', secrets.groq_api_key)
-                        }
-                        disabled={loadingSecrets}
-                      >
-                        Salvar
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
 
             {/* Webhook URL (readonly) */}
             <div>

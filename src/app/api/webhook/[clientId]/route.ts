@@ -52,6 +52,7 @@ export async function GET(
       identifier,
     );
     if (rateLimitResponse) {
+      console.log('⚠️  [WEBHOOK VERIFY] Rate limit exceeded:', { ip, identifier });
       return rateLimitResponse;
     }
 
@@ -59,56 +60,115 @@ export async function GET(
     const searchParams = request.nextUrl.searchParams;
 
     // Log 1: Informações da requisição
+    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🔔 [WEBHOOK VERIFY] Requisição recebida');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('📅 Timestamp:', timestamp);
+    console.log('🆔 Client ID:', clientId);
+    console.log('🌐 IP:', ip);
+    console.log('🔗 URL completa:', request.url);
 
     // Log 2: Headers recebidos
     const headers: Record<string, string> = {};
     request.headers.forEach((value, key) => {
       headers[key] = value;
     });
+    console.log('\n📋 Headers recebidos:');
+    console.log(JSON.stringify(headers, null, 2));
 
     // Log 3: Query parameters
     const mode = searchParams.get("hub.mode");
     const token = searchParams.get("hub.verify_token");
     const challenge = searchParams.get("hub.challenge");
 
+    console.log('\n🔍 Query Parameters:');
+    console.log('  hub.mode:', mode);
+    console.log('  hub.verify_token:', token ? `${token.substring(0, 20)}... (${token.length} chars)` : 'NULL');
+    console.log('  hub.challenge:', challenge);
+
     // Mostrar TODOS os query params
+    console.log('\n📝 Todos os query params:');
     searchParams.forEach((value, key) => {
+      console.log(`  ${key}:`, value);
     });
 
     // Log 4: Buscar config do cliente
-
+    console.log('\n🔎 Buscando config do cliente no banco...');
     const config = await getClientConfig(clientId);
 
     if (!config) {
+      console.log('❌ [WEBHOOK VERIFY] Cliente não encontrado!');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
       return new NextResponse("Client not found", { status: 404 });
     }
 
+    console.log('✅ Cliente encontrado:', {
+      name: config.name,
+      status: config.status,
+      phoneNumberId: config.apiKeys.metaPhoneNumberId,
+    });
+
     if (config.status !== "active") {
+      console.log('❌ [WEBHOOK VERIFY] Cliente não está ativo!');
+      console.log('   Status atual:', config.status);
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
       return new NextResponse("Client not active", { status: 403 });
     }
 
     // Log 5: Validar verify token
     const expectedToken = config.apiKeys.metaVerifyToken;
 
+    console.log('\n🔐 Validação do Verify Token:');
+    console.log('  Token recebido:', token ? `${token.substring(0, 20)}... (${token.length} chars)` : 'NULL');
+    console.log('  Token esperado:', expectedToken ? `${expectedToken.substring(0, 20)}... (${expectedToken.length} chars)` : 'NULL');
+    console.log('  Tokens iguais?', token === expectedToken);
+
     // Comparação character-by-character se tokens não batem
     if (token !== expectedToken) {
       if (token && expectedToken) {
         const minLen = Math.min(token.length, expectedToken.length);
+        console.log('\n⚠️  Tokens diferentes! Comparando char-by-char:');
+        console.log('  Tamanho recebido:', token.length);
+        console.log('  Tamanho esperado:', expectedToken.length);
         for (let i = 0; i < minLen; i++) {
           if (token[i] !== expectedToken[i]) {
+            console.log(`  ❌ Diferença na posição ${i}:`);
+            console.log(`     Recebido: '${token[i]}' (code ${token.charCodeAt(i)})`);
+            console.log(`     Esperado: '${expectedToken[i]}' (code ${expectedToken.charCodeAt(i)})`);
             break;
           }
+        }
+        if (token.length !== expectedToken.length) {
+          console.log('  ⚠️  Tamanhos diferentes!');
         }
       }
     }
 
+    console.log('\n🎯 Validações:');
+    console.log('  hub.mode === "subscribe"?', mode === "subscribe", `(recebido: "${mode}")`);
+    console.log('  tokens iguais?', token === expectedToken);
+
     // Log 6: Decisão final
     if (mode === "subscribe" && token === expectedToken) {
+      console.log('\n✅ [WEBHOOK VERIFY] Verificação bem-sucedida!');
+      console.log('📤 Enviando resposta:');
+      console.log('   Status: 200 OK');
+      console.log('   Body:', challenge);
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
       return new NextResponse(challenge, { status: 200 });
     } else {
+      console.log('\n❌ [WEBHOOK VERIFY] Verificação falhou!');
+      console.log('📤 Enviando resposta:');
+      console.log('   Status: 403 Forbidden');
+      console.log('   Motivo:', mode !== "subscribe" ? 'mode incorreto' : 'token incorreto');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
       return new NextResponse("Invalid verification token", { status: 403 });
     }
   } catch (error) {
+    console.log('\n❌ [WEBHOOK VERIFY] Erro interno!');
+    console.log('Erro:', error);
+    console.log('Stack:', error instanceof Error ? error.stack : 'N/A');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
     return new NextResponse("Internal error", { status: 500 });
   }
 }

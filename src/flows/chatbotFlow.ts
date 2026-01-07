@@ -566,20 +566,9 @@ export const processChatbotMessage = async (
           : "[Imagem recebida]";
     }
 
-    // 📎 Include media metadata for displaying real files in conversation
-    // 📱 Include wamid for WhatsApp message reactions
-    await saveChatMessage({
-      phone: parsedMessage.phone,
-      message: messageForHistory,
-      type: "user",
-      clientId: config.id, // 🔐 Multi-tenant: Associa mensagem ao cliente
-      mediaMetadata,
-      wamid: parsedMessage.messageId, // Store WhatsApp message ID for reactions
-    });
-    logger.logNodeSuccess("8. Save Chat Message (User)", { saved: true });
-
-    // NODE 8.5: Check Duplicate Message (prevent duplicate responses)
-    logger.logNodeStart("8.5. Check Duplicate Message", {
+    // NODE 8: Check Duplicate Message FIRST (prevent duplicate responses)
+    // ⚠️ CRITICAL: Must check BEFORE saving to avoid finding the message we just saved!
+    logger.logNodeStart("8. Check Duplicate Message", {
       phone: parsedMessage.phone,
       contentLength: normalizedMessage.content.length,
     });
@@ -592,7 +581,7 @@ export const processChatbotMessage = async (
     });
 
     if (duplicateCheck.isDuplicate) {
-      logger.logNodeSuccess("8.5. Check Duplicate Message", {
+      logger.logNodeSuccess("8. Check Duplicate Message", {
         isDuplicate: true,
         reason: duplicateCheck.reason,
         timeSinceMs: duplicateCheck.recentMessage?.timeSinceMs,
@@ -607,9 +596,27 @@ export const processChatbotMessage = async (
       return { success: true, skipped: true, reason: "duplicate_message" };
     }
 
-    logger.logNodeSuccess("8.5. Check Duplicate Message", {
+    logger.logNodeSuccess("8. Check Duplicate Message", {
       isDuplicate: false,
     });
+
+    // NODE 8.5: Save Chat Message (User) - AFTER duplicate check
+    // 📎 Include media metadata for displaying real files in conversation
+    // 📱 Include wamid for WhatsApp message reactions
+    logger.logNodeStart("8.5. Save Chat Message (User)", {
+      phone: parsedMessage.phone,
+      type: "user",
+    });
+
+    await saveChatMessage({
+      phone: parsedMessage.phone,
+      message: messageForHistory,
+      type: "user",
+      clientId: config.id, // 🔐 Multi-tenant: Associa mensagem ao cliente
+      mediaMetadata,
+      wamid: parsedMessage.messageId, // Store WhatsApp message ID for reactions
+    });
+    logger.logNodeSuccess("8.5. Save Chat Message (User)", { saved: true });
 
     // NODE 9: Batch Messages (configurable - can be disabled)
     let batchedContent: string;

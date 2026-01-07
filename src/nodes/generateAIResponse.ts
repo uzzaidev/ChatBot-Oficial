@@ -1,7 +1,6 @@
 import { AIResponse, ChatMessage, ClientConfig } from "@/lib/types";
 import { callAI } from "@/lib/ai-gateway";
 import { logGatewayUsage } from "@/lib/ai-gateway/usage-tracking";
-import { shouldUseGateway } from "@/lib/ai-gateway/config";
 import { checkBudgetAvailable } from "@/lib/unified-tracking";
 import type { CoreMessage } from "ai";
 import { z } from "zod";
@@ -290,19 +289,6 @@ export const generateAIResponse = async (
         ]
       : []; // Empty tools array for fast track
 
-    // 🌐 CHECK: AI Gateway enabled?
-    const useGateway = await shouldUseGateway(config.id);
-
-    console.log("[AI Gateway] Decision:", {
-      useGateway,
-      clientId: config.id,
-      clientName: config.name,
-      primaryProvider: config.primaryProvider,
-      messageCount: messages.length,
-      toolsEnabled: enableTools && config.settings.enableTools,
-      includeDateTimeInfo,
-    });
-
     // 💰 FASE 1: Budget Enforcement - Check before API call
     const budgetAvailable = await checkBudgetAvailable(config.id);
     if (!budgetAvailable) {
@@ -311,17 +297,24 @@ export const generateAIResponse = async (
       );
     }
 
-    if (useGateway) {
-      console.log("[AI Gateway] Routing request through AI Gateway");
+    // 🌐 SEMPRE usa callAI() - ele decide internamente se usa Gateway ou credenciais do cliente
+    console.log("[AI Gateway] Preparing AI request:", {
+      clientId: config.id,
+      clientName: config.name,
+      primaryProvider: config.primaryProvider,
+      messageCount: messages.length,
+      toolsEnabled: enableTools && config.settings.enableTools,
+      includeDateTimeInfo,
+    });
 
-      // Convert ChatMessage[] to CoreMessage[]
-      const coreMessages: CoreMessage[] = messages.map((msg) => ({
-        role: msg.role as "system" | "user" | "assistant",
-        content: msg.content,
-      }));
+    // Convert ChatMessage[] to CoreMessage[]
+    const coreMessages: CoreMessage[] = messages.map((msg) => ({
+      role: msg.role as "system" | "user" | "assistant",
+      content: msg.content,
+    }));
 
-      // Call AI via Gateway
-      const result = await callAI({
+    // Call AI - Gateway ou fallback para credenciais do cliente
+    const result = await callAI({
         clientId: config.id,
         clientConfig: {
           id: config.id,
@@ -411,38 +404,29 @@ export const generateAIResponse = async (
         requestId: result.requestId,
       });
 
-      // Convert back to AIResponse format
-      return {
-        content: result.text,
-        toolCalls: result.toolCalls,
-        finished: result.finishReason === "stop" ||
-          result.finishReason === "end_turn",
-        model: result.model,
-        provider: result.provider as any,
-        requestId: result.requestId,
-        wasCached: result.wasCached,
-        wasFallback: result.wasFallback,
-        fallbackReason: result.fallbackReason,
-        primaryAttemptedProvider: result.primaryAttemptedProvider as any,
-        primaryAttemptedModel: result.primaryAttemptedModel,
-        fallbackUsedProvider: result.fallbackUsedProvider as any,
-        fallbackUsedModel: result.fallbackUsedModel,
-        usage: {
-          prompt_tokens: result.usage.promptTokens,
-          completion_tokens: result.usage.completionTokens,
-          total_tokens: result.usage.totalTokens,
-          cached_tokens: result.usage.cachedTokens,
-        },
-      };
-    }
-
-    // 🚫 LEGACY PATH REMOVED: AI Gateway is now required
-    // If we reach here, it means AI Gateway is disabled for this client
-    const errorMessage =
-      `AI Gateway is required but disabled for client: ${config.id} (${config.name}). ` +
-      `Please enable AI Gateway in client settings or contact support.`;
-    console.error(`[AI Gateway Error] ${errorMessage}`);
-    throw new Error(errorMessage);
+    // Convert back to AIResponse format
+    return {
+      content: result.text,
+      toolCalls: result.toolCalls,
+      finished: result.finishReason === "stop" ||
+        result.finishReason === "end_turn",
+      model: result.model,
+      provider: result.provider as any,
+      requestId: result.requestId,
+      wasCached: result.wasCached,
+      wasFallback: result.wasFallback,
+      fallbackReason: result.fallbackReason,
+      primaryAttemptedProvider: result.primaryAttemptedProvider as any,
+      primaryAttemptedModel: result.primaryAttemptedModel,
+      fallbackUsedProvider: result.fallbackUsedProvider as any,
+      fallbackUsedModel: result.fallbackUsedModel,
+      usage: {
+        prompt_tokens: result.usage.promptTokens,
+        completion_tokens: result.usage.completionTokens,
+        total_tokens: result.usage.totalTokens,
+        cached_tokens: result.usage.cachedTokens,
+      },
+    };
   } catch (error) {
     const errorMessage = error instanceof Error
       ? error.message
