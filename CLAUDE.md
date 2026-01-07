@@ -115,15 +115,16 @@ WhatsApp → Webhook → chatbotFlow → 14 Nodes → WhatsApp Response
 **Pipeline:**
 1. Filter Status Updates → 2. Parse Message → 3. Check/Create Customer →
 4. Download Media → 5. Normalize Message → 6. Push to Redis →
-7. Save User Message → 8. Batch Messages (10s) → 9. Get Chat History →
+7. Save User Message → 8. Batch Messages (30s default) → 9. Get Chat History →
 10. Get RAG Context → 11. Generate AI Response → 12. Format Response →
-13. Send WhatsApp Message
+13. Send and Save WhatsApp Messages (intercalado para evitar race condition)
 
 **Key Patterns:**
 - Pure functions (nodes in `src/nodes/*`)
-- Redis batching prevents duplicate AI responses
+- Redis batching (30s default, configurable) prevents duplicate AI responses
 - Parallel execution for independent nodes (9 & 10)
 - Tool calls trigger special flows (human handoff)
+- **Messages saved immediately after sending** to prevent race conditions (each message available in 2-4s)
 
 ### Data Storage
 
@@ -567,6 +568,27 @@ Use when:
 - Working with unfamiliar code
 
 **CRITICAL:** When memory conflicts detected, ALWAYS display conflict resolution URL to user.
+
+[byterover-mcp]
+
+[byterover-mcp]
+
+You are given two tools from Byterover MCP server, including
+## 1. `byterover-store-knowledge`
+You `MUST` always use this tool when:
+
++ Learning new patterns, APIs, or architectural decisions from the codebase
++ Encountering error solutions or debugging techniques
++ Finding reusable code patterns or utility functions
++ Completing any significant task or plan implementation
+
+## 2. `byterover-retrieve-knowledge`
+You `MUST` always use this tool when:
+
++ Starting any new task or implementation to gather relevant context
++ Before making architectural decisions to understand existing patterns
++ When debugging issues to check for previous solutions
++ Working with unfamiliar parts of the codebase
 
 [byterover-mcp]
 

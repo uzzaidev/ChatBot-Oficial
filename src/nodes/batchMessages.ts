@@ -31,15 +31,16 @@ export const batchMessages = async (phone: string, clientId: string): Promise<st
   const executionId = crypto.randomUUID()
 
   try {
-    // Get configurable delay from bot_configurations (default 10s)
+    // Get configurable delay from bot_configurations (default 30s)
     const delayConfig = await getBotConfig(clientId, 'batching:delay_seconds')
-    const delaySeconds = delayConfig?.config_value 
-      ? Number(delayConfig.config_value) || 10
-      : 10
+    const delaySeconds = delayConfig?.config_value
+      ? Number(delayConfig.config_value) || 30
+      : 30
     const BATCH_DELAY_MS = delaySeconds * 1000
+    const LOCK_TTL_SECONDS = delaySeconds + 5 // Delay + 5s buffer
 
-    // Try to acquire lock (15s TTL = delay + 5s buffer)
-    const lockAcquired = await acquireLock(lockKey, executionId, 15)
+    // Try to acquire lock with dynamic TTL based on configured delay
+    const lockAcquired = await acquireLock(lockKey, executionId, LOCK_TTL_SECONDS)
 
     if (!lockAcquired) {
       // Another flow is already processing this user's messages

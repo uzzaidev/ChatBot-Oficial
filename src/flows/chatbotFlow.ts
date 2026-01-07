@@ -1218,45 +1218,75 @@ export const processChatbotMessage = async (
       return { success: true, messagesSent: 0 };
     }
 
-    // NODE 14: Send WhatsApp Message (com config do cliente)
-    logger.logNodeStart("14. Send WhatsApp Message", {
+    // NODE 14: Send and Save WhatsApp Messages (intercalado para evitar race condition)
+    // ✅ FIX: Envia uma mensagem → salva imediatamente → delay → próxima
+    // Isso garante que mensagens fiquem disponíveis no histórico quase instantaneamente
+    logger.logNodeStart("14. Send and Save WhatsApp Messages", {
       phone: parsedMessage.phone,
       messageCount: formattedMessages.length,
     });
-    const messageIds = await sendWhatsAppMessage({
-      phone: parsedMessage.phone,
-      messages: formattedMessages,
-      config, // 🔐 Passa config com metaAccessToken e metaPhoneNumberId
-    });
-    logger.logNodeSuccess("14. Send WhatsApp Message", {
-      sentCount: messageIds.length,
-    });
 
-    // NODE 14.5: Save AI messages with wamid
-    // ✅ FIX: Save AFTER sending, with correct formatted content and wamid
-    logger.logNodeStart("14.5. Save AI Messages with WAMID", {
-      messageCount: messageIds.length,
-    });
-    for (let i = 0; i < messageIds.length; i++) {
-      const wamid = messageIds[i];
+    const messageIds: string[] = [];
+    const messageDelayMs = config.settings.messageDelayMs ?? 2000;
+
+    console.log(`📤 [chatbotFlow] Sending and saving ${formattedMessages.length} messages`);
+
+    for (let i = 0; i < formattedMessages.length; i++) {
       const messageContent = formattedMessages[i];
 
+      if (!messageContent || messageContent.trim().length === 0) {
+        console.warn(`⚠️ [chatbotFlow] Skipping empty message ${i + 1}/${formattedMessages.length}`);
+        continue;
+      }
+
       try {
+        // ✅ STEP 1: Send message to WhatsApp API
+        console.log(`📤 [chatbotFlow] Sending message ${i + 1}/${formattedMessages.length}:`, {
+          contentLength: messageContent.length,
+          contentPreview: messageContent.substring(0, 50) + '...',
+          phone: parsedMessage.phone,
+        });
+
+        const { sendTextMessage } = await import("@/lib/meta");
+        const { messageId: wamid } = await sendTextMessage(
+          parsedMessage.phone,
+          messageContent,
+          config,
+        );
+
+        messageIds.push(wamid);
+
+        console.log(`✅ [chatbotFlow] Message ${i + 1}/${formattedMessages.length} sent, wamid: ${wamid}`);
+
+        // ✅ STEP 2: Save to database IMMEDIATELY (before delay)
+        // This makes the message available to next batch's chat history instantly
+        console.log(`💾 [chatbotFlow] Saving message ${i + 1}/${formattedMessages.length} to database...`);
+
         await saveChatMessage({
           phone: parsedMessage.phone,
-          message: messageContent, // ✅ Save formatted content (what was actually sent)
+          message: messageContent,
           type: "ai",
           clientId: config.id,
-          wamid, // ✅ Save with wamid immediately
-          status: "sent", // ✅ Mark as sent (message already went through WhatsApp API)
+          wamid,
+          status: "sent", // Already sent to WhatsApp API
         });
-      } catch (saveError) {
-        console.error(`Failed to save message with wamid ${wamid}:`, saveError);
-        // Don't fail the flow - this is a non-critical save
+
+        console.log(`✅ [chatbotFlow] Message ${i + 1}/${formattedMessages.length} saved with wamid: ${wamid}`);
+
+        // ✅ STEP 3: Delay before next message (only if not last message)
+        if (i < formattedMessages.length - 1) {
+          console.log(`⏱️ [chatbotFlow] Waiting ${messageDelayMs}ms before next message...`);
+          await new Promise((resolve) => setTimeout(resolve, messageDelayMs));
+        }
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        console.error(`❌ [chatbotFlow] Failed to send/save message ${i + 1}/${formattedMessages.length}:`, errorMsg);
+        // Continue with next message - don't fail entire flow
       }
     }
-    logger.logNodeSuccess("14.5. Save AI Messages with WAMID", {
-      saved: messageIds.length,
+
+    logger.logNodeSuccess("14. Send and Save WhatsApp Messages", {
+      sentAndSaved: messageIds.length,
     });
 
     logger.finishExecution("success");
