@@ -29,6 +29,8 @@ export type { SendWhatsAppDocumentInput } from './sendWhatsAppDocument'
 export { handleHumanHandoff } from './handleHumanHandoff'
 export type { HandleHumanHandoffInput } from './handleHumanHandoff'
 export { saveChatMessage } from './saveChatMessage'
+export { checkDuplicateMessage } from './checkDuplicateMessage'
+export type { CheckDuplicateMessageInput, CheckDuplicateMessageResult } from './checkDuplicateMessage'
 
 // 🔧 Phase 1-3: Configuration-driven nodes
 export { checkContinuity } from './checkContinuity'
