@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
       .insert({
         name: companyName,
         slug,
-        status: 'trial',
+        status: 'active',
         plan: 'free',
         meta_access_token_secret_id: metaAccessTokenSecretData,
         meta_verify_token_secret_id: metaVerifyTokenSecretData,
