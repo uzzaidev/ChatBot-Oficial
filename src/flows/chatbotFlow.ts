@@ -47,6 +47,8 @@ export interface ChatbotFlowResult {
   messagesSent?: number;
   handedOff?: boolean;
   sentAsAudio?: boolean;
+  skipped?: boolean;
+  reason?: string;
   error?: string;
 }
 
@@ -575,6 +577,39 @@ export const processChatbotMessage = async (
       wamid: parsedMessage.messageId, // Store WhatsApp message ID for reactions
     });
     logger.logNodeSuccess("8. Save Chat Message (User)", { saved: true });
+
+    // NODE 8.5: Check Duplicate Message (prevent duplicate responses)
+    logger.logNodeStart("8.5. Check Duplicate Message", {
+      phone: parsedMessage.phone,
+      contentLength: normalizedMessage.content.length,
+    });
+
+    const { checkDuplicateMessage } = await import("@/nodes/checkDuplicateMessage");
+    const duplicateCheck = await checkDuplicateMessage({
+      phone: parsedMessage.phone,
+      messageContent: normalizedMessage.content,
+      clientId: config.id,
+    });
+
+    if (duplicateCheck.isDuplicate) {
+      logger.logNodeSuccess("8.5. Check Duplicate Message", {
+        isDuplicate: true,
+        reason: duplicateCheck.reason,
+        timeSinceMs: duplicateCheck.recentMessage?.timeSinceMs,
+      });
+
+      console.warn(
+        `⚠️ [chatbotFlow] Duplicate message detected for ${parsedMessage.phone}, skipping processing to avoid duplicate response`,
+      );
+
+      // Exit gracefully - don't process duplicate
+      logger.finishExecution("success");
+      return { success: true, skipped: true, reason: "duplicate_message" };
+    }
+
+    logger.logNodeSuccess("8.5. Check Duplicate Message", {
+      isDuplicate: false,
+    });
 
     // NODE 9: Batch Messages (configurable - can be disabled)
     let batchedContent: string;

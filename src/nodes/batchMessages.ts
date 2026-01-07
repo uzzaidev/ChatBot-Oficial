@@ -61,11 +61,20 @@ export const batchMessages = async (phone: string, clientId: string): Promise<st
       const lastProcessedTime = parseInt(lastProcessedStr, 10)
       const timeSinceProcessed = Date.now() - lastProcessedTime
 
-      // If processed within last 60s, skip (another flow is/was processing)
+      // If processed within last 60s, check if there are new messages
       if (timeSinceProcessed < 60000) {
-        console.log(`[batchMessages] Recently processed for ${phone} (${timeSinceProcessed}ms ago), skipping to avoid duplicate`)
-        await deleteKey(lockKey)
-        return ''
+        // Check if Redis has new messages
+        const pendingMessages = await lrangeMessages(messagesKey, 0, -1)
+
+        if (pendingMessages.length === 0) {
+          // No new messages → Already processed everything → EXIT
+          console.log(`[batchMessages] Recently processed for ${phone} (${timeSinceProcessed}ms ago) and no new messages, skipping`)
+          await deleteKey(lockKey)
+          return ''
+        }
+
+        // Has new messages → Continue processing
+        console.log(`[batchMessages] Recently processed for ${phone} (${timeSinceProcessed}ms ago) but has ${pendingMessages.length} new messages, continuing`)
       }
     }
 
