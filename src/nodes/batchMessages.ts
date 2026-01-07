@@ -1,4 +1,4 @@
-import { lrangeMessages, deleteKey, get, acquireLock } from '@/lib/redis'
+import { lrangeMessages, deleteKey, get, setWithExpiry, acquireLock } from '@/lib/redis'
 import { getBotConfig } from '@/lib/config'
 
 interface RedisMessage {
@@ -26,7 +26,8 @@ export const batchMessages = async (phone: string, clientId: string): Promise<st
   const lockKey = `batch_lock:${phone}`
   const debounceKey = `debounce:${phone}`
   const messagesKey = `messages:${phone}`
-  
+  const lastProcessedKey = `last_processed:${phone}` // Track when we last processed this user
+
   // Generate unique execution ID for this flow
   const executionId = crypto.randomUUID()
 
@@ -37,7 +38,11 @@ export const batchMessages = async (phone: string, clientId: string): Promise<st
       ? Number(delayConfig.config_value) || 30
       : 30
     const BATCH_DELAY_MS = delaySeconds * 1000
-    const LOCK_TTL_SECONDS = delaySeconds + 5 // Delay + 5s buffer
+
+    // Lock TTL must cover: batch wait + AI processing + message sending
+    // Formula: batchDelay + 60s buffer (AI + send time)
+    // Example: 30s batch + 60s buffer = 90s total
+    const LOCK_TTL_SECONDS = delaySeconds + 60
 
     // Try to acquire lock with dynamic TTL based on configured delay
     const lockAcquired = await acquireLock(lockKey, executionId, LOCK_TTL_SECONDS)
@@ -47,6 +52,21 @@ export const batchMessages = async (phone: string, clientId: string): Promise<st
       // Exit immediately without processing
       console.log(`[batchMessages] Lock exists for ${phone}, skipping processing`)
       return ''
+    }
+
+    // ✅ ADDITIONAL PROTECTION: Check if we processed recently (even if lock expired)
+    // This prevents duplicate processing if lock expires before flow completes
+    const lastProcessedStr = await get(lastProcessedKey)
+    if (lastProcessedStr) {
+      const lastProcessedTime = parseInt(lastProcessedStr, 10)
+      const timeSinceProcessed = Date.now() - lastProcessedTime
+
+      // If processed within last 60s, skip (another flow is/was processing)
+      if (timeSinceProcessed < 60000) {
+        console.log(`[batchMessages] Recently processed for ${phone} (${timeSinceProcessed}ms ago), skipping to avoid duplicate`)
+        await deleteKey(lockKey)
+        return ''
+      }
     }
 
     console.log(`[batchMessages] Lock acquired for ${phone}, waiting ${delaySeconds}s`)
@@ -93,6 +113,10 @@ export const batchMessages = async (phone: string, clientId: string): Promise<st
       .join('\n\n')
 
     console.log(`[batchMessages] Processing ${parsedMessages.length} messages for ${phone}`)
+
+    // ✅ Mark as processed NOW (before returning to prevent race conditions)
+    // This timestamp protects against duplicate processing even if lock expires
+    await setWithExpiry(lastProcessedKey, Date.now().toString(), 90) // 90s TTL (matches lock TTL)
 
     // Clean up Redis keys
     await deleteKey(messagesKey)
