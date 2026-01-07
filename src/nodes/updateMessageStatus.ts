@@ -36,6 +36,34 @@ export const updateMessageStatus = async (
   try {
     console.log("🔄 Updating message status:", { wamid, status, clientId });
 
+    // 🔍 DEBUG: Check if message exists before UPDATE
+    const checkQuery = await query(
+      `SELECT id, session_id, wamid, status, created_at,
+              message->>'content' as content_preview
+       FROM n8n_chat_histories
+       WHERE wamid = $1 AND client_id = $2
+       LIMIT 1`,
+      [wamid, clientId],
+    );
+
+    if (checkQuery.rows.length > 0) {
+      const existing = checkQuery.rows[0];
+      console.log(`📋 [updateMessageStatus] Found message in database:`, {
+        id: existing.id,
+        wamid: existing.wamid,
+        currentStatus: existing.status,
+        newStatus: status,
+        contentPreview: existing.content_preview?.substring(0, 50) + '...',
+        createdAt: existing.created_at,
+      });
+    } else {
+      console.warn(`⚠️ [updateMessageStatus] Message NOT found in database (will try UPDATE anyway):`, {
+        wamid,
+        clientId,
+        newStatus: status,
+      });
+    }
+
     // 1) Update status in n8n_chat_histories (legacy chat store)
     // Note: We filter by both wamid AND client_id for multi-tenant isolation
     const historiesResult = await query(
