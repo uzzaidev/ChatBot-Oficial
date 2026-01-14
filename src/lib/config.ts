@@ -118,6 +118,10 @@ import { getSharedGatewayConfig } from "./ai-gateway/config";
  *
  * - Meta credentials: always per-client (Vault)
  * - AI provider keys: platform-only by default (shared_gateway_config), BYOK optional
+ *
+ * ⚠️ CRITICAL WARNING: This function returns SHARED keys when aiKeysMode != "byok_allowed"
+ * DO NOT USE for fallback scenarios where client-specific Vault credentials are required!
+ * For fallback, use getSecret() directly with client's openai_api_key_secret_id.
  */
 export const getClientConfig = async (
   clientId: string,
