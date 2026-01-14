@@ -387,29 +387,52 @@ const callAIDirectly = async (
   // Import OpenAI SDK (always use OpenAI for fallback)
   const { createOpenAI } = await import("@ai-sdk/openai");
 
-  // ✨ Get OpenAI API key from client's Vault credentials
-  const { getClientConfig } = await import("../config");
-  const fullClientConfig = await getClientConfig(config.clientId);
+  // ✨ FIX: Get OpenAI API key DIRECTLY from client's Vault (NOT from getClientConfig)
+  // CRITICAL: getClientConfig() may return shared keys when aiKeysMode != "byok_allowed"
+  // In fallback, we MUST use the client's OWN Vault credentials, never shared keys!
+  const { createServerClient } = await import("../supabase");
+  const { getClientSecrets } = await import("../vault");
 
-  if (!fullClientConfig) {
+  const supabase = createServerClient();
+
+  // Fetch client record to get Vault secret IDs
+  const { data: client, error: clientError } = await supabase
+    .from("clients")
+    .select("openai_api_key_secret_id")
+    .eq("id", config.clientId)
+    .single();
+
+  if (clientError || !client) {
     throw new Error(
-      `[Fallback] Could not retrieve client config from Vault for client: ${config.clientId}`,
+      `[Fallback] Could not retrieve client record for client: ${config.clientId}. ` +
+      `Error: ${clientError?.message || "Client not found"}`,
     );
   }
 
-  const apiKey = fullClientConfig.apiKeys.openaiApiKey;
-
-  if (!apiKey) {
+  if (!client.openai_api_key_secret_id) {
     throw new Error(
-      `[Fallback] No OpenAI API key found in Vault for client ${config.clientId}. ` +
+      `[Fallback] No OpenAI API key configured in Vault for client ${config.clientId}. ` +
       `Please configure in Settings: /dashboard/settings`,
     );
   }
 
-  console.log("[AI Gateway][Fallback] Using OpenAI API key from Vault", {
+  // Decrypt OpenAI API key DIRECTLY from Vault
+  const { getSecret } = await import("../vault");
+  const apiKey = await getSecret(client.openai_api_key_secret_id);
+
+  if (!apiKey) {
+    throw new Error(
+      `[Fallback] Failed to decrypt OpenAI API key from Vault for client ${config.clientId}. ` +
+      `Secret ID: ${client.openai_api_key_secret_id}`,
+    );
+  }
+
+  console.log("[AI Gateway][Fallback] Using OpenAI API key from Vault (client-specific)", {
     provider,
+    clientId: config.clientId,
     hasKey: !!apiKey,
     keyPrefix: apiKey.substring(0, 10) + "...",
+    secretId: client.openai_api_key_secret_id.substring(0, 8) + "...",
   });
 
   // Create OpenAI provider instance and model
