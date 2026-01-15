@@ -1,49 +1,35 @@
 import OpenAI from "openai";
 import { AIResponse, ChatMessage } from "./types";
-import { logAPIUsage } from "./ai-gateway/api-tracking";
-import { getSharedGatewayConfig } from "./ai-gateway/config";
 import { checkBudgetAvailable } from "./unified-tracking";
 
-const getRequiredEnvVariable = (key: string): string => {
-  const value = process.env[key];
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${key}`);
-  }
-  return value;
-};
+// =====================================================
+// MULTI-TENANT CREDENTIAL ISOLATION
+// =====================================================
+//
+// ⚠️ CRITICAL: All OpenAI API calls in this file MUST use client-specific
+// credentials from the Vault. NEVER use shared keys for production workloads.
+//
+// Use getClientOpenAIKey(clientId) from ./vault to get client's own key.
+// This ensures multi-tenant isolation where each client uses THEIR OWN API key.
+//
+// DO NOT use process.env.OPENAI_API_KEY or shared gateway keys!
+// =====================================================
 
-let openaiClient: OpenAI | null = null;
-
-const getSharedOpenAIApiKey = async (): Promise<string> => {
-  const sharedGatewayConfig = await getSharedGatewayConfig();
-  const sharedOpenaiKey = sharedGatewayConfig?.providerKeys?.openai;
-
-  if (!sharedOpenaiKey) {
-    throw new Error(
-      "Shared OpenAI API key is not configured. " +
-        "Configure shared_openai_api_key in shared_gateway_config (Vault).",
-    );
-  }
-
-  return sharedOpenaiKey;
-};
-
-const resolveOpenAIApiKey = async (apiKey?: string): Promise<string> => {
-  return apiKey || await getSharedOpenAIApiKey();
-};
-
+/**
+ * @deprecated Use getClientOpenAIKey(clientId) instead for multi-tenant isolation
+ */
 export const getOpenAIClient = (): OpenAI => {
-  if (openaiClient) {
-    return openaiClient;
+  console.warn(
+    "[DEPRECATED] getOpenAIClient() should not be used. " +
+    "Use getClientOpenAIKey(clientId) from ./vault for multi-tenant isolation."
+  );
+
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY not configured");
   }
 
-  const apiKey = getRequiredEnvVariable("OPENAI_API_KEY");
-
-  openaiClient = new OpenAI({
-    apiKey,
-  });
-
-  return openaiClient;
+  return new OpenAI({ apiKey });
 };
 
 export const transcribeAudio = async (
@@ -65,7 +51,36 @@ export const transcribeAudio = async (
   const startTime = Date.now();
 
   try {
-    const resolvedApiKey = await resolveOpenAIApiKey(apiKey);
+    // 🔐 FIX: ALWAYS use client-specific Vault credentials when clientId is provided
+    // This ensures multi-tenant isolation - each client uses their OWN API key
+    let resolvedApiKey: string;
+
+    if (clientId) {
+      // Get client's OpenAI key directly from Vault (NOT from getClientConfig which may return shared keys!)
+      const { getClientOpenAIKey } = await import("./vault");
+      const clientKey = await getClientOpenAIKey(clientId);
+
+      if (!clientKey) {
+        throw new Error(
+          `[Whisper] No OpenAI API key configured in Vault for client ${clientId}. ` +
+          `Please configure in Settings: /dashboard/settings`
+        );
+      }
+
+      resolvedApiKey = clientKey;
+      console.log("[Whisper] Using client-specific OpenAI key from Vault", {
+        clientId,
+        keyPrefix: resolvedApiKey.substring(0, 10) + "...",
+      });
+    } else if (apiKey) {
+      // Legacy: Use provided apiKey (should be deprecated)
+      resolvedApiKey = apiKey;
+      console.warn("[Whisper] Using legacy apiKey parameter - consider passing clientId instead");
+    } else {
+      throw new Error(
+        "[Whisper] clientId is required for multi-tenant API key isolation"
+      );
+    }
 
     // 💰 FASE 1: Budget Enforcement - Check before API call
     if (clientId) {
@@ -150,50 +165,31 @@ export const transcribeAudio = async (
 };
 
 export const analyzeImage = async (
-  imageUrl: string,
-  prompt: string,
+  imageBuffer: Buffer,
+  mimeType: string = "image/jpeg",
   apiKey?: string,
-): Promise<string> => {
-  try {
-    const resolvedApiKey = await resolveOpenAIApiKey(apiKey);
-    const client = new OpenAI({ apiKey: resolvedApiKey });
-
-    const response = await client.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: prompt,
-            },
-            {
-              type: "image_url",
-              image_url: {
-                url: imageUrl,
-              },
-            },
-          ],
-        },
-      ],
-      max_tokens: 1000,
-    });
-
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error("No content returned from GPT-4o Vision");
-    }
-
-    return content;
-  } catch (error) {
-    const errorMessage = error instanceof Error
-      ? error.message
-      : "Unknown error";
-    throw new Error(
-      `Failed to analyze image with GPT-4o Vision: ${errorMessage}`,
-    );
-  }
+  clientId?: string,
+  phone?: string,
+  conversationId?: string,
+): Promise<{
+  text: string;
+  usage: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+  model: string;
+}> => {
+  // Delegate to analyzeImageFromBuffer which has proper multi-tenant isolation
+  return analyzeImageFromBuffer(
+    imageBuffer,
+    "Descreva esta imagem em detalhes. Identifique elementos importantes, texto visível, e qualquer informação relevante para uma conversa de atendimento.",
+    mimeType,
+    apiKey,
+    clientId,
+    phone,
+    conversationId,
+  );
 };
 
 export const analyzeImageFromBuffer = async (
@@ -216,37 +212,54 @@ export const analyzeImageFromBuffer = async (
   const startTime = Date.now();
 
   try {
-    // 🚀 MIGRATED TO AI GATEWAY - Enables prompt caching (~60% savings!)
+    // 🔐 FIX: ALWAYS use client-specific Vault credentials when clientId is provided
+    // This ensures multi-tenant isolation - each client uses their OWN API key
     const { generateText } = await import("ai");
-    const { createGatewayInstance } = await import("./ai-gateway/providers");
-    const { getSharedGatewayConfig } = await import("./ai-gateway/config");
+    const { createOpenAI } = await import("@ai-sdk/openai");
     const { logGatewayUsage } = await import("./ai-gateway/usage-tracking");
 
-    // Get gateway instance
-    const gatewayConfig = await getSharedGatewayConfig();
-    if (!gatewayConfig?.gatewayApiKey) {
-      throw new Error("Gateway API key not configured");
+    // Get client's OpenAI key directly from Vault
+    if (!clientId) {
+      throw new Error(
+        "[Vision] clientId is required for multi-tenant API key isolation"
+      );
     }
 
-    const gateway = createGatewayInstance(gatewayConfig.gatewayApiKey);
+    const { getClientOpenAIKey } = await import("./vault");
+    const clientKey = await getClientOpenAIKey(clientId);
+
+    if (!clientKey) {
+      throw new Error(
+        `[Vision] No OpenAI API key configured in Vault for client ${clientId}. ` +
+        `Please configure in Settings: /dashboard/settings`
+      );
+    }
+
+    console.log("[Vision] Using client-specific OpenAI key from Vault", {
+      clientId,
+      keyPrefix: clientKey.substring(0, 10) + "...",
+    });
+
+    // Create OpenAI provider with client's own key
+    const openai = createOpenAI({
+      apiKey: clientKey,
+    });
 
     // 💰 FASE 1: Budget Enforcement - Check before API call
-    if (clientId) {
-      const budgetAvailable = await checkBudgetAvailable(clientId);
-      if (!budgetAvailable) {
-        throw new Error(
-          "❌ Limite de budget atingido. Análise de imagem bloqueada."
-        );
-      }
+    const budgetAvailable = await checkBudgetAvailable(clientId);
+    if (!budgetAvailable) {
+      throw new Error(
+        "❌ Limite de budget atingido. Análise de imagem bloqueada."
+      );
     }
 
     // Converter buffer para base64
     const base64Image = imageBuffer.toString("base64");
     const dataUrl = `data:${mimeType};base64,${base64Image}`;
 
-    // Call via Gateway with prompt caching support
+    // Call OpenAI directly with client's credentials
     const result = await generateText({
-      model: gateway("openai/gpt-4o"),
+      model: openai("gpt-4o"),
       messages: [
         {
           role: "user",
@@ -257,7 +270,7 @@ export const analyzeImageFromBuffer = async (
             },
             {
               type: "image",
-              image: dataUrl, // Gateway supports image type
+              image: dataUrl,
             },
           ],
         },
@@ -336,31 +349,45 @@ export const generateEmbedding = async (
   const startTime = Date.now();
 
   try {
-    // 🚀 MIGRATED TO AI GATEWAY - Unified tracking + dashboard visibility!
+    // 🔐 FIX: ALWAYS use client-specific Vault credentials when clientId is provided
+    // This ensures multi-tenant isolation - each client uses their OWN API key
     const { embed } = await import("ai");
     const { createOpenAI } = await import("@ai-sdk/openai");
-    const { getSharedGatewayConfig } = await import("./ai-gateway/config");
     const { logGatewayUsage } = await import("./ai-gateway/usage-tracking");
 
-    // Get Gateway config (we'll use OpenAI key from Gateway config)
-    const gatewayConfig = await getSharedGatewayConfig();
-    if (!gatewayConfig?.providerKeys?.openai) {
-      throw new Error("OpenAI API key not configured in Gateway");
+    // Get client's OpenAI key directly from Vault
+    if (!clientId) {
+      throw new Error(
+        "[Embeddings] clientId is required for multi-tenant API key isolation"
+      );
     }
 
-    // Create OpenAI provider instance with embedding model
+    const { getClientOpenAIKey } = await import("./vault");
+    const clientKey = await getClientOpenAIKey(clientId);
+
+    if (!clientKey) {
+      throw new Error(
+        `[Embeddings] No OpenAI API key configured in Vault for client ${clientId}. ` +
+        `Please configure in Settings: /dashboard/settings`
+      );
+    }
+
+    console.log("[Embeddings] Using client-specific OpenAI key from Vault", {
+      clientId,
+      keyPrefix: clientKey.substring(0, 10) + "...",
+    });
+
+    // Create OpenAI provider instance with client's own key
     const openai = createOpenAI({
-      apiKey: gatewayConfig.providerKeys.openai
+      apiKey: clientKey,
     });
 
     // 💰 FASE 1: Budget Enforcement - Check before API call
-    if (clientId) {
-      const budgetAvailable = await checkBudgetAvailable(clientId);
-      if (!budgetAvailable) {
-        throw new Error(
-          "❌ Limite de budget atingido. Geração de embeddings bloqueada."
-        );
-      }
+    const budgetAvailable = await checkBudgetAvailable(clientId);
+    if (!budgetAvailable) {
+      throw new Error(
+        "❌ Limite de budget atingido. Geração de embeddings bloqueada."
+      );
     }
 
     // Call embedding model directly (Gateway doesn't support embedding wrapper yet)
@@ -455,28 +482,45 @@ export const summarizePDFContent = async (
   try {
     const startTime = Date.now();
 
-    // 🚀 MIGRATED TO AI GATEWAY - Enables prompt caching (~70% savings!)
+    // 🔐 FIX: ALWAYS use client-specific Vault credentials when clientId is provided
+    // This ensures multi-tenant isolation - each client uses their OWN API key
     const { generateText } = await import("ai");
-    const { createGatewayInstance } = await import("./ai-gateway/providers");
-    const { getSharedGatewayConfig } = await import("./ai-gateway/config");
+    const { createOpenAI } = await import("@ai-sdk/openai");
     const { logGatewayUsage } = await import("./ai-gateway/usage-tracking");
 
-    // Get gateway instance
-    const gatewayConfig = await getSharedGatewayConfig();
-    if (!gatewayConfig?.gatewayApiKey) {
-      throw new Error("Gateway API key not configured");
+    // Get client's OpenAI key directly from Vault
+    if (!clientId) {
+      throw new Error(
+        "[PDF Summary] clientId is required for multi-tenant API key isolation"
+      );
     }
 
-    const gateway = createGatewayInstance(gatewayConfig.gatewayApiKey);
+    const { getClientOpenAIKey } = await import("./vault");
+    const clientKey = await getClientOpenAIKey(clientId);
+
+    if (!clientKey) {
+      throw new Error(
+        `[PDF Summary] No OpenAI API key configured in Vault for client ${clientId}. ` +
+        `Please configure in Settings: /dashboard/settings`
+      );
+    }
+
+    console.log("[PDF Summary] Using client-specific OpenAI key from Vault", {
+      clientId,
+      keyPrefix: clientKey.substring(0, 10) + "...",
+    });
+
+    // Create OpenAI provider with client's own key
+    const openai = createOpenAI({
+      apiKey: clientKey,
+    });
 
     // 💰 FASE 1: Budget Enforcement - Check before API call
-    if (clientId) {
-      const budgetAvailable = await checkBudgetAvailable(clientId);
-      if (!budgetAvailable) {
-        throw new Error(
-          "❌ Limite de budget atingido. Análise de PDF bloqueada."
-        );
-      }
+    const budgetAvailable = await checkBudgetAvailable(clientId);
+    if (!budgetAvailable) {
+      throw new Error(
+        "❌ Limite de budget atingido. Análise de PDF bloqueada."
+      );
     }
 
     const prompt = `Você recebeu um documento PDF${
@@ -488,18 +532,18 @@ Analise o conteúdo e forneça um resumo detalhado em português, incluindo:
 3. Detalhes relevantes que podem ser importantes para a conversa
 
 Conteúdo do PDF:
-${pdfText.substring(0, 12000)}`; // 12k chars = ~3k tokens - CACHEABLE!
+${pdfText.substring(0, 12000)}`; // 12k chars = ~3k tokens
 
-    // Call via Gateway with prompt caching support
+    // Call OpenAI directly with client's credentials
     const result = await generateText({
-      model: gateway("openai/gpt-4o"),
+      model: openai("gpt-4o"),
       messages: [
         {
           role: "user",
           content: prompt,
         },
       ],
-      experimental_telemetry: { isEnabled: true }, // CRITICAL for cache tracking
+      experimental_telemetry: { isEnabled: true }, // CRITICAL for usage tracking
     });
 
     const content = result.text;

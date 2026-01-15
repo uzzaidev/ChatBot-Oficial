@@ -2,10 +2,7 @@
 import OpenAI from "openai";
 import crypto from "crypto";
 import { createServerClient } from "@/lib/supabase-server";
-import { getSecret } from "@/lib/vault";
-import { checkBudgetAvailable } from "@/lib/unified-tracking"; // ✨ FASE 7: Removed trackUnifiedUsage
-import { getSharedGatewayConfig } from "@/lib/ai-gateway/config";
-
+import { checkBudgetAvailable } from "@/lib/unified-tracking";
 import { elevenLabsTTS } from "@/lib/elevenlabs";
 
 export interface ConvertTextToSpeechInput {
@@ -156,37 +153,24 @@ export const convertTextToSpeech = async (
     durationSeconds = Math.ceil((wordCount / 2.5) / speed);
     usedProvider = "elevenlabs" as import("@/lib/unified-tracking").Provider;
   } else {
-    // 2. Buscar credenciais do cliente do Vault
-    const { data: client } = await supabase
-      .from("clients")
-      .select(
-        "openai_api_key_secret_id, ai_keys_mode",
-      )
-      .eq("id", clientId)
-      .single();
+    // 🔐 FIX: ALWAYS use client-specific Vault credentials
+    // This ensures multi-tenant isolation - each client uses their OWN API key
+    const { getClientOpenAIKey } = await import("@/lib/vault");
+    const clientKey = await getClientOpenAIKey(clientId);
 
-    const aiKeysMode = (client?.ai_keys_mode === "byok_allowed"
-      ? "byok_allowed"
-      : "platform_only") as "platform_only" | "byok_allowed";
-
-    const sharedGatewayConfig = await getSharedGatewayConfig();
-    const sharedOpenaiKey = sharedGatewayConfig?.providerKeys?.openai || null;
-
-    const byokOpenaiKey =
-      aiKeysMode === "byok_allowed" && client?.openai_api_key_secret_id
-        ? await getSecret(client.openai_api_key_secret_id)
-        : null;
-
-    const finalOpenaiKey = aiKeysMode === "byok_allowed"
-      ? (byokOpenaiKey || sharedOpenaiKey)
-      : sharedOpenaiKey;
-
-    if (!finalOpenaiKey) {
+    if (!clientKey) {
       throw new Error(
-        `No OpenAI API key available for TTS (client ${clientId}). ` +
-          `Configure shared OpenAI key in shared_gateway_config (Vault).`,
+        `[TTS] No OpenAI API key configured in Vault for client ${clientId}. ` +
+        `Please configure in Settings: /dashboard/settings`
       );
     }
+
+    console.log("[TTS] Using client-specific OpenAI key from Vault", {
+      clientId,
+      keyPrefix: clientKey.substring(0, 10) + "...",
+    });
+
+    const finalOpenaiKey = clientKey;
 
     // 3. Gerar novo áudio via OpenAI TTS
     const openai = new OpenAI({

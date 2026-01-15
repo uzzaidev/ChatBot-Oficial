@@ -1,8 +1,25 @@
-# AI Gateway Fallback Fix - Multi-Tenant Isolation
+# Multi-Tenant API Key Isolation Fix - COMPREHENSIVE
 
-**Date:** 2026-01-13
+**Date:** 2026-01-14
 **Severity:** CRITICAL
-**Status:** FIXED ✅
+**Status:** FIXED ✅ (ALL SERVICES)
+
+---
+
+## Summary of All Fixes
+
+This document covers the comprehensive fix for **multi-tenant API key isolation** across ALL AI services:
+
+| Service | File | Status |
+|---------|------|--------|
+| AI Gateway Fallback | `src/lib/ai-gateway/index.ts` | ✅ Fixed |
+| Whisper (Transcription) | `src/lib/openai.ts` | ✅ Fixed |
+| GPT-4o Vision (Images) | `src/lib/openai.ts` | ✅ Fixed |
+| Embeddings (RAG) | `src/lib/openai.ts` | ✅ Fixed |
+| PDF Summary | `src/lib/openai.ts` | ✅ Fixed |
+| TTS (Text-to-Speech) | `src/nodes/convertTextToSpeech.ts` | ✅ Fixed |
+
+---
 
 ## Problem Description
 
@@ -168,11 +185,60 @@ Consider refactoring to separate concerns:
 - `getClientConfigForGateway()` - Returns shared keys when appropriate
 - `getClientConfigForDirectSDK()` - Always returns client-specific keys
 
+## All Files Modified
+
+### 1. AI Gateway Fallback
+**File:** `src/lib/ai-gateway/index.ts`
+- Modified `callAIDirectly()` to fetch credentials directly from Vault
+- Bypasses `getClientConfig()` which may return shared keys
+
+### 2. Whisper (Audio Transcription)
+**File:** `src/lib/openai.ts` - `transcribeAudio()`
+- Now requires `clientId` for multi-tenant isolation
+- Fetches client's OpenAI key directly from Vault
+- Logs which key is being used for audit trail
+
+### 3. GPT-4o Vision (Image Analysis)
+**File:** `src/lib/openai.ts` - `analyzeImageFromBuffer()`
+- Removed dependency on Gateway shared keys
+- Now uses `getClientOpenAIKey(clientId)` directly
+- Creates OpenAI provider with client's own credentials
+
+### 4. Embeddings (RAG)
+**File:** `src/lib/openai.ts` - `generateEmbedding()`
+- Removed `gatewayConfig.providerKeys.openai` usage
+- Now requires `clientId` and fetches from Vault
+- Each client's embeddings use their own API key
+
+### 5. PDF Summary
+**File:** `src/lib/openai.ts` - `summarizePDFContent()`
+- Same fix as Vision - uses client-specific credentials
+- Removed Gateway dependency for direct SDK calls
+
+### 6. TTS (Text-to-Speech)
+**File:** `src/nodes/convertTextToSpeech.ts`
+- Removed complex `aiKeysMode` logic that returned shared keys
+- Now uses simple `getClientOpenAIKey(clientId)` call
+- Each client's TTS uses their own OpenAI API key
+
+### 7. New Helper Functions
+**File:** `src/lib/vault.ts`
+- Added `getClientVaultCredentials(clientId)` - Returns all API credentials
+- Added `getClientOpenAIKey(clientId)` - Returns just OpenAI key
+- Both functions ALWAYS return client-specific keys, never shared
+
+### 8. Warning Comments
+**File:** `src/lib/config.ts`
+- Added warning that `getClientConfig()` returns shared keys when `aiKeysMode != "byok_allowed"`
+- Documents that this function should NOT be used for direct SDK calls
+
 ## Related Files
 
-- `src/lib/ai-gateway/index.ts` - Main fix location
-- `src/lib/config.ts` - Added warning comment
-- `src/lib/vault.ts` - Vault secret decryption
+- `src/lib/ai-gateway/index.ts` - AI Gateway fallback fix
+- `src/lib/openai.ts` - All OpenAI API functions fixed
+- `src/nodes/convertTextToSpeech.ts` - TTS fix
+- `src/lib/vault.ts` - New helper functions
+- `src/lib/config.ts` - Warning comment added
 - `src/app/api/test/ai-fallback/route.ts` - Test endpoint
 - `docs/tables/tabelas.md` - Database schema reference
 
