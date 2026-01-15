@@ -20,7 +20,8 @@
 
 import { searchDocumentInKnowledge } from "./searchDocumentInKnowledge";
 import { sendDocumentMessage, sendImageMessage } from "@/lib/meta";
-import type { ClientConfig } from "@/lib/types";
+import { saveChatMessage, ErrorDetails } from "@/nodes/saveChatMessage";
+import type { ClientConfig, StoredMediaMetadata } from "@/lib/types";
 
 export interface HandleDocumentSearchInput {
   /** Tool call object do AI response */
@@ -113,9 +114,25 @@ export const handleDocumentSearchToolCall = async (
     try {
       args = JSON.parse(toolCall.function.arguments);
     } catch (parseError) {
+      // ❌ FIX: Save parse error as failed message in conversation
+      const errorDetails: ErrorDetails = {
+        code: "PARSE_ERROR",
+        title: "Erro de Processamento",
+        message: "Não foi possível processar a solicitação de busca de documento.",
+      };
+
+      await saveChatMessage({
+        phone,
+        message: "📄 Busca de documento",
+        type: "ai",
+        clientId,
+        status: "failed",
+        errorDetails,
+      });
+
       return {
         success: false,
-        message: "Erro ao processar solicitação de busca de documento.",
+        message: "",
         documentsFound: 0,
         documentsSent: 0,
       };
@@ -137,12 +154,31 @@ export const handleDocumentSearchToolCall = async (
 
     // 3. Se não encontrou documentos
     if (results.length === 0) {
-      const message =
-        `Não encontrei documentos relacionados a "${query}" na base de conhecimento.`;
+      // ❌ FIX: Save "no documents found" as failed message in conversation
+      const errorDetails: ErrorDetails = {
+        code: "NOT_FOUND",
+        title: "Documento Não Encontrado",
+        message: `Não encontrei documentos relacionados a "${query}" na base de conhecimento.`,
+        error_data: {
+          query,
+          document_type,
+          totalDocumentsInBase: metadata.totalDocumentsInBase,
+          threshold: metadata.threshold,
+        },
+      };
+
+      await saveChatMessage({
+        phone,
+        message: `📄 Busca: "${query}"`,
+        type: "ai",
+        clientId,
+        status: "failed",
+        errorDetails,
+      });
 
       return {
         success: true,
-        message,
+        message: "",
         documentsFound: 0,
         documentsSent: 0,
         searchMetadata: metadata,
@@ -158,28 +194,54 @@ export const handleDocumentSearchToolCall = async (
     const errors: string[] = [];
 
     for (const doc of results) {
+      // Determinar tipo de mídia baseado no MIME type (moved outside try for catch access)
+      const isImage = doc.originalMimeType.startsWith("image/");
+
       try {
-        // Determinar tipo de mídia baseado no MIME type
-        const isImage = doc.originalMimeType.startsWith("image/");
+        let messageId: string;
 
         if (isImage) {
           // Enviar como imagem (sem caption)
-          await sendImageMessage(
+          const result = await sendImageMessage(
             phone,
             doc.originalFileUrl,
             undefined, // Sem caption
             config,
           );
+          messageId = result.messageId;
         } else {
           // Enviar como documento (PDF, DOC, etc.) - sem caption
-          await sendDocumentMessage(
+          const result = await sendDocumentMessage(
             phone,
             doc.originalFileUrl,
             doc.filename,
             undefined, // Sem caption
             config,
           );
+          messageId = result.messageId;
         }
+
+        // ✅ FIX: Salvar mensagem no banco com wamid e status
+        // Isso permite que o sistema de status atualize corretamente
+        const mediaMetadata: StoredMediaMetadata = {
+          type: isImage ? "image" : "document",
+          url: doc.originalFileUrl,
+          mimeType: doc.originalMimeType,
+          filename: doc.filename,
+          size: doc.originalFileSize,
+        };
+
+        await saveChatMessage({
+          phone,
+          message: `📄 ${doc.filename}`, // Descrição da mídia
+          type: "ai",
+          clientId,
+          mediaMetadata,
+          wamid: messageId,
+          status: "sent", // ✅ Marcar como enviado (já foi para o WhatsApp)
+        });
+
+        console.log(`✅ [handleDocumentSearchToolCall] Saved media message with wamid: ${messageId}`);
 
         sentCount++;
         filesSent.push(doc.filename);
@@ -201,23 +263,43 @@ export const handleDocumentSearchToolCall = async (
           ? sendError.message
           : "Unknown error";
         errors.push(`${doc.filename}: ${errorMessage}`);
+
+        // ❌ FIX: Save send error as failed message in conversation
+        const sendErrorDetails: ErrorDetails = {
+          code: "SEND_FAILED",
+          title: "Falha ao Enviar",
+          message: `Não foi possível enviar o documento "${doc.filename}".`,
+          error_data: {
+            filename: doc.filename,
+            mimeType: doc.originalMimeType,
+            originalError: errorMessage,
+          },
+        };
+
+        const failedMediaMetadata: StoredMediaMetadata = {
+          type: isImage ? "image" : "document",
+          url: doc.originalFileUrl,
+          mimeType: doc.originalMimeType,
+          filename: doc.filename,
+          size: doc.originalFileSize,
+        };
+
+        await saveChatMessage({
+          phone,
+          message: `📄 ${doc.filename}`,
+          type: "ai",
+          clientId,
+          mediaMetadata: failedMediaMetadata,
+          status: "failed",
+          errorDetails: sendErrorDetails,
+        });
       }
     }
 
     // 5. Montar mensagem de retorno
-    // Mensagem simplificada - apenas o documento é mostrado no frontend via filesMetadata
-    let message: string;
-
-    if (sentCount === 0) {
-      message =
-        `Não foi possível enviar os documentos. ${errors.join(", ")}`;
-    } else if (sentCount === results.length) {
-      // Mensagem vazia - apenas o documento/imagem será mostrado
-      message = "";
-    } else {
-      // Parcialmente enviado - mostrar apenas erros
-      message = errors.length > 0 ? `Alguns arquivos falharam: ${errors.join(", ")}` : "";
-    }
+    // ✅ FIX: Errors are now saved as failed messages in the conversation
+    // No need to return error messages - they're visible in the chat
+    const message = "";
 
     return {
       success: sentCount > 0,
@@ -233,9 +315,25 @@ export const handleDocumentSearchToolCall = async (
       ? error.message
       : "Unknown error";
 
+    // ❌ FIX: Save general error as failed message in conversation
+    const generalErrorDetails: ErrorDetails = {
+      code: "SEARCH_ERROR",
+      title: "Erro na Busca",
+      message: `Erro ao buscar documentos: ${errorMessage}`,
+    };
+
+    await saveChatMessage({
+      phone,
+      message: "📄 Busca de documento",
+      type: "ai",
+      clientId,
+      status: "failed",
+      errorDetails: generalErrorDetails,
+    });
+
     return {
       success: false,
-      message: `Erro ao buscar documentos: ${errorMessage}`,
+      message: "",
       documentsFound: 0,
       documentsSent: 0,
     };

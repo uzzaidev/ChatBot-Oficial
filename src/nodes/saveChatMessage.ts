@@ -1,6 +1,13 @@
 import { query } from '@/lib/postgres'
 import type { StoredMediaMetadata } from '@/lib/types'
 
+export interface ErrorDetails {
+  code?: string | number
+  title: string
+  message: string
+  error_data?: any
+}
+
 export interface SaveChatMessageInput {
   phone: string
   message: string
@@ -9,13 +16,14 @@ export interface SaveChatMessageInput {
   mediaMetadata?: StoredMediaMetadata // 📎 Media attachment metadata
   wamid?: string // 📱 WhatsApp message ID for reactions (wamid.xxx format)
   status?: 'pending' | 'sent' | 'delivered' | 'read' | 'failed' // 📊 Message delivery status
+  errorDetails?: ErrorDetails // ❌ Error details when status is 'failed'
 }
 
 export const saveChatMessage = async (input: SaveChatMessageInput): Promise<void> => {
   const startTime = Date.now()
 
   try {
-    const { phone, message, type, clientId, mediaMetadata, wamid, status } = input
+    const { phone, message, type, clientId, mediaMetadata, wamid, status, errorDetails } = input
 
     const messageJson = {
       type: type === 'user' ? 'human' : 'ai',
@@ -34,10 +42,19 @@ export const saveChatMessage = async (input: SaveChatMessageInput): Promise<void
     // 📎 Media: Adicionado media_metadata para armazenar URL da mídia
     // 📱 Wamid: Adicionado wamid para permitir reações via WhatsApp API
     // 📊 Status: Adicionado status para rastreamento de entrega (pending, sent, delivered, read, failed)
+    // ❌ Error: Adicionado error_details para armazenar detalhes de erros
     await query(
-      `INSERT INTO n8n_chat_histories (session_id, message, client_id, media_metadata, wamid, status, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())`,
-      [phone, JSON.stringify(messageJson), clientId, mediaMetadata ? JSON.stringify(mediaMetadata) : null, wamid || null, messageStatus]
+      `INSERT INTO n8n_chat_histories (session_id, message, client_id, media_metadata, wamid, status, error_details, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())`,
+      [
+        phone,
+        JSON.stringify(messageJson),
+        clientId,
+        mediaMetadata ? JSON.stringify(mediaMetadata) : null,
+        wamid || null,
+        messageStatus,
+        errorDetails ? JSON.stringify(errorDetails) : null
+      ]
     )
 
     const duration = Date.now() - startTime
