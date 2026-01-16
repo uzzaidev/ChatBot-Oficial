@@ -8,8 +8,9 @@ import { CustomizableChart } from '@/components/CustomizableChart'
 import { ChartConfigModal } from '@/components/ChartConfigModal'
 import { MetricCard, MetricCardSkeleton } from '@/components/MetricCard'
 import { AdvancedDateFilters, type DateFilterValue, getEffectiveDateRange } from '@/components/AdvancedDateFilters'
+import { ExportDialog } from '@/components/ExportDialog'
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics'
-import type { ChartConfig } from '@/lib/types/dashboard-metrics'
+import type { ChartConfig, MetricDataPoint } from '@/lib/types/dashboard-metrics'
 import { cn } from '@/lib/utils'
 
 interface DashboardMetricsViewProps {
@@ -283,6 +284,16 @@ export function DashboardMetricsView({ clientId }: DashboardMetricsViewProps) {
 
         {/* Controls Bar */}
         <div className="flex flex-wrap items-center gap-3">
+          {/* Export Button */}
+          <ExportDialog
+            charts={charts}
+            chartData={charts.reduce((acc, chart) => {
+              acc[chart.id] = getMetricData(chart.metricType)
+              return acc
+            }, {} as Record<string, MetricDataPoint[]>)}
+            dashboardTitle="Dashboard UZZ.AI"
+          />
+
           {/* Layout Toggle */}
           <div className="flex items-center gap-1 border border-white/10 rounded-md p-1 bg-white/5">
             <Button
@@ -344,6 +355,7 @@ export function DashboardMetricsView({ clientId }: DashboardMetricsViewProps) {
 
       {/* Charts Grid */}
       <div
+        id="dashboard-metrics-view"
         className={
           layout === 'grid'
             ? 'grid grid-cols-1 lg:grid-cols-2 gap-6'
@@ -351,14 +363,15 @@ export function DashboardMetricsView({ clientId }: DashboardMetricsViewProps) {
         }
       >
         {charts.map((chart) => (
-          <CustomizableChart
-            key={chart.id}
-            config={chart}
-            data={getMetricData(chart.metricType)}
-            onEdit={handleEditChart}
-            onRemove={handleRemoveChart}
-            loading={loading}
-          />
+          <div key={chart.id} id={`chart-${chart.id}`}>
+            <CustomizableChart
+              config={chart}
+              data={getMetricData(chart.metricType)}
+              onEdit={handleEditChart}
+              onRemove={handleRemoveChart}
+              loading={loading}
+            />
+          </div>
         ))}
       </div>
 

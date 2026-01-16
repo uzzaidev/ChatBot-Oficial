@@ -5,8 +5,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { MetricSelector } from '@/components/MetricSelector'
 import type { ChartConfig, ChartType, MetricType } from '@/lib/types/dashboard-metrics'
 
 interface ChartConfigModalProps {
@@ -16,36 +17,130 @@ interface ChartConfigModalProps {
   onSave: (config: ChartConfig) => void
 }
 
-const METRIC_OPTIONS: { value: MetricType; label: string; description: string }[] = [
+const METRIC_OPTIONS: { value: MetricType; label: string; description: string; category?: string }[] = [
+  // Métricas Básicas
   {
     value: 'conversations_per_day',
     label: 'Conversas por Dia',
     description: 'Total de conversas iniciadas por dia',
+    category: 'Básicas',
   },
   {
     value: 'new_clients_per_day',
     label: 'Novos Clientes por Dia',
     description: 'Novos clientes cadastrados por dia',
+    category: 'Básicas',
   },
   {
     value: 'messages_per_day',
     label: 'Mensagens por Dia',
     description: 'Total de mensagens enviadas/recebidas por dia',
+    category: 'Básicas',
   },
   {
     value: 'tokens_per_day',
     label: 'Tokens por Dia',
     description: 'Consumo de tokens de IA por dia',
+    category: 'Básicas',
   },
   {
     value: 'cost_per_day',
     label: 'Custo por Dia',
     description: 'Custo de APIs por dia',
+    category: 'Básicas',
   },
   {
     value: 'status_distribution',
     label: 'Distribuição por Status',
     description: 'Distribuição atual de conversas por status',
+    category: 'Básicas',
+  },
+  // Métricas de Performance
+  {
+    value: 'latency_per_day',
+    label: 'Latência por Dia',
+    description: 'Latência média, p50, p95 e p99 das requisições',
+    category: 'Performance',
+  },
+  {
+    value: 'latency_p50',
+    label: 'Latência P50',
+    description: 'Percentil 50 da latência (mediana)',
+    category: 'Performance',
+  },
+  {
+    value: 'latency_p95',
+    label: 'Latência P95',
+    description: 'Percentil 95 da latência',
+    category: 'Performance',
+  },
+  {
+    value: 'latency_p99',
+    label: 'Latência P99',
+    description: 'Percentil 99 da latência',
+    category: 'Performance',
+  },
+  {
+    value: 'cache_hit_rate',
+    label: 'Taxa de Cache Hit',
+    description: 'Percentual de requisições servidas do cache',
+    category: 'Performance',
+  },
+  {
+    value: 'error_rate',
+    label: 'Taxa de Erro',
+    description: 'Percentual de requisições com erro',
+    category: 'Performance',
+  },
+  {
+    value: 'error_rate_by_type',
+    label: 'Erros por Tipo',
+    description: 'Breakdown de erros por tipo',
+    category: 'Performance',
+  },
+  // Métricas Financeiras
+  {
+    value: 'cost_per_conversation',
+    label: 'Custo por Conversa',
+    description: 'Custo médio por conversa',
+    category: 'Financeiras',
+  },
+  {
+    value: 'cost_per_message',
+    label: 'Custo por Mensagem',
+    description: 'Custo médio por mensagem',
+    category: 'Financeiras',
+  },
+  {
+    value: 'cost_by_provider',
+    label: 'Custo por Provider',
+    description: 'Custo agrupado por provider (OpenAI, Groq, etc)',
+    category: 'Financeiras',
+  },
+  {
+    value: 'cost_by_model',
+    label: 'Custo por Modelo',
+    description: 'Custo agrupado por modelo de IA',
+    category: 'Financeiras',
+  },
+  {
+    value: 'cost_by_api_type',
+    label: 'Custo por Tipo de API',
+    description: 'Custo agrupado por tipo (chat, embeddings, etc)',
+    category: 'Financeiras',
+  },
+  // Métricas de Engajamento
+  {
+    value: 'messages_by_hour',
+    label: 'Mensagens por Hora',
+    description: 'Distribuição de mensagens ao longo do dia',
+    category: 'Engajamento',
+  },
+  {
+    value: 'peak_hours',
+    label: 'Horários de Pico',
+    description: 'Top 5 horas com mais mensagens',
+    category: 'Engajamento',
   },
 ]
 
@@ -92,6 +187,7 @@ export function ChartConfigModal({
     metricType: 'conversations_per_day',
     title: 'Novo Gráfico',
     description: '',
+    period: 'month', // Default: mês
     colors: {
       primary: '#3b82f6',
       secondary: '#60a5fa',
@@ -111,6 +207,7 @@ export function ChartConfigModal({
         metricType: 'conversations_per_day',
         title: 'Novo Gráfico',
         description: '',
+        period: 'month',
         colors: {
           primary: '#3b82f6',
           secondary: '#60a5fa',
@@ -129,6 +226,7 @@ export function ChartConfigModal({
       metricType: formData.metricType!,
       title: formData.title!,
       description: formData.description,
+      period: formData.period || 'month',
       colors: formData.colors!,
       showGrid: formData.showGrid,
       showLegend: formData.showLegend,
@@ -150,7 +248,6 @@ export function ChartConfigModal({
     })
   }
 
-  const selectedMetric = METRIC_OPTIONS.find((m) => m.value === formData.metricType)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -162,32 +259,14 @@ export function ChartConfigModal({
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Metric Type */}
-          <div className="space-y-2">
-            <Label htmlFor="metricType">Métrica</Label>
-            <Select
-              value={formData.metricType}
-              onValueChange={(value) =>
-                setFormData({ ...formData, metricType: value as MetricType })
-              }
-            >
-              <SelectTrigger id="metricType">
-                <SelectValue placeholder="Selecione uma métrica" />
-              </SelectTrigger>
-              <SelectContent>
-                {METRIC_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedMetric && (
-              <p className="text-sm text-muted-foreground">
-                {selectedMetric.description}
-              </p>
-            )}
-          </div>
+          {/* Metric Type - Novo componente melhorado */}
+          <MetricSelector
+            value={formData.metricType}
+            onValueChange={(value) =>
+              setFormData({ ...formData, metricType: value as MetricType })
+            }
+            label="Métrica"
+          />
 
           {/* Chart Type */}
           <div className="space-y-2">
@@ -201,14 +280,65 @@ export function ChartConfigModal({
               <SelectTrigger id="chartType">
                 <SelectValue placeholder="Selecione um tipo" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-[#1e2530] border-white/20 text-white z-50">
                 {CHART_TYPE_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
+                  <SelectItem 
+                    key={option.value} 
+                    value={option.value}
+                    className="focus:bg-white/10 focus:text-white"
+                  >
                     {option.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Period Selector */}
+          <div className="space-y-2">
+            <Label htmlFor="period">Período</Label>
+            <Select
+              value={formData.period || 'month'}
+              onValueChange={(value) =>
+                setFormData({ ...formData, period: value as 'day' | 'week' | 'month' | 'custom' })
+              }
+            >
+              <SelectTrigger id="period">
+                <SelectValue placeholder="Selecione um período" />
+              </SelectTrigger>
+              <SelectContent className="bg-[#1e2530] border-white/20 text-white z-50">
+                <SelectItem 
+                  value="day"
+                  className="focus:bg-white/10 focus:text-white cursor-pointer"
+                >
+                  Dia (Hoje)
+                </SelectItem>
+                <SelectItem 
+                  value="week"
+                  className="focus:bg-white/10 focus:text-white cursor-pointer"
+                >
+                  Semana (Últimos 7 dias)
+                </SelectItem>
+                <SelectItem 
+                  value="month"
+                  className="focus:bg-white/10 focus:text-white cursor-pointer"
+                >
+                  Mês (Últimos 30 dias)
+                </SelectItem>
+                <SelectItem 
+                  value="custom"
+                  className="focus:bg-white/10 focus:text-white cursor-pointer"
+                >
+                  Personalizado (usar filtro do dashboard)
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-sm text-muted-foreground">
+              {formData.period === 'day' && 'Mostra dados do dia atual'}
+              {formData.period === 'week' && 'Mostra dados dos últimos 7 dias'}
+              {formData.period === 'month' && 'Mostra dados dos últimos 30 dias'}
+              {formData.period === 'custom' && 'Usa o filtro de data do dashboard'}
+            </p>
           </div>
 
           {/* Title */}
