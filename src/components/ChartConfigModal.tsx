@@ -54,6 +54,11 @@ const CHART_TYPE_OPTIONS: { value: ChartType; label: string }[] = [
   { value: 'bar', label: 'Barra' },
   { value: 'area', label: 'Área' },
   { value: 'composed', label: 'Composto' },
+  { value: 'radar', label: 'Radar' },
+  { value: 'treemap', label: 'Mapa de Árvore' },
+  { value: 'gauge', label: 'Gauge' },
+  { value: 'funnel', label: 'Funil' },
+  { value: 'heatmap', label: 'Heatmap' },
 ]
 
 const COLOR_PRESETS = [
@@ -149,7 +154,7 @@ export function ChartConfigModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-[#1a1f26] border-white/10">
         <DialogHeader>
           <DialogTitle>
             {config ? 'Editar Gráfico' : 'Adicionar Gráfico'}

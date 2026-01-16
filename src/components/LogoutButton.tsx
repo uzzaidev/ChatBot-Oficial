@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { LogOut } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface LogoutButtonProps {
   isCollapsed?: boolean
@@ -50,9 +51,12 @@ export function LogoutButton({ isCollapsed = false }: LogoutButtonProps) {
     <Button
       onClick={handleLogout}
       disabled={loading}
-      variant="outline"
+      variant="ghost"
       size="sm"
-      className={isCollapsed ? "w-full justify-center" : "w-full justify-start gap-2"}
+      className={cn(
+        "w-full text-uzz-silver hover:text-white hover:bg-white/10 border border-white/10",
+        isCollapsed ? "justify-center" : "justify-start gap-2"
+      )}
       title={isCollapsed ? (loading ? 'Saindo...' : 'Sair') : undefined}
     >
       <LogOut className="h-4 w-4" />

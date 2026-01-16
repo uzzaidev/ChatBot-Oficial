@@ -4,7 +4,7 @@
  * Tipos para o sistema de dashboard customizável com gráficos
  */
 
-export type ChartType = 'line' | 'bar' | 'area' | 'composed'
+export type ChartType = 'line' | 'bar' | 'area' | 'composed' | 'radar' | 'treemap' | 'gauge' | 'funnel' | 'heatmap'
 
 export type MetricType =
   | 'conversations_per_day'
@@ -14,6 +14,14 @@ export type MetricType =
   | 'cost_per_day'
   | 'active_conversations'
   | 'status_distribution'
+  // Novas métricas
+  | 'resolution_rate'
+  | 'first_response_time'
+  | 'transfer_rate'
+  | 'avg_messages_per_conversation'
+  | 'peak_hours'
+  | 'cost_per_conversation'
+  | 'cost_per_message'
 
 export interface ChartConfig {
   id: string

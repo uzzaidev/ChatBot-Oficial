@@ -189,7 +189,7 @@ export default function SettingsPage() {
           if (data.config.ai_keys_mode === 'platform_only' || data.config.ai_keys_mode === 'byok_allowed') {
             setAiKeysMode(data.config.ai_keys_mode)
           }
-          
+
           // Also update WABA ID from client config if present
           if (data.whatsapp_business_account_id) {
             setSecrets(prev => ({
@@ -313,7 +313,7 @@ export default function SettingsPage() {
 
     try {
       const { apiFetch } = await import('@/lib/api')
-      
+
       // WABA ID is stored in clients table, not vault
       if (key === 'whatsapp_business_account_id') {
         const response = await apiFetch('/api/client/waba-id', {
@@ -488,18 +488,18 @@ export default function SettingsPage() {
           message: `${data.message} (${data.latency_ms}ms)`,
           latency_ms: data.latency_ms,
         })
-        setNotification({ 
-          type: 'success', 
-          message: `Modelo testado com sucesso! Latência: ${data.latency_ms}ms` 
+        setNotification({
+          type: 'success',
+          message: `Modelo testado com sucesso! Latência: ${data.latency_ms}ms`
         })
       } else {
         setTestResult({
           success: false,
           message: data.message || data.error,
         })
-        setNotification({ 
-          type: 'error', 
-          message: `${data.message || data.error}` 
+        setNotification({
+          type: 'error',
+          message: `${data.message || data.error}`
         })
       }
     } catch (error) {
@@ -507,9 +507,9 @@ export default function SettingsPage() {
         success: false,
         message: 'Erro ao conectar com o servidor',
       })
-      setNotification({ 
-        type: 'error', 
-        message: 'Erro ao testar modelo' 
+      setNotification({
+        type: 'error',
+        message: 'Erro ao testar modelo'
       })
     } finally {
       setTestingModel(false)
@@ -517,7 +517,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white p-6">
+    <div className="min-h-screen bg-[#0f1419] bg-pattern-dots p-6">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div>
@@ -743,7 +743,7 @@ export default function SettingsPage() {
               <p className="text-xs text-gray-600 mb-3">
                 Escolha qual IA vai responder as mensagens de texto do seu chatbot
               </p>
-              
+
               <Select
                 value={agentConfig.primary_model_provider}
                 onValueChange={(value) =>
@@ -779,7 +779,7 @@ export default function SettingsPage() {
                   </SelectItem>
                 </SelectContent>
               </Select>
-              
+
               {/* Alertas de custo */}
               {agentConfig.primary_model_provider === 'openai' && (
                 <div className="mt-3 text-xs bg-yellow-50 border border-yellow-200 p-3 rounded flex items-start gap-2">
@@ -790,7 +790,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
               )}
-              
+
               {agentConfig.primary_model_provider === 'groq' && (
                 <div className="mt-3 text-xs bg-green-50 border border-green-200 p-3 rounded flex items-start gap-2">
                   <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
@@ -825,11 +825,10 @@ export default function SettingsPage() {
 
               {/* Resultado do teste */}
               {testResult && (
-                <div className={`mt-3 text-xs p-3 rounded flex items-start gap-2 ${
-                  testResult.success 
-                    ? 'bg-green-50 border border-green-200 text-green-800' 
+                <div className={`mt-3 text-xs p-3 rounded flex items-start gap-2 ${testResult.success
+                    ? 'bg-green-50 border border-green-200 text-green-800'
                     : 'bg-red-50 border border-red-200 text-red-800'
-                }`}>
+                  }`}>
                   {testResult.success ? <CheckCircle className="h-4 w-4 flex-shrink-0 mt-0.5" /> : <XCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />}
                   <span>{testResult.message}</span>
                 </div>
@@ -885,11 +884,11 @@ export default function SettingsPage() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                {agentConfig.primary_model_provider === 'openai' 
+                {agentConfig.primary_model_provider === 'openai'
                   ? (
                     <>
                       <MessageCircle className="h-3 w-3" />
-                      Conversação + 
+                      Conversação +
                       <Mic className="h-3 w-3 ml-1" />
                       Mídia (transcrição, imagens, PDFs)
                     </>

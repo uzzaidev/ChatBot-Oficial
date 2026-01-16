@@ -26,12 +26,12 @@ export const ConversationMetricCard = ({
     <button
       onClick={onClick}
       className={cn(
-        "relative w-full p-3 rounded-xl border-2 transition-all duration-200",
-        "hover:shadow-lg hover:-translate-y-1",
-        "focus:outline-none focus:ring-2 focus:ring-uzz-mint focus:ring-offset-2",
+        "relative w-full p-4 rounded-xl border transition-all duration-200",
+        "hover:shadow-glow hover:-translate-y-1",
+        "focus:outline-none focus:ring-2 focus:ring-uzz-mint focus:ring-offset-2 focus:ring-offset-[#0f1419]",
         active
-          ? `bg-gradient-to-br ${gradient} text-white border-transparent shadow-lg`
-          : "bg-white border-uzz-silver text-uzz-black hover:border-uzz-mint hover:bg-gradient-to-br hover:from-gray-50 hover:to-white"
+          ? `bg-gradient-to-br ${gradient} text-white border-transparent shadow-glow`
+          : "bg-card-dark border-white/10 text-white hover:border-uzz-mint/30 hover:bg-white/5"
       )}
       aria-label={`Filtrar por ${label}: ${value} conversas`}
       aria-pressed={active}
@@ -41,20 +41,20 @@ export const ConversationMetricCard = ({
         <div className="absolute top-0 left-0 right-0 h-1 bg-white/30 rounded-t-xl" />
       )}
 
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-3">
         <span className={cn(
-          "text-[10px] font-bold uppercase tracking-wider",
+          "text-[11px] font-bold uppercase tracking-wider",
           active ? "text-white/90" : "text-uzz-silver"
         )}>
           {label}
         </span>
         <div className={cn(
-          "p-1.5 rounded-lg",
-          active ? "bg-white/20" : `bg-gradient-to-br ${gradient}`
+          "p-2 rounded-lg",
+          active ? "bg-white/20" : `bg-gradient-to-br ${gradient} bg-opacity-20`
         )}>
           <Icon className={cn(
             "h-4 w-4",
-            active ? "text-white" : "text-white"
+            active ? "text-white" : `text-white`
           )} />
         </div>
       </div>
@@ -63,13 +63,13 @@ export const ConversationMetricCard = ({
         "text-3xl font-bold font-poppins",
         active 
           ? "text-white" 
-          : `bg-gradient-to-r ${gradient} bg-clip-text text-transparent`
+          : "text-white"
       )}>
         {value}
       </div>
 
       {description && active && (
-        <p className="text-[10px] text-white/80 mt-1">
+        <p className="text-[11px] text-white/70 mt-2">
           {description}
         </p>
       )}

@@ -1,0 +1,3121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UzzAi Atléticas - Sistema de Gestão</title>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;600;700&family=Exo+2:wght@600&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* UzzAI Colors */
+            --uzzai-mint: #1ABC9C;
+            --uzzai-black: #1C1C1C;
+            --uzzai-silver: #B0B0B0;
+            --uzzai-blue: #2E86AB;
+            --uzzai-gold: #FFD700;
+
+            /* Status Colors */
+            --status-success: #10B981;
+            --status-warning: #F59E0B;
+            --status-danger: #EF4444;
+            --status-info: #3B82F6;
+
+            /* Fonts */
+            --font-inter: 'Inter', sans-serif;
+            --font-poppins: 'Poppins', sans-serif;
+            --font-exo2: 'Exo 2', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-inter);
+            background: #0f1419;
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        /* ========================================
+           LAYOUT BASE
+           ======================================== */
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* ========================================
+           SIDEBAR
+           ======================================== */
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, #1a1f26 0%, #0f1419 100%);
+            border-right: 1px solid rgba(26, 188, 156, 0.1);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            padding: 24px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .logo-uzz {
+            font-family: var(--font-poppins);
+            color: var(--uzzai-mint);
+        }
+
+        .logo-ai {
+            font-family: var(--font-exo2);
+            color: var(--uzzai-blue);
+        }
+
+        .logo-subtitle {
+            font-size: 12px;
+            color: var(--uzzai-silver);
+            margin-left: 4px;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 12px;
+        }
+
+        .nav-section-header {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--uzzai-silver);
+            letter-spacing: 0.5px;
+            padding: 12px 12px 8px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 12px;
+            margin: 2px 0;
+            border-radius: 8px;
+            color: #9ca3af;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .nav-item:hover {
+            background: rgba(26, 188, 156, 0.1);
+            color: var(--uzzai-mint);
+            transform: translateX(4px);
+        }
+
+        .nav-item.active {
+            background: rgba(26, 188, 156, 0.15);
+            color: var(--uzzai-mint);
+            border-left: 3px solid var(--uzzai-mint);
+        }
+
+        .nav-item i {
+            width: 20px;
+            text-align: center;
+        }
+
+        .nav-badge {
+            margin-left: auto;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .nav-badge.new {
+            background: linear-gradient(90deg, var(--uzzai-mint), var(--uzzai-gold));
+            color: var(--uzzai-black);
+        }
+
+        .nav-badge.count {
+            background: var(--status-danger);
+            color: white;
+        }
+
+        /* ========================================
+           MAIN CONTENT
+           ======================================== */
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ========================================
+           TOPBAR
+           ======================================== */
+        .topbar {
+            height: 70px;
+            background: #1a1f26;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+            position: sticky;
+            top: 0;
+            z-index: 90;
+        }
+
+        .topbar-left h1 {
+            font-size: 24px;
+            font-weight: 700;
+            font-family: var(--font-poppins);
+        }
+
+        .topbar-subtitle {
+            font-size: 13px;
+            color: var(--uzzai-silver);
+            margin-top: 2px;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .search-bar {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 8px 16px;
+            width: 300px;
+        }
+
+        .search-bar input {
+            background: transparent;
+            border: none;
+            color: white;
+            outline: none;
+            width: 100%;
+            font-size: 14px;
+        }
+
+        .search-bar input::placeholder {
+            color: var(--uzzai-silver);
+        }
+
+        .topbar-icon {
+            position: relative;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .topbar-icon:hover {
+            background: rgba(26, 188, 156, 0.2);
+            color: var(--uzzai-mint);
+        }
+
+        .topbar-icon .badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: var(--status-danger);
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .user-profile:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--uzzai-mint), var(--uzzai-blue));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-name {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .user-role {
+            font-size: 12px;
+            color: var(--uzzai-silver);
+        }
+
+        /* ========================================
+           CONTENT AREA
+           ======================================== */
+        .content {
+            flex: 1;
+            padding: 32px;
+            overflow-y: auto;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* ========================================
+           CARDS
+           ======================================== */
+        .metric-card {
+            background: linear-gradient(180deg, #1e2530 0%, #1a1f26 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--uzzai-mint), var(--uzzai-blue));
+        }
+
+        .metric-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(26, 188, 156, 0.15);
+        }
+
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .metric-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--uzzai-silver);
+            letter-spacing: 0.5px;
+        }
+
+        .metric-value {
+            font-size: 32px;
+            font-weight: 700;
+            font-family: var(--font-poppins);
+            margin: 8px 0;
+        }
+
+        .metric-trend {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            margin-top: 8px;
+        }
+
+        .metric-trend.up {
+            color: var(--status-success);
+        }
+
+        .metric-trend.down {
+            color: var(--status-danger);
+        }
+
+        /* ========================================
+           MODALIDADES
+           ======================================== */
+        .modalidade-card {
+            background: linear-gradient(135deg, rgba(26, 188, 156, 0.1) 0%, rgba(46, 134, 171, 0.05) 100%);
+            border: 1px solid rgba(26, 188, 156, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .modalidade-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--uzzai-mint);
+            box-shadow: 0 8px 16px rgba(26, 188, 156, 0.2);
+        }
+
+        .modalidade-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+
+        .modalidade-nome {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .modalidade-stats {
+            display: flex;
+            gap: 16px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modalidade-stat {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modalidade-stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--uzzai-mint);
+        }
+
+        .modalidade-stat-label {
+            font-size: 11px;
+            color: var(--uzzai-silver);
+        }
+
+        /* ========================================
+           TREINOS LIST
+           ======================================== */
+        .treino-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: all 0.2s;
+        }
+
+        .treino-item:hover {
+            background: rgba(26, 188, 156, 0.05);
+            border-color: rgba(26, 188, 156, 0.3);
+        }
+
+        .treino-date {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 60px;
+            padding: 12px;
+            background: rgba(26, 188, 156, 0.1);
+            border-radius: 8px;
+        }
+
+        .treino-day {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--uzzai-mint);
+        }
+
+        .treino-month {
+            font-size: 12px;
+            color: var(--uzzai-silver);
+            text-transform: uppercase;
+        }
+
+        .treino-info {
+            flex: 1;
+        }
+
+        .treino-modalidade {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .treino-badge {
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .treino-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .treino-details {
+            display: flex;
+            gap: 16px;
+            font-size: 13px;
+            color: var(--uzzai-silver);
+        }
+
+        .treino-detail {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .treino-status {
+            min-width: 140px;
+            text-align: right;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .status-badge.confirmado {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--status-success);
+        }
+
+        .status-badge.pendente {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--status-warning);
+        }
+
+        /* ========================================
+           FINANCIAL
+           ======================================== */
+        .financial-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .financial-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .financial-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+            font-size: 24px;
+        }
+
+        .financial-value {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .financial-label {
+            font-size: 12px;
+            color: var(--uzzai-silver);
+        }
+
+        /* ========================================
+           ATLETAS TABLE
+           ======================================== */
+        .atletas-table {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .table-header {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+            gap: 16px;
+            padding: 16px 24px;
+            background: rgba(255, 255, 255, 0.05);
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--uzzai-silver);
+        }
+
+        .table-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+            gap: 16px;
+            padding: 16px 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            align-items: center;
+            transition: all 0.2s;
+        }
+
+        .table-row:hover {
+            background: rgba(26, 188, 156, 0.05);
+        }
+
+        .atleta-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .atleta-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--uzzai-mint), var(--uzzai-blue));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .atleta-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .atleta-nome {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .atleta-modalidades {
+            font-size: 12px;
+            color: var(--uzzai-silver);
+        }
+
+        /* ========================================
+           UTILITIES
+           ======================================== */
+        .grid {
+            display: grid;
+            gap: 24px;
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .grid-4 {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .mb-24 {
+            margin-bottom: 24px;
+        }
+
+        .mb-32 {
+            margin-bottom: 32px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            font-family: var(--font-poppins);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--uzzai-mint), var(--uzzai-blue));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(26, 188, 156, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* ========================================
+           ANIMATIONS
+           ======================================== */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        /* ========================================
+           RESPONSIVE
+           ======================================== */
+        @media (max-width: 1024px) {
+            .grid-4 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .grid-2, .grid-3, .grid-4 {
+                grid-template-columns: 1fr;
+            }
+
+            .topbar {
+                padding: 0 16px;
+            }
+
+            .search-bar {
+                display: none;
+            }
+        }
+
+        /* ========================================
+           VIEW SPECIFIC STYLES
+           ======================================== */
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        /* Progress Ring */
+        .progress-ring {
+            width: 80px;
+            height: 80px;
+        }
+
+        .progress-ring-circle {
+            transition: stroke-dashoffset 0.5s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <!-- ========================================
+         SIDEBAR
+         ======================================== -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <span class="logo-uzz">Uzz</span><span class="logo-ai">Ai</span>
+                <span class="logo-subtitle">Atléticas</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section-header">Principal</div>
+            <div class="nav-item active" onclick="switchView('dashboard')">
+                <i class="fas fa-chart-line"></i>
+                <span>Dashboard</span>
+            </div>
+            <div class="nav-item" onclick="switchView('modalidades')">
+                <i class="fas fa-futbol"></i>
+                <span>Modalidades</span>
+                <span class="nav-badge new">5</span>
+            </div>
+            <div class="nav-item" onclick="switchView('atletas')">
+                <i class="fas fa-users"></i>
+                <span>Atletas</span>
+            </div>
+
+            <div class="nav-section-header">Gestão</div>
+            <div class="nav-item" onclick="switchView('treinos')">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Treinos</span>
+            </div>
+            <div class="nav-item" onclick="switchView('jogos')">
+                <i class="fas fa-trophy"></i>
+                <span>Jogos Oficiais</span>
+            </div>
+            <div class="nav-item" onclick="switchView('financeiro')">
+                <i class="fas fa-dollar-sign"></i>
+                <span>Financeiro</span>
+                <span class="nav-badge count">3</span>
+            </div>
+
+            <div class="nav-section-header">Análise</div>
+            <div class="nav-item" onclick="switchView('frequencia')">
+                <i class="fas fa-chart-bar"></i>
+                <span>Frequência</span>
+            </div>
+            <div class="nav-item" onclick="switchView('rankings')">
+                <i class="fas fa-medal"></i>
+                <span>Rankings</span>
+            </div>
+
+            <div class="nav-section-header">Ferramentas</div>
+            <div class="nav-item" onclick="switchView('tabelinha')">
+                <i class="fas fa-chalkboard"></i>
+                <span>Tabelinha Tática</span>
+                <span class="nav-badge new">NOVO</span>
+            </div>
+            <div class="nav-item">
+                <i class="fas fa-cog"></i>
+                <span>Configurações</span>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- ========================================
+         MAIN CONTENT
+         ======================================== -->
+    <main class="main-content">
+        <!-- TOPBAR -->
+        <div class="topbar">
+            <div class="topbar-left">
+                <h1>Dashboard</h1>
+                <div class="topbar-subtitle">Visão geral da atlética - Semana 48/2025</div>
+            </div>
+
+            <div class="topbar-right">
+                <div class="search-bar">
+                    <i class="fas fa-search" style="color: var(--uzzai-silver); margin-right: 8px;"></i>
+                    <input type="text" placeholder="Buscar atletas, treinos...">
+                </div>
+
+                <div class="topbar-icon">
+                    <i class="fas fa-bell"></i>
+                    <span class="badge">3</span>
+                </div>
+
+                <div class="user-profile">
+                    <div class="user-avatar">PV</div>
+                    <div class="user-info">
+                        <div class="user-name">Pedro Vitor</div>
+                        <div class="user-role">Atleta de Ouro</div>
+                    </div>
+                    <i class="fas fa-chevron-down" style="color: var(--uzzai-silver); font-size: 12px;"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTENT -->
+        <div class="content">
+            <!-- ========================================
+                 VIEW: DASHBOARD
+                 ======================================== -->
+            <div id="view-dashboard" class="view active">
+                <!-- Métricas Principais -->
+                <div class="grid grid-4 mb-32">
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <div class="metric-title">Atletas Ativos</div>
+                            <i class="fas fa-users" style="color: var(--uzzai-mint); font-size: 24px;"></i>
+                        </div>
+                        <div class="metric-value" style="color: var(--uzzai-mint);">127</div>
+                        <div class="metric-trend up">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>+12% vs. último semestre</span>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <div class="metric-title">Treinos Esta Semana</div>
+                            <i class="fas fa-calendar-check" style="color: var(--uzzai-blue); font-size: 24px;"></i>
+                        </div>
+                        <div class="metric-value" style="color: var(--uzzai-blue);">8</div>
+                        <div class="metric-trend">
+                            <span style="color: var(--uzzai-silver);">5 modalidades ativas</span>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <div class="metric-title">Frequência Média</div>
+                            <i class="fas fa-chart-line" style="color: var(--status-success); font-size: 24px;"></i>
+                        </div>
+                        <div class="metric-value" style="color: var(--status-success);">72%</div>
+                        <div class="metric-trend up">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>+5% este mês</span>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <div class="metric-title">Caixa do Mês</div>
+                            <i class="fas fa-dollar-sign" style="color: var(--uzzai-gold); font-size: 24px;"></i>
+                        </div>
+                        <div class="metric-value" style="color: var(--uzzai-gold);">R$ 3.450</div>
+                        <div class="metric-trend down">
+                            <i class="fas fa-arrow-down"></i>
+                            <span>R$ 850 pendente</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modalidades -->
+                <div class="section-header">
+                    <div class="section-title">Modalidades Ativas</div>
+                    <button class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        Nova Modalidade
+                    </button>
+                </div>
+
+                <div class="grid grid-3 mb-32">
+                    <div class="modalidade-card">
+                        <div class="modalidade-icon" style="background: rgba(26, 188, 156, 0.2); color: var(--uzzai-mint);">
+                            <i class="fas fa-futbol"></i>
+                        </div>
+                        <div class="modalidade-nome">Futsal</div>
+                        <div class="modalidade-stats">
+                            <div class="modalidade-stat">
+                                <div class="modalidade-stat-value">45</div>
+                                <div class="modalidade-stat-label">Atletas</div>
+                            </div>
+                            <div class="modalidade-stat">
+                                <div class="modalidade-stat-value">2x</div>
+                                <div class="modalidade-stat-label">Semana</div>
+                            </div>
+                            <div class="modalidade-stat">
+                                <div class="modalidade-stat-value">78%</div>
+                                <div class="modalidade-stat-label">Frequência</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modalidade-card">
+                        <div class="modalidade-icon" style="background: rgba(46, 134, 171, 0.2); color: var(--uzzai-blue);">
+                            <i class="fas fa-volleyball-ball"></i>
+                        </div>
+                        <div class="modalidade-nome">Vôlei</div>
+                        <div class="modalidade-stats">
+                            <div class="modalidade-stat">
+                                <div class="modalidade-stat-value">32</div>
+                                <div class="modalidade-stat-label">Atletas</div>
+                            </div>
+                            <div class="modalidade-stat">
+                                <div class="modalidade-stat-value">2x</div>
+                                <div class="modalidade-stat-label">Semana</div>
+                            </div>
+                            <div class="modalidade-stat">
+                                <div class="modalidade-stat-value">81%</div>
+                                <div class="modalidade-stat-label">Frequência</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modalidade-card">
+                        <div class="modalidade-icon" style="background: rgba(255, 215, 0, 0.2); color: var(--uzzai-gold);">
+                            <i class="fas fa-basketball-ball"></i>
+                        </div>
+                        <div class="modalidade-nome">Basquete</div>
+                        <div class="modalidade-stats">
+                            <div class="modalidade-stat">
+                                <div class="modalidade-stat-value">28</div>
+                                <div class="modalidade-stat-label">Atletas</div>
+                            </div>
+                            <div class="modalidade-stat">
+                                <div class="modalidade-stat-value">1x</div>
+                                <div class="modalidade-stat-label">Semana</div>
+                            </div>
+                            <div class="modalidade-stat">
+                                <div class="modalidade-stat-value">65%</div>
+                                <div class="modalidade-stat-label">Frequência</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modalidade-card">
+                        <div class="modalidade-icon" style="background: rgba(239, 68, 68, 0.2); color: var(--status-danger);">
+                            <i class="fas fa-basketball-ball"></i>
+                        </div>
+                        <div class="modalidade-nome">Handebol</div>
+                        <div class="modalidade-stats">
+                            <div class="modalidade-stat">
+                                <div class="modalidade-stat-value">22</div>
+                                <div class="modalidade-stat-label">Atletas</div>
+                            </div>
+                            <div class="modalidade-stat">
+                                <div class="modalidade-stat-value">1x</div>
+                                <div class="modalidade-stat-label">Semana</div>
+                            </div>
+                            <div class="modalidade-stat">
+                                <div class="modalidade-stat-value">70%</div>
+                                <div class="modalidade-stat-label">Frequência</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modalidade-card">
+                        <div class="modalidade-icon" style="background: rgba(16, 185, 129, 0.2); color: var(--status-success);">
+                            <i class="fas fa-futbol"></i>
+                        </div>
+                        <div class="modalidade-nome">Futebol Campo</div>
+                        <div class="modalidade-stats">
+                            <div class="modalidade-stat">
+                                <div class="modalidade-stat-value">38</div>
+                                <div class="modalidade-stat-label">Atletas</div>
+                            </div>
+                            <div class="modalidade-stat">
+                                <div class="modalidade-stat-value">1x</div>
+                                <div class="modalidade-stat-label">Semana</div>
+                            </div>
+                            <div class="modalidade-stat">
+                                <div class="modalidade-stat-value">68%</div>
+                                <div class="modalidade-stat-label">Frequência</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Próximos Treinos -->
+                <div class="section-header">
+                    <div class="section-title">Próximos Treinos</div>
+                    <button class="btn btn-secondary">
+                        Ver Calendário Completo
+                    </button>
+                </div>
+
+                <div class="mb-32">
+                    <div class="treino-item">
+                        <div class="treino-date">
+                            <div class="treino-day">15</div>
+                            <div class="treino-month">JAN</div>
+                        </div>
+                        <div class="treino-info">
+                            <div class="treino-modalidade">
+                                <span class="treino-badge" style="background: rgba(26, 188, 156, 0.2); color: var(--uzzai-mint);">FUTSAL</span>
+                            </div>
+                            <div class="treino-title">Treino Tático - Preparação Interatléticas</div>
+                            <div class="treino-details">
+                                <div class="treino-detail">
+                                    <i class="fas fa-clock"></i>
+                                    <span>Terça-feira, 20:00</span>
+                                </div>
+                                <div class="treino-detail">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <span>Ginásio UFRGS</span>
+                                </div>
+                                <div class="treino-detail">
+                                    <i class="fas fa-users"></i>
+                                    <span>23/30 confirmados</span>
+                                </div>
+                                <div class="treino-detail">
+                                    <i class="fas fa-dollar-sign"></i>
+                                    <span>R$ 10,00</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="treino-status">
+                            <span class="status-badge confirmado">CONFIRMADO</span>
+                        </div>
+                    </div>
+
+                    <div class="treino-item">
+                        <div class="treino-date">
+                            <div class="treino-day">16</div>
+                            <div class="treino-month">JAN</div>
+                        </div>
+                        <div class="treino-info">
+                            <div class="treino-modalidade">
+                                <span class="treino-badge" style="background: rgba(46, 134, 171, 0.2); color: var(--uzzai-blue);">VÔLEI</span>
+                            </div>
+                            <div class="treino-title">Treino Recepção e Levantamento</div>
+                            <div class="treino-details">
+                                <div class="treino-detail">
+                                    <i class="fas fa-clock"></i>
+                                    <span>Quarta-feira, 19:30</span>
+                                </div>
+                                <div class="treino-detail">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <span>Quadra Esportes UFRGS</span>
+                                </div>
+                                <div class="treino-detail">
+                                    <i class="fas fa-users"></i>
+                                    <span>18/24 confirmados</span>
+                                </div>
+                                <div class="treino-detail">
+                                    <i class="fas fa-dollar-sign"></i>
+                                    <span>R$ 8,00</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="treino-status">
+                            <span class="status-badge pendente">PENDENTE</span>
+                        </div>
+                    </div>
+
+                    <div class="treino-item">
+                        <div class="treino-date">
+                            <div class="treino-day">17</div>
+                            <div class="treino-month">JAN</div>
+                        </div>
+                        <div class="treino-info">
+                            <div class="treino-modalidade">
+                                <span class="treino-badge" style="background: rgba(255, 215, 0, 0.2); color: var(--uzzai-gold);">BASQUETE</span>
+                            </div>
+                            <div class="treino-title">Fundamentos + Jogo Coletivo</div>
+                            <div class="treino-details">
+                                <div class="treino-detail">
+                                    <i class="fas fa-clock"></i>
+                                    <span>Quinta-feira, 20:30</span>
+                                </div>
+                                <div class="treino-detail">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <span>Quadra Coberta</span>
+                                </div>
+                                <div class="treino-detail">
+                                    <i class="fas fa-users"></i>
+                                    <span>15/20 confirmados</span>
+                                </div>
+                                <div class="treino-detail">
+                                    <i class="fas fa-dollar-sign"></i>
+                                    <span>R$ 12,00</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="treino-status">
+                            <span class="status-badge confirmado">CONFIRMADO</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================
+                 VIEW: ATLETAS
+                 ======================================== -->
+            <div id="view-atletas" class="view">
+                <div class="section-header">
+                    <div class="section-title">Gestão de Atletas</div>
+                    <button class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        Novo Atleta
+                    </button>
+                </div>
+
+                <!-- Filtros -->
+                <div class="grid grid-4 mb-24">
+                    <div class="search-bar" style="width: 100%;">
+                        <i class="fas fa-search" style="color: var(--uzzai-silver); margin-right: 8px;"></i>
+                        <input type="text" placeholder="Buscar por nome ou email...">
+                    </div>
+                    <select class="btn btn-secondary" style="width: 100%;">
+                        <option>Todas Modalidades</option>
+                        <option>Futsal</option>
+                        <option>Vôlei</option>
+                        <option>Basquete</option>
+                        <option>Handebol</option>
+                        <option>Futebol Campo</option>
+                    </select>
+                    <select class="btn btn-secondary" style="width: 100%;">
+                        <option>Todos Status</option>
+                        <option>Atleta de Ouro</option>
+                        <option>Atleta Ativo</option>
+                        <option>Treinador</option>
+                        <option>Tesoureiro</option>
+                    </select>
+                    <select class="btn btn-secondary" style="width: 100%;">
+                        <option>Ordenar: Nome A-Z</option>
+                        <option>Frequência ↓</option>
+                        <option>Mais Recentes</option>
+                    </select>
+                </div>
+
+                <!-- Tabela de Atletas -->
+                <div class="atletas-table">
+                    <div class="table-header">
+                        <div>Atleta</div>
+                        <div>Modalidades</div>
+                        <div>Status</div>
+                        <div>Frequência</div>
+                        <div>Ações</div>
+                    </div>
+
+                    <div class="table-row">
+                        <div class="atleta-info">
+                            <div class="atleta-avatar">PV</div>
+                            <div class="atleta-details">
+                                <div class="atleta-nome">Pedro Vitor Costa</div>
+                                <div class="atleta-modalidades">pedro@example.com</div>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="treino-badge" style="background: rgba(26, 188, 156, 0.2); color: var(--uzzai-mint); margin-right: 4px;">FUTSAL</span>
+                            <span class="treino-badge" style="background: rgba(46, 134, 171, 0.2); color: var(--uzzai-blue);">VÔLEI</span>
+                        </div>
+                        <div><span class="status-badge" style="background: rgba(255, 215, 0, 0.2); color: var(--uzzai-gold);">OURO</span></div>
+                        <div style="color: var(--status-success); font-weight: 600;">92%</div>
+                        <div>
+                            <button class="btn" style="padding: 6px 12px; font-size: 12px;">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-row">
+                        <div class="atleta-info">
+                            <div class="atleta-avatar">LS</div>
+                            <div class="atleta-details">
+                                <div class="atleta-nome">Lucas Silva</div>
+                                <div class="atleta-modalidades">lucas@example.com</div>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="treino-badge" style="background: rgba(255, 215, 0, 0.2); color: var(--uzzai-gold);">BASQUETE</span>
+                        </div>
+                        <div><span class="status-badge confirmado">ATIVO</span></div>
+                        <div style="color: var(--status-success); font-weight: 600;">85%</div>
+                        <div>
+                            <button class="btn" style="padding: 6px 12px; font-size: 12px;">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-row">
+                        <div class="atleta-info">
+                            <div class="atleta-avatar">MO</div>
+                            <div class="atleta-details">
+                                <div class="atleta-nome">Maria Oliveira</div>
+                                <div class="atleta-modalidades">maria@example.com</div>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="treino-badge" style="background: rgba(46, 134, 171, 0.2); color: var(--uzzai-blue); margin-right: 4px;">VÔLEI</span>
+                            <span class="treino-badge" style="background: rgba(239, 68, 68, 0.2); color: var(--status-danger);">HANDEBOL</span>
+                        </div>
+                        <div><span class="status-badge" style="background: rgba(147, 51, 234, 0.2); color: #9333EA;">TREINADOR</span></div>
+                        <div style="color: var(--status-success); font-weight: 600;">95%</div>
+                        <div>
+                            <button class="btn" style="padding: 6px 12px; font-size: 12px;">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-row">
+                        <div class="atleta-info">
+                            <div class="atleta-avatar">RC</div>
+                            <div class="atleta-details">
+                                <div class="atleta-nome">Rafael Costa</div>
+                                <div class="atleta-modalidades">rafael@example.com</div>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="treino-badge" style="background: rgba(26, 188, 156, 0.2); color: var(--uzzai-mint); margin-right: 4px;">FUTSAL</span>
+                            <span class="treino-badge" style="background: rgba(16, 185, 129, 0.2); color: var(--status-success);">CAMPO</span>
+                        </div>
+                        <div><span class="status-badge confirmado">ATIVO</span></div>
+                        <div style="color: var(--status-warning); font-weight: 600;">68%</div>
+                        <div>
+                            <button class="btn" style="padding: 6px 12px; font-size: 12px;">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-row">
+                        <div class="atleta-info">
+                            <div class="atleta-avatar">AS</div>
+                            <div class="atleta-details">
+                                <div class="atleta-nome">Ana Santos</div>
+                                <div class="atleta-modalidades">ana@example.com</div>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="treino-badge" style="background: rgba(255, 215, 0, 0.2); color: var(--uzzai-gold);">BASQUETE</span>
+                        </div>
+                        <div><span class="status-badge" style="background: rgba(255, 215, 0, 0.2); color: var(--uzzai-gold);">OURO</span></div>
+                        <div style="color: var(--status-success); font-weight: 600;">88%</div>
+                        <div>
+                            <button class="btn" style="padding: 6px 12px; font-size: 12px;">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================
+                 VIEW: TREINOS
+                 ======================================== -->
+            <div id="view-treinos" class="view">
+                <div class="section-header">
+                    <div class="section-title">Gestão de Treinos</div>
+                    <div style="display: flex; gap: 12px;">
+                        <button class="btn btn-secondary">
+                            <i class="fas fa-calendar-week"></i>
+                            Criar Treino Recorrente
+                        </button>
+                        <button class="btn btn-primary">
+                            <i class="fas fa-plus"></i>
+                            Novo Treino
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filtros de Treinos -->
+                <div class="grid grid-4 mb-32">
+                    <div class="metric-card" style="cursor: pointer;">
+                        <div class="metric-title">Treinos Hoje</div>
+                        <div class="metric-value" style="color: var(--uzzai-mint); font-size: 28px;">3</div>
+                    </div>
+                    <div class="metric-card" style="cursor: pointer;">
+                        <div class="metric-title">Esta Semana</div>
+                        <div class="metric-value" style="color: var(--uzzai-blue); font-size: 28px;">8</div>
+                    </div>
+                    <div class="metric-card" style="cursor: pointer;">
+                        <div class="metric-title">Pendentes RSVP</div>
+                        <div class="metric-value" style="color: var(--status-warning); font-size: 28px;">2</div>
+                    </div>
+                    <div class="metric-card" style="cursor: pointer;">
+                        <div class="metric-title">Taxa Confirmação</div>
+                        <div class="metric-value" style="color: var(--status-success); font-size: 28px;">78%</div>
+                    </div>
+                </div>
+
+                <!-- Lista de Treinos com RSVP -->
+                <div class="section-header">
+                    <div class="section-title">Próximos Treinos</div>
+                    <select class="btn btn-secondary">
+                        <option>Todas Modalidades</option>
+                        <option>Futsal</option>
+                        <option>Vôlei</option>
+                        <option>Basquete</option>
+                    </select>
+                </div>
+
+                <div style="display: grid; gap: 16px;">
+                    <!-- Treino 1 - Com Sistema de RSVP Expandido -->
+                    <div class="metric-card">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                            <div>
+                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                                    <span class="treino-badge" style="background: rgba(26, 188, 156, 0.2); color: var(--uzzai-mint);">FUTSAL</span>
+                                    <div class="treino-title">Treino Tático - Preparação Interatléticas</div>
+                                </div>
+                                <div class="treino-details">
+                                    <div class="treino-detail">
+                                        <i class="fas fa-calendar"></i>
+                                        <span>Terça-feira, 15 Jan</span>
+                                    </div>
+                                    <div class="treino-detail">
+                                        <i class="fas fa-clock"></i>
+                                        <span>20:00 - 22:00</span>
+                                    </div>
+                                    <div class="treino-detail">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        <span>Ginásio UFRGS</span>
+                                    </div>
+                                    <div class="treino-detail">
+                                        <i class="fas fa-dollar-sign"></i>
+                                        <span>R$ 10,00 por atleta</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary">
+                                <i class="fas fa-check"></i>
+                                Confirmar Presença
+                            </button>
+                        </div>
+
+                        <!-- RSVP Progress -->
+                        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span style="font-size: 14px; font-weight: 600;">23/30 Confirmados</span>
+                                <span style="font-size: 14px; color: var(--uzzai-mint);">77%</span>
+                            </div>
+                            <div style="height: 8px; background: rgba(255, 255, 255, 0.1); border-radius: 4px; overflow: hidden;">
+                                <div style="height: 100%; width: 77%; background: linear-gradient(90deg, var(--uzzai-mint), var(--uzzai-blue));"></div>
+                            </div>
+
+                            <!-- Lista de Confirmados (Primeiros 5) -->
+                            <div style="display: flex; align-items: center; gap: 8px; margin-top: 12px;">
+                                <span style="font-size: 12px; color: var(--uzzai-silver);">Confirmados:</span>
+                                <div style="display: flex; margin-left: -8px;">
+                                    <div class="atleta-avatar" style="width: 32px; height: 32px; font-size: 11px; border: 2px solid #0f1419;">PV</div>
+                                    <div class="atleta-avatar" style="width: 32px; height: 32px; font-size: 11px; border: 2px solid #0f1419; margin-left: -8px;">LS</div>
+                                    <div class="atleta-avatar" style="width: 32px; height: 32px; font-size: 11px; border: 2px solid #0f1419; margin-left: -8px;">MO</div>
+                                    <div class="atleta-avatar" style="width: 32px; height: 32px; font-size: 11px; border: 2px solid #0f1419; margin-left: -8px;">RC</div>
+                                    <div class="atleta-avatar" style="width: 32px; height: 32px; font-size: 11px; border: 2px solid #0f1419; margin-left: -8px; background: rgba(26, 188, 156, 0.3);">+19</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Treino 2 -->
+                    <div class="metric-card">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div>
+                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                                    <span class="treino-badge" style="background: rgba(46, 134, 171, 0.2); color: var(--uzzai-blue);">VÔLEI</span>
+                                    <div class="treino-title">Treino Recepção e Levantamento</div>
+                                </div>
+                                <div class="treino-details">
+                                    <div class="treino-detail">
+                                        <i class="fas fa-calendar"></i>
+                                        <span>Quarta-feira, 16 Jan</span>
+                                    </div>
+                                    <div class="treino-detail">
+                                        <i class="fas fa-clock"></i>
+                                        <span>19:30 - 21:30</span>
+                                    </div>
+                                    <div class="treino-detail">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        <span>Quadra Esportes UFRGS</span>
+                                    </div>
+                                    <div class="treino-detail">
+                                        <i class="fas fa-dollar-sign"></i>
+                                        <span>R$ 8,00 por atleta</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="btn btn-secondary" style="border: 2px solid var(--status-warning); color: var(--status-warning);">
+                                <i class="fas fa-clock"></i>
+                                Responder
+                            </button>
+                        </div>
+
+                        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span style="font-size: 14px; font-weight: 600;">18/24 Confirmados</span>
+                                <span style="font-size: 14px; color: var(--status-warning);">75%</span>
+                            </div>
+                            <div style="height: 8px; background: rgba(255, 255, 255, 0.1); border-radius: 4px; overflow: hidden;">
+                                <div style="height: 100%; width: 75%; background: var(--status-warning);"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Treino 3 - Recorrente -->
+                    <div class="metric-card">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                                    <span class="treino-badge" style="background: rgba(255, 215, 0, 0.2); color: var(--uzzai-gold);">BASQUETE</span>
+                                    <div class="treino-title">Fundamentos + Jogo Coletivo</div>
+                                    <span class="nav-badge" style="background: rgba(147, 51, 234, 0.2); color: #9333EA; padding: 4px 8px;">
+                                        <i class="fas fa-repeat" style="font-size: 10px;"></i> RECORRENTE
+                                    </span>
+                                </div>
+                                <div class="treino-details">
+                                    <div class="treino-detail">
+                                        <i class="fas fa-calendar"></i>
+                                        <span>Toda Quinta-feira</span>
+                                    </div>
+                                    <div class="treino-detail">
+                                        <i class="fas fa-clock"></i>
+                                        <span>20:30 - 22:30</span>
+                                    </div>
+                                    <div class="treino-detail">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        <span>Quadra Coberta</span>
+                                    </div>
+                                    <div class="treino-detail">
+                                        <i class="fas fa-dollar-sign"></i>
+                                        <span>R$ 12,00 por atleta</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary">
+                                <i class="fas fa-check"></i>
+                                Confirmar Presença
+                            </button>
+                        </div>
+
+                        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span style="font-size: 14px; font-weight: 600;">15/20 Confirmados</span>
+                                <span style="font-size: 14px; color: var(--status-success);">75%</span>
+                            </div>
+                            <div style="height: 8px; background: rgba(255, 255, 255, 0.1); border-radius: 4px; overflow: hidden;">
+                                <div style="height: 100%; width: 75%; background: var(--status-success);"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================
+                 VIEW: FINANCEIRO
+                 ======================================== -->
+            <div id="view-financeiro" class="view">
+                <div class="section-header">
+                    <div class="section-title">Gestão Financeira</div>
+                    <button class="btn btn-primary">
+                        <i class="fas fa-file-export"></i>
+                        Exportar Relatório
+                    </button>
+                </div>
+
+                <!-- Resumo Financeiro -->
+                <div class="grid grid-4 mb-32">
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <div class="metric-title">Total Arrecadado</div>
+                            <i class="fas fa-dollar-sign" style="color: var(--status-success); font-size: 24px;"></i>
+                        </div>
+                        <div class="metric-value" style="color: var(--status-success);">R$ 3.450</div>
+                        <div class="metric-trend up">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>+18% vs. mês anterior</span>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <div class="metric-title">Pendente</div>
+                            <i class="fas fa-clock" style="color: var(--status-warning); font-size: 24px;"></i>
+                        </div>
+                        <div class="metric-value" style="color: var(--status-warning);">R$ 850</div>
+                        <div class="metric-trend">
+                            <span style="color: var(--uzzai-silver);">12 atletas devendo</span>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <div class="metric-title">Despesas do Mês</div>
+                            <i class="fas fa-receipt" style="color: var(--status-danger); font-size: 24px;"></i>
+                        </div>
+                        <div class="metric-value" style="color: var(--status-danger);">R$ 2.100</div>
+                        <div class="metric-trend">
+                            <span style="color: var(--uzzai-silver);">Aluguel de quadras</span>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <div class="metric-title">Saldo Disponível</div>
+                            <i class="fas fa-wallet" style="color: var(--uzzai-mint); font-size: 24px;"></i>
+                        </div>
+                        <div class="metric-value" style="color: var(--uzzai-mint);">R$ 1.350</div>
+                        <div class="metric-trend up">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>Caixa positivo</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sistema de Pagamento por Treino -->
+                <div class="section-header">
+                    <div class="section-title">Pagamentos por Treino - Janeiro 2026</div>
+                    <select class="btn btn-secondary">
+                        <option>Janeiro 2026</option>
+                        <option>Dezembro 2025</option>
+                        <option>Novembro 2025</option>
+                    </select>
+                </div>
+
+                <div style="display: grid; gap: 16px; margin-bottom: 32px;">
+                    <!-- Treino 1 - Pagamentos -->
+                    <div class="metric-card">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                            <div>
+                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                                    <span class="treino-badge" style="background: rgba(26, 188, 156, 0.2); color: var(--uzzai-mint);">FUTSAL</span>
+                                    <div style="font-size: 18px; font-weight: 700;">Treino Tático - 15/01</div>
+                                </div>
+                                <div style="font-size: 13px; color: var(--uzzai-silver);">23 confirmados × R$ 10,00 = R$ 230,00 esperado</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 24px; font-weight: 700; color: var(--status-success);">R$ 210</div>
+                                <div style="font-size: 12px; color: var(--uzzai-silver);">21/23 pagos (91%)</div>
+                            </div>
+                        </div>
+
+                        <!-- Lista de Pendentes -->
+                        <div style="padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                            <div style="font-size: 13px; font-weight: 600; color: var(--status-warning); margin-bottom: 12px;">
+                                <i class="fas fa-exclamation-triangle"></i> 2 atletas pendentes:
+                            </div>
+                            <div style="display: flex; gap: 16px;">
+                                <div style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: rgba(245, 158, 11, 0.1); border-radius: 8px;">
+                                    <div class="atleta-avatar" style="width: 28px; height: 28px; font-size: 11px;">RC</div>
+                                    <div>
+                                        <div style="font-size: 13px; font-weight: 600;">Rafael Costa</div>
+                                        <div style="font-size: 11px; color: var(--status-warning);">R$ 10,00 pendente</div>
+                                    </div>
+                                    <button class="btn btn-primary" style="padding: 4px 12px; font-size: 11px; margin-left: 12px;">
+                                        <i class="fas fa-paper-plane"></i> Cobrar
+                                    </button>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: rgba(245, 158, 11, 0.1); border-radius: 8px;">
+                                    <div class="atleta-avatar" style="width: 28px; height: 28px; font-size: 11px;">AS</div>
+                                    <div>
+                                        <div style="font-size: 13px; font-weight: 600;">Ana Santos</div>
+                                        <div style="font-size: 11px; color: var(--status-warning);">R$ 10,00 pendente</div>
+                                    </div>
+                                    <button class="btn btn-primary" style="padding: 4px 12px; font-size: 11px; margin-left: 12px;">
+                                        <i class="fas fa-paper-plane"></i> Cobrar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Treino 2 - 100% Pago -->
+                    <div class="metric-card">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div>
+                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                                    <span class="treino-badge" style="background: rgba(46, 134, 171, 0.2); color: var(--uzzai-blue);">VÔLEI</span>
+                                    <div style="font-size: 18px; font-weight: 700;">Treino Recepção - 09/01</div>
+                                    <span class="status-badge" style="background: rgba(16, 185, 129, 0.2); color: var(--status-success);">
+                                        <i class="fas fa-check-circle"></i> 100% PAGO
+                                    </span>
+                                </div>
+                                <div style="font-size: 13px; color: var(--uzzai-silver);">20 confirmados × R$ 8,00 = R$ 160,00</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 24px; font-weight: 700; color: var(--status-success);">R$ 160</div>
+                                <div style="font-size: 12px; color: var(--status-success);">20/20 pagos</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Histórico de Transações -->
+                <div class="section-header">
+                    <div class="section-title">Histórico de Transações</div>
+                </div>
+
+                <div class="atletas-table">
+                    <div class="table-header">
+                        <div>Data</div>
+                        <div>Tipo</div>
+                        <div>Descrição</div>
+                        <div>Atleta/Fornecedor</div>
+                        <div>Valor</div>
+                    </div>
+
+                    <div class="table-row">
+                        <div>14/01/26 14:32</div>
+                        <div><span class="status-badge" style="background: rgba(16, 185, 129, 0.2); color: var(--status-success);">RECEITA</span></div>
+                        <div>Pagamento Treino Futsal</div>
+                        <div>Pedro Vitor Costa</div>
+                        <div style="color: var(--status-success); font-weight: 700;">+R$ 10,00</div>
+                    </div>
+
+                    <div class="table-row">
+                        <div>13/01/26 19:15</div>
+                        <div><span class="status-badge" style="background: rgba(239, 68, 68, 0.2); color: var(--status-danger);">DESPESA</span></div>
+                        <div>Aluguel Ginásio UFRGS</div>
+                        <div>UFRGS - Ginásio</div>
+                        <div style="color: var(--status-danger); font-weight: 700;">-R$ 100,00</div>
+                    </div>
+
+                    <div class="table-row">
+                        <div>13/01/26 10:20</div>
+                        <div><span class="status-badge" style="background: rgba(16, 185, 129, 0.2); color: var(--status-success);">RECEITA</span></div>
+                        <div>Pagamento Treino Vôlei</div>
+                        <div>Lucas Silva</div>
+                        <div style="color: var(--status-success); font-weight: 700;">+R$ 8,00</div>
+                    </div>
+
+                    <div class="table-row">
+                        <div>12/01/26 21:45</div>
+                        <div><span class="status-badge" style="background: rgba(239, 68, 68, 0.2); color: var(--status-danger);">DESPESA</span></div>
+                        <div>Bolas de Basquete (2un)</div>
+                        <div>Loja Esportes Total</div>
+                        <div style="color: var(--status-danger); font-weight: 700;">-R$ 180,00</div>
+                    </div>
+
+                    <div class="table-row">
+                        <div>11/01/26 16:30</div>
+                        <div><span class="status-badge" style="background: rgba(16, 185, 129, 0.2); color: var(--status-success);">RECEITA</span></div>
+                        <div>Pagamento Treino Basquete</div>
+                        <div>Maria Oliveira</div>
+                        <div style="color: var(--status-success); font-weight: 700;">+R$ 12,00</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================
+                 VIEW: FREQUÊNCIA
+                 ======================================== -->
+            <div id="view-frequencia" class="view">
+                <div class="section-header">
+                    <div class="section-title">Controle de Frequência</div>
+                    <button class="btn btn-primary">
+                        <i class="fas fa-qrcode"></i>
+                        Gerar QR Code Check-in
+                    </button>
+                </div>
+
+                <!-- Métricas de Frequência -->
+                <div class="grid grid-4 mb-32">
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <div class="metric-title">Taxa Geral</div>
+                            <i class="fas fa-chart-line" style="color: var(--status-success); font-size: 24px;"></i>
+                        </div>
+                        <div class="metric-value" style="color: var(--status-success);">72%</div>
+                        <div class="metric-trend up">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>+5% este mês</span>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <div class="metric-title">Check-ins Hoje</div>
+                            <i class="fas fa-user-check" style="color: var(--uzzai-mint); font-size: 24px;"></i>
+                        </div>
+                        <div class="metric-value" style="color: var(--uzzai-mint);">45</div>
+                        <div class="metric-trend">
+                            <span style="color: var(--uzzai-silver);">3 treinos hoje</span>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <div class="metric-title">Atletas Assíduos</div>
+                            <i class="fas fa-medal" style="color: var(--uzzai-gold); font-size: 24px;"></i>
+                        </div>
+                        <div class="metric-value" style="color: var(--uzzai-gold);">23</div>
+                        <div class="metric-trend">
+                            <span style="color: var(--uzzai-silver);">&gt;90% frequência</span>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <div class="metric-title">Faltas Este Mês</div>
+                            <i class="fas fa-user-times" style="color: var(--status-danger); font-size: 24px;"></i>
+                        </div>
+                        <div class="metric-value" style="color: var(--status-danger);">87</div>
+                        <div class="metric-trend down">
+                            <i class="fas fa-arrow-down"></i>
+                            <span>-12% vs. mês anterior</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ranking de Frequência -->
+                <div class="section-header">
+                    <div class="section-title">Top 10 - Maior Frequência</div>
+                    <select class="btn btn-secondary">
+                        <option>Janeiro 2026</option>
+                        <option>Dezembro 2025</option>
+                        <option>Semestre</option>
+                    </select>
+                </div>
+
+                <div class="atletas-table mb-32">
+                    <div class="table-header">
+                        <div>Posição</div>
+                        <div>Atleta</div>
+                        <div>Modalidade Principal</div>
+                        <div>Treinos</div>
+                        <div>Frequência</div>
+                    </div>
+
+                    <div class="table-row">
+                        <div style="font-size: 20px; font-weight: 700; color: var(--uzzai-gold);">
+                            <i class="fas fa-trophy"></i> 1º
+                        </div>
+                        <div class="atleta-info">
+                            <div class="atleta-avatar">MO</div>
+                            <div class="atleta-details">
+                                <div class="atleta-nome">Maria Oliveira</div>
+                            </div>
+                        </div>
+                        <div><span class="treino-badge" style="background: rgba(46, 134, 171, 0.2); color: var(--uzzai-blue);">VÔLEI</span></div>
+                        <div style="font-weight: 600;">19/20</div>
+                        <div>
+                            <div style="font-size: 20px; font-weight: 700; color: var(--status-success);">95%</div>
+                            <div style="height: 4px; width: 60px; background: rgba(255, 255, 255, 0.1); border-radius: 2px; margin-top: 4px;">
+                                <div style="height: 100%; width: 95%; background: var(--status-success); border-radius: 2px;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-row">
+                        <div style="font-size: 18px; font-weight: 700; color: var(--uzzai-silver);">
+                            <i class="fas fa-medal"></i> 2º
+                        </div>
+                        <div class="atleta-info">
+                            <div class="atleta-avatar">PV</div>
+                            <div class="atleta-details">
+                                <div class="atleta-nome">Pedro Vitor Costa</div>
+                            </div>
+                        </div>
+                        <div><span class="treino-badge" style="background: rgba(26, 188, 156, 0.2); color: var(--uzzai-mint);">FUTSAL</span></div>
+                        <div style="font-weight: 600;">18/20</div>
+                        <div>
+                            <div style="font-size: 20px; font-weight: 700; color: var(--status-success);">92%</div>
+                            <div style="height: 4px; width: 60px; background: rgba(255, 255, 255, 0.1); border-radius: 2px; margin-top: 4px;">
+                                <div style="height: 100%; width: 92%; background: var(--status-success); border-radius: 2px;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-row">
+                        <div style="font-size: 16px; font-weight: 700; color: #CD7F32;">
+                            <i class="fas fa-award"></i> 3º
+                        </div>
+                        <div class="atleta-info">
+                            <div class="atleta-avatar">AS</div>
+                            <div class="atleta-details">
+                                <div class="atleta-nome">Ana Santos</div>
+                            </div>
+                        </div>
+                        <div><span class="treino-badge" style="background: rgba(255, 215, 0, 0.2); color: var(--uzzai-gold);">BASQUETE</span></div>
+                        <div style="font-weight: 600;">17/20</div>
+                        <div>
+                            <div style="font-size: 20px; font-weight: 700; color: var(--status-success);">88%</div>
+                            <div style="height: 4px; width: 60px; background: rgba(255, 255, 255, 0.1); border-radius: 2px; margin-top: 4px;">
+                                <div style="height: 100%; width: 88%; background: var(--status-success); border-radius: 2px;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-row">
+                        <div style="font-weight: 600; color: var(--uzzai-silver);">4º</div>
+                        <div class="atleta-info">
+                            <div class="atleta-avatar">LS</div>
+                            <div class="atleta-details">
+                                <div class="atleta-nome">Lucas Silva</div>
+                            </div>
+                        </div>
+                        <div><span class="treino-badge" style="background: rgba(255, 215, 0, 0.2); color: var(--uzzai-gold);">BASQUETE</span></div>
+                        <div style="font-weight: 600;">16/20</div>
+                        <div>
+                            <div style="font-size: 18px; font-weight: 700; color: var(--status-success);">85%</div>
+                            <div style="height: 4px; width: 60px; background: rgba(255, 255, 255, 0.1); border-radius: 2px; margin-top: 4px;">
+                                <div style="height: 100%; width: 85%; background: var(--status-success); border-radius: 2px;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-row">
+                        <div style="font-weight: 600; color: var(--uzzai-silver);">5º</div>
+                        <div class="atleta-info">
+                            <div class="atleta-avatar">RC</div>
+                            <div class="atleta-details">
+                                <div class="atleta-nome">Rafael Costa</div>
+                            </div>
+                        </div>
+                        <div><span class="treino-badge" style="background: rgba(26, 188, 156, 0.2); color: var(--uzzai-mint);">FUTSAL</span></div>
+                        <div style="font-weight: 600;">13/20</div>
+                        <div>
+                            <div style="font-size: 18px; font-weight: 700; color: var(--status-warning);">68%</div>
+                            <div style="height: 4px; width: 60px; background: rgba(255, 255, 255, 0.1); border-radius: 2px; margin-top: 4px;">
+                                <div style="height: 100%; width: 68%; background: var(--status-warning); border-radius: 2px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sistema de Check-in por QR Code -->
+                <div class="section-header">
+                    <div class="section-title">Check-in Treino Atual</div>
+                </div>
+
+                <div class="metric-card">
+                    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 32px;">
+                        <!-- QR Code Area -->
+                        <div style="text-align: center;">
+                            <div style="width: 200px; height: 200px; background: white; border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+                                <i class="fas fa-qrcode" style="font-size: 120px; color: #1a1f26;"></i>
+                            </div>
+                            <div style="margin-top: 16px; font-size: 14px; font-weight: 600;">Treino Futsal - 15/01</div>
+                            <div style="font-size: 12px; color: var(--uzzai-silver); margin-top: 4px;">Escaneie para fazer check-in</div>
+                            <button class="btn btn-secondary" style="margin-top: 16px; width: 100%;">
+                                <i class="fas fa-sync"></i>
+                                Gerar Novo QR
+                            </button>
+                        </div>
+
+                        <!-- Check-in Manual -->
+                        <div>
+                            <div style="font-size: 16px; font-weight: 700; margin-bottom: 16px;">Check-in Manual</div>
+                            <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                                <input type="text" placeholder="Buscar atleta..." style="flex: 1; padding: 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.05); color: white;">
+                                <button class="btn btn-primary">
+                                    <i class="fas fa-check"></i>
+                                    Confirmar
+                                </button>
+                            </div>
+
+                            <!-- Lista de Check-ins -->
+                            <div style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">
+                                Check-ins realizados (23):
+                            </div>
+                            <div style="max-height: 200px; overflow-y: auto; display: grid; gap: 8px;">
+                                <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.3);">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <div class="atleta-avatar" style="width: 28px; height: 28px; font-size: 11px;">PV</div>
+                                        <div style="font-size: 13px; font-weight: 600;">Pedro Vitor Costa</div>
+                                    </div>
+                                    <div style="font-size: 11px; color: var(--status-success);">
+                                        <i class="fas fa-clock"></i> 19:45
+                                    </div>
+                                </div>
+                                <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.3);">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <div class="atleta-avatar" style="width: 28px; height: 28px; font-size: 11px;">LS</div>
+                                        <div style="font-size: 13px; font-weight: 600;">Lucas Silva</div>
+                                    </div>
+                                    <div style="font-size: 11px; color: var(--status-success);">
+                                        <i class="fas fa-clock"></i> 19:42
+                                    </div>
+                                </div>
+                                <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.3);">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <div class="atleta-avatar" style="width: 28px; height: 28px; font-size: 11px;">MO</div>
+                                        <div style="font-size: 13px; font-weight: 600;">Maria Oliveira</div>
+                                    </div>
+                                    <div style="font-size: 11px; color: var(--status-success);">
+                                        <i class="fas fa-clock"></i> 19:38
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================
+                 VIEW: JOGOS OFICIAIS
+                 ======================================== -->
+            <div id="view-jogos" class="view">
+                <div class="section-header">
+                    <div class="section-title">Jogos Oficiais e Competições</div>
+                    <button class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        Novo Jogo
+                    </button>
+                </div>
+
+                <!-- Métricas de Jogos -->
+                <div class="grid grid-4 mb-32">
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <div class="metric-title">Jogos Marcados</div>
+                            <i class="fas fa-calendar-check" style="color: var(--uzzai-mint); font-size: 24px;"></i>
+                        </div>
+                        <div class="metric-value" style="color: var(--uzzai-mint);">7</div>
+                        <div class="metric-trend">
+                            <span style="color: var(--uzzai-silver);">Próximos 30 dias</span>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <div class="metric-title">Vitórias</div>
+                            <i class="fas fa-trophy" style="color: var(--uzzai-gold); font-size: 24px;"></i>
+                        </div>
+                        <div class="metric-value" style="color: var(--uzzai-gold);">12</div>
+                        <div class="metric-trend up">
+                            <span style="color: var(--status-success);">Temporada 2025/2</span>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <div class="metric-title">Taxa de Vitórias</div>
+                            <i class="fas fa-chart-line" style="color: var(--status-success); font-size: 24px;"></i>
+                        </div>
+                        <div class="metric-value" style="color: var(--status-success);">65%</div>
+                        <div class="metric-trend up">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>12V / 3E / 3D</span>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <div class="metric-title">Convocações Ativas</div>
+                            <i class="fas fa-users" style="color: var(--uzzai-blue); font-size: 24px;"></i>
+                        </div>
+                        <div class="metric-value" style="color: var(--uzzai-blue);">3</div>
+                        <div class="metric-trend">
+                            <span style="color: var(--uzzai-silver);">Aguardando respostas</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Próximos Jogos com Convocação -->
+                <div class="section-header">
+                    <div class="section-title">Próximos Jogos Oficiais</div>
+                </div>
+
+                <div style="display: grid; gap: 16px; margin-bottom: 32px;">
+                    <!-- Jogo 1 - Com Convocação -->
+                    <div class="metric-card">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                            <div style="flex: 1;">
+                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                                    <span class="treino-badge" style="background: rgba(26, 188, 156, 0.2); color: var(--uzzai-mint);">FUTSAL</span>
+                                    <div style="font-size: 20px; font-weight: 700;">Interatléticas UFRGS 2026</div>
+                                    <span class="status-badge" style="background: rgba(255, 215, 0, 0.2); color: var(--uzzai-gold);">
+                                        <i class="fas fa-star"></i> OFICIAL
+                                    </span>
+                                </div>
+
+                                <!-- Placar/Adversário -->
+                                <div style="display: flex; align-items: center; gap: 24px; margin-bottom: 16px;">
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 16px; font-weight: 700; color: var(--uzzai-mint);">NOSSA ATLÉTICA</div>
+                                        <div style="font-size: 12px; color: var(--uzzai-silver); margin-top: 4px;">Mandante</div>
+                                    </div>
+                                    <div style="font-size: 32px; font-weight: 700; color: var(--uzzai-silver);">vs</div>
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 16px; font-weight: 700;">Atlética Medicina</div>
+                                        <div style="font-size: 12px; color: var(--uzzai-silver); margin-top: 4px;">Visitante</div>
+                                    </div>
+                                </div>
+
+                                <div class="treino-details">
+                                    <div class="treino-detail">
+                                        <i class="fas fa-calendar"></i>
+                                        <span>Sábado, 20 Janeiro 2026</span>
+                                    </div>
+                                    <div class="treino-detail">
+                                        <i class="fas fa-clock"></i>
+                                        <span>16:00</span>
+                                    </div>
+                                    <div class="treino-detail">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        <span>Ginásio Principal UFRGS</span>
+                                    </div>
+                                    <div class="treino-detail">
+                                        <i class="fas fa-trophy"></i>
+                                        <span>Fase de Grupos</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary">
+                                <i class="fas fa-clipboard-list"></i>
+                                Ver Convocação
+                            </button>
+                        </div>
+
+                        <!-- Convocação Oficial -->
+                        <div style="padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                            <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 12px;">
+                                <div style="font-size: 14px; font-weight: 700;">
+                                    <i class="fas fa-clipboard-list"></i> Convocação Oficial (18 atletas)
+                                </div>
+                                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px; margin-left: auto;">
+                                    <i class="fas fa-edit"></i>
+                                    Editar Lista
+                                </button>
+                            </div>
+
+                            <!-- Status de Respostas -->
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+                                <div style="padding: 12px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; text-align: center;">
+                                    <div style="font-size: 24px; font-weight: 700; color: var(--status-success);">14</div>
+                                    <div style="font-size: 12px; color: var(--uzzai-silver);">Confirmados</div>
+                                </div>
+                                <div style="padding: 12px; background: rgba(245, 158, 11, 0.1); border-radius: 8px; text-align: center;">
+                                    <div style="font-size: 24px; font-weight: 700; color: var(--status-warning);">3</div>
+                                    <div style="font-size: 12px; color: var(--uzzai-silver);">Pendentes</div>
+                                </div>
+                                <div style="padding: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 8px; text-align: center;">
+                                    <div style="font-size: 24px; font-weight: 700; color: var(--status-danger);">1</div>
+                                    <div style="font-size: 12px; color: var(--uzzai-silver);">Recusaram</div>
+                                </div>
+                            </div>
+
+                            <!-- Posições Convocadas -->
+                            <div style="margin-top: 16px;">
+                                <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">Por Posição:</div>
+                                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                    <span style="padding: 4px 12px; background: rgba(26, 188, 156, 0.1); border-radius: 6px; font-size: 12px;">
+                                        <i class="fas fa-futbol"></i> Goleiro: 2
+                                    </span>
+                                    <span style="padding: 4px 12px; background: rgba(46, 134, 171, 0.1); border-radius: 6px; font-size: 12px;">
+                                        <i class="fas fa-shield-alt"></i> Fixo: 3
+                                    </span>
+                                    <span style="padding: 4px 12px; background: rgba(255, 215, 0, 0.1); border-radius: 6px; font-size: 12px;">
+                                        <i class="fas fa-running"></i> Ala: 5
+                                    </span>
+                                    <span style="padding: 4px 12px; background: rgba(147, 51, 234, 0.1); border-radius: 6px; font-size: 12px;">
+                                        <i class="fas fa-bolt"></i> Pivô: 8
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Jogo 2 - Resultado -->
+                    <div class="metric-card">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                                    <span class="treino-badge" style="background: rgba(46, 134, 171, 0.2); color: var(--uzzai-blue);">VÔLEI</span>
+                                    <div style="font-size: 20px; font-weight: 700;">Taça Universitária 2025</div>
+                                    <span class="status-badge" style="background: rgba(16, 185, 129, 0.2); color: var(--status-success);">
+                                        <i class="fas fa-check-circle"></i> FINALIZADO
+                                    </span>
+                                </div>
+
+                                <!-- Placar Final -->
+                                <div style="display: flex; align-items: center; gap: 24px; margin-bottom: 16px; padding: 16px; background: rgba(16, 185, 129, 0.05); border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.2);">
+                                    <div style="text-align: center; flex: 1;">
+                                        <div style="font-size: 16px; font-weight: 700; color: var(--uzzai-blue);">NOSSA ATLÉTICA</div>
+                                        <div style="font-size: 48px; font-weight: 700; color: var(--status-success); margin-top: 8px;">3</div>
+                                    </div>
+                                    <div style="font-size: 24px; font-weight: 700; color: var(--uzzai-silver);">×</div>
+                                    <div style="text-align: center; flex: 1;">
+                                        <div style="font-size: 16px; font-weight: 700;">Atlética Direito</div>
+                                        <div style="font-size: 48px; font-weight: 700; color: var(--uzzai-silver); margin-top: 8px;">1</div>
+                                    </div>
+                                </div>
+
+                                <div class="treino-details">
+                                    <div class="treino-detail">
+                                        <i class="fas fa-calendar"></i>
+                                        <span>10 Janeiro 2026</span>
+                                    </div>
+                                    <div class="treino-detail">
+                                        <i class="fas fa-trophy"></i>
+                                        <span>Quartas de Final</span>
+                                    </div>
+                                    <div class="treino-detail" style="color: var(--status-success); font-weight: 600;">
+                                        <i class="fas fa-star"></i>
+                                        <span>VITÓRIA</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calendário de Competições -->
+                <div class="section-header">
+                    <div class="section-title">Competições Inscritas - 2026</div>
+                </div>
+
+                <div class="grid grid-2">
+                    <div class="metric-card">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                            <div style="width: 48px; height: 48px; background: rgba(26, 188, 156, 0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-futbol" style="font-size: 24px; color: var(--uzzai-mint);"></i>
+                            </div>
+                            <div>
+                                <div style="font-size: 18px; font-weight: 700;">Interatléticas UFRGS 2026</div>
+                                <div style="font-size: 13px; color: var(--uzzai-silver);">Futsal Masculino</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 12px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                            <div style="flex: 1; text-align: center;">
+                                <div style="font-size: 20px; font-weight: 700; color: var(--status-success);">3</div>
+                                <div style="font-size: 11px; color: var(--uzzai-silver);">Vitórias</div>
+                            </div>
+                            <div style="flex: 1; text-align: center;">
+                                <div style="font-size: 20px; font-weight: 700; color: var(--uzzai-silver);">1</div>
+                                <div style="font-size: 11px; color: var(--uzzai-silver);">Empates</div>
+                            </div>
+                            <div style="flex: 1; text-align: center;">
+                                <div style="font-size: 20px; font-weight: 700; color: var(--status-danger);">0</div>
+                                <div style="font-size: 11px; color: var(--uzzai-silver);">Derrotas</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                            <div style="width: 48px; height: 48px; background: rgba(46, 134, 171, 0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-volleyball-ball" style="font-size: 24px; color: var(--uzzai-blue);"></i>
+                            </div>
+                            <div>
+                                <div style="font-size: 18px; font-weight: 700;">Taça Universitária 2025/2</div>
+                                <div style="font-size: 13px; color: var(--uzzai-silver);">Vôlei Misto</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 12px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                            <div style="flex: 1; text-align: center;">
+                                <div style="font-size: 20px; font-weight: 700; color: var(--status-success);">5</div>
+                                <div style="font-size: 11px; color: var(--uzzai-silver);">Vitórias</div>
+                            </div>
+                            <div style="flex: 1; text-align: center;">
+                                <div style="font-size: 20px; font-weight: 700; color: var(--uzzai-silver);">0</div>
+                                <div style="font-size: 11px; color: var(--uzzai-silver);">Empates</div>
+                            </div>
+                            <div style="flex: 1; text-align: center;">
+                                <div style="font-size: 20px; font-weight: 700; color: var(--status-danger);">2</div>
+                                <div style="font-size: 11px; color: var(--uzzai-silver);">Derrotas</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================
+                 VIEW: RANKINGS
+                 ======================================== -->
+            <div id="view-rankings" class="view">
+                <div class="section-header">
+                    <div class="section-title">Rankings e Estatísticas</div>
+                    <select class="btn btn-secondary">
+                        <option>Todas Modalidades</option>
+                        <option>Futsal</option>
+                        <option>Vôlei</option>
+                        <option>Basquete</option>
+                    </select>
+                </div>
+
+                <!-- Top Rankings -->
+                <div class="grid grid-3 mb-32">
+                    <!-- Top Artilheiros -->
+                    <div class="metric-card">
+                        <div style="font-size: 16px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-futbol" style="color: var(--uzzai-mint);"></i>
+                            Top 5 Artilheiros
+                        </div>
+                        <div style="display: grid; gap: 12px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="font-size: 20px; font-weight: 700; color: var(--uzzai-gold); width: 30px;">1º</div>
+                                <div class="atleta-avatar" style="width: 32px; height: 32px; font-size: 12px;">PV</div>
+                                <div style="flex: 1;">
+                                    <div style="font-size: 13px; font-weight: 600;">Pedro Vitor</div>
+                                    <div style="font-size: 11px; color: var(--uzzai-silver);">Futsal</div>
+                                </div>
+                                <div style="font-size: 18px; font-weight: 700; color: var(--uzzai-mint);">23</div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="font-size: 18px; font-weight: 700; color: var(--uzzai-silver); width: 30px;">2º</div>
+                                <div class="atleta-avatar" style="width: 32px; height: 32px; font-size: 12px;">RC</div>
+                                <div style="flex: 1;">
+                                    <div style="font-size: 13px; font-weight: 600;">Rafael Costa</div>
+                                    <div style="font-size: 11px; color: var(--uzzai-silver);">Campo</div>
+                                </div>
+                                <div style="font-size: 18px; font-weight: 700; color: var(--uzzai-mint);">18</div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="font-size: 16px; font-weight: 700; color: #CD7F32; width: 30px;">3º</div>
+                                <div class="atleta-avatar" style="width: 32px; height: 32px; font-size: 12px;">LS</div>
+                                <div style="flex: 1;">
+                                    <div style="font-size: 13px; font-weight: 600;">Lucas Silva</div>
+                                    <div style="font-size: 11px; color: var(--uzzai-silver);">Futsal</div>
+                                </div>
+                                <div style="font-size: 18px; font-weight: 700; color: var(--uzzai-mint);">15</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top Assistências -->
+                    <div class="metric-card">
+                        <div style="font-size: 16px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-hands-helping" style="color: var(--uzzai-blue);"></i>
+                            Top 5 Assistências
+                        </div>
+                        <div style="display: grid; gap: 12px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="font-size: 20px; font-weight: 700; color: var(--uzzai-gold); width: 30px;">1º</div>
+                                <div class="atleta-avatar" style="width: 32px; height: 32px; font-size: 12px;">MO</div>
+                                <div style="flex: 1;">
+                                    <div style="font-size: 13px; font-weight: 600;">Maria Oliveira</div>
+                                    <div style="font-size: 11px; color: var(--uzzai-silver);">Vôlei</div>
+                                </div>
+                                <div style="font-size: 18px; font-weight: 700; color: var(--uzzai-blue);">42</div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="font-size: 18px; font-weight: 700; color: var(--uzzai-silver); width: 30px;">2º</div>
+                                <div class="atleta-avatar" style="width: 32px; height: 32px; font-size: 12px;">PV</div>
+                                <div style="flex: 1;">
+                                    <div style="font-size: 13px; font-weight: 600;">Pedro Vitor</div>
+                                    <div style="font-size: 11px; color: var(--uzzai-silver);">Futsal</div>
+                                </div>
+                                <div style="font-size: 18px; font-weight: 700; color: var(--uzzai-blue);">28</div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="font-size: 16px; font-weight: 700; color: #CD7F32; width: 30px;">3º</div>
+                                <div class="atleta-avatar" style="width: 32px; height: 32px; font-size: 12px;">AS</div>
+                                <div style="flex: 1;">
+                                    <div style="font-size: 13px; font-weight: 600;">Ana Santos</div>
+                                    <div style="font-size: 11px; color: var(--uzzai-silver);">Basquete</div>
+                                </div>
+                                <div style="font-size: 18px; font-weight: 700; color: var(--uzzai-blue);">24</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top MVP -->
+                    <div class="metric-card">
+                        <div style="font-size: 16px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-star" style="color: var(--uzzai-gold);"></i>
+                            Top 5 MVP
+                        </div>
+                        <div style="display: grid; gap: 12px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="font-size: 20px; font-weight: 700; color: var(--uzzai-gold); width: 30px;">1º</div>
+                                <div class="atleta-avatar" style="width: 32px; height: 32px; font-size: 12px;">MO</div>
+                                <div style="flex: 1;">
+                                    <div style="font-size: 13px; font-weight: 600;">Maria Oliveira</div>
+                                    <div style="font-size: 11px; color: var(--uzzai-silver);">Vôlei</div>
+                                </div>
+                                <div style="font-size: 18px; font-weight: 700; color: var(--uzzai-gold);">8x</div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="font-size: 18px; font-weight: 700; color: var(--uzzai-silver); width: 30px;">2º</div>
+                                <div class="atleta-avatar" style="width: 32px; height: 32px; font-size: 12px;">PV</div>
+                                <div style="flex: 1;">
+                                    <div style="font-size: 13px; font-weight: 600;">Pedro Vitor</div>
+                                    <div style="font-size: 11px; color: var(--uzzai-silver);">Futsal</div>
+                                </div>
+                                <div style="font-size: 18px; font-weight: 700; color: var(--uzzai-gold);">6x</div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="font-size: 16px; font-weight: 700; color: #CD7F32; width: 30px;">3º</div>
+                                <div class="atleta-avatar" style="width: 32px; height: 32px; font-size: 12px;">AS</div>
+                                <div style="flex: 1;">
+                                    <div style="font-size: 13px; font-weight: 600;">Ana Santos</div>
+                                    <div style="font-size: 11px; color: var(--uzzai-silver);">Basquete</div>
+                                </div>
+                                <div style="font-size: 18px; font-weight: 700; color: var(--uzzai-gold);">5x</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estatísticas Detalhadas -->
+                <div class="section-header">
+                    <div class="section-title">Estatísticas Completas</div>
+                </div>
+
+                <div class="atletas-table">
+                    <div class="table-header">
+                        <div>Atleta</div>
+                        <div>Jogos</div>
+                        <div>Gols</div>
+                        <div>Assistências</div>
+                        <div>MVP</div>
+                    </div>
+
+                    <div class="table-row">
+                        <div class="atleta-info">
+                            <div class="atleta-avatar">PV</div>
+                            <div class="atleta-details">
+                                <div class="atleta-nome">Pedro Vitor Costa</div>
+                                <div class="atleta-modalidades">Futsal, Vôlei</div>
+                            </div>
+                        </div>
+                        <div style="font-weight: 600;">18</div>
+                        <div style="color: var(--uzzai-mint); font-weight: 700;">23</div>
+                        <div style="color: var(--uzzai-blue); font-weight: 700;">28</div>
+                        <div style="color: var(--uzzai-gold); font-weight: 700;">6x</div>
+                    </div>
+
+                    <div class="table-row">
+                        <div class="atleta-info">
+                            <div class="atleta-avatar">MO</div>
+                            <div class="atleta-details">
+                                <div class="atleta-nome">Maria Oliveira</div>
+                                <div class="atleta-modalidades">Vôlei, Handebol</div>
+                            </div>
+                        </div>
+                        <div style="font-weight: 600;">19</div>
+                        <div style="color: var(--uzzai-mint); font-weight: 700;">12</div>
+                        <div style="color: var(--uzzai-blue); font-weight: 700;">42</div>
+                        <div style="color: var(--uzzai-gold); font-weight: 700;">8x</div>
+                    </div>
+
+                    <div class="table-row">
+                        <div class="atleta-info">
+                            <div class="atleta-avatar">AS</div>
+                            <div class="atleta-details">
+                                <div class="atleta-nome">Ana Santos</div>
+                                <div class="atleta-modalidades">Basquete</div>
+                            </div>
+                        </div>
+                        <div style="font-weight: 600;">17</div>
+                        <div style="color: var(--uzzai-mint); font-weight: 700;">8</div>
+                        <div style="color: var(--uzzai-blue); font-weight: 700;">24</div>
+                        <div style="color: var(--uzzai-gold); font-weight: 700;">5x</div>
+                    </div>
+
+                    <div class="table-row">
+                        <div class="atleta-info">
+                            <div class="atleta-avatar">RC</div>
+                            <div class="atleta-details">
+                                <div class="atleta-nome">Rafael Costa</div>
+                                <div class="atleta-modalidades">Futsal, Campo</div>
+                            </div>
+                        </div>
+                        <div style="font-weight: 600;">13</div>
+                        <div style="color: var(--uzzai-mint); font-weight: 700;">18</div>
+                        <div style="color: var(--uzzai-blue); font-weight: 700;">15</div>
+                        <div style="color: var(--uzzai-gold); font-weight: 700;">3x</div>
+                    </div>
+
+                    <div class="table-row">
+                        <div class="atleta-info">
+                            <div class="atleta-avatar">LS</div>
+                            <div class="atleta-details">
+                                <div class="atleta-nome">Lucas Silva</div>
+                                <div class="atleta-modalidades">Basquete</div>
+                            </div>
+                        </div>
+                        <div style="font-weight: 600;">16</div>
+                        <div style="color: var(--uzzai-mint); font-weight: 700;">15</div>
+                        <div style="color: var(--uzzai-blue); font-weight: 700;">19</div>
+                        <div style="color: var(--uzzai-gold); font-weight: 700;">4x</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================
+                 VIEW: MODALIDADES (Detailed View)
+                 ======================================== -->
+            <div id="view-modalidades" class="view">
+                <div class="section-header">
+                    <div class="section-title">Gestão de Modalidades</div>
+                    <button class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        Nova Modalidade
+                    </button>
+                </div>
+
+                <p style="color: var(--uzzai-silver); margin-bottom: 24px;">
+                    Configure as modalidades esportivas da sua atlética, defina posições, regras e configurações específicas.
+                </p>
+
+                <!-- Grid de Modalidades Detalhadas -->
+                <div class="grid grid-2" style="gap: 24px;">
+                    <!-- Futsal -->
+                    <div class="metric-card">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                            <div style="display: flex; align-items: center; gap: 16px;">
+                                <div class="modalidade-icon" style="background: rgba(26, 188, 156, 0.2); color: var(--uzzai-mint); width: 64px; height: 64px; font-size: 32px;">
+                                    <i class="fas fa-futbol"></i>
+                                </div>
+                                <div>
+                                    <div style="font-size: 24px; font-weight: 700; margin-bottom: 4px;">Futsal</div>
+                                    <div style="font-size: 13px; color: var(--uzzai-silver);">45 atletas cadastrados</div>
+                                </div>
+                            </div>
+                            <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">
+                                <i class="fas fa-cog"></i>
+                            </button>
+                        </div>
+
+                        <div style="padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                            <div style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">Posições Cadastradas:</div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <span style="padding: 6px 12px; background: rgba(26, 188, 156, 0.1); border-radius: 6px; font-size: 12px;">
+                                    <i class="fas fa-futbol"></i> Goleiro (5)
+                                </span>
+                                <span style="padding: 6px 12px; background: rgba(46, 134, 171, 0.1); border-radius: 6px; font-size: 12px;">
+                                    <i class="fas fa-shield-alt"></i> Fixo (8)
+                                </span>
+                                <span style="padding: 6px 12px; background: rgba(255, 215, 0, 0.1); border-radius: 6px; font-size: 12px;">
+                                    <i class="fas fa-running"></i> Ala (12)
+                                </span>
+                                <span style="padding: 6px 12px; background: rgba(147, 51, 234, 0.1); border-radius: 6px; font-size: 12px;">
+                                    <i class="fas fa-bolt"></i> Pivô (20)
+                                </span>
+                            </div>
+
+                            <div style="margin-top: 16px; display: flex; gap: 12px;">
+                                <div style="flex: 1; text-align: center; padding: 12px; background: rgba(255, 255, 255, 0.03); border-radius: 8px;">
+                                    <div style="font-size: 20px; font-weight: 700; color: var(--uzzai-mint);">2x</div>
+                                    <div style="font-size: 11px; color: var(--uzzai-silver);">Treinos/Semana</div>
+                                </div>
+                                <div style="flex: 1; text-align: center; padding: 12px; background: rgba(255, 255, 255, 0.03); border-radius: 8px;">
+                                    <div style="font-size: 20px; font-weight: 700; color: var(--status-success);">78%</div>
+                                    <div style="font-size: 11px; color: var(--uzzai-silver);">Frequência</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vôlei -->
+                    <div class="metric-card">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                            <div style="display: flex; align-items: center; gap: 16px;">
+                                <div class="modalidade-icon" style="background: rgba(46, 134, 171, 0.2); color: var(--uzzai-blue); width: 64px; height: 64px; font-size: 32px;">
+                                    <i class="fas fa-volleyball-ball"></i>
+                                </div>
+                                <div>
+                                    <div style="font-size: 24px; font-weight: 700; margin-bottom: 4px;">Vôlei</div>
+                                    <div style="font-size: 13px; color: var(--uzzai-silver);">32 atletas cadastrados</div>
+                                </div>
+                            </div>
+                            <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">
+                                <i class="fas fa-cog"></i>
+                            </button>
+                        </div>
+
+                        <div style="padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                            <div style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">Posições Cadastradas:</div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <span style="padding: 6px 12px; background: rgba(26, 188, 156, 0.1); border-radius: 6px; font-size: 12px;">
+                                    <i class="fas fa-user"></i> Levantador (4)
+                                </span>
+                                <span style="padding: 6px 12px; background: rgba(46, 134, 171, 0.1); border-radius: 6px; font-size: 12px;">
+                                    <i class="fas fa-bolt"></i> Ponteiro (10)
+                                </span>
+                                <span style="padding: 6px 12px; background: rgba(255, 215, 0, 0.1); border-radius: 6px; font-size: 12px;">
+                                    <i class="fas fa-shield-alt"></i> Central (8)
+                                </span>
+                                <span style="padding: 6px 12px; background: rgba(147, 51, 234, 0.1); border-radius: 6px; font-size: 12px;">
+                                    <i class="fas fa-hand-rock"></i> Líbero (10)
+                                </span>
+                            </div>
+
+                            <div style="margin-top: 16px; display: flex; gap: 12px;">
+                                <div style="flex: 1; text-align: center; padding: 12px; background: rgba(255, 255, 255, 0.03); border-radius: 8px;">
+                                    <div style="font-size: 20px; font-weight: 700; color: var(--uzzai-blue);">2x</div>
+                                    <div style="font-size: 11px; color: var(--uzzai-silver);">Treinos/Semana</div>
+                                </div>
+                                <div style="flex: 1; text-align: center; padding: 12px; background: rgba(255, 255, 255, 0.03); border-radius: 8px;">
+                                    <div style="font-size: 20px; font-weight: 700; color: var(--status-success);">81%</div>
+                                    <div style="font-size: 11px; color: var(--uzzai-silver);">Frequência</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Basquete -->
+                    <div class="metric-card">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                            <div style="display: flex; align-items: center; gap: 16px;">
+                                <div class="modalidade-icon" style="background: rgba(255, 215, 0, 0.2); color: var(--uzzai-gold); width: 64px; height: 64px; font-size: 32px;">
+                                    <i class="fas fa-basketball-ball"></i>
+                                </div>
+                                <div>
+                                    <div style="font-size: 24px; font-weight: 700; margin-bottom: 4px;">Basquete</div>
+                                    <div style="font-size: 13px; color: var(--uzzai-silver);">28 atletas cadastrados</div>
+                                </div>
+                            </div>
+                            <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">
+                                <i class="fas fa-cog"></i>
+                            </button>
+                        </div>
+
+                        <div style="padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                            <div style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">Posições Cadastradas:</div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <span style="padding: 6px 12px; background: rgba(26, 188, 156, 0.1); border-radius: 6px; font-size: 12px;">
+                                    <i class="fas fa-basketball-ball"></i> Armador (6)
+                                </span>
+                                <span style="padding: 6px 12px; background: rgba(46, 134, 171, 0.1); border-radius: 6px; font-size: 12px;">
+                                    <i class="fas fa-bullseye"></i> Ala (8)
+                                </span>
+                                <span style="padding: 6px 12px; background: rgba(255, 215, 0, 0.1); border-radius: 6px; font-size: 12px;">
+                                    <i class="fas fa-shield-alt"></i> Pivô (14)
+                                </span>
+                            </div>
+
+                            <div style="margin-top: 16px; display: flex; gap: 12px;">
+                                <div style="flex: 1; text-align: center; padding: 12px; background: rgba(255, 255, 255, 0.03); border-radius: 8px;">
+                                    <div style="font-size: 20px; font-weight: 700; color: var(--uzzai-gold);">1x</div>
+                                    <div style="font-size: 11px; color: var(--uzzai-silver);">Treinos/Semana</div>
+                                </div>
+                                <div style="flex: 1; text-align: center; padding: 12px; background: rgba(255, 255, 255, 0.03); border-radius: 8px;">
+                                    <div style="font-size: 20px; font-weight: 700; color: var(--status-warning);">65%</div>
+                                    <div style="font-size: 11px; color: var(--uzzai-silver);">Frequência</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Handebol -->
+                    <div class="metric-card">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                            <div style="display: flex; align-items: center; gap: 16px;">
+                                <div class="modalidade-icon" style="background: rgba(239, 68, 68, 0.2); color: var(--status-danger); width: 64px; height: 64px; font-size: 32px;">
+                                    <i class="fas fa-basketball-ball"></i>
+                                </div>
+                                <div>
+                                    <div style="font-size: 24px; font-weight: 700; margin-bottom: 4px;">Handebol</div>
+                                    <div style="font-size: 13px; color: var(--uzzai-silver);">22 atletas cadastrados</div>
+                                </div>
+                            </div>
+                            <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">
+                                <i class="fas fa-cog"></i>
+                            </button>
+                        </div>
+
+                        <div style="padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                            <div style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">Posições Cadastradas:</div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <span style="padding: 6px 12px; background: rgba(26, 188, 156, 0.1); border-radius: 6px; font-size: 12px;">
+                                    <i class="fas fa-futbol"></i> Goleiro (3)
+                                </span>
+                                <span style="padding: 6px 12px; background: rgba(46, 134, 171, 0.1); border-radius: 6px; font-size: 12px;">
+                                    <i class="fas fa-running"></i> Ponta (6)
+                                </span>
+                                <span style="padding: 6px 12px; background: rgba(255, 215, 0, 0.1); border-radius: 6px; font-size: 12px;">
+                                    <i class="fas fa-shield-alt"></i> Armador (13)
+                                </span>
+                            </div>
+
+                            <div style="margin-top: 16px; display: flex; gap: 12px;">
+                                <div style="flex: 1; text-align: center; padding: 12px; background: rgba(255, 255, 255, 0.03); border-radius: 8px;">
+                                    <div style="font-size: 20px; font-weight: 700; color: var(--status-danger);">1x</div>
+                                    <div style="font-size: 11px; color: var(--uzzai-silver);">Treinos/Semana</div>
+                                </div>
+                                <div style="flex: 1; text-align: center; padding: 12px; background: rgba(255, 255, 255, 0.03); border-radius: 8px;">
+                                    <div style="font-size: 20px; font-weight: 700; color: var(--status-success);">70%</div>
+                                    <div style="font-size: 11px; color: var(--uzzai-silver);">Frequência</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================
+                 VIEW: TABELINHA TÁTICA
+                 ======================================== -->
+            <div id="view-tabelinha" class="view">
+                <div class="section-header">
+                    <div class="section-title">Tabelinha Tática</div>
+                    <div style="display: flex; gap: 12px;">
+                        <button class="btn btn-secondary">
+                            <i class="fas fa-save"></i>
+                            Salvar Tática
+                        </button>
+                        <button class="btn btn-primary">
+                            <i class="fas fa-share-alt"></i>
+                            Compartilhar
+                        </button>
+                    </div>
+                </div>
+
+                <p style="color: var(--uzzai-silver); margin-bottom: 24px;">
+                    Crie e planeje suas táticas e formações. Arraste os jogadores para posicioná-los no campo.
+                </p>
+
+                <!-- Seletor de Modalidade -->
+                <div class="grid grid-4 mb-24">
+                    <select class="btn btn-secondary" style="width: 100%;" onchange="changeTaticaSport(this.value)">
+                        <option value="futsal">Futsal (5x5)</option>
+                        <option value="volei">Vôlei (6x6)</option>
+                        <option value="basquete">Basquete (5x5)</option>
+                        <option value="campo">Futebol Campo (11x11)</option>
+                    </select>
+                    <select class="btn btn-secondary" style="width: 100%;">
+                        <option>Formação: 2-2 (Futsal)</option>
+                        <option>Formação: 1-2-1 (Futsal)</option>
+                        <option>Formação: 3-1 (Futsal)</option>
+                    </select>
+                    <select class="btn btn-secondary" style="width: 100%;">
+                        <option>Jogo Atual</option>
+                        <option>Treino 15/01</option>
+                        <option>Nova Tática</option>
+                    </select>
+                    <button class="btn btn-secondary" style="width: 100%;">
+                        <i class="fas fa-redo"></i>
+                        Resetar Campo
+                    </button>
+                </div>
+
+                <div class="grid grid-3" style="gap: 24px;">
+                    <!-- Campo Tático (Maior) -->
+                    <div class="metric-card" style="grid-column: span 2; position: relative;">
+                        <div style="font-size: 16px; font-weight: 700; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+                            <span><i class="fas fa-futbol"></i> Campo Tático - Futsal</span>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn" style="padding: 4px 12px; font-size: 11px; background: rgba(26, 188, 156, 0.2);">
+                                    <i class="fas fa-user"></i> Time A
+                                </button>
+                                <button class="btn" style="padding: 4px 12px; font-size: 11px; background: rgba(239, 68, 68, 0.2);">
+                                    <i class="fas fa-user"></i> Time B
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- SVG Campo de Futsal -->
+                        <div style="position: relative; width: 100%; aspect-ratio: 16/9; background: linear-gradient(135deg, #1e7a5e 0%, #145c45 100%); border-radius: 12px; overflow: hidden; border: 2px solid rgba(255, 255, 255, 0.2);">
+                            <!-- Linhas do Campo -->
+                            <svg style="position: absolute; width: 100%; height: 100%; top: 0; left: 0;" viewBox="0 0 800 450">
+                                <!-- Linhas laterais -->
+                                <rect x="40" y="40" width="720" height="370" fill="none" stroke="white" stroke-width="3"/>
+
+                                <!-- Linha do meio -->
+                                <line x1="400" y1="40" x2="400" y2="410" stroke="white" stroke-width="3"/>
+
+                                <!-- Círculo central -->
+                                <circle cx="400" cy="225" r="50" fill="none" stroke="white" stroke-width="3"/>
+                                <circle cx="400" cy="225" r="4" fill="white"/>
+
+                                <!-- Área esquerda -->
+                                <rect x="40" y="125" width="100" height="200" fill="none" stroke="white" stroke-width="3"/>
+                                <rect x="40" y="180" width="40" height="90" fill="none" stroke="white" stroke-width="3"/>
+
+                                <!-- Área direita -->
+                                <rect x="660" y="125" width="100" height="200" fill="none" stroke="white" stroke-width="3"/>
+                                <rect x="720" y="180" width="40" height="90" fill="none" stroke="white" stroke-width="3"/>
+
+                                <!-- Marca de pênalti esquerda -->
+                                <circle cx="140" cy="225" r="4" fill="white"/>
+
+                                <!-- Marca de pênalti direita -->
+                                <circle cx="660" cy="225" r="4" fill="white"/>
+                            </svg>
+
+                            <!-- Jogadores Time A (Verde/Mint) - Posicionamento Inicial 2-2 -->
+                            <div class="player-marker" style="position: absolute; left: 10%; top: 48%; background: var(--uzzai-mint); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; cursor: move; box-shadow: 0 4px 8px rgba(0,0,0,0.3); border: 3px solid white; z-index: 10;">
+                                GK
+                            </div>
+                            <div class="player-marker" style="position: absolute; left: 28%; top: 25%; background: var(--uzzai-mint); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; cursor: move; box-shadow: 0 4px 8px rgba(0,0,0,0.3); border: 3px solid white; z-index: 10;">
+                                FX
+                            </div>
+                            <div class="player-marker" style="position: absolute; left: 28%; top: 68%; background: var(--uzzai-mint); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; cursor: move; box-shadow: 0 4px 8px rgba(0,0,0,0.3); border: 3px solid white; z-index: 10;">
+                                FX
+                            </div>
+                            <div class="player-marker" style="position: absolute; left: 48%; top: 20%; background: var(--uzzai-mint); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; cursor: move; box-shadow: 0 4px 8px rgba(0,0,0,0.3); border: 3px solid white; z-index: 10;">
+                                ALA
+                            </div>
+                            <div class="player-marker" style="position: absolute; left: 48%; top: 73%; background: var(--uzzai-mint); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; cursor: move; box-shadow: 0 4px 8px rgba(0,0,0,0.3); border: 3px solid white; z-index: 10;">
+                                ALA
+                            </div>
+
+                            <!-- Jogadores Time B (Vermelho) - Lado Direito -->
+                            <div class="player-marker" style="position: absolute; left: 85%; top: 48%; background: var(--status-danger); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; cursor: move; box-shadow: 0 4px 8px rgba(0,0,0,0.3); border: 3px solid white; z-index: 10;">
+                                GK
+                            </div>
+                            <div class="player-marker" style="position: absolute; left: 67%; top: 25%; background: var(--status-danger); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; cursor: move; box-shadow: 0 4px 8px rgba(0,0,0,0.3); border: 3px solid white; z-index: 10;">
+                                FX
+                            </div>
+                            <div class="player-marker" style="position: absolute; left: 67%; top: 68%; background: var(--status-danger); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; cursor: move; box-shadow: 0 4px 8px rgba(0,0,0,0.3); border: 3px solid white; z-index: 10;">
+                                FX
+                            </div>
+                            <div class="player-marker" style="position: absolute; left: 47%; top: 20%; background: var(--status-danger); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; cursor: move; box-shadow: 0 4px 8px rgba(0,0,0,0.3); border: 3px solid white; z-index: 10;">
+                                ALA
+                            </div>
+                            <div class="player-marker" style="position: absolute; left: 47%; top: 73%; background: var(--status-danger); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; cursor: move; box-shadow: 0 4px 8px rgba(0,0,0,0.3); border: 3px solid white; z-index: 10;">
+                                ALA
+                            </div>
+                        </div>
+
+                        <!-- Ferramentas de Desenho -->
+                        <div style="margin-top: 16px; display: flex; gap: 12px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                            <button class="btn btn-secondary" style="flex: 1;">
+                                <i class="fas fa-pencil-alt"></i>
+                                Desenhar Jogada
+                            </button>
+                            <button class="btn btn-secondary" style="flex: 1;">
+                                <i class="fas fa-arrows-alt"></i>
+                                Movimento
+                            </button>
+                            <button class="btn btn-secondary" style="flex: 1;">
+                                <i class="fas fa-futbol"></i>
+                                Trajeto Bola
+                            </button>
+                            <button class="btn btn-secondary" style="flex: 1;">
+                                <i class="fas fa-eraser"></i>
+                                Limpar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Lista de Jogadores (Lateral) -->
+                    <div class="metric-card">
+                        <div style="font-size: 16px; font-weight: 700; margin-bottom: 16px;">
+                            <i class="fas fa-users"></i> Jogadores Disponíveis
+                        </div>
+
+                        <!-- Time A -->
+                        <div style="margin-bottom: 20px;">
+                            <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--uzzai-mint);">
+                                <i class="fas fa-circle" style="font-size: 8px;"></i> Time A
+                            </div>
+                            <div style="display: grid; gap: 8px;">
+                                <div style="display: flex; align-items: center; gap: 8px; padding: 8px; background: rgba(26, 188, 156, 0.1); border-radius: 6px; cursor: grab;">
+                                    <div class="atleta-avatar" style="width: 28px; height: 28px; font-size: 11px;">PV</div>
+                                    <div style="flex: 1;">
+                                        <div style="font-size: 12px; font-weight: 600;">Pedro Vitor</div>
+                                        <div style="font-size: 10px; color: var(--uzzai-silver);">Pivô</div>
+                                    </div>
+                                    <span style="font-size: 18px; color: var(--uzzai-silver);">
+                                        <i class="fas fa-grip-vertical"></i>
+                                    </span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; padding: 8px; background: rgba(26, 188, 156, 0.1); border-radius: 6px; cursor: grab;">
+                                    <div class="atleta-avatar" style="width: 28px; height: 28px; font-size: 11px;">LS</div>
+                                    <div style="flex: 1;">
+                                        <div style="font-size: 12px; font-weight: 600;">Lucas Silva</div>
+                                        <div style="font-size: 10px; color: var(--uzzai-silver);">Fixo</div>
+                                    </div>
+                                    <span style="font-size: 18px; color: var(--uzzai-silver);">
+                                        <i class="fas fa-grip-vertical"></i>
+                                    </span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; padding: 8px; background: rgba(26, 188, 156, 0.1); border-radius: 6px; cursor: grab;">
+                                    <div class="atleta-avatar" style="width: 28px; height: 28px; font-size: 11px;">RC</div>
+                                    <div style="flex: 1;">
+                                        <div style="font-size: 12px; font-weight: 600;">Rafael Costa</div>
+                                        <div style="font-size: 10px; color: var(--uzzai-silver);">Ala</div>
+                                    </div>
+                                    <span style="font-size: 18px; color: var(--uzzai-silver);">
+                                        <i class="fas fa-grip-vertical"></i>
+                                    </span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; padding: 8px; background: rgba(26, 188, 156, 0.1); border-radius: 6px; cursor: grab;">
+                                    <div class="atleta-avatar" style="width: 28px; height: 28px; font-size: 11px;">MO</div>
+                                    <div style="flex: 1;">
+                                        <div style="font-size: 12px; font-weight: 600;">Maria Oliveira</div>
+                                        <div style="font-size: 10px; color: var(--uzzai-silver);">Ala</div>
+                                    </div>
+                                    <span style="font-size: 18px; color: var(--uzzai-silver);">
+                                        <i class="fas fa-grip-vertical"></i>
+                                    </span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; padding: 8px; background: rgba(26, 188, 156, 0.1); border-radius: 6px; cursor: grab;">
+                                    <div class="atleta-avatar" style="width: 28px; height: 28px; font-size: 11px;">AS</div>
+                                    <div style="flex: 1;">
+                                        <div style="font-size: 12px; font-weight: 600;">Ana Santos</div>
+                                        <div style="font-size: 10px; color: var(--uzzai-silver);">Goleiro</div>
+                                    </div>
+                                    <span style="font-size: 18px; color: var(--uzzai-silver);">
+                                        <i class="fas fa-grip-vertical"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Time B -->
+                        <div>
+                            <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--status-danger);">
+                                <i class="fas fa-circle" style="font-size: 8px;"></i> Time B
+                            </div>
+                            <div style="display: grid; gap: 8px;">
+                                <div style="display: flex; align-items: center; gap: 8px; padding: 8px; background: rgba(239, 68, 68, 0.1); border-radius: 6px; cursor: grab;">
+                                    <div class="atleta-avatar" style="width: 28px; height: 28px; font-size: 11px; background: linear-gradient(135deg, var(--status-danger), #b91c1c);">JD</div>
+                                    <div style="flex: 1;">
+                                        <div style="font-size: 12px; font-weight: 600;">João Dias</div>
+                                        <div style="font-size: 10px; color: var(--uzzai-silver);">Pivô</div>
+                                    </div>
+                                    <span style="font-size: 18px; color: var(--uzzai-silver);">
+                                        <i class="fas fa-grip-vertical"></i>
+                                    </span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; padding: 8px; background: rgba(239, 68, 68, 0.1); border-radius: 6px; cursor: grab;">
+                                    <div class="atleta-avatar" style="width: 28px; height: 28px; font-size: 11px; background: linear-gradient(135deg, var(--status-danger), #b91c1c);">CF</div>
+                                    <div style="flex: 1;">
+                                        <div style="font-size: 12px; font-weight: 600;">Carlos Ferreira</div>
+                                        <div style="font-size: 10px; color: var(--uzzai-silver);">Fixo</div>
+                                    </div>
+                                    <span style="font-size: 18px; color: var(--uzzai-silver);">
+                                        <i class="fas fa-grip-vertical"></i>
+                                    </span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; padding: 8px; background: rgba(239, 68, 68, 0.1); border-radius: 6px; cursor: grab;">
+                                    <div class="atleta-avatar" style="width: 28px; height: 28px; font-size: 11px; background: linear-gradient(135deg, var(--status-danger), #b91c1c);">BL</div>
+                                    <div style="flex: 1;">
+                                        <div style="font-size: 12px; font-weight: 600;">Bruno Lima</div>
+                                        <div style="font-size: 10px; color: var(--uzzai-silver);">Ala</div>
+                                    </div>
+                                    <span style="font-size: 18px; color: var(--uzzai-silver);">
+                                        <i class="fas fa-grip-vertical"></i>
+                                    </span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; padding: 8px; background: rgba(239, 68, 68, 0.1); border-radius: 6px; cursor: grab;">
+                                    <div class="atleta-avatar" style="width: 28px; height: 28px; font-size: 11px; background: linear-gradient(135deg, var(--status-danger), #b91c1c);">PR</div>
+                                    <div style="flex: 1;">
+                                        <div style="font-size: 12px; font-weight: 600;">Paula Rocha</div>
+                                        <div style="font-size: 10px; color: var(--uzzai-silver);">Ala</div>
+                                    </div>
+                                    <span style="font-size: 18px; color: var(--uzzai-silver);">
+                                        <i class="fas fa-grip-vertical"></i>
+                                    </span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; padding: 8px; background: rgba(239, 68, 68, 0.1); border-radius: 6px; cursor: grab;">
+                                    <div class="atleta-avatar" style="width: 28px; height: 28px; font-size: 11px; background: linear-gradient(135deg, var(--status-danger), #b91c1c);">TM</div>
+                                    <div style="flex: 1;">
+                                        <div style="font-size: 12px; font-weight: 600;">Thiago Martins</div>
+                                        <div style="font-size: 10px; color: var(--uzzai-silver);">Goleiro</div>
+                                    </div>
+                                    <span style="font-size: 18px; color: var(--uzzai-silver);">
+                                        <i class="fas fa-grip-vertical"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notas e Instruções -->
+                        <div style="margin-top: 20px; padding: 12px; background: rgba(255, 215, 0, 0.1); border-radius: 8px; border: 1px solid rgba(255, 215, 0, 0.3);">
+                            <div style="font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--uzzai-gold);">
+                                <i class="fas fa-lightbulb"></i> Dica
+                            </div>
+                            <div style="font-size: 11px; color: var(--uzzai-silver); line-height: 1.5;">
+                                Arraste os jogadores para posicioná-los no campo. Use as ferramentas de desenho para traçar jogadas e movimentações.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Táticas Salvas -->
+                <div class="section-header" style="margin-top: 32px;">
+                    <div class="section-title">Táticas Salvas</div>
+                </div>
+
+                <div class="grid grid-3">
+                    <div class="metric-card" style="cursor: pointer;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                            <div>
+                                <div style="font-size: 16px; font-weight: 700; margin-bottom: 4px;">Ataque Rápido 2-2</div>
+                                <div style="font-size: 12px; color: var(--uzzai-silver);">Futsal • Criado em 10/01/26</div>
+                            </div>
+                            <button class="btn" style="padding: 4px 8px; font-size: 11px;">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-secondary" style="flex: 1; padding: 6px; font-size: 11px;">
+                                <i class="fas fa-eye"></i> Ver
+                            </button>
+                            <button class="btn btn-primary" style="flex: 1; padding: 6px; font-size: 11px;">
+                                <i class="fas fa-download"></i> Carregar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="metric-card" style="cursor: pointer;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                            <div>
+                                <div style="font-size: 16px; font-weight: 700; margin-bottom: 4px;">Defesa Zoneada 1-2-1</div>
+                                <div style="font-size: 12px; color: var(--uzzai-silver);">Futsal • Criado em 08/01/26</div>
+                            </div>
+                            <button class="btn" style="padding: 4px 8px; font-size: 11px;">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-secondary" style="flex: 1; padding: 6px; font-size: 11px;">
+                                <i class="fas fa-eye"></i> Ver
+                            </button>
+                            <button class="btn btn-primary" style="flex: 1; padding: 6px; font-size: 11px;">
+                                <i class="fas fa-download"></i> Carregar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="metric-card" style="cursor: pointer;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                            <div>
+                                <div style="font-size: 16px; font-weight: 700; margin-bottom: 4px;">Jogada Ensaiada - Lateral</div>
+                                <div style="font-size: 12px; color: var(--uzzai-silver);">Futsal • Criado em 05/01/26</div>
+                            </div>
+                            <button class="btn" style="padding: 4px 8px; font-size: 11px;">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-secondary" style="flex: 1; padding: 6px; font-size: 11px;">
+                                <i class="fas fa-eye"></i> Ver
+                            </button>
+                            <button class="btn btn-primary" style="flex: 1; padding: 6px; font-size: 11px;">
+                                <i class="fas fa-download"></i> Carregar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    // ========================================
+    // VIEW SWITCHING
+    // ========================================
+    function switchView(viewName) {
+        // Hide all views
+        document.querySelectorAll('.view').forEach(view => {
+            view.classList.remove('active');
+        });
+
+        // Show selected view
+        const targetView = document.getElementById(`view-${viewName}`);
+        if (targetView) {
+            targetView.classList.add('active');
+        }
+
+        // Update nav items
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.classList.remove('active');
+        });
+
+        event.currentTarget.classList.add('active');
+
+        // Update topbar title
+        const titles = {
+            'dashboard': 'Dashboard',
+            'modalidades': 'Gestão de Modalidades',
+            'atletas': 'Gestão de Atletas',
+            'treinos': 'Gestão de Treinos',
+            'jogos': 'Jogos Oficiais',
+            'financeiro': 'Gestão Financeira',
+            'frequencia': 'Controle de Frequência',
+            'rankings': 'Rankings e Estatísticas',
+            'tabelinha': 'Tabelinha Tática'
+        };
+
+        document.querySelector('.topbar-left h1').textContent = titles[viewName] || 'Dashboard';
+
+        // Update subtitle based on view
+        const subtitle = document.querySelector('.topbar-subtitle');
+        if (subtitle) {
+            const subtitles = {
+                'dashboard': 'Visão geral da atlética - Semana 48/2025',
+                'modalidades': 'Configure as modalidades esportivas',
+                'atletas': 'Gerencie atletas e suas modalidades',
+                'treinos': 'Organize treinos e confirmações',
+                'jogos': 'Acompanhe jogos oficiais e convocações',
+                'financeiro': 'Controle financeiro e pagamentos',
+                'frequencia': 'Monitore presença e assiduidade',
+                'rankings': 'Estatísticas e desempenho dos atletas',
+                'tabelinha': 'Crie e planeje táticas e formações'
+            };
+            subtitle.textContent = subtitles[viewName] || 'Visão geral da atlética';
+        }
+    }
+
+    // ========================================
+    // TACTICAL BOARD FUNCTIONS
+    // ========================================
+    function changeTaticaSport(sport) {
+        console.log('Changing sport to:', sport);
+        // Em produção, isso mudaria o campo visual e as posições disponíveis
+    }
+
+    // Make players draggable (simplified version - in production use a library like interact.js)
+    document.addEventListener('DOMContentLoaded', function() {
+        const players = document.querySelectorAll('.player-marker');
+        players.forEach(player => {
+            let isDragging = false;
+            let currentX;
+            let currentY;
+            let initialX;
+            let initialY;
+
+            player.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                initialX = e.clientX - player.offsetLeft;
+                initialY = e.clientY - player.offsetTop;
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    e.preventDefault();
+                    currentX = e.clientX - initialX;
+                    currentY = e.clientY - initialY;
+
+                    player.style.left = currentX + 'px';
+                    player.style.top = currentY + 'px';
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+        });
+    });
+</script>
+
+</body>
+</html>

@@ -106,9 +106,11 @@ export function EmptyStateSimple({
         className
       )}
     >
-      <Icon className="h-12 w-12 text-uzz-silver mb-4" strokeWidth={1.5} />
-      <h3 className="text-lg font-medium text-gray-700 mb-2">{title}</h3>
-      <p className="text-sm text-gray-500 max-w-sm">{description}</p>
+      <div className="rounded-full bg-gradient-to-br from-uzz-mint/20 to-uzz-blue/20 p-6 mb-6">
+        <Icon className="h-12 w-12 text-uzz-mint" strokeWidth={1.5} />
+      </div>
+      <h3 className="text-lg font-medium font-poppins text-white mb-2">{title}</h3>
+      <p className="text-sm text-uzz-silver max-w-sm">{description}</p>
     </div>
   )
 }

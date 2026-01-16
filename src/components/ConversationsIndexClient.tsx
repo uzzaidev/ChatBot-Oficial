@@ -65,7 +65,7 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
     const searchLower = searchTerm.toLowerCase().trim()
     // Limpar o termo de pesquisa uma vez fora do loop de filter
     const phoneSearchTerm = searchTerm.replace(/\D/g, '')
-    
+
     // Filtrar por nome ou telefone
     return conversations.filter((conversation) => {
       const nameMatch = conversation.name?.toLowerCase().includes(searchLower)
@@ -252,7 +252,7 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
         </div>
 
         {/* Lista de Conversas */}
-        <div 
+        <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
           className="flex-1 overflow-y-auto"
@@ -260,18 +260,18 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
           {filteredConversations.length === 0 && !loading ? (
             <EmptyStateSimple
               icon={
-                statusFilter === 'all' ? MessageCircle : 
-                statusFilter === 'bot' ? Bot :
-                statusFilter === 'humano' ? User :
-                statusFilter === 'fluxo_inicial' ? Workflow : 
-                statusFilter === 'transferido' ? ArrowRight : MessageCircle
+                statusFilter === 'all' ? MessageCircle :
+                  statusFilter === 'bot' ? Bot :
+                    statusFilter === 'humano' ? User :
+                      statusFilter === 'fluxo_inicial' ? Workflow :
+                        statusFilter === 'transferido' ? ArrowRight : MessageCircle
               }
               title={
                 statusFilter === 'all' ? "Nenhuma conversa encontrada" :
-                `Nenhuma conversa com status "${getStatusLabel(statusFilter)}"`
+                  `Nenhuma conversa com status "${getStatusLabel(statusFilter)}"`
               }
               description={
-                statusFilter === 'all' 
+                statusFilter === 'all'
                   ? "Quando você receber mensagens no WhatsApp, elas aparecerão aqui"
                   : `Não há conversas com status "${getStatusLabel(statusFilter)}" no momento. Tente mudar o filtro ou aguarde novas conversas.`
               }
@@ -288,21 +288,21 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
       </div>
 
       {/* Área Central - Mensagem para selecionar conversa (visível apenas em lg+) */}
-      <div className="hidden lg:flex flex-1 items-center justify-center bg-gradient-to-br from-gray-50 to-white">
+      <div className="hidden lg:flex flex-1 items-center justify-center bg-[#0f1419] bg-pattern-dots">
         <EmptyStateSimple
           icon={
-            statusFilter === 'all' ? MessageCircle : 
-            statusFilter === 'bot' ? Bot :
-            statusFilter === 'humano' ? User :
-            statusFilter === 'fluxo_inicial' ? Workflow : 
-            statusFilter === 'transferido' ? ArrowRight : MessageCircle
+            statusFilter === 'all' ? MessageCircle :
+              statusFilter === 'bot' ? Bot :
+                statusFilter === 'humano' ? User :
+                  statusFilter === 'fluxo_inicial' ? Workflow :
+                    statusFilter === 'transferido' ? ArrowRight : MessageCircle
           }
           title={
             statusFilter === 'all' ? "Nenhuma conversa selecionada" :
-            `Nenhuma conversa com status "${getStatusLabel(statusFilter)}"`
+              `Nenhuma conversa com status "${getStatusLabel(statusFilter)}"`
           }
           description={
-            statusFilter === 'all' 
+            statusFilter === 'all'
               ? "Selecione uma conversa à esquerda para visualizar as mensagens e começar a interagir"
               : `Não há conversas com status "${getStatusLabel(statusFilter)}" no momento. Tente mudar o filtro ou aguarde novas conversas.`
           }
