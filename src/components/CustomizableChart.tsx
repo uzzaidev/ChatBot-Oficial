@@ -57,12 +57,14 @@ export function CustomizableChart({
   const filteredData = data.length > 0 ? data.slice(brushStartIndex, brushEndIndex + 1) : []
 
   // Toggle visibility of data series
-  const handleLegendClick = (dataKey: string) => {
+  const handleLegendClick = (dataKey: string | number | ((data: any, index: number) => string | number) | undefined) => {
+    if (!dataKey || typeof dataKey === 'function') return
+    const key = String(dataKey)
     const newHidden = new Set(hiddenDataKeys)
-    if (newHidden.has(dataKey)) {
-      newHidden.delete(dataKey)
+    if (newHidden.has(key)) {
+      newHidden.delete(key)
     } else {
-      newHidden.add(dataKey)
+      newHidden.add(key)
     }
     setHiddenDataKeys(newHidden)
   }
@@ -151,7 +153,11 @@ export function CustomizableChart({
             <Tooltip {...tooltipProps} />
             {config.showLegend && (
               <Legend 
-                onClick={(e) => handleLegendClick(e.dataKey)}
+                onClick={(e: any) => {
+                  if (e?.dataKey) {
+                    handleLegendClick(e.dataKey)
+                  }
+                }}
                 wrapperStyle={{ color: '#fff' }}
                 iconType="line"
               />
@@ -196,7 +202,11 @@ export function CustomizableChart({
             <Tooltip {...tooltipProps} />
             {config.showLegend && (
               <Legend 
-                onClick={(e) => handleLegendClick(e.dataKey)}
+                onClick={(e: any) => {
+                  if (e?.dataKey) {
+                    handleLegendClick(e.dataKey)
+                  }
+                }}
                 wrapperStyle={{ color: '#fff' }}
               />
             )}
@@ -240,7 +250,11 @@ export function CustomizableChart({
             <Tooltip {...tooltipProps} />
             {config.showLegend && (
               <Legend 
-                onClick={(e) => handleLegendClick(e.dataKey)}
+                onClick={(e: any) => {
+                  if (e?.dataKey) {
+                    handleLegendClick(e.dataKey)
+                  }
+                }}
                 wrapperStyle={{ color: '#fff' }}
                 iconType="rect"
               />
@@ -285,7 +299,11 @@ export function CustomizableChart({
             <Tooltip {...tooltipProps} />
             {config.showLegend && (
               <Legend 
-                onClick={(e) => handleLegendClick(e.dataKey)}
+                onClick={(e: any) => {
+                  if (e?.dataKey) {
+                    handleLegendClick(e.dataKey)
+                  }
+                }}
                 wrapperStyle={{ color: '#fff' }}
               />
             )}
