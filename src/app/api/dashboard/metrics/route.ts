@@ -350,7 +350,7 @@ function processLatencyData(data: any[]) {
   }, {} as Record<string, number[]>)
 
   return Object.entries(grouped).map(([date, latencies]) => {
-    const sorted = latencies.sort((a, b) => a - b)
+    const sorted = (latencies as number[]).sort((a, b) => a - b)
     const len = sorted.length
     if (len === 0) {
       return {

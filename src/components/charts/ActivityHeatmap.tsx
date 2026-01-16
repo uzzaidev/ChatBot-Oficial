@@ -34,9 +34,9 @@ export function ActivityHeatmap({
   endDate,
   className,
 }: ActivityHeatmapProps) {
-  // Default to last year
-  const defaultEndDate = endDate || new Date()
-  const defaultStartDate = startDate || startOfYear(defaultEndDate)
+  // Default to last year - memoize to avoid dependency issues
+  const defaultEndDate = useMemo(() => endDate || new Date(), [endDate])
+  const defaultStartDate = useMemo(() => startDate || startOfYear(defaultEndDate), [startDate, defaultEndDate])
 
   // Create map of date to value
   const dataMap = useMemo(() => {
