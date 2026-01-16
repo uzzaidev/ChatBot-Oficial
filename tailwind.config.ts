@@ -185,6 +185,7 @@ const config = {
         poppins: ['var(--font-poppins)', 'sans-serif'],
         inter: ['var(--font-inter)', 'sans-serif'],
         exo2: ['var(--font-exo2)', 'sans-serif'],
+        'fira-code': ['var(--font-fira-code)', 'monospace'],
       },
       borderRadius: {
         lg: "var(--radius)",

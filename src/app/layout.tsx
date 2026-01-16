@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Poppins, Inter, Exo_2 } from 'next/font/google'
+import { Poppins, Inter, Exo_2, Fira_Code } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
 import { DeepLinkingProvider } from '@/components/DeepLinkingProvider'
@@ -28,6 +28,13 @@ const exo2 = Exo_2({
   display: 'swap',
 })
 
+const firaCode = Fira_Code({
+  weight: ['400', '500', '600'],
+  subsets: ['latin'],
+  variable: '--font-fira-code',
+  display: 'swap',
+})
+
 export const metadata: Metadata = {
   title: 'UzzApp - WhatsApp Dashboard',
   description: 'Dashboard para gerenciamento de conversas WhatsApp',
@@ -52,7 +59,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="pt-BR" className={`${poppins.variable} ${inter.variable} ${exo2.variable}`}>
+    <html lang="pt-BR" className={`${poppins.variable} ${inter.variable} ${exo2.variable} ${firaCode.variable}`}>
       <head>
         {/* Fallback link for browsers that don't read metadata.icons */}
         <link rel="icon" href="/favcon.ico" />

@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { StatusBadge } from '@/components/StatusBadge'
 import { formatPhone, formatDateTime, getInitials, truncateText } from '@/lib/utils'
 import type { ConversationWithCount } from '@/lib/types'
-import { MessageCircle } from 'lucide-react'
+import { MessageCircle, User, Workflow, Bot, ArrowRight } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { EmptyStateSimple } from '@/components/EmptyState'
@@ -52,14 +52,9 @@ export const ConversationList = ({
     )
   }
 
+  // Empty state será gerenciado pelo componente pai com contexto de filtro
   if (conversations.length === 0) {
-    return (
-      <EmptyStateSimple
-        icon={MessageCircle}
-        title="Nenhuma conversa encontrada"
-        description="Quando você receber mensagens no WhatsApp, elas aparecerão aqui"
-      />
-    )
+    return null // Deixa o pai gerenciar o empty state
   }
 
   return (
@@ -69,65 +64,129 @@ export const ConversationList = ({
         // Usar unread_count do Supabase (persistente)
         const hasUnread = (conversation.unread_count ?? 0) > 0 && !isActive
 
+        // Detectar conversas muito recentes (últimas 5 minutos)
+        const isVeryRecent = (() => {
+          if (!conversation.last_update) return false
+          const lastUpdate = new Date(conversation.last_update).getTime()
+          const fiveMinutesAgo = Date.now() - 5 * 60 * 1000
+          return lastUpdate > fiveMinutesAgo
+        })()
+
         return (
           <div
             key={conversation.id}
             className={cn(
-              "flex items-center gap-3 p-3 cursor-pointer transition-all duration-200 border-b border-uzz-silver/30",
-              isActive ? "bg-gradient-to-r from-uzz-mint/10 to-uzz-blue/10 border-l-4 border-l-uzz-mint" : "hover:bg-gray-50",
-              hasUnread && !isActive && "bg-uzz-blue/5"
+              "group relative p-4 cursor-pointer transition-all duration-200",
+              "border-l-4 border-b border-uzz-silver/20",
+              "hover:shadow-md hover:bg-gradient-to-r hover:from-gray-50 hover:to-white",
+              isActive 
+                ? "bg-gradient-to-r from-uzz-mint/15 to-uzz-blue/15 border-l-uzz-mint shadow-sm" 
+                : "",
+              hasUnread && !isActive && "bg-uzz-blue/5 border-l-uzz-blue",
+              isVeryRecent && "animate-pulse"
             )}
             onClick={() => handleConversationClick(conversation.phone)}
           >
-            {/* Avatar */}
-            <Avatar className="h-12 w-12 flex-shrink-0">
-              <AvatarFallback className="bg-gradient-to-br from-uzz-mint to-uzz-blue text-white text-sm font-poppins font-semibold">
-                {getInitials(conversation.name || 'Sem nome')}
-              </AvatarFallback>
-            </Avatar>
-
-            {/* Info da Conversa */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between mb-1">
-                <span className={cn(
-                  "font-poppins font-semibold text-sm truncate text-uzz-black",
-                  hasUnread && !isActive && "font-bold"
-                )}>
-                  {conversation.name}
-                </span>
-                <span className="text-xs text-uzz-silver ml-2 flex-shrink-0">
-                  {formatDateTime(conversation.last_update)}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <p className={cn(
-                  "text-xs text-gray-600 truncate flex-1",
-                  hasUnread && !isActive && "font-semibold text-uzz-black"
-                )}>
-                  {conversation.last_message
-                    ? truncateText(conversation.last_message, 35)
-                    : formatPhone(conversation.phone)
-                  }
-                </p>
-
-                {/* Badge de Status (pequeno) */}
-                <div className="ml-2">
-                  <StatusBadge
-                    status={conversation.status}
-                    showIcon={false}
+            <div className="flex items-start gap-4">
+              {/* Avatar com Badge de Status */}
+              <div className="relative flex-shrink-0">
+                <Avatar className="h-16 w-16 ring-2 ring-white shadow-md">
+                  <AvatarFallback className="bg-gradient-to-br from-uzz-mint to-uzz-blue text-white text-lg font-poppins font-bold">
+                    {getInitials(conversation.name || 'Sem nome')}
+                  </AvatarFallback>
+                </Avatar>
+                
+                {/* Badge de status no canto inferior direito do avatar */}
+                <div className="absolute -bottom-1 -right-1 z-10">
+                  <StatusBadge 
+                    status={conversation.status} 
+                    showIcon={true} 
                     size="sm"
                   />
                 </div>
+
+                {/* Indicador de "novo" (últimas 5min) */}
+                {isVeryRecent && (
+                  <div className="absolute -top-1 -right-1 z-20">
+                    <div className="w-3 h-3 bg-uzz-mint rounded-full border-2 border-white shadow-lg animate-ping" />
+                    <div className="absolute top-0 left-0 w-3 h-3 bg-uzz-mint rounded-full border-2 border-white" />
+                  </div>
+                )}
+              </div>
+
+              {/* Informações Principais */}
+              <div className="flex-1 min-w-0">
+                {/* Nome e Timestamp */}
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex-1 min-w-0">
+                    <h3 className={cn(
+                      "font-poppins font-bold text-base truncate mb-0.5",
+                      hasUnread && !isActive ? "text-uzz-black" : "text-uzz-black"
+                    )}>
+                      {conversation.name || formatPhone(conversation.phone)}
+                    </h3>
+                    <p className="text-xs text-uzz-silver">
+                      {formatPhone(conversation.phone)}
+                    </p>
+                  </div>
+                  
+                  <div className="flex flex-col items-end gap-1.5 ml-2 flex-shrink-0">
+                    <span className="text-xs text-uzz-silver whitespace-nowrap">
+                      {formatDateTime(conversation.last_update)}
+                    </span>
+                    {hasUnread && !isActive && (
+                      <div className="bg-gradient-to-r from-uzz-mint to-uzz-blue text-white text-[11px] rounded-full min-w-[22px] h-5 px-2 flex items-center justify-center font-bold shadow-lg shadow-uzz-mint/30">
+                        {conversation.unread_count > 9 ? '9+' : conversation.unread_count}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Última Mensagem */}
+                <div className="mb-2">
+                  <p className={cn(
+                    "text-sm line-clamp-2",
+                    hasUnread && !isActive 
+                      ? "font-semibold text-uzz-black" 
+                      : "text-gray-600"
+                  )}>
+                    {conversation.last_message
+                      ? truncateText(conversation.last_message, 60)
+                      : "Nenhuma mensagem ainda"
+                    }
+                  </p>
+                </div>
+
+                {/* Tags e Indicadores */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* Tag de Status Principal */}
+                  {conversation.status === 'humano' && (
+                    <span className="inline-flex items-center gap-1 text-[10px] px-2.5 py-1 bg-green-100 text-green-700 rounded-full font-bold border border-green-200">
+                      <User className="h-3 w-3" />
+                      Atendimento Humano
+                    </span>
+                  )}
+                  {conversation.status === 'fluxo_inicial' && (
+                    <span className="inline-flex items-center gap-1 text-[10px] px-2.5 py-1 bg-purple-100 text-purple-700 rounded-full font-bold border border-purple-200">
+                      <Workflow className="h-3 w-3" />
+                      Em Flow Interativo
+                    </span>
+                  )}
+                  {conversation.status === 'bot' && (
+                    <span className="inline-flex items-center gap-1 text-[10px] px-2.5 py-1 bg-blue-100 text-blue-700 rounded-full font-bold border border-blue-200">
+                      <Bot className="h-3 w-3" />
+                      Bot Respondendo
+                    </span>
+                  )}
+                  {conversation.status === 'transferido' && (
+                    <span className="inline-flex items-center gap-1 text-[10px] px-2.5 py-1 bg-orange-100 text-orange-700 rounded-full font-bold border border-orange-200">
+                      <ArrowRight className="h-3 w-3" />
+                      Aguardando Humano
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
-
-            {/* Indicador de mensagens não lidas - Badge com número */}
-            {hasUnread && !isActive && (
-              <div className="bg-gradient-to-r from-uzz-mint to-uzz-blue text-white text-[10px] rounded-full min-w-[20px] h-5 px-1.5 flex items-center justify-center font-bold flex-shrink-0 shadow-lg shadow-uzz-mint/30">
-                {(conversation.unread_count ?? 0) > 9 ? '9+' : conversation.unread_count}
-              </div>
-            )}
           </div>
         )
       })}
