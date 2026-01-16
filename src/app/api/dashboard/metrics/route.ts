@@ -555,12 +555,15 @@ function processMessagesByHourData(data: any[]) {
 
   return Object.entries(grouped)
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([hour, values]) => ({
-      hour,
-      total: values.total,
-      incoming: values.incoming,
-      outgoing: values.outgoing,
-    }))
+    .map(([hour, values]) => {
+      const v = values as { total: number; incoming: number; outgoing: number }
+      return {
+        hour,
+        total: v.total,
+        incoming: v.incoming,
+        outgoing: v.outgoing,
+      }
+    })
 }
 
 function processStatusDistribution(data: any[]) {
