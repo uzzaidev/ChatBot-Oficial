@@ -1,12 +1,32 @@
 import type { Metadata } from 'next'
-// import { Inter } from 'next/font/google'
+import { Poppins, Inter, Exo_2 } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
 import { DeepLinkingProvider } from '@/components/DeepLinkingProvider'
 import { PushNotificationsProvider } from '@/components/PushNotificationsProvider'
 import { NotificationManager } from '@/components/NotificationManager'
 
-// const inter = Inter({ subsets: ['latin'] })
+// Fontes UZZ.AI
+const poppins = Poppins({
+  weight: ['400', '600', '700'],
+  subsets: ['latin'],
+  variable: '--font-poppins',
+  display: 'swap',
+})
+
+const inter = Inter({
+  weight: ['400', '500', '600'],
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+})
+
+const exo2 = Exo_2({
+  weight: ['600', '700'],
+  subsets: ['latin'],
+  variable: '--font-exo2',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'UzzApp - WhatsApp Dashboard',
@@ -32,7 +52,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" className={`${poppins.variable} ${inter.variable} ${exo2.variable}`}>
       <head>
         {/* Fallback link for browsers that don't read metadata.icons */}
         <link rel="icon" href="/favcon.ico" />
@@ -42,7 +62,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="UzzApp" />
         {/* If you prefer an ICO file, place it at /public/favicon.ico and the browser will pick it up */}
       </head>
-      <body>
+      <body className="font-inter">
         <DeepLinkingProvider>
           <PushNotificationsProvider>
             <NotificationManager enabled={true} />

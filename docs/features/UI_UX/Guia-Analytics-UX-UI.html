@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Guia UX/UI - Página Analytics</title>
+   <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet">
+   <style>
+      * {
+         margin: 0;
+         padding: 0;
+         box-sizing: border-box;
+      }
+
+      body {
+         font-family: 'Inter', sans-serif;
+         background: #f8f9fa;
+         color: #1C1C1C;
+         line-height: 1.6;
+      }
+
+      .container {
+         max-width: 1600px;
+         margin: 0 auto;
+         padding: 40px 20px;
+      }
+
+      .header {
+         text-align: center;
+         padding: 60px 40px;
+         background: linear-gradient(135deg, #1ABC9C, #2E86AB);
+         border-radius: 20px;
+         color: white;
+         margin-bottom: 60px;
+      }
+
+      .header h1 {
+         font-family: 'Poppins', sans-serif;
+         font-size: 48px;
+         margin-bottom: 16px;
+      }
+
+      .section {
+         background: white;
+         border-radius: 16px;
+         padding: 40px;
+         margin-bottom: 40px;
+         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+         border: 2px solid #e5e7eb;
+      }
+
+      .section-title {
+         font-family: 'Poppins', sans-serif;
+         font-size: 32px;
+         color: #1C1C1C;
+         margin-bottom: 24px;
+         padding-bottom: 16px;
+         border-bottom: 3px solid #1ABC9C;
+      }
+
+      .subsection-title {
+         font-family: 'Poppins', sans-serif;
+         font-size: 24px;
+         color: #2E86AB;
+         margin: 32px 0 16px;
+      }
+
+      /* Filter Section */
+      .filter-section {
+         background: #f8f9fa;
+         border: 2px solid #e5e7eb;
+         border-radius: 12px;
+         padding: 24px;
+         margin: 24px 0;
+      }
+
+      .filter-header {
+         display: flex;
+         justify-content: space-between;
+         align-items: center;
+         margin-bottom: 20px;
+      }
+
+      .filter-title {
+         font-family: 'Poppins', sans-serif;
+         font-size: 18px;
+         font-weight: 600;
+         color: #1C1C1C;
+      }
+
+      .filter-subtitle {
+         font-size: 13px;
+         color: #6b7280;
+         margin-top: 4px;
+      }
+
+      .filter-grid {
+         display: grid;
+         grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+         gap: 16px;
+      }
+
+      .filter-item {
+         display: flex;
+         flex-direction: column;
+         gap: 8px;
+      }
+
+      .filter-label {
+         font-size: 13px;
+         font-weight: 600;
+         color: #1C1C1C;
+      }
+
+      .filter-select {
+         padding: 10px 14px;
+         border: 2px solid #e5e7eb;
+         border-radius: 8px;
+         font-family: 'Inter', sans-serif;
+         font-size: 14px;
+         background: white;
+         cursor: pointer;
+         transition: all 0.2s;
+      }
+
+      .filter-select:hover {
+         border-color: #1ABC9C;
+      }
+
+      .filter-select:focus {
+         outline: none;
+         border-color: #1ABC9C;
+         box-shadow: 0 0 0 3px rgba(26, 188, 156, 0.1);
+      }
+
+      /* Period Tabs */
+      .period-tabs {
+         display: flex;
+         gap: 8px;
+         background: white;
+         padding: 4px;
+         border-radius: 8px;
+         border: 2px solid #e5e7eb;
+      }
+
+      .period-tab {
+         padding: 8px 16px;
+         border-radius: 6px;
+         font-size: 13px;
+         font-weight: 600;
+         cursor: pointer;
+         transition: all 0.2s;
+         border: none;
+         background: transparent;
+         color: #6b7280;
+      }
+
+      .period-tab:hover {
+         background: #f3f4f6;
+         color: #1C1C1C;
+      }
+
+      .period-tab.active {
+         background: linear-gradient(135deg, #1ABC9C, #2E86AB);
+         color: white;
+      }
+
+      /* Metric Cards */
+      .metrics-grid {
+         display: grid;
+         grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+         gap: 20px;
+         margin: 24px 0;
+      }
+
+      .metric-card {
+         background: white;
+         border: 2px solid #e5e7eb;
+         border-radius: 12px;
+         padding: 24px;
+         position: relative;
+         overflow: hidden;
+         transition: all 0.3s;
+      }
+
+      .metric-card::before {
+         content: '';
+         position: absolute;
+         top: 0;
+         left: 0;
+         width: 100%;
+         height: 4px;
+         background: linear-gradient(90deg, #1ABC9C, #2E86AB);
+      }
+
+      .metric-card:hover {
+         transform: translateY(-4px);
+         box-shadow: 0 8px 24px rgba(26, 188, 156, 0.2);
+         border-color: #1ABC9C;
+      }
+
+      .metric-card h4 {
+         font-size: 12px;
+         color: #6b7280;
+         margin-bottom: 12px;
+         text-transform: uppercase;
+         letter-spacing: 0.5px;
+         font-weight: 600;
+         display: flex;
+         justify-content: space-between;
+         align-items: center;
+      }
+
+      .metric-card .value {
+         font-size: 36px;
+         font-weight: 700;
+         font-family: 'Poppins', sans-serif;
+         background: linear-gradient(135deg, #1ABC9C, #2E86AB);
+         -webkit-background-clip: text;
+         -webkit-text-fill-color: transparent;
+      }
+
+      .metric-card .subtitle {
+         font-size: 11px;
+         color: #9ca3af;
+         margin-top: 6px;
+      }
+
+      .metric-card .trend {
+         font-size: 12px;
+         margin-top: 8px;
+         font-weight: 600;
+      }
+
+      .metric-card .trend.positive {
+         color: #1ABC9C;
+      }
+
+      .metric-card .trend.negative {
+         color: #ef4444;
+      }
+
+      /* Chart Container */
+      .chart-container {
+         background: white;
+         border: 2px solid #e5e7eb;
+         border-radius: 12px;
+         padding: 24px;
+         margin: 24px 0;
+      }
+
+      .chart-header {
+         display: flex;
+         justify-content: space-between;
+         align-items: start;
+         margin-bottom: 20px;
+         flex-wrap: wrap;
+         gap: 12px;
+      }
+
+      .chart-title-group {
+         flex: 1;
+         min-width: 200px;
+      }
+
+      .chart-title {
+         font-family: 'Poppins', sans-serif;
+         font-size: 18px;
+         font-weight: 600;
+         color: #1C1C1C;
+      }
+
+      .chart-subtitle {
+         font-size: 13px;
+         color: #6b7280;
+         margin-top: 4px;
+      }
+
+      .chart-actions {
+         display: flex;
+         gap: 8px;
+         flex-wrap: wrap;
+      }
+
+      .chart-btn {
+         padding: 8px 16px;
+         border: 2px solid #e5e7eb;
+         border-radius: 8px;
+         background: white;
+         cursor: pointer;
+         font-size: 13px;
+         font-weight: 600;
+         transition: all 0.2s;
+         font-family: 'Inter', sans-serif;
+      }
+
+      .chart-btn:hover {
+         border-color: #1ABC9C;
+         color: #1ABC9C;
+      }
+
+      .chart-btn.primary {
+         background: linear-gradient(135deg, #1ABC9C, #2E86AB);
+         color: white;
+         border-color: transparent;
+      }
+
+      .chart-btn.primary:hover {
+         transform: translateY(-2px);
+         box-shadow: 0 4px 12px rgba(26, 188, 156, 0.3);
+      }
+
+      /* Chart Placeholder */
+      .chart-placeholder {
+         height: 350px;
+         background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+         border-radius: 12px;
+         display: flex;
+         flex-direction: column;
+         align-items: center;
+         justify-content: center;
+         color: #065f46;
+         font-weight: 600;
+         border: 2px dashed #1ABC9C;
+         gap: 12px;
+      }
+
+      .chart-placeholder.small {
+         height: 200px;
+      }
+
+      .chart-placeholder .icon {
+         font-size: 48px;
+      }
+
+      /* Custom Chart Builder */
+      .chart-builder {
+         background: #f8f9fa;
+         border: 2px solid #e5e7eb;
+         border-radius: 12px;
+         padding: 24px;
+         margin: 24px 0;
+      }
+
+      .builder-step {
+         margin-bottom: 24px;
+      }
+
+      .builder-step-title {
+         font-weight: 600;
+         color: #1C1C1C;
+         margin-bottom: 12px;
+         font-size: 15px;
+      }
+
+      .builder-options {
+         display: grid;
+         grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+         gap: 12px;
+      }
+
+      .builder-option {
+         padding: 16px;
+         background: white;
+         border: 2px solid #e5e7eb;
+         border-radius: 8px;
+         cursor: pointer;
+         text-align: center;
+         transition: all 0.2s;
+      }
+
+      .builder-option:hover {
+         border-color: #1ABC9C;
+         transform: translateY(-2px);
+      }
+
+      .builder-option.selected {
+         border-color: #1ABC9C;
+         background: linear-gradient(135deg, rgba(26, 188, 156, 0.1), rgba(46, 134, 171, 0.1));
+      }
+
+      .builder-option .icon {
+         font-size: 32px;
+         margin-bottom: 8px;
+      }
+
+      .builder-option .label {
+         font-size: 13px;
+         font-weight: 600;
+         color: #1C1C1C;
+      }
+
+      /* Table */
+      .data-table {
+         width: 100%;
+         border-collapse: collapse;
+         margin: 24px 0;
+      }
+
+      .data-table th {
+         background: #f8f9fa;
+         padding: 12px 16px;
+         text-align: left;
+         font-weight: 600;
+         font-size: 12px;
+         color: #6b7280;
+         text-transform: uppercase;
+         letter-spacing: 0.5px;
+         border-bottom: 2px solid #e5e7eb;
+      }
+
+      .data-table td {
+         padding: 14px 16px;
+         border-bottom: 1px solid #f3f4f6;
+         font-size: 14px;
+      }
+
+      .data-table tr:hover {
+         background: #f8f9fa;
+      }
+
+      /* Alert */
+      .alert {
+         padding: 20px;
+         border-radius: 12px;
+         margin: 24px 0;
+         display: flex;
+         gap: 16px;
+         align-items: start;
+      }
+
+      .alert.info {
+         background: #dbeafe;
+         border: 2px solid #3b82f6;
+         color: #1e40af;
+      }
+
+      .alert.success {
+         background: #dcfce7;
+         border: 2px solid #1ABC9C;
+         color: #065f46;
+      }
+
+      .alert.warning {
+         background: #fef3c7;
+         border: 2px solid #f59e0b;
+         color: #92400e;
+      }
+
+      /* Comparison */
+      .comparison {
+         display: grid;
+         grid-template-columns: 1fr 1fr;
+         gap: 24px;
+         margin: 24px 0;
+      }
+
+      .comparison-item {
+         padding: 24px;
+         border-radius: 12px;
+         border: 2px solid;
+      }
+
+      .comparison-item.current {
+         background: #fee2e2;
+         border-color: #ef4444;
+      }
+
+      .comparison-item.suggested {
+         background: #dcfce7;
+         border-color: #1ABC9C;
+      }
+
+      .comparison-item h4 {
+         font-weight: 700;
+         margin-bottom: 16px;
+         font-size: 18px;
+      }
+
+      /* Feature List */
+      .feature-list {
+         list-style: none;
+         margin: 16px 0;
+      }
+
+      .feature-list li {
+         padding: 8px 0;
+         padding-left: 28px;
+         position: relative;
+         font-size: 14px;
+      }
+
+      .feature-list li::before {
+         content: '✅';
+         position: absolute;
+         left: 0;
+         font-size: 16px;
+      }
+
+      @media (max-width: 768px) {
+         .comparison {
+            grid-template-columns: 1fr;
+         }
+
+         .filter-grid {
+            grid-template-columns: 1fr;
+         }
+
+         .metrics-grid {
+            grid-template-columns: 1fr;
+         }
+
+         .chart-header {
+            flex-direction: column;
+         }
+      }
+   </style>
+</head>
+
+<body>
+   <div class="container">
+      <div class="header">
+         <h1>📊 Guia UX/UI - Página Analytics</h1>
+         <p>Sistema de Filtros, Gráficos Customizáveis e Análise Avançada de Dados</p>
+      </div>
+
+      <!-- Section 1: Filter System -->
+      <div class="section">
+         <h2 class="section-title">🔍 1. Sistema de Filtros Inteligentes</h2>
+
+         <div class="alert info">
+            <span style="font-size: 32px;">💡</span>
+            <div>
+               <strong>Objetivo da Página Analytics:</strong> Permitir que o usuário explore dados em profundidade, crie
+               gráficos customizados, e exporte relatórios. Diferente do Dashboard (visão geral rápida), Analytics é
+               para análise detalhada.
+            </div>
+         </div>
+
+         <h3 class="subsection-title">🎯 1.1 Filtros Principais (Sempre Visíveis)</h3>
+
+         <div class="filter-section">
+            <div class="filter-header">
+               <div>
+                  <div class="filter-title">Filtros</div>
+                  <div class="filter-subtitle">Refine sua visualização</div>
+               </div>
+               <button class="chart-btn">🔄 Limpar Filtros</button>
+            </div>
+
+            <div class="filter-grid">
+               <div class="filter-item">
+                  <label class="filter-label">Tipo de API</label>
+                  <select class="filter-select">
+                     <option>Todas as APIs</option>
+                     <option>Chat (Conversação)</option>
+                     <option>Gateway (AI)</option>
+                     <option>RAG (Documentos)</option>
+                     <option>Function Calling</option>
+                  </select>
+               </div>
+
+               <div class="filter-item">
+                  <label class="filter-label">Conversação</label>
+                  <select class="filter-select">
+                     <option>Todas as conversas</option>
+                     <option>Ativas</option>
+                     <option>Resolvidas</option>
+                     <option>Transferidas</option>
+                     <option>Aguardando</option>
+                  </select>
+               </div>
+
+               <div class="filter-item">
+                  <label class="filter-label">Provedor de IA</label>
+                  <select class="filter-select">
+                     <option>Todos os provedores</option>
+                     <option>OpenAI (GPT-4)</option>
+                     <option>Groq (Llama 3.3)</option>
+                  </select>
+               </div>
+
+               <div class="filter-item">
+                  <label class="filter-label">Status</label>
+                  <select class="filter-select">
+                     <option>Todos os status</option>
+                     <option>Sucesso (200)</option>
+                     <option>Erro (4xx, 5xx)</option>
+                     <option>Timeout</option>
+                  </select>
+               </div>
+            </div>
+         </div>
+
+         <h3 class="subsection-title">📅 1.2 Seletor de Período (Tabs + Custom)</h3>
+
+         <div class="filter-section">
+            <div class="filter-label" style="margin-bottom: 12px;">Período</div>
+            <div class="period-tabs">
+               <button class="period-tab">7 dias</button>
+               <button class="period-tab active">30 dias</button>
+               <button class="period-tab">60 dias</button>
+               <button class="period-tab">90 dias</button>
+               <button class="period-tab">📅 Custom</button>
+            </div>
+
+            <div
+               style="margin-top: 16px; padding: 16px; background: white; border-radius: 8px; border: 2px solid #e5e7eb;">
+               <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; align-items: end;">
+                  <div class="filter-item">
+                     <label class="filter-label">Data Início</label>
+                     <input type="date" class="filter-select" value="2026-01-01">
+                  </div>
+                  <div class="filter-item">
+                     <label class="filter-label">Data Fim</label>
+                     <input type="date" class="filter-select" value="2026-01-08">
+                  </div>
+                  <button class="chart-btn primary">Aplicar</button>
+               </div>
+            </div>
+         </div>
+
+         <div class="alert success">
+            <span style="font-size: 24px;">✅</span>
+            <div>
+               <strong>Boas Práticas:</strong><br>
+               • Filtros sempre visíveis no topo (não esconder em drawer)<br>
+               • Botão "Limpar Filtros" para resetar rapidamente<br>
+               • Tabs para períodos comuns (7d, 30d, 90d) + Custom para flexibilidade<br>
+               • Aplicar filtros automaticamente (sem botão "Aplicar" a cada mudança)
+            </div>
+         </div>
+      </div>
+
+      <!-- Section 2: Metrics Overview -->
+      <div class="section">
+         <h2 class="section-title">📊 2. Visão Geral de Métricas (Filtradas)</h2>
+
+         <div class="alert info">
+            <span style="font-size: 28px;">💡</span>
+            <div>
+               <strong>Diferença do Dashboard:</strong> Esses cards refletem os filtros aplicados. Se usuário filtrar
+               "OpenAI apenas", os números mudam em tempo real.
+            </div>
+         </div>
+
+         <div class="metrics-grid">
+            <div class="metric-card">
+               <h4>
+                  Total de Requests
+                  <span style="font-size: 16px;">📡</span>
+               </h4>
+               <div class="value">242</div>
+               <div class="subtitle">via AI Gateway • 45,682 tokens • 0 units</div>
+            </div>
+
+            <div class="metric-card">
+               <h4>
+                  Mensagens Enviadas
+                  <span style="font-size: 16px;">💬</span>
+               </h4>
+               <div class="value">0</div>
+               <div class="subtitle">0 conversas</div>
+            </div>
+
+            <div class="metric-card">
+               <h4>
+                  Custo Total (BRL)
+                  <span style="font-size: 16px;">💰</span>
+               </h4>
+               <div class="value">R$ 0.00</div>
+               <div class="subtitle">R$ 0.0000 por request</div>
+            </div>
+
+            <div class="metric-card">
+               <h4>
+                  Cache Hit Rate
+                  <span style="font-size: 16px;">⚡</span>
+               </h4>
+               <div class="value">0.0%</div>
+               <div class="subtitle">Economia de ~R$ 0.00</div>
+            </div>
+         </div>
+
+         <h3 class="subsection-title">📊 2.1 Métricas de Performance</h3>
+
+         <div class="metrics-grid">
+            <div class="metric-card">
+               <h4>Total de Requests</h4>
+               <div class="value">242</div>
+               <div class="trend positive">↑ +18% vs período anterior</div>
+            </div>
+
+            <div class="metric-card">
+               <h4>Latência Média</h4>
+               <div class="value">1688ms</div>
+               <div class="trend positive">↓ -320ms vs período anterior</div>
+            </div>
+
+            <div class="metric-card">
+               <h4>Custo Total</h4>
+               <div class="value">R$ 0.00</div>
+               <div class="trend negative">↑ R$ 0.00 vs período anterior</div>
+            </div>
+         </div>
+      </div>
+
+      <!-- Section 3: Chart Customization -->
+      <div class="section">
+         <h2 class="section-title">📈 3. Sistema de Gráficos Customizáveis</h2>
+
+         <div class="alert success">
+            <span style="font-size: 32px;">🎨</span>
+            <div>
+               <strong>Feature Diferencial:</strong> Usuário pode criar gráficos personalizados escolhendo métrica, tipo
+               de gráfico, cores e período. Isso permite análises específicas sem depender de views pré-definidas.
+            </div>
+         </div>
+
+         <h3 class="subsection-title">🎨 3.1 Builder de Gráficos (Modal/Drawer)</h3>
+
+         <div class="chart-builder">
+            <div class="builder-step">
+               <div class="builder-step-title">1️⃣ Escolha a Métrica</div>
+               <div class="builder-options">
+                  <div class="builder-option selected">
+                     <div class="icon">💬</div>
+                     <div class="label">Conversas por Dia</div>
+                  </div>
+                  <div class="builder-option">
+                     <div class="icon">👥</div>
+                     <div class="label">Novos Clientes</div>
+                  </div>
+                  <div class="builder-option">
+                     <div class="icon">📨</div>
+                     <div class="label">Mensagens por Dia</div>
+                  </div>
+                  <div class="builder-option">
+                     <div class="icon">🪙</div>
+                     <div class="label">Tokens por Dia</div>
+                  </div>
+                  <div class="builder-option">
+                     <div class="icon">💰</div>
+                     <div class="label">Custo por Dia</div>
+                  </div>
+                  <div class="builder-option">
+                     <div class="icon">📊</div>
+                     <div class="label">Distribuição por Status</div>
+                  </div>
+               </div>
+            </div>
+
+            <div class="builder-step">
+               <div class="builder-step-title">2️⃣ Escolha o Tipo de Gráfico</div>
+               <div class="builder-options">
+                  <div class="builder-option selected">
+                     <div class="icon">📈</div>
+                     <div class="label">Linha</div>
+                  </div>
+                  <div class="builder-option">
+                     <div class="icon">📊</div>
+                     <div class="label">Barra</div>
+                  </div>
+                  <div class="builder-option">
+                     <div class="icon">📉</div>
+                     <div class="label">Área</div>
+                  </div>
+                  <div class="builder-option">
+                     <div class="icon">📦</div>
+                     <div class="label">Composto</div>
+                  </div>
+               </div>
+            </div>
+
+            <div class="builder-step">
+               <div class="builder-step-title">3️⃣ Escolha as Cores (Presets)</div>
+               <div class="builder-options">
+                  <div class="builder-option selected">
+                     <div style="display: flex; gap: 4px; justify-content: center;">
+                        <div style="width: 20px; height: 20px; background: #3b82f6; border-radius: 4px;"></div>
+                        <div style="width: 20px; height: 20px; background: #60a5fa; border-radius: 4px;"></div>
+                     </div>
+                     <div class="label">Azul</div>
+                  </div>
+                  <div class="builder-option">
+                     <div style="display: flex; gap: 4px; justify-content: center;">
+                        <div style="width: 20px; height: 20px; background: #1ABC9C; border-radius: 4px;"></div>
+                        <div style="width: 20px; height: 20px; background: #2E86AB; border-radius: 4px;"></div>
+                     </div>
+                     <div class="label">Verde</div>
+                  </div>
+                  <div class="builder-option">
+                     <div style="display: flex; gap: 4px; justify-content: center;">
+                        <div style="width: 20px; height: 20px; background: #ec4899; border-radius: 4px;"></div>
+                        <div style="width: 20px; height: 20px; background: #f472b6; border-radius: 4px;"></div>
+                     </div>
+                     <div class="label">Rosa</div>
+                  </div>
+                  <div class="builder-option">
+                     <div style="display: flex; gap: 4px; justify-content: center;">
+                        <div style="width: 20px; height: 20px; background: #f59e0b; border-radius: 4px;"></div>
+                        <div style="width: 20px; height: 20px; background: #fbbf24; border-radius: 4px;"></div>
+                     </div>
+                     <div class="label">Laranja</div>
+                  </div>
+                  <div class="builder-option">
+                     <div style="display: flex; gap: 4px; justify-content: center;">
+                        <div style="width: 20px; height: 20px; background: #ef4444; border-radius: 4px;"></div>
+                        <div style="width: 20px; height: 20px; background: #f87171; border-radius: 4px;"></div>
+                     </div>
+                     <div class="label">Vermelho</div>
+                  </div>
+               </div>
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+               <button class="chart-btn">Cancelar</button>
+               <button class="chart-btn primary">✅ Adicionar Gráfico</button>
+            </div>
+         </div>
+
+         <h3 class="subsection-title">📊 3.2 Gráficos Criados (Grid Customizável)</h3>
+
+         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+            <div class="chart-container">
+               <div class="chart-header">
+                  <div class="chart-title-group">
+                     <div class="chart-title">Conversas por Dia</div>
+                     <div class="chart-subtitle">Total de conversas iniciadas diariamente</div>
+                  </div>
+                  <div class="chart-actions">
+                     <button class="chart-btn">⚙️</button>
+                     <button class="chart-btn">❌</button>
+                  </div>
+               </div>
+               <div class="chart-placeholder small">
+                  <div class="icon">📈</div>
+                  <div>Gráfico de Linha</div>
+               </div>
+            </div>
+
+            <div class="chart-container">
+               <div class="chart-header">
+                  <div class="chart-title-group">
+                     <div class="chart-title">Mensagens por Dia</div>
+                     <div class="chart-subtitle">Mensagens enviadas e recebidas</div>
+                  </div>
+                  <div class="chart-actions">
+                     <button class="chart-btn">⚙️</button>
+                     <button class="chart-btn">❌</button>
+                  </div>
+               </div>
+               <div class="chart-placeholder small">
+                  <div class="icon">📊</div>
+                  <div>Gráfico de Barras</div>
+               </div>
+            </div>
+         </div>
+
+         <div style="text-align: center; margin-top: 24px;">
+            <button class="chart-btn primary" style="padding: 12px 32px; font-size: 15px;">
+               ➕ Adicionar Gráfico
+            </button>
+         </div>
+      </div>
+
+      <!-- Section 4: Data Tables -->
+      <div class="section">
+         <h2 class="section-title">📋 4. Tabelas de Dados Detalhadas</h2>
+
+         <div class="alert info">
+            <span style="font-size: 28px;">💡</span>
+            <div>
+               <strong>Quando usar tabelas:</strong> Para dados que precisam de precisão (valores exatos, comparações
+               numéricas, drill-down). Gráficos são para tendências, tabelas para detalhes.
+            </div>
+         </div>
+
+         <h3 class="subsection-title">📊 4.1 Uso por Tipo de API</h3>
+
+         <div class="chart-container">
+            <div class="chart-header">
+               <div class="chart-title-group">
+                  <div class="chart-title">Uso por Tipo de API</div>
+                  <div class="chart-subtitle">Distribuição de requests por tipo</div>
+               </div>
+               <div class="chart-actions">
+                  <button class="chart-btn">📊 Gráfico</button>
+                  <button class="chart-btn">📋 Tabela</button>
+                  <button class="chart-btn">📥 Exportar CSV</button>
+               </div>
+            </div>
+
+            <table class="data-table">
+               <thead>
+                  <tr>
+                     <th>Tipo</th>
+                     <th>Requests</th>
+                     <th>Tokens</th>
+                     <th>Custo</th>
+                     <th>% do Total</th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr>
+                     <td><strong>Chat</strong></td>
+                     <td>242 requests</td>
+                     <td>45,682 tokens • 0 units</td>
+                     <td>R$ 0.00</td>
+                     <td>100.0%</td>
+                  </tr>
+                  <tr style="background: #f8f9fa;">
+                     <td colspan="5" style="text-align: center; color: #6b7280; font-size: 13px; padding: 20px;">
+                        Nenhum outro tipo de API utilizado no período
+                     </td>
+                  </tr>
+               </tbody>
+            </table>
+         </div>
+
+         <h3 class="subsection-title">📊 4.2 Uso por Provedor</h3>
+
+         <div class="chart-container">
+            <div class="chart-header">
+               <div class="chart-title-group">
+                  <div class="chart-title">Uso por Provedor</div>
+                  <div class="chart-subtitle">Distribuição por provedor de IA</div>
+               </div>
+               <div class="chart-actions">
+                  <button class="chart-btn">📊 Gráfico</button>
+                  <button class="chart-btn">📋 Tabela</button>
+                  <button class="chart-btn">📥 Exportar CSV</button>
+               </div>
+            </div>
+
+            <table class="data-table">
+               <thead>
+                  <tr>
+                     <th>Provedor</th>
+                     <th>Requests</th>
+                     <th>Custo</th>
+                     <th>% do Total</th>
+                     <th>Latência Média</th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr>
+                     <td>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                           <div style="width: 12px; height: 12px; background: #1ABC9C; border-radius: 50%;"></div>
+                           <strong>Openai</strong>
+                        </div>
+                     </td>
+                     <td>242 requests</td>
+                     <td>R$ 0.00</td>
+                     <td>100.0%</td>
+                     <td>1688ms</td>
+                  </tr>
+               </tbody>
+            </table>
+         </div>
+      </div>
+
+      <!-- Section 5: Export & Reports -->
+      <div class="section">
+         <h2 class="section-title">📥 5. Exportação e Relatórios</h2>
+
+         <div class="alert success">
+            <span style="font-size: 32px;">📊</span>
+            <div>
+               <strong>Feature Essencial:</strong> Permitir que usuário exporte dados filtrados para análise externa
+               (Excel, Google Sheets) ou gere relatórios PDF para stakeholders.
+            </div>
+         </div>
+
+         <h3 class="subsection-title">📥 5.1 Opções de Exportação</h3>
+
+         <div class="comparison">
+            <div class="comparison-item suggested">
+               <h4>✅ Exportar Dados (CSV/Excel)</h4>
+               <ul class="feature-list">
+                  <li>Exporta dados brutos da tabela atual</li>
+                  <li>Respeita filtros aplicados</li>
+                  <li>Formato: CSV (universal) ou XLSX (Excel)</li>
+                  <li>Inclui todas as colunas visíveis</li>
+                  <li>Nome do arquivo: <code>analytics_2026-01-01_2026-01-08.csv</code></li>
+               </ul>
+               <button class="chart-btn primary" style="margin-top: 16px; width: 100%;">📥 Exportar CSV</button>
+            </div>
+
+            <div class="comparison-item suggested">
+               <h4>✅ Gerar Relatório (PDF)</h4>
+               <ul class="feature-list">
+                  <li>PDF formatado com logo UzzAI</li>
+                  <li>Inclui todos os gráficos visíveis</li>
+                  <li>Tabelas de dados resumidas</li>
+                  <li>Período e filtros aplicados no cabeçalho</li>
+                  <li>Ideal para apresentações/stakeholders</li>
+               </ul>
+               <button class="chart-btn primary" style="margin-top: 16px; width: 100%;">📄 Gerar PDF</button>
+            </div>
+         </div>
+
+         <h3 class="subsection-title">📧 5.2 Relatórios Agendados (Futuro)</h3>
+
+         <div class="alert warning">
+            <span style="font-size: 28px;">⏰</span>
+            <div>
+               <strong>Feature Futura:</strong> Permitir que usuário agende relatórios automáticos (ex: toda
+               segunda-feira às 9h, enviar resumo semanal por email).
+               <br><br>
+               <strong>Configuração:</strong><br>
+               • Frequência: Diária, Semanal, Mensal<br>
+               • Formato: PDF ou CSV<br>
+               • Destinatários: Emails dos stakeholders<br>
+               • Filtros: Salvos como "preset"
+            </div>
+         </div>
+      </div>
+
+      <!-- Section 6: Best Practices -->
+      <div class="section">
+         <h2 class="section-title">✅ 6. Boas Práticas de UX para Analytics</h2>
+
+         <h3 class="subsection-title">🎯 6.1 Hierarquia de Informação</h3>
+         <ul class="feature-list">
+            <li><strong>Filtros no topo:</strong> Sempre visíveis, não esconder em drawer/modal</li>
+            <li><strong>Métricas resumidas:</strong> Cards com totais logo abaixo dos filtros</li>
+            <li><strong>Gráficos principais:</strong> 2-3 gráficos mais importantes sempre visíveis</li>
+            <li><strong>Gráficos customizados:</strong> Abaixo, permitindo exploração livre</li>
+            <li><strong>Tabelas detalhadas:</strong> No final, para drill-down</li>
+         </ul>
+
+         <h3 class="subsection-title">⚡ 6.2 Performance e Loading</h3>
+         <ul class="feature-list">
+            <li><strong>Debounce em filtros:</strong> Aguardar 500ms após última mudança para aplicar</li>
+            <li><strong>Loading states:</strong> Skeleton em cards, spinner em gráficos</li>
+            <li><strong>Paginação em tabelas:</strong> Máximo 50 linhas por página</li>
+            <li><strong>Lazy loading:</strong> Gráficos abaixo da dobra carregam depois</li>
+            <li><strong>Cache inteligente:</strong> Dados filtrados cacheados por 1min</li>
+         </ul>
+
+         <h3 class="subsection-title">🎨 6.3 Consistência Visual</h3>
+         <ul class="feature-list">
+            <li><strong>Cores UzzAI:</strong> Sempre usar paleta oficial nos gráficos</li>
+            <li><strong>Tooltips em gráficos:</strong> Mostrar valores exatos ao hover</li>
+            <li><strong>Legendas claras:</strong> Sempre incluir legenda em gráficos multi-série</li>
+            <li><strong>Eixos rotulados:</strong> Nunca gráfico sem labels nos eixos</li>
+            <li><strong>Formato de números:</strong> 1,234 (milhares), R$ 0.00 (moeda), 87% (porcentagem)</li>
+         </ul>
+
+         <h3 class="subsection-title">📱 6.4 Responsividade</h3>
+         <ul class="feature-list">
+            <li><strong>Mobile:</strong> Filtros viram accordion (colapsáveis), gráficos 1 por linha</li>
+            <li><strong>Tablet:</strong> Gráficos 2 por linha, tabelas com scroll horizontal</li>
+            <li><strong>Desktop:</strong> Layout completo, gráficos lado a lado</li>
+            <li><strong>Touch-friendly:</strong> Botões mínimo 44x44px, sliders grandes</li>
+         </ul>
+      </div>
+
+      <!-- Footer -->
+      <div class="section"
+         style="background: linear-gradient(135deg, #1ABC9C, #2E86AB); color: white; text-align: center;">
+         <h2 style="color: white; border: none; padding-bottom: 0;">✅ Checklist de Implementação</h2>
+         <div
+            style="text-align: left; margin-top: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
+            <div>
+               <h4 style="color: #FFD700; margin-bottom: 12px;">🔍 Filtros</h4>
+               <p style="font-size: 14px; line-height: 1.8;">
+                  ☐ Filtros sempre visíveis no topo<br>
+                  ☐ Tabs para períodos (7d, 30d, 90d)<br>
+                  ☐ Custom date range<br>
+                  ☐ Botão "Limpar Filtros"<br>
+                  ☐ Aplicação automática (debounce)
+               </p>
+            </div>
+            <div>
+               <h4 style="color: #FFD700; margin-bottom: 12px;">📊 Gráficos</h4>
+               <p style="font-size: 14px; line-height: 1.8;">
+                  ☐ Builder de gráficos customizados<br>
+                  ☐ 6+ métricas disponíveis<br>
+                  ☐ 4 tipos de gráfico (linha, barra, área, composto)<br>
+                  ☐ Presets de cores<br>
+                  ☐ Botões editar/remover em cada gráfico
+               </p>
+            </div>
+            <div>
+               <h4 style="color: #FFD700; margin-bottom: 12px;">📥 Exportação</h4>
+               <p style="font-size: 14px; line-height: 1.8;">
+                  ☐ Exportar CSV (dados brutos)<br>
+                  ☐ Exportar Excel (formatado)<br>
+                  ☐ Gerar PDF (relatório visual)<br>
+                  ☐ Nome de arquivo com período<br>
+                  ☐ Respeitar filtros aplicados
+               </p>
+            </div>
+         </div>
+         <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.2);">
+            <p style="font-size: 14px; opacity: 0.9;">
+               📊 Documento criado para UzzAI ChatBot - Página Analytics<br>
+               🎨 Sistema de Filtros, Gráficos Customizáveis e Exportação<br>
+               ✅ Pronto para implementação no código React/Next.js
+            </p>
+         </div>
+      </div>
+   </div>
+</body>
+
+</html>
