@@ -153,14 +153,6 @@ export function AdvancedDateFilters({
               value={defaultDateRange}
               onChange={(range) => {
                 handlePresetChange(range)
-                setDateFilter({
-                  mode: 'preset',
-                  dateRange: {
-                    start: range.start,
-                    end: range.end,
-                    preset: range.preset,
-                  },
-                })
               }}
             />
             <div className="text-sm text-uzz-silver ml-4">
