@@ -16,7 +16,8 @@
     "test:coverage": "jest --coverage",
     "cap:sync": "npx cap sync",
     "cap:open:android": "npx cap open android",
-    "cap:open:ios": "npx cap open ios"
+    "cap:open:ios": "npx cap open ios",
+    "db:export": "node scripts/export-database-schema.js"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.56",
