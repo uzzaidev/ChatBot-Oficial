@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Guia UX/UI - Dashboard Principal</title>
+   <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet">
+   <style>
+      * {
+         margin: 0;
+         padding: 0;
+         box-sizing: border-box;
+      }
+
+      body {
+         font-family: 'Inter', sans-serif;
+         background: #f8f9fa;
+         color: #1C1C1C;
+         line-height: 1.6;
+      }
+
+      .container {
+         max-width: 1600px;
+         margin: 0 auto;
+         padding: 40px 20px;
+      }
+
+      .header {
+         text-align: center;
+         padding: 60px 40px;
+         background: linear-gradient(135deg, #1ABC9C, #2E86AB);
+         border-radius: 20px;
+         color: white;
+         margin-bottom: 60px;
+      }
+
+      .header h1 {
+         font-family: 'Poppins', sans-serif;
+         font-size: 48px;
+         margin-bottom: 16px;
+      }
+
+      .section {
+         background: white;
+         border-radius: 16px;
+         padding: 40px;
+         margin-bottom: 40px;
+         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+         border: 2px solid #e5e7eb;
+      }
+
+      .section-title {
+         font-family: 'Poppins', sans-serif;
+         font-size: 32px;
+         color: #1C1C1C;
+         margin-bottom: 24px;
+         padding-bottom: 16px;
+         border-bottom: 3px solid #1ABC9C;
+      }
+
+      .subsection-title {
+         font-family: 'Poppins', sans-serif;
+         font-size: 24px;
+         color: #2E86AB;
+         margin: 32px 0 16px;
+      }
+
+      /* Dashboard Layout Examples */
+      .layout-example {
+         background: #f8f9fa;
+         border: 2px solid #e5e7eb;
+         border-radius: 12px;
+         padding: 24px;
+         margin: 24px 0;
+      }
+
+      .layout-label {
+         background: #1ABC9C;
+         color: white;
+         padding: 8px 16px;
+         border-radius: 6px;
+         font-weight: 700;
+         display: inline-block;
+         margin-bottom: 16px;
+         font-size: 14px;
+      }
+
+      /* Grid Layouts */
+      .grid-2 {
+         display: grid;
+         grid-template-columns: 1fr 1fr;
+         gap: 16px;
+      }
+
+      .grid-3 {
+         display: grid;
+         grid-template-columns: repeat(3, 1fr);
+         gap: 16px;
+      }
+
+      .grid-4 {
+         display: grid;
+         grid-template-columns: repeat(4, 1fr);
+         gap: 16px;
+      }
+
+      .grid-auto {
+         display: grid;
+         grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+         gap: 16px;
+      }
+
+      /* Card Styles */
+      .card {
+         background: white;
+         border: 2px solid #e5e7eb;
+         border-radius: 12px;
+         padding: 20px;
+         position: relative;
+         overflow: hidden;
+         transition: all 0.3s;
+      }
+
+      .card::before {
+         content: '';
+         position: absolute;
+         top: 0;
+         left: 0;
+         width: 100%;
+         height: 4px;
+         background: linear-gradient(90deg, #1ABC9C, #2E86AB);
+      }
+
+      .card:hover {
+         transform: translateY(-4px);
+         box-shadow: 0 8px 24px rgba(26, 188, 156, 0.2);
+         border-color: #1ABC9C;
+      }
+
+      .card h4 {
+         font-size: 12px;
+         color: #6b7280;
+         margin-bottom: 8px;
+         text-transform: uppercase;
+         letter-spacing: 0.5px;
+         font-weight: 600;
+      }
+
+      .card .value {
+         font-size: 32px;
+         font-weight: 700;
+         font-family: 'Poppins', sans-serif;
+         background: linear-gradient(135deg, #1ABC9C, #2E86AB);
+         -webkit-background-clip: text;
+         -webkit-text-fill-color: transparent;
+      }
+
+      .card .trend {
+         font-size: 11px;
+         color: #1ABC9C;
+         margin-top: 6px;
+         font-weight: 600;
+      }
+
+      /* Card Variants */
+      .card-large {
+         grid-column: span 2;
+      }
+
+      .card-tall {
+         grid-row: span 2;
+      }
+
+      .card-full {
+         grid-column: 1 / -1;
+      }
+
+      /* Chart Placeholder */
+      .chart {
+         height: 200px;
+         background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+         border-radius: 8px;
+         display: flex;
+         align-items: center;
+         justify-content: center;
+         color: #065f46;
+         font-weight: 600;
+         border: 2px dashed #1ABC9C;
+         margin-top: 12px;
+      }
+
+      .chart-small {
+         height: 100px;
+      }
+
+      .chart-large {
+         height: 300px;
+      }
+
+      /* Alert */
+      .alert {
+         padding: 16px;
+         border-radius: 8px;
+         margin: 16px 0;
+         display: flex;
+         gap: 12px;
+         align-items: start;
+      }
+
+      .alert.info {
+         background: #dbeafe;
+         border: 2px solid #3b82f6;
+         color: #1e40af;
+      }
+
+      .alert.success {
+         background: #dcfce7;
+         border: 2px solid #1ABC9C;
+         color: #065f46;
+      }
+
+      .alert.warning {
+         background: #fef3c7;
+         border: 2px solid #f59e0b;
+         color: #92400e;
+      }
+
+      /* Comparison */
+      .comparison {
+         display: grid;
+         grid-template-columns: 1fr 1fr;
+         gap: 24px;
+         margin: 24px 0;
+      }
+
+      .comparison-item {
+         padding: 24px;
+         border-radius: 12px;
+         border: 2px solid;
+      }
+
+      .comparison-item.bad {
+         background: #fee2e2;
+         border-color: #ef4444;
+      }
+
+      .comparison-item.good {
+         background: #dcfce7;
+         border-color: #1ABC9C;
+      }
+
+      .comparison-item h4 {
+         font-weight: 700;
+         margin-bottom: 16px;
+         font-size: 18px;
+      }
+
+      /* Feature List */
+      .feature-list {
+         list-style: none;
+         margin: 16px 0;
+      }
+
+      .feature-list li {
+         padding: 8px 0;
+         padding-left: 28px;
+         position: relative;
+      }
+
+      .feature-list li::before {
+         content: '✅';
+         position: absolute;
+         left: 0;
+         font-size: 16px;
+      }
+
+      /* Skeleton Loading */
+      .skeleton {
+         background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+         background-size: 200% 100%;
+         animation: loading 1.5s infinite;
+         border-radius: 4px;
+      }
+
+      @keyframes loading {
+         0% {
+            background-position: 200% 0;
+         }
+
+         100% {
+            background-position: -200% 0;
+         }
+      }
+
+      /* Empty State */
+      .empty-state {
+         text-align: center;
+         padding: 60px 20px;
+         background: linear-gradient(135deg, white, #f8f9fa);
+         border-radius: 12px;
+         border: 2px dashed #e5e7eb;
+      }
+
+      .empty-state .icon {
+         font-size: 48px;
+         margin-bottom: 16px;
+         color: #B0B0B0;
+      }
+
+      .empty-state h3 {
+         font-size: 18px;
+         color: #1C1C1C;
+         margin-bottom: 8px;
+      }
+
+      .empty-state p {
+         color: #6b7280;
+         font-size: 14px;
+      }
+
+      @media (max-width: 768px) {
+         .comparison {
+            grid-template-columns: 1fr;
+         }
+
+         .grid-2,
+         .grid-3,
+         .grid-4 {
+            grid-template-columns: 1fr;
+         }
+
+         .card-large,
+         .card-tall {
+            grid-column: auto;
+            grid-row: auto;
+         }
+      }
+   </style>
+</head>
+
+<body>
+   <div class="container">
+      <div class="header">
+         <h1>🎨 Guia UX/UI - Dashboard Principal</h1>
+         <p>Padrões de Layout, Hierarquia Visual e Exemplos de Organização</p>
+      </div>
+
+      <!-- Section 1: Layout Patterns -->
+      <div class="section">
+         <h2 class="section-title">📐 1. Padrões de Layout para Dashboard</h2>
+
+         <div class="alert info">
+            <span style="font-size: 28px;">💡</span>
+            <div>
+               <strong>Princípio Fundamental:</strong> Dashboard deve seguir a hierarquia de importância. Métricas mais
+               críticas (KPIs) no topo, detalhes abaixo. Usuário deve entender o "estado geral" em 3 segundos.
+            </div>
+         </div>
+
+         <h3 class="subsection-title">📊 1.1 Layout Clássico: Grid 4 Colunas (Recomendado)</h3>
+
+         <div class="layout-example">
+            <div class="layout-label">✅ Padrão Recomendado - 4 KPI Cards + Gráficos</div>
+            <div class="grid-4">
+               <div class="card">
+                  <h4>Total Conversas</h4>
+                  <div class="value">1,234</div>
+                  <div class="trend">↑ +12%</div>
+               </div>
+               <div class="card">
+                  <h4>Mensagens Enviadas</h4>
+                  <div class="value">8,456</div>
+                  <div class="trend">↑ +18%</div>
+               </div>
+               <div class="card">
+                  <h4>Taxa de Resolução</h4>
+                  <div class="value">87%</div>
+                  <div class="trend">↑ +3%</div>
+               </div>
+               <div class="card">
+                  <h4>Tempo Médio</h4>
+                  <div class="value">2.3s</div>
+                  <div class="trend">↓ -0.5s</div>
+               </div>
+            </div>
+
+            <div style="margin-top: 16px;" class="grid-2">
+               <div class="card">
+                  <h4>Conversas por Dia</h4>
+                  <div class="chart chart-small">📈 Gráfico de Linha</div>
+               </div>
+               <div class="card">
+                  <h4>Mensagens por Dia</h4>
+                  <div class="chart chart-small">📊 Gráfico de Barras</div>
+               </div>
+            </div>
+         </div>
+
+         <div class="alert success">
+            <span style="font-size: 24px;">✅</span>
+            <div>
+               <strong>Por que funciona:</strong><br>
+               • 4 KPIs principais visíveis sem scroll<br>
+               • Gráficos de tendência logo abaixo (contexto imediato)<br>
+               • Responsivo: vira 2 colunas em tablet, 1 em mobile<br>
+               • Hierarquia clara: números grandes → gráficos → detalhes
+            </div>
+         </div>
+
+         <h3 class="subsection-title">📊 1.2 Layout Assimétrico: Destaque para Métrica Principal</h3>
+
+         <div class="layout-example">
+            <div class="layout-label">✅ Variação - Card Grande + 3 Pequenos</div>
+            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 16px;">
+               <div class="card" style="grid-row: span 2;">
+                  <h4>Total de Conversas (Hoje)</h4>
+                  <div class="value" style="font-size: 64px;">1,234</div>
+                  <div class="trend" style="font-size: 14px;">↑ +12% vs ontem</div>
+                  <div class="chart chart-small" style="margin-top: 20px;">📈 Sparkline (últimas 24h)</div>
+               </div>
+               <div class="card">
+                  <h4>Ativas Agora</h4>
+                  <div class="value">23</div>
+                  <div class="trend">🟢 Online</div>
+               </div>
+               <div class="card">
+                  <h4>Aguardando</h4>
+                  <div class="value">5</div>
+                  <div class="trend">⏳ Fila</div>
+               </div>
+               <div class="card">
+                  <h4>Resolvidas</h4>
+                  <div class="value">1,206</div>
+                  <div class="trend">✅ 98%</div>
+               </div>
+               <div class="card">
+                  <h4>Novos Clientes</h4>
+                  <div class="value">89</div>
+                  <div class="trend">↑ +25%</div>
+               </div>
+               <div class="card">
+                  <h4>Transferências</h4>
+                  <div class="value">28</div>
+                  <div class="trend">↓ -5%</div>
+               </div>
+               <div class="card">
+                  <h4>Tempo Médio</h4>
+                  <div class="value">2.3s</div>
+                  <div class="trend">⚡ Rápido</div>
+               </div>
+            </div>
+         </div>
+
+         <div class="alert success">
+            <span style="font-size: 24px;">✅</span>
+            <div>
+               <strong>Quando usar:</strong> Quando há UMA métrica muito mais importante que as outras (ex: Total de
+               Conversas é o KPI #1). Card grande chama atenção imediata.
+            </div>
+         </div>
+
+         <h3 class="subsection-title">📊 1.3 Layout em Seções: Agrupamento por Categoria</h3>
+
+         <div class="layout-example">
+            <div class="layout-label">✅ Organização por Seções Temáticas</div>
+
+            <!-- Seção 1: Conversas -->
+            <div style="margin-bottom: 24px;">
+               <h4
+                  style="font-size: 14px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; padding-left: 12px; border-left: 4px solid #1ABC9C;">
+                  💬 Conversas</h4>
+               <div class="grid-4">
+                  <div class="card">
+                     <h4>Total</h4>
+                     <div class="value">1,234</div>
+                     <div class="trend">↑ +12%</div>
+                  </div>
+                  <div class="card">
+                     <h4>Ativas</h4>
+                     <div class="value">23</div>
+                     <div class="trend">🟢 Agora</div>
+                  </div>
+                  <div class="card">
+                     <h4>Resolvidas</h4>
+                     <div class="value">1,206</div>
+                     <div class="trend">✅ 98%</div>
+                  </div>
+                  <div class="card">
+                     <h4>Transferidas</h4>
+                     <div class="value">28</div>
+                     <div class="trend">↓ -5%</div>
+                  </div>
+               </div>
+            </div>
+
+            <!-- Seção 2: Performance -->
+            <div style="margin-bottom: 24px;">
+               <h4
+                  style="font-size: 14px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; padding-left: 12px; border-left: 4px solid #2E86AB;">
+                  ⚡ Performance</h4>
+               <div class="grid-4">
+                  <div class="card">
+                     <h4>Tempo Médio</h4>
+                     <div class="value">2.3s</div>
+                     <div class="trend">↓ -0.5s</div>
+                  </div>
+                  <div class="card">
+                     <h4>Taxa de Erro</h4>
+                     <div class="value">0.3%</div>
+                     <div class="trend">✅ Baixo</div>
+                  </div>
+                  <div class="card">
+                     <h4>Uptime</h4>
+                     <div class="value">99.8%</div>
+                     <div class="trend">🟢 Ótimo</div>
+                  </div>
+                  <div class="card">
+                     <h4>Latência p95</h4>
+                     <div class="value">4.2s</div>
+                     <div class="trend">⚠️ OK</div>
+                  </div>
+               </div>
+            </div>
+
+            <!-- Seção 3: Custos -->
+            <div>
+               <h4
+                  style="font-size: 14px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; padding-left: 12px; border-left: 4px solid #FFD700;">
+                  💰 Custos</h4>
+               <div class="grid-4">
+                  <div class="card">
+                     <h4>Custo Hoje</h4>
+                     <div class="value">$16</div>
+                     <div class="trend">↑ +8%</div>
+                  </div>
+                  <div class="card">
+                     <h4>Custo Mês</h4>
+                     <div class="value">$487</div>
+                     <div class="trend">↑ +35%</div>
+                  </div>
+                  <div class="card">
+                     <h4>Por Conversa</h4>
+                     <div class="value">$0.01</div>
+                     <div class="trend">↓ -5%</div>
+                  </div>
+                  <div class="card">
+                     <h4>Projeção</h4>
+                     <div class="value">$657</div>
+                     <div class="trend">📊 Próx. mês</div>
+                  </div>
+               </div>
+            </div>
+         </div>
+
+         <div class="alert success">
+            <span style="font-size: 24px;">✅</span>
+            <div>
+               <strong>Quando usar:</strong> Quando há muitas métricas (12+). Agrupamento por categoria facilita
+               escaneabilidade e permite ao usuário focar na seção relevante.
+            </div>
+         </div>
+      </div>
+
+      <!-- Section 2: Card Design Patterns -->
+      <div class="section">
+         <h2 class="section-title">🎨 2. Padrões de Design para Metric Cards</h2>
+
+         <h3 class="subsection-title">📊 2.1 Anatomia de um Metric Card Perfeito</h3>
+
+         <div class="layout-example">
+            <div class="layout-label">✅ Elementos Essenciais de um Card</div>
+            <div style="max-width: 300px;">
+               <div class="card" style="padding: 24px;">
+                  <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                     <h4 style="margin: 0;">TOTAL DE CONVERSAS</h4>
+                     <span style="font-size: 20px;">💬</span>
+                  </div>
+                  <div class="value" style="font-size: 48px; margin: 12px 0;">1,234</div>
+                  <div class="trend" style="font-size: 13px; margin-bottom: 8px;">↑ +12% vs ontem</div>
+                  <div style="font-size: 11px; color: #9ca3af;">Últimas 24 horas</div>
+                  <div class="chart chart-small" style="margin-top: 16px; height: 60px;">📈 Sparkline</div>
+               </div>
+            </div>
+
+            <div
+               style="margin-top: 20px; padding: 20px; background: #f0fdf4; border-radius: 8px; border: 2px solid #1ABC9C;">
+               <h4 style="color: #065f46; margin-bottom: 12px;">Elementos do Card:</h4>
+               <ul class="feature-list" style="color: #065f46;">
+                  <li><strong>Barra superior (4px):</strong> Gradiente verde-azul (identidade UzzAI)</li>
+                  <li><strong>Título (uppercase):</strong> Cinza (#6b7280), 12px, peso 600</li>
+                  <li><strong>Ícone (opcional):</strong> Emoji ou SVG, canto superior direito</li>
+                  <li><strong>Valor principal:</strong> 48px, Poppins, gradiente no texto</li>
+                  <li><strong>Trend/Comparação:</strong> Verde (positivo) ou vermelho (negativo)</li>
+                  <li><strong>Contexto:</strong> Texto pequeno explicando período</li>
+                  <li><strong>Sparkline (opcional):</strong> Mini-gráfico de tendência</li>
+               </ul>
+            </div>
+         </div>
+
+         <h3 class="subsection-title">🎨 2.2 Variações de Cards</h3>
+
+         <div class="layout-example">
+            <div class="layout-label">✅ Diferentes Estilos de Cards</div>
+            <div class="grid-3">
+               <!-- Card Minimalista -->
+               <div class="card">
+                  <h4>MINIMALISTA</h4>
+                  <div class="value">1,234</div>
+                  <div class="trend">↑ +12%</div>
+               </div>
+
+               <!-- Card com Ícone -->
+               <div class="card">
+                  <div style="display: flex; justify-content: space-between; align-items: start;">
+                     <div>
+                        <h4>COM ÍCONE</h4>
+                        <div class="value">1,234</div>
+                        <div class="trend">↑ +12%</div>
+                     </div>
+                     <div style="font-size: 40px; opacity: 0.3;">💬</div>
+                  </div>
+               </div>
+
+               <!-- Card com Sparkline -->
+               <div class="card">
+                  <h4>COM SPARKLINE</h4>
+                  <div class="value">1,234</div>
+                  <div class="trend">↑ +12%</div>
+                  <div class="chart chart-small" style="margin-top: 12px; height: 40px;">📈</div>
+               </div>
+
+               <!-- Card com Badge -->
+               <div class="card">
+                  <div style="display: flex; justify-content: space-between; align-items: start;">
+                     <h4>COM STATUS</h4>
+                     <span
+                        style="background: #dcfce7; color: #065f46; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 700;">ATIVO</span>
+                  </div>
+                  <div class="value">1,234</div>
+                  <div class="trend">↑ +12%</div>
+               </div>
+
+               <!-- Card com Progresso -->
+               <div class="card">
+                  <h4>COM PROGRESSO</h4>
+                  <div class="value">87%</div>
+                  <div
+                     style="margin-top: 12px; height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden;">
+                     <div style="width: 87%; height: 100%; background: linear-gradient(90deg, #1ABC9C, #2E86AB);"></div>
+                  </div>
+                  <div class="trend" style="margin-top: 8px;">↑ +3%</div>
+               </div>
+
+               <!-- Card com Comparação -->
+               <div class="card">
+                  <h4>COM COMPARAÇÃO</h4>
+                  <div class="value">1,234</div>
+                  <div style="font-size: 11px; color: #9ca3af; margin-top: 4px;">vs 1,102 ontem</div>
+                  <div class="trend">↑ +132 (+12%)</div>
+               </div>
+            </div>
+         </div>
+
+         <h3 class="subsection-title">🎨 2.3 Estados do Card (Loading, Empty, Error)</h3>
+
+         <div class="layout-example">
+            <div class="layout-label">✅ Estados Especiais</div>
+            <div class="grid-3">
+               <!-- Loading State -->
+               <div class="card">
+                  <div class="skeleton" style="width: 60%; height: 12px; margin-bottom: 12px;"></div>
+                  <div class="skeleton" style="width: 80%; height: 40px; margin-bottom: 8px;"></div>
+                  <div class="skeleton" style="width: 40%; height: 10px;"></div>
+               </div>
+
+               <!-- Empty State -->
+               <div class="card">
+                  <div class="empty-state" style="padding: 40px 20px;">
+                     <div class="icon">📊</div>
+                     <h3 style="font-size: 14px;">Sem dados</h3>
+                     <p style="font-size: 12px;">Aguardando primeira conversa</p>
+                  </div>
+               </div>
+
+               <!-- Error State -->
+               <div class="card" style="border-color: #ef4444;">
+                  <div style="text-align: center; padding: 20px;">
+                     <div style="font-size: 32px; margin-bottom: 8px;">⚠️</div>
+                     <h4 style="color: #ef4444; margin-bottom: 4px;">Erro ao carregar</h4>
+                     <p style="font-size: 12px; color: #6b7280;">Tente novamente</p>
+                     <button
+                        style="margin-top: 12px; padding: 6px 12px; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">🔄
+                        Recarregar</button>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+
+      <!-- Section 3: Chart Integration -->
+      <div class="section">
+         <h2 class="section-title">📈 3. Integração de Gráficos no Dashboard</h2>
+
+         <h3 class="subsection-title">📊 3.1 Tipos de Gráficos e Quando Usar</h3>
+
+         <div class="layout-example">
+            <div class="layout-label">✅ Escolha do Gráfico por Tipo de Dado</div>
+            <div class="grid-2">
+               <!-- Linha -->
+               <div class="card">
+                  <h4>📈 GRÁFICO DE LINHA</h4>
+                  <div class="chart">Tendência ao longo do tempo</div>
+                  <div style="margin-top: 12px; font-size: 13px; color: #6b7280;">
+                     <strong>Quando usar:</strong> Conversas por dia, mensagens por hora, custo diário<br>
+                     <strong>Por quê:</strong> Mostra tendências e padrões temporais
+                  </div>
+               </div>
+
+               <!-- Barras -->
+               <div class="card">
+                  <h4>📊 GRÁFICO DE BARRAS</h4>
+                  <div class="chart">Comparação entre categorias</div>
+                  <div style="margin-top: 12px; font-size: 13px; color: #6b7280;">
+                     <strong>Quando usar:</strong> Conversas por status, mensagens por provedor<br>
+                     <strong>Por quê:</strong> Facilita comparação direta entre valores
+                  </div>
+               </div>
+
+               <!-- Pizza -->
+               <div class="card">
+                  <h4>🥧 GRÁFICO DE PIZZA</h4>
+                  <div class="chart">Proporção do total</div>
+                  <div style="margin-top: 12px; font-size: 13px; color: #6b7280;">
+                     <strong>Quando usar:</strong> % por provedor, % por status<br>
+                     <strong>Por quê:</strong> Mostra partes de um todo (máx 5 fatias)
+                  </div>
+               </div>
+
+               <!-- Área -->
+               <div class="card">
+                  <h4>📉 GRÁFICO DE ÁREA</h4>
+                  <div class="chart">Volume acumulado</div>
+                  <div style="margin-top: 12px; font-size: 13px; color: #6b7280;">
+                     <strong>Quando usar:</strong> Tokens acumulados, custo acumulado<br>
+                     <strong>Por quê:</strong> Enfatiza magnitude total
+                  </div>
+               </div>
+            </div>
+         </div>
+
+         <div class="alert warning">
+            <span style="font-size: 28px;">⚠️</span>
+            <div>
+               <strong>Evite:</strong> Gráfico de pizza com mais de 5 fatias (confuso). Use barras horizontais.<br>
+               <strong>Evite:</strong> 3D, sombras excessivas, cores muito vibrantes (dificulta leitura).<br>
+               <strong>Evite:</strong> Gráficos sem labels, eixos ou legendas (usuário não entende).
+            </div>
+         </div>
+
+         <h3 class="subsection-title">📊 3.2 Layout: Cards + Gráficos Combinados</h3>
+
+         <div class="layout-example">
+            <div class="layout-label">✅ Exemplo Completo: KPIs + Gráficos</div>
+
+            <!-- KPIs no topo -->
+            <div class="grid-4" style="margin-bottom: 16px;">
+               <div class="card">
+                  <h4>Total Conversas</h4>
+                  <div class="value">1,234</div>
+                  <div class="trend">↑ +12%</div>
+               </div>
+               <div class="card">
+                  <h4>Mensagens</h4>
+                  <div class="value">8,456</div>
+                  <div class="trend">↑ +18%</div>
+               </div>
+               <div class="card">
+                  <h4>Taxa Resolução</h4>
+                  <div class="value">87%</div>
+                  <div class="trend">↑ +3%</div>
+               </div>
+               <div class="card">
+                  <h4>Custo Hoje</h4>
+                  <div class="value">$16</div>
+                  <div class="trend">↑ +8%</div>
+               </div>
+            </div>
+
+            <!-- Gráficos grandes -->
+            <div class="grid-2">
+               <div class="card">
+                  <h4>Conversas por Dia (Últimos 30 dias)</h4>
+                  <div class="chart chart-large">📈 Gráfico de Linha com múltiplas séries (ativo, bot, humano, total)
+                  </div>
+               </div>
+               <div class="card">
+                  <h4>Distribuição por Status</h4>
+                  <div class="chart chart-large">📊 Gráfico de Barras Empilhadas (resolvido, transferido, aguardando)
+                  </div>
+               </div>
+            </div>
+
+            <!-- Gráficos médios -->
+            <div class="grid-3" style="margin-top: 16px;">
+               <div class="card">
+                  <h4>Novos Clientes</h4>
+                  <div class="chart">📈 Linha (últimos 7 dias)</div>
+               </div>
+               <div class="card">
+                  <h4>Tokens por Dia</h4>
+                  <div class="chart">📊 Barras (input vs output)</div>
+               </div>
+               <div class="card">
+                  <h4>Custo por Provedor</h4>
+                  <div class="chart">🥧 Pizza (OpenAI vs Groq)</div>
+               </div>
+            </div>
+         </div>
+      </div>
+
+      <!-- Section 4: Responsiveness -->
+      <div class="section">
+         <h2 class="section-title">📱 4. Responsividade e Adaptação</h2>
+
+         <h3 class="subsection-title">📱 4.1 Breakpoints e Comportamento</h3>
+
+         <div class="comparison">
+            <div class="comparison-item good">
+               <h4>✅ Desktop (≥1024px)</h4>
+               <p><strong>Layout:</strong> Grid 4 colunas<br>
+                  <strong>Cards:</strong> Todos visíveis sem scroll<br>
+                  <strong>Gráficos:</strong> Lado a lado (2 colunas)<br>
+                  <strong>Sidebar:</strong> Sempre visível (280px)
+               </p>
+            </div>
+            <div class="comparison-item good">
+               <h4>✅ Tablet (768px - 1023px)</h4>
+               <p><strong>Layout:</strong> Grid 2 colunas<br>
+                  <strong>Cards:</strong> 2 por linha<br>
+                  <strong>Gráficos:</strong> 1 por linha (full width)<br>
+                  <strong>Sidebar:</strong> Colapsável (hamburger)
+               </p>
+            </div>
+         </div>
+
+         <div class="comparison" style="margin-top: 16px;">
+            <div class="comparison-item good">
+               <h4>✅ Mobile (≤767px)</h4>
+               <p><strong>Layout:</strong> Grid 1 coluna<br>
+                  <strong>Cards:</strong> 1 por linha (full width)<br>
+                  <strong>Gráficos:</strong> Altura reduzida (200px)<br>
+                  <strong>Sidebar:</strong> Drawer (overlay)
+               </p>
+            </div>
+            <div class="comparison-item good">
+               <h4>✅ Mobile Landscape</h4>
+               <p><strong>Layout:</strong> Grid 2 colunas<br>
+                  <strong>Cards:</strong> 2 por linha<br>
+                  <strong>Gráficos:</strong> Altura reduzida (180px)<br>
+                  <strong>Sidebar:</strong> Drawer (overlay)
+               </p>
+            </div>
+         </div>
+
+         <div class="alert info">
+            <span style="font-size: 28px;">💡</span>
+            <div>
+               <strong>Dica:</strong> Use <code>grid-template-columns: repeat(auto-fit, minmax(250px, 1fr))</code> para
+               responsividade automática. Cards se reorganizam sozinhos conforme a largura da tela.
+            </div>
+         </div>
+      </div>
+
+      <!-- Section 5: Best Practices -->
+      <div class="section">
+         <h2 class="section-title">✅ 5. Boas Práticas e Checklist</h2>
+
+         <h3 class="subsection-title">🎯 5.1 Hierarquia Visual</h3>
+         <ul class="feature-list">
+            <li><strong>KPIs no topo:</strong> Métricas mais importantes sempre visíveis sem scroll</li>
+            <li><strong>Tamanho = Importância:</strong> Valores maiores (48px) para KPIs, menores (32px) para
+               secundários</li>
+            <li><strong>Cor = Significado:</strong> Verde (positivo), vermelho (negativo), cinza (neutro)</li>
+            <li><strong>Agrupamento:</strong> Cards relacionados próximos (ex: todos de "Conversas" juntos)</li>
+            <li><strong>Espaçamento:</strong> 16-24px entre cards, 32-40px entre seções</li>
+         </ul>
+
+         <h3 class="subsection-title">⚡ 5.2 Performance e Loading</h3>
+         <ul class="feature-list">
+            <li><strong>Skeleton Loading:</strong> Mostrar placeholders enquanto carrega (não tela branca)</li>
+            <li><strong>Lazy Loading:</strong> Gráficos abaixo da dobra carregam depois</li>
+            <li><strong>Caching:</strong> Dados de dashboard cacheados por 30s-1min (evita requests excessivos)</li>
+            <li><strong>Otimização:</strong> Gráficos renderizam apenas pontos visíveis (não 10k pontos)</li>
+         </ul>
+
+         <h3 class="subsection-title">🎨 5.3 Consistência Visual</h3>
+         <ul class="feature-list">
+            <li><strong>Cores UzzAI:</strong> Sempre usar paleta oficial (#1ABC9C, #2E86AB, #FFD700)</li>
+            <li><strong>Fontes:</strong> Poppins para números, Inter para texto</li>
+            <li><strong>Bordas:</strong> Sempre 2px, cor #e5e7eb, radius 12px</li>
+            <li><strong>Sombras:</strong> Apenas no hover (0 8px 24px rgba(26,188,156,0.2))</li>
+            <li><strong>Ícones:</strong> Emojis ou SVG monocromáticos (não misturar estilos)</li>
+         </ul>
+
+         <h3 class="subsection-title">♿ 5.4 Acessibilidade</h3>
+         <ul class="feature-list">
+            <li><strong>Contraste:</strong> Texto cinza (#6b7280) em branco = 4.6:1 (WCAG AA)</li>
+            <li><strong>Labels:</strong> Todos os gráficos com aria-label descritivo</li>
+            <li><strong>Navegação:</strong> Tab funciona em todos os cards (focusable)</li>
+            <li><strong>Cores:</strong> Não usar APENAS cor para comunicar (adicionar ícone/texto)</li>
+         </ul>
+      </div>
+
+      <!-- Footer -->
+      <div class="section"
+         style="background: linear-gradient(135deg, #1ABC9C, #2E86AB); color: white; text-align: center;">
+         <h2 style="color: white; border: none; padding-bottom: 0;">✅ Checklist de Implementação</h2>
+         <div
+            style="text-align: left; margin-top: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
+            <div>
+               <h4 style="color: #FFD700; margin-bottom: 12px;">📐 Layout</h4>
+               <p style="font-size: 14px; line-height: 1.8;">
+                  ☐ Grid 4 colunas (desktop)<br>
+                  ☐ KPIs no topo (sem scroll)<br>
+                  ☐ Gráficos abaixo dos KPIs<br>
+                  ☐ Seções com headers visuais<br>
+                  ☐ Responsivo (4→2→1 colunas)
+               </p>
+            </div>
+            <div>
+               <h4 style="color: #FFD700; margin-bottom: 12px;">🎨 Cards</h4>
+               <p style="font-size: 14px; line-height: 1.8;">
+                  ☐ Barra superior gradiente<br>
+                  ☐ Título uppercase (12px)<br>
+                  ☐ Valor grande (48px) com gradiente<br>
+                  ☐ Trend com cor semântica<br>
+                  ☐ Hover effect (elevação)
+               </p>
+            </div>
+            <div>
+               <h4 style="color: #FFD700; margin-bottom: 12px;">📊 Gráficos</h4>
+               <p style="font-size: 14px; line-height: 1.8;">
+                  ☐ Tipo correto por dado<br>
+                  ☐ Labels e legendas claras<br>
+                  ☐ Cores UzzAI (#1ABC9C, #2E86AB)<br>
+                  ☐ Responsivo (altura adapta)<br>
+                  ☐ Loading state (skeleton)
+               </p>
+            </div>
+         </div>
+         <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.2);">
+            <p style="font-size: 14px; opacity: 0.9;">
+               📊 Documento criado para UzzAI ChatBot - Dashboard Principal<br>
+               🎨 Padrões de Layout e Design de Cards<br>
+               ✅ Pronto para implementação no código React/Next.js
+            </p>
+         </div>
+      </div>
+   </div>
+</body>
+
+</html>

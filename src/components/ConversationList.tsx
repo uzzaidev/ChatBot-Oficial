@@ -7,6 +7,7 @@ import type { ConversationWithCount } from '@/lib/types'
 import { MessageCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { EmptyStateSimple } from '@/components/EmptyState'
 
 interface ConversationListProps {
   conversations: ConversationWithCount[]
@@ -53,12 +54,11 @@ export const ConversationList = ({
 
   if (conversations.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-8 text-center px-4">
-        <MessageCircle className="h-12 w-12 text-silver-300 mb-4" />
-        <span className="text-erie-black-600">
-          Nenhuma conversa encontrada
-        </span>
-      </div>
+      <EmptyStateSimple
+        icon={MessageCircle}
+        title="Nenhuma conversa encontrada"
+        description="Quando você receber mensagens no WhatsApp, elas aparecerão aqui"
+      />
     )
   }
 
@@ -73,15 +73,15 @@ export const ConversationList = ({
           <div
             key={conversation.id}
             className={cn(
-              "flex items-center gap-3 p-3 cursor-pointer transition-colors duration-200 border-b border-silver-200",
-              isActive ? "bg-mint-50" : "hover:bg-silver-50",
-              hasUnread && !isActive && "bg-brand-blue-50"
+              "flex items-center gap-3 p-3 cursor-pointer transition-all duration-200 border-b border-uzz-silver/30",
+              isActive ? "bg-gradient-to-r from-uzz-mint/10 to-uzz-blue/10 border-l-4 border-l-uzz-mint" : "hover:bg-gray-50",
+              hasUnread && !isActive && "bg-uzz-blue/5"
             )}
             onClick={() => handleConversationClick(conversation.phone)}
           >
             {/* Avatar */}
             <Avatar className="h-12 w-12 flex-shrink-0">
-              <AvatarFallback className="bg-mint-500 text-white text-sm">
+              <AvatarFallback className="bg-gradient-to-br from-uzz-mint to-uzz-blue text-white text-sm font-poppins font-semibold">
                 {getInitials(conversation.name || 'Sem nome')}
               </AvatarFallback>
             </Avatar>
@@ -90,20 +90,20 @@ export const ConversationList = ({
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-1">
                 <span className={cn(
-                  "font-semibold text-sm truncate text-erie-black-900",
+                  "font-poppins font-semibold text-sm truncate text-uzz-black",
                   hasUnread && !isActive && "font-bold"
                 )}>
                   {conversation.name}
                 </span>
-                <span className="text-xs text-erie-black-500 ml-2 flex-shrink-0">
+                <span className="text-xs text-uzz-silver ml-2 flex-shrink-0">
                   {formatDateTime(conversation.last_update)}
                 </span>
               </div>
 
               <div className="flex items-center justify-between">
                 <p className={cn(
-                  "text-xs text-erie-black-600 truncate flex-1",
-                  hasUnread && !isActive && "font-semibold text-erie-black-900"
+                  "text-xs text-gray-600 truncate flex-1",
+                  hasUnread && !isActive && "font-semibold text-uzz-black"
                 )}>
                   {conversation.last_message
                     ? truncateText(conversation.last_message, 35)
@@ -124,7 +124,7 @@ export const ConversationList = ({
 
             {/* Indicador de mensagens não lidas - Badge com número */}
             {hasUnread && !isActive && (
-              <div className="bg-mint-500 text-white text-[10px] rounded-full min-w-[20px] h-5 px-1.5 flex items-center justify-center font-semibold flex-shrink-0">
+              <div className="bg-gradient-to-r from-uzz-mint to-uzz-blue text-white text-[10px] rounded-full min-w-[20px] h-5 px-1.5 flex items-center justify-center font-bold flex-shrink-0 shadow-lg shadow-uzz-mint/30">
                 {(conversation.unread_count ?? 0) > 9 ? '9+' : conversation.unread_count}
               </div>
             )}

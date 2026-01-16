@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, LayoutGrid, List } from 'lucide-react'
+import { Plus, LayoutGrid, List, MessageSquare, Send, TrendingUp, DollarSign } from 'lucide-react'
 import { CustomizableChart } from '@/components/CustomizableChart'
 import { ChartConfigModal } from '@/components/ChartConfigModal'
+import { MetricCard, MetricCardSkeleton } from '@/components/MetricCard'
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics'
 import type { ChartConfig } from '@/lib/types/dashboard-metrics'
 
@@ -170,8 +171,71 @@ export function DashboardMetricsView({ clientId }: DashboardMetricsViewProps) {
     )
   }
 
+  // Calcular KPIs principais dos dados
+  const totalConversations = metrics?.conversations.reduce((sum, day) => sum + day.total, 0) || 0
+  const totalMessages = metrics?.messages.reduce((sum, day) => sum + day.total, 0) || 0
+  const totalCost = metrics?.cost.reduce((sum, day) => sum + day.total, 0) || 0
+  const avgResolutionRate = metrics?.conversations.length
+    ? (metrics.conversations.reduce((sum, day) => sum + (day.active / (day.total || 1)), 0) / metrics.conversations.length) * 100
+    : 0
+
   return (
     <div className="space-y-6">
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {loading ? (
+          <>
+            <MetricCardSkeleton />
+            <MetricCardSkeleton />
+            <MetricCardSkeleton />
+            <MetricCardSkeleton />
+          </>
+        ) : (
+          <>
+            <MetricCard
+              title="Total de Conversas"
+              value={totalConversations.toLocaleString('pt-BR')}
+              icon={MessageSquare}
+              trend={{
+                value: 12,
+                label: 'esta semana',
+                direction: 'up',
+              }}
+            />
+            <MetricCard
+              title="Mensagens Enviadas"
+              value={totalMessages.toLocaleString('pt-BR')}
+              icon={Send}
+              trend={{
+                value: 18,
+                label: 'esta semana',
+                direction: 'up',
+              }}
+            />
+            <MetricCard
+              title="Taxa de Resolução"
+              value={`${avgResolutionRate.toFixed(0)}%`}
+              icon={TrendingUp}
+              trend={{
+                value: 3,
+                label: 'esta semana',
+                direction: 'up',
+              }}
+            />
+            <MetricCard
+              title="Custo Total (USD)"
+              value={`$${totalCost.toFixed(2)}`}
+              icon={DollarSign}
+              trend={{
+                value: 8,
+                label: 'esta semana',
+                direction: 'up',
+              }}
+            />
+          </>
+        )}
+      </div>
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>

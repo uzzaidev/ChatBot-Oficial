@@ -55,7 +55,12 @@
       "Bash(grep:*)",
       "Bash(supabase db push:*)",
       "Bash(git add:*)",
-      "Bash(pnpm run build:*)"
+      "Bash(pnpm run build:*)",
+      "Bash(doppler:*)",
+      "Bash(if [ -f .doppler.yaml ])",
+      "Bash(then cat .doppler.yaml)",
+      "Bash(else echo \"Arquivo .doppler.yaml não encontrado\")",
+      "Bash(fi)"
     ],
     "deny": [],
     "ask": []

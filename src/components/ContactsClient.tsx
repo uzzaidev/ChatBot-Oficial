@@ -60,6 +60,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { apiFetch } from '@/lib/api'
+import { EmptyState } from '@/components/EmptyState'
 
 interface ContactsClientProps {
   clientId: string
@@ -320,13 +321,13 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
       {/* Sidebar com Lista de Contatos */}
       <div className="w-full lg:w-96 border-r border-silver-200 flex flex-col bg-white">
         {/* Header */}
-        <div className="bg-mint-600 p-4 flex items-center justify-between shadow-md">
+        <div className="bg-gradient-to-r from-uzz-mint to-uzz-blue p-4 flex items-center justify-between shadow-lg">
           <div className="flex items-center gap-3">
             <Users className="h-6 w-6 text-white" />
-            <h2 className="text-white font-semibold text-lg">Contatos</h2>
+            <h2 className="text-white font-poppins font-semibold text-lg">Contatos</h2>
           </div>
           <Link href="/dashboard">
-            <Button variant="ghost" size="sm" className="text-white hover:bg-mint-700">
+            <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 transition-all">
               <LayoutDashboard className="h-4 w-4" />
             </Button>
           </Link>
@@ -525,35 +526,35 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
             <TabsList className="w-full justify-start rounded-none h-auto p-0 bg-transparent overflow-x-auto">
               <TabsTrigger
                 value="all"
-                className="flex items-center gap-1 data-[state=active]:border-b-2 data-[state=active]:border-mint-600 rounded-none text-xs px-3"
+                className="flex items-center gap-1 data-[state=active]:border-b-2 data-[state=active]:border-uzz-mint rounded-none text-xs px-3"
               >
                 <List className="h-3 w-3" />
                 Todos
               </TabsTrigger>
               <TabsTrigger
                 value="bot"
-                className="flex items-center gap-1 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 rounded-none text-xs px-3"
+                className="flex items-center gap-1 data-[state=active]:border-b-2 data-[state=active]:border-uzz-blue rounded-none text-xs px-3"
               >
                 <Bot className="h-3 w-3" />
                 Bot
               </TabsTrigger>
               <TabsTrigger
                 value="humano"
-                className="flex items-center gap-1 data-[state=active]:border-b-2 data-[state=active]:border-green-600 rounded-none text-xs px-3"
+                className="flex items-center gap-1 data-[state=active]:border-b-2 data-[state=active]:border-green-500 rounded-none text-xs px-3"
               >
                 <User className="h-3 w-3" />
                 Humano
               </TabsTrigger>
               <TabsTrigger
                 value="transferido"
-                className="flex items-center gap-1 data-[state=active]:border-b-2 data-[state=active]:border-orange-600 rounded-none text-xs px-3"
+                className="flex items-center gap-1 data-[state=active]:border-b-2 data-[state=active]:border-orange-500 rounded-none text-xs px-3"
               >
                 <ArrowRight className="h-3 w-3" />
                 Transferido
               </TabsTrigger>
               <TabsTrigger
                 value="fluxo_inicial"
-                className="flex items-center gap-1 data-[state=active]:border-b-2 data-[state=active]:border-purple-600 rounded-none text-xs px-3"
+                className="flex items-center gap-1 data-[state=active]:border-b-2 data-[state=active]:border-purple-500 rounded-none text-xs px-3"
               >
                 <ArrowRight className="h-3 w-3" />
                 Em Flow
@@ -569,21 +570,25 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
               <span className="text-erie-black-600">Carregando...</span>
             </div>
           ) : filteredContacts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 text-center px-4">
-              <Users className="h-12 w-12 text-silver-300 mb-4" />
-              <span className="text-erie-black-600">
-                {searchQuery ? 'Nenhum contato encontrado' : 'Nenhum contato cadastrado'}
-              </span>
-              {!searchQuery && (
-                <Button
-                  variant="link"
-                  className="mt-2"
-                  onClick={() => setIsAddDialogOpen(true)}
-                >
-                  Adicionar primeiro contato
-                </Button>
-              )}
-            </div>
+            searchQuery ? (
+              <EmptyState
+                icon={Search}
+                title="Nenhum resultado encontrado"
+                description={`Não encontramos contatos com "${searchQuery}". Tente ajustar sua busca.`}
+                className="mx-4"
+              />
+            ) : (
+              <EmptyState
+                icon={Users}
+                title="Nenhum contato cadastrado"
+                description="Comece adicionando contatos manualmente ou importe em massa via CSV para gerenciar seus clientes."
+                actionLabel="Adicionar Primeiro Contato"
+                onAction={() => setIsAddDialogOpen(true)}
+                secondaryActionLabel="Importar CSV"
+                onSecondaryAction={() => setIsImportDialogOpen(true)}
+                className="mx-4"
+              />
+            )
           ) : (
             filteredContacts.map((contact) => (
               <div
@@ -596,7 +601,7 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                 onClick={() => setSelectedContact(contact)}
               >
                 <Avatar className="h-12 w-12 flex-shrink-0">
-                  <AvatarFallback className="bg-mint-500 text-white text-sm">
+                  <AvatarFallback className="bg-gradient-to-br from-uzz-mint to-uzz-blue text-white text-sm font-poppins font-semibold">
                     {getInitials(contact.name || 'Sem nome')}
                   </AvatarFallback>
                 </Avatar>
@@ -636,7 +641,7 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                 </Button>
               </div>
               <Avatar className="h-20 w-20 mx-auto mb-4">
-                <AvatarFallback className="bg-mint-500 text-white text-2xl">
+                <AvatarFallback className="bg-gradient-to-br from-uzz-mint to-uzz-blue text-white text-2xl font-poppins font-bold">
                   {getInitials(selectedContact.name || 'Sem nome')}
                 </AvatarFallback>
               </Avatar>

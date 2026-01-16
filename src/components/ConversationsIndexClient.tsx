@@ -8,6 +8,7 @@ import { MessageCircle, Bot, User, ArrowRight, List, Home, Search, X } from 'luc
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { EmptyStateSimple } from '@/components/EmptyState'
 import Link from 'next/link'
 
 interface ConversationsIndexClientProps {
@@ -91,16 +92,16 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
       {/* Sidebar com Lista de Conversas - Sempre visível em desktop */}
       <div className="w-full lg:w-96 border-r border-silver-200 flex flex-col bg-white">
         {/* Header da Sidebar */}
-        <div className="bg-mint-600 p-4 flex items-center justify-between shadow-md">
+        <div className="bg-gradient-to-r from-uzz-mint to-uzz-blue p-4 flex items-center justify-between shadow-lg">
           <div className="flex items-center gap-3">
             <MessageCircle className="h-6 w-6 text-white" />
-            <h2 className="text-white font-semibold text-lg">Conversas</h2>
+            <h2 className="text-white font-poppins font-semibold text-lg">Conversas</h2>
           </div>
           <Link href="/dashboard">
             <Button
               variant="ghost"
               size="sm"
-              className="text-white hover:bg-mint-700 flex items-center gap-2 px-3"
+              className="text-white hover:bg-white/20 flex items-center gap-2 px-3 transition-all"
             >
               <Home className="h-4 w-4" />
               <span className="font-medium">Início</span>
@@ -142,40 +143,40 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
         </div>
 
         {/* Filtros por Status */}
-        <div className="border-b border-silver-200 bg-white">
+        <div className="border-b border-uzz-silver bg-white">
           <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'all' | 'bot' | 'humano' | 'transferido' | 'fluxo_inicial')}>
             <TabsList className="w-full justify-start rounded-none h-auto p-0 bg-transparent">
               <TabsTrigger
                 value="all"
-                className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-mint-600 rounded-none"
+                className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-uzz-mint rounded-none text-sm"
               >
                 <List className="h-4 w-4" />
                 Todas
               </TabsTrigger>
               <TabsTrigger
                 value="bot"
-                className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 rounded-none"
+                className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-uzz-blue rounded-none text-sm"
               >
                 <Bot className="h-4 w-4" />
                 Bot
               </TabsTrigger>
               <TabsTrigger
                 value="humano"
-                className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-green-600 rounded-none"
+                className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-green-500 rounded-none text-sm"
               >
                 <User className="h-4 w-4" />
                 Humano
               </TabsTrigger>
               <TabsTrigger
                 value="transferido"
-                className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-orange-600 rounded-none"
+                className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-orange-500 rounded-none text-sm"
               >
                 <ArrowRight className="h-4 w-4" />
                 Transferido
               </TabsTrigger>
               <TabsTrigger
                 value="fluxo_inicial"
-                className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-purple-600 rounded-none"
+                className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-purple-500 rounded-none text-sm"
               >
                 <ArrowRight className="h-4 w-4" />
                 Em Flow
@@ -200,16 +201,12 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
       </div>
 
       {/* Área Central - Mensagem para selecionar conversa (visível apenas em lg+) */}
-      <div className="hidden lg:flex flex-1 items-center justify-center bg-silver-50">
-        <div className="text-center">
-          <MessageCircle className="h-20 w-20 text-silver-300 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-erie-black-700 mb-2">
-            Nenhuma conversa selecionada
-          </h3>
-          <p className="text-erie-black-500">
-            Selecione uma conversa à esquerda para começar
-          </p>
-        </div>
+      <div className="hidden lg:flex flex-1 items-center justify-center bg-gradient-to-br from-gray-50 to-white">
+        <EmptyStateSimple
+          icon={MessageCircle}
+          title="Nenhuma conversa selecionada"
+          description="Selecione uma conversa à esquerda para visualizar as mensagens e começar a interagir"
+        />
       </div>
     </div>
   )

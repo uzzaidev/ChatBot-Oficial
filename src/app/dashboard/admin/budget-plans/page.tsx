@@ -167,12 +167,12 @@ export default function AdminBudgetPlansPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Configuração de Budgets</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-poppins font-bold mb-2 bg-gradient-to-r from-uzz-mint to-uzz-blue bg-clip-text text-transparent">Configuração de Budgets</h1>
+          <p className="text-uzz-silver">
             Gerencie limites de uso por cliente (Tokens, Reais ou Híbrido)
           </p>
         </div>
-        <Button variant="outline" onClick={fetchData}>
+        <Button variant="outline" onClick={fetchData} className="border-uzz-mint text-uzz-mint hover:bg-uzz-mint/10">
           <RefreshCw className="w-4 h-4 mr-2" />
           Atualizar
         </Button>

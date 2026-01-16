@@ -517,12 +517,12 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white p-6">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Configurações</h1>
-          <p className="text-gray-600 mt-1">Gerencie seu perfil e variáveis de ambiente</p>
+          <h1 className="text-3xl font-poppins font-bold bg-gradient-to-r from-uzz-mint to-uzz-blue bg-clip-text text-transparent">Configurações</h1>
+          <p className="text-uzz-silver mt-1">Gerencie seu perfil e variáveis de ambiente</p>
         </div>
 
         {/* Notification */}

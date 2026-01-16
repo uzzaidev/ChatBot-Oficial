@@ -55,8 +55,8 @@ export default function FlowArchitecturePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-silver-50">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mint-500"></div>
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-white">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-uzz-mint"></div>
       </div>
     )
   }

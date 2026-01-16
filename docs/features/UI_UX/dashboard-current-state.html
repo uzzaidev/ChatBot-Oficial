@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatBot Dashboard - Estado Atual (Antes das Melhorias)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f8f9fa;
+            color: #1f2937;
+        }
+
+        .dashboard-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 256px;
+            background: #f9fafb;
+            border-right: 1px solid #e5e7eb;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            margin-bottom: 32px;
+        }
+
+        .sidebar-header h1 {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3b82f6;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sidebar-header p {
+            font-size: 14px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+
+        .separator {
+            height: 1px;
+            background: #e5e7eb;
+            margin: 24px 0;
+        }
+
+        .nav-menu {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+            font-weight: 500;
+            color: #1f2937;
+        }
+
+        .nav-item:hover {
+            background: #f3f4f6;
+        }
+
+        .nav-item.active {
+            background: #dbeafe;
+            color: #1d4ed8;
+            font-weight: 600;
+        }
+
+        .nav-item svg {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .user-info {
+            margin-top: auto;
+            padding-top: 16px;
+        }
+
+        .user-info p {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .user-info .user-name {
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+
+        .logout-btn {
+            width: 100%;
+            padding: 10px;
+            margin-top: 12px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: #dc2626;
+        }
+
+        .version-info {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 16px;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 256px;
+            padding: 32px;
+        }
+
+        .page-content {
+            display: none;
+        }
+
+        .page-content.active {
+            display: block;
+        }
+
+        .page-header {
+            margin-bottom: 32px;
+        }
+
+        .page-header h2 {
+            font-size: 28px;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .page-header p {
+            font-size: 16px;
+            color: #6b7280;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-card h3 {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+
+        .metric-card .value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #1f2937;
+        }
+
+        .conversations-list {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            overflow: hidden;
+        }
+
+        .conversation-item {
+            padding: 16px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .conversation-item:last-child {
+            border-bottom: none;
+        }
+
+        .conversation-item:hover {
+            background: #f9fafb;
+        }
+
+        .conversation-name {
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .conversation-phone {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-badge.bot {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .status-badge.humano {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .status-badge.transferido {
+            background: #fef3c7;
+            color: #a16207;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 64px 32px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            color: #d1d5db;
+            margin-bottom: 16px;
+        }
+
+        .empty-state h3 {
+            font-size: 20px;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            color: #6b7280;
+        }
+
+        .warning-banner {
+            background: #fef3c7;
+            border: 1px solid #fbbf24;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            display: flex;
+            gap: 12px;
+            align-items: start;
+        }
+
+        .warning-banner svg {
+            width: 20px;
+            height: 20px;
+            color: #f59e0b;
+            flex-shrink: 0;
+        }
+
+        .warning-banner .content {
+            flex: 1;
+        }
+
+        .warning-banner h4 {
+            font-weight: 600;
+            color: #92400e;
+            margin-bottom: 4px;
+        }
+
+        .warning-banner p {
+            color: #92400e;
+            font-size: 14px;
+        }
+
+        /* Problema visual - todas as páginas visíveis para todos */
+        .problem-indicator {
+            display: inline-block;
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: relative;
+                height: auto;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                    </svg>
+                    ChatBot
+                </h1>
+                <p>Dashboard WhatsApp</p>
+            </div>
+
+            <div class="separator"></div>
+
+            <nav class="nav-menu">
+                <!-- PROBLEMA: TODAS as páginas estão visíveis para TODOS os usuários -->
+                <div class="nav-item active" onclick="showPage('dashboard')">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                    </svg>
+                    Dashboard
+                </div>
+
+                <div class="nav-item" onclick="showPage('conversations')">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                    </svg>
+                    Conversas
+                </div>
+
+                <div class="nav-item" onclick="showPage('contacts')">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    Contatos
+                </div>
+
+                <div class="nav-item" onclick="showPage('templates')">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Templates
+                </div>
+
+                <div class="nav-item" onclick="showPage('knowledge')">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                    </svg>
+                    Base de Conhecimento
+                </div>
+
+                <div class="nav-item" onclick="showPage('flows')">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path>
+                    </svg>
+                    Flows Interativos
+                </div>
+
+                <div class="nav-item" onclick="showPage('analytics')">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    Analytics
+                </div>
+
+                <!-- PROBLEMA: Páginas ADMIN visíveis para TODOS -->
+                <div class="nav-item" onclick="showPage('budget-plans')">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Budget Plans
+                    <span class="problem-indicator">VISÍVEL P/ TODOS</span>
+                </div>
+
+                <div class="nav-item" onclick="showPage('ai-gateway')">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                    AI Gateway
+                    <span class="problem-indicator">VISÍVEL P/ TODOS</span>
+                </div>
+
+                <div class="nav-item" onclick="showPage('flow-architecture')">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                    </svg>
+                    Arquitetura do Fluxo
+                    <span class="problem-indicator">VISÍVEL P/ TODOS</span>
+                </div>
+
+                <div class="nav-item" onclick="showPage('backend')">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    Backend Monitor
+                    <span class="problem-indicator">VISÍVEL P/ TODOS</span>
+                </div>
+
+                <div class="nav-item" onclick="showPage('settings')">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    Configurações
+                </div>
+            </nav>
+
+            <div class="separator"></div>
+
+            <div class="user-info">
+                <p>Conectado como:</p>
+                <p class="user-name">Cliente Padrão</p>
+                <p style="font-size: 12px; color: #6b7280;">cliente@empresa.com</p>
+                <button class="logout-btn">Sair</button>
+            </div>
+
+            <div class="separator"></div>
+
+            <div class="version-info">
+                <p>Versão 2.0.0</p>
+                <p style="margin-top: 4px; display: flex; align-items: center; gap: 4px;">
+                    <svg style="width: 12px; height: 12px; color: #10b981;" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    Autenticação Ativa
+                </p>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Page -->
+            <div id="dashboard" class="page-content active">
+                <div class="page-header">
+                    <h2>Dashboard</h2>
+                    <p>Dashboard customizável com métricas e gráficos</p>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <h3>Total de Conversas</h3>
+                        <div class="value">1,234</div>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Clientes Ativos</h3>
+                        <div class="value">567</div>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Mensagens Hoje</h3>
+                        <div class="value">8,912</div>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Taxa de Resposta</h3>
+                        <div class="value">94%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conversations Page -->
+            <div id="conversations" class="page-content">
+                <div class="page-header">
+                    <h2>Conversas</h2>
+                    <p>Gerencie todas as conversas do WhatsApp</p>
+                </div>
+
+                <div class="conversations-list">
+                    <div class="conversation-item">
+                        <div>
+                            <div class="conversation-name">João Silva</div>
+                            <div class="conversation-phone">+55 11 99999-9999</div>
+                        </div>
+                        <span class="status-badge bot">Bot</span>
+                    </div>
+                    <div class="conversation-item">
+                        <div>
+                            <div class="conversation-name">Maria Santos</div>
+                            <div class="conversation-phone">+55 11 98888-8888</div>
+                        </div>
+                        <span class="status-badge humano">Humano</span>
+                    </div>
+                    <div class="conversation-item">
+                        <div>
+                            <div class="conversation-name">Pedro Costa</div>
+                            <div class="conversation-phone">+55 11 97777-7777</div>
+                        </div>
+                        <span class="status-badge transferido">Transferido</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contacts Page -->
+            <div id="contacts" class="page-content">
+                <div class="page-header">
+                    <h2>Contatos</h2>
+                    <p>Lista de todos os contatos cadastrados</p>
+                </div>
+
+                <div class="conversations-list">
+                    <div class="conversation-item">
+                        <div>
+                            <div class="conversation-name">Ana Paula</div>
+                            <div class="conversation-phone">+55 11 96666-6666</div>
+                        </div>
+                    </div>
+                    <div class="conversation-item">
+                        <div>
+                            <div class="conversation-name">Carlos Mendes</div>
+                            <div class="conversation-phone">+55 11 95555-5555</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Templates Page -->
+            <div id="templates" class="page-content">
+                <div class="page-header">
+                    <h2>Templates</h2>
+                    <p>Gerencie templates de mensagens do WhatsApp</p>
+                </div>
+
+                <div class="empty-state">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <h3>Nenhum template criado</h3>
+                    <p>Crie seu primeiro template de mensagem</p>
+                </div>
+            </div>
+
+            <!-- Knowledge Page -->
+            <div id="knowledge" class="page-content">
+                <div class="page-header">
+                    <h2>Base de Conhecimento</h2>
+                    <p>Documentos e arquivos para o chatbot</p>
+                </div>
+
+                <div class="empty-state">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                    </svg>
+                    <h3>Nenhum documento adicionado</h3>
+                    <p>Adicione PDFs ou arquivos TXT para treinar o chatbot</p>
+                </div>
+            </div>
+
+            <!-- Flows Page -->
+            <div id="flows" class="page-content">
+                <div class="page-header">
+                    <h2>Flows Interativos</h2>
+                    <p>Crie fluxos de conversa automatizados</p>
+                </div>
+
+                <div class="empty-state">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path>
+                    </svg>
+                    <h3>Nenhum fluxo criado</h3>
+                    <p>Crie fluxos interativos para automatizar conversas</p>
+                </div>
+            </div>
+
+            <!-- Analytics Page -->
+            <div id="analytics" class="page-content">
+                <div class="page-header">
+                    <h2>Analytics</h2>
+                    <p>Métricas e estatísticas de uso</p>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <h3>Taxa de Conversão</h3>
+                        <div class="value">23%</div>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Tempo Médio de Resposta</h3>
+                        <div class="value">2.3s</div>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Satisfação (NPS)</h3>
+                        <div class="value">8.7</div>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Custo por Conversa</h3>
+                        <div class="value">R$ 0.15</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Budget Plans Page (ADMIN ONLY - MAS VISÍVEL PARA TODOS) -->
+            <div id="budget-plans" class="page-content">
+                <div class="warning-banner">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                    <div class="content">
+                        <h4>⚠️ PROBLEMA: Página Visível para Todos</h4>
+                        <p>Esta página deveria ser acessível APENAS para administradores, mas atualmente está visível no menu lateral de TODOS os usuários (incluindo clientes padrão).</p>
+                    </div>
+                </div>
+
+                <div class="page-header">
+                    <h2>Budget Plans</h2>
+                    <p>Gerencie planos de orçamento e limites de uso</p>
+                </div>
+
+                <div class="empty-state">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <h3>Configuração de Budget Plans</h3>
+                    <p>Defina limites de uso e orçamento por cliente</p>
+                </div>
+            </div>
+
+            <!-- AI Gateway Page (ADMIN ONLY - MAS VISÍVEL PARA TODOS) -->
+            <div id="ai-gateway" class="page-content">
+                <div class="warning-banner">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                    <div class="content">
+                        <h4>⚠️ PROBLEMA: Página Visível para Todos</h4>
+                        <p>Esta página contém configurações técnicas de provedores de IA (OpenAI, Groq, Anthropic) e deveria ser acessível APENAS para administradores.</p>
+                    </div>
+                </div>
+
+                <div class="page-header">
+                    <h2>AI Gateway</h2>
+                    <p>Configure provedores de IA e monitore custos</p>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <h3>Custo Total (24h)</h3>
+                        <div class="value">R$ 42.50</div>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Requests</h3>
+                        <div class="value">1,523</div>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Cache Hit Rate</h3>
+                        <div class="value">68%</div>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Economia Cache</h3>
+                        <div class="value">R$ 89.20</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Flow Architecture Page (DEV ONLY - MAS VISÍVEL PARA TODOS) -->
+            <div id="flow-architecture" class="page-content">
+                <div class="warning-banner">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                    <div class="content">
+                        <h4>⚠️ PROBLEMA: Página Visível para Todos</h4>
+                        <p>Esta é uma ferramenta TÉCNICA para desenvolvedores visualizarem o pipeline de 14 nodes do chatbot. Clientes padrão não precisam (e não devem) ver isso.</p>
+                    </div>
+                </div>
+
+                <div class="page-header">
+                    <h2>Arquitetura do Fluxo</h2>
+                    <p>Visualize o pipeline de processamento de mensagens (14 nodes)</p>
+                </div>
+
+                <div class="empty-state">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                    </svg>
+                    <h3>Pipeline de Processamento</h3>
+                    <p>Diagrama Mermaid com os 14 nodes do chatbotFlow.ts</p>
+                </div>
+            </div>
+
+            <!-- Backend Monitor Page (DEV ONLY - MAS VISÍVEL PARA TODOS) -->
+            <div id="backend" class="page-content">
+                <div class="warning-banner">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                    <div class="content">
+                        <h4>⚠️ PROBLEMA: Página Visível para Todos</h4>
+                        <p>Esta é uma ferramenta de MONITORAMENTO TÉCNICO para desenvolvedores. Expor logs de sistema, execução de nodes e erros para clientes é uma péssima prática de UX e segurança.</p>
+                    </div>
+                </div>
+
+                <div class="page-header">
+                    <h2>Backend Monitor</h2>
+                    <p>Logs de execução e monitoramento de sistema</p>
+                </div>
+
+                <div class="empty-state">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    <h3>Logs de Sistema</h3>
+                    <p>Monitoramento de execução de nodes, erros e performance</p>
+                </div>
+            </div>
+
+            <!-- Settings Page -->
+            <div id="settings" class="page-content">
+                <div class="page-header">
+                    <h2>Configurações</h2>
+                    <p>Configure o comportamento do chatbot</p>
+                </div>
+
+                <div class="empty-state">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    <h3>Configurações do Sistema</h3>
+                    <p>Personalize o comportamento do chatbot</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function showPage(pageId) {
+            // Esconder todas as páginas
+            document.querySelectorAll('.page-content').forEach(page => {
+                page.classList.remove('active');
+            });
+
+            // Remover active de todos os nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+
+            // Mostrar página selecionada
+            document.getElementById(pageId).classList.add('active');
+
+            // Adicionar active no nav item clicado
+            event.currentTarget.classList.add('active');
+
+            // Scroll to top
+            window.scrollTo(0, 0);
+        }
+    </script>
+</body>
+</html>
