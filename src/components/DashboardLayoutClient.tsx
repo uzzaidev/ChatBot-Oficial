@@ -6,6 +6,7 @@ import { Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { DashboardNavigation } from '@/components/DashboardNavigation'
+import { NotificationBell } from '@/components/NotificationBell'
 import { cn } from '@/lib/utils'
 
 interface DashboardLayoutClientProps {
@@ -65,23 +66,39 @@ export function DashboardLayoutClient({
           isCollapsed && "md:ml-20"
         )}
       >
+        {/* Desktop Header */}
+        <div className="hidden md:flex sticky top-0 z-10 bg-white border-b px-6 py-4 items-center justify-between shadow-sm">
+          <div className="flex items-center gap-4">
+            <h1 className="text-xl font-poppins font-semibold text-uzz-black">
+              <span className="text-uzz-mint">Uzz</span>
+              <span className="text-uzz-blue">.Ai</span>
+            </h1>
+          </div>
+          <div className="flex items-center gap-3">
+            <NotificationBell />
+          </div>
+        </div>
+
         {/* Mobile Header */}
-        <div className="md:hidden sticky top-0 z-10 bg-white border-b p-4 flex items-center gap-3">
-          <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="sm">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-[280px] p-6">
-              <DashboardNavigation
-                userName={userName}
-                userEmail={userEmail}
-                onLinkClick={() => setIsMobileOpen(false)}
-              />
-            </SheetContent>
-          </Sheet>
-          <h1 className="text-lg font-bold text-blue-600">ChatBot Dashboard</h1>
+        <div className="md:hidden sticky top-0 z-10 bg-white border-b p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[280px] p-6">
+                <DashboardNavigation
+                  userName={userName}
+                  userEmail={userEmail}
+                  onLinkClick={() => setIsMobileOpen(false)}
+                />
+              </SheetContent>
+            </Sheet>
+            <h1 className="text-lg font-bold text-blue-600">ChatBot Dashboard</h1>
+          </div>
+          <NotificationBell />
         </div>
 
         {/* Page Content */}

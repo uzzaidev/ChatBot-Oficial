@@ -4,11 +4,12 @@ import { useState, useMemo, useRef, useCallback, useLayoutEffect } from 'react'
 import { useConversations } from '@/hooks/useConversations'
 import { useGlobalRealtimeNotifications } from '@/hooks/useGlobalRealtimeNotifications'
 import { ConversationList } from '@/components/ConversationList'
-import { MessageCircle, Bot, User, ArrowRight, List, Home, Search, X } from 'lucide-react'
+import { MessageCircle, Bot, User, ArrowRight, List, Home, Search, X, Workflow } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { EmptyStateSimple } from '@/components/EmptyState'
+import { ConversationMetricCard } from '@/components/ConversationMetricCard'
 import Link from 'next/link'
 
 interface ConversationsIndexClientProps {
@@ -87,6 +88,29 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
     setSearchTerm('')
   }, [])
 
+  // Calcular métricas por status
+  const metrics = useMemo(() => {
+    return {
+      total: conversations.length,
+      bot: conversations.filter(c => c.status === 'bot').length,
+      humano: conversations.filter(c => c.status === 'humano').length,
+      emFlow: conversations.filter(c => c.status === 'fluxo_inicial').length,
+      transferido: conversations.filter(c => c.status === 'transferido').length,
+    }
+  }, [conversations])
+
+  // Helper para obter label do status
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      all: 'Todas',
+      bot: 'Bot',
+      humano: 'Humano',
+      transferido: 'Transferido',
+      fluxo_inicial: 'Em Flow'
+    }
+    return labels[status] || status
+  }
+
   return (
     <div className="fixed inset-0 flex overflow-hidden bg-white">
       {/* Sidebar com Lista de Conversas - Sempre visível em desktop */}
@@ -107,6 +131,48 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
               <span className="font-medium">Início</span>
             </Button>
           </Link>
+        </div>
+
+        {/* Cards de Métricas */}
+        <div className="p-4 border-b border-uzz-silver bg-gradient-to-br from-white via-gray-50 to-white">
+          <div className="grid grid-cols-2 gap-3">
+            <ConversationMetricCard
+              label="Todas"
+              value={metrics.total}
+              icon={List}
+              gradient="from-uzz-mint to-uzz-blue"
+              onClick={() => setStatusFilter('all')}
+              active={statusFilter === 'all'}
+              description="Total de conversas"
+            />
+            <ConversationMetricCard
+              label="Bot"
+              value={metrics.bot}
+              icon={Bot}
+              gradient="from-uzz-blue to-blue-600"
+              onClick={() => setStatusFilter('bot')}
+              active={statusFilter === 'bot'}
+              description="Bot respondendo"
+            />
+            <ConversationMetricCard
+              label="Humano"
+              value={metrics.humano}
+              icon={User}
+              gradient="from-green-500 to-green-600"
+              onClick={() => setStatusFilter('humano')}
+              active={statusFilter === 'humano'}
+              description="Atendimento humano"
+            />
+            <ConversationMetricCard
+              label="Em Flow"
+              value={metrics.emFlow}
+              icon={Workflow}
+              gradient="from-purple-500 to-purple-600"
+              onClick={() => setStatusFilter('fluxo_inicial')}
+              active={statusFilter === 'fluxo_inicial'}
+              description="Flow interativo"
+            />
+          </div>
         </div>
 
         {/* Campo de Pesquisa */}
@@ -191,21 +257,55 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
           onScroll={handleScroll}
           className="flex-1 overflow-y-auto"
         >
-          <ConversationList
-            conversations={filteredConversations}
-            loading={loading}
-            clientId={clientId}
-            lastUpdatePhone={lastUpdatePhone}
-          />
+          {filteredConversations.length === 0 && !loading ? (
+            <EmptyStateSimple
+              icon={
+                statusFilter === 'all' ? MessageCircle : 
+                statusFilter === 'bot' ? Bot :
+                statusFilter === 'humano' ? User :
+                statusFilter === 'fluxo_inicial' ? Workflow : 
+                statusFilter === 'transferido' ? ArrowRight : MessageCircle
+              }
+              title={
+                statusFilter === 'all' ? "Nenhuma conversa encontrada" :
+                `Nenhuma conversa com status "${getStatusLabel(statusFilter)}"`
+              }
+              description={
+                statusFilter === 'all' 
+                  ? "Quando você receber mensagens no WhatsApp, elas aparecerão aqui"
+                  : `Não há conversas com status "${getStatusLabel(statusFilter)}" no momento. Tente mudar o filtro ou aguarde novas conversas.`
+              }
+            />
+          ) : (
+            <ConversationList
+              conversations={filteredConversations}
+              loading={loading}
+              clientId={clientId}
+              lastUpdatePhone={lastUpdatePhone}
+            />
+          )}
         </div>
       </div>
 
       {/* Área Central - Mensagem para selecionar conversa (visível apenas em lg+) */}
       <div className="hidden lg:flex flex-1 items-center justify-center bg-gradient-to-br from-gray-50 to-white">
         <EmptyStateSimple
-          icon={MessageCircle}
-          title="Nenhuma conversa selecionada"
-          description="Selecione uma conversa à esquerda para visualizar as mensagens e começar a interagir"
+          icon={
+            statusFilter === 'all' ? MessageCircle : 
+            statusFilter === 'bot' ? Bot :
+            statusFilter === 'humano' ? User :
+            statusFilter === 'fluxo_inicial' ? Workflow : 
+            statusFilter === 'transferido' ? ArrowRight : MessageCircle
+          }
+          title={
+            statusFilter === 'all' ? "Nenhuma conversa selecionada" :
+            `Nenhuma conversa com status "${getStatusLabel(statusFilter)}"`
+          }
+          description={
+            statusFilter === 'all' 
+              ? "Selecione uma conversa à esquerda para visualizar as mensagens e começar a interagir"
+              : `Não há conversas com status "${getStatusLabel(statusFilter)}" no momento. Tente mudar o filtro ou aguarde novas conversas.`
+          }
         />
       </div>
     </div>

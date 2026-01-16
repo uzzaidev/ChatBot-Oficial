@@ -102,4 +102,25 @@
   .bg-brand-surface {
     background-color: rgba(31, 36, 39, 0.95);
   }
+
+  /* Navigation Section Headers - UZZ.AI Style */
+  .nav-section-header {
+    font-size: 10px;
+    font-weight: 700;
+    color: #B0B0B0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 16px 0 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .nav-section-header::before {
+    content: '';
+    width: 3px;
+    height: 12px;
+    background: #1ABC9C;
+    border-radius: 2px;
+  }
 }

@@ -1,69 +1,119 @@
+'use client'
+
 import { Badge } from '@/components/ui/badge'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Bot, User, ArrowRight, HelpCircle, Workflow } from 'lucide-react'
 import { LucideIcon } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface StatusBadgeProps {
   status: string
   showIcon?: boolean
-  size?: 'sm' | 'md'
+  size?: 'sm' | 'md' | 'lg'
+  showTooltip?: boolean
 }
 
 type StatusConfig = {
   label: string
   icon: LucideIcon
-  color: string
+  gradient: string // Tailwind gradient classes
+  description: string
 }
 
 const statusConfig: Record<string, StatusConfig> = {
   bot: {
     label: 'Bot',
     icon: Bot,
-    color: 'bg-blue-500/10 text-blue-700 border-blue-200',
+    gradient: 'from-uzz-blue to-blue-600',
+    description: 'Bot está respondendo automaticamente'
   },
   humano: {
     label: 'Humano',
     icon: User,
-    color: 'bg-green-500/10 text-green-700 border-green-200',
+    gradient: 'from-green-500 to-green-600',
+    description: 'Atendimento humano ativo'
   },
   transferido: {
     label: 'Transferido',
     icon: ArrowRight,
-    color: 'bg-orange-500/10 text-orange-700 border-orange-200',
+    gradient: 'from-orange-500 to-orange-600',
+    description: 'Aguardando atendimento humano'
   },
   fluxo_inicial: {
     label: 'Em Flow',
     icon: Workflow,
-    color: 'bg-purple-500/10 text-purple-700 border-purple-200',
+    gradient: 'from-purple-500 to-purple-600',
+    description: 'Conversa em flow interativo'
   },
   // Legacy status values (for backward compatibility)
   human: {
     label: 'Humano',
     icon: User,
-    color: 'bg-green-500/10 text-green-700 border-green-200',
+    gradient: 'from-green-500 to-green-600',
+    description: 'Atendimento humano ativo'
   },
   waiting: {
     label: 'Aguardando',
     icon: ArrowRight,
-    color: 'bg-orange-500/10 text-orange-700 border-orange-200',
+    gradient: 'from-orange-500 to-orange-600',
+    description: 'Aguardando atendimento humano'
   },
 }
 
 const defaultConfig: StatusConfig = {
   label: 'Desconhecido',
   icon: HelpCircle,
-  color: 'bg-gray-500/10 text-gray-700 border-gray-200',
+  gradient: 'from-gray-500 to-gray-600',
+  description: 'Status desconhecido'
 }
 
-export const StatusBadge = ({ status, showIcon = true, size = 'sm' }: StatusBadgeProps) => {
+const sizeClasses = {
+  sm: 'text-[10px] px-2 py-0.5',
+  md: 'text-xs px-2.5 py-1',
+  lg: 'text-sm px-3 py-1.5'
+}
+
+const iconSizes = {
+  sm: 'h-3 w-3',
+  md: 'h-3.5 w-3.5',
+  lg: 'h-4 w-4'
+}
+
+export const StatusBadge = ({ 
+  status, 
+  showIcon = true, 
+  size = 'sm',
+  showTooltip = true
+}: StatusBadgeProps) => {
   const config = statusConfig[status] || defaultConfig
   const Icon = config.icon
 
-  const sizeClasses = size === 'sm' ? 'text-xs px-2 py-0.5' : 'text-sm px-3 py-1'
-
-  return (
-    <Badge className={`${config.color} ${sizeClasses}`}>
-      {showIcon && <Icon className={`mr-1 ${size === 'sm' ? 'h-3 w-3' : 'h-4 w-4'}`} />}
+  const badgeContent = (
+    <Badge className={cn(
+      `bg-gradient-to-r ${config.gradient} text-white border-0`,
+      sizeClasses[size],
+      "font-bold shadow-sm hover:shadow-md transition-all"
+    )}>
+      {showIcon && <Icon className={cn("mr-1.5", iconSizes[size])} />}
       {config.label}
     </Badge>
   )
+
+  if (showTooltip) {
+    return (
+      <TooltipProvider>
+        <Tooltip delayDuration={300}>
+          <TooltipTrigger asChild>
+            {badgeContent}
+          </TooltipTrigger>
+          <TooltipContent side="right" className="max-w-[200px]">
+            <p className="text-sm font-semibold mb-1">{config.label}</p>
+            <p className="text-xs text-gray-300">{config.description}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    )
+  }
+
+  return badgeContent
 }

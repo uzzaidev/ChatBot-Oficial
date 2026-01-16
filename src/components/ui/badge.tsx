@@ -17,13 +17,13 @@ const badgeVariants = cva(
         outline: "text-foreground",
         // UZZ.AI Custom Badges
         new:
-          "border-transparent bg-gradient-to-r from-mint-500 to-gold-500 text-erie-black-900 font-bold uppercase tracking-wider",
+          "border-transparent bg-gradient-to-r from-uzz-mint to-uzz-gold text-uzz-black font-bold uppercase tracking-wider",
         beta:
-          "border-brand-blue-500 bg-brand-blue-500/20 text-brand-blue-700 font-bold uppercase tracking-wider",
+          "border-uzz-blue bg-uzz-blue/20 text-uzz-blue font-bold uppercase tracking-wider",
         admin:
-          "border-gold-500/30 bg-gold-500/15 text-gold-600 font-bold uppercase tracking-wider",
+          "border-uzz-gold/30 bg-uzz-gold/15 text-uzz-gold font-bold uppercase tracking-wider",
         dev:
-          "border-silver-300 bg-silver-200/50 text-silver-600 font-bold uppercase tracking-wider",
+          "border-uzz-silver bg-uzz-silver/15 text-uzz-silver font-bold uppercase tracking-wider",
       },
     },
     defaultVariants: {

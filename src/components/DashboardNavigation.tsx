@@ -87,11 +87,8 @@ const NavSection = ({ title, isCollapsed }: NavSectionProps) => {
   if (isCollapsed) return null
 
   return (
-    <div className="flex items-center gap-2 px-3 mt-4 mb-2">
-      <div className="w-1 h-3 bg-mint-500 rounded-full" />
-      <span className="text-[10px] font-bold text-silver-600 uppercase tracking-wider">
-        {title}
-      </span>
+    <div className="nav-section-header">
+      <span>{title}</span>
     </div>
   )
 }
