@@ -32,6 +32,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { ToggleSwitch } from '@/components/ui/toggle-switch'
+import { SliderControl } from '@/components/ui/slider-control'
 import BotConfigurationManager from '@/components/BotConfigurationManager'
 export default function SettingsPage() {
   // Estado do perfil
@@ -517,12 +519,14 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f1419] bg-pattern-dots p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen bg-[#0f1419] p-6">
+      <div className="max-w-5xl mx-auto space-y-8">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-poppins font-bold bg-gradient-to-r from-uzz-mint to-uzz-blue bg-clip-text text-transparent">Configurações</h1>
-          <p className="text-uzz-silver mt-1">Gerencie seu perfil e variáveis de ambiente</p>
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-poppins font-bold bg-gradient-to-r from-uzz-mint to-uzz-blue bg-clip-text text-transparent mb-2">
+            ⚙️ Configurações
+          </h1>
+          <p className="text-uzz-silver text-lg">Gerencie seu perfil, agent e variáveis de ambiente</p>
         </div>
 
         {/* Notification */}
@@ -533,12 +537,16 @@ export default function SettingsPage() {
         )}
 
         {/* Seção 1: Perfil do Usuário */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Perfil do Usuário</CardTitle>
-            <CardDescription>Visualize e edite suas informações pessoais</CardDescription>
+        <Card className="bg-gradient-to-br from-[#1e2530] to-[#1a1f26] border-white/10">
+          <CardHeader className="border-b border-white/10">
+            <CardTitle className="text-xl font-poppins text-white flex items-center gap-2">
+              👤 Perfil do Usuário
+            </CardTitle>
+            <CardDescription className="text-uzz-silver">
+              Visualize e edite suas informações pessoais
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6 pt-6">
             {/* Nome */}
             <div>
               <Label htmlFor="full_name">Nome Completo</Label>
@@ -571,21 +579,26 @@ export default function SettingsPage() {
 
             {/* Email (readonly) */}
             <div>
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" value={profile.email} disabled className="mt-2" />
-              <p className="text-xs text-gray-500 mt-1">O email não pode ser alterado</p>
+              <Label htmlFor="email" className="text-white">Email</Label>
+              <Input 
+                id="email" 
+                value={profile.email} 
+                disabled 
+                className="mt-2 bg-white/5 border-white/10 text-white/70" 
+              />
+              <p className="text-xs text-uzz-silver mt-1">O email não pode ser alterado</p>
             </div>
 
             {/* Telefone (readonly) */}
             <div>
-              <Label htmlFor="phone">Telefone</Label>
+              <Label htmlFor="phone" className="text-white">Telefone</Label>
               <Input
                 id="phone"
                 value={profile.phone || 'Não configurado'}
                 disabled
-                className="mt-2"
+                className="mt-2 bg-white/5 border-white/10 text-white/70"
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-uzz-silver mt-1">
                 Telefone do WhatsApp configurado nas variáveis de ambiente
               </p>
             </div>
@@ -593,14 +606,18 @@ export default function SettingsPage() {
         </Card>
 
         {/* Seção 2: Alterar Senha */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Alterar Senha</CardTitle>
-            <CardDescription>Atualize sua senha de acesso</CardDescription>
+        <Card className="bg-gradient-to-br from-[#1e2530] to-[#1a1f26] border-white/10">
+          <CardHeader className="border-b border-white/10">
+            <CardTitle className="text-xl font-poppins text-white flex items-center gap-2">
+              🔐 Alterar Senha
+            </CardTitle>
+            <CardDescription className="text-uzz-silver">
+              Atualize sua senha de acesso
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pt-6">
             <div>
-              <Label htmlFor="current_password">Senha Atual</Label>
+              <Label htmlFor="current_password" className="text-white">Senha Atual</Label>
               <Input
                 id="current_password"
                 type="password"
@@ -609,12 +626,13 @@ export default function SettingsPage() {
                   setPasswordForm({ ...passwordForm, current_password: e.target.value })
                 }
                 disabled={loadingPassword}
-                className="mt-2"
+                className="mt-2 bg-white/5 border-white/10 text-white"
+                placeholder="Digite sua senha atual"
               />
             </div>
 
             <div>
-              <Label htmlFor="new_password">Nova Senha</Label>
+              <Label htmlFor="new_password" className="text-white">Nova Senha</Label>
               <Input
                 id="new_password"
                 type="password"
@@ -623,13 +641,14 @@ export default function SettingsPage() {
                   setPasswordForm({ ...passwordForm, new_password: e.target.value })
                 }
                 disabled={loadingPassword}
-                className="mt-2"
+                className="mt-2 bg-white/5 border-white/10 text-white"
+                placeholder="Mínimo 8 caracteres"
               />
-              <p className="text-xs text-gray-500 mt-1">Mínimo 8 caracteres</p>
+              <p className="text-xs text-uzz-silver mt-1">Mínimo 8 caracteres</p>
             </div>
 
             <div>
-              <Label htmlFor="confirm_password">Confirmar Nova Senha</Label>
+              <Label htmlFor="confirm_password" className="text-white">Confirmar Nova Senha</Label>
               <Input
                 id="confirm_password"
                 type="password"
@@ -638,28 +657,33 @@ export default function SettingsPage() {
                   setPasswordForm({ ...passwordForm, confirm_password: e.target.value })
                 }
                 disabled={loadingPassword}
-                className="mt-2"
+                className="mt-2 bg-white/5 border-white/10 text-white"
+                placeholder="Digite novamente"
               />
             </div>
 
-            <Button onClick={handleUpdatePassword} disabled={loadingPassword}>
+            <Button 
+              onClick={handleUpdatePassword} 
+              disabled={loadingPassword}
+              className="w-full bg-gradient-to-r from-uzz-mint to-uzz-blue text-white hover:from-uzz-blue hover:to-uzz-mint"
+            >
               {loadingPassword ? 'Atualizando...' : 'Atualizar Senha'}
             </Button>
           </CardContent>
         </Card>
 
         {/* Seção 3: Configurações do Agent */}
-        <Card>
-          <CardHeader>
+        <Card className="bg-gradient-to-br from-[#1e2530] to-[#1a1f26] border-white/10">
+          <CardHeader className="border-b border-white/10">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Bot className="w-5 h-5" />
+              <div className="flex items-center gap-3">
+                <Bot className="w-6 h-6 text-uzz-mint" />
                 <div>
-                  <CardTitle>Configurações do Agent</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="text-xl font-poppins text-white">Configurações do Agent</CardTitle>
+                  <CardDescription className="text-uzz-silver">
                     Configure os prompts e modelos de IA do seu assistente.
                     <br />
-                    <span className="text-xs">
+                    <span className="text-xs text-uzz-silver/80">
                       ℹ️ Groq é usado para conversação (rápido e econômico), OpenAI para mídia (Vision, Whisper)
                     </span>
                   </CardDescription>
@@ -696,10 +720,20 @@ export default function SettingsPage() {
               )}
             </div>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 pt-6">
+            {/* Alert de Atenção */}
+            {!editingAgent && (
+              <Alert className="bg-amber-500/10 border-amber-500/30">
+                <AlertTriangle className="h-4 w-4 text-amber-500" />
+                <AlertDescription className="text-amber-200 text-sm">
+                  <strong>Atenção:</strong> Mudanças no System Prompt afetam TODAS as conversas. Teste antes de aplicar em produção.
+                </AlertDescription>
+              </Alert>
+            )}
+
             {/* System Prompt */}
             <div>
-              <Label htmlFor="system_prompt">System Prompt</Label>
+              <Label htmlFor="system_prompt" className="text-white">System Prompt</Label>
               <Textarea
                 id="system_prompt"
                 value={agentConfig.system_prompt}
@@ -707,18 +741,22 @@ export default function SettingsPage() {
                   setAgentConfig({ ...agentConfig, system_prompt: e.target.value })
                 }
                 disabled={!editingAgent}
-                placeholder="Você é um assistente virtual prestativo..."
-                rows={6}
-                className="mt-2 font-mono text-sm"
+                placeholder="## 🤖 Assistente Oficial Uzz.AI
+
+## 🎯 Identidade e Papel
+
+Você é o assistente oficial de IA da Uzz.AI..."
+                rows={8}
+                className="mt-2 font-mono text-sm bg-white/5 border-white/10 text-white placeholder:text-uzz-silver/50"
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-uzz-silver mt-1">
                 Prompt principal que define o comportamento do assistente
               </p>
             </div>
 
             {/* Formatter Prompt */}
             <div>
-              <Label htmlFor="formatter_prompt">Formatter Prompt (Opcional)</Label>
+              <Label htmlFor="formatter_prompt" className="text-white">Formatter Prompt (Opcional)</Label>
               <Textarea
                 id="formatter_prompt"
                 value={agentConfig.formatter_prompt || ''}
@@ -726,21 +764,25 @@ export default function SettingsPage() {
                   setAgentConfig({ ...agentConfig, formatter_prompt: e.target.value })
                 }
                 disabled={!editingAgent}
-                placeholder="Formate a resposta de forma clara e objetiva..."
-                rows={4}
-                className="mt-2 font-mono text-sm"
+                placeholder="Formate a resposta de forma clara, objetiva e profissional.
+
+**Regras:**
+- Máximo 3-4 frases por mensagem (exceto quando listar features ou opções)
+- Use emojis com moderação..."
+                rows={5}
+                className="mt-2 font-mono text-sm bg-white/5 border-white/10 text-white placeholder:text-uzz-silver/50"
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-uzz-silver mt-1">
                 Prompt usado para formatar as respostas do assistente
               </p>
             </div>
 
             {/* Primary Provider Selection */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <Label htmlFor="primary_model_provider" className="text-base font-semibold">
+            <div className="bg-gradient-to-br from-blue-500/10 to-uzz-blue/10 border border-uzz-blue/30 rounded-lg p-4">
+              <Label htmlFor="primary_model_provider" className="text-base font-semibold text-white flex items-center gap-2">
                 🤖 Provedor Principal do Agente
               </Label>
-              <p className="text-xs text-gray-600 mb-3">
+              <p className="text-xs text-uzz-silver mb-3">
                 Escolha qual IA vai responder as mensagens de texto do seu chatbot
               </p>
 
@@ -751,10 +793,10 @@ export default function SettingsPage() {
                 }
                 disabled={!editingAgent}
               >
-                <SelectTrigger className="mt-2">
+                <SelectTrigger className="mt-2 bg-white/5 border-white/10 text-white">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-[#1e2530] border-white/20 text-white">
                   <SelectItem value="groq">
                     <div className="flex items-center gap-2">
                       <Rocket className="h-4 w-4 flex-shrink-0" />
@@ -782,23 +824,23 @@ export default function SettingsPage() {
 
               {/* Alertas de custo */}
               {agentConfig.primary_model_provider === 'openai' && (
-                <div className="mt-3 text-xs bg-yellow-50 border border-yellow-200 p-3 rounded flex items-start gap-2">
-                  <AlertTriangle className="h-4 w-4 text-yellow-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <strong>Custo estimado:</strong> GPT-4o é ~8x mais caro que Groq.
+                <Alert className="mt-3 bg-amber-500/10 border-amber-500/30">
+                  <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0" />
+                  <AlertDescription className="text-amber-200 text-xs">
+                    <strong>💰 Custo estimado:</strong> GPT-4o é ~8x mais caro que Groq.
                     Para 100k mensagens/mês, pode custar $500+ vs $60 com Groq.
-                  </div>
-                </div>
+                  </AlertDescription>
+                </Alert>
               )}
 
               {agentConfig.primary_model_provider === 'groq' && (
-                <div className="mt-3 text-xs bg-green-50 border border-green-200 p-3 rounded flex items-start gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <strong>Econômico:</strong> Llama 3.3 70B oferece ótima qualidade
+                <Alert className="mt-3 bg-green-500/10 border-green-500/30">
+                  <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                  <AlertDescription className="text-green-200 text-xs">
+                    <strong>✅ Econômico:</strong> Llama 3.3 70B oferece ótima qualidade
                     com custo muito baixo (~$0.60/1M tokens).
-                  </div>
-                </div>
+                  </AlertDescription>
+                </Alert>
               )}
 
               {/* Botão de teste */}
@@ -808,7 +850,7 @@ export default function SettingsPage() {
                   disabled={testingModel || !editingAgent}
                   variant="outline"
                   size="sm"
-                  className="w-full"
+                  className="w-full border-uzz-mint/30 text-uzz-mint hover:bg-uzz-mint/10 hover:text-white"
                 >
                   {testingModel ? (
                     <>
@@ -825,32 +867,38 @@ export default function SettingsPage() {
 
               {/* Resultado do teste */}
               {testResult && (
-                <div className={`mt-3 text-xs p-3 rounded flex items-start gap-2 ${testResult.success
-                    ? 'bg-green-50 border border-green-200 text-green-800'
-                    : 'bg-red-50 border border-red-200 text-red-800'
+                <Alert className={`mt-3 ${testResult.success
+                    ? 'bg-green-500/10 border-green-500/30'
+                    : 'bg-red-500/10 border-red-500/30'
                   }`}>
-                  {testResult.success ? <CheckCircle className="h-4 w-4 flex-shrink-0 mt-0.5" /> : <XCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />}
-                  <span>{testResult.message}</span>
-                </div>
+                  {testResult.success ? (
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <XCircle className="h-4 w-4 text-red-500" />
+                  )}
+                  <AlertDescription className={testResult.success ? 'text-green-200' : 'text-red-200'}>
+                    {testResult.message}
+                  </AlertDescription>
+                </Alert>
               )}
             </div>
 
             {/* Divisor */}
-            <div className="border-t my-4"></div>
+            <div className="border-t border-white/10 my-6"></div>
 
-            <h3 className="font-semibold text-sm mb-2">
+            <h3 className="font-semibold text-base mb-2 text-white">
               Modelos Específicos
             </h3>
-            <p className="text-xs text-gray-500 mb-4">
+            <p className="text-xs text-uzz-silver mb-4">
               Configure qual versão do modelo será usado para cada provedor
             </p>
 
             {/* OpenAI Model */}
             <div>
-              <Label htmlFor="openai_model">
+              <Label htmlFor="openai_model" className="text-white">
                 Modelo OpenAI
                 {agentConfig.primary_model_provider === 'openai' && (
-                  <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                  <span className="ml-2 text-xs bg-uzz-blue/20 text-uzz-blue px-2 py-0.5 rounded border border-uzz-blue/30">
                     EM USO
                   </span>
                 )}
@@ -862,10 +910,10 @@ export default function SettingsPage() {
                 }
                 disabled={!editingAgent}
               >
-                <SelectTrigger className="mt-2">
+                <SelectTrigger className="mt-2 bg-white/5 border-white/10 text-white">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-[#1e2530] border-white/20 text-white">
                   {agentConfig.openai_model &&
                     ![
                       'gpt-4o',
@@ -883,19 +931,19 @@ export default function SettingsPage() {
                   <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo (Econômico)</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+              <p className="text-xs text-uzz-silver mt-1 flex items-center gap-1">
                 {agentConfig.primary_model_provider === 'openai'
                   ? (
                     <>
-                      <MessageCircle className="h-3 w-3" />
+                      <MessageCircle className="h-3 w-3 text-uzz-mint" />
                       Conversação +
-                      <Mic className="h-3 w-3 ml-1" />
+                      <Mic className="h-3 w-3 ml-1 text-uzz-mint" />
                       Mídia (transcrição, imagens, PDFs)
                     </>
                   )
                   : (
                     <>
-                      <Mic className="h-3 w-3" />
+                      <Mic className="h-3 w-3 text-uzz-silver" />
                       Apenas para: Transcrição de áudio, análise de imagens e documentos
                     </>
                   )
@@ -905,10 +953,10 @@ export default function SettingsPage() {
 
             {/* Groq Model */}
             <div>
-              <Label htmlFor="groq_model">
+              <Label htmlFor="groq_model" className="text-white">
                 Modelo Groq
                 {agentConfig.primary_model_provider === 'groq' && (
-                  <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                  <span className="ml-2 text-xs bg-uzz-blue/20 text-uzz-blue px-2 py-0.5 rounded border border-uzz-blue/30">
                     EM USO
                   </span>
                 )}
@@ -920,10 +968,10 @@ export default function SettingsPage() {
                 }
                 disabled={!editingAgent}
               >
-                <SelectTrigger className="mt-2">
+                <SelectTrigger className="mt-2 bg-white/5 border-white/10 text-white">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-[#1e2530] border-white/20 text-white">
                   {agentConfig.groq_model &&
                     ![
                       'llama-3.3-70b-versatile',
@@ -941,11 +989,11 @@ export default function SettingsPage() {
                   <SelectItem value="mixtral-8x7b-32768">Mixtral 8x7B</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+              <p className="text-xs text-uzz-silver mt-1 flex items-center gap-1">
                 {agentConfig.primary_model_provider === 'groq'
                   ? (
                     <>
-                      <MessageCircle className="h-3 w-3" />
+                      <MessageCircle className="h-3 w-3 text-uzz-mint" />
                       Usado para: Respostas de texto do agente (conversação principal)
                     </>
                   )
@@ -955,346 +1003,283 @@ export default function SettingsPage() {
             </div>
 
             {/* Divisor */}
-            <div className="border-t pt-4">
-              <h3 className="font-semibold text-sm mb-4">Configurações Avançadas</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Enable RAG */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="enable_rag">Habilitar RAG</Label>
-                    <p className="text-xs text-gray-500">Busca contexto em documentos enviados (base de conhecimento)</p>
-                  </div>
-                  <Input
-                    type="checkbox"
-                    id="enable_rag"
-                    checked={agentConfig.settings.enable_rag}
-                    onChange={(e) =>
-                      setAgentConfig({
-                        ...agentConfig,
-                        settings: { ...agentConfig.settings, enable_rag: e.target.checked },
-                      })
-                    }
-                    disabled={!editingAgent}
-                    className="w-5 h-5"
-                  />
-                </div>
+            <div className="border-t border-white/10 pt-6">
+              <h3 className="font-semibold text-base mb-6 text-white">Configurações Avançadas</h3>
+              
+              {/* Toggles */}
+              <div className="space-y-4 mb-6">
+                <ToggleSwitch
+                  id="enable_rag"
+                  label="Habilitar RAG"
+                  description="Busca contexto em documentos enviados (base de conhecimento)"
+                  checked={agentConfig.settings.enable_rag}
+                  onCheckedChange={(checked) =>
+                    setAgentConfig({
+                      ...agentConfig,
+                      settings: { ...agentConfig.settings, enable_rag: checked },
+                    })
+                  }
+                  disabled={!editingAgent}
+                />
 
-                {/* Enable Tools */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="enable_tools">Habilitar Function Calling</Label>
-                    <p className="text-xs text-gray-500">Permite IA executar ações (transferência, agendamento, etc)</p>
-                  </div>
-                  <Input
-                    type="checkbox"
-                    id="enable_tools"
-                    checked={agentConfig.settings.enable_tools}
-                    onChange={(e) =>
-                      setAgentConfig({
-                        ...agentConfig,
-                        settings: { ...agentConfig.settings, enable_tools: e.target.checked },
-                      })
-                    }
-                    disabled={!editingAgent}
-                    className="w-5 h-5"
-                  />
-                </div>
+                <ToggleSwitch
+                  id="enable_tools"
+                  label="Habilitar Function Calling"
+                  description="Permite IA executar ações (transferência, agendamento, etc)"
+                  checked={agentConfig.settings.enable_tools}
+                  onCheckedChange={(checked) =>
+                    setAgentConfig({
+                      ...agentConfig,
+                      settings: { ...agentConfig.settings, enable_tools: checked },
+                    })
+                  }
+                  disabled={!editingAgent}
+                />
 
-                {/* Enable Human Handoff */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="enable_human_handoff">Transferência Humana</Label>
-                    <p className="text-xs text-gray-500">Permite IA transferir conversa para atendente humano</p>
-                  </div>
-                  <Input
-                    type="checkbox"
-                    id="enable_human_handoff"
-                    checked={agentConfig.settings.enable_human_handoff}
-                    onChange={(e) =>
-                      setAgentConfig({
-                        ...agentConfig,
-                        settings: { ...agentConfig.settings, enable_human_handoff: e.target.checked },
-                      })
-                    }
-                    disabled={!editingAgent}
-                    className="w-5 h-5"
-                  />
-                </div>
+                <ToggleSwitch
+                  id="enable_human_handoff"
+                  label="Transferência Humana"
+                  description="Permite IA transferir conversa para atendente humano"
+                  checked={agentConfig.settings.enable_human_handoff}
+                  onCheckedChange={(checked) =>
+                    setAgentConfig({
+                      ...agentConfig,
+                      settings: { ...agentConfig.settings, enable_human_handoff: checked },
+                    })
+                  }
+                  disabled={!editingAgent}
+                />
 
-                {/* Message Split Enabled */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="message_split_enabled">Dividir Mensagens Longas</Label>
-                    <p className="text-xs text-gray-500">Quebra respostas grandes em várias mensagens WhatsApp</p>
-                  </div>
-                  <Input
-                    type="checkbox"
-                    id="message_split_enabled"
-                    checked={agentConfig.settings.message_split_enabled}
-                    onChange={(e) =>
-                      setAgentConfig({
-                        ...agentConfig,
-                        settings: { ...agentConfig.settings, message_split_enabled: e.target.checked },
-                      })
-                    }
-                    disabled={!editingAgent}
-                    className="w-5 h-5"
-                  />
-                </div>
+                <ToggleSwitch
+                  id="message_split_enabled"
+                  label="Dividir Mensagens Longas"
+                  description="Quebra respostas grandes em várias mensagens WhatsApp"
+                  checked={agentConfig.settings.message_split_enabled}
+                  onCheckedChange={(checked) =>
+                    setAgentConfig({
+                      ...agentConfig,
+                      settings: { ...agentConfig.settings, message_split_enabled: checked },
+                    })
+                  }
+                  disabled={!editingAgent}
+                />
+              </div>
 
-                {/* Max Tokens */}
-                <div>
-                  <Label htmlFor="max_tokens">Max Tokens</Label>
-                  <Input
-                    type="number"
-                    id="max_tokens"
-                    value={agentConfig.settings.max_tokens}
-                    onChange={(e) =>
-                      setAgentConfig({
-                        ...agentConfig,
-                        settings: { ...agentConfig.settings, max_tokens: parseInt(e.target.value) || 2000 },
-                      })
-                    }
-                    disabled={!editingAgent}
-                    min={100}
-                    max={8000}
-                    className="mt-2"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">100 - 8000</p>
-                </div>
+              {/* Sliders */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <SliderControl
+                  id="max_tokens"
+                  label="Max Tokens"
+                  description="100 - 8000 (Padrão: 6000)"
+                  value={agentConfig.settings.max_tokens}
+                  onValueChange={(value) =>
+                    setAgentConfig({
+                      ...agentConfig,
+                      settings: { ...agentConfig.settings, max_tokens: value },
+                    })
+                  }
+                  min={100}
+                  max={8000}
+                  step={100}
+                  disabled={!editingAgent}
+                />
 
-                {/* Temperature */}
-                <div>
-                  <Label htmlFor="temperature">Temperature</Label>
-                  <Input
-                    type="number"
-                    id="temperature"
-                    value={agentConfig.settings.temperature}
-                    onChange={(e) =>
-                      setAgentConfig({
-                        ...agentConfig,
-                        settings: { ...agentConfig.settings, temperature: parseFloat(e.target.value) || 0.7 },
-                      })
-                    }
-                    disabled={!editingAgent}
-                    min={0}
-                    max={2}
-                    step={0.1}
-                    className="mt-2"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">0.0 - 2.0 (criatividade)</p>
-                </div>
+                <SliderControl
+                  id="temperature"
+                  label="Temperature"
+                  description="0.0 - 2.0 (0 = determinístico, 2 = criativo)"
+                  value={agentConfig.settings.temperature}
+                  onValueChange={(value) =>
+                    setAgentConfig({
+                      ...agentConfig,
+                      settings: { ...agentConfig.settings, temperature: value },
+                    })
+                  }
+                  min={0}
+                  max={2}
+                  step={0.1}
+                  disabled={!editingAgent}
+                />
 
-                {/* Max Chat History */}
-                <div>
-                  <Label htmlFor="max_chat_history">Max Chat History</Label>
-                  <Input
-                    type="number"
-                    id="max_chat_history"
-                    value={agentConfig.settings.max_chat_history}
-                    onChange={(e) =>
-                      setAgentConfig({
-                        ...agentConfig,
-                        settings: { ...agentConfig.settings, max_chat_history: parseInt(e.target.value) || 10 },
-                      })
-                    }
-                    disabled={!editingAgent}
-                    min={1}
-                    max={50}
-                    className="mt-2"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">1 - 50 mensagens</p>
-                </div>
+                <SliderControl
+                  id="max_chat_history"
+                  label="Max Chat History"
+                  description="1 - 50 mensagens (Padrão: 15)"
+                  value={agentConfig.settings.max_chat_history}
+                  onValueChange={(value) =>
+                    setAgentConfig({
+                      ...agentConfig,
+                      settings: { ...agentConfig.settings, max_chat_history: value },
+                    })
+                  }
+                  min={1}
+                  max={50}
+                  step={1}
+                  disabled={!editingAgent}
+                />
 
-                {/* Batching Delay */}
-                <div>
-                  <Label htmlFor="batching_delay_seconds">Delay de Agrupamento (s)</Label>
-                  <Input
-                    type="number"
-                    id="batching_delay_seconds"
-                    value={agentConfig.settings.batching_delay_seconds}
-                    onChange={(e) =>
-                      setAgentConfig({
-                        ...agentConfig,
-                        settings: { ...agentConfig.settings, batching_delay_seconds: parseInt(e.target.value) || 10 },
-                      })
-                    }
-                    disabled={!editingAgent}
-                    min={0}
-                    max={60}
-                    className="mt-2"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">0 - 60 segundos</p>
-                </div>
+                <SliderControl
+                  id="batching_delay_seconds"
+                  label="Delay de Agrupamento"
+                  description="0 - 60 segundos (Padrão: 10)"
+                  value={agentConfig.settings.batching_delay_seconds}
+                  onValueChange={(value) =>
+                    setAgentConfig({
+                      ...agentConfig,
+                      settings: { ...agentConfig.settings, batching_delay_seconds: value },
+                    })
+                  }
+                  min={0}
+                  max={60}
+                  step={1}
+                  unit="s"
+                  disabled={!editingAgent}
+                />
 
-                {/* Message Delay */}
-                <div>
-                  <Label htmlFor="message_delay_ms">Delay entre Mensagens (ms)</Label>
-                  <Input
-                    type="number"
-                    id="message_delay_ms"
-                    value={agentConfig.settings.message_delay_ms}
-                    onChange={(e) => {
-                      const value = e.target.value
-                      const parsed = value === '' ? 2000 : parseInt(value)
-                      setAgentConfig({
-                        ...agentConfig,
-                        settings: { ...agentConfig.settings, message_delay_ms: isNaN(parsed) ? 2000 : parsed },
-                      })
-                    }}
-                    disabled={!editingAgent}
-                    min={0}
-                    max={10000}
-                    step={100}
-                    className="mt-2"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">0 - 10000 ms (delay entre mensagens divididas)</p>
-                </div>
+                <SliderControl
+                  id="message_delay_ms"
+                  label="Delay entre Mensagens"
+                  description="0 - 10000 ms (delay entre mensagens divididas)"
+                  value={agentConfig.settings.message_delay_ms}
+                  onValueChange={(value) =>
+                    setAgentConfig({
+                      ...agentConfig,
+                      settings: { ...agentConfig.settings, message_delay_ms: value },
+                    })
+                  }
+                  min={0}
+                  max={10000}
+                  step={100}
+                  unit="ms"
+                  disabled={!editingAgent}
+                />
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Seção 3.5: Envio de Documentos RAG */}
-        <Card>
-          <CardHeader>
+        <Card className="bg-gradient-to-br from-[#1e2530] to-[#1a1f26] border-white/10">
+          <CardHeader className="border-b border-white/10">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Bot className="h-5 w-5 text-blue-500" />
-                  Envio de Documentos RAG
+                <CardTitle className="text-xl font-poppins text-white flex items-center gap-2">
+                  📄 Envio de Documentos RAG
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-uzz-silver">
                   Configure como o agente envia documentos e imagens da base de conhecimento via WhatsApp
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <Alert>
-              <AlertDescription className="text-sm">
+          <CardContent className="space-y-6 pt-6">
+            <Alert className="bg-blue-500/10 border-blue-500/30">
+              <AlertDescription className="text-blue-200 text-sm">
                 <strong>Nota:</strong> Esta funcionalidade permite que o agente busque e envie automaticamente documentos, catálogos, manuais e imagens armazenados na base de conhecimento quando solicitado pelo usuário. Requer RAG e Function Calling habilitados.
               </AlertDescription>
             </Alert>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Habilitar/Desabilitar */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="enable_document_sending">Habilitar envio de documentos</Label>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Permite que o agente busque e envie documentos da base de conhecimento
-                  </p>
-                </div>
-                <Input
-                  type="checkbox"
-                  id="enable_document_sending"
-                  checked={agentConfig.settings.enable_rag && agentConfig.settings.enable_tools}
-                  disabled={true}
-                  className="w-5 h-5"
-                  title="Requer RAG e Function Calling habilitados"
-                />
-              </div>
-
-              {/* Threshold de Similaridade */}
-              <div>
-                <Label htmlFor="doc_search_threshold">Threshold de Similaridade</Label>
-                <p className="text-xs text-gray-500 mt-1 mb-2">
-                  Quão similar deve ser o documento para ser considerado relevante (0.0 - 1.0)
-                </p>
-                <Input
-                  type="number"
-                  id="doc_search_threshold"
-                  defaultValue={0.7}
-                  disabled={!editingAgent}
-                  min={0}
-                  max={1}
-                  step={0.1}
-                />
-                <p className="text-xs text-gray-400 mt-1">
-                  Padrão: 0.7 (valores maiores = mais rigoroso)
-                </p>
-              </div>
-
-              {/* Máximo de Documentos */}
-              <div>
-                <Label htmlFor="doc_max_results">Máximo de Documentos</Label>
-                <p className="text-xs text-gray-500 mt-1 mb-2">
-                  Número máximo de documentos a enviar por solicitação
-                </p>
-                <Input
-                  type="number"
-                  id="doc_max_results"
-                  defaultValue={3}
-                  disabled={!editingAgent}
-                  min={1}
-                  max={5}
-                />
-                <p className="text-xs text-gray-400 mt-1">
-                  Padrão: 3 documentos (1-5)
-                </p>
-              </div>
-
-              {/* Tamanho Máximo */}
-              <div>
-                <Label htmlFor="doc_max_file_size">Tamanho Máximo (MB)</Label>
-                <p className="text-xs text-gray-500 mt-1 mb-2">
-                  Tamanho máximo de arquivo para envio via WhatsApp
-                </p>
-                <Input
-                  type="number"
-                  id="doc_max_file_size"
-                  defaultValue={10}
-                  disabled={!editingAgent}
-                  min={1}
-                  max={16}
-                />
-                <p className="text-xs text-gray-400 mt-1">
-                  WhatsApp: máx 16MB documentos, 5MB imagens
-                </p>
-              </div>
-            </div>
-
             {/* Status Indicator */}
-            <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <Alert className={agentConfig.settings.enable_rag && agentConfig.settings.enable_tools 
+              ? 'bg-green-500/10 border-green-500/30' 
+              : 'bg-amber-500/10 border-amber-500/30'
+            }>
               {agentConfig.settings.enable_rag && agentConfig.settings.enable_tools ? (
                 <>
-                  <CheckCircle className="h-5 w-5 text-green-500" />
-                  <span className="text-sm text-green-700 dark:text-green-400">
-                    <strong>Ativo:</strong> Agente pode buscar e enviar documentos via tool <code>buscar_documento</code>
-                  </span>
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <AlertDescription className="text-green-200 text-sm">
+                    <strong>✅ Ativo:</strong> Agente pode buscar e enviar documentos via tool <code className="bg-white/10 px-1 rounded">buscar_documento</code>
+                  </AlertDescription>
                 </>
               ) : (
                 <>
-                  <AlertTriangle className="h-5 w-5 text-amber-500" />
-                  <span className="text-sm text-amber-700 dark:text-amber-400">
-                    <strong>Inativo:</strong> Habilite RAG e Function Calling para usar esta funcionalidade
-                  </span>
+                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                  <AlertDescription className="text-amber-200 text-sm">
+                    <strong>⚠️ Inativo:</strong> Habilite RAG e Function Calling para usar esta funcionalidade
+                  </AlertDescription>
                 </>
               )}
+            </Alert>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Habilitar/Desabilitar */}
+              <ToggleSwitch
+                id="enable_document_sending"
+                label="Habilitar envio de documentos"
+                description="Permite que o agente busque e envie documentos da base de conhecimento"
+                checked={agentConfig.settings.enable_rag && agentConfig.settings.enable_tools}
+                onCheckedChange={() => {}} // Disabled - controlled by RAG and Tools
+                disabled={true}
+              />
+
+              {/* Threshold de Similaridade */}
+              <SliderControl
+                id="doc_search_threshold"
+                label="Threshold de Similaridade"
+                description="Padrão: 0.7 (valores maiores = mais rigoroso)"
+                value={0.7}
+                onValueChange={() => {}} // TODO: Implement when backend supports
+                min={0}
+                max={1}
+                step={0.1}
+                disabled={!editingAgent || !agentConfig.settings.enable_rag}
+              />
+
+              {/* Máximo de Documentos */}
+              <SliderControl
+                id="doc_max_results"
+                label="Máximo de Documentos"
+                description="Padrão: 3 documentos (1-5)"
+                value={3}
+                onValueChange={() => {}} // TODO: Implement when backend supports
+                min={1}
+                max={5}
+                step={1}
+                disabled={!editingAgent || !agentConfig.settings.enable_rag}
+              />
+
+              {/* Tamanho Máximo */}
+              <SliderControl
+                id="doc_max_file_size"
+                label="Tamanho Máximo"
+                description="WhatsApp: máx 16MB documentos, 5MB imagens"
+                value={10}
+                onValueChange={() => {}} // TODO: Implement when backend supports
+                min={1}
+                max={16}
+                step={1}
+                unit="MB"
+                disabled={!editingAgent || !agentConfig.settings.enable_rag}
+              />
             </div>
 
             {/* Como usar */}
-            <div className="border-t pt-4">
-              <h4 className="text-sm font-semibold mb-2">💡 Como usar:</h4>
-              <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1 list-disc list-inside">
-                <li>Faça upload de documentos em <strong>/dashboard/knowledge</strong></li>
-                <li>Usuário solicita via WhatsApp: <em>&quot;me envia o catálogo&quot;</em></li>
-                <li>AI aciona tool <code>buscar_documento</code> automaticamente</li>
-                <li>Sistema busca na base, encontra o documento mais relevante</li>
-                <li>Envia PDF/imagem diretamente no WhatsApp</li>
-              </ul>
+            <div className="border-t border-white/10 pt-4">
+              <Alert className="bg-blue-500/10 border-blue-500/30">
+                <AlertDescription>
+                  <h4 className="text-sm font-semibold mb-2 text-blue-200">💡 Como usar:</h4>
+                  <ul className="text-xs text-blue-200/90 space-y-1 list-disc list-inside">
+                    <li>Faça upload de documentos em <strong>/dashboard/knowledge</strong></li>
+                    <li>Usuário solicita via WhatsApp: <em>&quot;me envia o catálogo&quot;</em></li>
+                    <li>AI aciona tool <code className="bg-white/10 px-1 rounded">buscar_documento</code> automaticamente</li>
+                    <li>Sistema busca na base, encontra o documento mais relevante</li>
+                    <li>Envia PDF/imagem diretamente no WhatsApp</li>
+                  </ul>
+                </AlertDescription>
+              </Alert>
             </div>
           </CardContent>
         </Card>
 
         {/* Seção 4: Variáveis de Ambiente */}
-        <Card>
-          <CardHeader>
+        <Card className="bg-gradient-to-br from-[#1e2530] to-[#1a1f26] border-white/10">
+          <CardHeader className="border-b border-white/10">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Variáveis de Ambiente</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-xl font-poppins text-white flex items-center gap-2">
+                  🔑 Variáveis de Ambiente
+                </CardTitle>
+                <CardDescription className="text-uzz-silver">
                   Gerencie as credenciais de API do seu cliente
                 </CardDescription>
               </div>
@@ -1318,10 +1303,10 @@ export default function SettingsPage() {
               )}
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pt-6">
             {/* Meta Access Token */}
             <div>
-              <Label htmlFor="meta_access_token">Meta Access Token</Label>
+              <Label htmlFor="meta_access_token" className="text-white">Meta Access Token</Label>
               <div className="flex gap-2 mt-2">
                 <div className="relative flex-1">
                   <Input
@@ -1332,11 +1317,13 @@ export default function SettingsPage() {
                       setSecrets({ ...secrets, meta_access_token: e.target.value })
                     }
                     disabled={!editingSecrets}
+                    className="bg-white/5 border-white/10 text-white font-mono text-sm"
+                    placeholder="EAABsbCS1iHgBO7ZC..."
                   />
                   <button
                     type="button"
                     onClick={() => togglePasswordVisibility('meta_access_token')}
-                    className="absolute right-2 top-2"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-uzz-silver hover:text-white transition-colors"
                   >
                     {showPasswords['meta_access_token'] ? (
                       <EyeOff className="w-4 h-4" />
@@ -1351,6 +1338,7 @@ export default function SettingsPage() {
                       handleUpdateSecret('meta_access_token', secrets.meta_access_token)
                     }
                     disabled={loadingSecrets}
+                    className="bg-gradient-to-r from-uzz-mint to-uzz-blue text-white hover:from-uzz-blue hover:to-uzz-mint"
                   >
                     Salvar
                   </Button>
