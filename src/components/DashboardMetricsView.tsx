@@ -7,8 +7,10 @@ import { Plus, LayoutGrid, List, MessageSquare, Send, TrendingUp, DollarSign } f
 import { CustomizableChart } from '@/components/CustomizableChart'
 import { ChartConfigModal } from '@/components/ChartConfigModal'
 import { MetricCard, MetricCardSkeleton } from '@/components/MetricCard'
+import { AdvancedDateFilters, type DateFilterValue, getEffectiveDateRange } from '@/components/AdvancedDateFilters'
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics'
 import type { ChartConfig } from '@/lib/types/dashboard-metrics'
+import { cn } from '@/lib/utils'
 
 interface DashboardMetricsViewProps {
   clientId: string
@@ -76,13 +78,47 @@ const DEFAULT_CHARTS: ChartConfig[] = [
  * - Persistência de configuração (localStorage)
  */
 export function DashboardMetricsView({ clientId }: DashboardMetricsViewProps) {
-  const [days, setDays] = useState(30)
+  // Estado para filtros de data avançados
+  const [dateFilter, setDateFilter] = useState<DateFilterValue>({
+    mode: 'preset',
+    dateRange: {
+      start: (() => {
+        const d = new Date()
+        d.setDate(d.getDate() - 30)
+        d.setHours(0, 0, 0, 0)
+        return d
+      })(),
+      end: (() => {
+        const d = new Date()
+        d.setHours(23, 59, 59, 999)
+        return d
+      })(),
+      preset: 'last30Days',
+    },
+  })
+
   const [charts, setCharts] = useState<ChartConfig[]>([])
   const [configModalOpen, setConfigModalOpen] = useState(false)
   const [editingChart, setEditingChart] = useState<ChartConfig | undefined>()
   const [layout, setLayout] = useState<'grid' | 'list'>('grid')
 
-  const { metrics, loading, error, refetch, getMetricData } = useDashboardMetrics({ days })
+  // Obter range efetivo de datas
+  const effectiveRange = getEffectiveDateRange(dateFilter)
+
+  // Preparar parâmetros para o hook baseado no modo do filtro
+  const hookParams = (() => {
+    if (dateFilter.mode === 'monthYear' && dateFilter.month && dateFilter.year) {
+      return { month: dateFilter.month, year: dateFilter.year }
+    } else {
+      // Para preset e custom, usar startDate/endDate
+      return { 
+        startDate: effectiveRange.start, 
+        endDate: effectiveRange.end 
+      }
+    }
+  })()
+
+  const { metrics, loading, error, refetch, getMetricData } = useDashboardMetrics(hookParams)
 
   // Load saved configuration from localStorage
   useEffect(() => {
@@ -182,7 +218,7 @@ export function DashboardMetricsView({ clientId }: DashboardMetricsViewProps) {
   return (
     <div className="space-y-6">
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {loading ? (
           <>
             <MetricCardSkeleton />
@@ -237,59 +273,70 @@ export function DashboardMetricsView({ clientId }: DashboardMetricsViewProps) {
       </div>
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Métricas do Dashboard</h2>
-          <p className="text-sm text-muted-foreground">
+      <div className="mb-6">
+        <div className="mb-4">
+          <h2 className="text-2xl font-bold tracking-tight text-white">Métricas do Dashboard</h2>
+          <p className="text-sm text-uzz-silver mt-1">
             Customize seus gráficos e visualize métricas em tempo real
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* Controls Bar */}
+        <div className="flex flex-wrap items-center gap-3">
           {/* Layout Toggle */}
-          <div className="flex items-center gap-2 border rounded-md p-1">
+          <div className="flex items-center gap-1 border border-white/10 rounded-md p-1 bg-white/5">
             <Button
-              variant={layout === 'grid' ? 'secondary' : 'ghost'}
+              variant={layout === 'grid' ? 'default' : 'ghost'}
               size="icon"
               onClick={() => setLayout('grid')}
-              className="h-8 w-8"
+              className={cn(
+                "h-8 w-8",
+                layout === 'grid' 
+                  ? "bg-gradient-to-r from-uzz-mint to-uzz-blue text-white" 
+                  : "text-uzz-silver hover:text-white hover:bg-white/10"
+              )}
             >
               <LayoutGrid className="h-4 w-4" />
             </Button>
             <Button
-              variant={layout === 'list' ? 'secondary' : 'ghost'}
+              variant={layout === 'list' ? 'default' : 'ghost'}
               size="icon"
               onClick={() => setLayout('list')}
-              className="h-8 w-8"
+              className={cn(
+                "h-8 w-8",
+                layout === 'list' 
+                  ? "bg-gradient-to-r from-uzz-mint to-uzz-blue text-white" 
+                  : "text-uzz-silver hover:text-white hover:bg-white/10"
+              )}
             >
               <List className="h-4 w-4" />
             </Button>
           </div>
 
-          {/* Days Selector */}
-          <Select value={days.toString()} onValueChange={(value) => setDays(parseInt(value))}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7">Últimos 7 dias</SelectItem>
-              <SelectItem value="30">Últimos 30 dias</SelectItem>
-              <SelectItem value="60">Últimos 60 dias</SelectItem>
-              <SelectItem value="90">Últimos 90 dias</SelectItem>
-              <SelectItem value="180">Últimos 6 meses</SelectItem>
-              <SelectItem value="365">Último ano</SelectItem>
-              <SelectItem value="999">Todos os dados</SelectItem>
-            </SelectContent>
-          </Select>
+          {/* Advanced Date Filters */}
+          <AdvancedDateFilters
+            value={dateFilter}
+            onChange={setDateFilter}
+          />
 
           {/* Add Chart Button */}
-          <Button onClick={handleAddChart} size="sm" className="gap-2">
+          <Button 
+            onClick={handleAddChart} 
+            size="sm" 
+            className="gap-2 bg-gradient-to-r from-uzz-mint to-uzz-blue text-white border-transparent hover:shadow-lg hover:shadow-uzz-mint/30"
+          >
             <Plus className="h-4 w-4" />
             Adicionar Gráfico
           </Button>
 
           {/* Reset Button */}
-          <Button onClick={handleResetToDefault} variant="outline" size="sm">
+          <Button 
+            onClick={handleResetToDefault} 
+            variant="outline" 
+            size="sm"
+            className="border-white/10 text-uzz-silver hover:bg-white/10 hover:text-white"
+            disabled={charts.length === 0}
+          >
             Restaurar Padrão
           </Button>
         </div>

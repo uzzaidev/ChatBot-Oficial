@@ -6,6 +6,10 @@ import type { DashboardMetricsData, ChartConfig, MetricDataPoint } from '@/lib/t
 
 interface UseDashboardMetricsOptions {
   days?: number
+  startDate?: Date
+  endDate?: Date
+  month?: number // 1-12
+  year?: number
   refreshInterval?: number
 }
 
@@ -29,7 +33,11 @@ interface UseDashboardMetricsReturn {
  * - Loading e error states
  */
 export function useDashboardMetrics({
-  days = 30,
+  days,
+  startDate,
+  endDate,
+  month,
+  year,
   refreshInterval = 0,
 }: UseDashboardMetricsOptions = {}): UseDashboardMetricsReturn {
   const [metrics, setMetrics] = useState<DashboardMetricsData | null>(null)
@@ -48,7 +56,23 @@ export function useDashboardMetrics({
         throw new Error('Not authenticated')
       }
 
-      const response = await fetch(`/api/dashboard/metrics?days=${days}`, {
+      // Construir query params baseado no tipo de filtro
+      const params = new URLSearchParams()
+      
+      if (startDate && endDate) {
+        // Range customizado
+        params.set('startDate', startDate.toISOString())
+        params.set('endDate', endDate.toISOString())
+      } else if (month && year) {
+        // Mês/ano específico
+        params.set('month', month.toString())
+        params.set('year', year.toString())
+      } else {
+        // Fallback para days (legado)
+        params.set('days', (days || 30).toString())
+      }
+
+      const response = await fetch(`/api/dashboard/metrics?${params.toString()}`, {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
@@ -67,7 +91,7 @@ export function useDashboardMetrics({
     } finally {
       setLoading(false)
     }
-  }, [days])
+  }, [days, startDate, endDate, month, year])
 
   useEffect(() => {
     fetchMetrics()

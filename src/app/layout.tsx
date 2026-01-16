@@ -69,7 +69,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="UzzApp" />
         {/* If you prefer an ICO file, place it at /public/favicon.ico and the browser will pick it up */}
       </head>
-      <body className="font-inter">
+      <body className="font-inter dark">
         <DeepLinkingProvider>
           <PushNotificationsProvider>
             <NotificationManager enabled={true} />

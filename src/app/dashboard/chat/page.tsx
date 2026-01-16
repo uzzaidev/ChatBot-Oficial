@@ -57,16 +57,16 @@ function ChatPageContent() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-silver-50">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mint-500"></div>
+            <div className="flex items-center justify-center min-h-screen bg-[#0f1419]">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-uzz-mint"></div>
             </div>
         )
     }
 
     if (!clientId || !phone) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-silver-50">
-                <p className="text-erie-black-500">Conversa não encontrada</p>
+            <div className="flex items-center justify-center min-h-screen bg-[#0f1419]">
+                <p className="text-uzz-silver">Conversa não encontrada</p>
             </div>
         )
     }
@@ -77,8 +77,8 @@ function ChatPageContent() {
 export default function ChatPage() {
     return (
         <Suspense fallback={
-            <div className="flex items-center justify-center min-h-screen bg-silver-50">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mint-500"></div>
+            <div className="flex items-center justify-center min-h-screen bg-[#0f1419]">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-uzz-mint"></div>
             </div>
         }>
             <ChatPageContent />

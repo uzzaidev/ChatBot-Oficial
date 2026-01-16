@@ -37,14 +37,13 @@ export function MetricCard({
   if (loading) {
     return (
       <div className={cn(
-        "relative bg-gradient-to-br from-white to-gray-50/50 p-6 rounded-2xl border-2 border-gray-200 overflow-hidden",
+        "metric-card animate-pulse",
         className
       )}>
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-uzz-mint to-uzz-blue" />
-        <div className="space-y-3 animate-pulse">
-          <div className="h-4 bg-gray-200 rounded w-1/2" />
-          <div className="h-10 bg-gray-200 rounded w-3/4" />
-          <div className="h-3 bg-gray-200 rounded w-1/3" />
+        <div className="space-y-3">
+          <div className="h-3 bg-white/10 rounded w-1/2" />
+          <div className="h-8 bg-white/10 rounded w-3/4" />
+          <div className="h-3 bg-white/10 rounded w-1/3" />
         </div>
       </div>
     )
@@ -68,58 +67,46 @@ export function MetricCard({
 
     switch (trend.direction) {
       case 'up':
-        return 'text-green-600'
+        return 'text-status-success' // #10B981
       case 'down':
-        return 'text-red-600'
+        return 'text-status-danger' // #EF4444
       case 'neutral':
-        return 'text-gray-500'
+        return 'text-uzz-silver'
     }
   }
 
   return (
     <div
       className={cn(
-        "group relative bg-gradient-to-br from-white to-gray-50/50",
-        "p-6 rounded-2xl border-2 border-gray-200",
-        "shadow-md hover:shadow-xl hover:shadow-uzz-mint/20",
-        "transition-all duration-300 hover:-translate-y-1",
-        "overflow-hidden",
+        "metric-card group",
         className
       )}
     >
-      {/* Barra superior gradiente */}
-      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-uzz-mint to-uzz-blue" />
-
       {/* Icon (opcional) */}
       {Icon && (
-        <div className="absolute top-4 right-4 opacity-10 group-hover:opacity-20 transition-opacity">
-          <Icon className="h-12 w-12 text-uzz-mint" />
+        <div className="absolute top-6 right-6 opacity-20 group-hover:opacity-30 transition-opacity">
+          <Icon className="h-6 w-6 text-uzz-mint" />
         </div>
       )}
 
       {/* Conteúdo */}
-      <div className="relative space-y-2">
-        {/* Título */}
-        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
-          {title}
-        </h3>
-
-        {/* Valor com gradiente */}
-        <div className="flex items-baseline gap-2">
-          <p
-            className={cn(
-              "text-4xl font-bold font-poppins",
-              "bg-gradient-to-r from-uzz-mint to-uzz-blue bg-clip-text text-transparent"
-            )}
-          >
-            {value}
-          </p>
+      <div className="relative space-y-3">
+        {/* Header com título e ícone */}
+        <div className="flex items-start justify-between">
+          <h3 className="text-xs font-bold text-uzz-silver uppercase tracking-wider">
+            {title}
+          </h3>
         </div>
+
+        {/* Valor */}
+        <p className="text-3xl font-bold font-poppins text-white">
+          {value}
+        </p>
 
         {/* Trend */}
         {trend && (
           <div className={cn(
-            "flex items-center gap-1.5 text-xs font-semibold",
+            "flex items-center gap-1.5 text-sm font-medium",
             getTrendColor()
           )}>
             {getTrendIcon()}
@@ -140,14 +127,13 @@ export function MetricCard({
 export function MetricCardSkeleton({ className }: { className?: string }) {
   return (
     <div className={cn(
-      "relative bg-gradient-to-br from-white to-gray-50/50 p-6 rounded-2xl border-2 border-gray-200 overflow-hidden",
+      "metric-card animate-pulse",
       className
     )}>
-      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-uzz-mint to-uzz-blue" />
-      <div className="space-y-3 animate-pulse">
-        <div className="h-4 bg-gray-200 rounded w-1/2" />
-        <div className="h-10 bg-gray-200 rounded w-3/4" />
-        <div className="h-3 bg-gray-200 rounded w-1/3" />
+      <div className="space-y-3">
+        <div className="h-3 bg-white/10 rounded w-1/2" />
+        <div className="h-8 bg-white/10 rounded w-3/4" />
+        <div className="h-3 bg-white/10 rounded w-1/3" />
       </div>
     </div>
   )

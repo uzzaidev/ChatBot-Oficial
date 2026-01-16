@@ -35,20 +35,20 @@ const SearchSection = memo(function SearchSection({
   resultCount,
 }: SearchSectionProps) {
   return (
-    <div className="p-3 border-b border-silver-200 bg-white">
+    <div className="p-3 border-b border-white/10 bg-[#1a1f26]">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-erie-black-400" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-uzz-silver" />
         <Input
           type="text"
           placeholder="Pesquisar contatos ou números..."
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-9 pr-9 h-10 bg-silver-50 border-silver-200 focus:bg-white"
+          className="pl-9 pr-9 h-10 bg-[#0f1419] border-white/10 focus:bg-[#1a1f26] text-white placeholder:text-uzz-silver/60"
         />
         {searchTerm && (
           <button
             onClick={onClearSearch}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-erie-black-400 hover:text-erie-black-600"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-uzz-silver hover:text-white"
           >
             <X className="h-4 w-4" />
           </button>
@@ -56,12 +56,12 @@ const SearchSection = memo(function SearchSection({
       </div>
       {/* Indicador de pesquisa ativa */}
       {searchTerm.length >= 2 && (
-        <p className="text-xs text-erie-black-500 mt-2">
+        <p className="text-xs text-uzz-silver mt-2">
           {resultCount} resultado{resultCount !== 1 ? 's' : ''} encontrado{resultCount !== 1 ? 's' : ''}
         </p>
       )}
       {searchTerm.length === 1 && (
-        <p className="text-xs text-erie-black-400 mt-2">
+        <p className="text-xs text-uzz-silver/60 mt-2">
           Digite mais 1 caractere para pesquisar...
         </p>
       )}
@@ -180,7 +180,7 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
     const searchLower = searchTerm.toLowerCase().trim()
     // Limpar o termo de pesquisa uma vez fora do loop de filter
     const phoneSearchTerm = searchTerm.replace(/\D/g, '')
-    
+
     // Filtrar por nome ou telefone
     return conversations.filter((conversation) => {
       const nameMatch = conversation.name?.toLowerCase().includes(searchLower)
@@ -234,12 +234,12 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
 
   // Filtros por Status (memoizado para evitar re-renders desnecessários)
   const statusFilters = useMemo(() => (
-    <div className="border-b border-silver-200 bg-white">
+    <div className="border-b border-white/10 bg-[#1a1f26]">
       <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'all' | 'bot' | 'humano' | 'transferido' | 'fluxo_inicial')}>
         <TabsList className="w-full justify-start rounded-none h-auto p-0 bg-transparent flex-wrap">
           <TabsTrigger
             value="all"
-            className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-mint-600 rounded-none text-xs sm:text-sm px-2 sm:px-3"
+            className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-uzz-mint rounded-none text-xs sm:text-sm px-2 sm:px-3 text-uzz-silver data-[state=active]:text-white"
           >
             <List className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             <span className="hidden sm:inline">Todas</span>
@@ -247,7 +247,7 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
           </TabsTrigger>
           <TabsTrigger
             value="bot"
-            className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 rounded-none text-xs sm:text-sm px-2 sm:px-3"
+            className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-blue-400 rounded-none text-xs sm:text-sm px-2 sm:px-3 text-uzz-silver data-[state=active]:text-white"
           >
             <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             <span className="hidden sm:inline">Bot</span>
@@ -255,7 +255,7 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
           </TabsTrigger>
           <TabsTrigger
             value="humano"
-            className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-green-600 rounded-none text-xs sm:text-sm px-2 sm:px-3"
+            className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-green-400 rounded-none text-xs sm:text-sm px-2 sm:px-3 text-uzz-silver data-[state=active]:text-white"
           >
             <User className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             <span className="hidden sm:inline">Humano</span>
@@ -263,7 +263,7 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
           </TabsTrigger>
           <TabsTrigger
             value="transferido"
-            className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-orange-600 rounded-none text-xs sm:text-sm px-2 sm:px-3"
+            className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-orange-400 rounded-none text-xs sm:text-sm px-2 sm:px-3 text-uzz-silver data-[state=active]:text-white"
           >
             <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             <span className="hidden sm:inline">Transferido</span>
@@ -290,7 +290,7 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
         {statusFilters}
 
         {/* Lista de Conversas */}
-        <div 
+        <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
           className="flex-1 overflow-y-auto"
@@ -321,7 +321,7 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
             {statusFilters}
 
             {/* Lista de Conversas */}
-            <div 
+            <div
               ref={scrollContainerRef}
               onScroll={handleScroll}
               className="flex-1 overflow-y-auto"
@@ -343,13 +343,13 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
         {conversation ? (
           <>
             {/* Header do Chat */}
-            <div className="bg-silver-100 p-3 border-b border-silver-200">
+            <div className="bg-[#1a1f26] p-3 border-b border-white/10">
               <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 {/* Botão Menu (Mobile) */}
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="lg:hidden flex-shrink-0 relative"
+                  className="lg:hidden flex-shrink-0 relative text-white hover:bg-white/10"
                   onClick={() => setSidebarOpen(true)}
                 >
                   <Menu className="h-5 w-5" />
@@ -361,13 +361,13 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
                 </Button>
 
                 <Avatar className="h-10 w-10 flex-shrink-0">
-                  <AvatarFallback className="bg-mint-500 text-white">
+                  <AvatarFallback className="bg-uzz-mint text-white">
                     {getInitials(conversation.name || '')}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-erie-black-900 truncate">{conversation.name}</h3>
-                  <p className="text-xs text-erie-black-600 truncate">{conversation.phone}</p>
+                  <h3 className="font-semibold text-white truncate">{conversation.name}</h3>
+                  <p className="text-xs text-uzz-silver truncate">{conversation.phone}</p>
                 </div>
 
                 {/* Status Toggle */}
@@ -381,7 +381,7 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
             </div>
 
             {/* Área de Mensagens com Drag & Drop */}
-            <div className="flex-1 overflow-hidden bg-silver-50 relative">
+            <div className="flex-1 overflow-hidden bg-[#0f1419] relative">
               <DragDropZone onFileSelect={handleAddAttachment}>
                 <ConversationDetail
                   phone={phone}
@@ -394,7 +394,7 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
             </div>
 
             {/* Footer - Input de Mensagem */}
-            <div className="bg-silver-100 p-3 border-t border-silver-200">
+            <div className="bg-[#1a1f26] p-3 border-t border-white/10">
               <SendMessageForm
                 phone={phone}
                 clientId={clientId}
@@ -408,13 +408,15 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center bg-silver-50">
+          <div className="flex-1 flex items-center justify-center bg-[#0f1419] bg-pattern-dots">
             <div className="text-center">
-              <MessageCircle className="h-20 w-20 text-silver-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-erie-black-700 mb-2">
+              <div className="rounded-full bg-gradient-to-br from-uzz-mint/20 to-uzz-blue/20 p-6 mb-6 inline-block">
+                <MessageCircle className="h-20 w-20 text-uzz-mint" />
+              </div>
+              <h3 className="text-xl font-semibold font-poppins text-white mb-2">
                 Nenhuma conversa selecionada
               </h3>
-              <p className="text-erie-black-500">
+              <p className="text-uzz-silver">
                 Selecione uma conversa na lateral para começar
               </p>
             </div>

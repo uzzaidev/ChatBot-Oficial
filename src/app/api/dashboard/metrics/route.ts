@@ -21,7 +21,42 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = createServerClient()
     const searchParams = request.nextUrl.searchParams
-    const days = parseInt(searchParams.get('days') || '30')
+    
+    // Suporte a múltiplos formatos de filtro de data
+    // 1. days (legado) - número de dias
+    // 2. startDate & endDate - datas específicas (ISO string)
+    // 3. month & year - mês/ano específico
+    
+    let startDate: Date
+    let endDate: Date = new Date() // Por padrão, fim é hoje
+    
+    const daysParam = searchParams.get('days')
+    const startDateParam = searchParams.get('startDate')
+    const endDateParam = searchParams.get('endDate')
+    const monthParam = searchParams.get('month')
+    const yearParam = searchParams.get('year')
+
+    // Prioridade: startDate/endDate > month/year > days
+    if (startDateParam && endDateParam) {
+      // Range customizado
+      startDate = new Date(startDateParam)
+      endDate = new Date(endDateParam)
+      // Ajustar para fim do dia
+      endDate.setHours(23, 59, 59, 999)
+    } else if (monthParam && yearParam) {
+      // Mês/ano específico
+      const month = parseInt(monthParam)
+      const year = parseInt(yearParam)
+      startDate = new Date(year, month - 1, 1) // Primeiro dia do mês
+      endDate = new Date(year, month, 0, 23, 59, 59, 999) // Último dia do mês
+    } else {
+      // Fallback para days (legado)
+      const days = parseInt(daysParam || '30')
+      startDate = new Date()
+      startDate.setDate(startDate.getDate() - days)
+      startDate.setHours(0, 0, 0, 0) // Início do dia
+      endDate.setHours(23, 59, 59, 999) // Fim do dia
+    }
 
     // Get user and client_id
     const { data: { user } } = await supabase.auth.getUser()
@@ -40,12 +75,25 @@ export async function GET(request: NextRequest) {
     }
 
     const clientId = profile.client_id
-    const startDate = new Date()
-    startDate.setDate(startDate.getDate() - days)
 
-    // TEMPORARIAMENTE: Buscar TODOS os dados sem filtro de data
-    // para mostrar que os dados existem
-    const useDateFilter = days < 365 // Só aplicar filtro se for menos de 1 ano
+    // Validar range de datas (máximo 2 anos)
+    const maxRangeDays = 730
+    const rangeDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+    
+    if (rangeDays > maxRangeDays) {
+      return NextResponse.json({ 
+        error: `Range de datas excede o limite máximo de ${maxRangeDays} dias` 
+      }, { status: 400 })
+    }
+
+    if (startDate > endDate) {
+      return NextResponse.json({ 
+        error: 'Data de início deve ser anterior à data de fim' 
+      }, { status: 400 })
+    }
+
+    // Aplicar filtro de data em todas as queries
+    const useDateFilter = true
 
     // 1. Conversas por dia (usando clientes_whatsapp)
     // Cada cliente representa uma conversa no sistema
@@ -55,7 +103,9 @@ export async function GET(request: NextRequest) {
       .eq('client_id', clientId)
 
     if (useDateFilter) {
-      conversationsQuery = conversationsQuery.gte('created_at', startDate.toISOString())
+      conversationsQuery = conversationsQuery
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString())
     }
 
     const { data: conversationsData, error: convError } = await conversationsQuery
@@ -68,7 +118,9 @@ export async function GET(request: NextRequest) {
       .eq('client_id', clientId)
 
     if (useDateFilter) {
-      clientsQuery = clientsQuery.gte('created_at', startDate.toISOString())
+      clientsQuery = clientsQuery
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString())
     }
 
     const { data: clientsData, error: clientsError } = await clientsQuery
@@ -82,7 +134,9 @@ export async function GET(request: NextRequest) {
       .eq('client_id', clientId)
 
     if (useDateFilter) {
-      messagesQuery = messagesQuery.gte('created_at', startDate.toISOString())
+      messagesQuery = messagesQuery
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString())
     }
 
     const { data: messagesData, error: msgError } = await messagesQuery
@@ -99,7 +153,9 @@ export async function GET(request: NextRequest) {
       .eq('client_id', clientId)
 
     if (useDateFilter) {
-      usageQuery = usageQuery.gte('created_at', startDate.toISOString())
+      usageQuery = usageQuery
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString())
     }
 
     const { data: usageData, error: usageError } = await usageQuery
