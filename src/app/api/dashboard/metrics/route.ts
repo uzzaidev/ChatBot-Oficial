@@ -392,14 +392,17 @@ function processCacheHitRateData(data: any[]) {
     return acc
   }, {} as Record<string, { hits: number; misses: number; total: number; savingsUSD: number }>)
 
-  return Object.entries(grouped).map(([date, values]) => ({
-    date,
-    hitRate: values.total > 0 ? (values.hits / values.total) * 100 : 0,
-    hits: values.hits,
-    misses: values.misses,
-    total: values.total,
-    savingsUSD: Number(values.savingsUSD.toFixed(4)),
-  }))
+  return Object.entries(grouped).map(([date, values]) => {
+    const v = values as { hits: number; misses: number; total: number; savingsUSD: number }
+    return {
+      date,
+      hitRate: v.total > 0 ? (v.hits / v.total) * 100 : 0,
+      hits: v.hits,
+      misses: v.misses,
+      total: v.total,
+      savingsUSD: Number(v.savingsUSD.toFixed(4)),
+    }
+  })
 }
 
 function processErrorRateData(data: any[]) {
@@ -417,13 +420,16 @@ function processErrorRateData(data: any[]) {
     return acc
   }, {} as Record<string, { errors: number; total: number; byType: Record<string, number> }>)
 
-  return Object.entries(grouped).map(([date, values]) => ({
-    date,
-    errorRate: values.total > 0 ? (values.errors / values.total) * 100 : 0,
-    errors: values.errors,
-    total: values.total,
-    byType: values.byType,
-  }))
+  return Object.entries(grouped).map(([date, values]) => {
+    const v = values as { errors: number; total: number; byType: Record<string, number> }
+    return {
+      date,
+      errorRate: v.total > 0 ? (v.errors / v.total) * 100 : 0,
+      errors: v.errors,
+      total: v.total,
+      byType: v.byType,
+    }
+  })
 }
 
 function processCostBreakdownData(data: any[]) {
@@ -457,13 +463,21 @@ function processCostBreakdownData(data: any[]) {
     total: number
   }>)
 
-  return Object.entries(grouped).map(([date, values]) => ({
-    date,
-    byProvider: values.byProvider,
-    byModel: values.byModel,
-    byApiType: values.byApiType,
-    total: Number(values.total.toFixed(4)),
-  }))
+  return Object.entries(grouped).map(([date, values]) => {
+    const v = values as {
+      byProvider: Record<string, number>
+      byModel: Record<string, number>
+      byApiType: Record<string, number>
+      total: number
+    }
+    return {
+      date,
+      byProvider: v.byProvider,
+      byModel: v.byModel,
+      byApiType: v.byApiType,
+      total: Number(v.total.toFixed(4)),
+    }
+  })
 }
 
 function processCostPerConversationData(gatewayData: any[], conversationsData: any[]) {
