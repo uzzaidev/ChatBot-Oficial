@@ -30,11 +30,24 @@ import type { Database } from './types'
  * const { data: { user } } = await supabase.auth.getUser()
  */
 export const createServerClient = () => {
+  // Verificar variáveis de ambiente antes de criar o cliente
+  // Isso evita erros confusos durante o build quando .env.local não existe
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(
+      'Variáveis de ambiente do Supabase não configuradas. ' +
+      'Certifique-se de ter NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY ' +
+      'no arquivo .env.local'
+    )
+  }
+
   const cookieStore = cookies()
 
   return createSupabaseServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         get(name: string) {
@@ -73,9 +86,21 @@ export const createServerClient = () => {
  * const { data } = await supabase.from('usage_logs').select('*') // Bypass RLS
  */
 export const createServiceClient = () => {
+  // Verificar variáveis de ambiente antes de criar o cliente
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error(
+      'Variáveis de ambiente do Supabase não configuradas. ' +
+      'Certifique-se de ter NEXT_PUBLIC_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY ' +
+      'no arquivo .env.local'
+    )
+  }
+
   return createClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    supabaseUrl,
+    serviceRoleKey
   )
 }
 
@@ -95,14 +120,26 @@ export const createServiceClient = () => {
  * }
  */
 export const createRouteHandlerClient = (request?: Request) => {
+  // Verificar variáveis de ambiente antes de criar o cliente
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(
+      'Variáveis de ambiente do Supabase não configuradas. ' +
+      'Certifique-se de ter NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY ' +
+      'no arquivo .env.local'
+    )
+  }
+
   // Check for Bearer token first (mobile)
   const bearerToken = getBearerToken(request)
 
   if (bearerToken) {
     // Mobile: use standard client with Bearer token
     return createClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      supabaseUrl,
+      supabaseAnonKey,
       {
         global: {
           headers: {
@@ -117,8 +154,8 @@ export const createRouteHandlerClient = (request?: Request) => {
   const cookieStore = cookies()
 
   return createSupabaseServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         get(name: string) {
@@ -179,6 +216,18 @@ function getBearerToken(request?: Request): string | null {
 }
 
 export const getClientIdFromSession = async (request?: Request): Promise<string | null> => {
+  // Verificar variáveis de ambiente antes de criar o cliente
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(
+      'Variáveis de ambiente do Supabase não configuradas. ' +
+      'Certifique-se de ter NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY ' +
+      'no arquivo .env.local'
+    )
+  }
+
   // Tentar usar Bearer token primeiro (mobile)
   const bearerToken = getBearerToken(request)
 
@@ -186,8 +235,8 @@ export const getClientIdFromSession = async (request?: Request): Promise<string 
   if (bearerToken) {
     // Mobile: criar client padrão com Bearer token
     supabase = createClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      supabaseUrl,
+      supabaseAnonKey,
       {
         global: {
           headers: {
