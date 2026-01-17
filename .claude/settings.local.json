@@ -55,7 +55,8 @@
       "Bash(grep:*)",
       "Bash(supabase db push:*)",
       "Bash(git add:*)",
-      "Bash(pnpm run build:*)"
+      "Bash(pnpm run build:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []
