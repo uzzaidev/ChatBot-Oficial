@@ -55,8 +55,8 @@ export function NotificationBell({ clientId }: NotificationBellProps) {
   
   // Mock data para desenvolvimento
   const notifications: Notification[] = []
-  const unreadCount = 0
-  const isLoading = false
+  const unreadCount: number = 0
+  const isLoading: boolean = false
   
   const markAsRead = async (notificationId: string) => {
     // TODO: Implementar quando hook estiver disponível

@@ -79,7 +79,45 @@ else
 fi
 ```
 
+## ⚠️ Requisitos para Build Local
+
+### Variáveis de Ambiente Necessárias
+
+Para fazer build local, você **DEVE** ter um arquivo `.env.local` com pelo menos as variáveis do Supabase:
+
+```bash
+# .env.local
+NEXT_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-chave-anon
+SUPABASE_SERVICE_ROLE_KEY=sua-chave-service-role
+```
+
+**⚠️ IMPORTANTE:** Sem essas variáveis, o build vai falhar com erro:
+```
+Error: supabaseUrl is required.
+```
+
+Isso acontece porque o Next.js tenta coletar dados de rotas dinâmicas durante o build, e o código Supabase precisa dessas variáveis.
+
+### Como obter as variáveis?
+
+1. **Do Supabase Dashboard:**
+   - Vá para seu projeto no [Supabase Dashboard](https://app.supabase.com)
+   - Settings → API
+   - Copie `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
+   - Copie `anon public` key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - Copie `service_role` key → `SUPABASE_SERVICE_ROLE_KEY`
+
+2. **Ou use Doppler (se configurado):**
+   ```bash
+   doppler secrets download --no-file --format env > .env.local
+   ```
+
 ## 🐛 Debug de Erros Comuns
+
+### Erro: "supabaseUrl is required" ou "Variáveis de ambiente do Supabase não configuradas"
+**Causa:** Arquivo `.env.local` não existe ou está incompleto
+**Solução:** Criar/atualizar `.env.local` com as variáveis do Supabase (veja seção acima)
 
 ### Erro: "Property 'X' does not exist on type 'unknown'"
 **Causa:** TypeScript não consegue inferir o tipo

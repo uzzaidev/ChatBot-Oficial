@@ -1,11 +1,36 @@
 import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+import type { Database } from './types'
 
 const MEDIA_BUCKET = 'media-uploads'
+
+/**
+ * Cria cliente Supabase para Storage (lazy initialization)
+ * 
+ * IMPORTANTE: Cria o cliente apenas quando necessário, não no top-level do módulo.
+ * Isso evita erros durante o build quando variáveis de ambiente não estão disponíveis.
+ */
+let supabaseClient: ReturnType<typeof createClient<Database>> | null = null
+
+const getSupabaseClient = () => {
+  // Verificar variáveis de ambiente antes de criar o cliente
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error(
+      'Variáveis de ambiente do Supabase não configuradas. ' +
+      'Certifique-se de ter NEXT_PUBLIC_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY ' +
+      'no arquivo .env.local'
+    )
+  }
+
+  // Criar cliente apenas uma vez (singleton)
+  if (!supabaseClient) {
+    supabaseClient = createClient<Database>(supabaseUrl, serviceRoleKey)
+  }
+
+  return supabaseClient
+}
 
 /**
  * Faz upload de arquivo para Supabase Storage
@@ -28,6 +53,9 @@ export const uploadFileToStorage = async (
 
     // Path: {clientId}/{timestamp}_{filename}
     const path = `${clientId}/${Date.now()}_${sanitizedFilename}`
+
+    // Obter cliente Supabase (cria apenas quando necessário)
+    const supabase = getSupabaseClient()
 
     const { data, error } = await supabase.storage
       .from(MEDIA_BUCKET)
@@ -70,6 +98,9 @@ export const deleteFileFromStorage = async (publicUrl: string): Promise<boolean>
 
     const path = urlParts[1]
 
+    // Obter cliente Supabase (cria apenas quando necessário)
+    const supabase = getSupabaseClient()
+
     const { error } = await supabase.storage
       .from(MEDIA_BUCKET)
       .remove([path])
@@ -91,6 +122,9 @@ export const deleteFileFromStorage = async (publicUrl: string): Promise<boolean>
  */
 export const ensureMediaBucketExists = async (): Promise<void> => {
   try {
+    // Obter cliente Supabase (cria apenas quando necessário)
+    const supabase = getSupabaseClient()
+
     const { data: buckets, error: listError } = await supabase.storage.listBuckets()
 
     if (listError) {
