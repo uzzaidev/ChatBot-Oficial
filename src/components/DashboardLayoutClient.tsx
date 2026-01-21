@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import { Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -23,6 +23,7 @@ interface DashboardLayoutClientProps {
  * - Sheet mobile (hamburger menu)
  * - Responsividade
  * - Oculta-se automaticamente em rotas de conversas
+ * - Header que esconde ao rolar para baixo e aparece ao rolar para cima
  */
 export function DashboardLayoutClient({ 
   userName, 
@@ -31,6 +32,9 @@ export function DashboardLayoutClient({
 }: DashboardLayoutClientProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true)
+  const [lastScrollY, setLastScrollY] = useState(0)
+  const mainContentRef = useRef<HTMLElement>(null)
   const pathname = usePathname()
 
   // Se estiver em qualquer rota de conversas, chat ou contatos, renderiza apenas children
@@ -38,6 +42,39 @@ export function DashboardLayoutClient({
   const isFullScreenRoute = pathname.startsWith('/dashboard/conversations') ||
                            pathname.startsWith('/dashboard/chat') ||
                            pathname.startsWith('/dashboard/contacts')
+
+  // Detecta scroll para esconder/mostrar header (apenas desktop)
+  useEffect(() => {
+    if (isFullScreenRoute) return
+
+    const handleScroll = () => {
+      // Detecta scroll tanto do window quanto do elemento de conteúdo interno
+      const scrollElement = mainContentRef.current?.querySelector('[class*="overflow"]') as HTMLElement
+      const currentScrollY = scrollElement ? scrollElement.scrollTop : window.scrollY
+      
+      // Se rolar para baixo mais de 70px (altura do header), esconde o header
+      if (currentScrollY > lastScrollY && currentScrollY > 70) {
+        setIsHeaderVisible(false)
+      } 
+      // Se rolar para cima, mostra o header
+      else if (currentScrollY < lastScrollY) {
+        setIsHeaderVisible(true)
+      }
+      
+      setLastScrollY(currentScrollY)
+    }
+
+    // Escuta scroll no window e no elemento de conteúdo (se existir)
+    const scrollElement = mainContentRef.current?.querySelector('[class*="overflow"]') as HTMLElement
+    
+    if (scrollElement) {
+      scrollElement.addEventListener('scroll', handleScroll, { passive: true })
+      return () => scrollElement.removeEventListener('scroll', handleScroll)
+    } else {
+      window.addEventListener('scroll', handleScroll, { passive: true })
+      return () => window.removeEventListener('scroll', handleScroll)
+    }
+  }, [lastScrollY, isFullScreenRoute])
 
   if (isFullScreenRoute) {
     return <>{children}</>
@@ -66,17 +103,20 @@ export function DashboardLayoutClient({
 
       {/* Main Content - Add left margin to account for fixed sidebar */}
       <main 
+        ref={mainContentRef}
         className={cn(
           "flex-1 flex flex-col min-w-0 transition-all duration-300 bg-[#0f1419]",
           "md:ml-[260px]",
           isCollapsed && "md:ml-20"
         )}
       >
-        {/* Desktop Header - DARK THEME */}
+        {/* Desktop Header - DARK THEME - Esconde ao rolar para baixo */}
         <header 
           className={cn(
-            "hidden md:flex sticky top-0 z-40 h-[70px] border-b border-white/5 px-8 items-center justify-between transition-all duration-300",
-            isCollapsed ? "md:ml-20" : "md:ml-[260px]"
+            "hidden md:flex h-[70px] border-b border-white/5 px-8 items-center justify-between transition-transform duration-300",
+            "bg-[#1a1f26]",
+            // Transforma header para esconder/mostrar baseado no scroll
+            isHeaderVisible ? "translate-y-0" : "-translate-y-full"
           )}
           style={{
             background: '#1a1f26',
