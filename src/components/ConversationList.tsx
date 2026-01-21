@@ -47,7 +47,7 @@ export const ConversationList = ({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <span className="text-erie-black-600">Carregando...</span>
+        <span className="text-white/50">Carregando...</span>
       </div>
     )
   }
@@ -76,40 +76,47 @@ export const ConversationList = ({
           <div
             key={conversation.id}
             className={cn(
-              "group relative p-4 cursor-pointer transition-all duration-200",
-              "border-l-4 border-b border-uzz-silver/20",
-              "hover:shadow-md hover:bg-gradient-to-r hover:from-gray-50 hover:to-white",
+              "group relative p-4 cursor-pointer transition-all duration-200 border-b border-white/5",
               isActive 
-                ? "bg-gradient-to-r from-uzz-mint/15 to-uzz-blue/15 border-l-uzz-mint shadow-sm" 
-                : "",
-              hasUnread && !isActive && "bg-uzz-blue/5 border-l-uzz-blue",
+                ? "bg-gradient-to-r from-[#1ABC9C]/10 to-transparent border-l-2 border-l-[#1ABC9C]" 
+                : "hover:bg-white/5",
+              hasUnread && !isActive && "bg-[#2E86AB]/5 border-l-[#2E86AB]",
               isVeryRecent && "animate-pulse"
             )}
             onClick={() => handleConversationClick(conversation.phone)}
           >
-            <div className="flex items-start gap-4">
+            <div className="flex items-start gap-3">
               {/* Avatar com Badge de Status */}
               <div className="relative flex-shrink-0">
-                <Avatar className="h-16 w-16 ring-2 ring-white shadow-md">
-                  <AvatarFallback className="bg-gradient-to-br from-uzz-mint to-uzz-blue text-white text-lg font-poppins font-bold">
-                    {getInitials(conversation.name || 'Sem nome')}
-                  </AvatarFallback>
-                </Avatar>
+                <div
+                  className="h-12 w-12 rounded-full flex items-center justify-center font-semibold text-white"
+                  style={{ background: 'linear-gradient(135deg, #2E86AB, #1ABC9C)' }}
+                >
+                  {getInitials(conversation.name || 'Sem nome')}
+                </div>
                 
                 {/* Badge de status no canto inferior direito do avatar */}
-                <div className="absolute -bottom-1 -right-1 z-10">
-                  <StatusBadge 
-                    status={conversation.status} 
-                    showIcon={true} 
-                    size="sm"
-                  />
-                </div>
+                {conversation.status === 'fluxo_inicial' && (
+                  <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-[#9b59b6] rounded-full border-2 border-[#252525] flex items-center justify-center">
+                    <Workflow className="h-2.5 w-2.5 text-white" />
+                  </div>
+                )}
+                {conversation.status === 'humano' && (
+                  <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-[#1ABC9C] rounded-full border-2 border-[#252525] flex items-center justify-center">
+                    <User className="h-2.5 w-2.5 text-white" />
+                  </div>
+                )}
+                {conversation.status === 'bot' && (
+                  <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-[#2E86AB] rounded-full border-2 border-[#252525] flex items-center justify-center">
+                    <Bot className="h-2.5 w-2.5 text-white" />
+                  </div>
+                )}
 
                 {/* Indicador de "novo" (últimas 5min) */}
                 {isVeryRecent && (
                   <div className="absolute -top-1 -right-1 z-20">
-                    <div className="w-3 h-3 bg-uzz-mint rounded-full border-2 border-white shadow-lg animate-ping" />
-                    <div className="absolute top-0 left-0 w-3 h-3 bg-uzz-mint rounded-full border-2 border-white" />
+                    <div className="w-3 h-3 bg-[#1ABC9C] rounded-full border-2 border-[#252525] shadow-lg animate-ping" />
+                    <div className="absolute top-0 left-0 w-3 h-3 bg-[#1ABC9C] rounded-full border-2 border-[#252525]" />
                   </div>
                 )}
               </div>
@@ -117,25 +124,22 @@ export const ConversationList = ({
               {/* Informações Principais */}
               <div className="flex-1 min-w-0">
                 {/* Nome e Timestamp */}
-                <div className="flex items-start justify-between mb-2">
+                <div className="flex items-start justify-between mb-1.5">
                   <div className="flex-1 min-w-0">
-                    <h3 className={cn(
-                      "font-poppins font-bold text-base truncate mb-0.5",
-                      hasUnread && !isActive ? "text-uzz-black" : "text-uzz-black"
-                    )}>
+                    <h3 className="font-semibold text-sm text-white truncate">
                       {conversation.name || formatPhone(conversation.phone)}
                     </h3>
-                    <p className="text-xs text-uzz-silver">
+                    <p className="text-xs text-white/40 mt-0.5">
                       {formatPhone(conversation.phone)}
                     </p>
                   </div>
                   
                   <div className="flex flex-col items-end gap-1.5 ml-2 flex-shrink-0">
-                    <span className="text-xs text-uzz-silver whitespace-nowrap">
+                    <span className="text-xs text-white/50 whitespace-nowrap">
                       {formatDateTime(conversation.last_update)}
                     </span>
                     {hasUnread && !isActive && (
-                      <div className="bg-gradient-to-r from-uzz-mint to-uzz-blue text-white text-[11px] rounded-full min-w-[22px] h-5 px-2 flex items-center justify-center font-bold shadow-lg shadow-uzz-mint/30">
+                      <div className="bg-gradient-to-r from-[#1ABC9C] to-[#2E86AB] text-white text-[11px] rounded-full min-w-[22px] h-5 px-2 flex items-center justify-center font-bold shadow-lg" style={{ boxShadow: '0 0 10px rgba(26, 188, 156, 0.3)' }}>
                         {conversation.unread_count > 9 ? '9+' : conversation.unread_count}
                       </div>
                     )}
@@ -143,12 +147,12 @@ export const ConversationList = ({
                 </div>
 
                 {/* Última Mensagem */}
-                <div className="mb-2">
+                <div className="mb-1.5">
                   <p className={cn(
-                    "text-sm line-clamp-2",
+                    "text-sm line-clamp-2 leading-relaxed",
                     hasUnread && !isActive 
-                      ? "font-semibold text-uzz-black" 
-                      : "text-gray-600"
+                      ? "font-semibold text-white" 
+                      : "text-white/60"
                   )}>
                     {conversation.last_message
                       ? truncateText(conversation.last_message, 60)
@@ -161,25 +165,25 @@ export const ConversationList = ({
                 <div className="flex items-center gap-2 flex-wrap">
                   {/* Tag de Status Principal */}
                   {conversation.status === 'humano' && (
-                    <span className="inline-flex items-center gap-1 text-[10px] px-2.5 py-1 bg-green-100 text-green-700 rounded-full font-bold border border-green-200">
+                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium border" style={{ borderColor: 'rgba(26, 188, 156, 0.3)', color: '#1ABC9C', background: 'rgba(26, 188, 156, 0.1)' }}>
                       <User className="h-3 w-3" />
                       Atendimento Humano
                     </span>
                   )}
                   {conversation.status === 'fluxo_inicial' && (
-                    <span className="inline-flex items-center gap-1 text-[10px] px-2.5 py-1 bg-purple-100 text-purple-700 rounded-full font-bold border border-purple-200">
+                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium border" style={{ borderColor: 'rgba(155, 89, 182, 0.3)', color: '#9b59b6', background: 'rgba(155, 89, 182, 0.1)' }}>
                       <Workflow className="h-3 w-3" />
                       Em Flow Interativo
                     </span>
                   )}
                   {conversation.status === 'bot' && (
-                    <span className="inline-flex items-center gap-1 text-[10px] px-2.5 py-1 bg-blue-100 text-blue-700 rounded-full font-bold border border-blue-200">
+                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium border" style={{ borderColor: 'rgba(46, 134, 171, 0.3)', color: '#2E86AB', background: 'rgba(46, 134, 171, 0.1)' }}>
                       <Bot className="h-3 w-3" />
                       Bot Respondendo
                     </span>
                   )}
                   {conversation.status === 'transferido' && (
-                    <span className="inline-flex items-center gap-1 text-[10px] px-2.5 py-1 bg-orange-100 text-orange-700 rounded-full font-bold border border-orange-200">
+                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium border" style={{ borderColor: 'rgba(251, 146, 60, 0.3)', color: '#fb923c', background: 'rgba(251, 146, 60, 0.1)' }}>
                       <ArrowRight className="h-3 w-3" />
                       Aguardando Humano
                     </span>
