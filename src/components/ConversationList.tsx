@@ -31,17 +31,18 @@ export const ConversationList = ({
   const router = useRouter()
 
   const handleConversationClick = (phone: string) => {
-    // Notify parent component if callback provided
-    if (onConversationOpen) {
-      onConversationOpen(phone)
-    }
-
     // Fechar sidebar mobile se callback fornecido
     if (onConversationClick) {
       onConversationClick()
     }
 
-    router.push(`/dashboard/chat?phone=${phone}&client_id=${clientId}`)
+    // Se callback onConversationOpen fornecido, usar ele (não redirecionar)
+    // Caso contrário, redirecionar para página de chat
+    if (onConversationOpen) {
+      onConversationOpen(phone)
+    } else {
+      router.push(`/dashboard/chat?phone=${phone}&client_id=${clientId}`)
+    }
   }
 
   if (loading) {

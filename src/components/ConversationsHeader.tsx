@@ -1,6 +1,6 @@
 'use client'
 
-import { MessageCircle, Bot, User, Workflow, ArrowRight, List, Table } from 'lucide-react'
+import { MessageCircle, Bot, User, Workflow, ArrowRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface ConversationsHeaderProps {
@@ -13,23 +13,19 @@ interface ConversationsHeaderProps {
   }
   statusFilter: 'all' | 'bot' | 'humano' | 'transferido' | 'fluxo_inicial'
   onStatusChange: (status: 'all' | 'bot' | 'humano' | 'transferido' | 'fluxo_inicial') => void
-  viewMode: 'list' | 'table'
-  onViewModeChange: (mode: 'list' | 'table') => void
 }
 
 export const ConversationsHeader = ({
   metrics,
   statusFilter,
   onStatusChange,
-  viewMode,
-  onViewModeChange,
 }: ConversationsHeaderProps) => {
   return (
     <div
       className="w-full border-b border-white/5 px-6 py-4"
       style={{ background: 'rgba(28, 28, 28, 0.98)' }}
     >
-      {/* Header Top - Título e Toggle */}
+      {/* Header Top - Título e Status */}
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="font-poppins font-bold text-2xl text-white mb-1">
@@ -40,40 +36,10 @@ export const ConversationsHeader = ({
           </p>
         </div>
 
-        {/* Toggle View Mode */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 bg-[#151515] rounded-lg p-1 border border-white/10">
-            <button
-              onClick={() => onViewModeChange('table')}
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold transition-all",
-                viewMode === 'table'
-                  ? "bg-[#1ABC9C] text-white shadow-lg shadow-[#1ABC9C]/30"
-                  : "text-white/50 hover:text-white hover:bg-white/5"
-              )}
-            >
-              <Table className="h-4 w-4" />
-              Tabela
-            </button>
-            <button
-              onClick={() => onViewModeChange('list')}
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold transition-all",
-                viewMode === 'list'
-                  ? "bg-[#1ABC9C] text-white shadow-lg shadow-[#1ABC9C]/30"
-                  : "text-white/50 hover:text-white hover:bg-white/5"
-              )}
-            >
-              <List className="h-4 w-4" />
-              Lista
-            </button>
-          </div>
-
-          {/* Sistema Online Indicator */}
-          <div className="flex items-center gap-2 px-4 py-2 bg-[#151515] rounded-lg border border-white/10">
-            <div className="w-2 h-2 bg-[#1ABC9C] rounded-full animate-pulse shadow-lg shadow-[#1ABC9C]/50" />
-            <span className="text-white/70 text-sm font-medium">Sistema Online</span>
-          </div>
+        {/* Sistema Online Indicator */}
+        <div className="flex items-center gap-2 px-4 py-2 bg-[#151515] rounded-lg border border-white/10">
+          <div className="w-2 h-2 bg-[#1ABC9C] rounded-full animate-pulse shadow-lg shadow-[#1ABC9C]/50" />
+          <span className="text-white/70 text-sm font-medium">Sistema Online</span>
         </div>
       </div>
 
