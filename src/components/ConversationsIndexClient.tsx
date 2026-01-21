@@ -256,28 +256,28 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
         {/* Toggle View Mode e Filtros */}
         <div className="px-4 py-3 border-b border-white/5">
           <div className="flex items-center justify-between mb-3">
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full">
               <button
                 onClick={() => setViewMode('table')}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+                  "flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-all",
                   viewMode === 'table'
-                    ? "bg-[#1ABC9C] text-white"
-                    : "bg-white/5 text-white/50 hover:text-white/70"
+                    ? "bg-[#1ABC9C] text-white shadow-lg shadow-[#1ABC9C]/30"
+                    : "bg-white/5 text-white/50 hover:text-white hover:bg-white/10"
                 )}
               >
-                Tabela
+                📊 Tabela
               </button>
               <button
                 onClick={() => setViewMode('list')}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+                  "flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-all",
                   viewMode === 'list'
-                    ? "bg-[#1ABC9C] text-white"
-                    : "bg-white/5 text-white/50 hover:text-white/70"
+                    ? "bg-[#1ABC9C] text-white shadow-lg shadow-[#1ABC9C]/30"
+                    : "bg-white/5 text-white/50 hover:text-white hover:bg-white/10"
                 )}
               >
-                Lista
+                📋 Lista
               </button>
             </div>
           </div>
