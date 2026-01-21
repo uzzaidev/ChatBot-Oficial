@@ -1,14 +1,12 @@
-import Link from 'next/link'
-import { designTokens } from '@/lib/design-tokens'
 import { Card } from '@/components/ui/card'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { designTokens } from '@/lib/design-tokens'
 import { cn } from '@/lib/utils'
+import Link from 'next/link'
 
 const plans = [
   {
     id: 'free',
     name: 'Free',
-    price: 'Gratuito',
     description: 'Ideal para validar o fluxo em times pequenos.',
     features: ['1 sessão ativa por mês', 'Histórico de conversas', 'Configuração guiada'],
     cta: 'Começar grátis',
@@ -16,7 +14,6 @@ const plans = [
   {
     id: 'pro',
     name: 'Pro',
-    price: 'R$ 29/mês',
     description: 'Recomendado para operações comerciais recorrentes.',
     features: [
       'Até 10 sessões mensais',
@@ -29,7 +26,6 @@ const plans = [
   {
     id: 'premium',
     name: 'Premium',
-    price: 'Sob consulta',
     description: 'Para squads com volume elevado ou múltiplas marcas.',
     features: [
       'Sessões ilimitadas',
@@ -42,59 +38,56 @@ const plans = [
 
 export function Plans() {
   return (
-    <section className="bg-erie-black-900 py-20">
+    <section className="bg-[#0f1419] py-20 md:py-28">
       <div className={cn(designTokens.container.lg, designTokens.spacing.stack, 'px-6')}>
-        <div className="space-y-4 text-center">
-          <h2 className={cn(designTokens.typography.h2, "text-white")}>Planos preparados para cada estágio</h2>
-          <p className={cn(designTokens.typography.body, "text-silver-300")}>
+        <div className="space-y-4 text-center max-w-3xl mx-auto mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+            Planos preparados para cada estágio
+          </h2>
+          <p className="text-lg text-white/70">
             Escolha o plano ideal para o seu time e evolua sem migrar de plataforma.
           </p>
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-3">
           {plans.map((plan) => (
             <Card
               key={plan.id}
               className={cn(
-                'relative flex h-full flex-col border bg-erie-black-800/80 p-6 transition-all hover:scale-105',
+                'relative flex h-full flex-col border bg-[#1a1f26]/50 backdrop-blur-sm p-8 transition-all hover:scale-[1.02]',
                 plan.highlighted 
-                  ? 'border-mint-400/60 shadow-glow' 
-                  : 'border-silver-600/30 hover:border-brand-blue-500/40 shadow-lg'
+                  ? 'border-[#1ABC9C]/60 shadow-lg shadow-[#1ABC9C]/20' 
+                  : 'border-white/10 hover:border-white/20 shadow-lg'
               )}
             >
               {plan.highlighted && (
-                <span className="absolute -top-4 left-1/2 -translate-x-1/2 rounded-full border border-gold-400/70 bg-gold-500/30 px-4 py-1 text-xs font-semibold uppercase tracking-widest text-gold-200 shadow-glow-gold">
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full border border-[#1ABC9C]/70 bg-gradient-to-r from-[#1ABC9C]/20 to-[#2E86AB]/20 px-4 py-1 text-xs font-semibold uppercase tracking-wider text-[#1ABC9C] backdrop-blur-sm">
                   Mais procurado
                 </span>
               )}
 
-              <div className="space-y-3 text-left">
-                <h3 className="text-xl font-semibold text-white">{plan.name}</h3>
-                <p className="text-3xl font-bold text-mint-400">{plan.price}</p>
-                <p className="text-sm text-silver-300">{plan.description}</p>
+              <div className="space-y-4 text-left">
+                <h3 className="text-2xl font-bold text-white">{plan.name}</h3>
+                <p className="text-sm text-white/60 leading-relaxed">{plan.description}</p>
               </div>
 
-              <ul className="mt-6 space-y-3 text-sm text-silver-300">
+              <ul className="mt-8 space-y-3 text-sm text-white/70">
                 {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2">
-                    <span className="mt-1 inline-flex h-2 w-2 rounded-full bg-mint-400" />
-                    {feature}
+                  <li key={feature} className="flex items-start gap-3">
+                    <span className="mt-1.5 inline-flex h-1.5 w-1.5 rounded-full bg-[#1ABC9C] flex-shrink-0" />
+                    <span>{feature}</span>
                   </li>
                 ))}
               </ul>
 
-              <div className="mt-8">
+              <div className="mt-8 pt-6 border-t border-white/10">
                 <Link
                   href={`/register?plan=${plan.id}`}
                   className={cn(
-                    buttonVariants({
-                      variant: plan.highlighted ? 'default' : 'outline',
-                      size: 'lg',
-                    }),
-                    'w-full rounded-full',
+                    'w-full rounded-lg font-semibold py-3 px-6 text-center transition-all block',
                     plan.highlighted 
-                      ? 'bg-mint-500 hover:bg-mint-600 shadow-glow text-white' 
-                      : 'bg-white border-silver-300 text-erie-black-900 hover:bg-silver-100'
+                      ? 'bg-gradient-to-r from-[#1ABC9C] to-[#16a085] hover:from-[#16a085] hover:to-[#1ABC9C] text-white shadow-lg shadow-[#1ABC9C]/30 hover:scale-105' 
+                      : 'bg-white/5 border border-white/20 text-white hover:bg-white/10 hover:border-white/30'
                   )}
                 >
                   {plan.cta}
