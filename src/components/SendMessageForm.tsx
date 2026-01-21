@@ -211,7 +211,7 @@ export const SendMessageForm = ({
         onRemove={onRemoveAttachment}
       />
 
-      <div className="flex items-end gap-2 bg-white rounded-lg p-2 w-full overflow-hidden">
+      <div className="flex items-end gap-2 bg-[#0f1419] border border-white/10 rounded-lg p-2 w-full overflow-hidden">
         {/* Botão de anexar mídia (+) - esconde quando gravando OU tem áudio gravado */}
         {!isRecording && !hasRecordedAudio && (
           <div className="flex-shrink-0">
@@ -231,7 +231,7 @@ export const SendMessageForm = ({
             onChange={(e) => setContent(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={sending}
-            className="flex-1 min-w-0 resize-none border-0 bg-white px-3 py-2 text-sm md:text-base focus:outline-none focus:ring-0 rounded-lg max-h-[120px] min-h-[40px]"
+            className="flex-1 min-w-0 resize-none border-0 bg-transparent px-3 py-2 text-sm md:text-base text-white placeholder:text-white/40 focus:outline-none focus:ring-0 rounded-lg max-h-[120px] min-h-[40px]"
             rows={1}
           />
         )}
