@@ -7,7 +7,7 @@ import { Plus, LayoutGrid, List, MessageSquare, Send, TrendingUp, DollarSign } f
 import { CustomizableChart } from '@/components/CustomizableChart'
 import { ChartConfigModal } from '@/components/ChartConfigModal'
 import { MetricCard, MetricCardSkeleton } from '@/components/MetricCard'
-import { AdvancedDateFilters, type DateFilterValue, getEffectiveDateRange } from '@/components/AdvancedDateFilters'
+import { DateRangeSelector, type DateRange, type DatePreset } from '@/components/DateRangeSelector'
 import { ExportDialog } from '@/components/ExportDialog'
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics'
 import type { ChartConfig, MetricDataPoint } from '@/lib/types/dashboard-metrics'
@@ -79,23 +79,20 @@ const DEFAULT_CHARTS: ChartConfig[] = [
  * - Persistência de configuração (localStorage)
  */
 export function DashboardMetricsView({ clientId }: DashboardMetricsViewProps) {
-  // Estado para filtros de data avançados
-  const [dateFilter, setDateFilter] = useState<DateFilterValue>({
-    mode: 'preset',
-    dateRange: {
-      start: (() => {
-        const d = new Date()
-        d.setDate(d.getDate() - 30)
-        d.setHours(0, 0, 0, 0)
-        return d
-      })(),
-      end: (() => {
-        const d = new Date()
-        d.setHours(23, 59, 59, 999)
-        return d
-      })(),
-      preset: 'last30Days',
-    },
+  // Estado para seleção de período de data (simplificado)
+  const [dateRange, setDateRange] = useState<DateRange>({
+    start: (() => {
+      const d = new Date()
+      d.setDate(d.getDate() - 30)
+      d.setHours(0, 0, 0, 0)
+      return d
+    })(),
+    end: (() => {
+      const d = new Date()
+      d.setHours(23, 59, 59, 999)
+      return d
+    })(),
+    preset: 'last30Days',
   })
 
   const [charts, setCharts] = useState<ChartConfig[]>([])
@@ -103,21 +100,11 @@ export function DashboardMetricsView({ clientId }: DashboardMetricsViewProps) {
   const [editingChart, setEditingChart] = useState<ChartConfig | undefined>()
   const [layout, setLayout] = useState<'grid' | 'list'>('grid')
 
-  // Obter range efetivo de datas
-  const effectiveRange = getEffectiveDateRange(dateFilter)
-
-  // Preparar parâmetros para o hook baseado no modo do filtro
-  const hookParams = (() => {
-    if (dateFilter.mode === 'monthYear' && dateFilter.month && dateFilter.year) {
-      return { month: dateFilter.month, year: dateFilter.year }
-    } else {
-      // Para preset e custom, usar startDate/endDate
-      return { 
-        startDate: effectiveRange.start, 
-        endDate: effectiveRange.end 
-      }
-    }
-  })()
+  // Preparar parâmetros para o hook com range de datas
+  const hookParams = {
+    startDate: dateRange.start,
+    endDate: dateRange.end,
+  }
 
   const { metrics, loading, error, refetch, getMetricData } = useDashboardMetrics(hookParams)
 
@@ -324,10 +311,10 @@ export function DashboardMetricsView({ clientId }: DashboardMetricsViewProps) {
             </Button>
           </div>
 
-          {/* Advanced Date Filters */}
-          <AdvancedDateFilters
-            value={dateFilter}
-            onChange={setDateFilter}
+          {/* Date Range Selector - Simple period selection */}
+          <DateRangeSelector
+            value={dateRange}
+            onChange={setDateRange}
           />
 
           {/* Add Chart Button */}
