@@ -51,8 +51,8 @@ export default function ContactsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-silver-50">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mint-500"></div>
+      <div className="flex items-center justify-center min-h-screen" style={{ background: '#1C1C1C' }}>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1ABC9C]"></div>
       </div>
     )
   }
