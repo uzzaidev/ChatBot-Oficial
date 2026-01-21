@@ -5,31 +5,42 @@ import { cn } from '@/lib/utils'
 
 export function FinalCTA() {
   return (
-    <section className="relative overflow-hidden py-20 bg-gradient-to-br from-erie-black-900 via-erie-black-800 to-erie-black-900">
-      <div className="absolute inset-0 -z-10 bg-gradient-blue opacity-40 blur-[200px]" />
+    <section className="relative overflow-hidden py-20 md:py-28 bg-gradient-to-br from-[#0f1419] via-[#1a1f26] to-[#0f1419]">
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#1ABC9C]/10 rounded-full blur-[150px]" />
+      </div>
       <div className={cn(designTokens.container.lg, 'relative z-10 space-y-8 px-6 text-center')}>
-        <h2 className={cn(designTokens.typography.h2, "text-white")}>Pronto para entrar no UzzApp?</h2>
-        <p className={cn(designTokens.typography.body, "text-silver-300")}>
+        <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+          Pronto para entrar no UzzApp?
+        </h2>
+        <p className="text-lg text-white/70 max-w-2xl mx-auto">
           Faça login para continuar acompanhando as operações ou crie um acesso para a sua equipe.
         </p>
         <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
           <Link href="/login">
-            <Button variant="default" size="lg" className="rounded-full bg-mint-500 hover:bg-mint-600 shadow-glow">
+            <Button 
+              variant="default" 
+              size="lg" 
+              className="rounded-lg bg-gradient-to-r from-[#1ABC9C] to-[#16a085] hover:from-[#16a085] hover:to-[#1ABC9C] text-white font-semibold px-8 py-6 shadow-lg shadow-[#1ABC9C]/30 transition-all hover:scale-105"
+            >
               Acessar minha conta
             </Button>
           </Link>
           <Link
             href="/register"
-            className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-full border-silver-300 bg-white text-erie-black-900 hover:bg-silver-100')}
+            className={cn(
+              buttonVariants({ variant: 'outline', size: 'lg' }), 
+              'rounded-lg border-2 border-white/20 bg-white/5 backdrop-blur-sm text-white hover:bg-white/10 hover:border-white/30 font-semibold px-8 py-6 transition-all'
+            )}
           >
             Registrar um novo tenant
           </Link>
         </div>
-        <div className="flex flex-col items-center gap-2 text-sm text-silver-400">
+        <div className="flex flex-col items-center gap-2 text-sm text-white/50 pt-4">
           <span>Precisa de ajuda com convites, billing ou migração?</span>
           <a
             href="mailto:suporte@uzzai.dev"
-            className="text-mint-400 transition-colors hover:text-mint-300 font-medium"
+            className="text-[#1ABC9C] transition-colors hover:text-[#16a085] font-medium"
           >
             suporte@uzzai.dev
           </a>

@@ -1,51 +1,68 @@
-import Link from 'next/link'
-import { designTokens } from '@/lib/design-tokens'
 import { Button, buttonVariants } from '@/components/ui/button'
+import { designTokens } from '@/lib/design-tokens'
 import { cn } from '@/lib/utils'
+import Link from 'next/link'
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden py-24 bg-gradient-to-br from-erie-black-900 via-erie-black-800 to-erie-black-900">
-      <div className="absolute inset-0 -z-10 bg-gradient-mint opacity-40 blur-[160px]" />
-      <div className="absolute inset-y-0 right-0 -z-10 hidden w-1/3 bg-gradient-to-bl from-brand-blue-500/20 to-transparent blur-[200px] lg:block" />
+    <section className="relative overflow-hidden py-20 md:py-32 bg-gradient-to-br from-[#0f1419] via-[#1a1f26] to-[#0f1419]">
+      {/* Background effects */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#1ABC9C]/20 rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#2E86AB]/20 rounded-full blur-[100px]" />
+      </div>
 
       <div
         className={cn(
           designTokens.container.lg,
-          'relative z-10 flex flex-col items-center gap-10 px-6 text-center'
+          'relative z-10 flex flex-col items-center gap-8 md:gap-12 px-6 text-center'
         )}
       >
-        <span className="inline-flex items-center gap-2 rounded-full border border-mint-400/50 bg-mint-500/20 px-4 py-1 text-xs font-semibold uppercase tracking-[0.4em] text-mint-200 shadow-glow">
+        {/* Badge */}
+        <span className="inline-flex items-center gap-2 rounded-full border border-[#1ABC9C]/50 bg-[#1ABC9C]/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[#1ABC9C] backdrop-blur-sm">
           Portal UzzApp
         </span>
 
-        <div className="max-w-3xl space-y-6">
-          <h1 className={cn(designTokens.typography.hero, "text-white")}>
-            Entre no painel UzzApp e acompanhe seus atendimentos em tempo real.
+        {/* Main heading */}
+        <div className="max-w-4xl space-y-6">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight">
+            Entre no painel UzzApp e acompanhe seus atendimentos em{' '}
+            <span className="bg-gradient-to-r from-[#1ABC9C] to-[#2E86AB] bg-clip-text text-transparent">
+              tempo real
+            </span>
           </h1>
-          <p className={cn(designTokens.typography.lead, "text-silver-300")}>
+          <p className="text-lg md:text-xl text-white/70 max-w-2xl mx-auto leading-relaxed">
             Acesse o dashboard seguro do seu time, configure fluxos e mantenha o canal WhatsApp sob
             controle com a nossa inteligência multiagente.
           </p>
         </div>
 
+        {/* CTA Buttons */}
         <div className="flex flex-col items-center gap-4 sm:flex-row">
           <Link href="/login">
-            <Button variant="default" size="lg" className="rounded-full bg-mint-500 hover:bg-mint-600 shadow-glow">
+            <Button 
+              variant="default" 
+              size="lg" 
+              className="rounded-lg bg-gradient-to-r from-[#1ABC9C] to-[#16a085] hover:from-[#16a085] hover:to-[#1ABC9C] text-white font-semibold px-8 py-6 shadow-lg shadow-[#1ABC9C]/30 transition-all hover:scale-105"
+            >
               Fazer login
             </Button>
           </Link>
           <Link
             href="/register"
-            className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-full border-silver-300 bg-white text-erie-black-900 hover:bg-silver-100')}
+            className={cn(
+              buttonVariants({ variant: 'outline', size: 'lg' }), 
+              'rounded-lg border-2 border-white/20 bg-white/5 backdrop-blur-sm text-white hover:bg-white/10 hover:border-white/30 font-semibold px-8 py-6 transition-all'
+            )}
           >
             Criar conta para meu time
           </Link>
         </div>
 
-        <p className="text-sm text-silver-400">
-          Não recebeu o convite? Peça ao administrador para adicioná-lo em <strong className="text-mint-400">Configurações &gt;
-          Usuários</strong>.
+        {/* Helper text */}
+        <p className="text-sm text-white/50 max-w-xl">
+          Não recebeu o convite? Peça ao administrador para adicioná-lo em{' '}
+          <strong className="text-[#1ABC9C]">Configurações &gt; Usuários</strong>.
         </p>
       </div>
     </section>

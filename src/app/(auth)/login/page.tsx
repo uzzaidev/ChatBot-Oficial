@@ -167,22 +167,34 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-erie-black-900 via-erie-black-800 to-erie-black-900">
-      <div className="bg-white p-8 rounded-lg shadow-2xl w-full max-w-md border border-silver-200">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0f1419] via-[#1a1f26] to-[#0f1419] relative overflow-hidden">
+      {/* Background effects */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#1ABC9C]/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#2E86AB]/10 rounded-full blur-[100px]" />
+      </div>
+
+      <div className="bg-[#1a1f26]/80 backdrop-blur-sm p-8 md:p-10 rounded-xl shadow-2xl w-full max-w-md border border-white/10">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-erie-black-900 mb-2">
-            UzzApp Dashboard
+          <div className="inline-flex items-center gap-2 mb-4">
+            <span className="text-2xl font-bold">
+              <span className="text-[#1ABC9C]">Uzz</span>
+              <span className="text-[#2E86AB]">.Ai</span>
+            </span>
+          </div>
+          <h1 className="text-3xl font-bold text-white mb-2">
+            Bem-vindo de volta
           </h1>
-          <p className="text-erie-black-600">
-            Faça login para acessar o sistema
+          <p className="text-white/60">
+            Faça login para acessar o dashboard
           </p>
         </div>
 
         {/* Error Alert */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-800">{error}</p>
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+            <p className="text-sm text-red-400">{error}</p>
           </div>
         )}
 
@@ -197,16 +209,16 @@ export default function LoginPage() {
         {/* Divider (se biometria disponível) */}
         {biometricAvailable && (
           <div className="mb-6 flex items-center gap-4">
-            <div className="flex-1 border-t border-silver-300"></div>
-            <span className="text-sm text-erie-black-500">ou</span>
-            <div className="flex-1 border-t border-silver-300"></div>
+            <div className="flex-1 border-t border-white/10"></div>
+            <span className="text-sm text-white/40">ou</span>
+            <div className="flex-1 border-t border-white/10"></div>
           </div>
         )}
 
         {/* Prompt para habilitar biometria (após primeiro login) */}
         {showBiometricPrompt && (
-          <div className="mb-6 p-4 bg-mint-50 border border-mint-200 rounded-lg">
-            <p className="text-sm text-mint-800 mb-3">
+          <div className="mb-6 p-4 bg-[#1ABC9C]/10 border border-[#1ABC9C]/30 rounded-lg">
+            <p className="text-sm text-white/80 mb-3">
               Deseja habilitar login com biometria para acesso rápido?
             </p>
             <div className="flex gap-2">
@@ -216,7 +228,7 @@ export default function LoginPage() {
                   saveBiometricPreference(true)
                   setShowBiometricPrompt(false)
                 }}
-                className="flex-1 bg-mint-500 hover:bg-mint-600 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors"
+                className="flex-1 bg-gradient-to-r from-[#1ABC9C] to-[#16a085] hover:from-[#16a085] hover:to-[#1ABC9C] text-white text-sm font-medium py-2 px-4 rounded-lg transition-all"
               >
                 Sim, habilitar
               </button>
@@ -226,7 +238,7 @@ export default function LoginPage() {
                   saveBiometricPreference(false)
                   setShowBiometricPrompt(false)
                 }}
-                className="flex-1 bg-silver-200 hover:bg-silver-300 text-erie-black-700 text-sm font-medium py-2 px-4 rounded-lg transition-colors"
+                className="flex-1 bg-white/5 border border-white/10 hover:bg-white/10 text-white text-sm font-medium py-2 px-4 rounded-lg transition-all"
               >
                 Não, obrigado
               </button>
@@ -240,7 +252,7 @@ export default function LoginPage() {
           <div>
             <label
               htmlFor="email"
-              className="block text-sm font-medium text-erie-black-700 mb-2"
+              className="block text-sm font-medium text-white/80 mb-2"
             >
               Email
             </label>
@@ -250,7 +262,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
-              className="w-full px-4 py-2 border border-silver-300 rounded-lg focus:ring-2 focus:ring-mint-500 focus:border-mint-500 disabled:bg-silver-100 disabled:cursor-not-allowed"
+              className="w-full px-4 py-3 bg-[#0f1419]/50 border border-white/10 rounded-lg text-white placeholder-white/40 focus:ring-2 focus:ring-[#1ABC9C] focus:border-[#1ABC9C] disabled:bg-white/5 disabled:cursor-not-allowed transition-all"
               placeholder="seu@email.com"
               autoComplete="email"
               required
@@ -261,7 +273,7 @@ export default function LoginPage() {
           <div>
             <label
               htmlFor="password"
-              className="block text-sm font-medium text-erie-black-700 mb-2"
+              className="block text-sm font-medium text-white/80 mb-2"
             >
               Senha
             </label>
@@ -271,7 +283,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
-              className="w-full px-4 py-2 border border-silver-300 rounded-lg focus:ring-2 focus:ring-mint-500 focus:border-mint-500 disabled:bg-silver-100 disabled:cursor-not-allowed"
+              className="w-full px-4 py-3 bg-[#0f1419]/50 border border-white/10 rounded-lg text-white placeholder-white/40 focus:ring-2 focus:ring-[#1ABC9C] focus:border-[#1ABC9C] disabled:bg-white/5 disabled:cursor-not-allowed transition-all"
               placeholder="••••••••"
               autoComplete="current-password"
               required
@@ -282,19 +294,19 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-mint-500 hover:bg-mint-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:bg-mint-300 disabled:cursor-not-allowed shadow-glow"
+            className="w-full bg-gradient-to-r from-[#1ABC9C] to-[#16a085] hover:from-[#16a085] hover:to-[#1ABC9C] text-white font-semibold py-3 px-4 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#1ABC9C]/30 hover:scale-[1.02]"
           >
             {loading ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
 
         {/* Footer */}
-        <div className="mt-6 text-center text-sm text-erie-black-600">
+        <div className="mt-6 text-center text-sm text-white/60">
           <p>
             Não tem uma conta?{' '}
             <Link
               href="/register"
-              className="text-mint-600 hover:text-mint-700 font-medium hover:underline"
+              className="text-[#1ABC9C] hover:text-[#16a085] font-medium hover:underline transition-colors"
             >
               Crie uma conta
             </Link>

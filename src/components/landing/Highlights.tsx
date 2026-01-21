@@ -28,11 +28,13 @@ const highlights = [
 
 export function Highlights() {
   return (
-    <section className="py-20 bg-white">
+    <section className="py-20 md:py-28 bg-[#0f1419]">
       <div className={cn(designTokens.container.lg, designTokens.spacing.stack, 'px-6')}>
-        <div className="space-y-4 text-center">
-          <h2 className={cn(designTokens.typography.h2, "text-erie-black-900")}>Tudo o que você precisa em um único lugar</h2>
-          <p className={cn(designTokens.typography.body, "text-erie-black-700")}>
+        <div className="space-y-4 text-center max-w-3xl mx-auto mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+            Tudo o que você precisa em um único lugar
+          </h2>
+          <p className="text-lg text-white/70">
             O portal foi desenhado para administradores e operadores terem controle total do canal.
           </p>
         </div>
@@ -41,11 +43,13 @@ export function Highlights() {
           {highlights.map(({ title, description, icon: Icon }) => (
             <Card
               key={title}
-              className="flex h-full flex-col gap-3 border border-mint-300/30 bg-white hover:border-mint-400/50 transition-all p-6 shadow-lg hover:shadow-glow"
+              className="flex h-full flex-col gap-4 border border-white/10 bg-[#1a1f26]/50 backdrop-blur-sm hover:border-[#1ABC9C]/50 transition-all p-6 shadow-lg hover:shadow-[#1ABC9C]/20"
             >
-              <Icon className="h-6 w-6 text-mint-600" aria-hidden />
-              <h3 className="text-lg font-semibold text-erie-black-900">{title}</h3>
-              <p className="text-sm text-erie-black-600">{description}</p>
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-[#1ABC9C]/20 to-[#2E86AB]/20 flex items-center justify-center">
+                <Icon className="h-6 w-6 text-[#1ABC9C]" aria-hidden />
+              </div>
+              <h3 className="text-xl font-semibold text-white">{title}</h3>
+              <p className="text-sm text-white/60 leading-relaxed">{description}</p>
             </Card>
           ))}
         </div>
