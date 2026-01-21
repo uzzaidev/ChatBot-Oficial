@@ -42,15 +42,17 @@ export const ConversationTable = ({
   const router = useRouter()
 
   const handleConversationClick = (phone: string) => {
-    if (onConversationOpen) {
-      onConversationOpen(phone)
-    }
-
     if (onConversationClick) {
       onConversationClick()
     }
 
-    router.push(`/dashboard/chat?phone=${phone}&client_id=${clientId}`)
+    // Se callback onConversationOpen fornecido, usar ele (não redirecionar)
+    // Caso contrário, redirecionar para página de chat
+    if (onConversationOpen) {
+      onConversationOpen(phone)
+    } else {
+      router.push(`/dashboard/chat?phone=${phone}&client_id=${clientId}`)
+    }
   }
 
   const getStatusBadge = (status: string) => {
