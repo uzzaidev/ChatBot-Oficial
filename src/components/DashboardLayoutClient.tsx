@@ -33,11 +33,13 @@ export function DashboardLayoutClient({
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const pathname = usePathname()
 
-  // Se estiver em qualquer rota de conversas ou chat, renderiza apenas children
-  // (as páginas de conversas têm seu próprio layout/sidebar)
-  const isConversationsRoute = pathname.startsWith('/dashboard/conversations') || pathname.startsWith('/dashboard/chat')
+  // Se estiver em qualquer rota de conversas, chat ou contatos, renderiza apenas children
+  // (essas páginas têm seu próprio layout/sidebar full-screen)
+  const isFullScreenRoute = pathname.startsWith('/dashboard/conversations') ||
+                           pathname.startsWith('/dashboard/chat') ||
+                           pathname.startsWith('/dashboard/contacts')
 
-  if (isConversationsRoute) {
+  if (isFullScreenRoute) {
     return <>{children}</>
   }
 

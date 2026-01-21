@@ -10,8 +10,9 @@ import { SendMessageForm } from '@/components/SendMessageForm'
 import { StatusToggle } from '@/components/StatusToggle'
 import { DragDropZone } from '@/components/DragDropZone'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { MessageCircle, Bot, User, ArrowRight, Search, X, Workflow, Home } from 'lucide-react'
+import { MessageCircle, Bot, User, ArrowRight, Search, X, Workflow, Home, Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { EmptyStateSimple } from '@/components/EmptyState'
 import { getInitials } from '@/lib/utils'
 import { markConversationAsRead } from '@/lib/api'
@@ -37,6 +38,7 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null)
   const [attachments, setAttachments] = useState<MediaAttachment[]>([])
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const scrollPositionRef = useRef(0)
 
@@ -185,8 +187,8 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
 
       {/* Conteúdo Principal - Sidebar + Área de Conversas */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar Simplificada */}
-        <div className="w-80 flex flex-col border-r border-white/5" style={{ background: 'rgba(28, 28, 28, 0.95)' }}>
+        {/* Sidebar Desktop - Oculta em mobile (< lg) */}
+        <div className="hidden lg:flex w-80 flex-col border-r border-white/5" style={{ background: 'rgba(28, 28, 28, 0.95)' }}>
           {/* Header da Sidebar */}
           <div className="p-4 border-b border-white/5">
             <div className="flex items-center justify-between mb-4">
@@ -290,6 +292,114 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
           </div>
         </div>
 
+        {/* Sidebar Mobile - Sheet drawer */}
+        <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+          <SheetContent side="left" className="p-0 w-[85vw] sm:w-96">
+            <div className="flex flex-col h-full" style={{ background: 'rgba(28, 28, 28, 0.95)' }}>
+              {/* Header da Sidebar */}
+              <div className="p-4 border-b border-white/5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-poppins font-semibold text-sm text-white/90">Conversas</h3>
+                  <Link href="/dashboard">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 text-white/70 hover:text-white hover:bg-white/5"
+                    >
+                      <Home className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
+
+                {/* Campo de Pesquisa */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4" style={{ color: '#B0B0B0' }} />
+                  <input
+                    type="text"
+                    placeholder="Pesquisar contatos..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full bg-[#151515] border border-white/10 rounded-lg px-10 py-2.5 text-white placeholder-white/40 focus:outline-none focus:border-[#1ABC9C] transition-colors text-sm"
+                    style={{ fontFamily: 'Inter, sans-serif' }}
+                  />
+                  {searchTerm && (
+                    <button
+                      onClick={handleClearSearch}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/40 hover:text-white/70"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Indicador de pesquisa */}
+                {searchTerm.length >= 2 && (
+                  <p className="text-xs text-white/50 mt-2">
+                    {filteredConversations.length} resultado{filteredConversations.length !== 1 ? 's' : ''} encontrado{filteredConversations.length !== 1 ? 's' : ''}
+                  </p>
+                )}
+                {searchTerm.length === 1 && (
+                  <p className="text-xs text-white/40 mt-2">
+                    Digite mais 1 caractere para pesquisar...
+                  </p>
+                )}
+              </div>
+
+              {/* Filtros Simples - Todas / Não Lidas */}
+              <div className="px-4 py-3 border-b border-white/5">
+                <div className="flex gap-2">
+                  <button
+                    className="flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all bg-white/5 text-white/70 hover:bg-white/10"
+                  >
+                    Todas
+                  </button>
+                  <button
+                    className="flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all bg-white/5 text-white/70 hover:bg-white/10"
+                  >
+                    Não lidas
+                  </button>
+                </div>
+              </div>
+
+              {/* Lista de Conversas */}
+              <div className="flex-1 overflow-y-auto">
+                {filteredConversations.length === 0 && !loading ? (
+                  <EmptyStateSimple
+                    icon={
+                      statusFilter === 'all' ? MessageCircle :
+                        statusFilter === 'bot' ? Bot :
+                          statusFilter === 'humano' ? User :
+                            statusFilter === 'fluxo_inicial' ? Workflow :
+                              statusFilter === 'transferido' ? ArrowRight : MessageCircle
+                    }
+                    title={
+                      statusFilter === 'all' ? "Nenhuma conversa encontrada" :
+                        `Nenhuma conversa com status "${getStatusLabel(statusFilter)}"`
+                    }
+                    description={
+                      statusFilter === 'all'
+                        ? "Quando você receber mensagens no WhatsApp, elas aparecerão aqui"
+                        : `Não há conversas com status "${getStatusLabel(statusFilter)}" no momento. Tente mudar o filtro ou aguarde novas conversas.`
+                    }
+                  />
+                ) : (
+                  <ConversationList
+                    conversations={filteredConversations}
+                    loading={loading}
+                    clientId={clientId}
+                    currentPhone={selectedPhone || undefined}
+                    lastUpdatePhone={lastUpdatePhone}
+                    onConversationOpen={(phone) => {
+                      handleSelectConversation(phone)
+                      setSidebarOpen(false)
+                    }}
+                  />
+                )}
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
+
         {/* Área Principal - Chat ou Empty State */}
         <div className="flex-1 flex flex-col" style={{ background: '#1a1a1a' }}>
           {selectedConversation && selectedPhone ? (
@@ -297,6 +407,16 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
               {/* Header do Chat */}
               <div className="bg-[#1a1f26] p-3 border-b border-white/10">
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                  {/* Botão Menu (Mobile) */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="lg:hidden flex-shrink-0 text-white hover:bg-white/10"
+                    onClick={() => setSidebarOpen(true)}
+                  >
+                    <Menu className="h-5 w-5" />
+                  </Button>
+
                   <Avatar className="h-10 w-10 flex-shrink-0">
                     <AvatarFallback className="bg-gradient-to-br from-[#2E86AB] to-[#1ABC9C] text-white">
                       {getInitials(selectedConversation.name || 'Sem nome')}
