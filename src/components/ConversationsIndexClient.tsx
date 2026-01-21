@@ -4,12 +4,14 @@ import { useState, useMemo, useRef, useCallback, useLayoutEffect } from 'react'
 import { useConversations } from '@/hooks/useConversations'
 import { useGlobalRealtimeNotifications } from '@/hooks/useGlobalRealtimeNotifications'
 import { ConversationList } from '@/components/ConversationList'
+import { ConversationTable } from '@/components/ConversationTable'
 import { MessageCircle, Bot, User, ArrowRight, List, Home, Search, X, Workflow } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { EmptyStateSimple } from '@/components/EmptyState'
 import { ConversationMetricCard } from '@/components/ConversationMetricCard'
+import { cn } from '@/lib/utils'
 import Link from 'next/link'
 
 interface ConversationsIndexClientProps {
@@ -28,6 +30,7 @@ interface ConversationsIndexClientProps {
 export function ConversationsIndexClient({ clientId }: ConversationsIndexClientProps) {
   const [statusFilter, setStatusFilter] = useState<'all' | 'bot' | 'humano' | 'transferido' | 'fluxo_inicial'>('all')
   const [searchTerm, setSearchTerm] = useState('')
+  const [viewMode, setViewMode] = useState<'list' | 'table'>('table') // Tabela como padrão
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const scrollPositionRef = useRef(0)
 
@@ -113,8 +116,11 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
 
   return (
     <div className="fixed inset-0 flex overflow-hidden" style={{ background: 'radial-gradient(circle at top right, #242f36 0%, #1C1C1C 60%)' }}>
-      {/* Sidebar com Lista de Conversas - Estilo UZZ.AI Dark Theme */}
-      <div className="w-full lg:w-80 flex flex-col" style={{ background: 'rgba(28, 28, 28, 0.95)', borderRight: '1px solid rgba(255, 255, 255, 0.05)' }}>
+      {/* Sidebar com Filtros e Métricas - Estilo UZZ.AI Dark Theme */}
+      <div className={cn(
+        "flex flex-col transition-all duration-300",
+        viewMode === 'table' ? "w-80" : "w-full lg:w-80"
+      )} style={{ background: 'rgba(28, 28, 28, 0.95)', borderRight: '1px solid rgba(255, 255, 255, 0.05)' }}>
         {/* Header da Sidebar */}
         <div className="p-6 border-b border-white/5">
           <div className="flex items-center justify-between mb-6">
@@ -247,18 +253,45 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
           )}
         </div>
 
-        {/* Filtros - Estilo Elegante */}
-        <div className="px-4 py-3 border-b border-white/5 flex gap-2 overflow-x-auto">
-          <button
-            onClick={() => setStatusFilter('all')}
-            className={`text-xs px-3 py-1.5 rounded transition-all whitespace-nowrap ${
-              statusFilter === 'all'
-                ? 'text-[#1ABC9C] border-b-2 border-[#1ABC9C] pb-1'
-                : 'text-white/50 hover:text-white/70'
-            }`}
-          >
-            Todas
-          </button>
+        {/* Toggle View Mode e Filtros */}
+        <div className="px-4 py-3 border-b border-white/5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setViewMode('table')}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+                  viewMode === 'table'
+                    ? "bg-[#1ABC9C] text-white"
+                    : "bg-white/5 text-white/50 hover:text-white/70"
+                )}
+              >
+                Tabela
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+                  viewMode === 'list'
+                    ? "bg-[#1ABC9C] text-white"
+                    : "bg-white/5 text-white/50 hover:text-white/70"
+                )}
+              >
+                Lista
+              </button>
+            </div>
+          </div>
+          <div className="flex gap-2 overflow-x-auto">
+            <button
+              onClick={() => setStatusFilter('all')}
+              className={`text-xs px-3 py-1.5 rounded transition-all whitespace-nowrap ${
+                statusFilter === 'all'
+                  ? 'text-[#1ABC9C] border-b-2 border-[#1ABC9C] pb-1'
+                  : 'text-white/50 hover:text-white/70'
+              }`}
+            >
+              Todas
+            </button>
           <button
             onClick={() => setStatusFilter('bot')}
             className={`text-xs px-3 py-1.5 rounded transition-all whitespace-nowrap ${
@@ -299,46 +332,113 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
           >
             Em Flow
           </button>
+          </div>
         </div>
 
-        {/* Lista de Conversas */}
-        <div
-          ref={scrollContainerRef}
-          onScroll={handleScroll}
-          className="flex-1 overflow-y-auto"
-        >
-          {filteredConversations.length === 0 && !loading ? (
-            <EmptyStateSimple
-              icon={
-                statusFilter === 'all' ? MessageCircle :
-                  statusFilter === 'bot' ? Bot :
-                    statusFilter === 'humano' ? User :
-                      statusFilter === 'fluxo_inicial' ? Workflow :
-                        statusFilter === 'transferido' ? ArrowRight : MessageCircle
-              }
-              title={
-                statusFilter === 'all' ? "Nenhuma conversa encontrada" :
-                  `Nenhuma conversa com status "${getStatusLabel(statusFilter)}"`
-              }
-              description={
-                statusFilter === 'all'
-                  ? "Quando você receber mensagens no WhatsApp, elas aparecerão aqui"
-                  : `Não há conversas com status "${getStatusLabel(statusFilter)}" no momento. Tente mudar o filtro ou aguarde novas conversas.`
-              }
-            />
-          ) : (
-            <ConversationList
-              conversations={filteredConversations}
-              loading={loading}
-              clientId={clientId}
-              lastUpdatePhone={lastUpdatePhone}
-            />
-          )}
-        </div>
+        {/* Lista de Conversas (apenas quando viewMode === 'list') */}
+        {viewMode === 'list' && (
+          <div
+            ref={scrollContainerRef}
+            onScroll={handleScroll}
+            className="flex-1 overflow-y-auto"
+          >
+            {filteredConversations.length === 0 && !loading ? (
+              <EmptyStateSimple
+                icon={
+                  statusFilter === 'all' ? MessageCircle :
+                    statusFilter === 'bot' ? Bot :
+                      statusFilter === 'humano' ? User :
+                        statusFilter === 'fluxo_inicial' ? Workflow :
+                          statusFilter === 'transferido' ? ArrowRight : MessageCircle
+                }
+                title={
+                  statusFilter === 'all' ? "Nenhuma conversa encontrada" :
+                    `Nenhuma conversa com status "${getStatusLabel(statusFilter)}"`
+                }
+                description={
+                  statusFilter === 'all'
+                    ? "Quando você receber mensagens no WhatsApp, elas aparecerão aqui"
+                    : `Não há conversas com status "${getStatusLabel(statusFilter)}" no momento. Tente mudar o filtro ou aguarde novas conversas.`
+                }
+              />
+            ) : (
+              <ConversationList
+                conversations={filteredConversations}
+                loading={loading}
+                clientId={clientId}
+                lastUpdatePhone={lastUpdatePhone}
+              />
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Área Central - Mensagem para selecionar conversa (visível apenas em lg+) */}
-      <div className="hidden lg:flex flex-1 items-center justify-center" style={{ backgroundImage: 'radial-gradient(circle at center, rgba(46, 134, 171, 0.08) 0%, transparent 70%)' }}>
+      {/* Área Principal - Tabela ou Empty State */}
+      <div className={cn(
+        "flex-1 flex flex-col",
+        viewMode === 'table' ? "flex" : "hidden lg:flex"
+      )} style={{ backgroundImage: viewMode === 'table' ? 'none' : 'radial-gradient(circle at center, rgba(46, 134, 171, 0.08) 0%, transparent 70%)' }}>
+        {viewMode === 'table' ? (
+          <div className="flex-1 flex flex-col p-6" style={{ background: '#1a1a1a' }}>
+            {/* Header da Tabela */}
+            <div className="mb-6">
+              <h2 className="font-poppins font-semibold text-xl text-white mb-2">Conversas</h2>
+              <p className="text-white/60 text-sm">
+                {filteredConversations.length} conversa{filteredConversations.length !== 1 ? 's' : ''} encontrada{filteredConversations.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+
+            {/* Tabela de Conversas */}
+            {filteredConversations.length === 0 && !loading ? (
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center max-w-md px-6">
+                  <div className="mb-6 flex justify-center">
+                    <div
+                      className="h-20 w-20 rounded-full flex items-center justify-center border-2"
+                      style={{
+                        background: 'linear-gradient(135deg, #252525, #1C1C1C)',
+                        borderColor: '#1ABC9C',
+                        boxShadow: '0 0 20px rgba(26, 188, 156, 0.2)'
+                      }}
+                    >
+                      {statusFilter === 'all' ? (
+                        <MessageCircle className="h-10 w-10" style={{ color: '#1ABC9C' }} />
+                      ) : statusFilter === 'bot' ? (
+                        <Bot className="h-10 w-10" style={{ color: '#1ABC9C' }} />
+                      ) : statusFilter === 'humano' ? (
+                        <User className="h-10 w-10" style={{ color: '#1ABC9C' }} />
+                      ) : statusFilter === 'fluxo_inicial' ? (
+                        <Workflow className="h-10 w-10" style={{ color: '#1ABC9C' }} />
+                      ) : (
+                        <ArrowRight className="h-10 w-10" style={{ color: '#1ABC9C' }} />
+                      )}
+                    </div>
+                  </div>
+                  <h2 className="font-poppins font-semibold text-xl text-white mb-3">
+                    {statusFilter === 'all' ? "Nenhuma conversa encontrada" : `Nenhuma conversa com status "${getStatusLabel(statusFilter)}"`}
+                  </h2>
+                  <p className="text-white/60 mb-6 max-w-xs mx-auto leading-relaxed">
+                    {statusFilter === 'all'
+                      ? "Quando você receber mensagens no WhatsApp, elas aparecerão aqui"
+                      : `Não há conversas com status "${getStatusLabel(statusFilter)}" no momento. Tente mudar o filtro ou aguarde novas conversas.`}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 overflow-auto">
+                <ConversationTable
+                  conversations={filteredConversations}
+                  loading={loading}
+                  clientId={clientId}
+                  currentPhone={undefined}
+                  onConversationOpen={undefined}
+                  onConversationClick={undefined}
+                />
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex-1 flex items-center justify-center">
         <div className="text-center max-w-md px-6">
           <div className="mb-6 flex justify-center">
             <div
