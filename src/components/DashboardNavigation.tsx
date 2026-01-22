@@ -181,7 +181,6 @@ export function DashboardNavigation({
           label="Base de Conhecimento"
           isCollapsed={isCollapsed}
           onClick={onLinkClick}
-          badge="new"
           tooltip="Upload de documentos (PDF, TXT) para RAG com busca semântica"
         />
 
@@ -191,8 +190,7 @@ export function DashboardNavigation({
           label="Flows Interativos"
           isCollapsed={isCollapsed}
           onClick={onLinkClick}
-          badge="beta"
-          tooltip="Criar fluxos de conversa personalizados (Beta)"
+          tooltip="Criar fluxos de conversa personalizados"
         />
 
         {/* SEÇÃO: ANÁLISE */}
@@ -214,8 +212,7 @@ export function DashboardNavigation({
           label="Budget Plans"
           isCollapsed={isCollapsed}
           onClick={onLinkClick}
-          badge="admin"
-          tooltip="Gerenciar planos de orçamento e limites de uso (Admin)"
+          tooltip="Gerenciar planos de orçamento e limites de uso"
         />
 
         <NavItem
@@ -224,8 +221,7 @@ export function DashboardNavigation({
           label="AI Gateway"
           isCollapsed={isCollapsed}
           onClick={onLinkClick}
-          badge="admin"
-          tooltip="Configure provedores de IA e monitore custos (Admin)"
+          tooltip="Configure provedores de IA e monitore custos"
         />
 
         {/* SEÇÃO: DESENVOLVIMENTO */}
@@ -236,7 +232,6 @@ export function DashboardNavigation({
           label="Arquitetura do Fluxo"
           isCollapsed={isCollapsed}
           onClick={onLinkClick}
-          badge="dev"
           tooltip="Visualizar e editar a arquitetura do chatbot (14 nodes)"
         />
 
@@ -246,7 +241,6 @@ export function DashboardNavigation({
           label="Backend Monitor"
           isCollapsed={isCollapsed}
           onClick={onLinkClick}
-          badge="dev"
           tooltip="Monitorar logs e performance do backend"
         />
 
