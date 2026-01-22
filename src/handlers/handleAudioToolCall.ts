@@ -3,7 +3,7 @@ import { convertTextToSpeech } from "@/nodes/convertTextToSpeech";
 import { uploadAudioToWhatsApp } from "@/nodes/uploadAudioToWhatsApp";
 import { sendAudioMessageByMediaId, sendTextMessage } from "@/lib/meta";
 import { createServerClient } from "@/lib/supabase-server";
-import { saveChatMessage } from "@/nodes/saveChatMessage";
+import { saveChatMessage, ErrorDetails } from "@/nodes/saveChatMessage";
 import { ClientConfig, StoredMediaMetadata } from "@/lib/types";
 import { query } from "@/lib/postgres";
 
@@ -46,6 +46,7 @@ export const handleAudioToolCall = async (
         type: "ai",
         clientId,
         wamid: messageId,
+        status: "sent", // ✅ FIX: Marcar como enviado
       });
 
       return {
@@ -55,10 +56,27 @@ export const handleAudioToolCall = async (
         messageId,
       };
     } catch (error) {
+      // ❌ FIX: Save text send error as failed message in conversation
+      const errorMessage = error instanceof Error ? error.message : "Failed to send text";
+      const errorDetails: ErrorDetails = {
+        code: "TEXT_SEND_FAILED",
+        title: "Falha ao Enviar Texto",
+        message: `Não foi possível enviar a mensagem de texto: ${errorMessage}`,
+      };
+
+      await saveChatMessage({
+        phone,
+        message: aiResponseText,
+        type: "ai",
+        clientId,
+        status: "failed",
+        errorDetails,
+      });
+
       return {
         success: false,
         sentAsAudio: false,
-        error: error instanceof Error ? error.message : "Failed to send text",
+        error: errorMessage,
       };
     }
   }
@@ -139,6 +157,7 @@ export const handleAudioToolCall = async (
       clientId,
       mediaMetadata,
       wamid: messageId,
+      status: "sent", // ✅ FIX: Marcar como enviado
     });
 
     // Atualizar campos extras (transcription e audio_duration_seconds)
@@ -195,6 +214,7 @@ export const handleAudioToolCall = async (
         type: "ai",
         clientId,
         wamid: messageId,
+        status: "sent", // ✅ FIX: Marcar como enviado
       });
 
       // Atualizar última mensagem da conversa
@@ -222,12 +242,34 @@ export const handleAudioToolCall = async (
         messageId,
       };
     } catch (textError) {
+      // ❌ FIX: Save fallback text error as failed message in conversation
+      const textErrorMessage = textError instanceof Error
+        ? textError.message
+        : "Failed to send text fallback";
+
+      const fallbackErrorDetails: ErrorDetails = {
+        code: "FALLBACK_FAILED",
+        title: "Falha no Fallback",
+        message: `Não foi possível enviar o áudio nem o texto: ${textErrorMessage}`,
+        error_data: {
+          originalAudioError: error instanceof Error ? error.message : "Unknown audio error",
+          textFallbackError: textErrorMessage,
+        },
+      };
+
+      await saveChatMessage({
+        phone,
+        message: aiResponseText,
+        type: "ai",
+        clientId,
+        status: "failed",
+        errorDetails: fallbackErrorDetails,
+      });
+
       return {
         success: false,
         sentAsAudio: false,
-        error: textError instanceof Error
-          ? textError.message
-          : "Failed to send text fallback",
+        error: textErrorMessage,
       };
     }
   }

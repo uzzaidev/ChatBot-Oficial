@@ -27,7 +27,7 @@
     "@aparajita/capacitor-biometric-auth": "^9.1.2",
     "@capacitor/android": "^7.4.4",
     "@capacitor/app": "^7.1.0",
-    "@capacitor/cli": "^7.4.4",
+    "@capacitor/cli": "^8.0.1",
     "@capacitor/core": "^7.4.4",
     "@capacitor/ios": "^7.4.4",
     "@capacitor/network": "^7.0.2",

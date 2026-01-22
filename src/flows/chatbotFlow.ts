@@ -21,7 +21,7 @@ import { generateAIResponse } from "@/nodes/generateAIResponse";
 import { formatResponse } from "@/nodes/formatResponse";
 import { sendWhatsAppMessage } from "@/nodes/sendWhatsAppMessage";
 import { handleHumanHandoff } from "@/nodes/handleHumanHandoff";
-import { saveChatMessage } from "@/nodes/saveChatMessage";
+import { saveChatMessage, ErrorDetails } from "@/nodes/saveChatMessage";
 import { updateMessageWithWamid } from "@/nodes/updateMessageWithWamid";
 // 🔧 Phase 1-3: Configuration-driven nodes
 import { checkContinuity } from "@/nodes/checkContinuity";
@@ -301,28 +301,57 @@ export const processChatbotMessage = async (
           // Failed to upload audio to storage - non-critical, continue processing
         }
 
-        const transcriptionResult = await transcribeAudio(
-          audioBuffer,
-          config.apiKeys.openaiApiKey,
-          config.id,
-          parsedMessage.phone,
-        );
-        processedContent = transcriptionResult.text;
-        logger.logNodeSuccess("4b. Transcribe Audio", {
-          transcription: processedContent.substring(0, 100),
-        });
-
-        // 📊 Registrar uso de Whisper
+        // ❌ FIX: Wrap transcription in try-catch to save error as failed message
         try {
-          await logWhisperUsage(
+          const transcriptionResult = await transcribeAudio(
+            audioBuffer,
+            config.apiKeys.openaiApiKey,
             config.id,
-            undefined,
             parsedMessage.phone,
-            transcriptionResult.durationSeconds || 0,
-            transcriptionResult.usage.total_tokens,
           );
-        } catch (usageError) {
-          // Failed to log Whisper usage - non-critical
+          processedContent = transcriptionResult.text;
+          logger.logNodeSuccess("4b. Transcribe Audio", {
+            transcription: processedContent.substring(0, 100),
+          });
+
+          // 📊 Registrar uso de Whisper
+          try {
+            await logWhisperUsage(
+              config.id,
+              undefined,
+              parsedMessage.phone,
+              transcriptionResult.durationSeconds || 0,
+              transcriptionResult.usage.total_tokens,
+            );
+          } catch (usageError) {
+            // Failed to log Whisper usage - non-critical
+          }
+        } catch (transcriptionError) {
+          // ❌ Save transcription error as failed USER message in conversation
+          const errorMessage = transcriptionError instanceof Error
+            ? transcriptionError.message
+            : "Unknown transcription error";
+
+          const transcriptionErrorDetails: ErrorDetails = {
+            code: "TRANSCRIPTION_FAILED",
+            title: "Falha na Transcrição",
+            message: `Não foi possível transcrever o áudio: ${errorMessage}`,
+          };
+
+          await saveChatMessage({
+            phone: parsedMessage.phone,
+            message: "🎤 [Áudio não pôde ser transcrito]",
+            type: "user",
+            clientId: config.id,
+            mediaMetadata,
+            wamid: parsedMessage.messageId,
+            status: "failed",
+            errorDetails: transcriptionErrorDetails,
+          });
+
+          logger.logNodeError("4b. Transcribe Audio", transcriptionError);
+          logger.finishExecution("error");
+          return { success: false, error: errorMessage };
         }
       } else if (parsedMessage.type === "image" && parsedMessage.metadata?.id) {
         const imageBuffer = await downloadMetaMedia(
@@ -359,33 +388,62 @@ export const processChatbotMessage = async (
           // Failed to upload image to storage - non-critical
         }
 
-        const visionResult = await analyzeImage(
-          imageBuffer,
-          parsedMessage.metadata.mimeType || "image/jpeg",
-          config.apiKeys.openaiApiKey,
-          config.id,
-          parsedMessage.phone,
-          conversation?.id, // ✨ FASE 8: Pass conversation ID
-        );
-
-        // Passar apenas a descrição da IA (a legenda será adicionada pelo normalizeMessage)
-        processedContent = visionResult.text;
-
-        logger.logNodeSuccess("4b. Analyze Image", {
-          description: processedContent.substring(0, 100),
-        });
-
-        // 📊 Registrar uso de GPT-4o Vision
+        // ❌ FIX: Wrap image analysis in try-catch to save error as failed message
         try {
-          await logOpenAIUsage(
+          const visionResult = await analyzeImage(
+            imageBuffer,
+            parsedMessage.metadata.mimeType || "image/jpeg",
+            config.apiKeys.openaiApiKey,
             config.id,
-            undefined,
             parsedMessage.phone,
-            visionResult.model,
-            visionResult.usage,
+            conversation?.id, // ✨ FASE 8: Pass conversation ID
           );
-        } catch (usageError) {
-          // Failed to log Vision usage - non-critical
+
+          // Passar apenas a descrição da IA (a legenda será adicionada pelo normalizeMessage)
+          processedContent = visionResult.text;
+
+          logger.logNodeSuccess("4b. Analyze Image", {
+            description: processedContent.substring(0, 100),
+          });
+
+          // 📊 Registrar uso de GPT-4o Vision
+          try {
+            await logOpenAIUsage(
+              config.id,
+              undefined,
+              parsedMessage.phone,
+              visionResult.model,
+              visionResult.usage,
+            );
+          } catch (usageError) {
+            // Failed to log Vision usage - non-critical
+          }
+        } catch (visionError) {
+          // ❌ Save vision analysis error as failed USER message in conversation
+          const errorMessage = visionError instanceof Error
+            ? visionError.message
+            : "Unknown vision error";
+
+          const visionErrorDetails: ErrorDetails = {
+            code: "VISION_FAILED",
+            title: "Falha na Análise de Imagem",
+            message: `Não foi possível analisar a imagem: ${errorMessage}`,
+          };
+
+          await saveChatMessage({
+            phone: parsedMessage.phone,
+            message: "🖼️ [Imagem não pôde ser analisada]",
+            type: "user",
+            clientId: config.id,
+            mediaMetadata,
+            wamid: parsedMessage.messageId,
+            status: "failed",
+            errorDetails: visionErrorDetails,
+          });
+
+          logger.logNodeError("4b. Analyze Image", visionError);
+          logger.finishExecution("error");
+          return { success: false, error: errorMessage };
         }
       } else if (
         parsedMessage.type === "document" && parsedMessage.metadata?.id
@@ -423,35 +481,64 @@ export const processChatbotMessage = async (
           // Failed to upload document to storage - non-critical
         }
 
-        const documentResult = await analyzeDocument(
-          documentBuffer,
-          parsedMessage.metadata.mimeType,
-          parsedMessage.metadata.filename,
-          config.apiKeys.openaiApiKey,
-          config.id,
-          parsedMessage.phone,
-          conversation?.id, // ✨ FASE 8: Pass conversation ID
-        );
+        // ❌ FIX: Wrap document analysis in try-catch to save error as failed message
+        try {
+          const documentResult = await analyzeDocument(
+            documentBuffer,
+            parsedMessage.metadata.mimeType,
+            parsedMessage.metadata.filename,
+            config.apiKeys.openaiApiKey,
+            config.id,
+            parsedMessage.phone,
+            conversation?.id, // ✨ FASE 8: Pass conversation ID
+          );
 
-        processedContent = documentResult.content;
+          processedContent = documentResult.content;
 
-        logger.logNodeSuccess("4b. Analyze Document", {
-          summary: processedContent.substring(0, 100),
-        });
+          logger.logNodeSuccess("4b. Analyze Document", {
+            summary: processedContent.substring(0, 100),
+          });
 
-        // 📊 Registrar uso de GPT-4o PDF (se houver usage data)
-        if (documentResult.usage && documentResult.model) {
-          try {
-            await logOpenAIUsage(
-              config.id,
-              undefined,
-              parsedMessage.phone,
-              documentResult.model,
-              documentResult.usage,
-            );
-          } catch (usageError) {
-            // Failed to log PDF usage - non-critical
+          // 📊 Registrar uso de GPT-4o PDF (se houver usage data)
+          if (documentResult.usage && documentResult.model) {
+            try {
+              await logOpenAIUsage(
+                config.id,
+                undefined,
+                parsedMessage.phone,
+                documentResult.model,
+                documentResult.usage,
+              );
+            } catch (usageError) {
+              // Failed to log PDF usage - non-critical
+            }
           }
+        } catch (documentError) {
+          // ❌ Save document analysis error as failed USER message in conversation
+          const errorMessage = documentError instanceof Error
+            ? documentError.message
+            : "Unknown document error";
+
+          const documentErrorDetails: ErrorDetails = {
+            code: "DOCUMENT_FAILED",
+            title: "Falha na Análise de Documento",
+            message: `Não foi possível analisar o documento: ${errorMessage}`,
+          };
+
+          await saveChatMessage({
+            phone: parsedMessage.phone,
+            message: `📄 [Documento não pôde ser analisado: ${parsedMessage.metadata.filename || "documento"}]`,
+            type: "user",
+            clientId: config.id,
+            mediaMetadata,
+            wamid: parsedMessage.messageId,
+            status: "failed",
+            errorDetails: documentErrorDetails,
+          });
+
+          logger.logNodeError("4b. Analyze Document", documentError);
+          logger.finishExecution("error");
+          return { success: false, error: errorMessage };
         }
       }
     } else if (!shouldProcessMedia) {

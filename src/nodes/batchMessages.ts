@@ -12,12 +12,17 @@ const delay = (ms: number): Promise<void> => {
 
 /**
  * Batches multiple messages from the same user with configurable delay
- * 
+ *
  * How it works:
  * 1. First message arrives → Acquires lock → Waits X seconds → Processes batch
  * 2. Second message arrives (within X seconds) → Cannot acquire lock → Returns empty immediately
- * 3. Third message arrives → Resets debounce timer → First flow exits early, third flow waits
- * 
+ * 3. When debounce is reset, the holder RESTARTS the wait (not exits!)
+ *
+ * ❌ OLD BUG: When debounce was reset, holder would exit assuming newer flow would wait.
+ *             But newer flow already exited because lock existed. Result: no one processes!
+ *
+ * ✅ FIX: Holder restarts wait when debounce is reset, ensuring all messages get processed.
+ *
  * @param phone - User's phone number
  * @param clientId - Client ID for configuration lookup
  * @returns Concatenated message content, or empty string if should skip
@@ -40,9 +45,10 @@ export const batchMessages = async (phone: string, clientId: string): Promise<st
     const BATCH_DELAY_MS = delaySeconds * 1000
 
     // Lock TTL must cover: batch wait + AI processing + message sending
-    // Formula: batchDelay + 60s buffer (AI + send time)
-    // Example: 30s batch + 60s buffer = 90s total
-    const LOCK_TTL_SECONDS = delaySeconds + 60
+    // Formula: batchDelay * maxRestarts + 60s buffer (AI + send time)
+    // Example: 30s batch * 5 restarts + 60s buffer = 210s total
+    const MAX_RESTARTS = 5
+    const LOCK_TTL_SECONDS = (delaySeconds * MAX_RESTARTS) + 60
 
     // Try to acquire lock with dynamic TTL based on configured delay
     const lockAcquired = await acquireLock(lockKey, executionId, LOCK_TTL_SECONDS)
@@ -80,25 +86,37 @@ export const batchMessages = async (phone: string, clientId: string): Promise<st
 
     console.log(`[batchMessages] Lock acquired for ${phone}, waiting ${delaySeconds}s`)
 
-    // Wait for the configured delay
-    await delay(BATCH_DELAY_MS)
+    // ✅ FIX: Loop with restart capability instead of single wait
+    let restartCount = 0
 
-    // Check if debounce was reset by a newer message
-    const lastMessageTimestamp = await get(debounceKey)
+    while (restartCount < MAX_RESTARTS) {
+      // Wait for the configured delay
+      await delay(BATCH_DELAY_MS)
 
-    if (lastMessageTimestamp) {
-      const timeSinceLastMessage = Date.now() - parseInt(lastMessageTimestamp, 10)
+      // Check if debounce was reset by a newer message
+      const lastMessageTimestamp = await get(debounceKey)
 
-      // If less than configured delay since last message, a new message arrived
-      // This flow should exit and let the newer flow handle batching
-      if (timeSinceLastMessage < BATCH_DELAY_MS) {
-        console.log(`[batchMessages] Debounce reset for ${phone} (${timeSinceLastMessage}ms < ${BATCH_DELAY_MS}ms), exiting`)
-        await deleteKey(lockKey) // Release lock
-        return ''
+      if (lastMessageTimestamp) {
+        const timeSinceLastMessage = Date.now() - parseInt(lastMessageTimestamp, 10)
+
+        // If less than configured delay since last message, a new message arrived
+        // ✅ FIX: RESTART the wait instead of exiting!
+        if (timeSinceLastMessage < BATCH_DELAY_MS) {
+          restartCount++
+          console.log(`[batchMessages] Debounce reset for ${phone} (${timeSinceLastMessage}ms < ${BATCH_DELAY_MS}ms), restarting wait (attempt ${restartCount}/${MAX_RESTARTS})`)
+          continue // Restart the loop
+        }
       }
+
+      // No new messages during delay period - exit loop and process
+      break
     }
 
-    // No new messages during delay period - process the batch
+    if (restartCount >= MAX_RESTARTS) {
+      console.log(`[batchMessages] Max restarts (${MAX_RESTARTS}) reached for ${phone}, processing anyway`)
+    }
+
+    // Process the batch
     const messages = await lrangeMessages(messagesKey, 0, -1)
 
     if (messages.length === 0) {

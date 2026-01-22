@@ -211,3 +211,122 @@ export const generateSecureToken = (): string => {
   }
   return token
 }
+
+// =====================================================
+// MULTI-TENANT CREDENTIAL ISOLATION
+// =====================================================
+
+/**
+ * Interface para credenciais de API do cliente do Vault
+ */
+export interface ClientAPICredentials {
+  openaiApiKey: string | null
+  groqApiKey: string | null
+}
+
+/**
+ * 🔐 Busca credenciais de API DIRETAMENTE do Vault do cliente
+ *
+ * ⚠️ CRITICAL: Esta função SEMPRE retorna as credenciais específicas do cliente,
+ * NUNCA retorna chaves compartilhadas. Use esta função para:
+ * - Fallback do AI Gateway
+ * - Whisper (transcrição de áudio)
+ * - GPT-4o Vision (análise de imagens)
+ * - Embeddings (RAG)
+ * - TTS (Text-to-Speech)
+ *
+ * NÃO use getClientConfig() para estes casos, pois ela pode retornar chaves
+ * compartilhadas quando aiKeysMode !== "byok_allowed".
+ *
+ * @param clientId - UUID do cliente
+ * @returns Credenciais do cliente do Vault (pode ter valores null se não configurado)
+ * @throws Error se o cliente não existir
+ */
+export const getClientVaultCredentials = async (
+  clientId: string
+): Promise<ClientAPICredentials> => {
+  try {
+    const supabase = createServerClient()
+
+    // Buscar IDs dos secrets do cliente
+    const { data: client, error } = await supabase
+      .from('clients')
+      .select('openai_api_key_secret_id, groq_api_key_secret_id')
+      .eq('id', clientId)
+      .single()
+
+    if (error || !client) {
+      throw new Error(`Client not found: ${clientId}`)
+    }
+
+    // Descriptografar secrets em paralelo (performance)
+    const [openaiApiKey, groqApiKey] = await getSecretsParallel([
+      client.openai_api_key_secret_id || null,
+      client.groq_api_key_secret_id || null,
+    ])
+
+    console.log('[Vault] Retrieved client-specific credentials', {
+      clientId,
+      hasOpenAI: !!openaiApiKey,
+      hasGroq: !!groqApiKey,
+      openaiSecretId: client.openai_api_key_secret_id?.substring(0, 8) + '...' || 'none',
+      groqSecretId: client.groq_api_key_secret_id?.substring(0, 8) + '...' || 'none',
+    })
+
+    return {
+      openaiApiKey,
+      groqApiKey,
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    throw new Error(`Failed to get client Vault credentials: ${errorMessage}`)
+  }
+}
+
+/**
+ * 🔐 Busca chave OpenAI DIRETAMENTE do Vault do cliente
+ *
+ * Versão simplificada para casos onde só precisa da chave OpenAI.
+ *
+ * @param clientId - UUID do cliente
+ * @returns Chave OpenAI do cliente ou null se não configurada
+ * @throws Error se o cliente não existir
+ */
+export const getClientOpenAIKey = async (
+  clientId: string
+): Promise<string | null> => {
+  try {
+    const supabase = createServerClient()
+
+    // Buscar ID do secret OpenAI do cliente
+    const { data: client, error } = await supabase
+      .from('clients')
+      .select('openai_api_key_secret_id')
+      .eq('id', clientId)
+      .single()
+
+    if (error || !client) {
+      throw new Error(`Client not found: ${clientId}`)
+    }
+
+    if (!client.openai_api_key_secret_id) {
+      console.warn('[Vault] Client has no OpenAI API key configured', { clientId })
+      return null
+    }
+
+    // Descriptografar secret
+    const openaiApiKey = await getSecret(client.openai_api_key_secret_id)
+
+    console.log('[Vault] Retrieved client OpenAI key from Vault', {
+      clientId,
+      hasKey: !!openaiApiKey,
+      secretId: client.openai_api_key_secret_id.substring(0, 8) + '...',
+      keyPrefix: openaiApiKey ? openaiApiKey.substring(0, 10) + '...' : 'none',
+    })
+
+    return openaiApiKey
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    throw new Error(`Failed to get client OpenAI key from Vault: ${errorMessage}`)
+  }
+}
