@@ -95,12 +95,24 @@ export const useMessages = ({
 
   // CORREÇÃO: Removido fetchMessages das dependências para evitar loops
   // Reset do hasFetchedRef quando troca de conversa
+  // Usa ref para rastrear phone anterior e evitar resets desnecessários
+  const previousPhoneRef = useRef<string | null>(null)
   useEffect(() => {
     if (phone) {
-      // Reset ao trocar de conversa
+      // Só reseta se o phone realmente mudou (não é o mesmo valor)
+      if (previousPhoneRef.current !== phone) {
+        previousPhoneRef.current = phone
+        // Reset ao trocar de conversa
+        hasFetchedRef.current = false
+        setInitialLoading(true)
+        fetchMessages()
+      }
+    } else {
+      // Se phone for vazio/null, limpa o estado
+      previousPhoneRef.current = null
       hasFetchedRef.current = false
       setInitialLoading(true)
-      fetchMessages()
+      setMessages([])
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phone]) // Só phone, não fetchMessages
