@@ -46,6 +46,8 @@ export const ConversationDetail = ({
   const lastFetchedIdsRef = useRef<Set<string>>(new Set())
   const { toast } = useToast()
 
+  // CORREÇÃO: loading agora é initialLoading (só true no primeiro fetch)
+  // Refetches/polling não fazem a UI desaparecer, evitando o "piscar"
   const { messages: fetchedMessages, loading, error } = useMessages({
     clientId,
     phone,
