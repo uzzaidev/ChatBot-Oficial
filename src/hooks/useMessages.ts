@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { apiFetch } from '@/lib/api'
 import type { Message } from '@/lib/types'
 
@@ -16,19 +16,42 @@ interface UseMessagesResult {
   refetch: () => Promise<void>
 }
 
+/**
+ * Hook para buscar mensagens de uma conversa
+ * 
+ * CORREÇÃO: Separado initialLoading de refetch para evitar "piscar" da UI
+ * - initialLoading: só true no primeiro fetch (quando troca de conversa)
+ * - refetches/polling: não setam loading, mantendo UI visível
+ */
 export const useMessages = ({
   clientId, // Keep for backward compatibility, but not sent to API
   phone,
   refreshInterval = 0,
 }: UseMessagesOptions): UseMessagesResult => {
   const [messages, setMessages] = useState<Message[]>([])
-  const [loading, setLoading] = useState(true)
+  // CORREÇÃO: Renomeado para initialLoading para clareza
+  // Só será true no primeiro fetch, não em refetches
+  const [initialLoading, setInitialLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [total, setTotal] = useState(0)
+  
+  // Ref para rastrear se já foi feito o primeiro fetch desta conversa
+  // Evita setar loading em refetches/polling
+  const hasFetchedRef = useRef(false)
+  // Ref para armazenar a função fetchMessages mais recente
+  // Permite usar no interval sem adicionar nas dependências
+  const fetchMessagesRef = useRef<((phone: string) => Promise<void>) | null>(null)
 
   const fetchMessages = useCallback(async () => {
+    // Determina se é o primeiro fetch desta conversa
+    const isInitial = !hasFetchedRef.current
+    
     try {
-      setLoading(true)
+      // CORREÇÃO: Só seta loading no primeiro fetch
+      // Refetches/polling não devem limpar a UI
+      if (isInitial) {
+        setInitialLoading(true)
+      }
       setError(null)
 
       // 🔐 SECURITY: No longer send client_id as query param
@@ -48,36 +71,58 @@ export const useMessages = ({
 
       const data = await response.json()
 
-
       setMessages(data.messages || [])
       setTotal(data.total || 0)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido'
       setError(errorMessage)
     } finally {
-      setLoading(false)
+      // CORREÇÃO: Só limpa loading se foi o fetch inicial
+      if (isInitial) {
+        setInitialLoading(false)
+        hasFetchedRef.current = true
+      }
     }
   }, [phone]) // Removed clientId from dependencies since it's not used in API call
 
+  // Atualiza ref com a função mais recente
+  useEffect(() => {
+    fetchMessagesRef.current = async () => {
+      await fetchMessages()
+    }
+  }, [fetchMessages])
+
+  // CORREÇÃO: Removido fetchMessages das dependências para evitar loops
+  // Reset do hasFetchedRef quando troca de conversa
   useEffect(() => {
     if (phone) {
+      // Reset ao trocar de conversa
+      hasFetchedRef.current = false
+      setInitialLoading(true)
       fetchMessages()
     }
-  }, [phone, fetchMessages])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phone]) // Só phone, não fetchMessages
 
+  // CORREÇÃO: Polling sem fetchMessages nas dependências
+  // Usa ref para acessar função mais recente sem causar re-render
   useEffect(() => {
     if (refreshInterval > 0 && phone) {
       const interval = setInterval(() => {
-        fetchMessages()
+        // Usa ref para evitar dependência instável
+        if (fetchMessagesRef.current) {
+          fetchMessagesRef.current()
+        }
       }, refreshInterval)
 
       return () => clearInterval(interval)
     }
-  }, [refreshInterval, phone, fetchMessages])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshInterval, phone]) // Só refreshInterval e phone, não fetchMessages
 
   return {
     messages,
-    loading,
+    loading: initialLoading, // Retorna initialLoading como loading para compatibilidade
     error,
     total,
     refetch: fetchMessages,
