@@ -40,7 +40,8 @@ export const useMessages = ({
   const hasFetchedRef = useRef(false)
   // Ref para armazenar a função fetchMessages mais recente
   // Permite usar no interval sem adicionar nas dependências
-  const fetchMessagesRef = useRef<((phone: string) => Promise<void>) | null>(null)
+  // CORREÇÃO: Tipo corrigido - fetchMessages não recebe argumentos (usa phone do closure)
+  const fetchMessagesRef = useRef<(() => Promise<void>) | null>(null)
 
   const fetchMessages = useCallback(async () => {
     // Determina se é o primeiro fetch desta conversa
