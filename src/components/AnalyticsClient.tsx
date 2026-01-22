@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useAnalytics } from '@/hooks/useAnalytics'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
@@ -10,8 +10,9 @@ import { DailyUsageChart } from '@/components/DailyUsageChart'
 import { ModelComparisonChart } from '@/components/ModelComparisonChart'
 import { ConversationUsageTable } from '@/components/ConversationUsageTable'
 import { PricingConfigModal } from '@/components/PricingConfigModal'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { DateRangeSelector, type DateRange } from '@/components/DateRangeSelector'
 import { Settings, Target, DollarSign, Cpu, Zap } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface AnalyticsClientProps {
   clientId: string
@@ -27,8 +28,25 @@ interface AnalyticsClientProps {
  * - Uso por conversa
  */
 export function AnalyticsClient({ clientId }: AnalyticsClientProps) {
-  const [days, setDays] = useState(30)
+  const [dateRange, setDateRange] = useState<DateRange>(() => {
+    const now = new Date()
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(now.getDate() - 30)
+    return {
+      start: thirtyDaysAgo,
+      end: now,
+      preset: 'last30Days',
+    }
+  })
   const [pricingModalOpen, setPricingModalOpen] = useState(false)
+
+  // Calculate days from date range
+  const days = useMemo(() => {
+    const diffTime = Math.abs(dateRange.end.getTime() - dateRange.start.getTime())
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    return diffDays
+  }, [dateRange])
+
   const { analytics, loading, error, refetch } = useAnalytics({
     days,
     type: 'all',
@@ -75,14 +93,14 @@ export function AnalyticsClient({ clientId }: AnalyticsClientProps) {
   }
 
   return (
-    <div className="space-y-6 md:space-y-8 p-4 md:p-6 lg:p-8">
+    <div className="space-y-6 md:space-y-8 p-4 md:p-6 lg:p-8 bg-pattern-dots">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+          <h1 className="text-2xl md:text-3xl font-bold font-poppins tracking-tight text-white">
             Analytics de Uso
           </h1>
-          <p className="text-sm md:text-base text-muted-foreground">
+          <p className="text-sm md:text-base text-uzz-silver">
             Acompanhe tokens, custos e uso de APIs
           </p>
         </div>
@@ -92,85 +110,93 @@ export function AnalyticsClient({ clientId }: AnalyticsClientProps) {
             variant="outline"
             size="sm"
             onClick={() => setPricingModalOpen(true)}
-            className="gap-2"
+            className={cn(
+              "gap-2",
+              "bg-gradient-to-br from-[#1e2530] to-[#1a1f26]",
+              "border-white/10 hover:border-uzz-mint/50",
+              "text-white hover:text-white",
+              "transition-all duration-300",
+              "hover:shadow-lg hover:shadow-uzz-mint/20"
+            )}
           >
             <Settings className="h-4 w-4" />
             Configurar Preços
           </Button>
 
-          <Select value={days.toString()} onValueChange={(value) => setDays(parseInt(value))}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Período" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7">Últimos 7 dias</SelectItem>
-              <SelectItem value="30">Últimos 30 dias</SelectItem>
-              <SelectItem value="60">Últimos 60 dias</SelectItem>
-              <SelectItem value="90">Últimos 90 dias</SelectItem>
-            </SelectContent>
-          </Select>
+          <DateRangeSelector
+            value={dateRange}
+            onChange={setDateRange}
+          />
         </div>
       </div>
 
-      <Separator />
+      <Separator className="bg-white/10" />
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 animate-slide-in-up">
+        <Card className="metric-card-glow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Tokens</CardTitle>
-            <Target className="h-6 w-6 text-blue-500" />
+            <CardTitle className="text-sm font-medium text-white">Total de Tokens</CardTitle>
+            <div className="icon-bg-gradient">
+              <Target className="h-5 w-5 text-uzz-blue" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-3xl font-bold font-poppins text-white">
               {Number(summary.total_tokens || 0).toLocaleString('pt-BR')}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs text-uzz-silver mt-1">
               {Number(summary.total_requests || 0).toLocaleString('pt-BR')} requisições
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="metric-card-glow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Custo Total</CardTitle>
-            <DollarSign className="h-6 w-6 text-green-500" />
+            <CardTitle className="text-sm font-medium text-white">Custo Total</CardTitle>
+            <div className="icon-bg-gradient">
+              <DollarSign className="h-5 w-5 text-green-400" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-3xl font-bold font-poppins text-white">
               ${Number(summary.total_cost || 0).toFixed(2)}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs text-uzz-silver mt-1">
               Últimos {days} dias
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="metric-card-glow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">OpenAI</CardTitle>
-            <Cpu className="h-6 w-6 text-emerald-500" />
+            <CardTitle className="text-sm font-medium text-white">OpenAI</CardTitle>
+            <div className="icon-bg-gradient">
+              <Cpu className="h-5 w-5 text-emerald-400" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-3xl font-bold font-poppins text-white">
               {Number(summary.openai_tokens || 0).toLocaleString('pt-BR')}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs text-uzz-silver mt-1">
               ${Number(summary.openai_cost || 0).toFixed(4)}
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="metric-card-glow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Groq</CardTitle>
-            <Zap className="h-6 w-6 text-purple-500" />
+            <CardTitle className="text-sm font-medium text-white">Groq</CardTitle>
+            <div className="icon-bg-gradient">
+              <Zap className="h-5 w-5 text-purple-400" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-3xl font-bold font-poppins text-white">
               {Number(summary.groq_tokens || 0).toLocaleString('pt-BR')}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs text-uzz-silver mt-1">
               ${Number(summary.groq_cost || 0).toFixed(4)}
             </p>
           </CardContent>

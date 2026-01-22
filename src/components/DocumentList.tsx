@@ -15,9 +15,10 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
-import { FileText, Trash2, Loader2, AlertCircle, Eye } from 'lucide-react'
+import { FileText, Trash2, Loader2, AlertCircle, Eye, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
+import { EmptyStateSimple } from '@/components/EmptyState'
 import { ChunksViewer } from '@/components/ChunksViewer'
 import {
   AlertDialog,
@@ -165,15 +166,11 @@ export const DocumentList = ({ refreshTrigger }: DocumentListProps) => {
 
   if (documents.length === 0) {
     return (
-      <div className="text-center p-8 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg">
-        <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          Nenhum documento carregado ainda.
-        </p>
-        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-          Faça upload de PDFs ou TXTs para adicionar conhecimento ao chatbot.
-        </p>
-      </div>
+      <EmptyStateSimple
+        icon={BookOpen}
+        title="Nenhum documento adicionado"
+        description="Vá para a aba 'Upload de Documentos' para adicionar PDFs ou TXTs à base de conhecimento"
+      />
     )
   }
 

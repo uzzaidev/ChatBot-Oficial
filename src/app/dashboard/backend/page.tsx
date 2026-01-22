@@ -19,7 +19,6 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Check, X, Loader2, Phone, CheckCheck, Eye, AlertTriangle, Search, Globe, Mail, Send, ScrollText, RefreshCw, Pause, RotateCw } from 'lucide-react'
-import { createBrowserClient } from '@/lib/supabase-browser'
 import { apiFetch } from '@/lib/api'
 
 interface ExecutionLog {
@@ -55,7 +54,6 @@ export default function BackendPage() {
   const [autoScroll, setAutoScroll] = useState(true)
   const [statusFilter, setStatusFilter] = useState<StatusFilterType>('all')
   const [phoneFilter, setPhoneFilter] = useState<string>('')
-  const supabase = createBrowserClient()
 
   // Função para buscar logs - sempre busca os últimos 500 logs do Supabase
   const fetchLogs = useCallback(async () => {
@@ -364,8 +362,8 @@ export default function BackendPage() {
     <div className="container mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Backend Monitor</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-poppins font-bold bg-gradient-to-r from-uzz-mint to-uzz-blue bg-clip-text text-transparent">Backend Monitor</h1>
+          <p className="text-sm sm:text-base text-uzz-silver">
             Monitoramento em tempo real do fluxo de mensagens - Estilo terminal
           </p>
         </div>

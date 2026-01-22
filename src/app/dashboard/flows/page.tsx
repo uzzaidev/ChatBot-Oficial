@@ -16,7 +16,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClientBrowser } from '@/lib/supabase'
 import type { InteractiveFlow } from '@/types/interactiveFlows'
-import { Plus, Edit, Trash2, Copy, Play, Pause, Power, PowerOff } from 'lucide-react'
+import { Plus, Edit, Trash2, Copy, Play, Pause, Power, PowerOff, Workflow } from 'lucide-react'
+import { EmptyState } from '@/components/EmptyState'
 
 export default function FlowsListPage() {
   const [flows, setFlows] = useState<InteractiveFlow[]>([])
@@ -147,25 +148,13 @@ export default function FlowsListPage() {
 
       {/* Flows List */}
       {flows.length === 0 ? (
-        <div className="bg-white border-2 border-dashed border-gray-300 rounded-lg p-12 text-center">
-          <div className="max-w-sm mx-auto">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Plus className="w-8 h-8 text-gray-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Nenhum flow criado
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Comece criando seu primeiro flow interativo para automatizar o atendimento.
-            </p>
-            <button
-              onClick={handleCreateFlow}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Criar Primeiro Flow
-            </button>
-          </div>
-        </div>
+        <EmptyState
+          icon={Workflow}
+          title="Nenhum flow criado"
+          description="Comece criando seu primeiro flow interativo para automatizar o atendimento com mensagens estruturadas e botões."
+          actionLabel="Criar Primeiro Flow"
+          onAction={handleCreateFlow}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {flows.map((flow) => (

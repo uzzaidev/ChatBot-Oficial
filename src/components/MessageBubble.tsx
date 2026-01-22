@@ -507,7 +507,13 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
 
   return (
     <div className={'flex ' + (isIncoming ? 'justify-start' : 'justify-end') + ' mb-2 px-2'}>
-      <div className={'relative group max-w-[70%] rounded-lg p-3 break-words ' + (isIncoming ? 'bg-white shadow-sm' : 'bg-mint-500 text-white')}>
+      <div
+        className={'relative group max-w-[70%] rounded-lg p-3 break-words ' + (
+          isIncoming
+            ? 'bg-gradient-to-br from-[#1ABC9C] to-[#2E86AB] text-white shadow-lg'
+            : 'bg-white text-gray-900 shadow-sm border border-gray-200'
+        )}
+      >
         {/* Action menu - WhatsApp style dropdown */}
         {(onReaction || onDelete) && (
           <MessageActionMenu
@@ -517,12 +523,14 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
             isDeleting={isDeleting}
           />
         )}
-        
+
         {renderMediaContent()}
         {textContent && (
-          <p className="whitespace-pre-wrap text-sm md:text-base">{textContent}</p>
+          <p className={'whitespace-pre-wrap text-sm md:text-base ' + (isIncoming ? 'text-white' : 'text-gray-900')}>
+            {textContent}
+          </p>
         )}
-        <p className={'text-xs mt-1 flex items-center gap-1 ' + (isIncoming ? 'text-erie-black-500' : 'text-white/70')}>
+        <p className={'text-xs mt-1 flex items-center gap-1 ' + (isIncoming ? 'text-white/80' : 'text-gray-600')}>
           <span>{new Date(message.timestamp).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>
           {renderStatusIcon()}
         </p>

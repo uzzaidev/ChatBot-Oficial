@@ -15,6 +15,15 @@ const badgeVariants = cva(
         destructive:
           "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
         outline: "text-foreground",
+        // UZZ.AI Custom Badges
+        new:
+          "border-transparent bg-gradient-to-r from-uzz-mint to-uzz-gold text-uzz-black font-bold uppercase tracking-wider",
+        beta:
+          "border-uzz-blue bg-uzz-blue/20 text-uzz-blue font-bold uppercase tracking-wider",
+        admin:
+          "border-uzz-gold/30 bg-uzz-gold/15 text-uzz-gold font-bold uppercase tracking-wider",
+        dev:
+          "border-uzz-silver bg-uzz-silver/15 text-uzz-silver font-bold uppercase tracking-wider",
       },
     },
     defaultVariants: {

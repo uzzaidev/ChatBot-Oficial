@@ -76,12 +76,14 @@ O projeto **já usa Doppler** nos scripts de build:
 ```json
 {
   "scripts": {
-    "build:mobile": "doppler run --config dev -- cross-env CAPACITOR_BUILD=true next build",
+    "build:mobile": "node scripts/build-mobile.js",  // Usa Doppler prd internamente
     "build:mobile:stg": "doppler run --config stg -- cross-env CAPACITOR_BUILD=true next build",
     "build:mobile:prd": "doppler run --config prd -- cross-env CAPACITOR_BUILD=true next build"
   }
 }
 ```
+
+**Nota:** O script `build:mobile` usa o arquivo `scripts/build-mobile.js` que já executa `doppler run --config prd` internamente.
 
 ### Como Usar
 
@@ -102,6 +104,8 @@ npm run build:mobile:prd
 
 ### Setup Doppler (Primeira Vez)
 
+> 📚 **Guia Completo:** Para instruções detalhadas de instalação no Windows, veja [DOPPLER_SETUP_WINDOWS.md](../../setup/DOPPLER_SETUP_WINDOWS.md)
+
 1. **Instalar Doppler CLI:**
    ```bash
    # Windows (PowerShell como Admin)
@@ -111,23 +115,38 @@ npm run build:mobile:prd
    brew install dopplerhq/cli/doppler
    ```
 
-2. **Autenticar:**
+   **⚠️ IMPORTANTE:** Após instalar, feche e reabra o PowerShell para recarregar o PATH.
+
+2. **Verificar instalação:**
    ```bash
-   doppler login
+   doppler --version
+   # Deve mostrar: doppler version x.x.x
    ```
 
-3. **Configurar projeto:**
+3. **Autenticar:**
    ```bash
-   cd C:\Users\pedro\OneDrive\Área de Trabalho\ChatBot-Oficial\ChatBot-Oficial
+   doppler login
+   # Abrirá o navegador para autenticação
+   ```
+
+4. **Configurar projeto:**
+   ```bash
+   cd "C:\Projetos Uzz.Ai\10  - ChatBot-Oficial-main\ChatBot-Oficial"
    doppler setup
    # Selecionar projeto: chatbot-oficial
    # Configs disponíveis: dev, stg, prd
    ```
 
-4. **Verificar variáveis:**
+5. **Verificar variáveis:**
    ```bash
    doppler secrets
    # Deve mostrar todas as variáveis (NEXT_PUBLIC_SUPABASE_URL, etc.)
+   ```
+
+6. **Testar configuração:**
+   ```bash
+   # Teste com uma variável
+   doppler run --config dev -- echo $env:NEXT_PUBLIC_SUPABASE_URL
    ```
 
 ### Vantagens

@@ -10,55 +10,68 @@
     --safe-area-inset-left: env(safe-area-inset-left, 0px);
     --safe-area-inset-right: env(safe-area-inset-right, 0px);
 
+    /* UZZ.AI Brand Colors */
+    --uzzai-mint: #1ABC9C;
+    --uzzai-black: #1C1C1C;
+    --uzzai-silver: #B0B0B0;
+    --uzzai-blue: #2E86AB;
+    --uzzai-gold: #FFD700;
+
+    /* Status Colors */
+    --status-success: #10B981;
+    --status-warning: #F59E0B;
+    --status-danger: #EF4444;
+    --status-info: #3B82F6;
+    
+    /* CSS Variables for Tailwind */
+    --status-success-hsl: 142 76% 36%;
+    --status-warning-hsl: 38 92% 50%;
+    --status-danger-hsl: 0 84% 60%;
+    --status-info-hsl: 217 91% 60%;
+
+    /* Dark Theme Colors (Default) */
+    --background: #0f1419; /* Dark background */
+    --foreground: 210 40% 98%; /* White text */
+    --card: #1a1f26; /* Card background */
+    --card-foreground: 210 40% 98%;
+    --popover: #1e2530;
+    --popover-foreground: 210 40% 98%;
+    --primary: 170 76% 39%; /* UZZ.AI Mint (#1ABC9C) */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 203 68% 41%; /* UZZ.AI Blue (#2E86AB) */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 210 20% 25%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 170 76% 39%; /* UZZ.AI Mint */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: rgba(255, 255, 255, 0.1);
+    --input: rgba(255, 255, 255, 0.05);
+    --ring: 170 76% 39%; /* UZZ.AI Mint */
+    --radius: 0.5rem;
+  }
+
+  .light {
     --background: 0 0% 100%;
-    --foreground: 180 3% 15%; /* Erie Black for text */
+    --foreground: 180 3% 15%;
     --card: 0 0% 100%;
     --card-foreground: 180 3% 15%;
     --popover: 0 0% 100%;
     --popover-foreground: 180 3% 15%;
-    /* Brand Colors - Mint Green Primary */
-    --primary: 142 76% 36%; /* Mint Green */
+    --primary: 170 76% 39%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 217 91% 60%; /* Blue */
+    --secondary: 203 68% 41%;
     --secondary-foreground: 0 0% 100%;
     --muted: 210 40% 96%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 142 76% 36%; /* Mint Green accent */
+    --accent: 170 76% 39%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 142 76% 36%; /* Mint Green */
-    --radius: 0.5rem;
-    /* Brand specific colors */
-    --erie-black: 180 3% 15%; /* #1F2427 - Deep dark */
-    --mint-green: 142 76% 36%; /* #10B981 - Primary brand */
-    --brand-blue: 217 91% 60%; /* #3B82F6 - Secondary */
-    --gold-accent: 43 96% 56%; /* #F59E0B - Highlights */
-    --silver-accent: 214 32% 91%; /* #E5E7EB - Subtle borders */
-  }
-
-  .dark {
-    --background: 180 3% 15%; /* Erie Black */
-    --foreground: 210 40% 98%;
-    --card: 180 3% 18%; /* Slightly lighter Erie Black */
-    --card-foreground: 210 40% 98%;
-    --popover: 180 3% 18%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 142 76% 36%; /* Mint Green stays same */
-    --primary-foreground: 0 0% 100%;
-    --secondary: 217 91% 60%; /* Blue */
-    --secondary-foreground: 0 0% 100%;
-    --muted: 180 3% 25%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 142 76% 36%; /* Mint Green */
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 180 3% 25%;
-    --input: 180 3% 25%;
-    --ring: 142 76% 36%; /* Mint Green */
+    --ring: 170 76% 39%;
   }
 }
 
@@ -67,39 +80,291 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    @apply bg-[#0f1419] text-white;
+    font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    overflow-x: hidden;
+  }
+  
+  /* Scrollbar styling for dark theme */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: rgba(26, 188, 156, 0.3);
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(26, 188, 156, 0.5);
   }
 }
 
 @layer utilities {
   /* Brand gradient utilities */
+  .bg-gradient-uzz {
+    background: linear-gradient(135deg, var(--uzzai-mint), var(--uzzai-blue));
+  }
   .bg-gradient-mint {
-    background: radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.15), transparent);
+    background: linear-gradient(135deg, rgba(26, 188, 156, 0.15), transparent);
   }
   .bg-gradient-blue {
-    background: radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.15), transparent);
+    background: linear-gradient(135deg, rgba(46, 134, 171, 0.15), transparent);
   }
   .bg-gradient-gold {
-    background: radial-gradient(circle at 50% 50%, rgba(245, 158, 11, 0.1), transparent);
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), transparent);
+  }
+  
+  /* Dark card gradients */
+  .bg-card-dark {
+    background: linear-gradient(180deg, #1e2530 0%, #1a1f26 100%);
+  }
+  
+  .bg-sidebar-dark {
+    background: linear-gradient(180deg, #1a1f26 0%, #0f1419 100%);
   }
   
   /* Brand shadow effects */
   .shadow-glow {
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+    box-shadow: 0 12px 24px rgba(26, 188, 156, 0.15);
   }
   .shadow-glow-blue {
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
+    box-shadow: 0 12px 24px rgba(46, 134, 171, 0.15);
   }
   .shadow-glow-gold {
-    box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+    box-shadow: 0 8px 16px rgba(255, 215, 0, 0.2);
+  }
+  .shadow-glow-mint {
+    box-shadow: 0 8px 16px rgba(26, 188, 156, 0.3);
   }
   
-  /* Brand background utilities */
-  .bg-erie-black {
-    background-color: hsl(var(--erie-black));
+  /* Metric card with top border gradient */
+  .metric-card {
+    @apply relative overflow-hidden transition-all duration-300;
+    background: linear-gradient(180deg, #1e2530 0%, #1a1f26 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 24px;
   }
-  .bg-brand-surface {
-    background-color: rgba(31, 36, 39, 0.95);
+  
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, var(--uzzai-mint), var(--uzzai-blue));
+  }
+  
+  .metric-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(26, 188, 156, 0.15);
+  }
+
+  /* Navigation Section Headers - UZZ.AI Style */
+  .nav-section-header {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--uzzai-silver);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 12px 12px 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .nav-section-header::before {
+    content: '';
+    width: 3px;
+    height: 12px;
+    background: var(--uzzai-mint);
+    border-radius: 2px;
+  }
+  
+  /* Animation utilities */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+  
+  /* Pulse animation for new items */
+  @keyframes pulse-once {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
+  }
+  
+  .animate-pulse-once {
+    animation: pulse-once 2s ease-in-out infinite;
+  }
+  
+  /* Status color utilities */
+  .text-status-success {
+    color: var(--status-success);
+  }
+  
+  .text-status-warning {
+    color: var(--status-warning);
+  }
+  
+  .text-status-danger {
+    color: var(--status-danger);
+  }
+  
+  .text-status-info {
+    color: var(--status-info);
+  }
+  
+  /* ========================================
+     ANALYTICS DARK THEME
+     ======================================== */
+  
+  /* Chart containers */
+  .chart-container-dark {
+    background: linear-gradient(180deg, #1e2530 0%, #1a1f26 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 24px;
+  }
+  
+  /* Metric cards with glow effect */
+  .metric-card-glow {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(180deg, #1e2530 0%, #1a1f26 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    transition: all 0.3s ease;
+  }
+  
+  .metric-card-glow::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--uzzai-mint), var(--uzzai-blue));
+  }
+  
+  .metric-card-glow:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 12px 24px rgba(26, 188, 156, 0.2);
+    border-color: rgba(26, 188, 156, 0.3);
+  }
+  
+  /* Icon backgrounds */
+  .icon-bg-gradient {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(26, 188, 156, 0.2), rgba(46, 134, 171, 0.2));
+    transition: all 0.3s ease;
+  }
+  
+  .metric-card-glow:hover .icon-bg-gradient {
+    background: linear-gradient(135deg, rgba(26, 188, 156, 0.3), rgba(46, 134, 171, 0.3));
+    box-shadow: 0 4px 12px rgba(26, 188, 156, 0.3);
+  }
+  
+  /* Date range selector */
+  .date-preset-button {
+    @apply px-4 py-2 rounded-lg text-sm font-medium transition-all;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: transparent;
+    color: var(--uzzai-silver);
+  }
+  
+  .date-preset-button:hover {
+    border-color: rgba(26, 188, 156, 0.5);
+    color: white;
+    background: rgba(26, 188, 156, 0.1);
+  }
+  
+  .date-preset-button.active {
+    background: linear-gradient(135deg, var(--uzzai-mint), var(--uzzai-blue));
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 4px 12px rgba(26, 188, 156, 0.3);
+  }
+  
+  /* Glassmorphism tooltip */
+  .chart-tooltip-dark {
+    background: rgba(30, 37, 48, 0.95) !important;
+    border: 1px solid rgba(26, 188, 156, 0.3) !important;
+    border-radius: 8px !important;
+    backdrop-filter: blur(10px) !important;
+    padding: 12px !important;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3) !important;
+  }
+  
+  .chart-tooltip-dark .label {
+    color: white !important;
+    font-weight: 600 !important;
+    margin-bottom: 8px !important;
+  }
+  
+  .chart-tooltip-dark .value {
+    color: var(--uzzai-mint) !important;
+    font-size: 14px !important;
+  }
+  
+  /* Background pattern */
+  .bg-pattern-dots {
+    background-image: radial-gradient(circle at 1px 1px, rgba(26, 188, 156, 0.05) 1px, transparent 0);
+    background-size: 40px 40px;
+  }
+  
+  /* Glow pulse animation */
+  @keyframes glow-pulse {
+    0%, 100% {
+      box-shadow: 0 0 10px rgba(26, 188, 156, 0.2);
+    }
+    50% {
+      box-shadow: 0 0 20px rgba(26, 188, 156, 0.4);
+    }
+  }
+  
+  .animate-glow-pulse {
+    animation: glow-pulse 2s ease-in-out infinite;
+  }
+  
+  /* Slide in up animation */
+  @keyframes slide-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-slide-in-up {
+    animation: slide-in-up 0.5s ease-out forwards;
   }
 }

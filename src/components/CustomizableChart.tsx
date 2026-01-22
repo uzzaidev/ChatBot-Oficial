@@ -1,8 +1,9 @@
 'use client'
 
+import { useState, useRef } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Settings, X } from 'lucide-react'
+import { Settings, X, Download, ZoomIn, ZoomOut } from 'lucide-react'
 import {
   LineChart,
   Line,
@@ -17,8 +18,10 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  Brush,
 } from 'recharts'
 import type { ChartConfig, MetricDataPoint } from '@/lib/types/dashboard-metrics'
+import { cn } from '@/lib/utils'
 
 interface CustomizableChartProps {
   config: ChartConfig
@@ -45,25 +48,89 @@ export function CustomizableChart({
   loading = false,
 }: CustomizableChartProps) {
   const chartHeight = config.height || 300
+  const [hiddenDataKeys, setHiddenDataKeys] = useState<Set<string>>(new Set())
+  const [brushStartIndex, setBrushStartIndex] = useState(0)
+  const [brushEndIndex, setBrushEndIndex] = useState(data.length > 0 ? data.length - 1 : 0)
+  const chartContainerRef = useRef<HTMLDivElement>(null)
+
+  // Filter data based on brush selection
+  const filteredData = data.length > 0 ? data.slice(brushStartIndex, brushEndIndex + 1) : []
+
+  // Toggle visibility of data series
+  const handleLegendClick = (dataKey: string | number | ((data: any, index: number) => string | number) | undefined) => {
+    if (!dataKey || typeof dataKey === 'function') return
+    const key = String(dataKey)
+    const newHidden = new Set(hiddenDataKeys)
+    if (newHidden.has(key)) {
+      newHidden.delete(key)
+    } else {
+      newHidden.add(key)
+    }
+    setHiddenDataKeys(newHidden)
+  }
+
+  // Export chart as PNG
+  const handleExportPNG = async () => {
+    if (!chartContainerRef.current) return
+
+    try {
+      // Dynamic import of html2canvas to keep bundle size small
+      const html2canvas = (await import('html2canvas')).default
+      const canvas = await html2canvas(chartContainerRef.current, {
+        backgroundColor: '#1a1f26',
+        scale: 2,
+      })
+      const url = canvas.toDataURL('image/png')
+      const link = document.createElement('a')
+      link.download = `${config.title.replace(/\s+/g, '_')}_${Date.now()}.png`
+      link.href = url
+      link.click()
+    } catch (error) {
+      console.error('Erro ao exportar gráfico:', error)
+      alert('Erro ao exportar gráfico. Tente novamente.')
+    }
+  }
+
+  // Export chart as SVG
+  const handleExportSVG = () => {
+    const svgElement = chartContainerRef.current?.querySelector('svg')
+    if (!svgElement) return
+
+    const svgData = new XMLSerializer().serializeToString(svgElement)
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' })
+    const svgUrl = URL.createObjectURL(svgBlob)
+    const link = document.createElement('a')
+    link.download = `${config.title.replace(/\s+/g, '_')}_${Date.now()}.svg`
+    link.href = svgUrl
+    link.click()
+    URL.revokeObjectURL(svgUrl)
+  }
 
   const renderChart = () => {
+    // Filter data based on brush selection
+    const filteredData = data.slice(brushStartIndex, brushEndIndex + 1)
+
     const commonProps = {
-      data,
-      margin: { top: 10, right: 30, left: 0, bottom: 0 },
+      data: filteredData,
+      margin: { top: 10, right: 30, left: 0, bottom: data.length > 10 ? 50 : 0 },
     }
 
     const gridProps = config.showGrid
-      ? { strokeDasharray: '3 3', stroke: '#e5e7eb' }
+      ? { strokeDasharray: '3 3', stroke: 'rgba(255, 255, 255, 0.1)' }
       : undefined
 
     const tooltipProps = {
       contentStyle: {
-        backgroundColor: 'white',
-        border: '1px solid #e5e7eb',
+        backgroundColor: '#1a1f26',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
         borderRadius: '8px',
+        padding: '12px',
       },
-      labelStyle: { color: '#374151' },
+      labelStyle: { color: '#fff', fontWeight: 600 },
+      itemStyle: { color: '#fff' },
+      cursor: { stroke: 'rgba(26, 188, 156, 0.3)', strokeWidth: 2 },
     }
+
 
     switch (config.type) {
       case 'line':
@@ -72,14 +139,46 @@ export function CustomizableChart({
             {config.showGrid && <CartesianGrid {...gridProps} />}
             <XAxis
               dataKey="date"
-              stroke="#9ca3af"
+              stroke="rgba(255, 255, 255, 0.5)"
               fontSize={12}
               tickLine={false}
+              tick={{ fill: 'rgba(255, 255, 255, 0.7)' }}
             />
-            <YAxis stroke="#9ca3af" fontSize={12} tickLine={false} />
+            <YAxis 
+              stroke="rgba(255, 255, 255, 0.5)" 
+              fontSize={12} 
+              tickLine={false}
+              tick={{ fill: 'rgba(255, 255, 255, 0.7)' }}
+            />
             <Tooltip {...tooltipProps} />
-            {config.showLegend && <Legend />}
+            {config.showLegend && (
+              <Legend 
+                onClick={(e: any) => {
+                  if (e?.dataKey) {
+                    handleLegendClick(e.dataKey)
+                  }
+                }}
+                wrapperStyle={{ color: '#fff' }}
+                iconType="line"
+              />
+            )}
             {renderLines()}
+            {data.length > 10 && (
+              <Brush
+                dataKey="date"
+                height={30}
+                stroke="#1ABC9C"
+                fill="rgba(26, 188, 156, 0.1)"
+                startIndex={brushStartIndex}
+                endIndex={brushEndIndex}
+                onChange={(e) => {
+                  if (e.startIndex !== undefined && e.endIndex !== undefined) {
+                    setBrushStartIndex(e.startIndex)
+                    setBrushEndIndex(e.endIndex)
+                  }
+                }}
+              />
+            )}
           </LineChart>
         )
 
@@ -89,14 +188,45 @@ export function CustomizableChart({
             {config.showGrid && <CartesianGrid {...gridProps} />}
             <XAxis
               dataKey="date"
-              stroke="#9ca3af"
+              stroke="rgba(255, 255, 255, 0.5)"
               fontSize={12}
               tickLine={false}
+              tick={{ fill: 'rgba(255, 255, 255, 0.7)' }}
             />
-            <YAxis stroke="#9ca3af" fontSize={12} tickLine={false} />
+            <YAxis 
+              stroke="rgba(255, 255, 255, 0.5)" 
+              fontSize={12} 
+              tickLine={false}
+              tick={{ fill: 'rgba(255, 255, 255, 0.7)' }}
+            />
             <Tooltip {...tooltipProps} />
-            {config.showLegend && <Legend />}
+            {config.showLegend && (
+              <Legend 
+                onClick={(e: any) => {
+                  if (e?.dataKey) {
+                    handleLegendClick(e.dataKey)
+                  }
+                }}
+                wrapperStyle={{ color: '#fff' }}
+              />
+            )}
             {renderBars()}
+            {data.length > 10 && (
+              <Brush
+                dataKey="date"
+                height={30}
+                stroke="#1ABC9C"
+                fill="rgba(26, 188, 156, 0.1)"
+                startIndex={brushStartIndex}
+                endIndex={brushEndIndex}
+                onChange={(e) => {
+                  if (e.startIndex !== undefined && e.endIndex !== undefined) {
+                    setBrushStartIndex(e.startIndex)
+                    setBrushEndIndex(e.endIndex)
+                  }
+                }}
+              />
+            )}
           </BarChart>
         )
 
@@ -106,14 +236,46 @@ export function CustomizableChart({
             {config.showGrid && <CartesianGrid {...gridProps} />}
             <XAxis
               dataKey="date"
-              stroke="#9ca3af"
+              stroke="rgba(255, 255, 255, 0.5)"
               fontSize={12}
               tickLine={false}
+              tick={{ fill: 'rgba(255, 255, 255, 0.7)' }}
             />
-            <YAxis stroke="#9ca3af" fontSize={12} tickLine={false} />
+            <YAxis 
+              stroke="rgba(255, 255, 255, 0.5)" 
+              fontSize={12} 
+              tickLine={false}
+              tick={{ fill: 'rgba(255, 255, 255, 0.7)' }}
+            />
             <Tooltip {...tooltipProps} />
-            {config.showLegend && <Legend />}
+            {config.showLegend && (
+              <Legend 
+                onClick={(e: any) => {
+                  if (e?.dataKey) {
+                    handleLegendClick(e.dataKey)
+                  }
+                }}
+                wrapperStyle={{ color: '#fff' }}
+                iconType="rect"
+              />
+            )}
             {renderAreas()}
+            {data.length > 10 && (
+              <Brush
+                dataKey="date"
+                height={30}
+                stroke="#1ABC9C"
+                fill="rgba(26, 188, 156, 0.1)"
+                startIndex={brushStartIndex}
+                endIndex={brushEndIndex}
+                onChange={(e) => {
+                  if (e.startIndex !== undefined && e.endIndex !== undefined) {
+                    setBrushStartIndex(e.startIndex)
+                    setBrushEndIndex(e.endIndex)
+                  }
+                }}
+              />
+            )}
           </AreaChart>
         )
 
@@ -123,14 +285,45 @@ export function CustomizableChart({
             {config.showGrid && <CartesianGrid {...gridProps} />}
             <XAxis
               dataKey="date"
-              stroke="#9ca3af"
+              stroke="rgba(255, 255, 255, 0.5)"
               fontSize={12}
               tickLine={false}
+              tick={{ fill: 'rgba(255, 255, 255, 0.7)' }}
             />
-            <YAxis stroke="#9ca3af" fontSize={12} tickLine={false} />
+            <YAxis 
+              stroke="rgba(255, 255, 255, 0.5)" 
+              fontSize={12} 
+              tickLine={false}
+              tick={{ fill: 'rgba(255, 255, 255, 0.7)' }}
+            />
             <Tooltip {...tooltipProps} />
-            {config.showLegend && <Legend />}
+            {config.showLegend && (
+              <Legend 
+                onClick={(e: any) => {
+                  if (e?.dataKey) {
+                    handleLegendClick(e.dataKey)
+                  }
+                }}
+                wrapperStyle={{ color: '#fff' }}
+              />
+            )}
             {renderComposedElements()}
+            {data.length > 10 && (
+              <Brush
+                dataKey="date"
+                height={30}
+                stroke="#1ABC9C"
+                fill="rgba(26, 188, 156, 0.1)"
+                startIndex={brushStartIndex}
+                endIndex={brushEndIndex}
+                onChange={(e) => {
+                  if (e.startIndex !== undefined && e.endIndex !== undefined) {
+                    setBrushStartIndex(e.startIndex)
+                    setBrushEndIndex(e.endIndex)
+                  }
+                }}
+              />
+            )}
           </ComposedChart>
         )
 
@@ -141,43 +334,52 @@ export function CustomizableChart({
 
   const renderLines = () => {
     const dataKeys = getDataKeys()
-    return dataKeys.map((key, index) => (
-      <Line
-        key={key}
-        type="monotone"
-        dataKey={key}
-        stroke={index === 0 ? config.colors.primary : config.colors.secondary || config.colors.primary}
-        strokeWidth={2}
-        dot={false}
-        activeDot={{ r: 6 }}
-      />
-    ))
+    return dataKeys
+      .filter((key) => !hiddenDataKeys.has(key))
+      .map((key, index) => (
+        <Line
+          key={key}
+          type="monotone"
+          dataKey={key}
+          stroke={index === 0 ? config.colors.primary : config.colors.secondary || config.colors.primary}
+          strokeWidth={2}
+          dot={false}
+          activeDot={{ r: 6, fill: index === 0 ? config.colors.primary : config.colors.secondary || config.colors.primary }}
+          hide={hiddenDataKeys.has(key)}
+        />
+      ))
   }
 
   const renderBars = () => {
     const dataKeys = getDataKeys()
-    return dataKeys.map((key, index) => (
-      <Bar
-        key={key}
-        dataKey={key}
-        fill={index === 0 ? config.colors.primary : config.colors.secondary || config.colors.primary}
-        radius={[4, 4, 0, 0]}
-      />
-    ))
+    return dataKeys
+      .filter((key) => !hiddenDataKeys.has(key))
+      .map((key, index) => (
+        <Bar
+          key={key}
+          dataKey={key}
+          fill={index === 0 ? config.colors.primary : config.colors.secondary || config.colors.primary}
+          radius={[4, 4, 0, 0]}
+          hide={hiddenDataKeys.has(key)}
+        />
+      ))
   }
 
   const renderAreas = () => {
     const dataKeys = getDataKeys()
-    return dataKeys.map((key, index) => (
-      <Area
-        key={key}
-        type="monotone"
-        dataKey={key}
-        stroke={index === 0 ? config.colors.primary : config.colors.secondary || config.colors.primary}
-        fill={index === 0 ? config.colors.primary : config.colors.secondary || config.colors.primary}
-        fillOpacity={0.6}
-      />
-    ))
+    return dataKeys
+      .filter((key) => !hiddenDataKeys.has(key))
+      .map((key, index) => (
+        <Area
+          key={key}
+          type="monotone"
+          dataKey={key}
+          stroke={index === 0 ? config.colors.primary : config.colors.secondary || config.colors.primary}
+          fill={index === 0 ? config.colors.primary : config.colors.secondary || config.colors.primary}
+          fillOpacity={0.6}
+          hide={hiddenDataKeys.has(key)}
+        />
+      ))
   }
 
   const renderComposedElements = () => {
@@ -276,12 +478,32 @@ export function CustomizableChart({
           {config.description && <CardDescription>{config.description}</CardDescription>}
         </div>
         <div className="flex gap-2">
+          {/* Export buttons */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleExportPNG}
+            className="h-8 w-8"
+            title="Exportar como PNG"
+          >
+            <Download className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleExportSVG}
+            className="h-8 w-8"
+            title="Exportar como SVG"
+          >
+            <ZoomIn className="h-4 w-4" />
+          </Button>
           {onEdit && (
             <Button
               variant="ghost"
               size="icon"
               onClick={() => onEdit(config.id)}
               className="h-8 w-8"
+              title="Editar gráfico"
             >
               <Settings className="h-4 w-4" />
             </Button>
@@ -292,6 +514,7 @@ export function CustomizableChart({
               size="icon"
               onClick={() => onRemove(config.id)}
               className="h-8 w-8 text-destructive hover:text-destructive"
+              title="Remover gráfico"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -299,9 +522,11 @@ export function CustomizableChart({
         </div>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={chartHeight}>
-          {renderChart()}
-        </ResponsiveContainer>
+        <div ref={chartContainerRef} className="w-full">
+          <ResponsiveContainer width="100%" height={chartHeight}>
+            {renderChart()}
+          </ResponsiveContainer>
+        </div>
       </CardContent>
     </Card>
   )

@@ -104,22 +104,34 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0f1419] via-[#1a1f26] to-[#0f1419] relative overflow-hidden py-8">
+      {/* Background effects */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#1ABC9C]/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#2E86AB]/10 rounded-full blur-[100px]" />
+      </div>
+
+      <div className="bg-[#1a1f26]/80 backdrop-blur-sm p-8 md:p-10 rounded-xl shadow-2xl w-full max-w-md border border-white/10">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <div className="inline-flex items-center gap-2 mb-4">
+            <span className="text-2xl font-bold">
+              <span className="text-[#1ABC9C]">Uzz</span>
+              <span className="text-[#2E86AB]">.Ai</span>
+            </span>
+          </div>
+          <h1 className="text-3xl font-bold text-white mb-2">
             Criar Conta
           </h1>
-          <p className="text-gray-600">
-            Registre-se para começar a usar o chatbot
+          <p className="text-white/60">
+            Registre-se para começar a usar o portal
           </p>
         </div>
 
         {/* Error Alert */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-800">{error}</p>
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+            <p className="text-sm text-red-400">{error}</p>
           </div>
         )}
 
@@ -129,7 +141,7 @@ export default function RegisterPage() {
           <div>
             <label
               htmlFor="fullName"
-              className="block text-sm font-medium text-gray-700 mb-2"
+              className="block text-sm font-medium text-white/80 mb-2"
             >
               Nome Completo *
             </label>
@@ -141,7 +153,7 @@ export default function RegisterPage() {
                 setFormData({ ...formData, fullName: e.target.value })
               }
               disabled={loading}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+              className="w-full px-4 py-3 bg-[#0f1419]/50 border border-white/10 rounded-lg text-white placeholder-white/40 focus:ring-2 focus:ring-[#1ABC9C] focus:border-[#1ABC9C] disabled:bg-white/5 disabled:cursor-not-allowed transition-all"
               placeholder="Seu nome completo"
               required
             />
@@ -151,7 +163,7 @@ export default function RegisterPage() {
           <div>
             <label
               htmlFor="email"
-              className="block text-sm font-medium text-gray-700 mb-2"
+              className="block text-sm font-medium text-white/80 mb-2"
             >
               Email *
             </label>
@@ -163,7 +175,7 @@ export default function RegisterPage() {
                 setFormData({ ...formData, email: e.target.value })
               }
               disabled={loading}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+              className="w-full px-4 py-3 bg-[#0f1419]/50 border border-white/10 rounded-lg text-white placeholder-white/40 focus:ring-2 focus:ring-[#1ABC9C] focus:border-[#1ABC9C] disabled:bg-white/5 disabled:cursor-not-allowed transition-all"
               placeholder="seu@email.com"
               autoComplete="email"
               required
@@ -174,7 +186,7 @@ export default function RegisterPage() {
           <div>
             <label
               htmlFor="phone"
-              className="block text-sm font-medium text-gray-700 mb-2"
+              className="block text-sm font-medium text-white/80 mb-2"
             >
               Telefone (opcional)
             </label>
@@ -186,7 +198,7 @@ export default function RegisterPage() {
                 setFormData({ ...formData, phone: e.target.value })
               }
               disabled={loading}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+              className="w-full px-4 py-3 bg-[#0f1419]/50 border border-white/10 rounded-lg text-white placeholder-white/40 focus:ring-2 focus:ring-[#1ABC9C] focus:border-[#1ABC9C] disabled:bg-white/5 disabled:cursor-not-allowed transition-all"
               placeholder="(XX) XXXXX-XXXX"
             />
           </div>
@@ -195,7 +207,7 @@ export default function RegisterPage() {
           <div>
             <label
               htmlFor="companyName"
-              className="block text-sm font-medium text-gray-700 mb-2"
+              className="block text-sm font-medium text-white/80 mb-2"
             >
               Nome da Empresa (opcional)
             </label>
@@ -207,7 +219,7 @@ export default function RegisterPage() {
                 setFormData({ ...formData, companyName: e.target.value })
               }
               disabled={loading}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+              className="w-full px-4 py-3 bg-[#0f1419]/50 border border-white/10 rounded-lg text-white placeholder-white/40 focus:ring-2 focus:ring-[#1ABC9C] focus:border-[#1ABC9C] disabled:bg-white/5 disabled:cursor-not-allowed transition-all"
               placeholder="Minha Empresa"
             />
           </div>
@@ -216,7 +228,7 @@ export default function RegisterPage() {
           <div>
             <label
               htmlFor="password"
-              className="block text-sm font-medium text-gray-700 mb-2"
+              className="block text-sm font-medium text-white/80 mb-2"
             >
               Senha *
             </label>
@@ -228,20 +240,20 @@ export default function RegisterPage() {
                 setFormData({ ...formData, password: e.target.value })
               }
               disabled={loading}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+              className="w-full px-4 py-3 bg-[#0f1419]/50 border border-white/10 rounded-lg text-white placeholder-white/40 focus:ring-2 focus:ring-[#1ABC9C] focus:border-[#1ABC9C] disabled:bg-white/5 disabled:cursor-not-allowed transition-all"
               placeholder="••••••••"
               autoComplete="new-password"
               required
               minLength={8}
             />
-            <p className="text-xs text-gray-500 mt-1">Mínimo 8 caracteres</p>
+            <p className="text-xs text-white/40 mt-1">Mínimo 8 caracteres</p>
           </div>
 
           {/* Confirm Password */}
           <div>
             <label
               htmlFor="confirmPassword"
-              className="block text-sm font-medium text-gray-700 mb-2"
+              className="block text-sm font-medium text-white/80 mb-2"
             >
               Confirmar Senha *
             </label>
@@ -253,7 +265,7 @@ export default function RegisterPage() {
                 setFormData({ ...formData, confirmPassword: e.target.value })
               }
               disabled={loading}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+              className="w-full px-4 py-3 bg-[#0f1419]/50 border border-white/10 rounded-lg text-white placeholder-white/40 focus:ring-2 focus:ring-[#1ABC9C] focus:border-[#1ABC9C] disabled:bg-white/5 disabled:cursor-not-allowed transition-all"
               placeholder="••••••••"
               autoComplete="new-password"
               required
@@ -264,17 +276,17 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed mt-6"
+            className="w-full bg-gradient-to-r from-[#1ABC9C] to-[#16a085] hover:from-[#16a085] hover:to-[#1ABC9C] text-white font-semibold py-3 px-4 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#1ABC9C]/30 hover:scale-[1.02] mt-6"
           >
             {loading ? 'Criando conta...' : 'Criar Conta'}
           </button>
         </form>
 
         {/* Footer */}
-        <div className="mt-6 text-center text-sm text-gray-600">
+        <div className="mt-6 text-center text-sm text-white/60">
           <p>
             Já tem uma conta?{' '}
-            <Link href="/login" className="text-blue-600 hover:underline font-medium">
+            <Link href="/login" className="text-[#1ABC9C] hover:text-[#16a085] font-medium hover:underline transition-colors">
               Faça login
             </Link>
           </p>

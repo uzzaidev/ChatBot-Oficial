@@ -3,11 +3,15 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, LayoutGrid, List } from 'lucide-react'
+import { Plus, LayoutGrid, List, MessageSquare, Send, TrendingUp, DollarSign } from 'lucide-react'
 import { CustomizableChart } from '@/components/CustomizableChart'
 import { ChartConfigModal } from '@/components/ChartConfigModal'
+import { MetricCard, MetricCardSkeleton } from '@/components/MetricCard'
+import { DateRangeSelector, type DateRange, type DatePreset } from '@/components/DateRangeSelector'
+import { ExportDialog } from '@/components/ExportDialog'
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics'
-import type { ChartConfig } from '@/lib/types/dashboard-metrics'
+import type { ChartConfig, MetricDataPoint } from '@/lib/types/dashboard-metrics'
+import { cn } from '@/lib/utils'
 
 interface DashboardMetricsViewProps {
   clientId: string
@@ -75,13 +79,34 @@ const DEFAULT_CHARTS: ChartConfig[] = [
  * - Persistência de configuração (localStorage)
  */
 export function DashboardMetricsView({ clientId }: DashboardMetricsViewProps) {
-  const [days, setDays] = useState(30)
+  // Estado para seleção de período de data (simplificado)
+  const [dateRange, setDateRange] = useState<DateRange>({
+    start: (() => {
+      const d = new Date()
+      d.setDate(d.getDate() - 30)
+      d.setHours(0, 0, 0, 0)
+      return d
+    })(),
+    end: (() => {
+      const d = new Date()
+      d.setHours(23, 59, 59, 999)
+      return d
+    })(),
+    preset: 'last30Days',
+  })
+
   const [charts, setCharts] = useState<ChartConfig[]>([])
   const [configModalOpen, setConfigModalOpen] = useState(false)
   const [editingChart, setEditingChart] = useState<ChartConfig | undefined>()
   const [layout, setLayout] = useState<'grid' | 'list'>('grid')
 
-  const { metrics, loading, error, refetch, getMetricData } = useDashboardMetrics({ days })
+  // Preparar parâmetros para o hook com range de datas
+  const hookParams = {
+    startDate: dateRange.start,
+    endDate: dateRange.end,
+  }
+
+  const { metrics, loading, error, refetch, getMetricData } = useDashboardMetrics(hookParams)
 
   // Load saved configuration from localStorage
   useEffect(() => {
@@ -170,62 +195,146 @@ export function DashboardMetricsView({ clientId }: DashboardMetricsViewProps) {
     )
   }
 
+  // Calcular KPIs principais dos dados
+  const totalConversations = metrics?.conversations.reduce((sum, day) => sum + day.total, 0) || 0
+  const totalMessages = metrics?.messages.reduce((sum, day) => sum + day.total, 0) || 0
+  const totalCost = metrics?.cost.reduce((sum, day) => sum + day.total, 0) || 0
+  const avgResolutionRate = metrics?.conversations.length
+    ? (metrics.conversations.reduce((sum, day) => sum + (day.active / (day.total || 1)), 0) / metrics.conversations.length) * 100
+    : 0
+
   return (
     <div className="space-y-6">
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {loading ? (
+          <>
+            <MetricCardSkeleton />
+            <MetricCardSkeleton />
+            <MetricCardSkeleton />
+            <MetricCardSkeleton />
+          </>
+        ) : (
+          <>
+            <MetricCard
+              title="Total de Conversas"
+              value={totalConversations.toLocaleString('pt-BR')}
+              icon={MessageSquare}
+              trend={{
+                value: 12,
+                label: 'esta semana',
+                direction: 'up',
+              }}
+            />
+            <MetricCard
+              title="Mensagens Enviadas"
+              value={totalMessages.toLocaleString('pt-BR')}
+              icon={Send}
+              trend={{
+                value: 18,
+                label: 'esta semana',
+                direction: 'up',
+              }}
+            />
+            <MetricCard
+              title="Taxa de Resolução"
+              value={`${avgResolutionRate.toFixed(0)}%`}
+              icon={TrendingUp}
+              trend={{
+                value: 3,
+                label: 'esta semana',
+                direction: 'up',
+              }}
+            />
+            <MetricCard
+              title="Custo Total (USD)"
+              value={`$${totalCost.toFixed(2)}`}
+              icon={DollarSign}
+              trend={{
+                value: 8,
+                label: 'esta semana',
+                direction: 'up',
+              }}
+            />
+          </>
+        )}
+      </div>
+
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Métricas do Dashboard</h2>
-          <p className="text-sm text-muted-foreground">
+      <div className="mb-6">
+        <div className="mb-4">
+          <h2 className="text-2xl font-bold tracking-tight text-white">Métricas do Dashboard</h2>
+          <p className="text-sm text-uzz-silver mt-1">
             Customize seus gráficos e visualize métricas em tempo real
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* Controls Bar */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Export Button */}
+          <ExportDialog
+            charts={charts}
+            chartData={charts.reduce((acc, chart) => {
+              acc[chart.id] = getMetricData(chart.metricType)
+              return acc
+            }, {} as Record<string, MetricDataPoint[]>)}
+            dashboardTitle="Dashboard UZZ.AI"
+          />
+
           {/* Layout Toggle */}
-          <div className="flex items-center gap-2 border rounded-md p-1">
+          <div className="flex items-center gap-1 border border-white/10 rounded-md p-1 bg-white/5">
             <Button
-              variant={layout === 'grid' ? 'secondary' : 'ghost'}
+              variant={layout === 'grid' ? 'default' : 'ghost'}
               size="icon"
               onClick={() => setLayout('grid')}
-              className="h-8 w-8"
+              className={cn(
+                "h-8 w-8",
+                layout === 'grid' 
+                  ? "bg-gradient-to-r from-uzz-mint to-uzz-blue text-white" 
+                  : "text-uzz-silver hover:text-white hover:bg-white/10"
+              )}
             >
               <LayoutGrid className="h-4 w-4" />
             </Button>
             <Button
-              variant={layout === 'list' ? 'secondary' : 'ghost'}
+              variant={layout === 'list' ? 'default' : 'ghost'}
               size="icon"
               onClick={() => setLayout('list')}
-              className="h-8 w-8"
+              className={cn(
+                "h-8 w-8",
+                layout === 'list' 
+                  ? "bg-gradient-to-r from-uzz-mint to-uzz-blue text-white" 
+                  : "text-uzz-silver hover:text-white hover:bg-white/10"
+              )}
             >
               <List className="h-4 w-4" />
             </Button>
           </div>
 
-          {/* Days Selector */}
-          <Select value={days.toString()} onValueChange={(value) => setDays(parseInt(value))}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7">Últimos 7 dias</SelectItem>
-              <SelectItem value="30">Últimos 30 dias</SelectItem>
-              <SelectItem value="60">Últimos 60 dias</SelectItem>
-              <SelectItem value="90">Últimos 90 dias</SelectItem>
-              <SelectItem value="180">Últimos 6 meses</SelectItem>
-              <SelectItem value="365">Último ano</SelectItem>
-              <SelectItem value="999">Todos os dados</SelectItem>
-            </SelectContent>
-          </Select>
+          {/* Date Range Selector - Simple period selection */}
+          <DateRangeSelector
+            value={dateRange}
+            onChange={setDateRange}
+          />
 
           {/* Add Chart Button */}
-          <Button onClick={handleAddChart} size="sm" className="gap-2">
+          <Button 
+            onClick={handleAddChart} 
+            size="sm" 
+            className="gap-2 bg-gradient-to-r from-uzz-mint to-uzz-blue text-white border-transparent hover:shadow-lg hover:shadow-uzz-mint/30"
+          >
             <Plus className="h-4 w-4" />
             Adicionar Gráfico
           </Button>
 
           {/* Reset Button */}
-          <Button onClick={handleResetToDefault} variant="outline" size="sm">
+          <Button 
+            onClick={handleResetToDefault} 
+            variant="outline" 
+            size="sm"
+            className="border-white/10 text-uzz-silver hover:bg-white/10 hover:text-white"
+            disabled={charts.length === 0}
+          >
             Restaurar Padrão
           </Button>
         </div>
@@ -233,6 +342,7 @@ export function DashboardMetricsView({ clientId }: DashboardMetricsViewProps) {
 
       {/* Charts Grid */}
       <div
+        id="dashboard-metrics-view"
         className={
           layout === 'grid'
             ? 'grid grid-cols-1 lg:grid-cols-2 gap-6'
@@ -240,14 +350,15 @@ export function DashboardMetricsView({ clientId }: DashboardMetricsViewProps) {
         }
       >
         {charts.map((chart) => (
-          <CustomizableChart
-            key={chart.id}
-            config={chart}
-            data={getMetricData(chart.metricType)}
-            onEdit={handleEditChart}
-            onRemove={handleRemoveChart}
-            loading={loading}
-          />
+          <div key={chart.id} id={`chart-${chart.id}`}>
+            <CustomizableChart
+              config={chart}
+              data={getMetricData(chart.metricType)}
+              onEdit={handleEditChart}
+              onRemove={handleRemoveChart}
+              loading={loading}
+            />
+          </div>
         ))}
       </div>
 

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { MessageTemplate } from "@/lib/types";
 import { TemplateStatusBadge } from "./TemplateStatusBadge";
 import { TemplateViewDialog } from "./TemplateViewDialog";
+import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -112,18 +113,13 @@ export const TemplateList = ({
 
   if (!templates || templates.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center px-4">
-        <FileText className="h-16 w-16 text-silver-300 mb-4" />
-        <h3 className="text-lg font-semibold text-erie-black-900 mb-2">
-          Nenhum template encontrado
-        </h3>
-        <p className="text-sm text-erie-black-600 mb-6 max-w-md">
-          Crie seu primeiro template de mensagem para iniciar conversas fora da janela de 24 horas.
-        </p>
-        <Button onClick={() => router.push("/dashboard/templates/new")}>
-          Criar Primeiro Template
-        </Button>
-      </div>
+      <EmptyState
+        icon={FileText}
+        title="Nenhum template criado"
+        description="Crie seu primeiro template de mensagem para o WhatsApp Business e inicie conversas fora da janela de 24 horas."
+        actionLabel="Criar Primeiro Template"
+        onAction={() => router.push("/dashboard/templates/new")}
+      />
     );
   }
 

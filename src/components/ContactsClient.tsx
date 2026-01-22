@@ -60,6 +60,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { apiFetch } from '@/lib/api'
+import { EmptyState } from '@/components/EmptyState'
 
 interface ContactsClientProps {
   clientId: string
@@ -316,37 +317,39 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
   }
 
   return (
-    <div className="fixed inset-0 flex overflow-hidden bg-white">
+    <div className="fixed inset-0 flex overflow-hidden" style={{ background: 'radial-gradient(circle at top right, #242f36 0%, #1C1C1C 60%)' }}>
       {/* Sidebar com Lista de Contatos */}
-      <div className="w-full lg:w-96 border-r border-silver-200 flex flex-col bg-white">
+      <div className="w-full lg:w-96 border-r border-white/5 flex flex-col" style={{ background: 'rgba(28, 28, 28, 0.95)' }}>
         {/* Header */}
-        <div className="bg-mint-600 p-4 flex items-center justify-between shadow-md">
-          <div className="flex items-center gap-3">
-            <Users className="h-6 w-6 text-white" />
-            <h2 className="text-white font-semibold text-lg">Contatos</h2>
+        <div className="p-4 border-b border-white/5">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <Users className="h-6 w-6" style={{ color: '#1ABC9C' }} />
+              <h2 className="font-poppins font-semibold text-lg" style={{ color: '#1ABC9C' }}>Contatos</h2>
+            </div>
+            <Link href="/dashboard">
+              <Button variant="ghost" size="sm" className="text-white/70 hover:text-white hover:bg-white/5">
+                <LayoutDashboard className="h-4 w-4" />
+              </Button>
+            </Link>
           </div>
-          <Link href="/dashboard">
-            <Button variant="ghost" size="sm" className="text-white hover:bg-mint-700">
-              <LayoutDashboard className="h-4 w-4" />
-            </Button>
-          </Link>
         </div>
 
         {/* Search and Actions */}
-        <div className="p-4 border-b border-silver-200 space-y-3">
+        <div className="p-4 border-b border-white/5 space-y-3">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: '#B0B0B0' }} />
             <Input
               placeholder="Buscar contato..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 bg-[#151515] border-white/10 text-white placeholder:text-white/40 focus:border-[#1ABC9C]"
             />
           </div>
           <div className="flex gap-2">
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
-                <Button size="sm" className="flex-1">
+                <Button size="sm" className="flex-1 bg-[#1ABC9C] hover:bg-[#15967f] text-white">
                   <Plus className="h-4 w-4 mr-1" />
                   Adicionar
                 </Button>
@@ -431,7 +434,7 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
               else setIsImportDialogOpen(true)
             }}>
               <DialogTrigger asChild>
-                <Button size="sm" variant="outline" className="flex-1">
+                <Button size="sm" variant="outline" className="flex-1 border-white/10 text-white/90 hover:bg-white/5 hover:text-white">
                   <Upload className="h-4 w-4 mr-1" />
                   Importar
                 </Button>
@@ -520,42 +523,42 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
         </div>
 
         {/* Status Filter Tabs */}
-        <div className="border-b border-silver-200 bg-white">
+        <div className="border-b border-white/5">
           <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as any)}>
             <TabsList className="w-full justify-start rounded-none h-auto p-0 bg-transparent overflow-x-auto">
               <TabsTrigger
                 value="all"
-                className="flex items-center gap-1 data-[state=active]:border-b-2 data-[state=active]:border-mint-600 rounded-none text-xs px-3"
+                className="flex items-center gap-1 data-[state=active]:border-b-2 data-[state=active]:border-[#1ABC9C] rounded-none text-xs px-3 text-white/60 data-[state=active]:text-[#1ABC9C]"
               >
                 <List className="h-3 w-3" />
                 Todos
               </TabsTrigger>
               <TabsTrigger
                 value="bot"
-                className="flex items-center gap-1 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 rounded-none text-xs px-3"
+                className="flex items-center gap-1 data-[state=active]:border-b-2 data-[state=active]:border-[#2E86AB] rounded-none text-xs px-3 text-white/60 data-[state=active]:text-[#2E86AB]"
               >
                 <Bot className="h-3 w-3" />
                 Bot
               </TabsTrigger>
               <TabsTrigger
                 value="humano"
-                className="flex items-center gap-1 data-[state=active]:border-b-2 data-[state=active]:border-green-600 rounded-none text-xs px-3"
+                className="flex items-center gap-1 data-[state=active]:border-b-2 data-[state=active]:border-[#1ABC9C] rounded-none text-xs px-3 text-white/60 data-[state=active]:text-[#1ABC9C]"
               >
                 <User className="h-3 w-3" />
                 Humano
               </TabsTrigger>
               <TabsTrigger
                 value="transferido"
-                className="flex items-center gap-1 data-[state=active]:border-b-2 data-[state=active]:border-orange-600 rounded-none text-xs px-3"
+                className="flex items-center gap-1 data-[state=active]:border-b-2 data-[state=active]:border-orange-400 rounded-none text-xs px-3 text-white/60 data-[state=active]:text-orange-400"
               >
                 <ArrowRight className="h-3 w-3" />
                 Transferido
               </TabsTrigger>
               <TabsTrigger
                 value="fluxo_inicial"
-                className="flex items-center gap-1 data-[state=active]:border-b-2 data-[state=active]:border-purple-600 rounded-none text-xs px-3"
+                className="flex items-center gap-1 data-[state=active]:border-b-2 data-[state=active]:border-[#9b59b6] rounded-none text-xs px-3 text-white/60 data-[state=active]:text-[#9b59b6]"
               >
-                <ArrowRight className="h-3 w-3" />
+                <Workflow className="h-3 w-3" />
                 Em Flow
               </TabsTrigger>
             </TabsList>
@@ -566,48 +569,52 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
         <div className="flex-1 overflow-y-auto">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <span className="text-erie-black-600">Carregando...</span>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1ABC9C]"></div>
             </div>
           ) : filteredContacts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 text-center px-4">
-              <Users className="h-12 w-12 text-silver-300 mb-4" />
-              <span className="text-erie-black-600">
-                {searchQuery ? 'Nenhum contato encontrado' : 'Nenhum contato cadastrado'}
-              </span>
-              {!searchQuery && (
-                <Button
-                  variant="link"
-                  className="mt-2"
-                  onClick={() => setIsAddDialogOpen(true)}
-                >
-                  Adicionar primeiro contato
-                </Button>
-              )}
-            </div>
+            searchQuery ? (
+              <EmptyState
+                icon={Search}
+                title="Nenhum resultado encontrado"
+                description={`Não encontramos contatos com "${searchQuery}". Tente ajustar sua busca.`}
+                className="mx-4"
+              />
+            ) : (
+              <EmptyState
+                icon={Users}
+                title="Nenhum contato cadastrado"
+                description="Comece adicionando contatos manualmente ou importe em massa via CSV para gerenciar seus clientes."
+                actionLabel="Adicionar Primeiro Contato"
+                onAction={() => setIsAddDialogOpen(true)}
+                secondaryActionLabel="Importar CSV"
+                onSecondaryAction={() => setIsImportDialogOpen(true)}
+                className="mx-4"
+              />
+            )
           ) : (
             filteredContacts.map((contact) => (
               <div
                 key={contact.id}
-                className={`flex items-center gap-3 p-3 cursor-pointer transition-colors duration-200 border-b border-silver-200 ${
+                className={`flex items-center gap-3 p-3 cursor-pointer transition-colors duration-200 border-b border-white/5 ${
                   selectedContact?.id === contact.id
-                    ? 'bg-mint-50'
-                    : 'hover:bg-silver-50'
+                    ? 'bg-gradient-to-r from-[#1ABC9C]/10 to-transparent border-l-2 border-l-[#1ABC9C]'
+                    : 'hover:bg-white/5'
                 }`}
                 onClick={() => setSelectedContact(contact)}
               >
                 <Avatar className="h-12 w-12 flex-shrink-0">
-                  <AvatarFallback className="bg-mint-500 text-white text-sm">
+                  <AvatarFallback className="bg-gradient-to-br from-[#2E86AB] to-[#1ABC9C] text-white text-sm font-poppins font-semibold">
                     {getInitials(contact.name || 'Sem nome')}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-semibold text-sm truncate text-erie-black-900">
+                    <span className="font-semibold text-sm truncate text-white">
                       {contact.name || 'Sem nome'}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <p className="text-xs text-erie-black-600 truncate flex-1">
+                    <p className="text-xs text-white/60 truncate flex-1">
                       {formatPhone(contact.phone)}
                     </p>
                     <div className="ml-2">
@@ -622,9 +629,9 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
       </div>
 
       {/* Contact Details Panel */}
-      <div className="hidden lg:flex flex-1 items-center justify-center bg-silver-50">
+      <div className="hidden lg:flex flex-1 items-center justify-center" style={{ background: '#1a1a1a' }}>
         {selectedContact ? (
-          <Card className="w-full max-w-md mx-4">
+          <Card className="w-full max-w-md mx-4 bg-[#252525] border-white/10 text-white">
             <CardHeader className="text-center">
               <div className="flex justify-end">
                 <Button
@@ -636,7 +643,7 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                 </Button>
               </div>
               <Avatar className="h-20 w-20 mx-auto mb-4">
-                <AvatarFallback className="bg-mint-500 text-white text-2xl">
+                <AvatarFallback className="bg-gradient-to-br from-uzz-mint to-uzz-blue text-white text-2xl font-poppins font-bold">
                   {getInitials(selectedContact.name || 'Sem nome')}
                 </AvatarFallback>
               </Avatar>
@@ -732,11 +739,22 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
           </Card>
         ) : (
           <div className="text-center">
-            <Users className="h-20 w-20 text-silver-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-erie-black-700 mb-2">
+            <div className="mb-6 flex justify-center">
+              <div
+                className="h-20 w-20 rounded-full flex items-center justify-center border-2"
+                style={{
+                  background: 'linear-gradient(135deg, #252525, #1C1C1C)',
+                  borderColor: '#1ABC9C',
+                  boxShadow: '0 0 20px rgba(26, 188, 156, 0.2)'
+                }}
+              >
+                <Users className="h-10 w-10" style={{ color: '#1ABC9C' }} />
+              </div>
+            </div>
+            <h3 className="text-xl font-poppins font-semibold text-white mb-2">
               Nenhum contato selecionado
             </h3>
-            <p className="text-erie-black-500">
+            <p className="text-white/60">
               Selecione um contato à esquerda para ver os detalhes
             </p>
           </div>
