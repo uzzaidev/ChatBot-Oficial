@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 /**
- * Middleware - Route Protection
+ * Proxy - Route Protection (Next.js 16)
  *
  * Protege rotas do dashboard e admin com autenticação
  *
@@ -16,7 +16,7 @@ import { NextResponse, type NextRequest } from 'next/server'
  * - /dashboard/* - Requer autenticação
  * - /admin/* - Requer autenticação + role admin (futuro)
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -91,7 +91,7 @@ export async function middleware(request: NextRequest) {
 
     // Se profile não existe ou está inválido - redirecionar para login
     if (profileError || !profile || !profile.client_id) {
-      console.error('[middleware] Profile não encontrado ou inválido:', user.id)
+      console.error('[proxy] Profile não encontrado ou inválido:', user.id)
       console.error('  Error:', profileError?.message || 'Profile sem client_id')
       console.error('  → Redirecionando para /login')
 

@@ -25,11 +25,11 @@ interface InviteUpdate {
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = createServerClient()
-    const inviteId = params.id
+    const supabase = await createServerClient()
+    const { id: inviteId } = await params
 
     // Verificar autenticação
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -130,11 +130,11 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = createServerClient()
-    const inviteId = params.id
+    const supabase = await createServerClient()
+    const { id: inviteId } = await params
 
     // Verificar autenticação
     const { data: { user }, error: authError } = await supabase.auth.getUser()

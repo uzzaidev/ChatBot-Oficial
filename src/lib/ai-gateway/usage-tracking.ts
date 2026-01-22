@@ -66,7 +66,7 @@ export const logGatewayUsage = async (
   } = params;
 
   try {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     // Normalize model name to lowercase for registry lookup
     const normalizedModelName = modelName.toLowerCase();
@@ -199,7 +199,7 @@ const updateCachePerformance = async (
   },
 ): Promise<void> => {
   try {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     const now = new Date();
     const date = now.toISOString().split("T")[0]; // YYYY-MM-DD
@@ -248,7 +248,7 @@ export const getUsageSummary = async (
   endDate: string,
 ) => {
   try {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     const { data, error } = await supabase
       .from("gateway_usage_logs")
@@ -296,7 +296,7 @@ export const getUsageByProvider = async (
   endDate: string,
 ) => {
   try {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     const { data, error } = await supabase
       .from("gateway_usage_logs")

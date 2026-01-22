@@ -26,7 +26,7 @@ export const handleAudioToolCall = async (
 ): Promise<HandleAudioToolCallOutput> => {
   const { aiResponseText, phone, clientId, config } = input;
 
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   // 1. Verificação de segurança: TTS habilitado globalmente?
   if (!config.settings?.tts_enabled) {

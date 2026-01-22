@@ -19,7 +19,7 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
     const searchParams = request.nextUrl.searchParams
     
     // Suporte a múltiplos formatos de filtro de data

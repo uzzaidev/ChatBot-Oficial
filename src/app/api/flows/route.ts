@@ -37,7 +37,7 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(req: NextRequest) {
   try {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
     // Get authenticated user
     const {
@@ -134,7 +134,7 @@ export async function GET(req: NextRequest) {
  */
 export async function POST(req: NextRequest) {
   try {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
     // Get authenticated user
     const {

@@ -10,7 +10,7 @@ import {
 
 export const dynamic = "force-dynamic";
 
-async function requireAdmin(supabase: ReturnType<typeof createServerClient>) {
+async function requireAdmin(supabase: Awaited<ReturnType<typeof createServerClient>>) {
     const {
         data: { user },
         error: authError,
@@ -97,7 +97,7 @@ const normalizeTestError = (rawMessage: string) => {
 
 export async function POST(request: NextRequest) {
     try {
-        const supabase = createServerClient();
+        const supabase = await createServerClient();
 
         const adminCheck = await requireAdmin(supabase);
         if (!adminCheck.ok) return adminCheck.response;

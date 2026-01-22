@@ -20,7 +20,7 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient(request as any)
+    const supabase = await createRouteHandlerClient(request as any)
 
     // Verificar autenticação
     const {
@@ -83,7 +83,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Nome inválido' }, { status: 400 })
     }
 
-    const supabase = createRouteHandlerClient(request as any)
+    const supabase = await createRouteHandlerClient(request as any)
 
     // Verificar autenticação
     const {

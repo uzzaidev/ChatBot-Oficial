@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body: TestRequest = await request.json()
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
     // Use provided values or defaults
     const testPrompt = body.prompt || 'Hello! This is a test message. Please respond briefly.'

@@ -46,7 +46,7 @@ export const getRAGContext = async (
       openaiApiKey,
       clientId,
     );
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     // Buscar documentos similares (multi-tenant)
     const { data, error } = await supabase.rpc("match_documents", {

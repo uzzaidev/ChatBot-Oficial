@@ -30,10 +30,10 @@ const getSupabaseServiceRoleKey = (): string => {
  * createServerClient - Para API routes que precisam LER a sessão do usuário
  * Usa cookies para manter a autenticação do browser
  */
-export const createServerClient = () => {
+export const createServerClient = async () => {
   // Import dinâmico para evitar erro em client components
   const { cookies } = require('next/headers')
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
 
   return createSSRServerClient(
     getSupabaseUrl(),

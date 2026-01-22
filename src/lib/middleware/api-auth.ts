@@ -79,7 +79,7 @@ export function withAuth(handler: AuthenticatedHandler) {
         return handler(request, null as any, routeParams)
       }
 
-      const supabase = createRouteHandlerClient()
+      const supabase = await createRouteHandlerClient()
 
       // 1. Verify authentication
       const {
@@ -150,7 +150,7 @@ export function withAdminAuth(handler: AuthenticatedHandler) {
   return async (request: NextRequest, routeParams?: any) => {
     try {
       const pathname = request.nextUrl.pathname
-      const supabase = createRouteHandlerClient()
+      const supabase = await createRouteHandlerClient()
 
       // 1. Verify authentication
       const {
@@ -228,7 +228,7 @@ export function withAdminAuth(handler: AuthenticatedHandler) {
 export function withOptionalAuth(handler: AuthenticatedHandler) {
   return async (request: NextRequest, routeParams?: any) => {
     try {
-      const supabase = createRouteHandlerClient()
+      const supabase = await createRouteHandlerClient()
 
       const {
         data: { user },

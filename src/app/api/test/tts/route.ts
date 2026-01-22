@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar clientId do usuário autenticado
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Buscar clientId do usuário autenticado
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {

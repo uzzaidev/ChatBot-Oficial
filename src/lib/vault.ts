@@ -25,7 +25,7 @@ export const createSecret = async (
   description?: string
 ): Promise<string> => {
   try {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
     // @ts-ignore - RPC custom function
     const { data, error } = await supabase.rpc('create_client_secret', {
@@ -61,7 +61,7 @@ export const getSecret = async (secretId: string): Promise<string | null> => {
       return null
     }
 
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
     // @ts-ignore - RPC custom function
     const { data, error } = await supabase.rpc('get_client_secret', {
@@ -91,7 +91,7 @@ export const updateSecret = async (
   newValue: string
 ): Promise<boolean> => {
   try {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
     // @ts-ignore - RPC custom function
     const { data, error} = await supabase.rpc('update_client_secret', {
@@ -246,7 +246,7 @@ export const getClientVaultCredentials = async (
   clientId: string
 ): Promise<ClientAPICredentials> => {
   try {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
     // Buscar IDs dos secrets do cliente
     const { data: client, error } = await supabase
@@ -296,7 +296,7 @@ export const getClientOpenAIKey = async (
   clientId: string
 ): Promise<string | null> => {
   try {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
     // Buscar ID do secret OpenAI do cliente
     const { data: client, error } = await supabase

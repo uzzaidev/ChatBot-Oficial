@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
     // Get test client ID from query param or use first client
     const url = new URL(request.url)

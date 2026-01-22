@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   try {
     // Test 1: Create client
     const clientStart = Date.now()
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
     const clientTime = Date.now() - clientStart
     results.tests.push({
       name: 'Create Supabase Client',

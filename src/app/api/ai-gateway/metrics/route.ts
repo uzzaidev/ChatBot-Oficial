@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - days)
 
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
     // Fetch aggregated metrics
     const { data: usageLogs, error: usageError } = await supabase

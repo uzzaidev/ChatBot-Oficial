@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET() {
   try {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
     // 1. Verificar triggers - usando query SQL direta
     let triggersManual = null

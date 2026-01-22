@@ -109,7 +109,7 @@ export const trackUnifiedUsage = async (
   } = params;
 
   try {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     // =====================================================
     // 1. CALCULATE TOTAL TOKENS
@@ -436,7 +436,7 @@ export const checkBudgetAvailable = async (
   clientId: string,
 ): Promise<boolean> => {
   try {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     const { data, error } = await supabase.rpc("check_budget_available", {
       p_client_id: clientId,
@@ -459,7 +459,7 @@ export const checkBudgetAvailable = async (
  */
 export const getBudgetStatus = async (clientId: string) => {
   try {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     const { data, error } = await supabase
       .from("budget_status")
@@ -512,7 +512,7 @@ const insertLegacyLog = async (params: {
   metadata?: any;
 }): Promise<void> => {
   try {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     await supabase.from("usage_logs").insert({
       client_id: params.clientId,

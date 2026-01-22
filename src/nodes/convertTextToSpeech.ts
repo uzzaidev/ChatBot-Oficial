@@ -50,7 +50,7 @@ export const convertTextToSpeech = async (
   }
 
   // Criar cliente Supabase uma única vez
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   // 1. Verificar cache
   if (useCache) {

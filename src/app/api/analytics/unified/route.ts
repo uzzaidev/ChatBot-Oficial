@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
     const filterApiType = searchParams.get("apiType"); // chat, whisper, vision, embeddings
     const filterConversationId = searchParams.get("conversationId");
 
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     // =====================================================
     // 1. AUTHENTICATE & CHECK ROLE

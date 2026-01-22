@@ -9,11 +9,11 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { nodeId: string } },
+  { params }: { params: Promise<{ nodeId: string }> },
 ) {
   try {
-    const { nodeId } = params;
-    const supabase = createRouteHandlerClient(request as any);
+    const { nodeId } = await params;
+    const supabase = await createRouteHandlerClient(request as any);
 
     // Authenticate user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -222,14 +222,14 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { nodeId: string } },
+  { params }: { params: Promise<{ nodeId: string }> },
 ) {
   try {
-    const { nodeId } = params;
+    const { nodeId } = await params;
     const body = await request.json();
     const { enabled, config } = body;
 
-    const supabase = createRouteHandlerClient(request as any);
+    const supabase = await createRouteHandlerClient(request as any);
 
     // Authenticate user
     const { data: { user }, error: authError } = await supabase.auth.getUser();

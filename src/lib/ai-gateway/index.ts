@@ -393,7 +393,7 @@ const callAIDirectly = async (
   const { createServerClient } = await import("../supabase");
   const { getClientSecrets } = await import("../vault");
 
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   // Fetch client record to get Vault secret IDs
   const { data: client, error: clientError } = await supabase

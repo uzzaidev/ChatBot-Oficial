@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
           const bucketName = pathMatch[1]
           const filePath = pathMatch[2]
 
-          const supabase = createServerClient()
+          const supabase = await createServerClient()
           const { error: storageError } = await supabase.storage
             .from(bucketName)
             .remove([filePath])

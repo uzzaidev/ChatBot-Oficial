@@ -19,11 +19,11 @@ interface CurrentUserProfile {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = createServerClient()
-    const userId = params.id
+    const supabase = await createServerClient()
+    const { id: userId } = await params
 
     // Verificar autenticação
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -121,11 +121,11 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = createServerClient()
-    const userId = params.id
+    const supabase = await createServerClient()
+    const { id: userId } = await params
 
     // Verificar autenticação
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -292,12 +292,12 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
     const supabaseAdmin = createServiceRoleClient()
-    const userId = params.id
+    const { id: userId } = await params
 
     // Verificar autenticação
     const { data: { user }, error: authError } = await supabase.auth.getUser()

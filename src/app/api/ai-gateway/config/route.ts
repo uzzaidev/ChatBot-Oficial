@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
     // Fetch shared gateway config
     const { data: config, error } = await supabase
@@ -50,7 +50,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
     // Get existing config ID
     const { data: existingConfig, error: fetchError } = await supabase

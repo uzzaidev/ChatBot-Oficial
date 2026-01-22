@@ -19,7 +19,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const supabase = createRouteHandlerClient(request as any);
+    const supabase = await createRouteHandlerClient(request as any);
 
     // Verificar autenticação
     const {

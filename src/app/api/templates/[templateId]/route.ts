@@ -6,9 +6,9 @@ import type { MessageTemplate, UpdateTemplateRequest } from "@/lib/types";
 export const dynamic = "force-dynamic";
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     templateId: string;
-  };
+  }>;
 }
 
 /**
@@ -17,7 +17,7 @@ interface RouteParams {
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const { templateId } = params;
+    const { templateId } = await params;
 
     // 🔐 SECURITY: Get client_id from authenticated session
     const clientId = await getClientIdFromSession(request as any);
@@ -82,7 +82,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
  */
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const { templateId } = params;
+    const { templateId } = await params;
 
     // 🔐 SECURITY: Get client_id from authenticated session
     const clientId = await getClientIdFromSession(request as any);
@@ -227,7 +227,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
  */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const { templateId } = params;
+    const { templateId } = await params;
 
     // 🔐 SECURITY: Get client_id from authenticated session
     const clientId = await getClientIdFromSession(request as any);

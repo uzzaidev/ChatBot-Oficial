@@ -13,9 +13,9 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { clientId: string } }
+  { params }: { params: Promise<{ clientId: string }> }
 ) {
-  const { clientId } = params;
+  const { clientId } = await params;
 
   try {
     console.log('🔍 Diagnosticando webhook para clientId:', clientId);

@@ -60,7 +60,9 @@
       "Bash(if [ -f .doppler.yaml ])",
       "Bash(then cat .doppler.yaml)",
       "Bash(else echo \"Arquivo .doppler.yaml não encontrado\")",
-      "Bash(fi)"
+      "Bash(fi)",
+      "Bash(git mv:*)",
+      "Bash(powershell -ExecutionPolicy Bypass -File fix-await.ps1)"
     ],
     "deny": [],
     "ask": []

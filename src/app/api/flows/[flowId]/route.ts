@@ -19,15 +19,15 @@ import type {
 
 export const dynamic = 'force-dynamic'
 
-type Params = {
+type Params = Promise<{
   flowId: string
-}
+}>
 
 /**
  * GET /api/flows/[flowId]
- * 
+ *
  * Get details of a specific flow
- * 
+ *
  * Returns:
  * - 200: { flow: InteractiveFlow }
  * - 401: Unauthorized
@@ -40,8 +40,8 @@ export async function GET(
   { params }: { params: Params }
 ) {
   try {
-    const supabase = createServerClient()
-    const { flowId } = params
+    const supabase = await createServerClient()
+    const { flowId } = await params
 
     // Get authenticated user
     const {
@@ -118,8 +118,8 @@ export async function PUT(
   { params }: { params: Params }
 ) {
   try {
-    const supabase = createServerClient()
-    const { flowId } = params
+    const supabase = await createServerClient()
+    const { flowId } = await params
 
     // Get authenticated user
     const {
@@ -295,8 +295,8 @@ export async function DELETE(
   { params }: { params: Params }
 ) {
   try {
-    const supabase = createServerClient()
-    const { flowId } = params
+    const supabase = await createServerClient()
+    const { flowId } = await params
 
     // Get authenticated user
     const {

@@ -26,10 +26,10 @@ import type { Database } from './types'
  *
  * @example
  * // Em um Server Component
- * const supabase = createServerClient()
+ * const supabase = await createServerClient()
  * const { data: { user } } = await supabase.auth.getUser()
  */
-export const createServerClient = () => {
+export const createServerClient = async () => {
   // Verificar variáveis de ambiente antes de criar o cliente
   // Isso evita erros confusos durante o build quando .env.local não existe
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -43,7 +43,7 @@ export const createServerClient = () => {
     )
   }
 
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
 
   return createSupabaseServerClient<Database>(
     supabaseUrl,
@@ -114,12 +114,12 @@ export const createServiceClient = () => {
  * @example
  * // Em app/api/example/route.ts
  * export async function GET(request: NextRequest) {
- *   const supabase = createRouteHandlerClient()
+ *   const supabase = await createRouteHandlerClient()
  *   const { data: { user } } = await supabase.auth.getUser()
  *   return NextResponse.json({ user })
  * }
  */
-export const createRouteHandlerClient = (request?: Request) => {
+export const createRouteHandlerClient = async (request?: Request) => {
   // Verificar variáveis de ambiente antes de criar o cliente
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -151,7 +151,7 @@ export const createRouteHandlerClient = (request?: Request) => {
   }
 
   // Web: use cookie-based client
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
 
   return createSupabaseServerClient<Database>(
     supabaseUrl,
@@ -184,7 +184,7 @@ export const createRouteHandlerClient = (request?: Request) => {
  * }
  */
 export const getCurrentUser = async () => {
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   return user
 }
@@ -247,7 +247,7 @@ export const getClientIdFromSession = async (request?: Request): Promise<string 
     )
   } else {
     // Web: usar cookies (padrão)
-    supabase = createServerClient()
+    supabase = await createServerClient()
   }
 
   // 1. Obter usuário autenticado

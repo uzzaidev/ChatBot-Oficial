@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     `)
 
     // 4. Verificar se Supabase consegue acessar
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
     // @ts-ignore - Tabela com espaço no nome
     const { data: testData, error: testError } = await supabase
       .from('Clientes WhatsApp')

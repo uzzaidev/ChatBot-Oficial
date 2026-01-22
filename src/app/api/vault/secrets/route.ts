@@ -55,7 +55,7 @@ function maskSecret(secret: string | null | undefined): string {
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient(request as any);
+    const supabase = await createRouteHandlerClient(request as any);
 
     // Verificar autenticação
     const {
@@ -212,7 +212,7 @@ export async function PUT(request: NextRequest) {
       typeof SecretUpdateSchema
     >;
 
-    const supabase = createRouteHandlerClient(request as any);
+    const supabase = await createRouteHandlerClient(request as any);
 
     // Verificar autenticação
     const {

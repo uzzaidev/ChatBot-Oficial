@@ -24,7 +24,7 @@ interface CurrentUserProfile {
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
 
     // Verificar autenticação
@@ -161,7 +161,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
     const supabaseAdmin = createServiceRoleClient()
 
 

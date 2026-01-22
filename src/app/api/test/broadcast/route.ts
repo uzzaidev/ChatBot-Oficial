@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
     // Inserir mensagem de teste
     const testMessage = {

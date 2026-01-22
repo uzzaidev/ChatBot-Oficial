@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient(request as any)
+    const supabase = await createRouteHandlerClient(request as any)
 
     const { error } = await supabase.auth.signOut()
 

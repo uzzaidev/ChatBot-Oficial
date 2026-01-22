@@ -21,13 +21,13 @@ export const dynamic = 'force-dynamic'
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { filename: string } }
+  { params }: { params: Promise<{ filename: string }> }
 ) {
   try {
-    const { filename } = params
+    const { filename } = await params
 
     // 1. Authenticate user
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {

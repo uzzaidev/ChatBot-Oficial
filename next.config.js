@@ -18,13 +18,10 @@ const nextConfig = {
       },
     ],
   },
-  experimental: {
-    serverActions: {
-      bodySizeLimit: '10mb',
-    },
-    // External packages for serverless compatibility (pdf-parse uses pdf.js which may try to load canvas)
-    serverComponentsExternalPackages: ['pdf-parse'],
-  },
+  // Next.js 16: serverComponentsExternalPackages moved to serverExternalPackages
+  serverExternalPackages: ['pdf-parse', 'fluent-ffmpeg', '@ffmpeg-installer/ffmpeg'],
+  // Empty turbopack config to allow webpack config without errors
+  turbopack: {},
   webpack: (config, { isServer }) => {
     if (isServer) {
       // Externalizar pacotes FFmpeg para evitar bundling

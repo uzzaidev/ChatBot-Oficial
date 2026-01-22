@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
     // Fetch pricing configurations
     const { data: pricingConfigs, error: pricingError } = await supabase
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
     // Parse request body
     const body = await request.json()
@@ -155,7 +155,7 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
     // Parse request body
     const body = await request.json()

@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category') || undefined
 
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
 
     // Get authenticated user
@@ -119,7 +119,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Get authenticated user's client_id
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
     const { data: { user } } = await supabase.auth.getUser()
     
     if (!user) {
@@ -182,7 +182,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Get authenticated user's client_id
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
     const { data: { user } } = await supabase.auth.getUser()
     
     if (!user) {

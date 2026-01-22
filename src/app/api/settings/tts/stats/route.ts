@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     // Obter usuário logado
     const { data: { user } } = await supabase.auth.getUser();

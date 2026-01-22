@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     // Aceita Bearer token (mobile) OU cookies (web)
     // ================================================================
 
-    const supabase = createRouteHandlerClient(request as any)
+    const supabase = await createRouteHandlerClient(request as any)
 
     // Verificar autenticação
     const { data: { user }, error: authError } = await supabase.auth.getUser()

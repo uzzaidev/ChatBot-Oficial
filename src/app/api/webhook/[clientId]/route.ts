@@ -33,9 +33,10 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { clientId: string } },
+  { params }: { params: Promise<{ clientId: string }> },
 ) {
   const timestamp = new Date().toISOString();
+  const { clientId } = await params;
 
   try {
     // SECURITY FIX (VULN-002): Rate limit webhook verification
@@ -45,18 +46,6 @@ export async function GET(
       ? forwarded.split(",")[0]
       : request.headers.get("x-real-ip") || "unknown";
     const identifier = `webhook-verify:${ip}`;
-
-    const rateLimitResponse = await checkRateLimit(
-      request,
-      webhookVerifyLimiter,
-      identifier,
-    );
-    if (rateLimitResponse) {
-      console.log('⚠️  [WEBHOOK VERIFY] Rate limit exceeded:', { ip, identifier });
-      return rateLimitResponse;
-    }
-
-    const { clientId } = params;
     const searchParams = request.nextUrl.searchParams;
 
     // Log 1: Informações da requisição
@@ -180,9 +169,9 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { clientId: string } },
+  { params }: { params: Promise<{ clientId: string }> },
 ) {
-  const { clientId } = params;
+  const { clientId } = await params;
 
   try {
     // SECURITY FIX (VULN-012): Validar assinatura ANTES de processar

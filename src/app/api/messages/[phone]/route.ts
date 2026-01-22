@@ -17,14 +17,14 @@ const VALID_MESSAGE_TYPES = new Set<MessageType>([
 ]);
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     phone: string;
-  };
+  }>;
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const { phone } = params;
+    const { phone } = await params;
 
     // 🔐 SECURITY: Get client_id from authenticated session, not query params
     const clientId = await getClientIdFromSession(request as any);

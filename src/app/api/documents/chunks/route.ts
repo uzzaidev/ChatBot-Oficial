@@ -25,7 +25,7 @@ export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest) {
   try {
     // 1. Authenticate user
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
@@ -179,7 +179,7 @@ const resolveOpenAIApiKey = async (
 export async function POST(request: NextRequest) {
   try {
     // 1. Authenticate user
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {

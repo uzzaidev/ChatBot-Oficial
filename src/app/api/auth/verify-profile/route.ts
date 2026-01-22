@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient(request as any)
+    const supabase = await createRouteHandlerClient(request as any)
 
     // 1. Verificar se usuário está autenticado
     const { data: { user }, error: authError } = await supabase.auth.getUser()

@@ -12,7 +12,7 @@ import { createServerClient } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
-async function requireAdmin(supabase: ReturnType<typeof createServerClient>) {
+async function requireAdmin(supabase: Awaited<ReturnType<typeof createServerClient>>) {
   const {
     data: { user },
     error: authError,
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const capability = searchParams.get("capability");
 
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     let query = supabase
       .from("ai_models_registry")
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     const adminCheck = await requireAdmin(supabase);
     if (!adminCheck.ok) return adminCheck.response;
@@ -192,7 +192,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     const adminCheck = await requireAdmin(supabase);
     if (!adminCheck.ok) return adminCheck.response;
@@ -258,7 +258,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     const adminCheck = await requireAdmin(supabase);
     if (!adminCheck.ok) return adminCheck.response;

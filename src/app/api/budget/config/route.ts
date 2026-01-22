@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
     // Fetch budget config
     const { data: budget, error } = await supabase
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
     // Calculate next reset date
     const nextResetAt = new Date()
@@ -159,7 +159,7 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
     // Delete custom budget (will fallback to plan default)
     const { error } = await supabase

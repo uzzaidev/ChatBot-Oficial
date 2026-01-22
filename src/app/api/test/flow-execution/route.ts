@@ -134,7 +134,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     // 1. Buscar execução ativa
     const { data: execution, error: execError } = await supabase

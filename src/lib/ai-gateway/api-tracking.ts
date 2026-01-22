@@ -142,7 +142,7 @@ export const logAPIUsage = async (params: APIUsageParams): Promise<void> => {
   } = params
 
   try {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
     // 1. Calculate cost in USD based on API type
     const costUSD = calculateAPICost({
@@ -376,7 +376,7 @@ export const checkBudgetAvailable = async (
   apiType: APIType
 ): Promise<boolean> => {
   try {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
     const { data, error } = await supabase.rpc('check_budget_available', {
       p_client_id: clientId,
@@ -432,7 +432,7 @@ export const getUsageSummaryByAPI = async (
   endDate: string
 ) => {
   try {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
     const { data, error } = await supabase
       .from('gateway_usage_logs')

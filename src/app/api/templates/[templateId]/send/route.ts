@@ -8,9 +8,9 @@ import type { MessageTemplate, SendTemplateRequest } from "@/lib/types";
 export const dynamic = "force-dynamic";
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     templateId: string;
-  };
+  }>;
 }
 
 /**
@@ -19,7 +19,7 @@ interface RouteParams {
  */
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
-    const { templateId } = params;
+    const { templateId } = await params;
 
     // 🔐 SECURITY: Get client_id from authenticated session
     const clientId = await getClientIdFromSession(request as any);

@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     };
     const interval = intervalMap[period] || "7 days";
 
-    const supabase = createRouteHandlerClient(request as any);
+    const supabase = await createRouteHandlerClient(request as any);
 
     // Base query conditions
     const baseConditions = `created_at > NOW() - INTERVAL '${interval}'${

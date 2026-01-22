@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
     // Fetch budget config
     const { data: budget, error: budgetError } = await supabase

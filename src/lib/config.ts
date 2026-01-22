@@ -127,7 +127,7 @@ export const getClientConfig = async (
   clientId: string,
 ): Promise<ClientConfig | null> => {
   try {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     const { data: client, error } = await supabase
       .from("clients")
@@ -337,7 +337,7 @@ export const getBotConfig = async (
   }
 
   try {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     // Buscar configuração do cliente OU default
     // Ordem: cliente (is_default=false) tem prioridade sobre default (is_default=true)
@@ -451,7 +451,7 @@ export const setBotConfig = async (
   metadata?: { description?: string; category?: string },
 ): Promise<void> => {
   try {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     const { error } = await supabase
       .from("bot_configurations")
@@ -494,7 +494,7 @@ export const resetBotConfig = async (
   configKey: string,
 ): Promise<void> => {
   try {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     const { error } = await supabase
       .from("bot_configurations")
@@ -532,7 +532,7 @@ export const listBotConfigs = async (
   category?: string,
 ): Promise<BotConfig[]> => {
   try {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     let query = supabase
       .from("bot_configurations")

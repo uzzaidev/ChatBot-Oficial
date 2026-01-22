@@ -17,7 +17,7 @@ const ESTIMATED_COST_PER_TOKEN_BRL = 0.0002; // Fallback average cost
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
 
     const {
       data: { user },

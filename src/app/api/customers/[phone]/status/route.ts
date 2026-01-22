@@ -15,11 +15,11 @@ export const dynamic = "force-dynamic";
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { phone: string } },
+  { params }: { params: Promise<{ phone: string }> },
 ) {
   try {
+    const { phone } = await params;
     const { status } = await request.json();
-    const { phone } = params;
 
     // Validar status
     if (!["bot", "humano", "transferido", "fluxo_inicial"].includes(status)) {
@@ -33,7 +33,7 @@ export async function PUT(
     }
 
     // Verificar autenticação
-    const supabase = createRouteHandlerClient(request as any);
+    const supabase = await createRouteHandlerClient(request as any);
     const {
       data: { user },
       error: authError,
