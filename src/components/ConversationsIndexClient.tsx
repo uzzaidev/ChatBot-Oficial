@@ -179,11 +179,23 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden" style={{ background: 'radial-gradient(circle at top right, #242f36 0%, #1C1C1C 60%)' }}>
       {/* Header com Cards KPI */}
-      <ConversationsHeader
-        metrics={metrics}
-        statusFilter={statusFilter}
-        onStatusChange={setStatusFilter}
-      />
+      <div className="relative">
+        {/* Botão Hambúrguer Mobile - No topo do header, sempre visível */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="lg:hidden absolute top-2 left-2 z-30 text-white hover:bg-white/10 rounded-lg"
+          onClick={() => setSidebarOpen(true)}
+          style={{ background: 'rgba(28, 28, 28, 0.9)' }}
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+        <ConversationsHeader
+          metrics={metrics}
+          statusFilter={statusFilter}
+          onStatusChange={setStatusFilter}
+        />
+      </div>
 
       {/* Conteúdo Principal - Sidebar + Área de Conversas */}
       <div className="flex-1 flex overflow-hidden">
@@ -465,7 +477,7 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center">
+            <div className="flex-1 flex items-center justify-center relative">
               <div className="text-center max-w-md px-6">
                 <div className="mb-6 flex justify-center">
                   <div
@@ -483,8 +495,20 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
                   Selecione uma conversa
                 </h2>
                 <p className="text-white/60 mb-6 max-w-xs mx-auto leading-relaxed">
-                  Escolha uma conversa na lista ao lado para visualizar e responder mensagens
+                  {typeof window !== 'undefined' && window.innerWidth < 1024 
+                    ? "Toque no menu acima para ver suas conversas"
+                    : "Escolha uma conversa na lista ao lado para visualizar e responder mensagens"}
                 </p>
+                {/* Botão para abrir sidebar no mobile */}
+                <div className="lg:hidden">
+                  <Button
+                    onClick={() => setSidebarOpen(true)}
+                    className="bg-gradient-to-r from-[#1ABC9C] to-[#2E86AB] text-white hover:opacity-90"
+                  >
+                    <Menu className="h-4 w-4 mr-2" />
+                    Ver Conversas
+                  </Button>
+                </div>
               </div>
             </div>
           )}
