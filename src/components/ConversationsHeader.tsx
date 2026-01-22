@@ -22,11 +22,11 @@ export const ConversationsHeader = ({
 }: ConversationsHeaderProps) => {
   return (
     <div
-      className="w-full border-b border-white/5 px-4 md:px-6 py-2 md:py-2.5"
+      className="w-full border-b border-white/5 px-4 md:px-6 py-2 md:py-2.5 relative"
       style={{ background: 'rgba(28, 28, 28, 0.98)' }}
     >
       {/* Header Top - Título e Status */}
-      <div className="flex items-center justify-between mb-2 md:mb-2.5">
+      <div className="flex items-center justify-between mb-2 md:mb-2.5 pl-8 lg:pl-0">
         <div>
           <h1 className="font-poppins font-bold text-base md:text-xl text-white mb-0.5">
             Caixa de Entrada
