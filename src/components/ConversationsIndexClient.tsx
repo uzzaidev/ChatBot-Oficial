@@ -43,6 +43,8 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
   const scrollPositionRef = useRef(0)
   // Ref para armazenar referências aos elementos das conversas (para scroll automático)
   const conversationItemsRef = useRef<Map<string, HTMLDivElement>>(new Map())
+  // Flag para indicar que acabamos de fazer scroll automático (evita restaurar scroll)
+  const justScrolledToConversationRef = useRef(false)
 
   // Refs para callbacks de optimistic updates
   const optimisticCallbacksRef = useRef<{
@@ -97,6 +99,9 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
   // Ajusta o scroll baseado na data da conversa (conversas mais antigas ficam mais abaixo)
   useLayoutEffect(() => {
     if (selectedPhone && scrollContainerRef.current) {
+      // Marcar que vamos fazer scroll automático
+      justScrolledToConversationRef.current = true
+      
       // Pequeno delay para garantir que o DOM foi atualizado
       const timeout = setTimeout(() => {
         const selectedElement = conversationItemsRef.current.get(selectedPhone)
@@ -126,28 +131,48 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
             
             // Salvar a nova posição após um pequeno delay (para aguardar o scroll suave)
             setTimeout(() => {
-              scrollPositionRef.current = container.scrollTop
-            }, 300)
+              if (scrollContainerRef.current) {
+                scrollPositionRef.current = scrollContainerRef.current.scrollTop
+              }
+              // Resetar flag após o scroll completar
+              justScrolledToConversationRef.current = false
+            }, 500) // Aumentado para 500ms para garantir que o scroll suave completou
+          } else {
+            // Se já está visível, resetar flag imediatamente
+            justScrolledToConversationRef.current = false
           }
+        } else {
+          // Se elemento não encontrado, resetar flag
+          justScrolledToConversationRef.current = false
         }
-      }, 150) // Aumentado para 150ms para garantir que o DOM foi atualizado
+      }, 150) // Delay para garantir que o DOM foi atualizado
       
       return () => clearTimeout(timeout)
+    } else {
+      // Se não há conversa selecionada, resetar flag
+      justScrolledToConversationRef.current = false
     }
   }, [selectedPhone])
 
   // Restaurar scroll quando as conversas são atualizadas (useLayoutEffect para sincronização imediata com DOM)
-  // Mas não restaurar se acabamos de selecionar uma conversa (deixar o scroll automático funcionar)
+  // IMPORTANTE: NUNCA restaurar scroll quando há uma conversa selecionada
+  // Isso evita conflito com o scroll automático para a conversa selecionada
   useLayoutEffect(() => {
-    // Só restaurar se não acabamos de selecionar uma conversa
-    if (!selectedPhone) {
+    // Só restaurar scroll se:
+    // 1. Não há conversa selecionada (evita conflito)
+    // 2. Não acabamos de fazer scroll automático (flag de proteção)
+    if (!selectedPhone && !justScrolledToConversationRef.current && scrollContainerRef.current) {
       restoreScrollPosition()
     }
   }, [conversations, restoreScrollPosition, selectedPhone])
 
-  // Handler para scroll - salva posição durante scroll
+  // Handler para scroll - salva posição durante scroll manual do usuário
   const handleScroll = useCallback(() => {
-    saveScrollPosition()
+    // Só salvar posição se não acabamos de fazer scroll automático
+    // Isso evita sobrescrever a posição do scroll automático
+    if (!justScrolledToConversationRef.current) {
+      saveScrollPosition()
+    }
   }, [saveScrollPosition])
 
   const handleClearSearch = useCallback(() => {
