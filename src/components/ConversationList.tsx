@@ -17,6 +17,7 @@ interface ConversationListProps {
   lastUpdatePhone?: string | null // Mantido para animação de pulse
   onConversationOpen?: (phone: string) => void
   onConversationClick?: () => void // Callback para fechar sidebar mobile
+  onMarkAsRead?: (phone: string) => void // Callback para marcar conversa como lida
 }
 
 export const ConversationList = ({
@@ -27,6 +28,7 @@ export const ConversationList = ({
   lastUpdatePhone, // Mantido por compatibilidade mas não usado
   onConversationOpen,
   onConversationClick,
+  onMarkAsRead,
 }: ConversationListProps) => {
   const router = useRouter()
 
@@ -42,6 +44,11 @@ export const ConversationList = ({
       onConversationOpen(phone)
     } else {
       router.push(`/dashboard/chat?phone=${phone}&client_id=${clientId}`)
+    }
+
+    // Marcar conversa como lida ao abrir
+    if (onMarkAsRead) {
+      onMarkAsRead(phone)
     }
   }
 

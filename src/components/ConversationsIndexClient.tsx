@@ -299,6 +299,7 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
                 currentPhone={selectedPhone || undefined}
                 lastUpdatePhone={lastUpdatePhone}
                 onConversationOpen={handleSelectConversation}
+                onMarkAsRead={handleMarkAsRead}
               />
             )}
           </div>
@@ -405,6 +406,7 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
                       handleSelectConversation(phone)
                       setSidebarOpen(false)
                     }}
+                    onMarkAsRead={handleMarkAsRead}
                   />
                 )}
               </div>
