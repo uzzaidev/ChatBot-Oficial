@@ -22,7 +22,8 @@ interface UseConversationsResult {
   loading: boolean;
   error: string | null;
   total: number;
-  refetch: () => Promise<void>;
+  refetch: () => Promise<void>; // Com loading state
+  refetchSilent: () => Promise<void>; // Sem loading state (para atualizações silenciosas)
 }
 
 export const useConversations = ({
@@ -160,11 +161,17 @@ export const useConversations = ({
     return () => clearTimeout(fallbackTimeout);
   }, [enableRealtime, realtimeConnected, fetchConversations]);
 
+  // Método para refetch silencioso (sem loading state) - usado para atualizações após ações do usuário
+  const refetchSilent = useCallback(async () => {
+    await fetchConversations(true); // Passa true para indicar que é update silencioso
+  }, [fetchConversations]);
+
   return {
     conversations,
     loading,
     error,
     total,
-    refetch: fetchConversations,
+    refetch: fetchConversations, // Mantém para compatibilidade (com loading)
+    refetchSilent, // Novo método sem loading
   };
 };

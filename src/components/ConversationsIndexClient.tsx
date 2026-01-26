@@ -52,7 +52,7 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
     onMessageError: (tempId: string) => void
   } | null>(null)
 
-  const { conversations, loading, refetch } = useConversations({
+  const { conversations, loading, refetchSilent } = useConversations({
     clientId,
     status: statusFilter === 'all' ? undefined : statusFilter,
     enableRealtime: true,
@@ -154,17 +154,11 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
     }
   }, [selectedPhone])
 
-  // Restaurar scroll quando as conversas são atualizadas (useLayoutEffect para sincronização imediata com DOM)
-  // IMPORTANTE: NUNCA restaurar scroll quando há uma conversa selecionada
-  // Isso evita conflito com o scroll automático para a conversa selecionada
-  useLayoutEffect(() => {
-    // Só restaurar scroll se:
-    // 1. Não há conversa selecionada (evita conflito)
-    // 2. Não acabamos de fazer scroll automático (flag de proteção)
-    if (!selectedPhone && !justScrolledToConversationRef.current && scrollContainerRef.current) {
-      restoreScrollPosition()
-    }
-  }, [conversations, restoreScrollPosition, selectedPhone])
+  // REMOVIDO: Restaurar scroll quando as conversas são atualizadas
+  // Isso estava causando conflito com o scroll automático
+  // O scroll só deve ser restaurado manualmente pelo usuário ou quando não há conversa selecionada
+  // Com realtime, as atualizações são silenciosas e não devem resetar o scroll
+  // useLayoutEffect removido para evitar piscar e resetar scroll
 
   // Handler para scroll - salva posição durante scroll manual do usuário
   const handleScroll = useCallback(() => {
@@ -219,10 +213,11 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
     const result = await markConversationAsRead(conversationPhone)
 
     if (result.success) {
-      // Forçar refetch imediato para atualizar UI
-      await refetch()
+      // Refetch silencioso (sem loading) para atualizar UI
+      // O realtime também vai atualizar, mas fazemos refetch imediato para garantir
+      await refetchSilent()
     }
-  }, [refetch])
+  }, [refetchSilent])
 
   // Calcular métricas por status
   const metrics = useMemo(() => {
