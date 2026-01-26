@@ -41,6 +41,8 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const scrollPositionRef = useRef(0)
+  // Ref para armazenar referências aos elementos das conversas (para scroll automático)
+  const conversationItemsRef = useRef<Map<string, HTMLDivElement>>(new Map())
 
   // Refs para callbacks de optimistic updates
   const optimisticCallbacksRef = useRef<{
@@ -91,10 +93,57 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
     })
   }, [conversations, searchTerm])
 
-  // Restaurar scroll quando as conversas são atualizadas (useLayoutEffect para sincronização imediata com DOM)
+  // Scroll automático para a conversa selecionada quando ela é clicada
+  // Ajusta o scroll baseado na data da conversa (conversas mais antigas ficam mais abaixo)
   useLayoutEffect(() => {
-    restoreScrollPosition()
-  }, [conversations, restoreScrollPosition])
+    if (selectedPhone && scrollContainerRef.current) {
+      // Pequeno delay para garantir que o DOM foi atualizado
+      const timeout = setTimeout(() => {
+        const selectedElement = conversationItemsRef.current.get(selectedPhone)
+        if (selectedElement && scrollContainerRef.current) {
+          const container = scrollContainerRef.current
+          const elementTop = selectedElement.offsetTop
+          const elementHeight = selectedElement.offsetHeight
+          const containerHeight = container.clientHeight
+          const containerScrollTop = container.scrollTop
+          const containerScrollBottom = containerScrollTop + containerHeight
+          
+          // Verificar se o elemento já está visível na viewport
+          const elementBottom = elementTop + elementHeight
+          const isFullyVisible = elementTop >= containerScrollTop && elementBottom <= containerScrollBottom
+          
+          // Só fazer scroll se o elemento não estiver totalmente visível
+          if (!isFullyVisible) {
+            // Calcular posição para centralizar o elemento na viewport
+            // Isso garante que conversas antigas (mais abaixo) sejam visíveis
+            const scrollPosition = elementTop - (containerHeight / 2) + (elementHeight / 2)
+            
+            // Scroll suave até a conversa selecionada
+            container.scrollTo({
+              top: Math.max(0, scrollPosition),
+              behavior: 'smooth'
+            })
+            
+            // Salvar a nova posição após um pequeno delay (para aguardar o scroll suave)
+            setTimeout(() => {
+              scrollPositionRef.current = container.scrollTop
+            }, 300)
+          }
+        }
+      }, 150) // Aumentado para 150ms para garantir que o DOM foi atualizado
+      
+      return () => clearTimeout(timeout)
+    }
+  }, [selectedPhone])
+
+  // Restaurar scroll quando as conversas são atualizadas (useLayoutEffect para sincronização imediata com DOM)
+  // Mas não restaurar se acabamos de selecionar uma conversa (deixar o scroll automático funcionar)
+  useLayoutEffect(() => {
+    // Só restaurar se não acabamos de selecionar uma conversa
+    if (!selectedPhone) {
+      restoreScrollPosition()
+    }
+  }, [conversations, restoreScrollPosition, selectedPhone])
 
   // Handler para scroll - salva posição durante scroll
   const handleScroll = useCallback(() => {
@@ -303,6 +352,7 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
                 lastUpdatePhone={lastUpdatePhone}
                 onConversationOpen={handleSelectConversation}
                 onMarkAsRead={handleMarkAsRead}
+                conversationItemsRef={conversationItemsRef}
               />
             )}
           </div>
@@ -410,6 +460,7 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
                       setSidebarOpen(false)
                     }}
                     onMarkAsRead={handleMarkAsRead}
+                    conversationItemsRef={conversationItemsRef}
                   />
                 )}
               </div>

@@ -53,6 +53,26 @@ export const ConversationDetail = ({
     phone,
     // Sem polling - vamos depender 100% do realtime
   })
+  
+  // Estado local para controlar se deve mostrar loading
+  // Só mostra loading se realmente não tem mensagens ainda
+  const [hasShownMessages, setHasShownMessages] = useState(false)
+  
+  // Atualizar flag quando mensagens são carregadas pela primeira vez
+  useEffect(() => {
+    if (fetchedMessages.length > 0 && !hasShownMessages) {
+      setHasShownMessages(true)
+    }
+  }, [fetchedMessages.length, hasShownMessages])
+  
+  // Reset flag quando troca de conversa
+  useEffect(() => {
+    setHasShownMessages(false)
+  }, [phone])
+  
+  // Determinar se deve mostrar loading
+  // Só mostra se está carregando E ainda não mostrou mensagens
+  const shouldShowLoading = loading && !hasShownMessages && fetchedMessages.length === 0
 
   // Memoize fetched message IDs for efficient lookup
   const fetchedMessageIds = useMemo(() => {
@@ -644,13 +664,16 @@ export const ConversationDetail = ({
       )}
       
       <div className="flex-1 overflow-hidden">
-        {loading ? (
+        {shouldShowLoading ? (
           <div className="flex items-center justify-center h-full">
-            <span className="text-sm text-muted-foreground">Carregando mensagens...</span>
+            <div className="flex flex-col items-center gap-2">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1ABC9C]"></div>
+              <span className="text-sm text-white/50">Carregando mensagens...</span>
+            </div>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
-            <span className="text-sm text-muted-foreground">Nenhuma mensagem ainda</span>
+            <span className="text-sm text-white/50">Nenhuma mensagem ainda</span>
           </div>
         ) : (
           <ScrollArea ref={scrollAreaRef} className="h-full px-2 md:px-4">
