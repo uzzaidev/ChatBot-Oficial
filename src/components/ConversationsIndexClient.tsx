@@ -41,6 +41,10 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const scrollPositionRef = useRef(0)
+  // Ref para armazenar referências aos elementos das conversas (para scroll automático)
+  const conversationItemsRef = useRef<Map<string, HTMLDivElement>>(new Map())
+  // Flag para indicar que acabamos de fazer scroll automático (evita restaurar scroll)
+  const justScrolledToConversationRef = useRef(false)
 
   // Refs para callbacks de optimistic updates
   const optimisticCallbacksRef = useRef<{
@@ -48,7 +52,7 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
     onMessageError: (tempId: string) => void
   } | null>(null)
 
-  const { conversations, loading } = useConversations({
+  const { conversations, loading, refetchSilent } = useConversations({
     clientId,
     status: statusFilter === 'all' ? undefined : statusFilter,
     enableRealtime: true,
@@ -91,14 +95,78 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
     })
   }, [conversations, searchTerm])
 
-  // Restaurar scroll quando as conversas são atualizadas (useLayoutEffect para sincronização imediata com DOM)
+  // Scroll automático para a conversa selecionada quando ela é clicada
+  // Ajusta o scroll baseado na data da conversa (conversas mais antigas ficam mais abaixo)
   useLayoutEffect(() => {
-    restoreScrollPosition()
-  }, [conversations, restoreScrollPosition])
+    if (selectedPhone && scrollContainerRef.current) {
+      // Marcar que vamos fazer scroll automático
+      justScrolledToConversationRef.current = true
+      
+      // Pequeno delay para garantir que o DOM foi atualizado
+      const timeout = setTimeout(() => {
+        const selectedElement = conversationItemsRef.current.get(selectedPhone)
+        if (selectedElement && scrollContainerRef.current) {
+          const container = scrollContainerRef.current
+          const elementTop = selectedElement.offsetTop
+          const elementHeight = selectedElement.offsetHeight
+          const containerHeight = container.clientHeight
+          const containerScrollTop = container.scrollTop
+          const containerScrollBottom = containerScrollTop + containerHeight
+          
+          // Verificar se o elemento já está visível na viewport
+          const elementBottom = elementTop + elementHeight
+          const isFullyVisible = elementTop >= containerScrollTop && elementBottom <= containerScrollBottom
+          
+          // Só fazer scroll se o elemento não estiver totalmente visível
+          if (!isFullyVisible) {
+            // Calcular posição para centralizar o elemento na viewport
+            // Isso garante que conversas antigas (mais abaixo) sejam visíveis
+            const scrollPosition = elementTop - (containerHeight / 2) + (elementHeight / 2)
+            
+            // Scroll suave até a conversa selecionada
+            container.scrollTo({
+              top: Math.max(0, scrollPosition),
+              behavior: 'smooth'
+            })
+            
+            // Salvar a nova posição após um pequeno delay (para aguardar o scroll suave)
+            setTimeout(() => {
+              if (scrollContainerRef.current) {
+                scrollPositionRef.current = scrollContainerRef.current.scrollTop
+              }
+              // Resetar flag após o scroll completar
+              justScrolledToConversationRef.current = false
+            }, 500) // Aumentado para 500ms para garantir que o scroll suave completou
+          } else {
+            // Se já está visível, resetar flag imediatamente
+            justScrolledToConversationRef.current = false
+          }
+        } else {
+          // Se elemento não encontrado, resetar flag
+          justScrolledToConversationRef.current = false
+        }
+      }, 150) // Delay para garantir que o DOM foi atualizado
+      
+      return () => clearTimeout(timeout)
+    } else {
+      // Se não há conversa selecionada, resetar flag
+      justScrolledToConversationRef.current = false
+    }
+  }, [selectedPhone])
 
-  // Handler para scroll - salva posição durante scroll
+  // REMOVIDO: Restaurar scroll quando as conversas são atualizadas
+  // Isso estava causando conflito com o scroll automático
+  // O scroll só deve ser restaurado manualmente pelo usuário ou quando não há conversa selecionada
+  // Com realtime, as atualizações são silenciosas e não devem resetar o scroll
+  // useLayoutEffect removido para evitar piscar e resetar scroll
+
+  // Handler para scroll - salva posição durante scroll manual do usuário
   const handleScroll = useCallback(() => {
-    saveScrollPosition()
+    // Só salvar posição se não acabamos de fazer scroll automático
+    // Isso evita sobrescrever a posição do scroll automático
+    if (!justScrolledToConversationRef.current) {
+      saveScrollPosition()
+    }
   }, [saveScrollPosition])
 
   const handleClearSearch = useCallback(() => {
@@ -141,11 +209,15 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
 
   // Callback para marcar como lida
   const handleMarkAsRead = useCallback(async (conversationPhone: string) => {
+    // Marcar como lida na API
     const result = await markConversationAsRead(conversationPhone)
-    if (!result.success) {
-      // Handle error silently
+
+    if (result.success) {
+      // Refetch silencioso (sem loading) para atualizar UI
+      // O realtime também vai atualizar, mas fazemos refetch imediato para garantir
+      await refetchSilent()
     }
-  }, [])
+  }, [refetchSilent])
 
   // Calcular métricas por status
   const metrics = useMemo(() => {
@@ -299,6 +371,8 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
                 currentPhone={selectedPhone || undefined}
                 lastUpdatePhone={lastUpdatePhone}
                 onConversationOpen={handleSelectConversation}
+                onMarkAsRead={handleMarkAsRead}
+                conversationItemsRef={conversationItemsRef}
               />
             )}
           </div>
@@ -405,6 +479,8 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
                       handleSelectConversation(phone)
                       setSidebarOpen(false)
                     }}
+                    onMarkAsRead={handleMarkAsRead}
+                    conversationItemsRef={conversationItemsRef}
                   />
                 )}
               </div>

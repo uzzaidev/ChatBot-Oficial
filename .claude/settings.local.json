@@ -62,7 +62,9 @@
       "Bash(else echo \"Arquivo .doppler.yaml não encontrado\")",
       "Bash(fi)",
       "Bash(git mv:*)",
-      "Bash(powershell -ExecutionPolicy Bypass -File fix-await.ps1)"
+      "Bash(powershell -ExecutionPolicy Bypass -File fix-await.ps1)",
+      "Bash(git cherry-pick:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

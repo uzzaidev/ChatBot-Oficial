@@ -17,6 +17,8 @@ interface ConversationListProps {
   lastUpdatePhone?: string | null // Mantido para animação de pulse
   onConversationOpen?: (phone: string) => void
   onConversationClick?: () => void // Callback para fechar sidebar mobile
+  onMarkAsRead?: (phone: string) => void // Callback para marcar conversa como lida
+  conversationItemsRef?: React.MutableRefObject<Map<string, HTMLDivElement>> // Ref para elementos das conversas (para scroll automático)
 }
 
 export const ConversationList = ({
@@ -27,6 +29,8 @@ export const ConversationList = ({
   lastUpdatePhone, // Mantido por compatibilidade mas não usado
   onConversationOpen,
   onConversationClick,
+  onMarkAsRead,
+  conversationItemsRef,
 }: ConversationListProps) => {
   const router = useRouter()
 
@@ -42,6 +46,11 @@ export const ConversationList = ({
       onConversationOpen(phone)
     } else {
       router.push(`/dashboard/chat?phone=${phone}&client_id=${clientId}`)
+    }
+
+    // Marcar conversa como lida ao abrir
+    if (onMarkAsRead) {
+      onMarkAsRead(phone)
     }
   }
 
@@ -76,6 +85,15 @@ export const ConversationList = ({
         return (
           <div
             key={conversation.id}
+            ref={(el) => {
+              // Registrar elemento no ref para scroll automático
+              if (el && conversationItemsRef?.current) {
+                conversationItemsRef.current.set(conversation.phone, el)
+              } else if (!el && conversationItemsRef?.current) {
+                // Limpar ref quando elemento é desmontado
+                conversationItemsRef.current.delete(conversation.phone)
+              }
+            }}
             className={cn(
               "group relative p-4 cursor-pointer transition-all duration-200 border-b border-white/5",
               isActive 
