@@ -48,7 +48,7 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
     onMessageError: (tempId: string) => void
   } | null>(null)
 
-  const { conversations, loading } = useConversations({
+  const { conversations, loading, refetch } = useConversations({
     clientId,
     status: statusFilter === 'all' ? undefined : statusFilter,
     enableRealtime: true,
@@ -141,11 +141,14 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
 
   // Callback para marcar como lida
   const handleMarkAsRead = useCallback(async (conversationPhone: string) => {
+    // Marcar como lida na API
     const result = await markConversationAsRead(conversationPhone)
-    if (!result.success) {
-      // Handle error silently
+
+    if (result.success) {
+      // Forçar refetch imediato para atualizar UI
+      await refetch()
     }
-  }, [])
+  }, [refetch])
 
   // Calcular métricas por status
   const metrics = useMemo(() => {

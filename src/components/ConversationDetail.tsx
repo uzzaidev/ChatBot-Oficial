@@ -88,6 +88,18 @@ export const ConversationDetail = ({
     sentDebounceTimersRef.current.clear()
   }, [phone])
 
+  // Mark conversation as read when opened
+  useEffect(() => {
+    if (phone && onMarkAsRead && !loading) {
+      // Small delay to ensure messages are loaded first
+      const timer = setTimeout(() => {
+        onMarkAsRead(phone)
+      }, 500)
+
+      return () => clearTimeout(timer)
+    }
+  }, [phone, onMarkAsRead, loading])
+
   const statusRank = useCallback((status: Message['status']): number => {
     const ranks: Record<string, number> = {
       pending: 0,

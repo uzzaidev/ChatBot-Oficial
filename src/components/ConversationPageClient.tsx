@@ -103,7 +103,7 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
     optimisticCallbacksRef.current = callbacks
   }, [])
 
-  const { conversations, loading } = useConversations({
+  const { conversations, loading, refetch } = useConversations({
     clientId,
     status: statusFilter === 'all' ? undefined : statusFilter,
     enableRealtime: true,
@@ -116,11 +116,13 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
   useEffect(() => {
     if (phone) {
       markConversationAsRead(phone).then((result) => {
-        if (!result.success) {
+        if (result.success) {
+          // Forçar refetch imediato para atualizar UI
+          refetch()
         }
       })
     }
-  }, [phone])
+  }, [phone, refetch])
 
   // Gerenciar anexos de mídia
   const handleAddAttachment = useCallback((file: File, type: 'image' | 'document') => {
@@ -206,9 +208,11 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
   // Callback para marcar como lida (usado pelo ConversationDetail)
   const handleMarkAsRead = useCallback(async (conversationPhone: string) => {
     const result = await markConversationAsRead(conversationPhone)
-    if (!result.success) {
+    if (result.success) {
+      // Forçar refetch imediato para atualizar UI
+      await refetch()
     }
-  }, [])
+  }, [refetch])
 
   const conversation = conversations.find((c) => c.phone === phone)
 
