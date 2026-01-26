@@ -301,6 +301,7 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
             currentPhone={phone}
             lastUpdatePhone={lastUpdatePhone}
             onConversationClick={() => setSidebarOpen(false)}
+            onMarkAsRead={handleMarkAsRead}
           />
         </div>
       </div>
@@ -332,6 +333,7 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
                 currentPhone={phone}
                 lastUpdatePhone={lastUpdatePhone}
                 onConversationClick={() => setSidebarOpen(false)}
+                onMarkAsRead={handleMarkAsRead}
               />
             </div>
           </div>
