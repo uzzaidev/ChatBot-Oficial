@@ -107,7 +107,7 @@ export const ConversationList = ({
               {/* Avatar com Badge de Status */}
               <div className="relative flex-shrink-0">
                 <div
-                  className="h-10 w-10 rounded-full flex items-center justify-center font-semibold text-white text-sm"
+                  className="h-8 w-8 rounded-full flex items-center justify-center font-semibold text-white text-xs"
                   style={{ background: 'linear-gradient(135deg, #2E86AB, #1ABC9C)' }}
                 >
                   {getInitials(conversation.name || 'Sem nome')}
