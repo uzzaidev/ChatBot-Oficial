@@ -427,15 +427,15 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
       case 'queued':
       case 'sending':
         // Clock icon for pending/sending
-        return <Clock className={`${statusIconClass} text-white/50`} />
+        return <Clock className={`${statusIconClass} text-gray-400`} />
 
       case 'sent':
         // Single check for sent
-        return <Check className={`${statusIconClass} text-white/70`} />
+        return <Check className={`${statusIconClass} text-gray-400`} />
 
       case 'delivered':
         // Double check for delivered
-        return <CheckCheck className={`${statusIconClass} text-white/70`} />
+        return <CheckCheck className={`${statusIconClass} text-gray-500`} />
 
       case 'read':
         // Double check in blue for read
