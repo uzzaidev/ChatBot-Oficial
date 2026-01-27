@@ -164,7 +164,7 @@ export const AudioMessage = ({
       )}
 
       {/* Audio element (invisível) */}
-      <audio ref={audioRef} src={audioUrl} preload="metadata" crossOrigin="anonymous" />
+      <audio ref={audioRef} src={audioUrl} preload="metadata" />
 
       {/* Timestamp */}
       <span className="text-xs opacity-60 text-right">

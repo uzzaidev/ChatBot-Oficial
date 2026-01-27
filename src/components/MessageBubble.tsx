@@ -218,7 +218,7 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
           className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
             isIncoming 
               ? 'bg-silver-50 hover:bg-silver-100 border-silver-200' 
-              : 'bg-white/10 hover:bg-white/20 border-white/20'
+              : 'bg-gray-50 hover:bg-gray-100 border-gray-200'
           }`}
         >
           <div className={`p-2 rounded-lg ${isPDF ? 'bg-red-100' : 'bg-blue-100'}`}>
@@ -229,16 +229,16 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className={`text-sm font-medium truncate ${isIncoming ? 'text-erie-black-800' : 'text-white'}`}>
+            <p className={`text-sm font-medium truncate ${isIncoming ? 'text-erie-black-800' : 'text-gray-900'}`}>
               {filename}
             </p>
             {fileSize && (
-              <p className={`text-xs ${isIncoming ? 'text-erie-black-500' : 'text-white/70'}`}>
+              <p className={`text-xs ${isIncoming ? 'text-erie-black-500' : 'text-gray-500'}`}>
                 {fileSize}
               </p>
             )}
           </div>
-          <Download className={`h-5 w-5 flex-shrink-0 ${isIncoming ? 'text-erie-black-400' : 'text-white/70'}`} />
+          <Download className={`h-5 w-5 flex-shrink-0 ${isIncoming ? 'text-erie-black-400' : 'text-gray-400'}`} />
         </a>
       </div>
     )
@@ -251,7 +251,7 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
     const displayName = docMatch ? docMatch[1].trim() : legacyFilename
     
     return (
-      <div className={`flex items-center gap-2 mb-1 p-2 rounded-lg ${isIncoming ? 'bg-silver-50' : 'bg-white/10'}`}>
+      <div className={`flex items-center gap-2 mb-1 p-2 rounded-lg ${isIncoming ? 'bg-silver-50' : 'bg-gray-50'}`}>
         <FileText className="h-5 w-5" />
         <span className="font-medium text-sm">{displayName || 'Arquivo enviado'}</span>
       </div>
@@ -277,13 +277,13 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
     return (
       <div className="space-y-2">
         {/* Template header with badge */}
-        <div className={`flex items-center gap-2 pb-2 border-b ${isIncoming ? 'border-silver-200' : 'border-white/20'}`}>
+        <div className={`flex items-center gap-2 pb-2 border-b ${isIncoming ? 'border-silver-200' : 'border-gray-200'}`}>
           <div className={`px-2 py-0.5 rounded text-xs font-medium ${
-            isIncoming ? 'bg-blue-100 text-blue-700' : 'bg-white/20 text-white'
+            isIncoming ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
           }`}>
             Template
           </div>
-          <span className={`text-xs font-medium ${isIncoming ? 'text-erie-black-600' : 'text-white/80'}`}>
+          <span className={`text-xs font-medium ${isIncoming ? 'text-erie-black-600' : 'text-gray-600'}`}>
             {templateMetadata.template_name}
           </span>
         </div>
@@ -298,7 +298,7 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
         {/* Footer if exists */}
         {templateMetadata.template_components?.find(c => c.type === 'FOOTER') && (
           <div className={`text-xs pt-2 border-t ${
-            isIncoming ? 'border-silver-200 text-erie-black-500' : 'border-white/20 text-white/70'
+            isIncoming ? 'border-silver-200 text-erie-black-500' : 'border-gray-200 text-gray-500'
           }`}>
             {templateMetadata.template_components.find(c => c.type === 'FOOTER')?.text}
           </div>
@@ -313,9 +313,9 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
                 <div
                   key={index}
                   className={`text-center py-2 px-3 rounded text-sm font-medium ${
-                    isIncoming 
-                      ? 'bg-silver-100 text-erie-black-700' 
-                      : 'bg-white/10 text-white'
+                    isIncoming
+                      ? 'bg-silver-100 text-erie-black-700'
+                      : 'bg-gray-100 text-gray-700'
                   }`}
                 >
                   {button.text}
@@ -508,7 +508,7 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
   return (
     <div className={'flex ' + (isIncoming ? 'justify-start' : 'justify-end') + ' mb-2 px-2'}>
       <div
-        className={'relative group max-w-[70%] rounded-lg p-3 break-words ' + (
+        className={'relative group max-w-[85%] sm:max-w-[75%] md:max-w-[70%] rounded-lg p-3 break-words ' + (
           isIncoming
             ? 'bg-gradient-to-br from-[#1ABC9C] to-[#2E86AB] text-white shadow-lg'
             : 'bg-white text-gray-900 shadow-sm border border-gray-200'

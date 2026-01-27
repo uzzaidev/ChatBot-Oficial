@@ -102,7 +102,7 @@ export const MessageActionMenu = ({
             p-1 rounded-full
             ${isIncoming 
               ? 'right-1 bg-white/80 hover:bg-white text-erie-black-500' 
-              : 'left-1 bg-white/20 hover:bg-white/30 text-white'
+              : 'left-1 bg-gray-100 hover:bg-gray-200 text-gray-500'
             }
           `}
           aria-label="Message actions"

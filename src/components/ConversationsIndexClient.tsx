@@ -250,9 +250,9 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden" style={{ background: 'radial-gradient(circle at top right, #242f36 0%, #1C1C1C 60%)' }}>
-      {/* Header com Cards KPI */}
-      <div className="relative">
-        {/* Botão Hambúrguer Mobile - No topo do header, sempre visível */}
+      {/* Header com Cards KPI - Esconde em mobile quando conversa selecionada */}
+      <div className={`relative ${selectedPhone ? 'hidden lg:block' : ''}`}>
+        {/* Botão Hambúrguer Mobile - No topo do header */}
         <Button
           variant="ghost"
           size="icon"
