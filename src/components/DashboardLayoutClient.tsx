@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import { Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet'
 import { DashboardNavigation } from '@/components/DashboardNavigation'
 import { NotificationBell } from '@/components/NotificationBell'
 import { cn } from '@/lib/utils'
@@ -156,14 +156,15 @@ export function DashboardLayoutClient({
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent 
-                side="left" 
+              <SheetContent
+                side="left"
                 className="w-[280px] p-6 bg-sidebar-dark border-r border-uzz-mint/10"
                 style={{
                   background: 'linear-gradient(180deg, #1a1f26 0%, #0f1419 100%)',
                   borderRight: '1px solid rgba(26, 188, 156, 0.1)'
                 }}
               >
+                <SheetTitle className="sr-only">Menu de Navegação</SheetTitle>
                 <DashboardNavigation
                   userName={userName}
                   userEmail={userEmail}

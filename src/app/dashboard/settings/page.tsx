@@ -1626,7 +1626,7 @@ Você é o assistente oficial de IA da Uzz.AI..."
         </Card>
 
         {/* Seção 4.5: Text-to-Speech (TTS) */}
-        <Card>
+        <Card className="bg-gradient-to-br from-[#1e2530] to-[#1a1f26] border-white/10">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -1698,8 +1698,8 @@ Você é o assistente oficial de IA da Uzz.AI..."
 
       {/* Modal de Revalidação de Senha */}
       {showRevalidationModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md bg-gradient-to-br from-[#1e2530] to-[#1a1f26] border-white/10">
             <CardHeader>
               <CardTitle>Confirme sua Senha</CardTitle>
               <CardDescription>
@@ -1746,8 +1746,8 @@ Você é o assistente oficial de IA da Uzz.AI..."
 
       {/* Modal de Revalidação de Senha - Agent Config */}
       {showAgentRevalidationModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md bg-gradient-to-br from-[#1e2530] to-[#1a1f26] border-white/10">
             <CardHeader>
               <CardTitle>Confirme sua Senha</CardTitle>
               <CardDescription>

@@ -12,7 +12,7 @@ import { DragDropZone } from '@/components/DragDropZone'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { MessageCircle, Bot, User, ArrowRight, Search, X, Workflow, Home, Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { EmptyStateSimple } from '@/components/EmptyState'
 import { getInitials } from '@/lib/utils'
 import { markConversationAsRead } from '@/lib/api'
@@ -381,6 +381,7 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
         {/* Sidebar Mobile - Sheet drawer */}
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
           <SheetContent side="left" className="p-0 w-[85vw] sm:w-96">
+            <SheetTitle className="sr-only">Conversas</SheetTitle>
             <div className="flex flex-col h-full" style={{ background: 'rgba(28, 28, 28, 0.95)' }}>
               {/* Header da Sidebar */}
               <div className="p-4 border-b border-white/5">

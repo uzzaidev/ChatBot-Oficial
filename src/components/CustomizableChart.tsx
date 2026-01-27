@@ -18,7 +18,6 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  Brush,
 } from 'recharts'
 import type { ChartConfig, MetricDataPoint } from '@/lib/types/dashboard-metrics'
 import { cn } from '@/lib/utils'
@@ -49,12 +48,7 @@ export function CustomizableChart({
 }: CustomizableChartProps) {
   const chartHeight = config.height || 300
   const [hiddenDataKeys, setHiddenDataKeys] = useState<Set<string>>(new Set())
-  const [brushStartIndex, setBrushStartIndex] = useState(0)
-  const [brushEndIndex, setBrushEndIndex] = useState(data.length > 0 ? data.length - 1 : 0)
   const chartContainerRef = useRef<HTMLDivElement>(null)
-
-  // Filter data based on brush selection
-  const filteredData = data.length > 0 ? data.slice(brushStartIndex, brushEndIndex + 1) : []
 
   // Toggle visibility of data series
   const handleLegendClick = (dataKey: string | number | ((data: any, index: number) => string | number) | undefined) => {
@@ -107,12 +101,9 @@ export function CustomizableChart({
   }
 
   const renderChart = () => {
-    // Filter data based on brush selection
-    const filteredData = data.slice(brushStartIndex, brushEndIndex + 1)
-
     const commonProps = {
-      data: filteredData,
-      margin: { top: 10, right: 30, left: 0, bottom: data.length > 10 ? 50 : 0 },
+      data,
+      margin: { top: 10, right: 30, left: 0, bottom: 5 },
     }
 
     const gridProps = config.showGrid
@@ -121,14 +112,15 @@ export function CustomizableChart({
 
     const tooltipProps = {
       contentStyle: {
-        backgroundColor: '#1a1f26',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
-        borderRadius: '8px',
-        padding: '12px',
+        backgroundColor: '#1e2530',
+        border: '1px solid rgba(26, 188, 156, 0.2)',
+        borderRadius: '12px',
+        padding: '12px 16px',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
       },
-      labelStyle: { color: '#fff', fontWeight: 600 },
-      itemStyle: { color: '#fff' },
-      cursor: { stroke: 'rgba(26, 188, 156, 0.3)', strokeWidth: 2 },
+      labelStyle: { color: '#fff', fontWeight: 600, marginBottom: '4px' },
+      itemStyle: { color: '#ccc', fontSize: '13px' },
+      cursor: { stroke: 'rgba(26, 188, 156, 0.3)', strokeWidth: 1 },
     }
 
 
@@ -163,22 +155,6 @@ export function CustomizableChart({
               />
             )}
             {renderLines()}
-            {data.length > 10 && (
-              <Brush
-                dataKey="date"
-                height={30}
-                stroke="#1ABC9C"
-                fill="rgba(26, 188, 156, 0.1)"
-                startIndex={brushStartIndex}
-                endIndex={brushEndIndex}
-                onChange={(e) => {
-                  if (e.startIndex !== undefined && e.endIndex !== undefined) {
-                    setBrushStartIndex(e.startIndex)
-                    setBrushEndIndex(e.endIndex)
-                  }
-                }}
-              />
-            )}
           </LineChart>
         )
 
@@ -211,22 +187,6 @@ export function CustomizableChart({
               />
             )}
             {renderBars()}
-            {data.length > 10 && (
-              <Brush
-                dataKey="date"
-                height={30}
-                stroke="#1ABC9C"
-                fill="rgba(26, 188, 156, 0.1)"
-                startIndex={brushStartIndex}
-                endIndex={brushEndIndex}
-                onChange={(e) => {
-                  if (e.startIndex !== undefined && e.endIndex !== undefined) {
-                    setBrushStartIndex(e.startIndex)
-                    setBrushEndIndex(e.endIndex)
-                  }
-                }}
-              />
-            )}
           </BarChart>
         )
 
@@ -260,22 +220,6 @@ export function CustomizableChart({
               />
             )}
             {renderAreas()}
-            {data.length > 10 && (
-              <Brush
-                dataKey="date"
-                height={30}
-                stroke="#1ABC9C"
-                fill="rgba(26, 188, 156, 0.1)"
-                startIndex={brushStartIndex}
-                endIndex={brushEndIndex}
-                onChange={(e) => {
-                  if (e.startIndex !== undefined && e.endIndex !== undefined) {
-                    setBrushStartIndex(e.startIndex)
-                    setBrushEndIndex(e.endIndex)
-                  }
-                }}
-              />
-            )}
           </AreaChart>
         )
 
@@ -308,22 +252,6 @@ export function CustomizableChart({
               />
             )}
             {renderComposedElements()}
-            {data.length > 10 && (
-              <Brush
-                dataKey="date"
-                height={30}
-                stroke="#1ABC9C"
-                fill="rgba(26, 188, 156, 0.1)"
-                startIndex={brushStartIndex}
-                endIndex={brushEndIndex}
-                onChange={(e) => {
-                  if (e.startIndex !== undefined && e.endIndex !== undefined) {
-                    setBrushStartIndex(e.startIndex)
-                    setBrushEndIndex(e.endIndex)
-                  }
-                }}
-              />
-            )}
           </ComposedChart>
         )
 

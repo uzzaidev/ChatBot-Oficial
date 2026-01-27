@@ -193,14 +193,14 @@ export default function AdminBudgetPlansPage() {
       )}
 
       <Tabs defaultValue="configure">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="configure">Configurar Budget</TabsTrigger>
-          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 bg-[#1a1f26] border border-white/10 p-1 rounded-lg">
+          <TabsTrigger value="configure" className="data-[state=active]:bg-uzz-mint/15 data-[state=active]:text-white data-[state=active]:shadow-sm text-uzz-silver rounded-md transition-all">Configurar Budget</TabsTrigger>
+          <TabsTrigger value="overview" className="data-[state=active]:bg-uzz-mint/15 data-[state=active]:text-white data-[state=active]:shadow-sm text-uzz-silver rounded-md transition-all">Visão Geral</TabsTrigger>
         </TabsList>
 
         {/* Configure Tab */}
         <TabsContent value="configure" className="space-y-6">
-          <Card>
+          <Card className="bg-gradient-to-br from-[#1e2530] to-[#1a1f26] border-white/10">
             <CardHeader>
               <CardTitle>Configurar Budget do Cliente</CardTitle>
               <CardDescription>
@@ -368,14 +368,14 @@ export default function AdminBudgetPlansPage() {
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-4">
           {budgets.length === 0 ? (
-            <Card>
+            <Card className="bg-gradient-to-br from-[#1e2530] to-[#1a1f26] border-white/10">
               <CardContent className="pt-6 text-center text-muted-foreground">
                 <p>Nenhum budget configurado ainda</p>
               </CardContent>
             </Card>
           ) : (
             budgets.map((budget) => (
-              <Card key={budget.client_id}>
+              <Card key={budget.client_id} className="bg-gradient-to-br from-[#1e2530] to-[#1a1f26] border-white/10">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div>

@@ -41,7 +41,7 @@ const NavItem = ({ href, icon, label, isCollapsed, onClick, badge, tooltip }: Na
         "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 text-sm font-medium",
         isActive
           ? "bg-uzz-mint/15 text-uzz-mint border-l-[3px] border-uzz-mint font-semibold"
-          : "text-[#9ca3af] hover:bg-uzz-mint/10 hover:text-uzz-mint hover:translate-x-1",
+          : "text-[#9ca3af] hover:bg-[#1a2a28] hover:text-uzz-mint hover:translate-x-1",
         isCollapsed && "justify-center"
       )}
       title={isCollapsed ? label : undefined}

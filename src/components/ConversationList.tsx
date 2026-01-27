@@ -99,8 +99,7 @@ export const ConversationList = ({
               isActive 
                 ? "bg-gradient-to-r from-[#1ABC9C]/10 to-transparent border-l-2 border-l-[#1ABC9C]" 
                 : "hover:bg-white/5",
-              hasUnread && !isActive && "bg-[#2E86AB]/5 border-l-[#2E86AB]",
-              isVeryRecent && "animate-pulse"
+              hasUnread && !isActive && "bg-[#2E86AB]/5 border-l-[#2E86AB]"
             )}
             onClick={() => handleConversationClick(conversation.phone)}
           >

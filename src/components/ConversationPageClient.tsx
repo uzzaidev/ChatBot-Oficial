@@ -11,12 +11,13 @@ import { ConversationList } from '@/components/ConversationList'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getInitials } from '@/lib/utils'
 import { markConversationAsRead } from '@/lib/api'
-import { MessageCircle, Menu, Bot, User, ArrowRight, List, Home, Search, X } from 'lucide-react'
+import { MessageCircle, Menu, Bot, User, ArrowRight, List, Home, Search, X, LogOut } from 'lucide-react'
 import Link from 'next/link'
+import { LogoutButton } from '@/components/LogoutButton'
 import type { MediaAttachment } from '@/components/MediaPreview'
 import type { Message } from '@/lib/types'
 
@@ -223,16 +224,19 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
         <MessageCircle className="h-6 w-6 text-white" />
         <h2 className="text-white font-semibold text-lg">Conversas</h2>
       </div>
-      <Link href="/dashboard">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-white hover:bg-mint-700 flex items-center gap-2 px-3"
-        >
-          <Home className="h-4 w-4" />
-          <span className="font-medium">Início</span>
-        </Button>
-      </Link>
+      <div className="flex items-center gap-2">
+        <Link href="/dashboard">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-white hover:bg-mint-700 flex items-center gap-2 px-3"
+          >
+            <Home className="h-4 w-4" />
+            <span className="font-medium">Início</span>
+          </Button>
+        </Link>
+        <LogoutButton isCollapsed />
+      </div>
     </div>
   )
 
@@ -313,6 +317,7 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
       {/* Sidebar Mobile - Sheet drawer */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <SheetContent side="left" className="p-0 w-[85vw] sm:w-96">
+          <SheetTitle className="sr-only">Conversas</SheetTitle>
           <div className="flex flex-col h-full">
             {sidebarHeader}
 

@@ -36,11 +36,6 @@ export const ConversationsHeader = ({
           </p>
         </div>
 
-        {/* Sistema Online Indicator */}
-        <div className="flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 bg-[#151515] rounded-lg border border-white/10">
-          <div className="w-2 h-2 bg-[#1ABC9C] rounded-full animate-pulse shadow-lg shadow-[#1ABC9C]/50" />
-          <span className="text-white/70 text-xs font-medium hidden sm:inline">Sistema Online</span>
-        </div>
       </div>
 
       {/* Cards KPI - Responsivo */}
