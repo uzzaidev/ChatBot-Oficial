@@ -110,6 +110,32 @@ export const useRealtimeConversations = ({
             const data = payload.new as any;
             const phone = data.session_id;
 
+            // Parse message JSON to check message type
+            const rawMessage = data.message;
+            const parsedMessage = (() => {
+              if (!rawMessage) return null;
+              if (typeof rawMessage === "object") return rawMessage as any;
+              if (typeof rawMessage !== "string") return null;
+
+              try {
+                return JSON.parse(rawMessage) as any;
+              } catch {
+                return null;
+              }
+            })();
+
+            const messageType: string | null =
+              typeof parsedMessage?.type === "string"
+                ? parsedMessage.type
+                : null;
+
+            // 🐛 FIX: Só processar mensagens RECEBIDAS (type: 'human')
+            // Ignora mensagens ENVIADAS (type: 'ai') para evitar que apareçam como "não lidas"
+            // Ref: BUG-UZZAPP-Broadcast-Supabase-Fix.md
+            if (messageType !== "human") {
+              return; // Ignora mensagens do bot/AI
+            }
+
             // Criar um update fake de UPDATE para triggerar refetch
             const update: ConversationUpdate = {
               eventType: "UPDATE",
@@ -141,6 +167,14 @@ export const useRealtimeConversations = ({
           try {
             const data = payload.new as any;
             const phone = data.phone;
+            const direction = data.direction;
+
+            // 🐛 FIX: Só processar mensagens RECEBIDAS (incoming)
+            // Ignora mensagens ENVIADAS (outgoing) para evitar que apareçam como "não lidas"
+            // Ref: BUG-UZZAPP-Broadcast-Supabase-Fix.md
+            if (direction !== "incoming") {
+              return; // Ignora mensagens enviadas
+            }
 
             // Criar um update fake de UPDATE para triggerar refetch
             const update: ConversationUpdate = {
