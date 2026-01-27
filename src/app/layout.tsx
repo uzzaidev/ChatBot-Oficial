@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/toaster'
 import { DeepLinkingProvider } from '@/components/DeepLinkingProvider'
 import { PushNotificationsProvider } from '@/components/PushNotificationsProvider'
 import { NotificationManager } from '@/components/NotificationManager'
+import { ThemeProvider } from '@/components/ThemeProvider'
 
 // Fontes UZZ.AI
 const poppins = Poppins({
@@ -59,7 +60,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="pt-BR" className={`${poppins.variable} ${inter.variable} ${exo2.variable} ${firaCode.variable}`}>
+    <html lang="pt-BR" suppressHydrationWarning className={`${poppins.variable} ${inter.variable} ${exo2.variable} ${firaCode.variable}`}>
       <head>
         {/* Fallback link for browsers that don't read metadata.icons */}
         <link rel="icon" href="/favcon.ico" />
@@ -69,14 +70,22 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="UzzApp" />
         {/* If you prefer an ICO file, place it at /public/favicon.ico and the browser will pick it up */}
       </head>
-      <body className="font-inter dark">
-        <DeepLinkingProvider>
-          <PushNotificationsProvider>
-            <NotificationManager enabled={true} />
-            {children}
-          </PushNotificationsProvider>
-        </DeepLinkingProvider>
-        <Toaster />
+      <body className="font-inter">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem={false}
+          themes={['dark', 'light']}
+          storageKey="uzzapp-theme"
+        >
+          <DeepLinkingProvider>
+            <PushNotificationsProvider>
+              <NotificationManager enabled={true} />
+              {children}
+            </PushNotificationsProvider>
+          </DeepLinkingProvider>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   )

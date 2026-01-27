@@ -1,8 +1,15 @@
 # Plano: Clear Mode (Modo Claro) + Dark Mode Toggle
 
 > **Data:** 27/01/2026
-> **Status:** Planejado
+> **Status:** Em andamento
 > **Impacto:** 3 arquivos novos, ~28 arquivos modificados
+>
+> ### Progresso de Implementação
+> - [x] **Fase 0: Infraestrutura** (27/01/2026) - `next-themes` instalado, `ThemeProvider` criado, `layout.tsx` atualizado, `globals.css` theme-aware, `tailwind.config.ts` com cores `surface`. Build OK.
+> - [ ] **Fase 1: Toggle no Header**
+> - [ ] **Fase 2: Migração de Componentes**
+> - [ ] **Fase 3: Transição Suave + Acessibilidade**
+> - [ ] **Fase 4: Verificação**
 
 ---
 
