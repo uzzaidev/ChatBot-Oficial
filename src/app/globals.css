@@ -30,11 +30,12 @@
     --status-info-hsl: 217 91% 60%;
 
     /* Dark Theme Colors (Default) */
-    --background: #0f1419; /* Dark background */
+    /* Values must be HSL without hsl() wrapper - Tailwind wraps with hsl() */
+    --background: 210 27% 8%; /* #0f1419 */
     --foreground: 210 40% 98%; /* White text */
-    --card: #1a1f26; /* Card background */
+    --card: 215 18% 13%; /* #1a1f26 */
     --card-foreground: 210 40% 98%;
-    --popover: #1e2530;
+    --popover: 216 22% 15%; /* #1e2530 */
     --popover-foreground: 210 40% 98%;
     --primary: 170 76% 39%; /* UZZ.AI Mint (#1ABC9C) */
     --primary-foreground: 0 0% 100%;
@@ -46,8 +47,8 @@
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: rgba(255, 255, 255, 0.1);
-    --input: rgba(255, 255, 255, 0.05);
+    --border: 210 14% 30%; /* ~rgba(255,255,255,0.1) on dark bg */
+    --input: 210 14% 20%; /* ~rgba(255,255,255,0.05) on dark bg */
     --ring: 170 76% 39%; /* UZZ.AI Mint */
     --radius: 0.5rem;
   }

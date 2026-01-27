@@ -525,14 +525,25 @@ export const ConversationDetail = ({
   const calculateStickyDate = useCallback((scrollElement: Element): string | null => {
     const STICKY_HEADER_OFFSET = 50
     let currentDate: string | null = null
+    let currentDateElement: HTMLDivElement | null = null
     const containerRect = scrollElement.getBoundingClientRect()
-    
+
     dateRefs.current.forEach((element, date) => {
       const rect = element.getBoundingClientRect()
       if (rect.top <= containerRect.top + STICKY_HEADER_OFFSET) {
         currentDate = date
+        currentDateElement = element
       }
     })
+
+    // Hide sticky when the inline date separator is still visible
+    // to avoid showing the same date twice
+    if (currentDateElement) {
+      const rect = (currentDateElement as HTMLDivElement).getBoundingClientRect()
+      if (rect.bottom > containerRect.top + 10) {
+        return null
+      }
+    }
 
     return currentDate
   }, [])

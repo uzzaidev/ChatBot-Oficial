@@ -385,8 +385,7 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
             <div className="flex flex-col h-full" style={{ background: 'rgba(28, 28, 28, 0.95)' }}>
               {/* Header da Sidebar */}
               <div className="p-4 border-b border-white/5">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-poppins font-semibold text-sm text-white/90">Conversas</h3>
+                <div className="flex items-center gap-3 mb-4">
                   <Link href="/dashboard">
                     <Button
                       variant="ghost"
@@ -396,6 +395,7 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
                       <Home className="h-4 w-4" />
                     </Button>
                   </Link>
+                  <h3 className="font-poppins font-semibold text-sm text-white/90">Conversas</h3>
                 </div>
 
                 {/* Campo de Pesquisa */}
