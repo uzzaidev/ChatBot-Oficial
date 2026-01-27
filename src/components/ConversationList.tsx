@@ -107,7 +107,7 @@ export const ConversationList = ({
               {/* Avatar com Badge de Status */}
               <div className="relative flex-shrink-0">
                 <div
-                  className="h-12 w-12 rounded-full flex items-center justify-center font-semibold text-white"
+                  className="h-10 w-10 rounded-full flex items-center justify-center font-semibold text-white text-sm"
                   style={{ background: 'linear-gradient(135deg, #2E86AB, #1ABC9C)' }}
                 >
                   {getInitials(conversation.name || 'Sem nome')}
@@ -130,11 +130,10 @@ export const ConversationList = ({
                   </div>
                 )}
 
-                {/* Indicador de "novo" (últimas 5min) */}
-                {isVeryRecent && (
+                {/* Indicador de "novo" - só aparece se não lida */}
+                {isVeryRecent && hasUnread && (
                   <div className="absolute -top-1 -right-1 z-20">
-                    <div className="w-3 h-3 bg-[#1ABC9C] rounded-full border-2 border-[#252525] shadow-lg animate-ping" />
-                    <div className="absolute top-0 left-0 w-3 h-3 bg-[#1ABC9C] rounded-full border-2 border-[#252525]" />
+                    <div className="w-2.5 h-2.5 bg-[#1ABC9C] rounded-full border-2 border-[#252525]" />
                   </div>
                 )}
               </div>
