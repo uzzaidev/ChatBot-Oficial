@@ -204,7 +204,7 @@ const FlowNodeBlock = memo(({ id, data, selected }: NodeProps) => {
       {/* Loading Indicator */}
       {nodeData.isLoading && (
         <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center rounded-lg">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
         </div>
       )}
     </div>

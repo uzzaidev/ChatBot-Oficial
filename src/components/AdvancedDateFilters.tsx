@@ -116,7 +116,7 @@ export function AdvancedDateFilters({
             className={cn(
               "data-[state=active]:bg-gradient-to-r data-[state=active]:from-uzz-mint data-[state=active]:to-uzz-blue",
               "data-[state=active]:text-white",
-              "text-uzz-silver data-[state=inactive]:hover:text-white"
+              "text-muted-foreground data-[state=inactive]:hover:text-foreground"
             )}
           >
             <Calendar className="h-4 w-4 mr-2" />
@@ -127,7 +127,7 @@ export function AdvancedDateFilters({
             className={cn(
               "data-[state=active]:bg-gradient-to-r data-[state=active]:from-uzz-mint data-[state=active]:to-uzz-blue",
               "data-[state=active]:text-white",
-              "text-uzz-silver data-[state=inactive]:hover:text-white"
+              "text-muted-foreground data-[state=inactive]:hover:text-foreground"
             )}
           >
             <BarChart3 className="h-4 w-4 mr-2" />
@@ -138,7 +138,7 @@ export function AdvancedDateFilters({
             className={cn(
               "data-[state=active]:bg-gradient-to-r data-[state=active]:from-uzz-mint data-[state=active]:to-uzz-blue",
               "data-[state=active]:text-white",
-              "text-uzz-silver data-[state=inactive]:hover:text-white"
+              "text-muted-foreground data-[state=inactive]:hover:text-foreground"
             )}
           >
             <CalendarRange className="h-4 w-4 mr-2" />
@@ -155,7 +155,7 @@ export function AdvancedDateFilters({
                 handlePresetChange(range)
               }}
             />
-            <div className="text-sm text-uzz-silver ml-4">
+            <div className="text-sm text-muted-foreground ml-4">
               {defaultDateRange.preset && (
                 <span>
                   {formatDateRange(defaultDateRange.start, defaultDateRange.end)}
