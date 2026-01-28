@@ -41,7 +41,7 @@ const NavItem = ({ href, icon, label, isCollapsed, onClick, badge, tooltip }: Na
         "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 text-sm font-medium",
         isActive
           ? "bg-uzz-mint/15 text-uzz-mint border-l-[3px] border-uzz-mint font-semibold"
-          : "text-[#9ca3af] hover:bg-[#1a2a28] hover:text-uzz-mint hover:translate-x-1",
+          : "text-muted-foreground hover:bg-primary/10 hover:text-uzz-mint hover:translate-x-1",
         isCollapsed && "justify-center"
       )}
       title={isCollapsed ? label : undefined}
@@ -114,7 +114,7 @@ export function DashboardNavigation({
   return (
     <div className="flex flex-col h-full">
       {/* Logo Header */}
-      <div className="px-5 py-6 border-b border-white/5">
+      <div className="px-5 py-6 border-b border-border/50">
         {isCollapsed ? (
           <div className="flex justify-center">
             <MessageSquare className="h-7 w-7 text-uzz-mint" />
@@ -256,12 +256,12 @@ export function DashboardNavigation({
         />
       </nav>
 
-      <div className="px-3 py-4 border-t border-white/5 space-y-4">
+      <div className="px-3 py-4 border-t border-border/50 space-y-4">
         {/* User Info & Logout */}
         {!isCollapsed && userName && (
-          <div className="px-3 py-3 rounded-lg bg-white/5">
+          <div className="px-3 py-3 rounded-lg bg-muted/30">
             <p className="text-xs text-uzz-silver mb-1">Conectado como:</p>
-            <p className="text-sm font-semibold text-white truncate" title={userEmail || ''}>
+            <p className="text-sm font-semibold text-foreground truncate" title={userEmail || ''}>
               {userName}
             </p>
             {userEmail && (
@@ -293,7 +293,7 @@ export function DashboardNavigation({
           size="sm"
           onClick={onToggleCollapse}
           className={cn(
-            "mx-3 mb-4 hidden md:flex items-center gap-2 text-uzz-silver hover:text-white hover:bg-white/10",
+            "mx-3 mb-4 hidden md:flex items-center gap-2 text-muted-foreground hover:text-foreground hover:bg-muted",
             isCollapsed && "justify-center"
           )}
         >

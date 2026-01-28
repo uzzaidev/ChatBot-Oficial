@@ -100,9 +100,9 @@ export const MessageActionMenu = ({
             absolute top-1 opacity-0 group-hover:opacity-100
             transition-opacity duration-200
             p-1 rounded-full
-            ${isIncoming 
-              ? 'right-1 bg-white/80 hover:bg-white text-erie-black-500' 
-              : 'left-1 bg-gray-100 hover:bg-gray-200 text-gray-500'
+            ${isIncoming
+              ? 'right-1 bg-card/80 hover:bg-card text-muted-foreground'
+              : 'left-1 bg-muted hover:bg-muted/80 text-muted-foreground'
             }
           `}
           aria-label="Message actions"
@@ -113,18 +113,18 @@ export const MessageActionMenu = ({
 
       <DropdownMenuContent
         align={isIncoming ? 'end' : 'start'}
-        className="min-w-[280px] bg-white dark:bg-zinc-800 border dark:border-zinc-700"
+        className="min-w-[280px] bg-card border border-border"
       >
         {/* Emoji reactions row - only show if wamid is available */}
         {canReact && (
-          <div className="flex items-center justify-evenly gap-1 p-2 border-b dark:border-zinc-700">
+          <div className="flex items-center justify-evenly gap-1 p-2 border-b border-border">
             {REACTION_EMOJIS.map((emoji) => (
               <button
                 key={emoji}
                 onClick={() => handleReaction(emoji)}
                 disabled={isReacting}
                 className="
-                  p-1.5 rounded-full hover:bg-silver-100 dark:hover:bg-zinc-700
+                  p-1.5 rounded-full hover:bg-muted
                   transition-colors text-xl flex-shrink-0
                   disabled:opacity-50
                 "

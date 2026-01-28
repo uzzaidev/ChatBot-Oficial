@@ -6,7 +6,7 @@
 >
 > ### Progresso de Implementação
 > - [x] **Fase 0: Infraestrutura** (27/01/2026) - `next-themes` instalado, `ThemeProvider` criado, `layout.tsx` atualizado, `globals.css` theme-aware, `tailwind.config.ts` com cores `surface`. Build OK.
-> - [ ] **Fase 1: Toggle no Header**
+> - [x] **Fase 1: Toggle no Header** (27/01/2026) - `ThemeToggle.tsx` criado, adicionado no header desktop e mobile (ao lado do sino). Build OK.
 > - [ ] **Fase 2: Migração de Componentes**
 > - [ ] **Fase 3: Transição Suave + Acessibilidade**
 > - [ ] **Fase 4: Verificação**

@@ -59,7 +59,7 @@ export const ConversationTable = ({
     switch (status) {
       case 'humano':
         return (
-          <Badge className="border-[#1ABC9C]/30 text-[#1ABC9C] bg-[#1ABC9C]/10 text-xs">
+          <Badge className="border-primary/30 text-primary bg-primary/10 text-xs">
             <User className="h-3 w-3 mr-1" />
             Humano
           </Badge>
@@ -73,7 +73,7 @@ export const ConversationTable = ({
         )
       case 'bot':
         return (
-          <Badge className="border-[#2E86AB]/30 text-[#2E86AB] bg-[#2E86AB]/10 text-xs">
+          <Badge className="border-secondary/30 text-secondary bg-secondary/10 text-xs">
             <Bot className="h-3 w-3 mr-1" />
             Bot
           </Badge>
@@ -93,7 +93,7 @@ export const ConversationTable = ({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1ABC9C]"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     )
   }
@@ -101,33 +101,33 @@ export const ConversationTable = ({
   if (conversations.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-        <MessageCircle className="h-12 w-12 text-white/30 mb-4" />
-        <p className="text-white/60">Nenhuma conversa encontrada</p>
+        <MessageCircle className="h-12 w-12 text-muted-foreground/50 mb-4" />
+        <p className="text-muted-foreground">Nenhuma conversa encontrada</p>
       </div>
     )
   }
 
   return (
-    <div className="w-full overflow-x-auto rounded-lg border border-white/5" style={{ background: '#252525' }}>
+    <div className="w-full overflow-x-auto rounded-lg border border-border bg-surface">
       <Table className="bg-transparent">
         <TableHeader>
-          <TableRow className="border-white/5 hover:bg-transparent" style={{ background: 'rgba(37, 37, 37, 0.8)' }}>
-            <TableHead className="text-white/70 font-medium text-xs uppercase tracking-wider px-4 py-3" style={{ minWidth: '200px' }}>
+          <TableRow className="border-border/50 hover:bg-transparent bg-surface-alt">
+            <TableHead className="text-muted-foreground font-medium text-xs uppercase tracking-wider px-4 py-3" style={{ minWidth: '200px' }}>
               Contato
             </TableHead>
-            <TableHead className="text-white/70 font-medium text-xs uppercase tracking-wider px-4 py-3" style={{ minWidth: '150px' }}>
+            <TableHead className="text-muted-foreground font-medium text-xs uppercase tracking-wider px-4 py-3" style={{ minWidth: '150px' }}>
               Status
             </TableHead>
-            <TableHead className="text-white/70 font-medium text-xs uppercase tracking-wider px-4 py-3" style={{ minWidth: '200px' }}>
+            <TableHead className="text-muted-foreground font-medium text-xs uppercase tracking-wider px-4 py-3" style={{ minWidth: '200px' }}>
               Última Mensagem
             </TableHead>
-            <TableHead className="text-white/70 font-medium text-xs uppercase tracking-wider px-4 py-3" style={{ minWidth: '120px' }}>
+            <TableHead className="text-muted-foreground font-medium text-xs uppercase tracking-wider px-4 py-3" style={{ minWidth: '120px' }}>
               Telefone
             </TableHead>
-            <TableHead className="text-white/70 font-medium text-xs uppercase tracking-wider px-4 py-3" style={{ minWidth: '120px' }}>
+            <TableHead className="text-muted-foreground font-medium text-xs uppercase tracking-wider px-4 py-3" style={{ minWidth: '120px' }}>
               Última Atualização
             </TableHead>
-            <TableHead className="text-white/70 font-medium w-12 px-4 py-3"></TableHead>
+            <TableHead className="text-muted-foreground font-medium w-12 px-4 py-3"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -147,11 +147,11 @@ export const ConversationTable = ({
               <TableRow
                 key={conversation.id}
                 className={cn(
-                  "border-white/5 cursor-pointer transition-all bg-transparent",
+                  "border-border/50 cursor-pointer transition-all bg-transparent",
                   isActive
-                    ? "bg-gradient-to-r from-[#1ABC9C]/10 to-transparent"
-                    : "hover:bg-white/5",
-                  hasUnread && !isActive && "bg-[#2E86AB]/5",
+                    ? "bg-gradient-to-r from-primary/10 to-transparent"
+                    : "hover:bg-muted/50",
+                  hasUnread && !isActive && "bg-secondary/5",
                   isVeryRecent && "animate-pulse"
                 )}
                 onClick={() => handleConversationClick(conversation.phone)}
@@ -161,30 +161,29 @@ export const ConversationTable = ({
                   <div className="flex items-center gap-3">
                     <div className="relative flex-shrink-0">
                       <div
-                        className="h-10 w-10 rounded-full flex items-center justify-center font-semibold text-white text-sm"
-                        style={{ background: 'linear-gradient(135deg, #2E86AB, #1ABC9C)' }}
+                        className="h-10 w-10 rounded-full flex items-center justify-center font-semibold text-white text-sm bg-gradient-to-br from-secondary to-primary"
                       >
                         {getInitials(conversation.name || 'Sem nome')}
                       </div>
                       {conversation.status === 'fluxo_inicial' && (
-                        <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 bg-[#9b59b6] rounded-full border-2 border-[#252525] flex items-center justify-center">
+                        <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 bg-[#9b59b6] rounded-full border-2 border-card flex items-center justify-center">
                           <Workflow className="h-2 w-2 text-white" />
                         </div>
                       )}
                       {conversation.status === 'humano' && (
-                        <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 bg-[#1ABC9C] rounded-full border-2 border-[#252525] flex items-center justify-center">
+                        <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 bg-primary rounded-full border-2 border-card flex items-center justify-center">
                           <User className="h-2 w-2 text-white" />
                         </div>
                       )}
                       {conversation.status === 'bot' && (
-                        <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 bg-[#2E86AB] rounded-full border-2 border-[#252525] flex items-center justify-center">
+                        <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 bg-secondary rounded-full border-2 border-card flex items-center justify-center">
                           <Bot className="h-2 w-2 text-white" />
                         </div>
                       )}
                       {isVeryRecent && (
                         <div className="absolute -top-0.5 -right-0.5 z-20">
-                          <div className="w-2.5 h-2.5 bg-[#1ABC9C] rounded-full border-2 border-[#252525] shadow-lg animate-ping" />
-                          <div className="absolute top-0 left-0 w-2.5 h-2.5 bg-[#1ABC9C] rounded-full border-2 border-[#252525]" />
+                          <div className="w-2.5 h-2.5 bg-primary rounded-full border-2 border-card shadow-lg animate-ping" />
+                          <div className="absolute top-0 left-0 w-2.5 h-2.5 bg-primary rounded-full border-2 border-card" />
                         </div>
                       )}
                     </div>
@@ -192,12 +191,12 @@ export const ConversationTable = ({
                       <div className="flex items-center gap-2">
                         <h3 className={cn(
                           "font-semibold text-sm truncate",
-                          hasUnread && !isActive ? "text-white" : "text-white/90"
+                          hasUnread && !isActive ? "text-foreground" : "text-foreground/90"
                         )}>
                           {conversation.name || formatPhone(conversation.phone)}
                         </h3>
                         {hasUnread && !isActive && (
-                          <div className="bg-gradient-to-r from-[#1ABC9C] to-[#2E86AB] text-white text-[10px] rounded-full min-w-[18px] h-4 px-1.5 flex items-center justify-center font-bold">
+                          <div className="bg-gradient-to-r from-primary to-secondary text-white text-[10px] rounded-full min-w-[18px] h-4 px-1.5 flex items-center justify-center font-bold">
                             {conversation.unread_count > 9 ? '9+' : conversation.unread_count}
                           </div>
                         )}
@@ -216,8 +215,8 @@ export const ConversationTable = ({
                   <p className={cn(
                     "text-sm truncate max-w-xs",
                     hasUnread && !isActive
-                      ? "font-semibold text-white"
-                      : "text-white/60"
+                      ? "font-semibold text-foreground"
+                      : "text-muted-foreground"
                   )}>
                     {conversation.last_message
                       ? truncateText(conversation.last_message, 50)
@@ -228,14 +227,14 @@ export const ConversationTable = ({
 
                 {/* Telefone */}
                 <TableCell className="py-3">
-                  <span className="text-sm text-white/50 font-mono">
+                  <span className="text-sm text-muted-foreground font-mono">
                     {formatPhone(conversation.phone)}
                   </span>
                 </TableCell>
 
                 {/* Última Atualização */}
                 <TableCell className="py-3">
-                  <span className="text-xs text-white/50">
+                  <span className="text-xs text-muted-foreground">
                     {formatDateTime(conversation.last_update)}
                   </span>
                 </TableCell>
@@ -247,18 +246,18 @@ export const ConversationTable = ({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 w-8 p-0 text-white/50 hover:text-white hover:bg-white/5"
+                        className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-muted/50"
                       >
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
                       align="end"
-                      className="bg-[#252525] border-white/10"
+                      className="bg-card border-border"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <DropdownMenuItem
-                        className="text-white/90 hover:bg-white/5 focus:bg-white/5"
+                        className="text-foreground/90 hover:bg-muted focus:bg-muted"
                         onClick={(e) => {
                           e.stopPropagation()
                           handleConversationClick(conversation.phone)
@@ -267,13 +266,13 @@ export const ConversationTable = ({
                         Abrir Conversa
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        className="text-white/90 hover:bg-white/5 focus:bg-white/5"
+                        className="text-foreground/90 hover:bg-muted focus:bg-muted"
                         onClick={(e) => e.stopPropagation()}
                       >
                         Ver Detalhes
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        className="text-white/90 hover:bg-white/5 focus:bg-white/5 text-red-400"
+                        className="text-red-400 hover:bg-muted focus:bg-muted"
                         onClick={(e) => e.stopPropagation()}
                       >
                         Arquivar

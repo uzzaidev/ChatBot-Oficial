@@ -22,17 +22,16 @@ export const ConversationsHeader = ({
 }: ConversationsHeaderProps) => {
   return (
     <div
-      className="w-full border-b border-white/5 px-4 md:px-6 py-2 md:py-2.5 relative"
-      style={{ background: 'rgba(28, 28, 28, 0.98)' }}
+      className="w-full border-b border-border/50 px-4 md:px-6 py-2 md:py-2.5 relative bg-card/[0.98]"
     >
       {/* Header Top - Título e Status */}
       <div className="flex items-center justify-between mb-2 md:mb-2.5 pl-8 lg:pl-0">
         <div>
-          <h1 className="font-poppins font-bold text-base md:text-xl text-white mb-0.5">
+          <h1 className="font-poppins font-bold text-base md:text-xl text-foreground mb-0.5">
             Caixa de Entrada
           </h1>
-          <p className="text-white/50 text-xs md:text-sm hidden md:block">
-            Gestão / <span className="text-white/70">Conversas</span>
+          <p className="text-muted-foreground text-xs md:text-sm hidden md:block">
+            Gestão / <span className="text-foreground/70">Conversas</span>
           </p>
         </div>
 
@@ -48,20 +47,20 @@ export const ConversationsHeader = ({
           className={cn(
             "relative p-2 md:p-2.5 rounded-lg border transition-all duration-200 text-left group",
             statusFilter === 'all'
-              ? "bg-gradient-to-br from-[#252525] to-[#1f2a28] border-[#1ABC9C] border-t-2"
-              : "bg-[#252525] border-white/5 hover:border-[#1ABC9C]/50 hover:shadow-lg"
+              ? "bg-gradient-to-br from-surface to-surface-alt border-primary border-t-2"
+              : "bg-surface border-border/50 hover:border-primary/50 hover:shadow-lg"
           )}
         >
           <div className="flex items-start justify-between mb-1 md:mb-1.5">
-            <div className="text-[10px] md:text-xs font-medium tracking-wide" style={{ color: statusFilter === 'all' ? '#1ABC9C' : '#B0B0B0' }}>
+            <div className={cn("text-[10px] md:text-xs font-medium tracking-wide", statusFilter === 'all' ? "text-primary" : "text-muted-foreground")}>
               TODAS
             </div>
-            <MessageCircle className="h-3.5 w-3.5 md:h-4 md:w-4 opacity-40 group-hover:opacity-60 transition-opacity" style={{ color: '#1ABC9C' }} />
+            <MessageCircle className="h-3.5 w-3.5 md:h-4 md:w-4 opacity-40 group-hover:opacity-60 transition-opacity text-primary" />
           </div>
-          <div className="font-exo2 text-xl md:text-2xl font-bold text-white mb-0.5">
+          <div className="font-exo2 text-xl md:text-2xl font-bold text-foreground mb-0.5">
             {metrics.total}
           </div>
-          <div className="text-[9px] md:text-[10px] text-white/40 truncate">Total de conversas</div>
+          <div className="text-[9px] md:text-[10px] text-muted-foreground truncate">Total de conversas</div>
         </button>
 
         {/* Card BOT RESPONDENDO */}
@@ -70,20 +69,20 @@ export const ConversationsHeader = ({
           className={cn(
             "relative p-2 md:p-2.5 rounded-lg border transition-all duration-200 text-left group",
             statusFilter === 'bot'
-              ? "bg-gradient-to-br from-[#252525] to-[#1f2a28] border-[#2E86AB] border-t-2"
-              : "bg-[#252525] border-white/5 hover:border-[#2E86AB]/50 hover:shadow-lg"
+              ? "bg-gradient-to-br from-surface to-surface-alt border-secondary border-t-2"
+              : "bg-surface border-border/50 hover:border-secondary/50 hover:shadow-lg"
           )}
         >
           <div className="flex items-start justify-between mb-1 md:mb-1.5">
-            <div className="text-[10px] md:text-xs font-medium tracking-wide truncate pr-1" style={{ color: statusFilter === 'bot' ? '#2E86AB' : '#B0B0B0' }}>
+            <div className={cn("text-[10px] md:text-xs font-medium tracking-wide truncate pr-1", statusFilter === 'bot' ? "text-secondary" : "text-muted-foreground")}>
               BOT
             </div>
-            <Bot className="h-3.5 w-3.5 md:h-4 md:w-4 opacity-40 group-hover:opacity-60 transition-opacity flex-shrink-0" style={{ color: '#2E86AB' }} />
+            <Bot className="h-3.5 w-3.5 md:h-4 md:w-4 opacity-40 group-hover:opacity-60 transition-opacity flex-shrink-0 text-secondary" />
           </div>
-          <div className="font-exo2 text-xl md:text-2xl font-bold text-white mb-0.5">
+          <div className="font-exo2 text-xl md:text-2xl font-bold text-foreground mb-0.5">
             {metrics.bot}
           </div>
-          <div className="text-[9px] md:text-[10px] text-white/40 truncate">Bot ativo</div>
+          <div className="text-[9px] md:text-[10px] text-muted-foreground truncate">Bot ativo</div>
         </button>
 
         {/* Card HUMANO */}
@@ -92,20 +91,20 @@ export const ConversationsHeader = ({
           className={cn(
             "relative p-2 md:p-2.5 rounded-lg border transition-all duration-200 text-left group",
             statusFilter === 'humano'
-              ? "bg-gradient-to-br from-[#252525] to-[#1f2a28] border-[#1ABC9C] border-t-2"
-              : "bg-[#252525] border-white/5 hover:border-[#1ABC9C]/50 hover:shadow-lg"
+              ? "bg-gradient-to-br from-surface to-surface-alt border-primary border-t-2"
+              : "bg-surface border-border/50 hover:border-primary/50 hover:shadow-lg"
           )}
         >
           <div className="flex items-start justify-between mb-1 md:mb-1.5">
-            <div className="text-[10px] md:text-xs font-medium tracking-wide" style={{ color: statusFilter === 'humano' ? '#1ABC9C' : '#B0B0B0' }}>
+            <div className={cn("text-[10px] md:text-xs font-medium tracking-wide", statusFilter === 'humano' ? "text-primary" : "text-muted-foreground")}>
               HUMANO
             </div>
-            <User className="h-3.5 w-3.5 md:h-4 md:w-4 opacity-40 group-hover:opacity-60 transition-opacity" style={{ color: '#1ABC9C' }} />
+            <User className="h-3.5 w-3.5 md:h-4 md:w-4 opacity-40 group-hover:opacity-60 transition-opacity text-primary" />
           </div>
-          <div className="font-exo2 text-xl md:text-2xl font-bold text-white mb-0.5">
+          <div className="font-exo2 text-xl md:text-2xl font-bold text-foreground mb-0.5">
             {metrics.humano}
           </div>
-          <div className="text-[9px] md:text-[10px] text-white/40 truncate">Atend. humano</div>
+          <div className="text-[9px] md:text-[10px] text-muted-foreground truncate">Atend. humano</div>
         </button>
 
         {/* Card EM FLOW */}
@@ -114,20 +113,20 @@ export const ConversationsHeader = ({
           className={cn(
             "relative p-2 md:p-2.5 rounded-lg border transition-all duration-200 text-left group",
             statusFilter === 'fluxo_inicial'
-              ? "bg-gradient-to-br from-[#252525] to-[#1f2a28] border-[#9b59b6] border-t-2"
-              : "bg-[#252525] border-white/5 hover:border-[#9b59b6]/50 hover:shadow-lg"
+              ? "bg-gradient-to-br from-surface to-surface-alt border-[#9b59b6] border-t-2"
+              : "bg-surface border-border/50 hover:border-[#9b59b6]/50 hover:shadow-lg"
           )}
         >
           <div className="flex items-start justify-between mb-1 md:mb-1.5">
-            <div className="text-[10px] md:text-xs font-medium tracking-wide" style={{ color: statusFilter === 'fluxo_inicial' ? '#9b59b6' : '#B0B0B0' }}>
+            <div className={cn("text-[10px] md:text-xs font-medium tracking-wide", statusFilter === 'fluxo_inicial' ? "text-[#9b59b6]" : "text-muted-foreground")}>
               EM FLOW
             </div>
-            <Workflow className="h-3.5 w-3.5 md:h-4 md:w-4 opacity-40 group-hover:opacity-60 transition-opacity" style={{ color: '#9b59b6' }} />
+            <Workflow className="h-3.5 w-3.5 md:h-4 md:w-4 opacity-40 group-hover:opacity-60 transition-opacity text-[#9b59b6]" />
           </div>
-          <div className="font-exo2 text-xl md:text-2xl font-bold text-white mb-0.5">
+          <div className="font-exo2 text-xl md:text-2xl font-bold text-foreground mb-0.5">
             {metrics.emFlow}
           </div>
-          <div className="text-[9px] md:text-[10px] text-white/40 truncate">Flow interativo</div>
+          <div className="text-[9px] md:text-[10px] text-muted-foreground truncate">Flow interativo</div>
         </button>
 
         {/* Card TRANSFERIDO */}
@@ -136,20 +135,20 @@ export const ConversationsHeader = ({
           className={cn(
             "relative p-2 md:p-2.5 rounded-lg border transition-all duration-200 text-left group",
             statusFilter === 'transferido'
-              ? "bg-gradient-to-br from-[#252525] to-[#1f2a28] border-orange-400 border-t-2"
-              : "bg-[#252525] border-white/5 hover:border-orange-400/50 hover:shadow-lg"
+              ? "bg-gradient-to-br from-surface to-surface-alt border-orange-400 border-t-2"
+              : "bg-surface border-border/50 hover:border-orange-400/50 hover:shadow-lg"
           )}
         >
           <div className="flex items-start justify-between mb-1 md:mb-1.5">
-            <div className="text-[10px] md:text-xs font-medium tracking-wide truncate pr-1" style={{ color: statusFilter === 'transferido' ? '#fb923c' : '#B0B0B0' }}>
+            <div className={cn("text-[10px] md:text-xs font-medium tracking-wide truncate pr-1", statusFilter === 'transferido' ? "text-orange-400" : "text-muted-foreground")}>
               TRANSF
             </div>
-            <ArrowRight className="h-3.5 w-3.5 md:h-4 md:w-4 opacity-40 group-hover:opacity-60 transition-opacity flex-shrink-0" style={{ color: '#fb923c' }} />
+            <ArrowRight className="h-3.5 w-3.5 md:h-4 md:w-4 opacity-40 group-hover:opacity-60 transition-opacity flex-shrink-0 text-orange-400" />
           </div>
-          <div className="font-exo2 text-xl md:text-2xl font-bold text-white mb-0.5">
+          <div className="font-exo2 text-xl md:text-2xl font-bold text-foreground mb-0.5">
             {metrics.transferido}
           </div>
-          <div className="text-[9px] md:text-[10px] text-white/40 truncate">Aguardando</div>
+          <div className="text-[9px] md:text-[10px] text-muted-foreground truncate">Aguardando</div>
         </button>
       </div>
       </div>

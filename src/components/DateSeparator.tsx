@@ -13,7 +13,7 @@ interface DateSeparatorProps {
 export const DateSeparator = ({ date }: DateSeparatorProps) => {
   return (
     <div className="flex items-center justify-center my-3">
-      <div className="bg-silver-200/80 text-erie-black-700 text-xs px-3 py-1 rounded-full shadow-sm">
+      <div className="bg-muted text-muted-foreground text-xs px-3 py-1 rounded-full shadow-sm">
         {date}
       </div>
     </div>

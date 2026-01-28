@@ -632,7 +632,7 @@ export const ConversationDetail = ({
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-full bg-white">
+      <div className="flex items-center justify-center h-full bg-background">
         <div className="text-center text-red-500 p-8">
           Erro ao carregar mensagens: {error}
         </div>
@@ -645,7 +645,7 @@ export const ConversationDetail = ({
       {/* Sticky Date Header - WhatsApp style */}
       {stickyDate && messages.length > 0 && (
         <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-center pt-2 pointer-events-none">
-          <div className="bg-silver-200/90 text-erie-black-700 text-xs px-3 py-1 rounded-full shadow-md backdrop-blur-sm">
+          <div className="bg-muted text-muted-foreground text-xs px-3 py-1 rounded-full shadow-md backdrop-blur-sm">
             {stickyDate}
           </div>
         </div>
@@ -678,13 +678,13 @@ export const ConversationDetail = ({
         {shouldShowLoading ? (
           <div className="flex items-center justify-center h-full">
             <div className="flex flex-col items-center gap-2">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1ABC9C]"></div>
-              <span className="text-sm text-white/50">Carregando mensagens...</span>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <span className="text-sm text-muted-foreground">Carregando mensagens...</span>
             </div>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
-            <span className="text-sm text-white/50">Nenhuma mensagem ainda</span>
+            <span className="text-sm text-muted-foreground">Nenhuma mensagem ainda</span>
           </div>
         ) : (
           <ScrollArea ref={scrollAreaRef} className="h-full px-2 md:px-4">

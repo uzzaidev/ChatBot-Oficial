@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet'
 import { DashboardNavigation } from '@/components/DashboardNavigation'
 import { NotificationBell } from '@/components/NotificationBell'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { cn } from '@/lib/utils'
 
 interface DashboardLayoutClientProps {
@@ -81,17 +82,13 @@ export function DashboardLayoutClient({
   }
 
   return (
-    <div className="flex min-h-screen bg-[#0f1419]">
+    <div className="flex min-h-screen bg-background">
       {/* Desktop Sidebar - Fixed position, always visible - DARK THEME */}
-      <aside 
+      <aside
         className={cn(
-          "hidden md:flex flex-col fixed left-0 top-0 h-screen border-r border-uzz-mint/10 bg-sidebar-dark transition-all duration-300 overflow-y-auto z-50",
+          "hidden md:flex flex-col fixed left-0 top-0 h-screen border-r border-primary/10 bg-sidebar-dark transition-all duration-300 overflow-y-auto z-50",
           isCollapsed ? "w-20" : "w-[260px]"
         )}
-        style={{
-          background: 'linear-gradient(180deg, #1a1f26 0%, #0f1419 100%)',
-          borderRight: '1px solid rgba(26, 188, 156, 0.1)'
-        }}
       >
         <DashboardNavigation
           userName={userName}
@@ -105,23 +102,19 @@ export function DashboardLayoutClient({
       <main 
         ref={mainContentRef}
         className={cn(
-          "flex-1 flex flex-col min-w-0 transition-all duration-300 bg-[#0f1419]",
+          "flex-1 flex flex-col min-w-0 transition-all duration-300 bg-background",
           "md:ml-[260px]",
           isCollapsed && "md:ml-20"
         )}
       >
         {/* Desktop Header - DARK THEME - Esconde ao rolar para baixo */}
-        <header 
+        <header
           className={cn(
-            "hidden md:flex h-[70px] border-b border-white/5 px-8 items-center justify-between transition-transform duration-300",
-            "bg-[#1a1f26]",
+            "hidden md:flex h-[70px] border-b border-border/50 px-8 items-center justify-between transition-transform duration-300",
+            "bg-card",
             // Transforma header para esconder/mostrar baseado no scroll
             isHeaderVisible ? "translate-y-0" : "-translate-y-full"
           )}
-          style={{
-            background: '#1a1f26',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
-          }}
         >
           <div className="flex items-center gap-4">
             <h1 className="text-2xl font-poppins font-bold text-white">
@@ -132,37 +125,30 @@ export function DashboardLayoutClient({
               Dashboard
             </p>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4">
+            <ThemeToggle />
             <NotificationBell />
           </div>
         </header>
 
-        {/* Mobile Header - DARK THEME */}
-        <div 
-          className="md:hidden sticky top-0 z-10 border-b border-white/5 p-4 flex items-center justify-between"
-          style={{
-            background: '#1a1f26',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
-          }}
+        {/* Mobile Header */}
+        <div
+          className="md:hidden sticky top-0 z-10 border-b border-border/50 p-4 flex items-center justify-between bg-card"
         >
           <div className="flex items-center gap-3">
             <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
               <SheetTrigger asChild>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   size="sm"
-                  className="text-white hover:bg-white/10"
+                  className="text-foreground hover:bg-muted"
                 >
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
               <SheetContent
                 side="left"
-                className="w-[280px] p-6 bg-sidebar-dark border-r border-uzz-mint/10"
-                style={{
-                  background: 'linear-gradient(180deg, #1a1f26 0%, #0f1419 100%)',
-                  borderRight: '1px solid rgba(26, 188, 156, 0.1)'
-                }}
+                className="w-[280px] p-6 bg-sidebar-dark border-r border-primary/10"
               >
                 <SheetTitle className="sr-only">Menu de Navegação</SheetTitle>
                 <DashboardNavigation
@@ -177,11 +163,14 @@ export function DashboardLayoutClient({
               <span className="text-uzz-blue font-exo2">.Ai</span>
             </h1>
           </div>
-          <NotificationBell />
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <NotificationBell />
+          </div>
         </div>
 
-        {/* Page Content - DARK THEME */}
-        <div className="flex-1 overflow-auto bg-[#0f1419] p-8">
+        {/* Page Content */}
+        <div className="flex-1 overflow-auto bg-background p-8">
           <div className="max-w-[1600px] mx-auto w-full">
             {children}
           </div>

@@ -57,7 +57,7 @@ export const ConversationList = ({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <span className="text-white/50">Carregando...</span>
+        <span className="text-muted-foreground">Carregando...</span>
       </div>
     )
   }
@@ -95,11 +95,11 @@ export const ConversationList = ({
               }
             }}
             className={cn(
-              "group relative p-4 cursor-pointer transition-all duration-200 border-b border-white/5",
-              isActive 
-                ? "bg-gradient-to-r from-[#1ABC9C]/10 to-transparent border-l-2 border-l-[#1ABC9C]" 
-                : "hover:bg-white/5",
-              hasUnread && !isActive && "bg-[#2E86AB]/5 border-l-[#2E86AB]"
+              "group relative p-4 cursor-pointer transition-all duration-200 border-b border-border/50",
+              isActive
+                ? "bg-gradient-to-r from-primary/10 to-transparent border-l-2 border-l-primary"
+                : "hover:bg-muted/50",
+              hasUnread && !isActive && "bg-secondary/5 border-l-secondary"
             )}
             onClick={() => handleConversationClick(conversation.phone)}
           >
@@ -107,25 +107,24 @@ export const ConversationList = ({
               {/* Avatar com Badge de Status */}
               <div className="relative flex-shrink-0">
                 <div
-                  className="h-8 w-8 rounded-full flex items-center justify-center font-semibold text-white text-xs"
-                  style={{ background: 'linear-gradient(135deg, #2E86AB, #1ABC9C)' }}
+                  className="h-8 w-8 rounded-full flex items-center justify-center font-semibold text-white text-xs bg-gradient-to-br from-secondary to-primary"
                 >
                   {getInitials(conversation.name || 'Sem nome')}
                 </div>
-                
+
                 {/* Badge de status no canto inferior direito do avatar */}
                 {conversation.status === 'fluxo_inicial' && (
-                  <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-[#9b59b6] rounded-full border-2 border-[#252525] flex items-center justify-center">
+                  <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-[#9b59b6] rounded-full border-2 border-card flex items-center justify-center">
                     <Workflow className="h-2.5 w-2.5 text-white" />
                   </div>
                 )}
                 {conversation.status === 'humano' && (
-                  <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-[#1ABC9C] rounded-full border-2 border-[#252525] flex items-center justify-center">
+                  <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-primary rounded-full border-2 border-card flex items-center justify-center">
                     <User className="h-2.5 w-2.5 text-white" />
                   </div>
                 )}
                 {conversation.status === 'bot' && (
-                  <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-[#2E86AB] rounded-full border-2 border-[#252525] flex items-center justify-center">
+                  <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-secondary rounded-full border-2 border-card flex items-center justify-center">
                     <Bot className="h-2.5 w-2.5 text-white" />
                   </div>
                 )}
@@ -133,7 +132,7 @@ export const ConversationList = ({
                 {/* Indicador de "novo" - só aparece se não lida */}
                 {isVeryRecent && hasUnread && (
                   <div className="absolute -top-1 -right-1 z-20">
-                    <div className="w-2.5 h-2.5 bg-[#1ABC9C] rounded-full border-2 border-[#252525]" />
+                    <div className="w-2.5 h-2.5 bg-primary rounded-full border-2 border-card" />
                   </div>
                 )}
               </div>
@@ -143,20 +142,20 @@ export const ConversationList = ({
                 {/* Nome e Timestamp */}
                 <div className="flex items-start justify-between mb-1.5">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-sm text-white truncate">
+                    <h3 className="font-semibold text-sm text-foreground truncate">
                       {conversation.name || formatPhone(conversation.phone)}
                     </h3>
-                    <p className="text-xs text-white/40 mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       {formatPhone(conversation.phone)}
                     </p>
                   </div>
-                  
+
                   <div className="flex flex-col items-end gap-1.5 ml-2 flex-shrink-0">
-                    <span className="text-xs text-white/50 whitespace-nowrap">
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
                       {formatDateTime(conversation.last_update)}
                     </span>
                     {hasUnread && !isActive && (
-                      <div className="bg-gradient-to-r from-[#1ABC9C] to-[#2E86AB] text-white text-[11px] rounded-full min-w-[22px] h-5 px-2 flex items-center justify-center font-bold shadow-lg" style={{ boxShadow: '0 0 10px rgba(26, 188, 156, 0.3)' }}>
+                      <div className="bg-gradient-to-r from-primary to-secondary text-white text-[11px] rounded-full min-w-[22px] h-5 px-2 flex items-center justify-center font-bold shadow-glow">
                         {conversation.unread_count > 9 ? '9+' : conversation.unread_count}
                       </div>
                     )}
@@ -167,9 +166,9 @@ export const ConversationList = ({
                 <div className="mb-1.5">
                   <p className={cn(
                     "text-sm line-clamp-2 leading-relaxed",
-                    hasUnread && !isActive 
-                      ? "font-semibold text-white" 
-                      : "text-white/60"
+                    hasUnread && !isActive
+                      ? "font-semibold text-foreground"
+                      : "text-muted-foreground"
                   )}>
                     {conversation.last_message
                       ? truncateText(conversation.last_message, 60)
@@ -182,25 +181,25 @@ export const ConversationList = ({
                 <div className="flex items-center gap-2 flex-wrap">
                   {/* Tag de Status Principal */}
                   {conversation.status === 'humano' && (
-                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium border" style={{ borderColor: 'rgba(26, 188, 156, 0.3)', color: '#1ABC9C', background: 'rgba(26, 188, 156, 0.1)' }}>
+                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium border border-primary/30 text-primary bg-primary/10">
                       <User className="h-3 w-3" />
                       Atendimento Humano
                     </span>
                   )}
                   {conversation.status === 'fluxo_inicial' && (
-                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium border" style={{ borderColor: 'rgba(155, 89, 182, 0.3)', color: '#9b59b6', background: 'rgba(155, 89, 182, 0.1)' }}>
+                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium border border-[#9b59b6]/30 text-[#9b59b6] bg-[#9b59b6]/10">
                       <Workflow className="h-3 w-3" />
                       Em Flow Interativo
                     </span>
                   )}
                   {conversation.status === 'bot' && (
-                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium border" style={{ borderColor: 'rgba(46, 134, 171, 0.3)', color: '#2E86AB', background: 'rgba(46, 134, 171, 0.1)' }}>
+                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium border border-secondary/30 text-secondary bg-secondary/10">
                       <Bot className="h-3 w-3" />
                       Bot Respondendo
                     </span>
                   )}
                   {conversation.status === 'transferido' && (
-                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium border" style={{ borderColor: 'rgba(251, 146, 60, 0.3)', color: '#fb923c', background: 'rgba(251, 146, 60, 0.1)' }}>
+                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium border border-orange-400/30 text-orange-400 bg-orange-400/10">
                       <ArrowRight className="h-3 w-3" />
                       Aguardando Humano
                     </span>

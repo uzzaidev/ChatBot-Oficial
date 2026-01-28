@@ -215,30 +215,26 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
           href={mediaMetadata.url}
           target="_blank"
           rel="noopener noreferrer"
-          className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
-            isIncoming 
-              ? 'bg-silver-50 hover:bg-silver-100 border-silver-200' 
-              : 'bg-gray-50 hover:bg-gray-100 border-gray-200'
-          }`}
+          className="flex items-center gap-3 p-3 rounded-lg border transition-colors bg-white/10 hover:bg-white/20 border-white/20"
         >
-          <div className={`p-2 rounded-lg ${isPDF ? 'bg-red-100' : 'bg-blue-100'}`}>
+          <div className={`p-2 rounded-lg ${isPDF ? 'bg-red-500/20' : 'bg-blue-500/20'}`}>
             {isPDF ? (
-              <FileText className="h-6 w-6 text-red-600" />
+              <FileText className="h-6 w-6 text-red-200" />
             ) : (
-              <File className="h-6 w-6 text-blue-600" />
+              <File className="h-6 w-6 text-blue-200" />
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className={`text-sm font-medium truncate ${isIncoming ? 'text-erie-black-800' : 'text-gray-900'}`}>
+            <p className="text-sm font-medium truncate text-white">
               {filename}
             </p>
             {fileSize && (
-              <p className={`text-xs ${isIncoming ? 'text-erie-black-500' : 'text-gray-500'}`}>
+              <p className="text-xs text-white/70">
                 {fileSize}
               </p>
             )}
           </div>
-          <Download className={`h-5 w-5 flex-shrink-0 ${isIncoming ? 'text-erie-black-400' : 'text-gray-400'}`} />
+          <Download className="h-5 w-5 flex-shrink-0 text-white/70" />
         </a>
       </div>
     )
@@ -251,9 +247,9 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
     const displayName = docMatch ? docMatch[1].trim() : legacyFilename
     
     return (
-      <div className={`flex items-center gap-2 mb-1 p-2 rounded-lg ${isIncoming ? 'bg-silver-50' : 'bg-gray-50'}`}>
-        <FileText className="h-5 w-5" />
-        <span className="font-medium text-sm">{displayName || 'Arquivo enviado'}</span>
+      <div className="flex items-center gap-2 mb-1 p-2 rounded-lg bg-white/10">
+        <FileText className="h-5 w-5 text-white" />
+        <span className="font-medium text-sm text-white">{displayName || 'Arquivo enviado'}</span>
       </div>
     )
   }
@@ -277,29 +273,25 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
     return (
       <div className="space-y-2">
         {/* Template header with badge */}
-        <div className={`flex items-center gap-2 pb-2 border-b ${isIncoming ? 'border-silver-200' : 'border-gray-200'}`}>
-          <div className={`px-2 py-0.5 rounded text-xs font-medium ${
-            isIncoming ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
-          }`}>
+        <div className="flex items-center gap-2 pb-2 border-b border-white/20">
+          <div className="px-2 py-0.5 rounded text-xs font-medium bg-white/20 text-white">
             Template
           </div>
-          <span className={`text-xs font-medium ${isIncoming ? 'text-erie-black-600' : 'text-gray-600'}`}>
+          <span className="text-xs font-medium text-white/80">
             {templateMetadata.template_name}
           </span>
         </div>
 
         {/* Template body content */}
         {bodyText && (
-          <div className="text-sm md:text-base whitespace-pre-wrap">
+          <div className="text-sm md:text-base whitespace-pre-wrap text-white">
             {bodyText}
           </div>
         )}
 
         {/* Footer if exists */}
         {templateMetadata.template_components?.find(c => c.type === 'FOOTER') && (
-          <div className={`text-xs pt-2 border-t ${
-            isIncoming ? 'border-silver-200 text-erie-black-500' : 'border-gray-200 text-gray-500'
-          }`}>
+          <div className="text-xs pt-2 border-t border-white/20 text-white/70">
             {templateMetadata.template_components.find(c => c.type === 'FOOTER')?.text}
           </div>
         )}
@@ -312,11 +304,7 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
               ?.buttons?.map((button, index) => (
                 <div
                   key={index}
-                  className={`text-center py-2 px-3 rounded text-sm font-medium ${
-                    isIncoming
-                      ? 'bg-silver-100 text-erie-black-700'
-                      : 'bg-gray-100 text-gray-700'
-                  }`}
+                  className="text-center py-2 px-3 rounded text-sm font-medium bg-white/15 text-white hover:bg-white/25 transition-colors"
                 >
                   {button.text}
                 </div>
@@ -427,24 +415,24 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
       case 'queued':
       case 'sending':
         // Clock icon for pending/sending
-        return <Clock className={`${statusIconClass} text-gray-400`} />
+        return <Clock className={`${statusIconClass} text-white/60`} />
 
       case 'sent':
         // Single check for sent
-        return <Check className={`${statusIconClass} text-gray-400`} />
+        return <Check className={`${statusIconClass} text-white/70`} />
 
       case 'delivered':
         // Double check for delivered
-        return <CheckCheck className={`${statusIconClass} text-gray-500`} />
+        return <CheckCheck className={`${statusIconClass} text-white/80`} />
 
       case 'read':
-        // Double check in blue for read
-        return <CheckCheck className={`${statusIconClass} text-blue-400`} />
+        // Double check in lighter shade for read (distinguishes from delivered)
+        return <CheckCheck className={`${statusIconClass} text-white`} />
 
       case 'failed':
-        // Red X for failed (click to view error details)
+        // Red X for failed (click to view error details) - using red-300 for visibility on green
         if (!errorDetails) {
-          return <XCircle className={`${statusIconClass} text-red-400`} />
+          return <XCircle className={`${statusIconClass} text-red-300`} />
         }
 
         return (
@@ -455,7 +443,7 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
                 className="inline-flex items-center"
                 aria-label="Ver detalhes do erro"
               >
-                <XCircle className={`${statusIconClass} text-red-400`} />
+                <XCircle className={`${statusIconClass} text-red-300`} />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="max-w-[320px]">
@@ -472,7 +460,7 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
                   <div><span className="font-medium">Mensagem:</span> {(errorDetails as any).message}</div>
                 )}
                 {errorHint && (
-                  <div className="pt-1 text-erie-black-600">{errorHint}</div>
+                  <div className="pt-1 text-muted-foreground">{errorHint}</div>
                 )}
               </div>
             </DropdownMenuContent>
@@ -508,11 +496,7 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
   return (
     <div className={'flex ' + (isIncoming ? 'justify-start' : 'justify-end') + ' mb-2 px-2'}>
       <div
-        className={'relative group max-w-[85%] sm:max-w-[75%] md:max-w-[70%] rounded-lg p-3 break-words ' + (
-          isIncoming
-            ? 'bg-gradient-to-br from-[#1ABC9C] to-[#2E86AB] text-white shadow-lg'
-            : 'bg-white text-gray-900 shadow-sm border border-gray-200'
-        )}
+        className="relative group max-w-[85%] sm:max-w-[75%] md:max-w-[70%] rounded-lg p-3 break-words bg-gradient-to-br from-primary to-secondary text-white shadow-lg"
       >
         {/* Action menu - WhatsApp style dropdown */}
         {(onReaction || onDelete) && (
@@ -526,11 +510,11 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
 
         {renderMediaContent()}
         {textContent && (
-          <p className={'whitespace-pre-wrap text-sm md:text-base ' + (isIncoming ? 'text-white' : 'text-gray-900')}>
+          <p className="whitespace-pre-wrap text-sm md:text-base text-white">
             {textContent}
           </p>
         )}
-        <p className={'text-xs mt-1 flex items-center gap-1 ' + (isIncoming ? 'text-white/80' : 'text-gray-600')}>
+        <p className="text-xs mt-1 flex items-center gap-1 text-white/80">
           <span>{new Date(message.timestamp).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>
           {renderStatusIcon()}
         </p>
