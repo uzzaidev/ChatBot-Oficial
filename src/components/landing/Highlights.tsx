@@ -28,13 +28,13 @@ const highlights = [
 
 export function Highlights() {
   return (
-    <section className="py-20 md:py-28 bg-[#0f1419]">
+    <section className="py-20 md:py-28 bg-background">
       <div className={cn(designTokens.container.lg, designTokens.spacing.stack, 'px-6')}>
         <div className="space-y-4 text-center max-w-3xl mx-auto mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
             Tudo o que você precisa em um único lugar
           </h2>
-          <p className="text-lg text-white/70">
+          <p className="text-lg text-muted-foreground">
             O portal foi desenhado para administradores e operadores terem controle total do canal.
           </p>
         </div>
@@ -43,13 +43,13 @@ export function Highlights() {
           {highlights.map(({ title, description, icon: Icon }) => (
             <Card
               key={title}
-              className="flex h-full flex-col gap-4 border border-white/10 bg-[#1a1f26]/50 backdrop-blur-sm hover:border-[#1ABC9C]/50 transition-all p-6 shadow-lg hover:shadow-[#1ABC9C]/20"
+              className="flex h-full flex-col gap-4 border border-border bg-card/50 backdrop-blur-sm hover:border-primary/50 transition-all p-6 shadow-lg hover:shadow-primary/20"
             >
-              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-[#1ABC9C]/20 to-[#2E86AB]/20 flex items-center justify-center">
-                <Icon className="h-6 w-6 text-[#1ABC9C]" aria-hidden />
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
+                <Icon className="h-6 w-6 text-primary" aria-hidden />
               </div>
-              <h3 className="text-xl font-semibold text-white">{title}</h3>
-              <p className="text-sm text-white/60 leading-relaxed">{description}</p>
+              <h3 className="text-xl font-semibold text-foreground">{title}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
             </Card>
           ))}
         </div>

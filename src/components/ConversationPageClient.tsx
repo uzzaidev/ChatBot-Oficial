@@ -36,20 +36,20 @@ const SearchSection = memo(function SearchSection({
   resultCount,
 }: SearchSectionProps) {
   return (
-    <div className="p-3 border-b border-white/10 bg-[#1a1f26]">
+    <div className="p-3 border-b border-border bg-card">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-uzz-silver" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           type="text"
           placeholder="Pesquisar contatos ou números..."
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-9 pr-9 h-10 bg-[#0f1419] border-white/10 focus:bg-[#1a1f26] text-white placeholder:text-uzz-silver/60"
+          className="pl-9 pr-9 h-10 bg-background border-border focus:bg-card text-foreground placeholder:text-muted-foreground/60"
         />
         {searchTerm && (
           <button
             onClick={onClearSearch}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-uzz-silver hover:text-white"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
           >
             <X className="h-4 w-4" />
           </button>
@@ -57,12 +57,12 @@ const SearchSection = memo(function SearchSection({
       </div>
       {/* Indicador de pesquisa ativa */}
       {searchTerm.length >= 2 && (
-        <p className="text-xs text-uzz-silver mt-2">
+        <p className="text-xs text-muted-foreground mt-2">
           {resultCount} resultado{resultCount !== 1 ? 's' : ''} encontrado{resultCount !== 1 ? 's' : ''}
         </p>
       )}
       {searchTerm.length === 1 && (
-        <p className="text-xs text-uzz-silver/60 mt-2">
+        <p className="text-xs text-muted-foreground/60 mt-2">
           Digite mais 1 caractere para pesquisar...
         </p>
       )}
@@ -242,12 +242,12 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
 
   // Filtros por Status (memoizado para evitar re-renders desnecessários)
   const statusFilters = useMemo(() => (
-    <div className="border-b border-white/10 bg-[#1a1f26]">
+    <div className="border-b border-border bg-card">
       <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'all' | 'bot' | 'humano' | 'transferido' | 'fluxo_inicial')}>
         <TabsList className="w-full justify-start rounded-none h-auto p-0 bg-transparent flex-wrap">
           <TabsTrigger
             value="all"
-            className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-uzz-mint rounded-none text-xs sm:text-sm px-2 sm:px-3 text-uzz-silver data-[state=active]:text-white"
+            className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none text-xs sm:text-sm px-2 sm:px-3 text-muted-foreground data-[state=active]:text-foreground"
           >
             <List className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             <span className="hidden sm:inline">Todas</span>
@@ -255,7 +255,7 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
           </TabsTrigger>
           <TabsTrigger
             value="bot"
-            className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-blue-400 rounded-none text-xs sm:text-sm px-2 sm:px-3 text-uzz-silver data-[state=active]:text-white"
+            className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-secondary rounded-none text-xs sm:text-sm px-2 sm:px-3 text-muted-foreground data-[state=active]:text-foreground"
           >
             <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             <span className="hidden sm:inline">Bot</span>
@@ -263,7 +263,7 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
           </TabsTrigger>
           <TabsTrigger
             value="humano"
-            className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-green-400 rounded-none text-xs sm:text-sm px-2 sm:px-3 text-uzz-silver data-[state=active]:text-white"
+            className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none text-xs sm:text-sm px-2 sm:px-3 text-muted-foreground data-[state=active]:text-foreground"
           >
             <User className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             <span className="hidden sm:inline">Humano</span>
@@ -271,7 +271,7 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
           </TabsTrigger>
           <TabsTrigger
             value="transferido"
-            className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-orange-400 rounded-none text-xs sm:text-sm px-2 sm:px-3 text-uzz-silver data-[state=active]:text-white"
+            className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-orange-400 rounded-none text-xs sm:text-sm px-2 sm:px-3 text-muted-foreground data-[state=active]:text-foreground"
           >
             <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             <span className="hidden sm:inline">Transferido</span>
@@ -283,9 +283,9 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
   ), [statusFilter])
 
   return (
-    <div className="fixed inset-0 flex overflow-hidden bg-white">
+    <div className="fixed inset-0 flex overflow-hidden bg-background">
       {/* Sidebar Desktop - Oculta em mobile (< lg) */}
-      <div className="hidden lg:flex w-96 border-r border-silver-200 flex-col bg-white">
+      <div className="hidden lg:flex w-96 border-r border-border flex-col bg-card">
         {sidebarHeader}
 
         <SearchSection
@@ -354,13 +354,13 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
         {conversation ? (
           <>
             {/* Header do Chat */}
-            <div className="bg-[#1a1f26] p-3 border-b border-white/10">
+            <div className="bg-card p-3 border-b border-border">
               <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 {/* Botão Menu (Mobile) */}
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="lg:hidden flex-shrink-0 relative text-white hover:bg-white/10"
+                  className="lg:hidden flex-shrink-0 relative text-foreground hover:bg-muted"
                   onClick={() => setSidebarOpen(true)}
                 >
                   <Menu className="h-5 w-5" />
@@ -372,13 +372,13 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
                 </Button>
 
                 <Avatar className="h-10 w-10 flex-shrink-0">
-                  <AvatarFallback className="bg-uzz-mint text-white">
+                  <AvatarFallback className="bg-primary text-primary-foreground">
                     {getInitials(conversation.name || '')}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-white truncate">{conversation.name}</h3>
-                  <p className="text-xs text-uzz-silver truncate">{conversation.phone}</p>
+                  <h3 className="font-semibold text-foreground truncate">{conversation.name}</h3>
+                  <p className="text-xs text-muted-foreground truncate">{conversation.phone}</p>
                 </div>
 
                 {/* Status Toggle */}
@@ -392,7 +392,7 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
             </div>
 
             {/* Área de Mensagens com Drag & Drop */}
-            <div className="flex-1 overflow-hidden bg-[#0f1419] relative">
+            <div className="flex-1 overflow-hidden bg-background relative">
               <DragDropZone onFileSelect={handleAddAttachment}>
                 <ConversationDetail
                   phone={phone}
@@ -405,7 +405,7 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
             </div>
 
             {/* Footer - Input de Mensagem */}
-            <div className="bg-[#1a1f26] p-3 border-t border-white/10">
+            <div className="bg-card p-3 border-t border-border">
               <SendMessageForm
                 phone={phone}
                 clientId={clientId}
@@ -419,15 +419,15 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center bg-[#0f1419] bg-pattern-dots">
+          <div className="flex-1 flex items-center justify-center bg-background bg-pattern-dots">
             <div className="text-center">
-              <div className="rounded-full bg-gradient-to-br from-uzz-mint/20 to-uzz-blue/20 p-6 mb-6 inline-block">
-                <MessageCircle className="h-20 w-20 text-uzz-mint" />
+              <div className="rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 p-6 mb-6 inline-block">
+                <MessageCircle className="h-20 w-20 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold font-poppins text-white mb-2">
+              <h3 className="text-xl font-semibold font-poppins text-foreground mb-2">
                 Nenhuma conversa selecionada
               </h3>
-              <p className="text-uzz-silver">
+              <p className="text-muted-foreground">
                 Selecione uma conversa na lateral para começar
               </p>
             </div>

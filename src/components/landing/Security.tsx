@@ -28,13 +28,13 @@ const securityItems = [
 
 export function Security() {
   return (
-    <section className="bg-[#1a1f26] py-20 md:py-28 border-t border-white/10">
+    <section className="bg-card py-20 md:py-28 border-t border-border">
       <div className={cn(designTokens.container.lg, 'px-6')}>
         <div className="space-y-6 text-center max-w-3xl mx-auto mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
             Segurança e governança integradas
           </h2>
-          <p className="text-lg text-white/70">
+          <p className="text-lg text-muted-foreground">
             O UzzApp foi desenhado para ser um SaaS multi-tenant seguro desde o primeiro acesso. Cada
             camada reforça compliance, rastreabilidade e confiabilidade operacional.
           </p>
@@ -46,14 +46,14 @@ export function Security() {
             return (
               <Card
                 key={title}
-                className="flex h-full flex-col gap-4 border border-white/10 bg-[#0f1419]/50 backdrop-blur-sm hover:border-[#2E86AB]/50 transition-all p-6 shadow-lg"
+                className="flex h-full flex-col gap-4 border border-border bg-background/50 backdrop-blur-sm hover:border-secondary/50 transition-all p-6 shadow-lg"
                 aria-labelledby={headingId}
               >
-                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-[#2E86AB]/20 to-[#1ABC9C]/20 flex items-center justify-center">
-                  <Icon className="h-6 w-6 text-[#2E86AB]" aria-hidden />
+                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-secondary/20 to-primary/20 flex items-center justify-center">
+                  <Icon className="h-6 w-6 text-secondary" aria-hidden />
                 </div>
-                <h3 id={headingId} className="text-lg font-semibold text-white">{title}</h3>
-                <p className="text-sm text-white/60 leading-relaxed">{description}</p>
+                <h3 id={headingId} className="text-lg font-semibold text-foreground">{title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
               </Card>
             );
           })}
