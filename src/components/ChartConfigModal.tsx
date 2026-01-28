@@ -309,25 +309,25 @@ export function ChartConfigModal({
               <SelectContent className="bg-popover border-border text-popover-foreground z-50">
                 <SelectItem 
                   value="day"
-                  className="focus:bg-white/10 focus:text-white cursor-pointer"
+                  className="focus:bg-muted focus:text-foreground cursor-pointer"
                 >
                   Dia (Hoje)
                 </SelectItem>
                 <SelectItem 
                   value="week"
-                  className="focus:bg-white/10 focus:text-white cursor-pointer"
+                  className="focus:bg-muted focus:text-foreground cursor-pointer"
                 >
                   Semana (Últimos 7 dias)
                 </SelectItem>
                 <SelectItem 
                   value="month"
-                  className="focus:bg-white/10 focus:text-white cursor-pointer"
+                  className="focus:bg-muted focus:text-foreground cursor-pointer"
                 >
                   Mês (Últimos 30 dias)
                 </SelectItem>
                 <SelectItem 
                   value="custom"
-                  className="focus:bg-white/10 focus:text-white cursor-pointer"
+                  className="focus:bg-muted focus:text-foreground cursor-pointer"
                 >
                   Personalizado (usar filtro do dashboard)
                 </SelectItem>

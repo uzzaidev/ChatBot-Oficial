@@ -54,14 +54,14 @@ export function CustomizableChart({
   const chartContainerRef = useRef<HTMLDivElement>(null)
 
   // Theme-aware chart colors
-  const axisStroke = isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.3)'
-  const tickFill = isDark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'
-  const gridStroke = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
-  const tooltipBg = isDark ? '#1e2530' : '#ffffff'
-  const tooltipBorder = isDark ? 'rgba(26, 188, 156, 0.2)' : 'rgba(26, 188, 156, 0.3)'
-  const tooltipLabelColor = isDark ? '#fff' : '#1a1a1a'
-  const tooltipItemColor = isDark ? '#ccc' : '#666'
-  const legendColor = isDark ? '#fff' : '#1a1a1a'
+  const axisStroke = isDark ? 'hsl(var(--muted-foreground) / 0.5)' : 'hsl(var(--muted-foreground) / 0.3)'
+  const tickFill = isDark ? 'hsl(var(--muted-foreground) / 0.7)' : 'hsl(var(--muted-foreground) / 0.6)'
+  const gridStroke = isDark ? 'hsl(var(--border) / 0.3)' : 'hsl(var(--border) / 0.2)'
+  const tooltipBg = isDark ? 'hsl(var(--popover))' : 'hsl(var(--background))'
+  const tooltipBorder = isDark ? 'hsl(var(--border))' : 'hsl(var(--border))'
+  const tooltipLabelColor = isDark ? 'hsl(var(--foreground))' : 'hsl(var(--foreground))'
+  const tooltipItemColor = isDark ? 'hsl(var(--muted-foreground))' : 'hsl(var(--muted-foreground))'
+  const legendColor = isDark ? 'hsl(var(--foreground))' : 'hsl(var(--foreground))'
 
   // Toggle visibility of data series
   const handleLegendClick = (dataKey: string | number | ((data: any, index: number) => string | number) | undefined) => {
@@ -84,7 +84,7 @@ export function CustomizableChart({
       // Dynamic import of html2canvas to keep bundle size small
       const html2canvas = (await import('html2canvas')).default
       const canvas = await html2canvas(chartContainerRef.current, {
-        backgroundColor: isDark ? '#1a1f26' : '#ffffff',
+        backgroundColor: isDark ? 'hsl(var(--card))' : 'hsl(var(--background))',
         scale: 2,
       })
       const url = canvas.toDataURL('image/png')

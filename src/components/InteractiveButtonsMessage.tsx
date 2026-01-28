@@ -31,23 +31,23 @@ export const InteractiveButtonsMessage = ({
   return (
     <div className="space-y-2">
       {/* Body text */}
-      <div className="text-sm text-white">
+      <div className="text-sm text-foreground">
         {body}
       </div>
 
       {/* Footer text */}
       {footer && (
-        <div className="text-xs text-white/70">
+        <div className="text-xs text-muted-foreground">
           {footer}
         </div>
       )}
 
       {/* Buttons */}
-      <div className="space-y-1 mt-3 pt-3 border-t border-white/20">
+      <div className="space-y-1 mt-3 pt-3 border-t border-border/50">
         {buttons.map((button) => (
           <div
             key={button.id}
-            className="flex items-center justify-center gap-2 py-2 px-3 rounded-md border transition-colors border-white/30 bg-white/10 text-white hover:bg-white/20"
+            className="flex items-center justify-center gap-2 py-2 px-3 rounded-md border transition-colors border-border bg-muted/50 text-foreground hover:bg-muted"
           >
             <MessageCircle className="h-4 w-4" />
             <span className="text-sm font-medium">{button.title}</span>
@@ -56,7 +56,7 @@ export const InteractiveButtonsMessage = ({
       </div>
 
       {/* Helper text */}
-      <div className="text-xs italic mt-2 text-white/60">
+      <div className="text-xs italic mt-2 text-muted-foreground">
         {buttons.length} {buttons.length === 1 ? 'opção' : 'opções'} de resposta
       </div>
     </div>
