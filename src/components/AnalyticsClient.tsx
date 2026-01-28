@@ -97,10 +97,10 @@ export function AnalyticsClient({ clientId }: AnalyticsClientProps) {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold font-poppins tracking-tight text-white">
+          <h1 className="text-2xl md:text-3xl font-bold font-poppins tracking-tight text-foreground">
             Analytics de Uso
           </h1>
-          <p className="text-sm md:text-base text-uzz-silver">
+          <p className="text-sm md:text-base text-muted-foreground">
             Acompanhe tokens, custos e uso de APIs
           </p>
         </div>
@@ -112,11 +112,11 @@ export function AnalyticsClient({ clientId }: AnalyticsClientProps) {
             onClick={() => setPricingModalOpen(true)}
             className={cn(
               "gap-2",
-              "bg-gradient-to-br from-[#1e2530] to-[#1a1f26]",
-              "border-white/10 hover:border-uzz-mint/50",
-              "text-white hover:text-white",
+              "bg-card",
+              "border-border hover:border-primary/50",
+              "text-foreground hover:text-foreground",
               "transition-all duration-300",
-              "hover:shadow-lg hover:shadow-uzz-mint/20"
+              "hover:shadow-lg hover:shadow-primary/20"
             )}
           >
             <Settings className="h-4 w-4" />
@@ -130,22 +130,22 @@ export function AnalyticsClient({ clientId }: AnalyticsClientProps) {
         </div>
       </div>
 
-      <Separator className="bg-white/10" />
+      <Separator className="bg-border" />
 
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 animate-slide-in-up">
         <Card className="metric-card-glow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-white">Total de Tokens</CardTitle>
+            <CardTitle className="text-sm font-medium text-foreground">Total de Tokens</CardTitle>
             <div className="icon-bg-gradient">
-              <Target className="h-5 w-5 text-uzz-blue" />
+              <Target className="h-5 w-5 text-secondary" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold font-poppins text-white">
+            <div className="text-3xl font-bold font-poppins text-foreground">
               {Number(summary.total_tokens || 0).toLocaleString('pt-BR')}
             </div>
-            <p className="text-xs text-uzz-silver mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               {Number(summary.total_requests || 0).toLocaleString('pt-BR')} requisições
             </p>
           </CardContent>
@@ -153,16 +153,16 @@ export function AnalyticsClient({ clientId }: AnalyticsClientProps) {
 
         <Card className="metric-card-glow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-white">Custo Total</CardTitle>
+            <CardTitle className="text-sm font-medium text-foreground">Custo Total</CardTitle>
             <div className="icon-bg-gradient">
               <DollarSign className="h-5 w-5 text-green-400" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold font-poppins text-white">
+            <div className="text-3xl font-bold font-poppins text-foreground">
               ${Number(summary.total_cost || 0).toFixed(2)}
             </div>
-            <p className="text-xs text-uzz-silver mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Últimos {days} dias
             </p>
           </CardContent>
@@ -170,16 +170,16 @@ export function AnalyticsClient({ clientId }: AnalyticsClientProps) {
 
         <Card className="metric-card-glow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-white">OpenAI</CardTitle>
+            <CardTitle className="text-sm font-medium text-foreground">OpenAI</CardTitle>
             <div className="icon-bg-gradient">
               <Cpu className="h-5 w-5 text-emerald-400" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold font-poppins text-white">
+            <div className="text-3xl font-bold font-poppins text-foreground">
               {Number(summary.openai_tokens || 0).toLocaleString('pt-BR')}
             </div>
-            <p className="text-xs text-uzz-silver mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               ${Number(summary.openai_cost || 0).toFixed(4)}
             </p>
           </CardContent>
@@ -187,16 +187,16 @@ export function AnalyticsClient({ clientId }: AnalyticsClientProps) {
 
         <Card className="metric-card-glow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-white">Groq</CardTitle>
+            <CardTitle className="text-sm font-medium text-foreground">Groq</CardTitle>
             <div className="icon-bg-gradient">
               <Zap className="h-5 w-5 text-purple-400" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold font-poppins text-white">
+            <div className="text-3xl font-bold font-poppins text-foreground">
               {Number(summary.groq_tokens || 0).toLocaleString('pt-BR')}
             </div>
-            <p className="text-xs text-uzz-silver mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               ${Number(summary.groq_cost || 0).toFixed(4)}
             </p>
           </CardContent>

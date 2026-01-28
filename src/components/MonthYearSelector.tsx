@@ -98,29 +98,29 @@ export function MonthYearSelector({
           onClick={handlePreviousMonth}
           disabled={currentMonth === 1 && currentYear === startYear}
           className={cn(
-            "h-9 w-9 text-uzz-silver hover:text-white hover:bg-white/10",
-            "border border-white/10"
+            "h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-muted",
+            "border border-border"
           )}
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        
+
         <Select
           value={currentMonth.toString()}
           onValueChange={(value) => onMonthChange(parseInt(value))}
         >
           <SelectTrigger className={cn(
-            "w-[140px] bg-card-dark border-white/10 text-white",
-            "hover:border-uzz-mint/50"
+            "w-[140px] bg-card border-border text-foreground",
+            "hover:border-primary/50"
           )}>
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="bg-card-dark border-white/10">
+          <SelectContent className="bg-card border-border">
             {MONTHS.map((month) => (
               <SelectItem
                 key={month.value}
                 value={month.value.toString()}
-                className="text-white hover:bg-white/10 focus:bg-uzz-mint/20"
+                className="text-foreground hover:bg-muted focus:bg-primary/20"
               >
                 {month.label}
               </SelectItem>
@@ -134,8 +134,8 @@ export function MonthYearSelector({
           onClick={handleNextMonth}
           disabled={currentMonth === 12 && currentYear === endYear}
           className={cn(
-            "h-9 w-9 text-uzz-silver hover:text-white hover:bg-white/10",
-            "border border-white/10"
+            "h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-muted",
+            "border border-border"
           )}
         >
           <ChevronRight className="h-4 w-4" />
@@ -150,29 +150,29 @@ export function MonthYearSelector({
           onClick={handlePreviousYear}
           disabled={currentYear <= startYear}
           className={cn(
-            "h-9 w-9 text-uzz-silver hover:text-white hover:bg-white/10",
-            "border border-white/10"
+            "h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-muted",
+            "border border-border"
           )}
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        
+
         <Select
           value={currentYear.toString()}
           onValueChange={(value) => onYearChange(parseInt(value))}
         >
           <SelectTrigger className={cn(
-            "w-[100px] bg-card-dark border-white/10 text-white",
-            "hover:border-uzz-mint/50"
+            "w-[100px] bg-card border-border text-foreground",
+            "hover:border-primary/50"
           )}>
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="bg-card-dark border-white/10 max-h-[200px]">
+          <SelectContent className="bg-card border-border max-h-[200px]">
             {years.reverse().map((year) => (
               <SelectItem
                 key={year}
                 value={year.toString()}
-                className="text-white hover:bg-white/10 focus:bg-uzz-mint/20"
+                className="text-foreground hover:bg-muted focus:bg-primary/20"
               >
                 {year}
               </SelectItem>
@@ -186,8 +186,8 @@ export function MonthYearSelector({
           onClick={handleNextYear}
           disabled={currentYear >= endYear}
           className={cn(
-            "h-9 w-9 text-uzz-silver hover:text-white hover:bg-white/10",
-            "border border-white/10"
+            "h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-muted",
+            "border border-border"
           )}
         >
           <ChevronRight className="h-4 w-4" />
@@ -203,8 +203,8 @@ export function MonthYearSelector({
           className={cn(
             "ml-auto",
             compareWithPrevious
-              ? "bg-gradient-to-r from-uzz-mint to-uzz-blue text-white border-transparent"
-              : "border-white/10 text-uzz-silver hover:border-uzz-mint/50 hover:text-white"
+              ? "bg-gradient-to-r from-primary to-secondary text-primary-foreground border-transparent"
+              : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"
           )}
         >
           <Calendar className="h-4 w-4 mr-2" />

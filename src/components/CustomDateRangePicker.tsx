@@ -130,12 +130,12 @@ export function CustomDateRangePicker({
           variant="outline"
           className={cn(
             "w-[240px] justify-between",
-            "bg-card-dark border-white/10 text-white hover:border-uzz-mint/50",
+            "bg-card border-border text-foreground hover:border-primary/50",
             className
           )}
         >
           <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-uzz-mint" />
+            <Calendar className="h-4 w-4 text-primary" />
             <span className="font-medium">{displayText}</span>
           </div>
         </Button>
@@ -144,7 +144,7 @@ export function CustomDateRangePicker({
       <PopoverContent
         className={cn(
           "w-[420px] p-4",
-          "bg-card-dark border-white/10",
+          "bg-card border-border",
           "shadow-xl shadow-black/50"
         )}
         align="start"
@@ -153,7 +153,7 @@ export function CustomDateRangePicker({
           {/* Ranges Salvos */}
           {savedRanges.length > 0 && (
             <div>
-              <h4 className="text-xs font-semibold text-uzz-silver uppercase tracking-wide mb-2">
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
                 Ranges Salvos
               </h4>
               <div className="space-y-1">
@@ -163,11 +163,11 @@ export function CustomDateRangePicker({
                     onClick={() => handleSavedRangeClick(saved)}
                     className={cn(
                       "w-full text-left px-3 py-2 rounded-lg text-sm transition-all",
-                      "border border-white/10 text-uzz-silver hover:border-uzz-mint/50 hover:text-white hover:bg-uzz-mint/10"
+                      "border border-border text-muted-foreground hover:border-primary/50 hover:text-foreground hover:bg-primary/10"
                     )}
                   >
                     <div className="font-medium">{saved.name}</div>
-                    <div className="text-xs text-uzz-silver/70">
+                    <div className="text-xs text-muted-foreground/70">
                       {format(saved.start, 'dd/MM/yyyy', { locale: ptBR })} - {format(saved.end, 'dd/MM/yyyy', { locale: ptBR })}
                     </div>
                   </button>
@@ -179,7 +179,7 @@ export function CustomDateRangePicker({
           {/* Seletores de Data */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-semibold text-uzz-silver uppercase tracking-wide mb-2 block">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 block">
                 Data Início
               </label>
               <input
@@ -190,14 +190,14 @@ export function CustomDateRangePicker({
                 max={format(maxDate, 'yyyy-MM-dd')}
                 className={cn(
                   "w-full px-3 py-2 rounded-lg text-sm",
-                  "bg-white/5 border border-white/10 text-white",
-                  "focus:outline-none focus:ring-2 focus:ring-uzz-mint focus:border-transparent",
-                  "hover:border-uzz-mint/50 transition-colors"
+                  "bg-muted/30 border border-border text-foreground",
+                  "focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent",
+                  "hover:border-primary/50 transition-colors"
                 )}
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-uzz-silver uppercase tracking-wide mb-2 block">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 block">
                 Data Fim
               </label>
               <input
@@ -208,9 +208,9 @@ export function CustomDateRangePicker({
                 max={format(maxDate, 'yyyy-MM-dd')}
                 className={cn(
                   "w-full px-3 py-2 rounded-lg text-sm",
-                  "bg-white/5 border border-white/10 text-white",
-                  "focus:outline-none focus:ring-2 focus:ring-uzz-mint focus:border-transparent",
-                  "hover:border-uzz-mint/50 transition-colors"
+                  "bg-muted/30 border border-border text-foreground",
+                  "focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent",
+                  "hover:border-primary/50 transition-colors"
                 )}
               />
             </div>
@@ -218,12 +218,12 @@ export function CustomDateRangePicker({
 
           {/* Informações do Range */}
           {tempStartDate && tempEndDate && (
-            <div className="text-xs text-uzz-silver space-y-1">
+            <div className="text-xs text-muted-foreground space-y-1">
               <div>
                 <span className="font-medium">Período:</span> {rangeDays} {rangeDays === 1 ? 'dia' : 'dias'}
               </div>
               {exceedsMaxRange && (
-                <div className="text-status-danger">
+                <div className="text-destructive">
                   ⚠️ Range excede o limite máximo de {maxRangeDays} dias
                 </div>
               )}
@@ -231,26 +231,26 @@ export function CustomDateRangePicker({
           )}
 
           {/* Ações */}
-          <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/10">
+          <div className="flex items-center justify-between gap-2 pt-2 border-t border-border">
             <div className="flex gap-2">
               {(tempStartDate || tempEndDate) && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleClear}
-                  className="text-uzz-silver hover:text-white hover:bg-white/10"
+                  className="text-muted-foreground hover:text-foreground hover:bg-muted"
                 >
                   <X className="h-4 w-4 mr-2" />
                   Limpar
                 </Button>
               )}
-              
+
               {onSaveRange && isValidRange && !exceedsMaxRange && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowSaveDialog(!showSaveDialog)}
-                  className="text-uzz-silver hover:text-white hover:bg-white/10"
+                  className="text-muted-foreground hover:text-foreground hover:bg-muted"
                 >
                   <Save className="h-4 w-4 mr-2" />
                   Salvar
@@ -263,8 +263,8 @@ export function CustomDateRangePicker({
               onClick={handleApply}
               disabled={!isValidRange || exceedsMaxRange}
               className={cn(
-                "bg-gradient-to-r from-uzz-mint to-uzz-blue text-white border-transparent",
-                "hover:shadow-lg hover:shadow-uzz-mint/30",
+                "bg-gradient-to-r from-primary to-secondary text-primary-foreground border-transparent",
+                "hover:shadow-lg hover:shadow-primary/30",
                 "disabled:opacity-50 disabled:cursor-not-allowed"
               )}
             >
@@ -274,8 +274,8 @@ export function CustomDateRangePicker({
 
           {/* Dialog de Salvar */}
           {showSaveDialog && (
-            <div className="pt-4 border-t border-white/10">
-              <label className="text-xs font-semibold text-uzz-silver uppercase tracking-wide mb-2 block">
+            <div className="pt-4 border-t border-border">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 block">
                 Nome do Range
               </label>
               <div className="flex gap-2">
@@ -286,9 +286,9 @@ export function CustomDateRangePicker({
                   placeholder="Ex: Janeiro 2026"
                   className={cn(
                     "flex-1 px-3 py-2 rounded-lg text-sm",
-                    "bg-white/5 border border-white/10 text-white",
-                    "focus:outline-none focus:ring-2 focus:ring-uzz-mint focus:border-transparent",
-                    "placeholder:text-uzz-silver/50"
+                    "bg-muted/30 border border-border text-foreground",
+                    "focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent",
+                    "placeholder:text-muted-foreground/50"
                   )}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -300,7 +300,7 @@ export function CustomDateRangePicker({
                   size="sm"
                   onClick={handleSaveRange}
                   disabled={!saveName.trim()}
-                  className="bg-gradient-to-r from-uzz-mint to-uzz-blue text-white"
+                  className="bg-gradient-to-r from-primary to-secondary text-primary-foreground"
                 >
                   Salvar
                 </Button>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTheme } from 'next-themes'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Download, FileImage, FileText, FileSpreadsheet, Loader2 } from 'lucide-react'
@@ -34,6 +35,8 @@ export function ExportDialog({
 }: ExportDialogProps) {
   const [open, setOpen] = useState(false)
   const [exporting, setExporting] = useState<ExportFormat | null>(null)
+  const { theme } = useTheme()
+  const exportBgColor = theme === 'dark' ? '#1a1f26' : '#ffffff'
 
   const handleExport = async (format: ExportFormat, chartId?: string) => {
     setExporting(format)
@@ -83,7 +86,7 @@ export function ExportDialog({
 
     const html2canvas = (await import('html2canvas')).default
     const canvas = await html2canvas(chartElement, {
-      backgroundColor: '#1a1f26',
+      backgroundColor: exportBgColor,
       scale: 2,
       logging: false,
     })
@@ -105,7 +108,7 @@ export function ExportDialog({
 
     const html2canvas = (await import('html2canvas')).default
     const canvas = await html2canvas(dashboardElement, {
-      backgroundColor: '#1a1f26',
+      backgroundColor: exportBgColor,
       scale: 1,
       logging: false,
       height: dashboardElement.scrollHeight,
@@ -174,7 +177,7 @@ export function ExportDialog({
       try {
         const html2canvas = (await import('html2canvas')).default
         const canvas = await html2canvas(chartElement, {
-          backgroundColor: '#1a1f26',
+          backgroundColor: exportBgColor,
           scale: 1.5,
           logging: false,
         })
@@ -299,19 +302,19 @@ export function ExportDialog({
         {trigger || (
           <Button
             variant="outline"
-            className="border-white/10 text-uzz-silver hover:bg-white/10 hover:text-white"
+            className="border-border text-muted-foreground hover:bg-muted hover:text-foreground"
           >
             <Download className="h-4 w-4 mr-2" />
             Exportar
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="bg-gradient-to-br from-[#1e2530] to-[#1a1f26] border-white/10 text-white max-w-2xl">
+      <DialogContent className="bg-card border-border text-foreground max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-poppins text-white">
+          <DialogTitle className="text-2xl font-poppins text-foreground">
             Exportar Dashboard
           </DialogTitle>
-          <DialogDescription className="text-uzz-silver">
+          <DialogDescription className="text-muted-foreground">
             Escolha o formato e o que deseja exportar
           </DialogDescription>
         </DialogHeader>
@@ -320,23 +323,23 @@ export function ExportDialog({
           {/* Gráficos Individuais */}
           {charts.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-uzz-silver mb-3 uppercase tracking-wider">
+              <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
                 Gráficos Individuais
               </h3>
               <div className="grid grid-cols-1 gap-2">
                 {charts.map((chart) => (
                   <div
                     key={chart.id}
-                    className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10"
+                    className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border"
                   >
-                    <span className="text-sm text-white">{chart.title}</span>
+                    <span className="text-sm text-foreground">{chart.title}</span>
                     <div className="flex gap-2">
                       <Button
                         size="sm"
                         variant="ghost"
                         onClick={() => handleExport('png', chart.id)}
                         disabled={exporting === 'png'}
-                        className="text-uzz-silver hover:text-white hover:bg-white/10"
+                        className="text-muted-foreground hover:text-foreground hover:bg-muted"
                       >
                         {exporting === 'png' ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -349,7 +352,7 @@ export function ExportDialog({
                         variant="ghost"
                         onClick={() => handleExport('svg', chart.id)}
                         disabled={exporting === 'svg'}
-                        className="text-uzz-silver hover:text-white hover:bg-white/10"
+                        className="text-muted-foreground hover:text-foreground hover:bg-muted"
                       >
                         {exporting === 'svg' ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -366,7 +369,7 @@ export function ExportDialog({
 
           {/* Dashboard Completo */}
           <div>
-            <h3 className="text-sm font-semibold text-uzz-silver mb-3 uppercase tracking-wider">
+            <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
               Dashboard Completo
             </h3>
             <div className="grid grid-cols-2 gap-3">
@@ -374,7 +377,7 @@ export function ExportDialog({
                 variant="outline"
                 onClick={() => handleExport('png')}
                 disabled={exporting === 'png'}
-                className="border-white/10 text-uzz-silver hover:bg-white/10 hover:text-white justify-start"
+                className="border-border text-muted-foreground hover:bg-muted hover:text-foreground justify-start"
               >
                 {exporting === 'png' ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -387,7 +390,7 @@ export function ExportDialog({
                 variant="outline"
                 onClick={() => handleExport('pdf')}
                 disabled={exporting === 'pdf'}
-                className="border-white/10 text-uzz-silver hover:bg-white/10 hover:text-white justify-start"
+                className="border-border text-muted-foreground hover:bg-muted hover:text-foreground justify-start"
               >
                 {exporting === 'pdf' ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -401,7 +404,7 @@ export function ExportDialog({
 
           {/* Dados */}
           <div>
-            <h3 className="text-sm font-semibold text-uzz-silver mb-3 uppercase tracking-wider">
+            <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
               Dados
             </h3>
             <div className="grid grid-cols-2 gap-3">
@@ -409,7 +412,7 @@ export function ExportDialog({
                 variant="outline"
                 onClick={() => handleExport('excel')}
                 disabled={exporting === 'excel'}
-                className="border-white/10 text-uzz-silver hover:bg-white/10 hover:text-white justify-start"
+                className="border-border text-muted-foreground hover:bg-muted hover:text-foreground justify-start"
               >
                 {exporting === 'excel' ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -422,7 +425,7 @@ export function ExportDialog({
                 variant="outline"
                 onClick={() => handleExport('csv')}
                 disabled={exporting === 'csv'}
-                className="border-white/10 text-uzz-silver hover:bg-white/10 hover:text-white justify-start"
+                className="border-border text-muted-foreground hover:bg-muted hover:text-foreground justify-start"
               >
                 {exporting === 'csv' ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
