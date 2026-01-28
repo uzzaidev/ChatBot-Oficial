@@ -251,7 +251,7 @@ export function ChartConfigModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-[#1a1f26] border-white/10">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-card border-border">
         <DialogHeader>
           <DialogTitle>
             {config ? 'Editar Gráfico' : 'Adicionar Gráfico'}
@@ -280,7 +280,7 @@ export function ChartConfigModal({
               <SelectTrigger id="chartType">
                 <SelectValue placeholder="Selecione um tipo" />
               </SelectTrigger>
-              <SelectContent className="bg-[#1e2530] border-white/20 text-white z-50">
+              <SelectContent className="bg-popover border-border text-popover-foreground z-50">
                 {CHART_TYPE_OPTIONS.map((option) => (
                   <SelectItem 
                     key={option.value} 
@@ -306,7 +306,7 @@ export function ChartConfigModal({
               <SelectTrigger id="period">
                 <SelectValue placeholder="Selecione um período" />
               </SelectTrigger>
-              <SelectContent className="bg-[#1e2530] border-white/20 text-white z-50">
+              <SelectContent className="bg-popover border-border text-popover-foreground z-50">
                 <SelectItem 
                   value="day"
                   className="focus:bg-white/10 focus:text-white cursor-pointer"

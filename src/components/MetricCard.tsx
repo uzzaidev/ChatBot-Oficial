@@ -41,9 +41,9 @@ export function MetricCard({
         className
       )}>
         <div className="space-y-3">
-          <div className="h-3 bg-white/10 rounded w-1/2" />
-          <div className="h-8 bg-white/10 rounded w-3/4" />
-          <div className="h-3 bg-white/10 rounded w-1/3" />
+          <div className="h-3 bg-muted rounded w-1/2" />
+          <div className="h-8 bg-muted rounded w-3/4" />
+          <div className="h-3 bg-muted rounded w-1/3" />
         </div>
       </div>
     )
@@ -93,13 +93,13 @@ export function MetricCard({
       <div className="relative space-y-3">
         {/* Header com título e ícone */}
         <div className="flex items-start justify-between">
-          <h3 className="text-xs font-bold text-uzz-silver uppercase tracking-wider">
+          <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
             {title}
           </h3>
         </div>
 
         {/* Valor */}
-        <p className="text-3xl font-bold font-poppins text-white">
+        <p className="text-3xl font-bold font-poppins text-foreground">
           {value}
         </p>
 
@@ -131,9 +131,9 @@ export function MetricCardSkeleton({ className }: { className?: string }) {
       className
     )}>
       <div className="space-y-3">
-        <div className="h-3 bg-white/10 rounded w-1/2" />
-        <div className="h-8 bg-white/10 rounded w-3/4" />
-        <div className="h-3 bg-white/10 rounded w-1/3" />
+        <div className="h-3 bg-muted rounded w-1/2" />
+        <div className="h-8 bg-muted rounded w-3/4" />
+        <div className="h-3 bg-muted rounded w-1/3" />
       </div>
     </div>
   )

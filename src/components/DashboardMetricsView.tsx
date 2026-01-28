@@ -263,8 +263,8 @@ export function DashboardMetricsView({ clientId }: DashboardMetricsViewProps) {
       {/* Header */}
       <div className="mb-6">
         <div className="mb-4">
-          <h2 className="text-2xl font-bold tracking-tight text-white">Métricas do Dashboard</h2>
-          <p className="text-sm text-uzz-silver mt-1">
+          <h2 className="text-2xl font-bold tracking-tight text-foreground">Métricas do Dashboard</h2>
+          <p className="text-sm text-muted-foreground mt-1">
             Customize seus gráficos e visualize métricas em tempo real
           </p>
         </div>
@@ -282,16 +282,16 @@ export function DashboardMetricsView({ clientId }: DashboardMetricsViewProps) {
           />
 
           {/* Layout Toggle */}
-          <div className="flex items-center gap-1 border border-white/10 rounded-md p-1 bg-white/5">
+          <div className="flex items-center gap-1 border border-border rounded-md p-1 bg-muted/50">
             <Button
               variant={layout === 'grid' ? 'default' : 'ghost'}
               size="icon"
               onClick={() => setLayout('grid')}
               className={cn(
                 "h-8 w-8",
-                layout === 'grid' 
-                  ? "bg-gradient-to-r from-uzz-mint to-uzz-blue text-white" 
-                  : "text-uzz-silver hover:text-white hover:bg-white/10"
+                layout === 'grid'
+                  ? "bg-gradient-to-r from-primary to-secondary text-white"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
               )}
             >
               <LayoutGrid className="h-4 w-4" />
@@ -302,9 +302,9 @@ export function DashboardMetricsView({ clientId }: DashboardMetricsViewProps) {
               onClick={() => setLayout('list')}
               className={cn(
                 "h-8 w-8",
-                layout === 'list' 
-                  ? "bg-gradient-to-r from-uzz-mint to-uzz-blue text-white" 
-                  : "text-uzz-silver hover:text-white hover:bg-white/10"
+                layout === 'list'
+                  ? "bg-gradient-to-r from-primary to-secondary text-white"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
               )}
             >
               <List className="h-4 w-4" />
@@ -328,11 +328,11 @@ export function DashboardMetricsView({ clientId }: DashboardMetricsViewProps) {
           </Button>
 
           {/* Reset Button */}
-          <Button 
-            onClick={handleResetToDefault} 
-            variant="outline" 
+          <Button
+            onClick={handleResetToDefault}
+            variant="outline"
             size="sm"
-            className="border-white/10 text-uzz-silver hover:bg-white/10 hover:text-white"
+            className="border-border text-muted-foreground hover:bg-muted hover:text-foreground"
             disabled={charts.length === 0}
           >
             Restaurar Padrão

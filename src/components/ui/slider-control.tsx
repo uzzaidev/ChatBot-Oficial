@@ -43,10 +43,10 @@ export function SliderControl({
   return (
     <div className={cn('space-y-2', className)}>
       <div className="flex items-center justify-between">
-        <Label htmlFor={id} className="text-sm font-semibold text-white">
+        <Label htmlFor={id} className="text-sm font-semibold text-foreground">
           {label}
         </Label>
-        <span className="text-sm font-bold text-uzz-mint">
+        <span className="text-sm font-bold text-primary">
           {value}{unit}
         </span>
       </div>
@@ -61,7 +61,7 @@ export function SliderControl({
         className="w-full"
       />
       {description && (
-        <p className="text-xs text-uzz-silver">
+        <p className="text-xs text-muted-foreground">
           {description}
         </p>
       )}

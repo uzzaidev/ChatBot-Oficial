@@ -37,12 +37,12 @@ export function ToggleSwitch({
       <div className="flex-1 space-y-0.5">
         <Label
           htmlFor={id}
-          className="text-sm font-semibold text-white cursor-pointer"
+          className="text-sm font-semibold text-foreground cursor-pointer"
         >
           {label}
         </Label>
         {description && (
-          <p className="text-xs text-uzz-silver">
+          <p className="text-xs text-muted-foreground">
             {description}
           </p>
         )}
@@ -52,7 +52,7 @@ export function ToggleSwitch({
         checked={checked}
         onCheckedChange={onCheckedChange}
         disabled={disabled}
-        className="data-[state=checked]:bg-uzz-mint"
+        className="data-[state=checked]:bg-primary"
       />
     </div>
   )

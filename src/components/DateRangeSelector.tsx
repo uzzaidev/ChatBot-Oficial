@@ -236,34 +236,33 @@ export function DateRangeSelector({
                     variant="outline"
                     className={cn(
                         "w-[240px] justify-between",
-                        "bg-gradient-to-br from-[#1e2530] to-[#1a1f26]",
-                        "border-white/10 hover:border-uzz-mint/50",
-                        "text-white hover:text-white",
+                        "bg-surface border-border",
+                        "text-foreground hover:text-foreground",
+                        "hover:border-primary/50",
                         "transition-all duration-300",
-                        "hover:shadow-lg hover:shadow-uzz-mint/20"
+                        "hover:shadow-lg hover:shadow-primary/20"
                     )}
                 >
                     <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-uzz-mint" />
+                        <Calendar className="h-4 w-4 text-primary" />
                         <span className="font-medium">{currentLabel}</span>
                     </div>
-                    <ChevronDown className="h-4 w-4 text-uzz-silver" />
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 </Button>
             </PopoverTrigger>
 
             <PopoverContent
                 className={cn(
                     "w-[320px] p-4",
-                    "bg-gradient-to-br from-[#1e2530] to-[#1a1f26]",
-                    "border border-white/10",
-                    "shadow-xl shadow-black/50"
+                    "bg-card border-border",
+                    "shadow-xl"
                 )}
                 align="start"
             >
                 <div className="space-y-4">
                     {/* Quick Presets */}
                     <div>
-                        <h4 className="text-xs font-semibold text-uzz-silver uppercase tracking-wide mb-2">
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
                             Rápido
                         </h4>
                         <div className="flex flex-wrap gap-2">
@@ -275,8 +274,8 @@ export function DateRangeSelector({
                                         "px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
                                         "border",
                                         value.preset === preset
-                                            ? "bg-gradient-to-r from-uzz-mint to-uzz-blue text-white border-transparent shadow-lg shadow-uzz-mint/30"
-                                            : "border-white/10 text-uzz-silver hover:border-uzz-mint/50 hover:text-white hover:bg-uzz-mint/10"
+                                            ? "bg-gradient-to-r from-primary to-secondary text-white border-transparent shadow-lg shadow-primary/30"
+                                            : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground hover:bg-primary/10"
                                     )}
                                 >
                                     {presetLabels[preset]}
@@ -287,7 +286,7 @@ export function DateRangeSelector({
 
                     {/* Past Periods */}
                     <div>
-                        <h4 className="text-xs font-semibold text-uzz-silver uppercase tracking-wide mb-2">
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
                             Períodos Anteriores
                         </h4>
                         <div className="flex flex-wrap gap-2">
@@ -299,8 +298,8 @@ export function DateRangeSelector({
                                         "px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
                                         "border",
                                         value.preset === preset
-                                            ? "bg-gradient-to-r from-uzz-mint to-uzz-blue text-white border-transparent shadow-lg shadow-uzz-mint/30"
-                                            : "border-white/10 text-uzz-silver hover:border-uzz-mint/50 hover:text-white hover:bg-uzz-mint/10"
+                                            ? "bg-gradient-to-r from-primary to-secondary text-white border-transparent shadow-lg shadow-primary/30"
+                                            : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground hover:bg-primary/10"
                                     )}
                                 >
                                     {presetLabels[preset]}
@@ -311,7 +310,7 @@ export function DateRangeSelector({
 
                     {/* Range Presets */}
                     <div>
-                        <h4 className="text-xs font-semibold text-uzz-silver uppercase tracking-wide mb-2">
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
                             Últimos Dias
                         </h4>
                         <div className="grid grid-cols-2 gap-2">
@@ -323,8 +322,8 @@ export function DateRangeSelector({
                                         "px-3 py-2 rounded-lg text-sm font-medium transition-all",
                                         "border",
                                         value.preset === preset
-                                            ? "bg-gradient-to-r from-uzz-mint to-uzz-blue text-white border-transparent shadow-lg shadow-uzz-mint/30"
-                                            : "border-white/10 text-uzz-silver hover:border-uzz-mint/50 hover:text-white hover:bg-uzz-mint/10"
+                                            ? "bg-gradient-to-r from-primary to-secondary text-white border-transparent shadow-lg shadow-primary/30"
+                                            : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground hover:bg-primary/10"
                                     )}
                                 >
                                     {presetLabels[preset]}

@@ -519,14 +519,14 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f1419] p-6">
+    <div className="min-h-screen bg-background p-6">
       <div className="max-w-5xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-poppins font-bold bg-gradient-to-r from-uzz-mint to-uzz-blue bg-clip-text text-transparent mb-2">
+          <h1 className="text-4xl font-poppins font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2">
             ⚙️ Configurações
           </h1>
-          <p className="text-uzz-silver text-lg">Gerencie seu perfil, agent e variáveis de ambiente</p>
+          <p className="text-muted-foreground text-lg">Gerencie seu perfil, agent e variáveis de ambiente</p>
         </div>
 
         {/* Notification */}
@@ -537,12 +537,12 @@ export default function SettingsPage() {
         )}
 
         {/* Seção 1: Perfil do Usuário */}
-        <Card className="bg-gradient-to-br from-[#1e2530] to-[#1a1f26] border-white/10">
-          <CardHeader className="border-b border-white/10">
-            <CardTitle className="text-xl font-poppins text-white flex items-center gap-2">
+        <Card className="bg-card border-border">
+          <CardHeader className="border-b border-border">
+            <CardTitle className="text-xl font-poppins text-foreground flex items-center gap-2">
               👤 Perfil do Usuário
             </CardTitle>
-            <CardDescription className="text-uzz-silver">
+            <CardDescription className="text-muted-foreground">
               Visualize e edite suas informações pessoais
             </CardDescription>
           </CardHeader>
@@ -579,26 +579,26 @@ export default function SettingsPage() {
 
             {/* Email (readonly) */}
             <div>
-              <Label htmlFor="email" className="text-white">Email</Label>
+              <Label htmlFor="email" className="text-foreground">Email</Label>
               <Input 
                 id="email" 
                 value={profile.email} 
                 disabled 
-                className="mt-2 bg-white/5 border-white/10 text-white/70" 
+                className="mt-2 bg-muted/50 border-border text-foreground/70" 
               />
-              <p className="text-xs text-uzz-silver mt-1">O email não pode ser alterado</p>
+              <p className="text-xs text-muted-foreground mt-1">O email não pode ser alterado</p>
             </div>
 
             {/* Telefone (readonly) */}
             <div>
-              <Label htmlFor="phone" className="text-white">Telefone</Label>
+              <Label htmlFor="phone" className="text-foreground">Telefone</Label>
               <Input
                 id="phone"
                 value={profile.phone || 'Não configurado'}
                 disabled
-                className="mt-2 bg-white/5 border-white/10 text-white/70"
+                className="mt-2 bg-muted/50 border-border text-foreground/70"
               />
-              <p className="text-xs text-uzz-silver mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Telefone do WhatsApp configurado nas variáveis de ambiente
               </p>
             </div>
@@ -606,18 +606,18 @@ export default function SettingsPage() {
         </Card>
 
         {/* Seção 2: Alterar Senha */}
-        <Card className="bg-gradient-to-br from-[#1e2530] to-[#1a1f26] border-white/10">
-          <CardHeader className="border-b border-white/10">
-            <CardTitle className="text-xl font-poppins text-white flex items-center gap-2">
+        <Card className="bg-card border-border">
+          <CardHeader className="border-b border-border">
+            <CardTitle className="text-xl font-poppins text-foreground flex items-center gap-2">
               🔐 Alterar Senha
             </CardTitle>
-            <CardDescription className="text-uzz-silver">
+            <CardDescription className="text-muted-foreground">
               Atualize sua senha de acesso
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-6">
             <div>
-              <Label htmlFor="current_password" className="text-white">Senha Atual</Label>
+              <Label htmlFor="current_password" className="text-foreground">Senha Atual</Label>
               <Input
                 id="current_password"
                 type="password"
@@ -626,13 +626,13 @@ export default function SettingsPage() {
                   setPasswordForm({ ...passwordForm, current_password: e.target.value })
                 }
                 disabled={loadingPassword}
-                className="mt-2 bg-white/5 border-white/10 text-white"
+                className="mt-2 bg-muted/50 border-border text-foreground"
                 placeholder="Digite sua senha atual"
               />
             </div>
 
             <div>
-              <Label htmlFor="new_password" className="text-white">Nova Senha</Label>
+              <Label htmlFor="new_password" className="text-foreground">Nova Senha</Label>
               <Input
                 id="new_password"
                 type="password"
@@ -641,14 +641,14 @@ export default function SettingsPage() {
                   setPasswordForm({ ...passwordForm, new_password: e.target.value })
                 }
                 disabled={loadingPassword}
-                className="mt-2 bg-white/5 border-white/10 text-white"
+                className="mt-2 bg-muted/50 border-border text-foreground"
                 placeholder="Mínimo 8 caracteres"
               />
-              <p className="text-xs text-uzz-silver mt-1">Mínimo 8 caracteres</p>
+              <p className="text-xs text-muted-foreground mt-1">Mínimo 8 caracteres</p>
             </div>
 
             <div>
-              <Label htmlFor="confirm_password" className="text-white">Confirmar Nova Senha</Label>
+              <Label htmlFor="confirm_password" className="text-foreground">Confirmar Nova Senha</Label>
               <Input
                 id="confirm_password"
                 type="password"
@@ -657,7 +657,7 @@ export default function SettingsPage() {
                   setPasswordForm({ ...passwordForm, confirm_password: e.target.value })
                 }
                 disabled={loadingPassword}
-                className="mt-2 bg-white/5 border-white/10 text-white"
+                className="mt-2 bg-muted/50 border-border text-foreground"
                 placeholder="Digite novamente"
               />
             </div>
@@ -665,7 +665,7 @@ export default function SettingsPage() {
             <Button 
               onClick={handleUpdatePassword} 
               disabled={loadingPassword}
-              className="w-full bg-gradient-to-r from-uzz-mint to-uzz-blue text-white hover:from-uzz-blue hover:to-uzz-mint"
+              className="w-full bg-gradient-to-r from-uzz-mint to-uzz-blue text-foreground hover:from-uzz-blue hover:to-uzz-mint"
             >
               {loadingPassword ? 'Atualizando...' : 'Atualizar Senha'}
             </Button>
@@ -673,17 +673,17 @@ export default function SettingsPage() {
         </Card>
 
         {/* Seção 3: Configurações do Agent */}
-        <Card className="bg-gradient-to-br from-[#1e2530] to-[#1a1f26] border-white/10">
-          <CardHeader className="border-b border-white/10">
+        <Card className="bg-card border-border">
+          <CardHeader className="border-b border-border">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Bot className="w-6 h-6 text-uzz-mint" />
                 <div>
-                  <CardTitle className="text-xl font-poppins text-white">Configurações do Agent</CardTitle>
-                  <CardDescription className="text-uzz-silver">
+                  <CardTitle className="text-xl font-poppins text-foreground">Configurações do Agent</CardTitle>
+                  <CardDescription className="text-muted-foreground">
                     Configure os prompts e modelos de IA do seu assistente.
                     <br />
-                    <span className="text-xs text-uzz-silver/80">
+                    <span className="text-xs text-muted-foreground/80">
                       ℹ️ Groq é usado para conversação (rápido e econômico), OpenAI para mídia (Vision, Whisper)
                     </span>
                   </CardDescription>
@@ -725,7 +725,7 @@ export default function SettingsPage() {
             {!editingAgent && (
               <Alert className="bg-amber-500/10 border-amber-500/30">
                 <AlertTriangle className="h-4 w-4 text-amber-500" />
-                <AlertDescription className="text-amber-200 text-sm">
+                <AlertDescription className="text-amber-700 dark:text-amber-200 text-sm">
                   <strong>Atenção:</strong> Mudanças no System Prompt afetam TODAS as conversas. Teste antes de aplicar em produção.
                 </AlertDescription>
               </Alert>
@@ -733,7 +733,7 @@ export default function SettingsPage() {
 
             {/* System Prompt */}
             <div>
-              <Label htmlFor="system_prompt" className="text-white">System Prompt</Label>
+              <Label htmlFor="system_prompt" className="text-foreground">System Prompt</Label>
               <Textarea
                 id="system_prompt"
                 value={agentConfig.system_prompt}
@@ -747,16 +747,16 @@ export default function SettingsPage() {
 
 Você é o assistente oficial de IA da Uzz.AI..."
                 rows={8}
-                className="mt-2 font-mono text-sm bg-white/5 border-white/10 text-white placeholder:text-uzz-silver/50"
+                className="mt-2 font-mono text-sm bg-muted/50 border-border text-foreground placeholder:text-muted-foreground/50"
               />
-              <p className="text-xs text-uzz-silver mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Prompt principal que define o comportamento do assistente
               </p>
             </div>
 
             {/* Formatter Prompt */}
             <div>
-              <Label htmlFor="formatter_prompt" className="text-white">Formatter Prompt (Opcional)</Label>
+              <Label htmlFor="formatter_prompt" className="text-foreground">Formatter Prompt (Opcional)</Label>
               <Textarea
                 id="formatter_prompt"
                 value={agentConfig.formatter_prompt || ''}
@@ -770,19 +770,19 @@ Você é o assistente oficial de IA da Uzz.AI..."
 - Máximo 3-4 frases por mensagem (exceto quando listar features ou opções)
 - Use emojis com moderação..."
                 rows={5}
-                className="mt-2 font-mono text-sm bg-white/5 border-white/10 text-white placeholder:text-uzz-silver/50"
+                className="mt-2 font-mono text-sm bg-muted/50 border-border text-foreground placeholder:text-muted-foreground/50"
               />
-              <p className="text-xs text-uzz-silver mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Prompt usado para formatar as respostas do assistente
               </p>
             </div>
 
             {/* Primary Provider Selection */}
             <div className="bg-gradient-to-br from-blue-500/10 to-uzz-blue/10 border border-uzz-blue/30 rounded-lg p-4">
-              <Label htmlFor="primary_model_provider" className="text-base font-semibold text-white flex items-center gap-2">
+              <Label htmlFor="primary_model_provider" className="text-base font-semibold text-foreground flex items-center gap-2">
                 🤖 Provedor Principal do Agente
               </Label>
-              <p className="text-xs text-uzz-silver mb-3">
+              <p className="text-xs text-muted-foreground mb-3">
                 Escolha qual IA vai responder as mensagens de texto do seu chatbot
               </p>
 
@@ -793,16 +793,16 @@ Você é o assistente oficial de IA da Uzz.AI..."
                 }
                 disabled={!editingAgent}
               >
-                <SelectTrigger className="mt-2 bg-white/5 border-white/10 text-white">
+                <SelectTrigger className="mt-2 bg-muted/50 border-border text-foreground">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-[#1e2530] border-white/20 text-white">
+                <SelectContent className="bg-popover border-border text-popover-foreground">
                   <SelectItem value="groq">
                     <div className="flex items-center gap-2">
                       <Rocket className="h-4 w-4 flex-shrink-0" />
                       <div className="flex flex-col items-start">
                         <span className="font-semibold">Groq (Llama) - Recomendado</span>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-muted-foreground">
                           Rápido (~1000 tokens/s) • Econômico (~$0.60/1M tokens)
                         </span>
                       </div>
@@ -813,7 +813,7 @@ Você é o assistente oficial de IA da Uzz.AI..."
                       <Bot className="h-4 w-4 flex-shrink-0" />
                       <div className="flex flex-col items-start">
                         <span className="font-semibold">OpenAI (GPT)</span>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-muted-foreground">
                           Mais inteligente • Mais lento • Mais caro (~$5/1M tokens)
                         </span>
                       </div>
@@ -826,7 +826,7 @@ Você é o assistente oficial de IA da Uzz.AI..."
               {agentConfig.primary_model_provider === 'openai' && (
                 <Alert className="mt-3 bg-amber-500/10 border-amber-500/30">
                   <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0" />
-                  <AlertDescription className="text-amber-200 text-xs">
+                  <AlertDescription className="text-amber-700 dark:text-amber-200 text-xs">
                     <strong>💰 Custo estimado:</strong> GPT-4o é ~8x mais caro que Groq.
                     Para 100k mensagens/mês, pode custar $500+ vs $60 com Groq.
                   </AlertDescription>
@@ -836,7 +836,7 @@ Você é o assistente oficial de IA da Uzz.AI..."
               {agentConfig.primary_model_provider === 'groq' && (
                 <Alert className="mt-3 bg-green-500/10 border-green-500/30">
                   <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
-                  <AlertDescription className="text-green-200 text-xs">
+                  <AlertDescription className="text-green-700 dark:text-green-200 text-xs">
                     <strong>✅ Econômico:</strong> Llama 3.3 70B oferece ótima qualidade
                     com custo muito baixo (~$0.60/1M tokens).
                   </AlertDescription>
@@ -850,7 +850,7 @@ Você é o assistente oficial de IA da Uzz.AI..."
                   disabled={testingModel || !editingAgent}
                   variant="outline"
                   size="sm"
-                  className="w-full border-uzz-mint/30 text-uzz-mint hover:bg-uzz-mint/10 hover:text-white"
+                  className="w-full border-uzz-mint/30 text-uzz-mint hover:bg-uzz-mint/10 hover:text-foreground"
                 >
                   {testingModel ? (
                     <>
@@ -876,7 +876,7 @@ Você é o assistente oficial de IA da Uzz.AI..."
                   ) : (
                     <XCircle className="h-4 w-4 text-red-500" />
                   )}
-                  <AlertDescription className={testResult.success ? 'text-green-200' : 'text-red-200'}>
+                  <AlertDescription className={testResult.success ? 'text-green-700 dark:text-green-200' : 'text-red-700 dark:text-red-200'}>
                     {testResult.message}
                   </AlertDescription>
                 </Alert>
@@ -884,18 +884,18 @@ Você é o assistente oficial de IA da Uzz.AI..."
             </div>
 
             {/* Divisor */}
-            <div className="border-t border-white/10 my-6"></div>
+            <div className="border-t border-border my-6"></div>
 
-            <h3 className="font-semibold text-base mb-2 text-white">
+            <h3 className="font-semibold text-base mb-2 text-foreground">
               Modelos Específicos
             </h3>
-            <p className="text-xs text-uzz-silver mb-4">
+            <p className="text-xs text-muted-foreground mb-4">
               Configure qual versão do modelo será usado para cada provedor
             </p>
 
             {/* OpenAI Model */}
             <div>
-              <Label htmlFor="openai_model" className="text-white">
+              <Label htmlFor="openai_model" className="text-foreground">
                 Modelo OpenAI
                 {agentConfig.primary_model_provider === 'openai' && (
                   <span className="ml-2 text-xs bg-uzz-blue/20 text-uzz-blue px-2 py-0.5 rounded border border-uzz-blue/30">
@@ -910,10 +910,10 @@ Você é o assistente oficial de IA da Uzz.AI..."
                 }
                 disabled={!editingAgent}
               >
-                <SelectTrigger className="mt-2 bg-white/5 border-white/10 text-white">
+                <SelectTrigger className="mt-2 bg-muted/50 border-border text-foreground">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-[#1e2530] border-white/20 text-white">
+                <SelectContent className="bg-popover border-border text-popover-foreground">
                   {agentConfig.openai_model &&
                     ![
                       'gpt-4o',
@@ -931,7 +931,7 @@ Você é o assistente oficial de IA da Uzz.AI..."
                   <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo (Econômico)</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-uzz-silver mt-1 flex items-center gap-1">
+              <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                 {agentConfig.primary_model_provider === 'openai'
                   ? (
                     <>
@@ -943,7 +943,7 @@ Você é o assistente oficial de IA da Uzz.AI..."
                   )
                   : (
                     <>
-                      <Mic className="h-3 w-3 text-uzz-silver" />
+                      <Mic className="h-3 w-3 text-muted-foreground" />
                       Apenas para: Transcrição de áudio, análise de imagens e documentos
                     </>
                   )
@@ -953,7 +953,7 @@ Você é o assistente oficial de IA da Uzz.AI..."
 
             {/* Groq Model */}
             <div>
-              <Label htmlFor="groq_model" className="text-white">
+              <Label htmlFor="groq_model" className="text-foreground">
                 Modelo Groq
                 {agentConfig.primary_model_provider === 'groq' && (
                   <span className="ml-2 text-xs bg-uzz-blue/20 text-uzz-blue px-2 py-0.5 rounded border border-uzz-blue/30">
@@ -968,10 +968,10 @@ Você é o assistente oficial de IA da Uzz.AI..."
                 }
                 disabled={!editingAgent}
               >
-                <SelectTrigger className="mt-2 bg-white/5 border-white/10 text-white">
+                <SelectTrigger className="mt-2 bg-muted/50 border-border text-foreground">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-[#1e2530] border-white/20 text-white">
+                <SelectContent className="bg-popover border-border text-popover-foreground">
                   {agentConfig.groq_model &&
                     ![
                       'llama-3.3-70b-versatile',
@@ -989,7 +989,7 @@ Você é o assistente oficial de IA da Uzz.AI..."
                   <SelectItem value="mixtral-8x7b-32768">Mixtral 8x7B</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-uzz-silver mt-1 flex items-center gap-1">
+              <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                 {agentConfig.primary_model_provider === 'groq'
                   ? (
                     <>
@@ -1003,8 +1003,8 @@ Você é o assistente oficial de IA da Uzz.AI..."
             </div>
 
             {/* Divisor */}
-            <div className="border-t border-white/10 pt-6">
-              <h3 className="font-semibold text-base mb-6 text-white">Configurações Avançadas</h3>
+            <div className="border-t border-border pt-6">
+              <h3 className="font-semibold text-base mb-6 text-foreground">Configurações Avançadas</h3>
               
               {/* Toggles */}
               <div className="space-y-4 mb-6">
@@ -1159,14 +1159,14 @@ Você é o assistente oficial de IA da Uzz.AI..."
         </Card>
 
         {/* Seção 3.5: Envio de Documentos RAG */}
-        <Card className="bg-gradient-to-br from-[#1e2530] to-[#1a1f26] border-white/10">
-          <CardHeader className="border-b border-white/10">
+        <Card className="bg-card border-border">
+          <CardHeader className="border-b border-border">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-xl font-poppins text-white flex items-center gap-2">
+                <CardTitle className="text-xl font-poppins text-foreground flex items-center gap-2">
                   📄 Envio de Documentos RAG
                 </CardTitle>
-                <CardDescription className="text-uzz-silver">
+                <CardDescription className="text-muted-foreground">
                   Configure como o agente envia documentos e imagens da base de conhecimento via WhatsApp
                 </CardDescription>
               </div>
@@ -1174,7 +1174,7 @@ Você é o assistente oficial de IA da Uzz.AI..."
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
             <Alert className="bg-blue-500/10 border-blue-500/30">
-              <AlertDescription className="text-blue-200 text-sm">
+              <AlertDescription className="text-blue-700 dark:text-blue-200 text-sm">
                 <strong>Nota:</strong> Esta funcionalidade permite que o agente busque e envie automaticamente documentos, catálogos, manuais e imagens armazenados na base de conhecimento quando solicitado pelo usuário. Requer RAG e Function Calling habilitados.
               </AlertDescription>
             </Alert>
@@ -1187,14 +1187,14 @@ Você é o assistente oficial de IA da Uzz.AI..."
               {agentConfig.settings.enable_rag && agentConfig.settings.enable_tools ? (
                 <>
                   <CheckCircle className="h-4 w-4 text-green-500" />
-                  <AlertDescription className="text-green-200 text-sm">
-                    <strong>✅ Ativo:</strong> Agente pode buscar e enviar documentos via tool <code className="bg-white/10 px-1 rounded">buscar_documento</code>
+                  <AlertDescription className="text-green-700 dark:text-green-200 text-sm">
+                    <strong>✅ Ativo:</strong> Agente pode buscar e enviar documentos via tool <code className="bg-muted px-1 rounded">buscar_documento</code>
                   </AlertDescription>
                 </>
               ) : (
                 <>
                   <AlertTriangle className="h-4 w-4 text-amber-500" />
-                  <AlertDescription className="text-amber-200 text-sm">
+                  <AlertDescription className="text-amber-700 dark:text-amber-200 text-sm">
                     <strong>⚠️ Inativo:</strong> Habilite RAG e Function Calling para usar esta funcionalidade
                   </AlertDescription>
                 </>
@@ -1254,14 +1254,14 @@ Você é o assistente oficial de IA da Uzz.AI..."
             </div>
 
             {/* Como usar */}
-            <div className="border-t border-white/10 pt-4">
+            <div className="border-t border-border pt-4">
               <Alert className="bg-blue-500/10 border-blue-500/30">
                 <AlertDescription>
-                  <h4 className="text-sm font-semibold mb-2 text-blue-200">💡 Como usar:</h4>
-                  <ul className="text-xs text-blue-200/90 space-y-1 list-disc list-inside">
+                  <h4 className="text-sm font-semibold mb-2 text-blue-700 dark:text-blue-200">💡 Como usar:</h4>
+                  <ul className="text-xs text-blue-700/90 dark:text-blue-200/90 space-y-1 list-disc list-inside">
                     <li>Faça upload de documentos em <strong>/dashboard/knowledge</strong></li>
                     <li>Usuário solicita via WhatsApp: <em>&quot;me envia o catálogo&quot;</em></li>
-                    <li>AI aciona tool <code className="bg-white/10 px-1 rounded">buscar_documento</code> automaticamente</li>
+                    <li>AI aciona tool <code className="bg-muted px-1 rounded">buscar_documento</code> automaticamente</li>
                     <li>Sistema busca na base, encontra o documento mais relevante</li>
                     <li>Envia PDF/imagem diretamente no WhatsApp</li>
                   </ul>
@@ -1272,14 +1272,14 @@ Você é o assistente oficial de IA da Uzz.AI..."
         </Card>
 
         {/* Seção 4: Variáveis de Ambiente */}
-        <Card className="bg-gradient-to-br from-[#1e2530] to-[#1a1f26] border-white/10">
-          <CardHeader className="border-b border-white/10">
+        <Card className="bg-card border-border">
+          <CardHeader className="border-b border-border">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-xl font-poppins text-white flex items-center gap-2">
+                <CardTitle className="text-xl font-poppins text-foreground flex items-center gap-2">
                   🔑 Variáveis de Ambiente
                 </CardTitle>
-                <CardDescription className="text-uzz-silver">
+                <CardDescription className="text-muted-foreground">
                   Gerencie as credenciais de API do seu cliente
                 </CardDescription>
               </div>
@@ -1306,7 +1306,7 @@ Você é o assistente oficial de IA da Uzz.AI..."
           <CardContent className="space-y-4 pt-6">
             {/* Meta Access Token */}
             <div>
-              <Label htmlFor="meta_access_token" className="text-white">Meta Access Token</Label>
+              <Label htmlFor="meta_access_token" className="text-foreground">Meta Access Token</Label>
               <div className="flex gap-2 mt-2">
                 <div className="relative flex-1">
                   <Input
@@ -1317,13 +1317,13 @@ Você é o assistente oficial de IA da Uzz.AI..."
                       setSecrets({ ...secrets, meta_access_token: e.target.value })
                     }
                     disabled={!editingSecrets}
-                    className="bg-white/5 border-white/10 text-white font-mono text-sm"
+                    className="bg-muted/50 border-border text-foreground font-mono text-sm"
                     placeholder="EAABsbCS1iHgBO7ZC..."
                   />
                   <button
                     type="button"
                     onClick={() => togglePasswordVisibility('meta_access_token')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-uzz-silver hover:text-white transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {showPasswords['meta_access_token'] ? (
                       <EyeOff className="w-4 h-4" />
@@ -1338,7 +1338,7 @@ Você é o assistente oficial de IA da Uzz.AI..."
                       handleUpdateSecret('meta_access_token', secrets.meta_access_token)
                     }
                     disabled={loadingSecrets}
-                    className="bg-gradient-to-r from-uzz-mint to-uzz-blue text-white hover:from-uzz-blue hover:to-uzz-mint"
+                    className="bg-gradient-to-r from-uzz-mint to-uzz-blue text-foreground hover:from-uzz-blue hover:to-uzz-mint"
                   >
                     Salvar
                   </Button>
@@ -1478,7 +1478,7 @@ Você é o assistente oficial de IA da Uzz.AI..."
                   </Button>
                 )}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 ID da conta comercial do WhatsApp (usado para criar templates)
               </p>
             </div>
@@ -1490,7 +1490,7 @@ Você é o assistente oficial de IA da Uzz.AI..."
             <div className="space-y-4">
               <div>
                 <h3 className="font-semibold text-base mb-2">🔑 Credenciais de IA (Fallback)</h3>
-                <p className="text-sm text-gray-600 mb-4">
+                <p className="text-sm text-muted-foreground mb-4">
                   Configure suas chaves de API da OpenAI e Groq. Estas credenciais são usadas como <strong>fallback automático</strong> caso o AI Gateway falhe ou fique sem créditos.
                 </p>
                 <Alert className="mb-4">
@@ -1544,7 +1544,7 @@ Você é o assistente oficial de IA da Uzz.AI..."
                     </Button>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Obtenha em: <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">platform.openai.com/api-keys</a>
                 </p>
               </div>
@@ -1553,7 +1553,7 @@ Você é o assistente oficial de IA da Uzz.AI..."
               <div>
                 <Label htmlFor="groq_api_key">
                   Groq API Key
-                  <span className="text-xs text-gray-500 ml-2">(Opcional - secundário)</span>
+                  <span className="text-xs text-muted-foreground ml-2">(Opcional - secundário)</span>
                 </Label>
                 <div className="flex gap-2 mt-2">
                   <div className="relative flex-1">
@@ -1590,7 +1590,7 @@ Você é o assistente oficial de IA da Uzz.AI..."
                     </Button>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Obtenha em: <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">console.groq.com/keys</a>
                 </p>
               </div>
@@ -1618,7 +1618,7 @@ Você é o assistente oficial de IA da Uzz.AI..."
                   )}
                 </Button>
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Use esta URL para configurar o webhook na Meta API
               </p>
             </div>
@@ -1626,7 +1626,7 @@ Você é o assistente oficial de IA da Uzz.AI..."
         </Card>
 
         {/* Seção 4.5: Text-to-Speech (TTS) */}
-        <Card className="bg-gradient-to-br from-[#1e2530] to-[#1a1f26] border-white/10">
+        <Card className="bg-card border-border">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -1699,7 +1699,7 @@ Você é o assistente oficial de IA da Uzz.AI..."
       {/* Modal de Revalidação de Senha */}
       {showRevalidationModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md bg-gradient-to-br from-[#1e2530] to-[#1a1f26] border-white/10">
+          <Card className="w-full max-w-md bg-card border-border">
             <CardHeader>
               <CardTitle>Confirme sua Senha</CardTitle>
               <CardDescription>
@@ -1747,7 +1747,7 @@ Você é o assistente oficial de IA da Uzz.AI..."
       {/* Modal de Revalidação de Senha - Agent Config */}
       {showAgentRevalidationModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md bg-gradient-to-br from-[#1e2530] to-[#1a1f26] border-white/10">
+          <Card className="w-full max-w-md bg-card border-border">
             <CardHeader>
               <CardTitle>Confirme sua Senha</CardTitle>
               <CardDescription>

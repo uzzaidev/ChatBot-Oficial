@@ -123,11 +123,11 @@ export function DashboardNavigation({
           <>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold leading-none">
-                <span className="font-poppins text-uzz-mint">Uzz</span>
-                <span className="font-exo2 text-uzz-blue">Ai</span>
+                <span className="font-poppins text-primary">Uzz</span>
+                <span className="font-exo2 text-secondary">Ai</span>
               </h1>
             </div>
-            <p className="text-xs text-uzz-silver mt-2 ml-0.5">
+            <p className="text-xs text-muted-foreground mt-2 ml-0.5">
               Automação Criativa, Realizada
             </p>
           </>
@@ -260,12 +260,12 @@ export function DashboardNavigation({
         {/* User Info & Logout */}
         {!isCollapsed && userName && (
           <div className="px-3 py-3 rounded-lg bg-muted/30">
-            <p className="text-xs text-uzz-silver mb-1">Conectado como:</p>
+            <p className="text-xs text-muted-foreground mb-1">Conectado como:</p>
             <p className="text-sm font-semibold text-foreground truncate" title={userEmail || ''}>
               {userName}
             </p>
             {userEmail && (
-              <p className="text-xs text-uzz-silver/70 truncate mt-1" title={userEmail}>
+              <p className="text-xs text-muted-foreground/70 truncate mt-1" title={userEmail}>
                 {userEmail}
               </p>
             )}
@@ -276,7 +276,7 @@ export function DashboardNavigation({
 
         {/* Version Info */}
         {!isCollapsed && (
-          <div className="text-xs text-uzz-silver/60 px-3">
+          <div className="text-xs text-muted-foreground/60 px-3">
             <p>Versão 2.0.0</p>
             <p className="mt-1 flex items-center gap-1">
               <CheckCircle className="h-3 w-3 text-status-success" />

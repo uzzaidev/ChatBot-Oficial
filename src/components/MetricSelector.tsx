@@ -381,17 +381,17 @@ export function MetricSelector({
 
   return (
     <div className={cn('space-y-3', className)}>
-      <Label className="text-white text-sm font-semibold">{label}</Label>
+      <Label className="text-foreground text-sm font-semibold">{label}</Label>
 
       {/* Input de busca */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-uzz-silver" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
           type="text"
           placeholder="Buscar métrica (ex: conversa, mensagem, dia, custo...)"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-uzz-silver/50"
+          className="pl-10 bg-muted/50 border-border text-foreground placeholder:text-muted-foreground"
         />
       </div>
 
@@ -402,8 +402,8 @@ export function MetricSelector({
           className={cn(
             'px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
             selectedCategory === null
-              ? 'bg-uzz-mint text-[#1C1C1C]'
-              : 'bg-white/5 text-uzz-silver hover:bg-white/10 hover:text-white'
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'
           )}
         >
           Todas
@@ -415,8 +415,8 @@ export function MetricSelector({
             className={cn(
               'px-3 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-1.5',
               selectedCategory === category
-                ? 'bg-uzz-mint text-[#1C1C1C]'
-                : 'bg-white/5 text-uzz-silver hover:bg-white/10 hover:text-white'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'
             )}
           >
             {categoryIcons[category as keyof typeof categoryIcons]}
@@ -427,31 +427,31 @@ export function MetricSelector({
 
       {/* Métrica selecionada (preview) */}
       {selectedMetric && (
-        <div className="p-3 bg-uzz-mint/10 border border-uzz-mint/30 rounded-lg">
+        <div className="p-3 bg-primary/10 border border-primary/30 rounded-lg">
           <div className="flex items-center gap-2">
             {getMetricIcon(selectedMetric.value)}
-            <span className="text-sm font-semibold text-white">{selectedMetric.label}</span>
+            <span className="text-sm font-semibold text-foreground">{selectedMetric.label}</span>
           </div>
-          <p className="text-xs text-uzz-silver mt-1 ml-6">{selectedMetric.description}</p>
+          <p className="text-xs text-muted-foreground mt-1 ml-6">{selectedMetric.description}</p>
         </div>
       )}
 
       {/* Lista de métricas */}
-      <div className="rounded-lg border border-white/10 bg-white/5 overflow-hidden">
+      <div className="rounded-lg border border-border bg-muted/30 overflow-hidden">
         <ScrollArea className="h-[400px] w-full">
           <div className="p-3 space-y-4">
           {Object.entries(groupedMetrics).map(([category, metrics]) => (
             <div key={category} className="space-y-2">
               {/* Header da categoria */}
-              <div className="flex items-center gap-2 px-2 py-1.5 sticky top-0 bg-[#1e2530] z-10">
-                <div className="text-uzz-silver">
+              <div className="flex items-center gap-2 px-2 py-1.5 sticky top-0 bg-card z-10">
+                <div className="text-muted-foreground">
                   {categoryIcons[category as keyof typeof categoryIcons]}
                 </div>
-                <h4 className="text-xs font-bold text-uzz-silver uppercase tracking-wider">
+                <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                   {category}
                 </h4>
-                <div className="flex-1 h-px bg-white/10 ml-2" />
-                <span className="text-xs text-uzz-silver/70">{metrics.length}</span>
+                <div className="flex-1 h-px bg-border ml-2" />
+                <span className="text-xs text-muted-foreground/70">{metrics.length}</span>
               </div>
 
               {/* Métricas da categoria - Grid de 3 colunas */}
@@ -464,17 +464,17 @@ export function MetricSelector({
                       onClick={() => onValueChange(metric.value)}
                       className={cn(
                         'p-3.5 rounded-lg text-left transition-all h-full',
-                        'hover:bg-white/10 border',
+                        'hover:bg-muted border',
                         isSelected
-                          ? 'bg-uzz-mint/20 border-uzz-mint/50 shadow-lg shadow-uzz-mint/20'
-                          : 'bg-white/5 border-white/10'
+                          ? 'bg-primary/20 border-primary/50 shadow-lg shadow-primary/20'
+                          : 'bg-card border-border'
                       )}
                     >
                       <div className="flex items-start gap-2.5">
                         <div
                           className={cn(
                             'mt-0.5 flex-shrink-0',
-                            isSelected ? 'text-uzz-mint' : 'text-uzz-silver'
+                            isSelected ? 'text-primary' : 'text-muted-foreground'
                           )}
                         >
                           {getMetricIcon(metric.value)}
@@ -484,16 +484,16 @@ export function MetricSelector({
                             <span
                               className={cn(
                                 'text-xs font-semibold leading-tight',
-                                isSelected ? 'text-white' : 'text-white/90'
+                                isSelected ? 'text-foreground' : 'text-foreground/90'
                               )}
                             >
                               {metric.label}
                             </span>
                             {isSelected && (
-                              <div className="w-1.5 h-1.5 rounded-full bg-uzz-mint flex-shrink-0" />
+                              <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
                             )}
                           </div>
-                          <p className="text-[10px] text-uzz-silver line-clamp-2 leading-relaxed mb-2">
+                          <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed mb-2">
                             {metric.description}
                           </p>
                           {metric.tags && metric.tags.length > 0 && (
@@ -504,8 +504,8 @@ export function MetricSelector({
                                   className={cn(
                                     'px-1.5 py-0.5 text-[9px] font-medium rounded',
                                     (tag === 'mês' || tag === 'ano')
-                                      ? 'bg-uzz-blue/20 text-uzz-blue border border-uzz-blue/30'
-                                      : 'bg-white/5 text-uzz-silver/70'
+                                      ? 'bg-secondary/20 text-secondary border border-secondary/30'
+                                      : 'bg-muted text-muted-foreground/70'
                                   )}
                                 >
                                   {tag}
@@ -524,8 +524,8 @@ export function MetricSelector({
 
           {filteredMetrics.length === 0 && (
             <div className="text-center py-8">
-              <AlertCircle className="w-8 h-8 text-uzz-silver/50 mx-auto mb-2" />
-              <p className="text-sm text-uzz-silver">
+              <AlertCircle className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">
                 Nenhuma métrica encontrada para &quot;{searchQuery}&quot;
               </p>
             </div>

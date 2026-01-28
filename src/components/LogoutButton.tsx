@@ -54,7 +54,7 @@ export function LogoutButton({ isCollapsed = false }: LogoutButtonProps) {
       variant="ghost"
       size="sm"
       className={cn(
-        "w-full text-uzz-silver hover:text-white hover:bg-white/10 border border-white/10",
+        "w-full text-muted-foreground hover:text-foreground hover:bg-muted border border-border",
         isCollapsed ? "justify-center" : "justify-start gap-2"
       )}
       title={isCollapsed ? (loading ? 'Saindo...' : 'Sair') : undefined}

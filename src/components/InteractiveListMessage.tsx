@@ -37,7 +37,6 @@ export const InteractiveListMessage = ({
   footer,
   buttonText,
   sections,
-  isIncoming = false,
 }: InteractiveListMessageProps) => {
   const totalRows = sections.reduce((sum, section) => sum + section.rows.length, 0)
 
@@ -45,36 +44,26 @@ export const InteractiveListMessage = ({
     <div className="space-y-2">
       {/* Header */}
       {header && (
-        <div className={`text-sm font-semibold ${isIncoming ? 'text-erie-black-900' : 'text-white'}`}>
+        <div className="text-sm font-semibold text-white">
           {header}
         </div>
       )}
 
       {/* Body text */}
-      <div className={`text-sm ${isIncoming ? 'text-erie-black-800' : 'text-white'}`}>
+      <div className="text-sm text-white">
         {body}
       </div>
 
       {/* Footer text */}
       {footer && (
-        <div className={`text-xs ${isIncoming ? 'text-erie-black-500' : 'text-white/70'}`}>
+        <div className="text-xs text-white/70">
           {footer}
         </div>
       )}
 
       {/* List Button */}
-      <div className="mt-3 pt-3 border-t border-current/20">
-        <div
-          className={`
-            flex items-center justify-between py-2 px-3 rounded-md
-            border transition-colors
-            ${
-              isIncoming
-                ? 'border-purple-300 bg-purple-50 text-purple-700'
-                : 'border-white/30 bg-white/10 text-white'
-            }
-          `}
-        >
+      <div className="mt-3 pt-3 border-t border-white/20">
+        <div className="flex items-center justify-between py-2 px-3 rounded-md border transition-colors border-white/30 bg-white/10 text-white hover:bg-white/20">
           <div className="flex items-center gap-2">
             <List className="h-4 w-4" />
             <span className="text-sm font-medium">{buttonText}</span>
@@ -84,7 +73,7 @@ export const InteractiveListMessage = ({
       </div>
 
       {/* Sections Preview - Collapsed */}
-      <div className={`text-xs mt-2 ${isIncoming ? 'text-erie-black-600' : 'text-white/80'}`}>
+      <div className="text-xs mt-2 text-white/80">
         <div className="space-y-1">
           {sections.map((section, idx) => (
             <div key={idx} className="flex items-start gap-2">
@@ -98,7 +87,7 @@ export const InteractiveListMessage = ({
       </div>
 
       {/* Helper text */}
-      <div className={`text-xs italic mt-2 ${isIncoming ? 'text-erie-black-400' : 'text-white/60'}`}>
+      <div className="text-xs italic mt-2 text-white/60">
         {totalRows} {totalRows === 1 ? 'opção' : 'opções'} de resposta
       </div>
     </div>

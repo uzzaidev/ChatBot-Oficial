@@ -205,8 +205,8 @@ export function UnifiedAnalytics() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-poppins font-bold mb-2 bg-gradient-to-r from-uzz-mint to-uzz-blue bg-clip-text text-transparent">Analytics Unificado</h1>
-          <p className="text-uzz-silver">
+          <h1 className="text-3xl font-poppins font-bold mb-2 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Analytics Unificado</h1>
+          <p className="text-muted-foreground">
             {data.isAdmin
               ? 'Visão completa de todos os clientes'
               : `Analytics de ${data.clientName}`}

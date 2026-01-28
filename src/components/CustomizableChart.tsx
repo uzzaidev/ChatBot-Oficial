@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import { useTheme } from 'next-themes'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Settings, X, Download, ZoomIn, ZoomOut } from 'lucide-react'
@@ -46,9 +47,21 @@ export function CustomizableChart({
   onRemove,
   loading = false,
 }: CustomizableChartProps) {
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === 'dark'
   const chartHeight = config.height || 300
   const [hiddenDataKeys, setHiddenDataKeys] = useState<Set<string>>(new Set())
   const chartContainerRef = useRef<HTMLDivElement>(null)
+
+  // Theme-aware chart colors
+  const axisStroke = isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.3)'
+  const tickFill = isDark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'
+  const gridStroke = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+  const tooltipBg = isDark ? '#1e2530' : '#ffffff'
+  const tooltipBorder = isDark ? 'rgba(26, 188, 156, 0.2)' : 'rgba(26, 188, 156, 0.3)'
+  const tooltipLabelColor = isDark ? '#fff' : '#1a1a1a'
+  const tooltipItemColor = isDark ? '#ccc' : '#666'
+  const legendColor = isDark ? '#fff' : '#1a1a1a'
 
   // Toggle visibility of data series
   const handleLegendClick = (dataKey: string | number | ((data: any, index: number) => string | number) | undefined) => {
@@ -71,7 +84,7 @@ export function CustomizableChart({
       // Dynamic import of html2canvas to keep bundle size small
       const html2canvas = (await import('html2canvas')).default
       const canvas = await html2canvas(chartContainerRef.current, {
-        backgroundColor: '#1a1f26',
+        backgroundColor: isDark ? '#1a1f26' : '#ffffff',
         scale: 2,
       })
       const url = canvas.toDataURL('image/png')
@@ -107,19 +120,19 @@ export function CustomizableChart({
     }
 
     const gridProps = config.showGrid
-      ? { strokeDasharray: '3 3', stroke: 'rgba(255, 255, 255, 0.1)' }
+      ? { strokeDasharray: '3 3', stroke: gridStroke }
       : undefined
 
     const tooltipProps = {
       contentStyle: {
-        backgroundColor: '#1e2530',
-        border: '1px solid rgba(26, 188, 156, 0.2)',
+        backgroundColor: tooltipBg,
+        border: `1px solid ${tooltipBorder}`,
         borderRadius: '12px',
         padding: '12px 16px',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+        boxShadow: isDark ? '0 8px 32px rgba(0, 0, 0, 0.4)' : '0 8px 32px rgba(0, 0, 0, 0.15)',
       },
-      labelStyle: { color: '#fff', fontWeight: 600, marginBottom: '4px' },
-      itemStyle: { color: '#ccc', fontSize: '13px' },
+      labelStyle: { color: tooltipLabelColor, fontWeight: 600, marginBottom: '4px' },
+      itemStyle: { color: tooltipItemColor, fontSize: '13px' },
       cursor: { stroke: 'rgba(26, 188, 156, 0.3)', strokeWidth: 1 },
     }
 
@@ -131,26 +144,26 @@ export function CustomizableChart({
             {config.showGrid && <CartesianGrid {...gridProps} />}
             <XAxis
               dataKey="date"
-              stroke="rgba(255, 255, 255, 0.5)"
+              stroke={axisStroke}
               fontSize={12}
               tickLine={false}
-              tick={{ fill: 'rgba(255, 255, 255, 0.7)' }}
+              tick={{ fill: tickFill }}
             />
-            <YAxis 
-              stroke="rgba(255, 255, 255, 0.5)" 
-              fontSize={12} 
+            <YAxis
+              stroke={axisStroke}
+              fontSize={12}
               tickLine={false}
-              tick={{ fill: 'rgba(255, 255, 255, 0.7)' }}
+              tick={{ fill: tickFill }}
             />
             <Tooltip {...tooltipProps} />
             {config.showLegend && (
-              <Legend 
+              <Legend
                 onClick={(e: any) => {
                   if (e?.dataKey) {
                     handleLegendClick(e.dataKey)
                   }
                 }}
-                wrapperStyle={{ color: '#fff' }}
+                wrapperStyle={{ color: legendColor }}
                 iconType="line"
               />
             )}
@@ -164,26 +177,26 @@ export function CustomizableChart({
             {config.showGrid && <CartesianGrid {...gridProps} />}
             <XAxis
               dataKey="date"
-              stroke="rgba(255, 255, 255, 0.5)"
+              stroke={axisStroke}
               fontSize={12}
               tickLine={false}
-              tick={{ fill: 'rgba(255, 255, 255, 0.7)' }}
+              tick={{ fill: tickFill }}
             />
-            <YAxis 
-              stroke="rgba(255, 255, 255, 0.5)" 
-              fontSize={12} 
+            <YAxis
+              stroke={axisStroke}
+              fontSize={12}
               tickLine={false}
-              tick={{ fill: 'rgba(255, 255, 255, 0.7)' }}
+              tick={{ fill: tickFill }}
             />
             <Tooltip {...tooltipProps} />
             {config.showLegend && (
-              <Legend 
+              <Legend
                 onClick={(e: any) => {
                   if (e?.dataKey) {
                     handleLegendClick(e.dataKey)
                   }
                 }}
-                wrapperStyle={{ color: '#fff' }}
+                wrapperStyle={{ color: legendColor }}
               />
             )}
             {renderBars()}
@@ -196,26 +209,26 @@ export function CustomizableChart({
             {config.showGrid && <CartesianGrid {...gridProps} />}
             <XAxis
               dataKey="date"
-              stroke="rgba(255, 255, 255, 0.5)"
+              stroke={axisStroke}
               fontSize={12}
               tickLine={false}
-              tick={{ fill: 'rgba(255, 255, 255, 0.7)' }}
+              tick={{ fill: tickFill }}
             />
-            <YAxis 
-              stroke="rgba(255, 255, 255, 0.5)" 
-              fontSize={12} 
+            <YAxis
+              stroke={axisStroke}
+              fontSize={12}
               tickLine={false}
-              tick={{ fill: 'rgba(255, 255, 255, 0.7)' }}
+              tick={{ fill: tickFill }}
             />
             <Tooltip {...tooltipProps} />
             {config.showLegend && (
-              <Legend 
+              <Legend
                 onClick={(e: any) => {
                   if (e?.dataKey) {
                     handleLegendClick(e.dataKey)
                   }
                 }}
-                wrapperStyle={{ color: '#fff' }}
+                wrapperStyle={{ color: legendColor }}
                 iconType="rect"
               />
             )}
@@ -229,26 +242,26 @@ export function CustomizableChart({
             {config.showGrid && <CartesianGrid {...gridProps} />}
             <XAxis
               dataKey="date"
-              stroke="rgba(255, 255, 255, 0.5)"
+              stroke={axisStroke}
               fontSize={12}
               tickLine={false}
-              tick={{ fill: 'rgba(255, 255, 255, 0.7)' }}
+              tick={{ fill: tickFill }}
             />
-            <YAxis 
-              stroke="rgba(255, 255, 255, 0.5)" 
-              fontSize={12} 
+            <YAxis
+              stroke={axisStroke}
+              fontSize={12}
               tickLine={false}
-              tick={{ fill: 'rgba(255, 255, 255, 0.7)' }}
+              tick={{ fill: tickFill }}
             />
             <Tooltip {...tooltipProps} />
             {config.showLegend && (
-              <Legend 
+              <Legend
                 onClick={(e: any) => {
                   if (e?.dataKey) {
                     handleLegendClick(e.dataKey)
                   }
                 }}
-                wrapperStyle={{ color: '#fff' }}
+                wrapperStyle={{ color: legendColor }}
               />
             )}
             {renderComposedElements()}
