@@ -31,7 +31,7 @@ export const ConversationMetricCard = ({
         "focus:outline-none focus:ring-2 focus:ring-uzz-mint focus:ring-offset-2 focus:ring-offset-[#0f1419]",
         active
           ? `bg-gradient-to-br ${gradient} text-white border-transparent shadow-glow`
-          : "bg-card-dark border-white/10 text-white hover:border-uzz-mint/30 hover:bg-white/5"
+          : "bg-card-dark border-white/10 text-foreground hover:border-uzz-mint/30 hover:bg-white/5"
       )}
       aria-label={`Filtrar por ${label}: ${value} conversas`}
       aria-pressed={active}
@@ -44,7 +44,7 @@ export const ConversationMetricCard = ({
       <div className="flex items-center justify-between mb-3">
         <span className={cn(
           "text-[11px] font-bold uppercase tracking-wider",
-          active ? "text-white/90" : "text-uzz-silver"
+          active ? "text-foreground/90" : "text-muted-foreground"
         )}>
           {label}
         </span>
@@ -54,7 +54,7 @@ export const ConversationMetricCard = ({
         )}>
           <Icon className={cn(
             "h-4 w-4",
-            active ? "text-white" : `text-white`
+            active ? "text-foreground" : `text-foreground`
           )} />
         </div>
       </div>
@@ -62,14 +62,14 @@ export const ConversationMetricCard = ({
       <div className={cn(
         "text-3xl font-bold font-poppins",
         active 
-          ? "text-white" 
-          : "text-white"
+          ? "text-foreground" 
+          : "text-foreground"
       )}>
         {value}
       </div>
 
       {description && active && (
-        <p className="text-[11px] text-white/70 mt-2">
+        <p className="text-[11px] text-muted-foreground mt-2">
           {description}
         </p>
       )}

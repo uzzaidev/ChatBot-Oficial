@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useTheme } from 'next-themes'
 import { Play, Pause, Volume2, FileText } from 'lucide-react'
 
 interface AudioMessageProps {
@@ -23,6 +24,8 @@ export const AudioMessage = ({
   const [showTranscription, setShowTranscription] = useState(false)
   const [audioError, setAudioError] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === 'dark'
 
   const togglePlay = async () => {
     if (audioRef.current) {
@@ -117,8 +120,10 @@ export const AudioMessage = ({
                     backgroundColor: isPlayed
                       ? direction === 'outbound'
                         ? 'white'
-                        : '#3b82f6'
-                      : 'rgba(255,255,255,0.3)',
+                        : isDark ? 'hsl(var(--primary))' : '#3b82f6'
+                      : isDark 
+                        ? 'rgba(255,255,255,0.3)' 
+                        : 'rgba(0,0,0,0.2)',
                     minHeight: '4px'
                   }}
                 />
