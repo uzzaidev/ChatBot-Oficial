@@ -3,6 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { useMemo } from 'react'
+import { useTheme } from 'next-themes'
 
 interface GaugeChartProps {
   title: string
@@ -42,6 +43,9 @@ export function GaugeChart({
   size = 200,
   className,
 }: GaugeChartProps) {
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
+
   const percentage = useMemo(() => {
     const clampedValue = Math.max(min, Math.min(max, value))
     return ((clampedValue - min) / (max - min)) * 100
@@ -60,11 +64,13 @@ export function GaugeChart({
   const circumference = 2 * Math.PI * radius
   const strokeDashoffset = circumference - (percentage / 100) * circumference
 
+  const bgCircleStroke = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+
   return (
-    <Card className={cn("bg-[#1a1f26] border-white/10", className)}>
+    <Card className={cn("bg-card border-border", className)}>
       <CardHeader>
-        <CardTitle className="text-white">{title}</CardTitle>
-        {description && <CardDescription className="text-uzz-silver">{description}</CardDescription>}
+        <CardTitle className="text-foreground">{title}</CardTitle>
+        {description && <CardDescription className="text-muted-foreground">{description}</CardDescription>}
       </CardHeader>
       <CardContent>
         <div className="flex flex-col items-center justify-center py-8">
@@ -77,7 +83,7 @@ export function GaugeChart({
                 cy={size / 2}
                 r={radius}
                 fill="none"
-                stroke="rgba(255, 255, 255, 0.1)"
+                stroke={bgCircleStroke}
                 strokeWidth="12"
               />
               {/* Threshold arcs */}
@@ -124,7 +130,7 @@ export function GaugeChart({
               <div className="text-4xl font-bold font-poppins" style={{ color: currentColor }}>
                 {value.toFixed(1)}
               </div>
-              <div className="text-sm text-uzz-silver mt-1">{unit}</div>
+              <div className="text-sm text-muted-foreground mt-1">{unit}</div>
             </div>
           </div>
 
@@ -136,7 +142,7 @@ export function GaugeChart({
                   className="w-3 h-3 rounded-full"
                   style={{ backgroundColor: threshold.color }}
                 />
-                <span className="text-xs text-uzz-silver">
+                <span className="text-xs text-muted-foreground">
                   {threshold.label}
                 </span>
               </div>

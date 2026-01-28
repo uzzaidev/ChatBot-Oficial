@@ -3,6 +3,7 @@
 import { Treemap as RechartsTreemap, ResponsiveContainer, Tooltip, Cell } from 'recharts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
+import { useTheme } from 'next-themes'
 
 interface TreemapData {
   name: string
@@ -34,16 +35,21 @@ export function TreemapChart({
   colors = ['#1ABC9C', '#2E86AB', '#FFD700', '#EC4899', '#F59E0B', '#10B981'],
   className,
 }: TreemapChartProps) {
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
+
   const tooltipProps = {
     contentStyle: {
-      backgroundColor: '#1a1f26',
-      border: '1px solid rgba(255, 255, 255, 0.1)',
+      backgroundColor: isDark ? '#1a1f26' : '#ffffff',
+      border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
       borderRadius: '8px',
       padding: '12px',
     },
-    labelStyle: { color: '#fff', fontWeight: 600 },
-    itemStyle: { color: '#fff' },
+    labelStyle: { color: isDark ? '#fff' : '#1f2937', fontWeight: 600 },
+    itemStyle: { color: isDark ? '#fff' : '#1f2937' },
   }
+
+  const cellStroke = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'
 
   // Custom content for treemap cells
   const CustomContent = (props: any) => {
@@ -58,7 +64,7 @@ export function TreemapChart({
           height={height}
           style={{
             fill: payload.color || colors[payload.index % colors.length],
-            stroke: 'rgba(255, 255, 255, 0.1)',
+            stroke: cellStroke,
             strokeWidth: 2,
           }}
         />
@@ -96,10 +102,10 @@ export function TreemapChart({
   }))
 
   return (
-    <Card className={cn("bg-[#1a1f26] border-white/10", className)}>
+    <Card className={cn("bg-card border-border", className)}>
       <CardHeader>
-        <CardTitle className="text-white">{title}</CardTitle>
-        {description && <CardDescription className="text-uzz-silver">{description}</CardDescription>}
+        <CardTitle className="text-foreground">{title}</CardTitle>
+        {description && <CardDescription className="text-muted-foreground">{description}</CardDescription>}
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={height}>
@@ -107,7 +113,7 @@ export function TreemapChart({
             data={dataWithColors}
             dataKey="value"
             aspectRatio={4 / 3}
-            stroke="rgba(255, 255, 255, 0.1)"
+            stroke={cellStroke}
             content={<CustomContent />}
           >
             <Tooltip {...tooltipProps} />

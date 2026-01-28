@@ -54,10 +54,10 @@ export function FunnelChart({
   const defaultColors = ['#1ABC9C', '#2E86AB', '#FFD700', '#EC4899', '#F59E0B', '#10B981']
 
   return (
-    <Card className={cn("bg-[#1a1f26] border-white/10", className)}>
+    <Card className={cn("bg-card border-border", className)}>
       <CardHeader>
-        <CardTitle className="text-white">{title}</CardTitle>
-        {description && <CardDescription className="text-uzz-silver">{description}</CardDescription>}
+        <CardTitle className="text-foreground">{title}</CardTitle>
+        {description && <CardDescription className="text-muted-foreground">{description}</CardDescription>}
       </CardHeader>
       <CardContent>
         <div className="space-y-3" style={{ height }}>
@@ -69,20 +69,20 @@ export function FunnelChart({
                 {/* Step label and value */}
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-white">{step.label}</span>
+                    <span className="text-sm font-semibold text-foreground">{step.label}</span>
                     {showPercentages && index > 0 && (
-                      <span className="text-xs text-uzz-silver">
+                      <span className="text-xs text-muted-foreground">
                         ({step.conversionRate.toFixed(1)}% conversão)
                       </span>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-white">{step.value.toLocaleString('pt-BR')}</span>
+                    <span className="text-sm font-bold text-foreground">{step.value.toLocaleString('pt-BR')}</span>
                   </div>
                 </div>
 
                 {/* Funnel bar */}
-                <div className="relative h-12 bg-white/5 rounded-lg overflow-hidden">
+                <div className="relative h-12 bg-muted/30 rounded-lg overflow-hidden">
                   {/* Background */}
                   <div
                     className="absolute inset-0 transition-all duration-500 ease-out"
@@ -113,7 +113,7 @@ export function FunnelChart({
                 {/* Drop-off indicator */}
                 {index < processedSteps.length - 1 && (
                   <div className="flex items-center justify-center my-2">
-                    <div className="flex items-center gap-2 text-xs text-uzz-silver">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span>↓</span>
                       <span>
                         {(
@@ -136,27 +136,27 @@ export function FunnelChart({
         </div>
 
         {/* Summary */}
-        <div className="mt-6 pt-4 border-t border-white/10">
+        <div className="mt-6 pt-4 border-t border-border">
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
-              <div className="text-2xl font-bold text-white">
+              <div className="text-2xl font-bold text-foreground">
                 {processedSteps[0].value.toLocaleString('pt-BR')}
               </div>
-              <div className="text-xs text-uzz-silver mt-1">Início</div>
+              <div className="text-xs text-muted-foreground mt-1">Início</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-white">
+              <div className="text-2xl font-bold text-foreground">
                 {processedSteps[processedSteps.length - 1].value.toLocaleString('pt-BR')}
               </div>
-              <div className="text-xs text-uzz-silver mt-1">Fim</div>
+              <div className="text-xs text-muted-foreground mt-1">Fim</div>
             </div>
             <div>
-              <div className="text-2xl font-bold" style={{ color: defaultColors[0] }}>
+              <div className="text-2xl font-bold text-primary">
                 {(
                   (processedSteps[processedSteps.length - 1].value / processedSteps[0].value) * 100
                 ).toFixed(1)}%
               </div>
-              <div className="text-xs text-uzz-silver mt-1">Taxa Total</div>
+              <div className="text-xs text-muted-foreground mt-1">Taxa Total</div>
             </div>
           </div>
         </div>

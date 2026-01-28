@@ -167,12 +167,12 @@ export default function AdminBudgetPlansPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-poppins font-bold mb-2 bg-gradient-to-r from-uzz-mint to-uzz-blue bg-clip-text text-transparent">Configuração de Budgets</h1>
-          <p className="text-uzz-silver">
+          <h1 className="text-3xl font-poppins font-bold mb-2 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Configuração de Budgets</h1>
+          <p className="text-muted-foreground">
             Gerencie limites de uso por cliente (Tokens, Reais ou Híbrido)
           </p>
         </div>
-        <Button variant="outline" onClick={fetchData} className="border-uzz-mint text-uzz-mint hover:bg-uzz-mint/10">
+        <Button variant="outline" onClick={fetchData} className="border-primary text-primary hover:bg-primary/10">
           <RefreshCw className="w-4 h-4 mr-2" />
           Atualizar
         </Button>
@@ -193,14 +193,14 @@ export default function AdminBudgetPlansPage() {
       )}
 
       <Tabs defaultValue="configure">
-        <TabsList className="grid w-full grid-cols-2 bg-[#1a1f26] border border-white/10 p-1 rounded-lg">
-          <TabsTrigger value="configure" className="data-[state=active]:bg-uzz-mint/15 data-[state=active]:text-white data-[state=active]:shadow-sm text-uzz-silver rounded-md transition-all">Configurar Budget</TabsTrigger>
-          <TabsTrigger value="overview" className="data-[state=active]:bg-uzz-mint/15 data-[state=active]:text-white data-[state=active]:shadow-sm text-uzz-silver rounded-md transition-all">Visão Geral</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 bg-card border border-border p-1 rounded-lg">
+          <TabsTrigger value="configure" className="data-[state=active]:bg-primary/15 data-[state=active]:text-foreground data-[state=active]:shadow-sm text-muted-foreground rounded-md transition-all">Configurar Budget</TabsTrigger>
+          <TabsTrigger value="overview" className="data-[state=active]:bg-primary/15 data-[state=active]:text-foreground data-[state=active]:shadow-sm text-muted-foreground rounded-md transition-all">Visão Geral</TabsTrigger>
         </TabsList>
 
         {/* Configure Tab */}
         <TabsContent value="configure" className="space-y-6">
-          <Card className="bg-gradient-to-br from-[#1e2530] to-[#1a1f26] border-white/10">
+          <Card className="bg-card border-border">
             <CardHeader>
               <CardTitle>Configurar Budget do Cliente</CardTitle>
               <CardDescription>
@@ -368,14 +368,14 @@ export default function AdminBudgetPlansPage() {
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-4">
           {budgets.length === 0 ? (
-            <Card className="bg-gradient-to-br from-[#1e2530] to-[#1a1f26] border-white/10">
+            <Card className="bg-card border-border">
               <CardContent className="pt-6 text-center text-muted-foreground">
                 <p>Nenhum budget configurado ainda</p>
               </CardContent>
             </Card>
           ) : (
             budgets.map((budget) => (
-              <Card key={budget.client_id} className="bg-gradient-to-br from-[#1e2530] to-[#1a1f26] border-white/10">
+              <Card key={budget.client_id} className="bg-card border-border">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div>
@@ -406,7 +406,7 @@ export default function AdminBudgetPlansPage() {
                           {budget.current_tokens.toLocaleString()} / {budget.token_limit.toLocaleString()}
                         </span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="w-full bg-muted rounded-full h-2">
                         <div
                           className={`h-2 rounded-full ${
                             budget.token_usage_percentage >= 90
@@ -433,7 +433,7 @@ export default function AdminBudgetPlansPage() {
                           R$ {budget.current_brl.toFixed(2)} / R$ {budget.brl_limit.toFixed(2)}
                         </span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="w-full bg-muted rounded-full h-2">
                         <div
                           className={`h-2 rounded-full ${
                             budget.brl_usage_percentage >= 90

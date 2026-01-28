@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import { useMemo } from 'react'
 import { format, startOfYear, eachDayOfInterval, getDay, isSameDay } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { useTheme } from 'next-themes'
 
 interface HeatmapData {
   date: Date | string
@@ -34,6 +35,9 @@ export function ActivityHeatmap({
   endDate,
   className,
 }: ActivityHeatmapProps) {
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
+
   // Default to last year - memoize to avoid dependency issues
   const defaultEndDate = useMemo(() => endDate || new Date(), [endDate])
   const defaultStartDate = useMemo(() => startDate || startOfYear(defaultEndDate), [startDate, defaultEndDate])
@@ -72,13 +76,21 @@ export function ActivityHeatmap({
   }
 
   const getColor = (intensity: number): string => {
-    const colors = [
+    const darkColors = [
       'rgba(255, 255, 255, 0.05)', // 0 - No activity
       'rgba(26, 188, 156, 0.3)',   // 1 - Low
       'rgba(26, 188, 156, 0.5)',   // 2 - Medium
       'rgba(26, 188, 156, 0.7)',   // 3 - High
       'rgba(26, 188, 156, 1)',     // 4 - Very High
     ]
+    const lightColors = [
+      'rgba(0, 0, 0, 0.05)',       // 0 - No activity
+      'rgba(26, 188, 156, 0.3)',   // 1 - Low
+      'rgba(26, 188, 156, 0.5)',   // 2 - Medium
+      'rgba(26, 188, 156, 0.7)',   // 3 - High
+      'rgba(26, 188, 156, 1)',     // 4 - Very High
+    ]
+    const colors = isDark ? darkColors : lightColors
     return colors[intensity] || colors[0]
   }
 
@@ -118,11 +130,13 @@ export function ActivityHeatmap({
     return Array.from(months)
   }, [days])
 
+  const cellBorder = isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)'
+
   return (
-    <Card className={cn("bg-[#1a1f26] border-white/10", className)}>
+    <Card className={cn("bg-card border-border", className)}>
       <CardHeader>
-        <CardTitle className="text-white">{title}</CardTitle>
-        {description && <CardDescription className="text-uzz-silver">{description}</CardDescription>}
+        <CardTitle className="text-foreground">{title}</CardTitle>
+        {description && <CardDescription className="text-muted-foreground">{description}</CardDescription>}
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
@@ -132,7 +146,7 @@ export function ActivityHeatmap({
               {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day, index) => (
                 <div
                   key={day}
-                  className="text-xs text-uzz-silver text-right w-10 h-3"
+                  className="text-xs text-muted-foreground text-right w-10 h-3"
                   style={{ visibility: index % 2 === 0 ? 'visible' : 'hidden' }}
                 >
                   {day}
@@ -153,10 +167,10 @@ export function ActivityHeatmap({
                     return (
                       <div
                         key={dateKey}
-                        className="w-3 h-3 rounded-sm transition-all hover:scale-125 hover:ring-2 hover:ring-uzz-mint cursor-pointer"
+                        className="w-3 h-3 rounded-sm transition-all hover:scale-125 hover:ring-2 hover:ring-primary cursor-pointer"
                         style={{
                           backgroundColor: color,
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          border: cellBorder,
                         }}
                         title={`${format(day, 'dd/MM/yyyy', { locale: ptBR })}: ${value} atividades`}
                       />
@@ -173,8 +187,8 @@ export function ActivityHeatmap({
           </div>
 
           {/* Legend */}
-          <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/10">
-            <div className="flex items-center gap-2 text-xs text-uzz-silver">
+          <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span>Menos</span>
               <div className="flex gap-1">
                 {[0, 1, 2, 3, 4].map((intensity) => (
@@ -183,14 +197,14 @@ export function ActivityHeatmap({
                     className="w-3 h-3 rounded-sm"
                     style={{
                       backgroundColor: getColor(intensity),
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      border: cellBorder,
                     }}
                   />
                 ))}
               </div>
               <span>Mais</span>
             </div>
-            <div className="text-xs text-uzz-silver">
+            <div className="text-xs text-muted-foreground">
               Total: {data.reduce((sum, item) => sum + item.value, 0).toLocaleString('pt-BR')}
             </div>
           </div>
