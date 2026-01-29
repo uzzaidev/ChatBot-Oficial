@@ -60,9 +60,6 @@ export interface HandleDocumentSearchOutput {
   /** Número de documentos enviados com sucesso */
   documentsSent?: number;
 
-  /** Quantidade de arquivos de texto (.txt/.md) encontrados (não enviados como anexo) */
-  textFilesFound?: number;
-
   /** Lista de arquivos enviados (para log) */
   filesSent?: string[];
 
