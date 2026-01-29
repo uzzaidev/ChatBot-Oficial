@@ -129,6 +129,7 @@ export default function SettingsPage() {
     similarity_threshold: 0.7,
     max_documents: 3,
     max_file_size_mb: 10,
+    max_upload_size_mb: 10, // Tamanho máximo para upload de arquivos
   })
 
   // Carregar perfil do usuário
@@ -237,6 +238,9 @@ export default function SettingsPage() {
           const maxDocsConfig = data.configs.find((c: any) => c.config_key === 'rag:top_k_documents')
           const maxSizeConfig = data.configs.find((c: any) => c.config_key === 'knowledge_media:max_file_size_mb')
 
+          // Buscar também configuração de tamanho máximo de upload
+          const maxUploadSizeConfig = data.configs.find((c: any) => c.config_key === 'knowledge_media:max_upload_size_mb')
+
           setRagConfig({
             similarity_threshold: thresholdConfig?.config_value !== undefined 
               ? Number(thresholdConfig.config_value) 
@@ -246,6 +250,9 @@ export default function SettingsPage() {
               : 3,
             max_file_size_mb: maxSizeConfig?.config_value !== undefined 
               ? Number(maxSizeConfig.config_value) 
+              : 10,
+            max_upload_size_mb: maxUploadSizeConfig?.config_value !== undefined 
+              ? Number(maxUploadSizeConfig.config_value) 
               : 10,
           })
         }
@@ -584,6 +591,16 @@ export default function SettingsPage() {
             config_value: ragConfig.max_file_size_mb,
             category: 'thresholds',
             description: 'Tamanho máximo de arquivo em MB para envio via WhatsApp',
+          }),
+        }),
+        apiFetch('/api/config', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            config_key: 'knowledge_media:max_upload_size_mb',
+            config_value: ragConfig.max_upload_size_mb,
+            category: 'thresholds',
+            description: 'Tamanho máximo por arquivo no upload (1-50MB)',
           }),
         }),
       ]
@@ -1410,10 +1427,10 @@ Você é o assistente oficial de IA da Uzz.AI..."
                 disabled={!editingRAG || !agentConfig.settings.enable_rag}
               />
 
-              {/* Tamanho Máximo */}
+              {/* Tamanho Máximo para Envio */}
               <SliderControl
                 id="doc_max_file_size"
-                label="Tamanho Máximo"
+                label="Tamanho Máximo (Envio)"
                 description="WhatsApp: máx 16MB documentos, 5MB imagens"
                 value={ragConfig.max_file_size_mb}
                 onValueChange={(value) =>
@@ -1421,6 +1438,22 @@ Você é o assistente oficial de IA da Uzz.AI..."
                 }
                 min={1}
                 max={16}
+                step={1}
+                unit="MB"
+                disabled={!editingRAG || !agentConfig.settings.enable_rag}
+              />
+
+              {/* Tamanho Máximo para Upload */}
+              <SliderControl
+                id="doc_max_upload_size"
+                label="Tamanho Máximo (Upload)"
+                description="Tamanho máximo por arquivo no upload (1-50MB)"
+                value={ragConfig.max_upload_size_mb}
+                onValueChange={(value) =>
+                  setRagConfig({ ...ragConfig, max_upload_size_mb: value })
+                }
+                min={1}
+                max={50}
                 step={1}
                 unit="MB"
                 disabled={!editingRAG || !agentConfig.settings.enable_rag}
