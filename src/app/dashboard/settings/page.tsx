@@ -117,6 +117,20 @@ export default function SettingsPage() {
     latency_ms?: number
   } | null>(null)
 
+  // Estado da seção RAG (edição independente)
+  const [editingRAG, setEditingRAG] = useState(false)
+  const [loadingRAG, setLoadingRAG] = useState(false)
+  const [showRAGRevalidationModal, setShowRAGRevalidationModal] = useState(false)
+  const [ragRevalidationPassword, setRagRevalidationPassword] = useState('')
+  const [ragRevalidating, setRagRevalidating] = useState(false)
+  
+  // Estado dos valores RAG (carregados do backend)
+  const [ragConfig, setRagConfig] = useState({
+    similarity_threshold: 0.7,
+    max_documents: 3,
+    max_file_size_mb: 10,
+  })
+
   // Carregar perfil do usuário
   useEffect(() => {
     const fetchProfile = async () => {
@@ -205,6 +219,43 @@ export default function SettingsPage() {
     }
 
     fetchAgentConfig()
+  }, [])
+
+  // Carregar configurações RAG do backend
+  useEffect(() => {
+    const fetchRAGConfig = async () => {
+      try {
+        const { apiFetch } = await import('@/lib/api')
+        
+        // Buscar todas as configurações e filtrar as RAG
+        const response = await apiFetch('/api/config')
+        const data = await response.json()
+
+        if (response.ok && data.configs) {
+          // Encontrar as configurações RAG específicas
+          const thresholdConfig = data.configs.find((c: any) => c.config_key === 'rag:similarity_threshold')
+          const maxDocsConfig = data.configs.find((c: any) => c.config_key === 'rag:top_k_documents')
+          const maxSizeConfig = data.configs.find((c: any) => c.config_key === 'knowledge_media:max_file_size_mb')
+
+          setRagConfig({
+            similarity_threshold: thresholdConfig?.config_value !== undefined 
+              ? Number(thresholdConfig.config_value) 
+              : 0.7,
+            max_documents: maxDocsConfig?.config_value !== undefined 
+              ? Number(maxDocsConfig.config_value) 
+              : 3,
+            max_file_size_mb: maxSizeConfig?.config_value !== undefined 
+              ? Number(maxSizeConfig.config_value) 
+              : 10,
+          })
+        }
+      } catch (error) {
+        // Se der erro, usa valores padrão
+        console.error('Erro ao carregar configurações RAG:', error)
+      }
+    }
+
+    fetchRAGConfig()
   }, [])
 
   // Atualizar nome do usuário
@@ -462,6 +513,94 @@ export default function SettingsPage() {
       setNotification({ type: 'error', message: 'Erro ao atualizar configurações' })
     } finally {
       setLoadingAgent(false)
+    }
+  }
+
+  // Revalidar senha antes de editar configurações RAG
+  const handleRevalidateRAGPassword = async () => {
+    setRagRevalidating(true)
+    setNotification(null)
+
+    try {
+      const { apiFetch } = await import('@/lib/api')
+      const response = await apiFetch('/api/user/revalidate-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: ragRevalidationPassword }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.valid) {
+        setShowRAGRevalidationModal(false)
+        setEditingRAG(true)
+        setRagRevalidationPassword('')
+        setNotification({ type: 'success', message: 'Senha validada! Você pode editar as configurações RAG.' })
+      } else {
+        setNotification({ type: 'error', message: 'Senha incorreta' })
+      }
+    } catch (error) {
+      setNotification({ type: 'error', message: 'Erro ao validar senha' })
+    } finally {
+      setRagRevalidating(false)
+    }
+  }
+
+  // Salvar configurações RAG
+  const handleSaveRAGConfig = async () => {
+    setLoadingRAG(true)
+    setNotification(null)
+
+    try {
+      const { apiFetch } = await import('@/lib/api')
+      
+      // Salvar cada configuração separadamente
+      const promises = [
+        apiFetch('/api/config', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            config_key: 'rag:similarity_threshold',
+            config_value: ragConfig.similarity_threshold,
+            category: 'thresholds',
+            description: 'Threshold mínimo de similaridade para incluir documento na busca RAG (0-1)',
+          }),
+        }),
+        apiFetch('/api/config', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            config_key: 'rag:top_k_documents',
+            config_value: ragConfig.max_documents,
+            category: 'thresholds',
+            description: 'Quantos documentos mais relevantes retornar na busca vetorial',
+          }),
+        }),
+        apiFetch('/api/config', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            config_key: 'knowledge_media:max_file_size_mb',
+            config_value: ragConfig.max_file_size_mb,
+            category: 'thresholds',
+            description: 'Tamanho máximo de arquivo em MB para envio via WhatsApp',
+          }),
+        }),
+      ]
+
+      const results = await Promise.all(promises)
+      const errors = results.filter(r => !r.ok)
+
+      if (errors.length > 0) {
+        setNotification({ type: 'error', message: 'Erro ao salvar algumas configurações RAG' })
+      } else {
+        setNotification({ type: 'success', message: 'Configurações RAG atualizadas com sucesso!' })
+        setEditingRAG(false)
+      }
+    } catch (error) {
+      setNotification({ type: 'error', message: 'Erro ao atualizar configurações RAG' })
+    } finally {
+      setLoadingRAG(false)
     }
   }
 
@@ -1170,6 +1309,35 @@ Você é o assistente oficial de IA da Uzz.AI..."
                   Configure como o agente envia documentos e imagens da base de conhecimento via WhatsApp
                 </CardDescription>
               </div>
+              {!editingRAG && (
+                <Button
+                  onClick={() => setShowRAGRevalidationModal(true)}
+                  variant="outline"
+                  className="gap-2"
+                >
+                  <Lock className="w-4 h-4" />
+                  Editar
+                </Button>
+              )}
+              {editingRAG && (
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleSaveRAGConfig}
+                    disabled={loadingRAG}
+                    className="gap-2"
+                  >
+                    <Save className="w-4 h-4" />
+                    Salvar
+                  </Button>
+                  <Button
+                    onClick={() => setEditingRAG(false)}
+                    variant="outline"
+                    disabled={loadingRAG}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              )}
             </div>
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
@@ -1217,12 +1385,14 @@ Você é o assistente oficial de IA da Uzz.AI..."
                 id="doc_search_threshold"
                 label="Threshold de Similaridade"
                 description="Padrão: 0.7 (valores maiores = mais rigoroso)"
-                value={0.7}
-                onValueChange={() => {}} // TODO: Implement when backend supports
+                value={ragConfig.similarity_threshold}
+                onValueChange={(value) =>
+                  setRagConfig({ ...ragConfig, similarity_threshold: value })
+                }
                 min={0}
                 max={1}
                 step={0.1}
-                disabled={!editingAgent || !agentConfig.settings.enable_rag}
+                disabled={!editingRAG || !agentConfig.settings.enable_rag}
               />
 
               {/* Máximo de Documentos */}
@@ -1230,12 +1400,14 @@ Você é o assistente oficial de IA da Uzz.AI..."
                 id="doc_max_results"
                 label="Máximo de Documentos"
                 description="Padrão: 3 documentos (1-5)"
-                value={3}
-                onValueChange={() => {}} // TODO: Implement when backend supports
+                value={ragConfig.max_documents}
+                onValueChange={(value) =>
+                  setRagConfig({ ...ragConfig, max_documents: value })
+                }
                 min={1}
                 max={5}
                 step={1}
-                disabled={!editingAgent || !agentConfig.settings.enable_rag}
+                disabled={!editingRAG || !agentConfig.settings.enable_rag}
               />
 
               {/* Tamanho Máximo */}
@@ -1243,13 +1415,15 @@ Você é o assistente oficial de IA da Uzz.AI..."
                 id="doc_max_file_size"
                 label="Tamanho Máximo"
                 description="WhatsApp: máx 16MB documentos, 5MB imagens"
-                value={10}
-                onValueChange={() => {}} // TODO: Implement when backend supports
+                value={ragConfig.max_file_size_mb}
+                onValueChange={(value) =>
+                  setRagConfig({ ...ragConfig, max_file_size_mb: value })
+                }
                 min={1}
                 max={16}
                 step={1}
                 unit="MB"
-                disabled={!editingAgent || !agentConfig.settings.enable_rag}
+                disabled={!editingRAG || !agentConfig.settings.enable_rag}
               />
             </div>
 
@@ -1783,6 +1957,54 @@ Você é o assistente oficial de IA da Uzz.AI..."
                     setAgentRevalidationPassword('')
                   }}
                   disabled={agentRevalidating}
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Modal de Revalidação de Senha - RAG Config */}
+      {showRAGRevalidationModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md bg-card border-border">
+            <CardHeader>
+              <CardTitle>Confirme sua Senha</CardTitle>
+              <CardDescription>
+                Por segurança, confirme sua senha antes de editar as configurações RAG
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="rag_revalidation_password">Senha</Label>
+                <Input
+                  id="rag_revalidation_password"
+                  type="password"
+                  value={ragRevalidationPassword}
+                  onChange={(e) => setRagRevalidationPassword(e.target.value)}
+                  disabled={ragRevalidating}
+                  onKeyDown={(e) => e.key === 'Enter' && handleRevalidateRAGPassword()}
+                  className="mt-2"
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleRevalidateRAGPassword}
+                  disabled={ragRevalidating || !ragRevalidationPassword}
+                  className="flex-1"
+                >
+                  {ragRevalidating ? 'Validando...' : 'Confirmar'}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowRAGRevalidationModal(false)
+                    setRagRevalidationPassword('')
+                  }}
+                  disabled={ragRevalidating}
                 >
                   Cancelar
                 </Button>
