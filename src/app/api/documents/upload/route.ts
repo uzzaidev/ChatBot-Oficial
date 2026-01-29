@@ -36,6 +36,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_TYPES = [
   "application/pdf",
   "text/plain",
+  "text/markdown",
   "image/jpeg",
   "image/png",
   "image/webp",
@@ -48,6 +49,7 @@ const EMPTY_TEXT_ERROR_MESSAGES: Record<string, string> = {
   "application/pdf":
     "O PDF não contém texto extraível. Verifique se não é um PDF de imagens ou protegido.",
   "text/plain": "O arquivo de texto está vazio.",
+  "text/markdown": "O arquivo Markdown está vazio.",
   "image/jpeg": "Não foi possível extrair texto da imagem.",
   "image/png": "Não foi possível extrair texto da imagem.",
   "image/webp": "Não foi possível extrair texto da imagem.",
@@ -307,9 +309,14 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Validate file
-    if (!ALLOWED_TYPES.includes(file.type)) {
+    // Check MIME type or file extension for .md files
+    const fileName = file.name.toLowerCase()
+    const isMarkdown = fileName.endsWith('.md') || fileName.endsWith('.markdown')
+    const isValidType = ALLOWED_TYPES.includes(file.type) || isMarkdown
+    
+    if (!isValidType) {
       return NextResponse.json(
-        { error: `Invalid file type. Allowed: ${ALLOWED_TYPES.join(", ")}` },
+        { error: `Invalid file type. Allowed: PDF, TXT, MD, and images (JPG, PNG, WEBP)` },
         { status: 400 },
       );
     }
@@ -378,6 +385,9 @@ export async function POST(request: NextRequest) {
           { status: 400 },
         );
       }
+    } else if (file.type === "text/markdown" || isMarkdown) {
+      // Markdown files - treat as plain text
+      text = await file.text();
     } else {
       // text/plain
       text = await file.text();

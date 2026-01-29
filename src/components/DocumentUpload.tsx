@@ -45,15 +45,21 @@ export const DocumentUpload = ({ onUploadSuccess }: DocumentUploadProps) => {
     const allowedTypes = [
       'application/pdf',
       'text/plain',
+      'text/markdown',
       'image/jpeg',
       'image/png',
       'image/webp',
       'image/jpg'
     ]
-    if (!allowedTypes.includes(file.type)) {
+    // Also check file extension for .md files (some browsers don't set text/markdown MIME type)
+    const fileName = file.name.toLowerCase()
+    const isMarkdown = fileName.endsWith('.md') || fileName.endsWith('.markdown')
+    const isValidType = allowedTypes.includes(file.type) || isMarkdown
+    
+    if (!isValidType) {
       toast({
         title: 'Tipo de arquivo inválido',
-        description: 'Apenas arquivos PDF, TXT e imagens (JPG, PNG, WEBP) são permitidos.',
+        description: 'Apenas arquivos PDF, TXT, MD e imagens (JPG, PNG, WEBP) são permitidos.',
         variant: 'destructive',
       })
       return
@@ -211,7 +217,7 @@ export const DocumentUpload = ({ onUploadSuccess }: DocumentUploadProps) => {
                   Arraste um arquivo ou clique para selecionar
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  PDF, TXT ou Imagem (JPG, PNG, WEBP) - máximo 10MB
+                  PDF, TXT, MD ou Imagem (JPG, PNG, WEBP) - máximo 10MB
                 </p>
               </div>
               <label htmlFor="file-upload">
@@ -225,7 +231,7 @@ export const DocumentUpload = ({ onUploadSuccess }: DocumentUploadProps) => {
               <input
                 id="file-upload"
                 type="file"
-                accept=".pdf,.txt,.jpg,.jpeg,.png,.webp"
+                accept=".pdf,.txt,.md,.markdown,.jpg,.jpeg,.png,.webp"
                 onChange={handleFileSelect}
                 className="hidden"
               />
@@ -236,10 +242,11 @@ export const DocumentUpload = ({ onUploadSuccess }: DocumentUploadProps) => {
 
       {/* Info */}
       <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
-        <p>• <strong>PDFs e TXT:</strong> Extração direta de texto</p>
+        <p>• <strong>PDFs, TXT e MD:</strong> Extração direta de texto</p>
         <p>• <strong>Imagens:</strong> OCR automático com Tesseract (português)</p>
         <p>• <strong>Processamento:</strong> Chunking semântico + embeddings (OpenAI)</p>
         <p>• <strong>Disponibilidade:</strong> Conhecimento disponível imediatamente após upload</p>
+        <p>• <strong>Nota:</strong> Arquivos TXT e MD são usados apenas para RAG (não são enviados como anexo)</p>
       </div>
     </div>
   )

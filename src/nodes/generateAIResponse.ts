@@ -120,7 +120,7 @@ const SEARCH_DOCUMENT_TOOL_DEFINITION = {
   function: {
     name: "buscar_documento",
     description:
-      'Busca e envia documentos ou imagens da base de conhecimento. Use quando o usuário EXPLICITAMENTE solicitar um documento, manual, catálogo, imagem ou arquivo específico. Exemplos: "me envia o catálogo", "preciso do manual", "tem alguma imagem sobre isso", "pode me enviar o documento X". NÃO use para perguntas gerais que você pode responder com texto.',
+      'Busca e envia documentos ou imagens da base de conhecimento. Use quando o usuário EXPLICITAMENTE solicitar um documento, manual, catálogo, imagem ou arquivo específico. Exemplos: "me envia o catálogo", "preciso do manual", "tem alguma imagem sobre isso", "pode me enviar o documento X". IMPORTANTE: Arquivos de texto (.txt, .md) não são enviados como anexo, mas o CONTEÚDO completo será retornado na mensagem para você usar nas respostas. NÃO use para perguntas gerais que você pode responder com texto.',
     parameters: {
       type: "object",
       properties: {

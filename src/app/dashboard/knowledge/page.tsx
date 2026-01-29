@@ -84,7 +84,7 @@ export default function KnowledgePage() {
             <CardHeader>
               <CardTitle>Upload de Documento</CardTitle>
               <CardDescription>
-                Envie arquivos PDF ou TXT para adicionar conhecimento ao chatbot
+                Envie arquivos PDF, TXT ou MD para adicionar conhecimento ao chatbot
               </CardDescription>
             </CardHeader>
             <CardContent>
