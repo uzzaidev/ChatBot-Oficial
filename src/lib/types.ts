@@ -287,6 +287,23 @@ export interface WhatsAppWebhookPayload {
   entry: WhatsAppWebhookEntry[];
 }
 
+// 🎯 Referral data from Meta Ads (Click-to-WhatsApp)
+export interface ReferralData {
+  source_url?: string;
+  source_type?: string;
+  source_id?: string;
+  headline?: string;
+  body?: string;
+  media_type?: string;
+  ctwa_clid?: string; // Click-to-WhatsApp click ID
+  ad_id?: string;
+  ad_name?: string;
+  adset_id?: string;
+  adset_name?: string;
+  campaign_id?: string;
+  campaign_name?: string;
+}
+
 export interface ParsedMessage {
   phone: string;
   name: string;
@@ -299,6 +316,8 @@ export interface ParsedMessage {
   interactiveType?: "button_reply" | "list_reply";
   interactiveResponseId?: string;
   interactiveResponseTitle?: string;
+  // 🎯 Referral from Meta Ads
+  referral?: ReferralData;
 }
 
 export interface MediaMetadata {
@@ -727,7 +746,10 @@ export interface Database {
       };
       scheduled_messages: {
         Row: ScheduledMessage;
-        Insert: Omit<ScheduledMessage, "id" | "created_at" | "updated_at" | "contact" | "creator">;
+        Insert: Omit<
+          ScheduledMessage,
+          "id" | "created_at" | "updated_at" | "contact" | "creator"
+        >;
         Update: Partial<
           Omit<ScheduledMessage, "id" | "created_at" | "contact" | "creator">
         >;

@@ -1,34 +1,32 @@
 import {
   ClientConfig,
-  ParsedMessage,
   StoredMediaMetadata,
   WhatsAppWebhookPayload,
 } from "@/lib/types";
-import { filterStatusUpdates } from "@/nodes/filterStatusUpdates";
-import { parseMessage } from "@/nodes/parseMessage";
+import { analyzeDocument } from "@/nodes/analyzeDocument";
+import { analyzeImage } from "@/nodes/analyzeImage";
+import { batchMessages } from "@/nodes/batchMessages";
 import { checkHumanHandoffStatus } from "@/nodes/checkHumanHandoffStatus";
 import { checkOrCreateCustomer } from "@/nodes/checkOrCreateCustomer";
 import { downloadMetaMedia } from "@/nodes/downloadMetaMedia";
-import { transcribeAudio } from "@/nodes/transcribeAudio";
-import { analyzeImage } from "@/nodes/analyzeImage";
-import { analyzeDocument } from "@/nodes/analyzeDocument";
-import { normalizeMessage } from "@/nodes/normalizeMessage";
-import { pushToRedis } from "@/nodes/pushToRedis";
-import { batchMessages } from "@/nodes/batchMessages";
+import { filterStatusUpdates } from "@/nodes/filterStatusUpdates";
+import { formatResponse } from "@/nodes/formatResponse";
+import { generateAIResponse } from "@/nodes/generateAIResponse";
 import { getChatHistory } from "@/nodes/getChatHistory";
 import { getRAGContext } from "@/nodes/getRAGContext";
-import { generateAIResponse } from "@/nodes/generateAIResponse";
-import { formatResponse } from "@/nodes/formatResponse";
-import { sendWhatsAppMessage } from "@/nodes/sendWhatsAppMessage";
 import { handleHumanHandoff } from "@/nodes/handleHumanHandoff";
-import { saveChatMessage, ErrorDetails } from "@/nodes/saveChatMessage";
-import { updateMessageWithWamid } from "@/nodes/updateMessageWithWamid";
+import { normalizeMessage } from "@/nodes/normalizeMessage";
+import { parseMessage } from "@/nodes/parseMessage";
+import { pushToRedis } from "@/nodes/pushToRedis";
+import { ErrorDetails, saveChatMessage } from "@/nodes/saveChatMessage";
+import { transcribeAudio } from "@/nodes/transcribeAudio";
 // 🔧 Phase 1-3: Configuration-driven nodes
 import { checkContinuity } from "@/nodes/checkContinuity";
 import { classifyIntent } from "@/nodes/classifyIntent";
 import { detectRepetition } from "@/nodes/detectRepetition";
 // 🔄 Phase 4: Interactive Flows
 import { checkInteractiveFlow } from "@/nodes/checkInteractiveFlow";
+// 🎯 CRM Automation: Lead source capture and status updates
 import { createExecutionLogger } from "@/lib/logger";
 import { setWithExpiry } from "@/lib/redis";
 import { createServiceRoleClient } from "@/lib/supabase";
@@ -37,6 +35,11 @@ import {
   logOpenAIUsage,
   logWhisperUsage,
 } from "@/lib/usageTracking";
+import { captureLeadSource } from "@/nodes/captureLeadSource";
+import {
+  ensureCRMCard,
+  updateCRMCardStatus,
+} from "@/nodes/updateCRMCardStatus";
 // 🔄 Flow synchronization - Option 4 (Hybrid)
 import { getAllNodeStates, shouldExecuteNode } from "@/lib/flowHelpers";
 // 📎 Media storage for displaying real files in conversations
@@ -140,10 +143,14 @@ export const processChatbotMessage = async (
 ): Promise<ChatbotFlowResult> => {
   const logger = createExecutionLogger();
 
-  const executionId = logger.startExecution({
-    source: "chatbotFlow",
-    payload_from: payload.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from,
-  }, config.id); // ⚡ Multi-tenant: passa client_id para isolamento de logs
+  const executionId = logger.startExecution(
+    {
+      source: "chatbotFlow",
+      payload_from:
+        payload.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from,
+    },
+    config.id,
+  ); // ⚡ Multi-tenant: passa client_id para isolamento de logs
 
   try {
     // 🔄 FLOW SYNC: Fetch all node enabled states for this client
@@ -192,6 +199,61 @@ export const processChatbotMessage = async (
       .eq("client_id", config.id)
       .eq("phone", parsedMessage.phone)
       .maybeSingle();
+
+    // ═════════════════════════════════════════════════════════════════
+    // 🎯 CRM INTEGRATION: Ensure card exists and capture lead source
+    // ═════════════════════════════════════════════════════════════════
+    const isFirstMessage = customer.status === "bot" && !conversation;
+    let crmCardId: string | undefined;
+
+    try {
+      // Ensure CRM card exists (auto-create if enabled)
+      const cardResult = await ensureCRMCard(
+        config.id,
+        parsedMessage.phone,
+        parsedMessage.name,
+      );
+
+      if (cardResult) {
+        crmCardId = cardResult.cardId;
+
+        // Capture lead source if message has referral (from Meta Ads)
+        if (parsedMessage.referral || isFirstMessage) {
+          const leadSourceResult = await captureLeadSource({
+            clientId: config.id,
+            cardId: crmCardId,
+            phone: parsedMessage.phone,
+            contactName: parsedMessage.name,
+            referral: parsedMessage.referral,
+            isFirstMessage,
+          });
+
+          if (
+            leadSourceResult.captured &&
+            leadSourceResult.automationsTriggered > 0
+          ) {
+            logger.logNodeSuccess("3.2. CRM Lead Source", {
+              sourceType: leadSourceResult.sourceType,
+              automationsTriggered: leadSourceResult.automationsTriggered,
+            });
+          }
+        }
+
+        // Update CRM card status for message received
+        await updateCRMCardStatus({
+          clientId: config.id,
+          phone: parsedMessage.phone,
+          event: "message_received",
+          conversationStatus: customer.status as
+            | "bot"
+            | "humano"
+            | "transferido",
+        });
+      }
+    } catch (crmError) {
+      // CRM integration is non-critical, continue processing
+      console.warn("[chatbotFlow] CRM integration error:", crmError);
+    }
 
     // ═════════════════════════════════════════════════════════════════
     // 🚦 PHASE 4: STATUS-BASED ROUTING (CRITICAL - EXECUTES FIRST)
@@ -260,7 +322,8 @@ export const processChatbotMessage = async (
 
     if (
       shouldProcessMedia &&
-      (parsedMessage.type === "audio" || parsedMessage.type === "image" ||
+      (parsedMessage.type === "audio" ||
+        parsedMessage.type === "image" ||
         parsedMessage.type === "document") &&
       parsedMessage.metadata?.id
     ) {
@@ -279,8 +342,9 @@ export const processChatbotMessage = async (
         try {
           const mimeType = parsedMessage.metadata.mimeType || "audio/ogg";
           const extension = getExtensionFromMimeType(mimeType, "ogg");
-          const filename =
-            `audio_${parsedMessage.phone}_${Date.now()}.${extension}`;
+          const filename = `audio_${
+            parsedMessage.phone
+          }_${Date.now()}.${extension}`;
           const mediaUrl = await uploadFileToStorage(
             audioBuffer,
             filename,
@@ -328,9 +392,10 @@ export const processChatbotMessage = async (
           }
         } catch (transcriptionError) {
           // ❌ Save transcription error as failed USER message in conversation
-          const errorMessage = transcriptionError instanceof Error
-            ? transcriptionError.message
-            : "Unknown transcription error";
+          const errorMessage =
+            transcriptionError instanceof Error
+              ? transcriptionError.message
+              : "Unknown transcription error";
 
           const transcriptionErrorDetails: ErrorDetails = {
             code: "TRANSCRIPTION_FAILED",
@@ -366,8 +431,9 @@ export const processChatbotMessage = async (
         try {
           const mimeType = parsedMessage.metadata.mimeType || "image/jpeg";
           const extension = getExtensionFromMimeType(mimeType, "jpg");
-          const filename =
-            `image_${parsedMessage.phone}_${Date.now()}.${extension}`;
+          const filename = `image_${
+            parsedMessage.phone
+          }_${Date.now()}.${extension}`;
           const mediaUrl = await uploadFileToStorage(
             imageBuffer,
             filename,
@@ -420,9 +486,10 @@ export const processChatbotMessage = async (
           }
         } catch (visionError) {
           // ❌ Save vision analysis error as failed USER message in conversation
-          const errorMessage = visionError instanceof Error
-            ? visionError.message
-            : "Unknown vision error";
+          const errorMessage =
+            visionError instanceof Error
+              ? visionError.message
+              : "Unknown vision error";
 
           const visionErrorDetails: ErrorDetails = {
             code: "VISION_FAILED",
@@ -446,7 +513,8 @@ export const processChatbotMessage = async (
           return { success: false, error: errorMessage };
         }
       } else if (
-        parsedMessage.type === "document" && parsedMessage.metadata?.id
+        parsedMessage.type === "document" &&
+        parsedMessage.metadata?.id
       ) {
         const documentBuffer = await downloadMetaMedia(
           parsedMessage.metadata.id,
@@ -459,7 +527,8 @@ export const processChatbotMessage = async (
 
         // 📎 Upload document to Supabase Storage
         try {
-          const filename = parsedMessage.metadata.filename ||
+          const filename =
+            parsedMessage.metadata.filename ||
             `document_${parsedMessage.phone}_${Date.now()}.pdf`;
           const mediaUrl = await uploadFileToStorage(
             documentBuffer,
@@ -515,9 +584,10 @@ export const processChatbotMessage = async (
           }
         } catch (documentError) {
           // ❌ Save document analysis error as failed USER message in conversation
-          const errorMessage = documentError instanceof Error
-            ? documentError.message
-            : "Unknown document error";
+          const errorMessage =
+            documentError instanceof Error
+              ? documentError.message
+              : "Unknown document error";
 
           const documentErrorDetails: ErrorDetails = {
             code: "DOCUMENT_FAILED",
@@ -527,7 +597,9 @@ export const processChatbotMessage = async (
 
           await saveChatMessage({
             phone: parsedMessage.phone,
-            message: `📄 [Documento não pôde ser analisado: ${parsedMessage.metadata.filename || "documento"}]`,
+            message: `📄 [Documento não pôde ser analisado: ${
+              parsedMessage.metadata.filename || "documento"
+            }]`,
             type: "user",
             clientId: config.id,
             mediaMetadata,
@@ -660,7 +732,9 @@ export const processChatbotMessage = async (
       contentLength: normalizedMessage.content.length,
     });
 
-    const { checkDuplicateMessage } = await import("@/nodes/checkDuplicateMessage");
+    const { checkDuplicateMessage } = await import(
+      "@/nodes/checkDuplicateMessage"
+    );
     const duplicateCheck = await checkDuplicateMessage({
       phone: parsedMessage.phone,
       messageContent: normalizedMessage.content,
@@ -781,8 +855,8 @@ export const processChatbotMessage = async (
     let ragContext: string = "";
 
     // Check if we should fetch chat history
-    const shouldGetHistory = shouldExecuteNode("get_chat_history", nodeStates) &&
-      !isFastTrack; // Skip if fast track
+    const shouldGetHistory =
+      shouldExecuteNode("get_chat_history", nodeStates) && !isFastTrack; // Skip if fast track
 
     if (shouldGetHistory) {
       logger.logNodeStart("10. Get Chat History", {
@@ -796,7 +870,8 @@ export const processChatbotMessage = async (
     }
 
     // Check if we should fetch RAG context
-    const shouldGetRAG = shouldExecuteNode("get_rag_context", nodeStates) &&
+    const shouldGetRAG =
+      shouldExecuteNode("get_rag_context", nodeStates) &&
       config.settings.enableRAG &&
       !isFastTrack; // Skip if fast track
 
@@ -953,16 +1028,20 @@ export const processChatbotMessage = async (
     // NODE 12: Generate AI Response (com config do cliente + greeting instruction)
     // 🚀 Fast Track: Disable datetime and tools if in fast track mode
     // 🚀 Fast Track: Use canonical question for cache-friendly prompts
-    const messageForAI = isFastTrack && fastTrackResult?.matchedCanonical
-      ? fastTrackResult.matchedCanonical
-      : batchedContent;
+    const messageForAI =
+      isFastTrack && fastTrackResult?.matchedCanonical
+        ? fastTrackResult.matchedCanonical
+        : batchedContent;
 
     logger.logNodeStart("12. Generate AI Response", {
       messageLength: messageForAI.length,
       historyCount: chatHistory2.length,
       fastTrack: isFastTrack,
-      usedCanonical: isFastTrack && fastTrackResult?.matchedCanonical ? true : false,
-      promptPreview: messageForAI.substring(0, 100) + (messageForAI.length > 100 ? "..." : ""),
+      usedCanonical:
+        isFastTrack && fastTrackResult?.matchedCanonical ? true : false,
+      promptPreview:
+        messageForAI.substring(0, 100) +
+        (messageForAI.length > 100 ? "..." : ""),
       includeDateTimeInfo: !isFastTrack,
       enableTools: !isFastTrack || !fastTrackResult?.catalogSize,
       conversationId: conversation?.id || null, // ✨ FASE 8: Track conversation
@@ -1005,21 +1084,24 @@ export const processChatbotMessage = async (
           msg?.role === "user" &&
           typeof msg?.content === "string" &&
           msg.content.trim().length > 0,
-      )?.content
-      ?.trim();
-    const isSameUserMessageAsLast = typeof lastUserMessage === "string" &&
+      )
+      ?.content?.trim();
+    const isSameUserMessageAsLast =
+      typeof lastUserMessage === "string" &&
       lastUserMessage.length > 0 &&
       lastUserMessage === normalizedCurrentMessage;
-    const skipRepetitionDetectionReason = aiResponse.wasCached === true
-      ? "cache_hit"
-      : isSameUserMessageAsLast
-      ? "same_user_message"
-      : null;
+    const skipRepetitionDetectionReason =
+      aiResponse.wasCached === true
+        ? "cache_hit"
+        : isSameUserMessageAsLast
+        ? "same_user_message"
+        : null;
 
     // 🔧 Phase 3: Detect Repetition and regenerate if needed (configurable)
     if (
       shouldExecuteNode("detect_repetition", nodeStates) &&
-      aiResponse.content && aiResponse.content.trim().length > 0
+      aiResponse.content &&
+      aiResponse.content.trim().length > 0
     ) {
       if (skipRepetitionDetectionReason) {
         logger.logNodeSuccess("12.5. Detect Repetition", {
@@ -1157,6 +1239,22 @@ export const processChatbotMessage = async (
             customerName: parsedMessage.name,
             config, // 🔐 Passa config com notificationEmail
           });
+
+          // 🎯 Update CRM status for human transfer
+          try {
+            await updateCRMCardStatus({
+              clientId: config.id,
+              phone: parsedMessage.phone,
+              event: "transfer_human",
+              conversationStatus: "transferido",
+              metadata: {
+                transferReason: "Solicitação do cliente via bot",
+              },
+            });
+          } catch (crmError) {
+            console.warn("[chatbotFlow] CRM status update error:", crmError);
+          }
+
           logger.logNodeSuccess("15. Handle Human Handoff", {
             transferred: true,
             emailSent: true,
@@ -1197,10 +1295,11 @@ export const processChatbotMessage = async (
             documentSearchResult.documentsSent &&
             documentSearchResult.documentsSent > 0
           ) {
-            const confirmationMessage = documentSearchResult.message ||
-              `Documentos enviados: ${
-                documentSearchResult.filesSent?.join(", ")
-              }`;
+            const confirmationMessage =
+              documentSearchResult.message ||
+              `Documentos enviados: ${documentSearchResult.filesSent?.join(
+                ", ",
+              )}`;
 
             // Preparar media metadata para o primeiro arquivo enviado (para exibir no frontend)
             let mediaMetadata = undefined;
@@ -1330,8 +1429,8 @@ export const processChatbotMessage = async (
       formattedMessages = formatResponse(aiResponse.content);
       logger.logNodeSuccess("13. Format Response", {
         messageCount: formattedMessages.length,
-        messages: formattedMessages.map((msg, idx) =>
-          `[${idx + 1}]: ${msg.substring(0, 100)}...`
+        messages: formattedMessages.map(
+          (msg, idx) => `[${idx + 1}]: ${msg.substring(0, 100)}...`,
         ),
       });
     } else {
@@ -1358,23 +1457,34 @@ export const processChatbotMessage = async (
     const messageIds: string[] = [];
     const messageDelayMs = config.settings.messageDelayMs ?? 2000;
 
-    console.log(`📤 [chatbotFlow] Sending and saving ${formattedMessages.length} messages`);
+    console.log(
+      `📤 [chatbotFlow] Sending and saving ${formattedMessages.length} messages`,
+    );
 
     for (let i = 0; i < formattedMessages.length; i++) {
       const messageContent = formattedMessages[i];
 
       if (!messageContent || messageContent.trim().length === 0) {
-        console.warn(`⚠️ [chatbotFlow] Skipping empty message ${i + 1}/${formattedMessages.length}`);
+        console.warn(
+          `⚠️ [chatbotFlow] Skipping empty message ${i + 1}/${
+            formattedMessages.length
+          }`,
+        );
         continue;
       }
 
       try {
         // ✅ STEP 1: Send message to WhatsApp API
-        console.log(`📤 [chatbotFlow] Sending message ${i + 1}/${formattedMessages.length}:`, {
-          contentLength: messageContent.length,
-          contentPreview: messageContent.substring(0, 50) + '...',
-          phone: parsedMessage.phone,
-        });
+        console.log(
+          `📤 [chatbotFlow] Sending message ${i + 1}/${
+            formattedMessages.length
+          }:`,
+          {
+            contentLength: messageContent.length,
+            contentPreview: messageContent.substring(0, 50) + "...",
+            phone: parsedMessage.phone,
+          },
+        );
 
         const { sendTextMessage } = await import("@/lib/meta");
         const { messageId: wamid } = await sendTextMessage(
@@ -1385,11 +1495,19 @@ export const processChatbotMessage = async (
 
         messageIds.push(wamid);
 
-        console.log(`✅ [chatbotFlow] Message ${i + 1}/${formattedMessages.length} sent, wamid: ${wamid}`);
+        console.log(
+          `✅ [chatbotFlow] Message ${i + 1}/${
+            formattedMessages.length
+          } sent, wamid: ${wamid}`,
+        );
 
         // ✅ STEP 2: Save to database IMMEDIATELY (before delay)
         // This makes the message available to next batch's chat history instantly
-        console.log(`💾 [chatbotFlow] Saving message ${i + 1}/${formattedMessages.length} to database...`);
+        console.log(
+          `💾 [chatbotFlow] Saving message ${i + 1}/${
+            formattedMessages.length
+          } to database...`,
+        );
 
         await saveChatMessage({
           phone: parsedMessage.phone,
@@ -1400,16 +1518,27 @@ export const processChatbotMessage = async (
           status: "sent", // Already sent to WhatsApp API
         });
 
-        console.log(`✅ [chatbotFlow] Message ${i + 1}/${formattedMessages.length} saved with wamid: ${wamid}`);
+        console.log(
+          `✅ [chatbotFlow] Message ${i + 1}/${
+            formattedMessages.length
+          } saved with wamid: ${wamid}`,
+        );
 
         // ✅ STEP 3: Delay before next message (only if not last message)
         if (i < formattedMessages.length - 1) {
-          console.log(`⏱️ [chatbotFlow] Waiting ${messageDelayMs}ms before next message...`);
+          console.log(
+            `⏱️ [chatbotFlow] Waiting ${messageDelayMs}ms before next message...`,
+          );
           await new Promise((resolve) => setTimeout(resolve, messageDelayMs));
         }
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        console.error(`❌ [chatbotFlow] Failed to send/save message ${i + 1}/${formattedMessages.length}:`, errorMsg);
+        console.error(
+          `❌ [chatbotFlow] Failed to send/save message ${i + 1}/${
+            formattedMessages.length
+          }:`,
+          errorMsg,
+        );
         // Continue with next message - don't fail entire flow
       }
     }
@@ -1421,9 +1550,8 @@ export const processChatbotMessage = async (
     logger.finishExecution("success");
     return { success: true, messagesSent: messageIds.length };
   } catch (error) {
-    const errorMessage = error instanceof Error
-      ? error.message
-      : "Unknown error occurred";
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error occurred";
 
     logger.finishExecution("error");
 

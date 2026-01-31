@@ -20,6 +20,7 @@ import {
   ArrowRight,
   Calendar,
   ChevronDown,
+  Clock,
   DollarSign,
   Loader2,
   MessageSquare,
@@ -33,6 +34,7 @@ import { useEffect, useRef, useState } from "react";
 import { CardNotes } from "./CardNotes";
 import { CardStatusBadge } from "./CardStatusBadge";
 import { CardTimeline } from "./CardTimeline";
+import { ScheduleMessageDialog } from "./ScheduleMessageDialog";
 
 interface Message {
   id: string;
@@ -89,6 +91,7 @@ export const CardDetailPanel = ({
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [showTagSelector, setShowTagSelector] = useState(false);
   const [localTagIds, setLocalTagIds] = useState<string[]>([]);
+  const [showScheduleDialog, setShowScheduleDialog] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesScrollRef = useRef<HTMLDivElement>(null);
 
@@ -395,15 +398,25 @@ export const CardDetailPanel = ({
           )}
 
           {/* Quick Actions */}
-          <Button
-            onClick={handleGoToConversation}
-            className="w-full gap-2"
-            variant="default"
-          >
-            <MessageSquare className="h-4 w-4" />
-            Ver Conversa Completa
-            <ArrowRight className="h-4 w-4 ml-auto" />
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={handleGoToConversation}
+              className="flex-1 gap-2"
+              variant="default"
+            >
+              <MessageSquare className="h-4 w-4" />
+              Ver Conversa
+              <ArrowRight className="h-4 w-4 ml-auto" />
+            </Button>
+            <Button
+              onClick={() => setShowScheduleDialog(true)}
+              variant="outline"
+              size="icon"
+              title="Agendar mensagem"
+            >
+              <Clock className="h-4 w-4" />
+            </Button>
+          </div>
         </SheetHeader>
 
         <Separator />
@@ -489,6 +502,46 @@ export const CardDetailPanel = ({
           </TabsContent>
         </Tabs>
       </SheetContent>
+
+      {/* Schedule Message Dialog */}
+      {card && (
+        <ScheduleMessageDialog
+          open={showScheduleDialog}
+          onClose={() => setShowScheduleDialog(false)}
+          phone={String(card.phone)}
+          contactName={card.contact?.name}
+          onSchedule={async (data) => {
+            try {
+              const response = await apiFetch("/api/crm/scheduled", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  phone: String(card.phone),
+                  card_id: card.id,
+                  message_type: "template",
+                  template_id: data.template_id,
+                  template_params: data.template_params
+                    ? { parameters: data.template_params }
+                    : null,
+                  scheduled_for: data.scheduled_for,
+                }),
+              });
+
+              if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || "Erro ao agendar");
+              }
+
+              // Refresh activities to show the scheduled message
+              fetchActivities();
+              return true;
+            } catch (err) {
+              console.error("Error scheduling message:", err);
+              return false;
+            }
+          }}
+        />
+      )}
     </Sheet>
   );
 };
