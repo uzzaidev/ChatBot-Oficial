@@ -71,7 +71,7 @@ export const KanbanColumn = ({
     <div
       ref={setNodeRef}
       className={cn(
-        "flex flex-col w-[320px] min-w-[320px] max-w-[320px]",
+        "flex flex-col w-[260px] min-w-[260px] max-w-[260px] shrink-0",
         "bg-card rounded-lg border border-border",
         "border-t-4",
         "transition-all duration-200 ease-in-out",

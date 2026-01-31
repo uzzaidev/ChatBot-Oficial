@@ -15,7 +15,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Clock, MoreHorizontal, User } from "lucide-react";
+import { Clock, MoreHorizontal } from "lucide-react";
 import { CardStatusBadge } from "./CardStatusBadge";
 import { CardTagList } from "./CardTagList";
 
@@ -94,20 +94,20 @@ export const KanbanCard = ({
       {...attributes}
       {...listeners}
     >
-      <CardContent className="p-3 space-y-3">
+      <CardContent className="p-2.5 space-y-2">
         {/* Header */}
-        <div className="flex items-start gap-3">
-          <Avatar className="h-10 w-10 flex-shrink-0">
-            <AvatarFallback className="bg-gradient-to-br from-secondary to-primary text-primary-foreground text-sm font-medium">
+        <div className="flex items-start gap-2">
+          <Avatar className="h-8 w-8 flex-shrink-0">
+            <AvatarFallback className="bg-gradient-to-br from-secondary to-primary text-primary-foreground text-xs font-medium">
               {getInitials(contactName)}
             </AvatarFallback>
           </Avatar>
 
           <div className="flex-1 min-w-0">
-            <p className="font-medium text-foreground truncate">
+            <p className="font-medium text-sm text-foreground truncate">
               {contactName}
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[11px] text-muted-foreground truncate">
               {formatPhone(card.phone)}
             </p>
           </div>
@@ -119,12 +119,12 @@ export const KanbanCard = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 flex-shrink-0"
+                  className="h-6 w-6 flex-shrink-0"
                 >
-                  <MoreHorizontal className="h-4 w-4" />
+                  <MoreHorizontal className="h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-44">
                 {columns.map((col) => (
                   <DropdownMenuItem
                     key={col.id}
@@ -132,6 +132,7 @@ export const KanbanCard = ({
                       e.stopPropagation();
                       onMoveToColumn?.(col.id);
                     }}
+                    className="text-xs"
                   >
                     Mover para {col.name}
                   </DropdownMenuItem>
@@ -141,33 +142,17 @@ export const KanbanCard = ({
           )}
         </div>
 
-        {/* Last Message Preview */}
-        {card.last_message_preview && (
-          <p className="text-sm text-muted-foreground line-clamp-2">
-            {card.last_message_preview}
-          </p>
-        )}
-
         {/* Tags */}
-        {cardTags.length > 0 && <CardTagList tags={cardTags} maxVisible={3} />}
+        {cardTags.length > 0 && <CardTagList tags={cardTags} maxVisible={2} />}
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-1 border-t border-border/50">
-          <CardStatusBadge status={card.auto_status} />
+        <div className="flex items-center justify-between pt-1.5 border-t border-border/50">
+          <CardStatusBadge status={card.auto_status} size="sm" />
 
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            {card.assigned_to && (
-              <div className="flex items-center gap-1">
-                <User className="h-3 w-3" />
-                <span className="truncate max-w-[60px]">
-                  {card.assignedUser?.name?.split(" ")[0] || "Atribuído"}
-                </span>
-              </div>
-            )}
-
+          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
             {card.last_message_at && (
-              <div className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
+              <div className="flex items-center gap-0.5">
+                <Clock className="h-2.5 w-2.5" />
                 <span>
                   {formatDistanceToNow(new Date(card.last_message_at), {
                     addSuffix: false,

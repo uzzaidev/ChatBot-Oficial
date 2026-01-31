@@ -1,6 +1,5 @@
 "use client";
 
-import { ScrollArea } from "@/components/ui/scroll-area";
 import type { CRMCard, CRMColumn, CRMTag } from "@/lib/types";
 import {
   DndContext,
@@ -199,31 +198,61 @@ export const KanbanBoard = ({
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <ScrollArea className="w-full h-full">
-        <div className="flex gap-4 p-4 h-full">
-          {columns.map((column) => {
-            const columnCards = columnCardsMap.get(column.id) || [];
-            return (
-              <KanbanColumn
-                key={column.id}
-                column={column}
-                cards={columnCards}
-                tags={tags}
-                allColumns={columns}
-                onCardClick={onCardClick}
-                onCardMove={onMoveCard}
-                onEditColumn={
-                  onEditColumn ? () => onEditColumn(column) : undefined
-                }
-                onDeleteColumn={
-                  onDeleteColumn ? () => onDeleteColumn(column.id) : undefined
-                }
-                isOver={overId === column.id}
-              />
-            );
-          })}
+      {/* Scroll horizontal container com scrollbar visível em cima */}
+      <div className="w-full h-full flex flex-col">
+        {/* Barra de scroll duplicada em cima (para facilitar acesso) */}
+        <div
+          className="w-full overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent hover:scrollbar-thumb-muted-foreground/50"
+          style={{
+            height: "12px",
+            marginBottom: "-12px",
+            position: "relative",
+            zIndex: 10,
+          }}
+          onScroll={(e) => {
+            const target = e.currentTarget;
+            const mainScroll = target.nextElementSibling as HTMLElement;
+            if (mainScroll) mainScroll.scrollLeft = target.scrollLeft;
+          }}
+        >
+          <div style={{ width: `${columns.length * 276}px`, height: "1px" }} />
         </div>
-      </ScrollArea>
+
+        {/* Container principal com scroll horizontal */}
+        <div
+          className="flex-1 overflow-x-auto overflow-y-hidden pb-4 scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent hover:scrollbar-thumb-muted-foreground/50"
+          style={{ WebkitOverflowScrolling: "touch" }}
+          onScroll={(e) => {
+            const target = e.currentTarget;
+            const topScroll = target.previousElementSibling as HTMLElement;
+            if (topScroll) topScroll.scrollLeft = target.scrollLeft;
+          }}
+        >
+          <div className="flex gap-3 p-4 h-full min-w-max">
+            {columns.map((column) => {
+              const columnCards = columnCardsMap.get(column.id) || [];
+              return (
+                <KanbanColumn
+                  key={column.id}
+                  column={column}
+                  cards={columnCards}
+                  tags={tags}
+                  allColumns={columns}
+                  onCardClick={onCardClick}
+                  onCardMove={onMoveCard}
+                  onEditColumn={
+                    onEditColumn ? () => onEditColumn(column) : undefined
+                  }
+                  onDeleteColumn={
+                    onDeleteColumn ? () => onDeleteColumn(column.id) : undefined
+                  }
+                  isOver={overId === column.id}
+                />
+              );
+            })}
+          </div>
+        </div>
+      </div>
 
       {/* Drag Overlay - renders the dragged card */}
       <DragOverlay
