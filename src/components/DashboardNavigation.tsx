@@ -1,37 +1,67 @@
-'use client'
+"use client";
 
-import { MessageSquare, LayoutDashboard, Settings, BarChart3, ChevronLeft, ChevronRight, GitBranch, Terminal, CheckCircle, BookOpen, Users, Workflow, FileText, Zap, DollarSign } from 'lucide-react'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { Separator } from '@/components/ui/separator'
-import { LogoutButton } from '@/components/LogoutButton'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { cn } from '@/lib/utils'
+import { LogoutButton } from "@/components/LogoutButton";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+import {
+  BarChart3,
+  BookOpen,
+  CheckCircle,
+  ChevronLeft,
+  ChevronRight,
+  DollarSign,
+  FileText,
+  GitBranch,
+  Kanban,
+  LayoutDashboard,
+  MessageSquare,
+  Settings,
+  Terminal,
+  Users,
+  Workflow,
+  Zap,
+} from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 interface DashboardNavigationProps {
-  userName?: string
-  userEmail?: string
-  isCollapsed?: boolean
-  onToggleCollapse?: () => void
-  onLinkClick?: () => void
+  userName?: string;
+  userEmail?: string;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
+  onLinkClick?: () => void;
 }
 
 interface NavItemProps {
-  href: string
-  icon: React.ReactNode
-  label: string
-  isCollapsed?: boolean
-  onClick?: () => void
-  badge?: 'new' | 'beta' | 'admin' | 'dev'
-  tooltip?: string
+  href: string;
+  icon: React.ReactNode;
+  label: string;
+  isCollapsed?: boolean;
+  onClick?: () => void;
+  badge?: "new" | "beta" | "admin" | "dev";
+  tooltip?: string;
 }
 
-const NavItem = ({ href, icon, label, isCollapsed, onClick, badge, tooltip }: NavItemProps) => {
-  const pathname = usePathname()
+const NavItem = ({
+  href,
+  icon,
+  label,
+  isCollapsed,
+  onClick,
+  badge,
+  tooltip,
+}: NavItemProps) => {
+  const pathname = usePathname();
   // Check if current route matches this nav item
-  const isActive = pathname === href || (pathname.startsWith(href) && href !== '/dashboard')
+  const isActive =
+    pathname === href || (pathname.startsWith(href) && href !== "/dashboard");
 
   const linkContent = (
     <Link
@@ -42,7 +72,7 @@ const NavItem = ({ href, icon, label, isCollapsed, onClick, badge, tooltip }: Na
         isActive
           ? "bg-uzz-mint/15 text-uzz-mint border-l-[3px] border-uzz-mint font-semibold"
           : "text-muted-foreground hover:bg-primary/10 hover:text-uzz-mint hover:translate-x-1",
-        isCollapsed && "justify-center"
+        isCollapsed && "justify-center",
       )}
       title={isCollapsed ? label : undefined}
     >
@@ -53,63 +83,71 @@ const NavItem = ({ href, icon, label, isCollapsed, onClick, badge, tooltip }: Na
         <>
           <span className="flex-1">{label}</span>
           {badge && (
-            <Badge 
-              variant={badge} 
+            <Badge
+              variant={badge}
               className={cn(
                 "text-[10px] px-2 py-0.5 font-bold uppercase tracking-wider",
-                badge === 'new' && "bg-gradient-to-r from-uzz-mint to-uzz-gold text-uzz-black",
-                badge === 'beta' && "bg-uzz-blue/20 text-uzz-blue border-uzz-blue/30",
-                badge === 'admin' && "bg-uzz-gold/15 text-uzz-gold border-uzz-gold/30",
-                badge === 'dev' && "bg-uzz-silver/15 text-uzz-silver border-uzz-silver/30"
+                badge === "new" &&
+                  "bg-gradient-to-r from-uzz-mint to-uzz-gold text-uzz-black",
+                badge === "beta" &&
+                  "bg-uzz-blue/20 text-uzz-blue border-uzz-blue/30",
+                badge === "admin" &&
+                  "bg-uzz-gold/15 text-uzz-gold border-uzz-gold/30",
+                badge === "dev" &&
+                  "bg-uzz-silver/15 text-uzz-silver border-uzz-silver/30",
               )}
             >
-              {badge === 'new' ? 'Novo' : badge === 'beta' ? 'Beta' : badge === 'admin' ? 'Admin' : 'Dev'}
+              {badge === "new"
+                ? "Novo"
+                : badge === "beta"
+                ? "Beta"
+                : badge === "admin"
+                ? "Admin"
+                : "Dev"}
             </Badge>
           )}
         </>
       )}
     </Link>
-  )
+  );
 
   if (tooltip && !isCollapsed) {
     return (
       <TooltipProvider delayDuration={300}>
         <Tooltip>
-          <TooltipTrigger asChild>
-            {linkContent}
-          </TooltipTrigger>
+          <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
           <TooltipContent side="right" className="max-w-[250px]">
             <p className="text-sm">{tooltip}</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
-    )
+    );
   }
 
-  return linkContent
-}
+  return linkContent;
+};
 
 interface NavSectionProps {
-  title: string
-  isCollapsed?: boolean
+  title: string;
+  isCollapsed?: boolean;
 }
 
 const NavSection = ({ title, isCollapsed }: NavSectionProps) => {
-  if (isCollapsed) return null
+  if (isCollapsed) return null;
 
   return (
     <div className="nav-section-header">
       <span>{title}</span>
     </div>
-  )
-}
+  );
+};
 
-export function DashboardNavigation({ 
-  userName, 
-  userEmail, 
+export function DashboardNavigation({
+  userName,
+  userEmail,
   isCollapsed = false,
   onToggleCollapse,
-  onLinkClick
+  onLinkClick,
 }: DashboardNavigationProps) {
   return (
     <div className="flex flex-col h-full">
@@ -164,6 +202,15 @@ export function DashboardNavigation({
           isCollapsed={isCollapsed}
           onClick={onLinkClick}
           tooltip="Lista completa de clientes e contatos do WhatsApp"
+        />
+
+        <NavItem
+          href="/dashboard/crm"
+          icon={<Kanban className="h-5 w-5 flex-shrink-0" />}
+          label="CRM"
+          isCollapsed={isCollapsed}
+          onClick={onLinkClick}
+          tooltip="Kanban CRM para gerenciar leads e pipeline de vendas"
         />
 
         <NavItem
@@ -260,12 +307,20 @@ export function DashboardNavigation({
         {/* User Info & Logout */}
         {!isCollapsed && userName && (
           <div className="px-3 py-3 rounded-lg bg-muted/30">
-            <p className="text-xs text-muted-foreground mb-1">Conectado como:</p>
-            <p className="text-sm font-semibold text-foreground truncate" title={userEmail || ''}>
+            <p className="text-xs text-muted-foreground mb-1">
+              Conectado como:
+            </p>
+            <p
+              className="text-sm font-semibold text-foreground truncate"
+              title={userEmail || ""}
+            >
               {userName}
             </p>
             {userEmail && (
-              <p className="text-xs text-muted-foreground/70 truncate mt-1" title={userEmail}>
+              <p
+                className="text-xs text-muted-foreground/70 truncate mt-1"
+                title={userEmail}
+              >
                 {userEmail}
               </p>
             )}
@@ -294,7 +349,7 @@ export function DashboardNavigation({
           onClick={onToggleCollapse}
           className={cn(
             "mx-3 mb-4 hidden md:flex items-center gap-2 text-muted-foreground hover:text-foreground hover:bg-muted",
-            isCollapsed && "justify-center"
+            isCollapsed && "justify-center",
           )}
         >
           {isCollapsed ? (
@@ -308,5 +363,5 @@ export function DashboardNavigation({
         </Button>
       )}
     </div>
-  )
+  );
 }
