@@ -422,6 +422,148 @@ export interface ClientConfig {
 
   // Notificações
   notificationEmail?: string;
+
+  // Active Agent (NEW - Multi-Agent System)
+  activeAgentId?: string | null;
+}
+
+/**
+ * 🤖 Agent Configuration (Multi-Agent System)
+ *
+ * Represents an AI agent with structured configuration that gets
+ * compiled into a system prompt. Supports multiple agents per client
+ * with features like A/B testing, scheduling, and version history.
+ */
+export interface Agent {
+  // Identification
+  id: string;
+  client_id: string;
+  name: string;
+  slug: string;
+  avatar_emoji: string;
+  description: string | null;
+
+  // Status
+  is_active: boolean;
+  is_archived: boolean;
+
+  // === COMO RESPONDER (Tone & Style) ===
+  response_tone: "formal" | "friendly" | "professional" | "casual";
+  response_style: "helpful" | "direct" | "educational" | "consultative";
+  language: string;
+  use_emojis: boolean;
+  max_response_length: "short" | "medium" | "long";
+
+  // === O QUE FAZER (Behavior) ===
+  role_description: string | null;
+  primary_goal: string | null;
+  forbidden_topics: string[] | null;
+  always_mention: string[] | null;
+  greeting_message: string | null;
+  fallback_message: string | null;
+
+  // === FERRAMENTAS (Tools) ===
+  enable_human_handoff: boolean;
+  enable_document_search: boolean;
+  enable_audio_response: boolean;
+  enable_tools: boolean; // Function calling (ações, agendamento, etc)
+
+  // === INTEGRACOES (RAG) ===
+  enable_rag: boolean;
+  rag_threshold: number;
+  rag_max_results: number;
+
+  // === MODELO IA (AI Model) ===
+  primary_provider: "groq" | "openai";
+  openai_model: string;
+  groq_model: string;
+  temperature: number;
+  max_tokens: number;
+
+  // === MEMÓRIA & CONTEXTO ===
+  max_chat_history: number; // Quantas mensagens manter no contexto
+
+  // === TIMING & BATCHING ===
+  batching_delay_seconds: number; // Tempo para agrupar mensagens (debounce)
+  message_delay_ms: number; // Delay entre mensagens divididas
+  message_split_enabled: boolean; // Dividir mensagens longas
+
+  // === PROMPT COMPILADO (Generated) ===
+  compiled_system_prompt: string | null;
+  compiled_formatter_prompt: string | null;
+
+  // Timestamps
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Agent Version (Version History)
+ */
+export interface AgentVersion {
+  id: string;
+  agent_id: string;
+  version_number: number;
+  snapshot: Agent;
+  change_description: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+/**
+ * Agent Schedule Rule
+ */
+export interface AgentScheduleRule {
+  agent_id: string;
+  days: number[]; // 0-6 (Sunday-Saturday)
+  start: string; // "HH:MM"
+  end: string; // "HH:MM"
+}
+
+/**
+ * Agent Schedule Configuration
+ */
+export interface AgentSchedule {
+  id: string;
+  client_id: string;
+  is_enabled: boolean;
+  timezone: string;
+  rules: AgentScheduleRule[];
+  default_agent_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Agent A/B Testing Experiment
+ */
+export interface AgentExperiment {
+  id: string;
+  client_id: string;
+  name: string;
+  is_active: boolean;
+  agent_a_id: string;
+  agent_b_id: string;
+  traffic_split: number; // 0-100 (percentage for agent A)
+  total_conversations: number;
+  agent_a_conversations: number;
+  agent_b_conversations: number;
+  started_at: string | null;
+  ended_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Experiment Assignment (Sticky phone-to-agent)
+ */
+export interface ExperimentAssignment {
+  id: string;
+  experiment_id: string;
+  conversation_id: string | null;
+  assigned_agent_id: string;
+  phone: string;
+  created_at: string;
 }
 
 export interface CustomerRecord {

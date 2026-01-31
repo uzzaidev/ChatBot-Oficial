@@ -17,7 +17,6 @@
  * IMPORTANTE: Edição de variáveis requer revalidação de senha
  */
 
-import BotConfigurationManager from "@/components/BotConfigurationManager";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,30 +29,26 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { SliderControl } from "@/components/ui/slider-control";
-import { Textarea } from "@/components/ui/textarea";
-import { ToggleSwitch } from "@/components/ui/toggle-switch";
-import {
   AlertTriangle,
+  ArrowRight,
+  BarChart3,
   Bot,
   Check,
-  CheckCircle,
+  Clock,
   Copy,
   Eye,
   EyeOff,
+  Key,
+  Lightbulb,
   Lock,
-  MessageCircle,
+  LockKeyhole,
   Mic,
-  Rocket,
   Save,
-  XCircle,
+  Settings,
+  Sparkles,
+  User,
 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 export default function SettingsPage() {
   // Estado do perfil
@@ -110,41 +105,6 @@ export default function SettingsPage() {
   // Estado de cópia
   const [copied, setCopied] = useState<string | null>(null);
 
-  // Estado do Agent Config
-  const [agentConfig, setAgentConfig] = useState({
-    system_prompt: "",
-    formatter_prompt: "",
-    openai_model: "gpt-4o",
-    groq_model: "llama-3.3-70b-versatile",
-    primary_model_provider: "groq", // NOVO
-    settings: {
-      enable_rag: false,
-      max_tokens: 2000,
-      temperature: 0.7,
-      enable_tools: false,
-      max_chat_history: 10,
-      enable_human_handoff: false,
-      message_split_enabled: false,
-      batching_delay_seconds: 10,
-      message_delay_ms: 2000, // Delay between split messages
-    },
-  });
-  const [editingAgent, setEditingAgent] = useState(false);
-  const [loadingAgent, setLoadingAgent] = useState(false);
-  const [showAgentRevalidationModal, setShowAgentRevalidationModal] =
-    useState(false);
-  const [agentRevalidationPassword, setAgentRevalidationPassword] =
-    useState("");
-  const [agentRevalidating, setAgentRevalidating] = useState(false);
-
-  // Estado do teste de modelo
-  const [testingModel, setTestingModel] = useState(false);
-  const [testResult, setTestResult] = useState<{
-    success: boolean;
-    message: string;
-    latency_ms?: number;
-  } | null>(null);
-
   // Carregar perfil do usuário
   useEffect(() => {
     const fetchProfile = async () => {
@@ -189,35 +149,15 @@ export default function SettingsPage() {
     fetchSecrets();
   }, []);
 
-  // Carregar configurações do Agent
+  // Carregar WABA ID do config
   useEffect(() => {
-    const fetchAgentConfig = async () => {
+    const fetchClientConfig = async () => {
       try {
         const { apiFetch } = await import("@/lib/api");
         const response = await apiFetch("/api/client/config");
         const data = await response.json();
 
         if (response.ok && data.config) {
-          setAgentConfig({
-            system_prompt: data.config.system_prompt || "",
-            formatter_prompt: data.config.formatter_prompt || "",
-            openai_model: data.config.openai_model || "gpt-4o",
-            groq_model: data.config.groq_model || "llama-3.3-70b-versatile",
-            primary_model_provider:
-              data.config.primary_model_provider || "groq", // NOVO
-            settings: data.config.settings || {
-              enable_rag: false,
-              max_tokens: 2000,
-              temperature: 0.7,
-              enable_tools: false,
-              max_chat_history: 10,
-              enable_human_handoff: false,
-              message_split_enabled: false,
-              batching_delay_seconds: 10,
-              message_delay_ms: 2000,
-            },
-          });
-
           if (
             data.config.ai_keys_mode === "platform_only" ||
             data.config.ai_keys_mode === "byok_allowed"
@@ -225,7 +165,7 @@ export default function SettingsPage() {
             setAiKeysMode(data.config.ai_keys_mode);
           }
 
-          // Also update WABA ID from client config if present
+          // Update WABA ID from client config if present
           if (data.whatsapp_business_account_id) {
             setSecrets((prev) => ({
               ...prev,
@@ -236,7 +176,7 @@ export default function SettingsPage() {
       } catch (error) {}
     };
 
-    fetchAgentConfig();
+    fetchClientConfig();
   }, []);
 
   // Atualizar nome do usuário
@@ -498,143 +438,19 @@ export default function SettingsPage() {
     setShowPasswords((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // Revalidar senha antes de editar configurações do Agent
-  const handleRevalidateAgentPassword = async () => {
-    setAgentRevalidating(true);
-    setNotification(null);
-
-    try {
-      const { apiFetch } = await import("@/lib/api");
-      const response = await apiFetch("/api/user/revalidate-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: agentRevalidationPassword }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.valid) {
-        setShowAgentRevalidationModal(false);
-        setEditingAgent(true);
-        setAgentRevalidationPassword("");
-        setNotification({
-          type: "success",
-          message:
-            "Senha validada! Você pode editar as configurações do Agent.",
-        });
-      } else {
-        setNotification({ type: "error", message: "Senha incorreta" });
-      }
-    } catch (error) {
-      setNotification({ type: "error", message: "Erro ao validar senha" });
-    } finally {
-      setAgentRevalidating(false);
-    }
-  };
-
-  // Salvar configurações do Agent
-  const handleSaveAgentConfig = async () => {
-    setLoadingAgent(true);
-    setNotification(null);
-
-    try {
-      const { apiFetch } = await import("@/lib/api");
-      const response = await apiFetch("/api/client/config", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(agentConfig),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setNotification({
-          type: "success",
-          message: "Configurações do Agent atualizadas com sucesso!",
-        });
-        setEditingAgent(false);
-      } else {
-        setNotification({
-          type: "error",
-          message: data.error || "Erro ao atualizar configurações",
-        });
-      }
-    } catch (error) {
-      setNotification({
-        type: "error",
-        message: "Erro ao atualizar configurações",
-      });
-    } finally {
-      setLoadingAgent(false);
-    }
-  };
-
-  // Testar modelo selecionado
-  const handleTestModel = async () => {
-    setTestingModel(true);
-    setTestResult(null);
-    setNotification(null);
-
-    try {
-      const provider = agentConfig.primary_model_provider;
-      const model =
-        provider === "openai"
-          ? agentConfig.openai_model
-          : agentConfig.groq_model;
-
-      const { apiFetch } = await import("@/lib/api");
-      const response = await apiFetch("/api/client/test-model", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider, model }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setTestResult({
-          success: true,
-          message: `${data.message} (${data.latency_ms}ms)`,
-          latency_ms: data.latency_ms,
-        });
-        setNotification({
-          type: "success",
-          message: `Modelo testado com sucesso! Latência: ${data.latency_ms}ms`,
-        });
-      } else {
-        setTestResult({
-          success: false,
-          message: data.message || data.error,
-        });
-        setNotification({
-          type: "error",
-          message: `${data.message || data.error}`,
-        });
-      }
-    } catch (error) {
-      setTestResult({
-        success: false,
-        message: "Erro ao conectar com o servidor",
-      });
-      setNotification({
-        type: "error",
-        message: "Erro ao testar modelo",
-      });
-    } finally {
-      setTestingModel(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-5xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-poppins font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2">
-            ⚙️ Configurações
-          </h1>
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <Settings className="w-9 h-9 text-primary" />
+            <h1 className="text-4xl font-poppins font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent pb-1">
+              Configurações
+            </h1>
+          </div>
           <p className="text-muted-foreground text-lg">
-            Gerencie seu perfil, agent e variáveis de ambiente
+            Gerencie seu perfil, credenciais e variáveis de ambiente
           </p>
         </div>
 
@@ -651,7 +467,8 @@ export default function SettingsPage() {
         <Card className="bg-card border-border">
           <CardHeader className="border-b border-border">
             <CardTitle className="text-xl font-poppins text-foreground flex items-center gap-2">
-              👤 Perfil do Usuário
+              <User className="w-5 h-5 text-primary" />
+              Perfil do Usuário
             </CardTitle>
             <CardDescription className="text-muted-foreground">
               Visualize e edite suas informações pessoais
@@ -733,7 +550,8 @@ export default function SettingsPage() {
         <Card className="bg-card border-border">
           <CardHeader className="border-b border-border">
             <CardTitle className="text-xl font-poppins text-foreground flex items-center gap-2">
-              🔐 Alterar Senha
+              <LockKeyhole className="w-5 h-5 text-primary" />
+              Alterar Senha
             </CardTitle>
             <CardDescription className="text-muted-foreground">
               Atualize sua senha de acesso
@@ -813,710 +631,105 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Seção 3: Configurações do Agent */}
-        <Card className="bg-card border-border">
-          <CardHeader className="border-b border-border">
+        {/* Seção 3: Banner de Redirecionamento para Agentes IA */}
+        <Card className="bg-gradient-to-br from-uzz-purple/10 via-uzz-mint/10 to-uzz-blue/10 border-uzz-mint/30 relative overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-uzz-mint/5 via-transparent to-transparent" />
+          <CardHeader className="border-b border-uzz-mint/20 relative">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Bot className="w-6 h-6 text-uzz-mint" />
+                <div className="p-2 rounded-lg bg-uzz-mint/20">
+                  <Sparkles className="w-6 h-6 text-uzz-mint" />
+                </div>
                 <div>
-                  <CardTitle className="text-xl font-poppins text-foreground">
-                    Configurações do Agent
+                  <CardTitle className="text-xl font-poppins text-foreground flex items-center gap-2">
+                    Configurações de IA
+                    <span className="text-xs bg-uzz-mint/20 text-uzz-mint px-2 py-0.5 rounded-full font-normal">
+                      Centralizado
+                    </span>
                   </CardTitle>
                   <CardDescription className="text-muted-foreground">
-                    Configure os prompts e modelos de IA do seu assistente.
-                    <br />
-                    <span className="text-xs text-muted-foreground/80">
-                      ℹ️ Groq é usado para conversação (rápido e econômico),
-                      OpenAI para mídia (Vision, Whisper)
-                    </span>
+                    Todas as configurações de IA, prompts, modelos e
+                    comportamentos foram centralizados na página de Agentes IA.
                   </CardDescription>
                 </div>
               </div>
-              {!editingAgent && (
-                <Button
-                  onClick={() => setShowAgentRevalidationModal(true)}
-                  variant="outline"
-                  className="gap-2"
-                >
-                  <Lock className="w-4 h-4" />
-                  Editar
+              <Link href="/dashboard/agents">
+                <Button className="gap-2 bg-uzz-mint hover:bg-uzz-mint/90 text-white">
+                  Ir para Agentes IA
+                  <ArrowRight className="w-4 h-4" />
                 </Button>
-              )}
-              {editingAgent && (
-                <div className="flex gap-2">
-                  <Button
-                    onClick={handleSaveAgentConfig}
-                    disabled={loadingAgent}
-                    className="gap-2"
-                  >
-                    <Save className="w-4 h-4" />
-                    Salvar Tudo
-                  </Button>
-                  <Button
-                    onClick={() => setEditingAgent(false)}
-                    variant="outline"
-                    disabled={loadingAgent}
-                  >
-                    Cancelar
-                  </Button>
-                </div>
-              )}
+              </Link>
             </div>
           </CardHeader>
-          <CardContent className="space-y-6 pt-6">
-            {/* Alert de Atenção */}
-            {!editingAgent && (
-              <Alert className="bg-amber-500/10 border-amber-500/30">
-                <AlertTriangle className="h-4 w-4 text-amber-500" />
-                <AlertDescription className="text-amber-700 dark:text-amber-200 text-sm">
-                  <strong>Atenção:</strong> Mudanças no System Prompt afetam
-                  TODAS as conversas. Teste antes de aplicar em produção.
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {/* System Prompt */}
-            <div>
-              <Label htmlFor="system_prompt" className="text-foreground">
-                System Prompt
-              </Label>
-              <Textarea
-                id="system_prompt"
-                value={agentConfig.system_prompt}
-                onChange={(e) =>
-                  setAgentConfig({
-                    ...agentConfig,
-                    system_prompt: e.target.value,
-                  })
-                }
-                disabled={!editingAgent}
-                placeholder="## 🤖 Assistente Oficial Uzz.AI
-
-## 🎯 Identidade e Papel
-
-Você é o assistente oficial de IA da Uzz.AI..."
-                rows={8}
-                className="mt-2 font-mono text-sm bg-muted/50 border-border text-foreground placeholder:text-muted-foreground/50"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Prompt principal que define o comportamento do assistente
-              </p>
-            </div>
-
-            {/* Formatter Prompt */}
-            <div>
-              <Label htmlFor="formatter_prompt" className="text-foreground">
-                Formatter Prompt (Opcional)
-              </Label>
-              <Textarea
-                id="formatter_prompt"
-                value={agentConfig.formatter_prompt || ""}
-                onChange={(e) =>
-                  setAgentConfig({
-                    ...agentConfig,
-                    formatter_prompt: e.target.value,
-                  })
-                }
-                disabled={!editingAgent}
-                placeholder="Formate a resposta de forma clara, objetiva e profissional.
-
-**Regras:**
-- Máximo 3-4 frases por mensagem (exceto quando listar features ou opções)
-- Use emojis com moderação..."
-                rows={5}
-                className="mt-2 font-mono text-sm bg-muted/50 border-border text-foreground placeholder:text-muted-foreground/50"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Prompt usado para formatar as respostas do assistente
-              </p>
-            </div>
-
-            {/* Primary Provider Selection */}
-            <div className="bg-gradient-to-br from-blue-500/10 to-uzz-blue/10 border border-uzz-blue/30 rounded-lg p-4">
-              <Label
-                htmlFor="primary_model_provider"
-                className="text-base font-semibold text-foreground flex items-center gap-2"
-              >
-                🤖 Provedor Principal do Agente
-              </Label>
-              <p className="text-xs text-muted-foreground mb-3">
-                Escolha qual IA vai responder as mensagens de texto do seu
-                chatbot
-              </p>
-
-              <Select
-                value={agentConfig.primary_model_provider}
-                onValueChange={(value) =>
-                  setAgentConfig({
-                    ...agentConfig,
-                    primary_model_provider: value,
-                  })
-                }
-                disabled={!editingAgent}
-              >
-                <SelectTrigger className="mt-2 bg-muted/50 border-border text-foreground">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border-border text-popover-foreground">
-                  <SelectItem value="groq">
-                    <div className="flex items-center gap-2">
-                      <Rocket className="h-4 w-4 flex-shrink-0" />
-                      <div className="flex flex-col items-start">
-                        <span className="font-semibold">
-                          Groq (Llama) - Recomendado
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          Rápido (~1000 tokens/s) • Econômico (~$0.60/1M tokens)
-                        </span>
-                      </div>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="openai">
-                    <div className="flex items-center gap-2">
-                      <Bot className="h-4 w-4 flex-shrink-0" />
-                      <div className="flex flex-col items-start">
-                        <span className="font-semibold">OpenAI (GPT)</span>
-                        <span className="text-xs text-muted-foreground">
-                          Mais inteligente • Mais lento • Mais caro (~$5/1M
-                          tokens)
-                        </span>
-                      </div>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* Alertas de custo */}
-              {agentConfig.primary_model_provider === "openai" && (
-                <Alert className="mt-3 bg-amber-500/10 border-amber-500/30">
-                  <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0" />
-                  <AlertDescription className="text-amber-700 dark:text-amber-200 text-xs">
-                    <strong>💰 Custo estimado:</strong> GPT-4o é ~8x mais caro
-                    que Groq. Para 100k mensagens/mês, pode custar $500+ vs $60
-                    com Groq.
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {agentConfig.primary_model_provider === "groq" && (
-                <Alert className="mt-3 bg-green-500/10 border-green-500/30">
-                  <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
-                  <AlertDescription className="text-green-700 dark:text-green-200 text-xs">
-                    <strong>✅ Econômico:</strong> Llama 3.3 70B oferece ótima
-                    qualidade com custo muito baixo (~$0.60/1M tokens).
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {/* Botão de teste */}
-              <div className="mt-4">
-                <Button
-                  onClick={handleTestModel}
-                  disabled={testingModel || !editingAgent}
-                  variant="outline"
-                  size="sm"
-                  className="w-full border-uzz-mint/30 text-uzz-mint hover:bg-uzz-mint/10 hover:text-foreground"
-                >
-                  {testingModel ? (
-                    <>
-                      <span className="animate-spin mr-2">⏳</span>
-                      Testando modelo...
-                    </>
-                  ) : (
-                    <>🧪 Testar Modelo</>
-                  )}
-                </Button>
+          <CardContent className="pt-6 relative">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="p-4 rounded-lg bg-background/50 border border-border">
+                <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
+                  <Bot className="w-4 h-4 text-uzz-mint" />O que você encontra
+                  lá:
+                </h4>
+                <ul className="text-sm text-muted-foreground space-y-1.5">
+                  <li className="flex items-start gap-2">
+                    <span className="text-uzz-mint">•</span>
+                    System Prompts personalizados
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-uzz-mint">•</span>
+                    Configuração de modelos (Groq, OpenAI)
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-uzz-mint">•</span>
+                    Temperatura e parâmetros de geração
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-uzz-mint">•</span>
+                    RAG e Function Calling
+                  </li>
+                </ul>
               </div>
-
-              {/* Resultado do teste */}
-              {testResult && (
-                <Alert
-                  className={`mt-3 ${
-                    testResult.success
-                      ? "bg-green-500/10 border-green-500/30"
-                      : "bg-red-500/10 border-red-500/30"
-                  }`}
-                >
-                  {testResult.success ? (
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <XCircle className="h-4 w-4 text-red-500" />
-                  )}
-                  <AlertDescription
-                    className={
-                      testResult.success
-                        ? "text-green-700 dark:text-green-200"
-                        : "text-red-700 dark:text-red-200"
-                    }
-                  >
-                    {testResult.message}
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
-
-            {/* Divisor */}
-            <div className="border-t border-border my-6"></div>
-
-            <h3 className="font-semibold text-base mb-2 text-foreground">
-              Modelos Específicos
-            </h3>
-            <p className="text-xs text-muted-foreground mb-4">
-              Configure qual versão do modelo será usado para cada provedor
-            </p>
-
-            {/* OpenAI Model */}
-            <div>
-              <Label htmlFor="openai_model" className="text-foreground">
-                Modelo OpenAI
-                {agentConfig.primary_model_provider === "openai" && (
-                  <span className="ml-2 text-xs bg-uzz-blue/20 text-uzz-blue px-2 py-0.5 rounded border border-uzz-blue/30">
-                    EM USO
-                  </span>
-                )}
-              </Label>
-              <Select
-                value={agentConfig.openai_model}
-                onValueChange={(value) =>
-                  setAgentConfig({ ...agentConfig, openai_model: value })
-                }
-                disabled={!editingAgent}
-              >
-                <SelectTrigger className="mt-2 bg-muted/50 border-border text-foreground">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border-border text-popover-foreground">
-                  {agentConfig.openai_model &&
-                    ![
-                      "gpt-4o",
-                      "gpt-4o-mini",
-                      "gpt-4-turbo",
-                      "gpt-3.5-turbo",
-                    ].includes(agentConfig.openai_model) && (
-                      <SelectItem value={agentConfig.openai_model}>
-                        {agentConfig.openai_model} (Atual)
-                      </SelectItem>
-                    )}
-                  <SelectItem value="gpt-4o">GPT-4o (Recomendado)</SelectItem>
-                  <SelectItem value="gpt-4o-mini">
-                    GPT-4o Mini (Mais rápido)
-                  </SelectItem>
-                  <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
-                  <SelectItem value="gpt-3.5-turbo">
-                    GPT-3.5 Turbo (Econômico)
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                {agentConfig.primary_model_provider === "openai" ? (
-                  <>
-                    <MessageCircle className="h-3 w-3 text-uzz-mint" />
-                    Conversação +
-                    <Mic className="h-3 w-3 ml-1 text-uzz-mint" />
-                    Mídia (transcrição, imagens, PDFs)
-                  </>
-                ) : (
-                  <>
-                    <Mic className="h-3 w-3 text-muted-foreground" />
-                    Apenas para: Transcrição de áudio, análise de imagens e
-                    documentos
-                  </>
-                )}
-              </p>
-            </div>
-
-            {/* Groq Model */}
-            <div>
-              <Label htmlFor="groq_model" className="text-foreground">
-                Modelo Groq
-                {agentConfig.primary_model_provider === "groq" && (
-                  <span className="ml-2 text-xs bg-uzz-blue/20 text-uzz-blue px-2 py-0.5 rounded border border-uzz-blue/30">
-                    EM USO
-                  </span>
-                )}
-              </Label>
-              <Select
-                value={agentConfig.groq_model}
-                onValueChange={(value) =>
-                  setAgentConfig({ ...agentConfig, groq_model: value })
-                }
-                disabled={!editingAgent}
-              >
-                <SelectTrigger className="mt-2 bg-muted/50 border-border text-foreground">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border-border text-popover-foreground">
-                  {agentConfig.groq_model &&
-                    ![
-                      "llama-3.3-70b-versatile",
-                      "llama-3.1-70b-versatile",
-                      "llama-3.1-8b-instant",
-                      "mixtral-8x7b-32768",
-                    ].includes(agentConfig.groq_model) && (
-                      <SelectItem value={agentConfig.groq_model}>
-                        {agentConfig.groq_model} (Atual)
-                      </SelectItem>
-                    )}
-                  <SelectItem value="llama-3.3-70b-versatile">
-                    Llama 3.3 70B (Recomendado)
-                  </SelectItem>
-                  <SelectItem value="llama-3.1-70b-versatile">
-                    Llama 3.1 70B
-                  </SelectItem>
-                  <SelectItem value="llama-3.1-8b-instant">
-                    Llama 3.1 8B (Mais rápido)
-                  </SelectItem>
-                  <SelectItem value="mixtral-8x7b-32768">
-                    Mixtral 8x7B
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                {agentConfig.primary_model_provider === "groq" ? (
-                  <>
-                    <MessageCircle className="h-3 w-3 text-uzz-mint" />
-                    Usado para: Respostas de texto do agente (conversação
-                    principal)
-                  </>
-                ) : (
-                  "(Não está sendo usado no momento)"
-                )}
-              </p>
-            </div>
-
-            {/* Divisor */}
-            <div className="border-t border-border pt-6">
-              <h3 className="font-semibold text-base mb-6 text-foreground">
-                Configurações Avançadas
-              </h3>
-
-              {/* Toggles */}
-              <div className="space-y-4 mb-6">
-                <ToggleSwitch
-                  id="enable_rag"
-                  label="Habilitar RAG"
-                  description="Busca contexto em documentos enviados (base de conhecimento)"
-                  checked={agentConfig.settings.enable_rag}
-                  onCheckedChange={(checked) =>
-                    setAgentConfig({
-                      ...agentConfig,
-                      settings: {
-                        ...agentConfig.settings,
-                        enable_rag: checked,
-                      },
-                    })
-                  }
-                  disabled={!editingAgent}
-                />
-
-                <ToggleSwitch
-                  id="enable_tools"
-                  label="Habilitar Function Calling"
-                  description="Permite IA executar ações (transferência, agendamento, etc)"
-                  checked={agentConfig.settings.enable_tools}
-                  onCheckedChange={(checked) =>
-                    setAgentConfig({
-                      ...agentConfig,
-                      settings: {
-                        ...agentConfig.settings,
-                        enable_tools: checked,
-                      },
-                    })
-                  }
-                  disabled={!editingAgent}
-                />
-
-                <ToggleSwitch
-                  id="enable_human_handoff"
-                  label="Transferência Humana"
-                  description="Permite IA transferir conversa para atendente humano"
-                  checked={agentConfig.settings.enable_human_handoff}
-                  onCheckedChange={(checked) =>
-                    setAgentConfig({
-                      ...agentConfig,
-                      settings: {
-                        ...agentConfig.settings,
-                        enable_human_handoff: checked,
-                      },
-                    })
-                  }
-                  disabled={!editingAgent}
-                />
-
-                <ToggleSwitch
-                  id="message_split_enabled"
-                  label="Dividir Mensagens Longas"
-                  description="Quebra respostas grandes em várias mensagens WhatsApp"
-                  checked={agentConfig.settings.message_split_enabled}
-                  onCheckedChange={(checked) =>
-                    setAgentConfig({
-                      ...agentConfig,
-                      settings: {
-                        ...agentConfig.settings,
-                        message_split_enabled: checked,
-                      },
-                    })
-                  }
-                  disabled={!editingAgent}
-                />
-              </div>
-
-              {/* Sliders */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <SliderControl
-                  id="max_tokens"
-                  label="Max Tokens"
-                  description="100 - 8000 (Padrão: 6000)"
-                  value={agentConfig.settings.max_tokens}
-                  onValueChange={(value) =>
-                    setAgentConfig({
-                      ...agentConfig,
-                      settings: { ...agentConfig.settings, max_tokens: value },
-                    })
-                  }
-                  min={100}
-                  max={8000}
-                  step={100}
-                  disabled={!editingAgent}
-                />
-
-                <SliderControl
-                  id="temperature"
-                  label="Temperature"
-                  description="0.0 - 2.0 (0 = determinístico, 2 = criativo)"
-                  value={agentConfig.settings.temperature}
-                  onValueChange={(value) =>
-                    setAgentConfig({
-                      ...agentConfig,
-                      settings: { ...agentConfig.settings, temperature: value },
-                    })
-                  }
-                  min={0}
-                  max={2}
-                  step={0.1}
-                  disabled={!editingAgent}
-                />
-
-                <SliderControl
-                  id="max_chat_history"
-                  label="Max Chat History"
-                  description="1 - 50 mensagens (Padrão: 15)"
-                  value={agentConfig.settings.max_chat_history}
-                  onValueChange={(value) =>
-                    setAgentConfig({
-                      ...agentConfig,
-                      settings: {
-                        ...agentConfig.settings,
-                        max_chat_history: value,
-                      },
-                    })
-                  }
-                  min={1}
-                  max={50}
-                  step={1}
-                  disabled={!editingAgent}
-                />
-
-                <SliderControl
-                  id="batching_delay_seconds"
-                  label="Delay de Agrupamento"
-                  description="0 - 60 segundos (Padrão: 10)"
-                  value={agentConfig.settings.batching_delay_seconds}
-                  onValueChange={(value) =>
-                    setAgentConfig({
-                      ...agentConfig,
-                      settings: {
-                        ...agentConfig.settings,
-                        batching_delay_seconds: value,
-                      },
-                    })
-                  }
-                  min={0}
-                  max={60}
-                  step={1}
-                  unit="s"
-                  disabled={!editingAgent}
-                />
-
-                <SliderControl
-                  id="message_delay_ms"
-                  label="Delay entre Mensagens"
-                  description="0 - 10000 ms (delay entre mensagens divididas)"
-                  value={agentConfig.settings.message_delay_ms}
-                  onValueChange={(value) =>
-                    setAgentConfig({
-                      ...agentConfig,
-                      settings: {
-                        ...agentConfig.settings,
-                        message_delay_ms: value,
-                      },
-                    })
-                  }
-                  min={0}
-                  max={10000}
-                  step={100}
-                  unit="ms"
-                  disabled={!editingAgent}
-                />
+              <div className="p-4 rounded-lg bg-background/50 border border-border">
+                <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-uzz-blue" />
+                  Timing & Comportamento:
+                </h4>
+                <ul className="text-sm text-muted-foreground space-y-1.5">
+                  <li className="flex items-start gap-2">
+                    <span className="text-uzz-blue">•</span>
+                    Delay de agrupamento de mensagens
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-uzz-blue">•</span>
+                    Delay entre mensagens divididas
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-uzz-blue">•</span>
+                    Memória de contexto (histórico)
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-uzz-blue">•</span>
+                    Divisão automática de mensagens longas
+                  </li>
+                </ul>
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Seção 3.5: Envio de Documentos RAG */}
-        <Card className="bg-card border-border">
-          <CardHeader className="border-b border-border">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-xl font-poppins text-foreground flex items-center gap-2">
-                  📄 Envio de Documentos RAG
-                </CardTitle>
-                <CardDescription className="text-muted-foreground">
-                  Configure como o agente envia documentos e imagens da base de
-                  conhecimento via WhatsApp
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6 pt-6">
-            <Alert className="bg-blue-500/10 border-blue-500/30">
-              <AlertDescription className="text-blue-700 dark:text-blue-200 text-sm">
-                <strong>Nota:</strong> Esta funcionalidade permite que o agente
-                busque e envie automaticamente documentos, catálogos, manuais e
-                imagens armazenados na base de conhecimento quando solicitado
-                pelo usuário. Requer RAG e Function Calling habilitados.
+            <Alert className="mt-4 bg-uzz-mint/10 border-uzz-mint/30">
+              <Lightbulb className="h-4 w-4 text-uzz-mint" />
+              <AlertDescription className="text-sm">
+                <strong className="text-uzz-mint">Dica:</strong> Na página de
+                Agentes IA você pode criar múltiplos agentes com diferentes
+                configurações e alternar entre eles facilmente.
               </AlertDescription>
             </Alert>
-
-            {/* Status Indicator */}
-            <Alert
-              className={
-                agentConfig.settings.enable_rag &&
-                agentConfig.settings.enable_tools
-                  ? "bg-green-500/10 border-green-500/30"
-                  : "bg-amber-500/10 border-amber-500/30"
-              }
-            >
-              {agentConfig.settings.enable_rag &&
-              agentConfig.settings.enable_tools ? (
-                <>
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <AlertDescription className="text-green-700 dark:text-green-200 text-sm">
-                    <strong>✅ Ativo:</strong> Agente pode buscar e enviar
-                    documentos via tool{" "}
-                    <code className="bg-muted px-1 rounded">
-                      buscar_documento
-                    </code>
-                  </AlertDescription>
-                </>
-              ) : (
-                <>
-                  <AlertTriangle className="h-4 w-4 text-amber-500" />
-                  <AlertDescription className="text-amber-700 dark:text-amber-200 text-sm">
-                    <strong>⚠️ Inativo:</strong> Habilite RAG e Function Calling
-                    para usar esta funcionalidade
-                  </AlertDescription>
-                </>
-              )}
-            </Alert>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Habilitar/Desabilitar */}
-              <ToggleSwitch
-                id="enable_document_sending"
-                label="Habilitar envio de documentos"
-                description="Permite que o agente busque e envie documentos da base de conhecimento"
-                checked={
-                  agentConfig.settings.enable_rag &&
-                  agentConfig.settings.enable_tools
-                }
-                onCheckedChange={() => {}} // Disabled - controlled by RAG and Tools
-                disabled={true}
-              />
-
-              {/* Threshold de Similaridade */}
-              <SliderControl
-                id="doc_search_threshold"
-                label="Threshold de Similaridade"
-                description="Padrão: 0.7 (valores maiores = mais rigoroso)"
-                value={0.7}
-                onValueChange={() => {}} // TODO: Implement when backend supports
-                min={0}
-                max={1}
-                step={0.1}
-                disabled={!editingAgent || !agentConfig.settings.enable_rag}
-              />
-
-              {/* Máximo de Documentos */}
-              <SliderControl
-                id="doc_max_results"
-                label="Máximo de Documentos"
-                description="Padrão: 3 documentos (1-5)"
-                value={3}
-                onValueChange={() => {}} // TODO: Implement when backend supports
-                min={1}
-                max={5}
-                step={1}
-                disabled={!editingAgent || !agentConfig.settings.enable_rag}
-              />
-
-              {/* Tamanho Máximo */}
-              <SliderControl
-                id="doc_max_file_size"
-                label="Tamanho Máximo"
-                description="WhatsApp: máx 16MB documentos, 5MB imagens"
-                value={10}
-                onValueChange={() => {}} // TODO: Implement when backend supports
-                min={1}
-                max={16}
-                step={1}
-                unit="MB"
-                disabled={!editingAgent || !agentConfig.settings.enable_rag}
-              />
-            </div>
-
-            {/* Como usar */}
-            <div className="border-t border-border pt-4">
-              <Alert className="bg-blue-500/10 border-blue-500/30">
-                <AlertDescription>
-                  <h4 className="text-sm font-semibold mb-2 text-blue-700 dark:text-blue-200">
-                    💡 Como usar:
-                  </h4>
-                  <ul className="text-xs text-blue-700/90 dark:text-blue-200/90 space-y-1 list-disc list-inside">
-                    <li>
-                      Faça upload de documentos em{" "}
-                      <strong>/dashboard/knowledge</strong>
-                    </li>
-                    <li>
-                      Usuário solicita via WhatsApp:{" "}
-                      <em>&quot;me envia o catálogo&quot;</em>
-                    </li>
-                    <li>
-                      AI aciona tool{" "}
-                      <code className="bg-muted px-1 rounded">
-                        buscar_documento
-                      </code>{" "}
-                      automaticamente
-                    </li>
-                    <li>
-                      Sistema busca na base, encontra o documento mais relevante
-                    </li>
-                    <li>Envia PDF/imagem diretamente no WhatsApp</li>
-                  </ul>
-                </AlertDescription>
-              </Alert>
-            </div>
           </CardContent>
         </Card>
-
         {/* Seção 4: Variáveis de Ambiente */}
         <Card className="bg-card border-border">
           <CardHeader className="border-b border-border">
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-xl font-poppins text-foreground flex items-center gap-2">
-                  🔑 Variáveis de Ambiente
+                  <Key className="w-5 h-5 text-primary" />
+                  Variáveis de Ambiente
                 </CardTitle>
                 <CardDescription className="text-muted-foreground">
                   Gerencie as credenciais de API do seu cliente
@@ -1769,7 +982,8 @@ Você é o assistente oficial de IA da Uzz.AI..."
             {/* Meta Ads Section */}
             <div className="border-t pt-4 mt-4">
               <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
-                📊 Meta Ads Integration
+                <BarChart3 className="w-4 h-4 text-muted-foreground" />
+                Meta Ads Integration
                 <span className="text-xs text-muted-foreground">
                   (Conversions API & Marketing API)
                 </span>
@@ -1855,8 +1069,9 @@ Você é o assistente oficial de IA da Uzz.AI..."
             {/* Seção de Credenciais de IA */}
             <div className="space-y-4">
               <div>
-                <h3 className="font-semibold text-base mb-2">
-                  🔑 Credenciais de IA (Fallback)
+                <h3 className="font-semibold text-base mb-2 flex items-center gap-2">
+                  <Key className="w-4 h-4 text-muted-foreground" />
+                  Credenciais de IA (Fallback)
                 </h3>
                 <p className="text-sm text-muted-foreground mb-4">
                   Configure suas chaves de API da OpenAI e Groq. Estas
@@ -2026,97 +1241,84 @@ Você é o assistente oficial de IA da Uzz.AI..."
           </CardContent>
         </Card>
 
-        {/* Seção 4.5: Text-to-Speech (TTS) */}
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Mic className="w-5 h-5 text-blue-500" />
-                <div>
-                  <CardTitle>Text-to-Speech (TTS)</CardTitle>
-                  <CardDescription>
-                    Configure o envio de respostas em áudio (mensagens de voz)
-                  </CardDescription>
+        {/* Seção 4.5: Links Rápidos para Outras Configurações */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Card TTS */}
+          <Card className="bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border-blue-500/30 hover:border-blue-500/50 transition-colors">
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-blue-500/20">
+                    <Mic className="w-5 h-5 text-blue-500" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground">
+                      Text-to-Speech
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Configure vozes, velocidade e qualidade de áudio
+                    </p>
+                    <div className="flex gap-2 mt-2">
+                      <span className="text-xs bg-blue-500/20 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded">
+                        6 vozes
+                      </span>
+                      <span className="text-xs bg-blue-500/20 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded">
+                        HD
+                      </span>
+                    </div>
+                  </div>
                 </div>
+                <Link href="/dashboard/settings/tts">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-blue-500 hover:text-blue-600 hover:bg-blue-500/10"
+                  >
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </Link>
               </div>
-              <Button
-                onClick={() =>
-                  (window.location.href = "/dashboard/settings/tts")
-                }
-                variant="default"
-                className="gap-2"
-              >
-                <Mic className="w-4 h-4" />
-                Ver Configurações Completas
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Alert>
-              <Mic className="h-4 w-4" />
-              <AlertDescription>
-                O bot pode converter respostas longas em mensagens de voz
-                (áudio) para melhor experiência do usuário. Configure voz,
-                velocidade e quando usar áudio através da página de
-                configurações completas.
-              </AlertDescription>
-            </Alert>
+            </CardContent>
+          </Card>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-              <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  6
-                </p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">
-                  Vozes Disponíveis
-                </p>
+          {/* Card Bot Configurations */}
+          <Card className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/30 hover:border-purple-500/50 transition-colors">
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-purple-500/20">
+                    <Bot className="w-5 h-5 text-purple-500" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground">
+                      Configurações do Bot
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Prompts, regras, limites e personalidade
+                    </p>
+                    <div className="flex gap-2 mt-2">
+                      <span className="text-xs bg-purple-500/20 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded">
+                        Prompts
+                      </span>
+                      <span className="text-xs bg-purple-500/20 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded">
+                        Regras
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <Link href="/dashboard/settings/bot">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-purple-500 hover:text-purple-600 hover:bg-purple-500/10"
+                  >
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </Link>
               </div>
-              <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  HD
-                </p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">
-                  Qualidade de Áudio
-                </p>
-              </div>
-              <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  0.5-2x
-                </p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">
-                  Velocidade Ajustável
-                </p>
-              </div>
-            </div>
-
-            <div className="border-t pt-4">
-              <h4 className="text-sm font-semibold mb-2">
-                Recursos Disponíveis:
-              </h4>
-              <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1 list-disc list-inside">
-                <li>
-                  Preview de vozes (Alloy, Echo, Fable, Onyx, Nova, Shimmer)
-                </li>
-                <li>Controle de velocidade de fala (0.5x a 2.0x)</li>
-                <li>Qualidade HD (tts-1-hd) ou Rápida (tts-1)</li>
-                <li>Estatísticas de uso e economia de cache</li>
-                <li>Player com waveform e transcrição no WhatsApp</li>
-              </ul>
-            </div>
-
-            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
-              <p className="text-xs text-blue-700 dark:text-blue-300">
-                💡 <strong>Dica:</strong> Configure no prompt do sistema quando
-                o bot deve usar áudio. Exemplo: &quot;Use a tool
-                enviar_resposta_em_audio para explicações longas (mais de 500
-                caracteres)&quot;.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Seção 5: Bot Configurations */}
-        <BotConfigurationManager />
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Modal de Revalidação de Senha */}
@@ -2160,57 +1362,6 @@ Você é o assistente oficial de IA da Uzz.AI..."
                     setRevalidationPassword("");
                   }}
                   disabled={revalidating}
-                >
-                  Cancelar
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Modal de Revalidação de Senha - Agent Config */}
-      {showAgentRevalidationModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md bg-card border-border">
-            <CardHeader>
-              <CardTitle>Confirme sua Senha</CardTitle>
-              <CardDescription>
-                Por segurança, confirme sua senha antes de editar as
-                configurações do Agent
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="agent_revalidation_password">Senha</Label>
-                <Input
-                  id="agent_revalidation_password"
-                  type="password"
-                  value={agentRevalidationPassword}
-                  onChange={(e) => setAgentRevalidationPassword(e.target.value)}
-                  disabled={agentRevalidating}
-                  onKeyDown={(e) =>
-                    e.key === "Enter" && handleRevalidateAgentPassword()
-                  }
-                  className="mt-2"
-                />
-              </div>
-
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleRevalidateAgentPassword}
-                  disabled={agentRevalidating || !agentRevalidationPassword}
-                  className="flex-1"
-                >
-                  {agentRevalidating ? "Validando..." : "Confirmar"}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowAgentRevalidationModal(false);
-                    setAgentRevalidationPassword("");
-                  }}
-                  disabled={agentRevalidating}
                 >
                   Cancelar
                 </Button>

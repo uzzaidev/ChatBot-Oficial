@@ -36,12 +36,20 @@ Step-by-step implementation checklist for Meta Ads integration with the WhatsApp
 ### Files Created
 
 - [x] `supabase/migrations/20260131_add_meta_ads_integration.sql`
+- [x] `supabase/migrations/20260131_meta_ads_features.sql` - **Lead Ads, Audiences, Alerts tables**
 - [x] `src/nodes/sendConversionEvent.ts` - Conversions API integration
 - [x] `src/app/api/webhook/meta-ads/route.ts` - Webhook for Ad Account events
 - [x] `src/app/api/crm/meta-insights/route.ts` - Marketing API insights
 - [x] `src/app/api/crm/conversion-events/route.ts` - Conversion events log API
 - [x] `src/app/api/client/meta-config/route.ts` - Settings API
 - [x] `src/app/dashboard/meta-ads/page.tsx` - **Dedicated Meta Ads page**
+- [x] `src/lib/meta-leads.ts` - **Lead Ads processing library**
+- [x] `src/app/api/crm/meta-audiences/route.ts` - **Custom Audiences API**
+- [x] `src/app/api/crm/budget-alerts/route.ts` - **Budget Alerts API**
+- [x] `src/app/api/crm/lead-ads-events/route.ts` - **Lead Ads Events API**
+- [x] `src/components/meta-ads/MetaAdsBudgetAlerts.tsx` - **Budget Alerts UI**
+- [x] `src/components/meta-ads/MetaAdsAudienceSync.tsx` - **Audience Sync UI**
+- [x] `src/components/meta-ads/MetaAdsLeadAds.tsx` - **Lead Ads UI**
 - [x] `docs/setup/META_DEVELOPER_SETUP.md` - Setup guide
 
 ### Files Modified
@@ -51,6 +59,10 @@ Step-by-step implementation checklist for Meta Ads integration with the WhatsApp
 - [x] `src/app/api/vault/secrets/route.ts` - Returns Meta Ads config
 - [x] `src/components/DashboardNavigation.tsx` - Added Meta Ads nav link
 - [x] `src/lib/utils.ts` - Added `formatNumber` and `formatPercent`
+- [x] `src/components/meta-ads/MetaAdsTrendCharts.tsx` - Gráficos de tendência com seletor de atribuição
+- [x] `src/components/meta-ads/MetaAdsBreakdownTable.tsx` - Tabela hierárquica por Ad/AdSet
+- [x] `src/app/api/crm/meta-insights/time-series/route.ts` - API para dados temporais
+- [x] `src/app/api/crm/meta-insights/breakdown/route.ts` - API para breakdown por nível
 
 ### Safety Guarantees
 
@@ -69,6 +81,9 @@ Step-by-step implementation checklist for Meta Ads integration with the WhatsApp
 - [x] **Tab Campanhas**: Tabela completa com métricas por campanha
 - [x] **Tab Eventos CAPI**: Log de eventos enviados para Meta
 - [x] **Tab Configuração**: Status da integração e guia de setup
+- [x] **Tab Lead Ads**: Eventos de Lead Ads recebidos via webhook
+- [x] **Tab Audiências**: Custom Audiences do Meta Ads
+- [x] **Tab Alertas**: Budget Alerts configuráveis
 - [x] Filtro por período (data início/fim)
 - [x] Navigation link na sidebar
 
@@ -198,16 +213,39 @@ ORDER BY created_at DESC;
 
 ### Prioridade Alta (após configurar Meta)
 
-- [ ] **Gráficos de tendência**: Adicionar charts de evolução temporal (spend, leads, ROI ao longo do tempo)
-- [ ] **Detalhes por Ad/AdSet**: Expandir para ver métricas por anúncio individual, não só campanha
-- [ ] **Attribution Window**: Mostrar janela de atribuição (7d click, 1d view, etc)
+- [x] **Gráficos de tendência**: Charts de evolução temporal (spend, leads, ROI ao longo do tempo)
+  - Implementado em `MetaAdsTrendCharts.tsx`
+  - Area chart para gastos diários
+  - Bar chart para leads vs conversões
+  - Line chart para ROI
+- [x] **Detalhes por Ad/AdSet**: Métricas por anúncio individual, não só campanha
+  - Implementado em `MetaAdsBreakdownTable.tsx`
+  - Seletor de nível (Campaign/AdSet/Ad)
+  - Expansão hierárquica por campanha
+  - Métricas completas: spend, impressions, CTR, leads, CPL, ROI
+- [x] **Attribution Window**: Seletor de janela de atribuição
+  - Opções: 7d click, 1d click, 1d view, 28d click
+  - Integrado nos gráficos de tendência
+  - API `/api/crm/meta-insights/time-series` suporta parâmetro `attribution`
 
-### Prioridade Média
+### Prioridade Média ✅ DONE
 
-- [ ] **Lead Ads Integration**: Receber leads diretamente do Lead Ads (formulários do Facebook)
-- [ ] **Audience Sync**: Sincronizar audiências customizadas do CRM para Meta Ads
+- [x] **Lead Ads Integration**: Receber leads diretamente do Lead Ads (formulários do Facebook)
+  - Implementado em `src/lib/meta-leads.ts`
+  - Webhook: `/api/webhook/meta-ads` processa eventos `leadgen`
+  - UI: Tab "Lead Ads" em `/dashboard/meta-ads`
+  - Cria cards automaticamente no CRM com dados do lead
+- [x] **Audience Sync**: Sincronizar audiências customizadas do CRM para Meta Ads
+  - Implementado em `src/app/api/crm/meta-audiences/route.ts`
+  - Fontes: all_cards, column, tag, won, high_value
+  - Hash SHA256 para phone/email (compliance LGPD)
+  - UI: Tab "Audiências" em `/dashboard/meta-ads`
+- [x] **Budget Alerts**: Alertas quando gasto se aproximar do limite
+  - Implementado em `src/app/api/crm/budget-alerts/route.ts`
+  - Tipos: daily_spend, monthly_spend, campaign_spend, cpl_threshold
+  - Notificações: dashboard, email, webhook
+  - UI: Tab "Alertas" em `/dashboard/meta-ads`
 - [ ] **A/B Test Tracking**: Identificar qual variante de anúncio gera melhor conversão
-- [ ] **Budget Alerts**: Alertas quando gasto se aproximar do limite
 
 ### Prioridade Baixa (nice to have)
 

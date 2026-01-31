@@ -13,21 +13,18 @@ import { cn } from "@/lib/utils";
 import {
   BarChart3,
   BookOpen,
+  Bot,
   CheckCircle,
   ChevronLeft,
   ChevronRight,
-  DollarSign,
   FileText,
-  GitBranch,
   Kanban,
   LayoutDashboard,
   MessageSquare,
   Settings,
-  Terminal,
   TrendingUp,
   Users,
   Workflow,
-  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -233,6 +230,15 @@ export function DashboardNavigation({
         />
 
         <NavItem
+          href="/dashboard/agents"
+          icon={<Bot className="h-5 w-5 flex-shrink-0" />}
+          label="Agentes IA"
+          isCollapsed={isCollapsed}
+          onClick={onLinkClick}
+          tooltip="Configure múltiplos agentes com diferentes personalidades"
+        />
+
+        <NavItem
           href="/dashboard/flows"
           icon={<Workflow className="h-5 w-5 flex-shrink-0" />}
           label="Flows Interativos"
@@ -259,46 +265,6 @@ export function DashboardNavigation({
           isCollapsed={isCollapsed}
           onClick={onLinkClick}
           tooltip="Performance de campanhas, ROI e conversões CAPI"
-        />
-
-        {/* SEÇÃO: ADMINISTRAÇÃO */}
-        <NavSection title="Administração" isCollapsed={isCollapsed} />
-        <NavItem
-          href="/dashboard/admin/budget-plans"
-          icon={<DollarSign className="h-5 w-5 flex-shrink-0" />}
-          label="Budget Plans"
-          isCollapsed={isCollapsed}
-          onClick={onLinkClick}
-          tooltip="Gerenciar planos de orçamento e limites de uso"
-        />
-
-        <NavItem
-          href="/dashboard/ai-gateway"
-          icon={<Zap className="h-5 w-5 flex-shrink-0" />}
-          label="AI Gateway"
-          isCollapsed={isCollapsed}
-          onClick={onLinkClick}
-          tooltip="Configure provedores de IA e monitore custos"
-        />
-
-        {/* SEÇÃO: DESENVOLVIMENTO */}
-        <NavSection title="Desenvolvimento" isCollapsed={isCollapsed} />
-        <NavItem
-          href="/dashboard/flow-architecture"
-          icon={<GitBranch className="h-5 w-5 flex-shrink-0" />}
-          label="Arquitetura do Fluxo"
-          isCollapsed={isCollapsed}
-          onClick={onLinkClick}
-          tooltip="Visualizar e editar a arquitetura do chatbot (14 nodes)"
-        />
-
-        <NavItem
-          href="/dashboard/backend"
-          icon={<Terminal className="h-5 w-5 flex-shrink-0" />}
-          label="Backend Monitor"
-          isCollapsed={isCollapsed}
-          onClick={onLinkClick}
-          tooltip="Monitorar logs e performance do backend"
         />
 
         {/* SEÇÃO: CONFIGURAÇÃO */}

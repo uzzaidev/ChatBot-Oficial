@@ -20,6 +20,12 @@
  * @see https://developers.facebook.com/docs/marketing-api/webhooks
  */
 
+import { getClientConfig } from "@/lib/config";
+import {
+  createCardFromLead,
+  fetchLeadDetails,
+  parseLeadData,
+} from "@/lib/meta-leads";
 import { createServiceRoleClient } from "@/lib/supabase";
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
@@ -207,37 +213,148 @@ async function handleLeadgenEvent(
   console.log("  Ad ID:", value.ad_id);
   console.log("  Created:", value.created_time);
 
-  // Find client by ad account ID
-  const { data: client } = (await supabase
+  // Find client by ad account ID or page ID
+  let client: { id: string; name: string } | null = null;
+
+  // Try ad account first
+  const { data: clientByAd } = await supabase
     .from("clients")
     .select("id, name")
     .eq("meta_ad_account_id", adAccountOrPageId)
-    .single()) as { data: { id: string; name: string } | null };
+    .single();
+
+  if (clientByAd) {
+    client = clientByAd;
+  } else {
+    // Try page ID
+    const { data: clientByPage } = await supabase
+      .from("clients")
+      .select("id, name")
+      .eq("meta_page_id", value.page_id)
+      .single();
+
+    if (clientByPage) {
+      client = clientByPage;
+    }
+  }
 
   if (!client) {
     console.log(
-      "[META-ADS-WEBHOOK] ⚠️ No client found for ad account:",
+      "[META-ADS-WEBHOOK] ⚠️ No client found for ad account/page:",
       adAccountOrPageId,
     );
-    // Log to console for manual processing (table meta_ads_events_log may not exist)
-    console.log(
-      "[META-ADS-WEBHOOK] Unprocessed leadgen event:",
-      JSON.stringify(value),
-    );
+
+    // Log to lead_ads_events for manual processing
+    // Note: Using 'as any' because lead_ads_events is not yet in generated types
+    await (supabase as any).from("lead_ads_events").insert({
+      client_id: process.env.DEFAULT_CLIENT_ID,
+      leadgen_id: value.leadgen_id,
+      form_id: value.form_id,
+      ad_id: value.ad_id,
+      page_id: value.page_id,
+      lead_data: value,
+      processed: false,
+      error_message: `No client found for account ${adAccountOrPageId}`,
+    });
+
     return;
   }
 
   console.log("[META-ADS-WEBHOOK] ✅ Found client:", client.name);
 
-  // Note: To get the actual lead data (name, email, phone), you need to:
-  // 1. Call the Leadgen API: GET /{leadgen_id}?access_token=...
-  // 2. The response contains field_data with the submitted form values
-  //
-  // This requires the leads_retrieval permission and page access token
-  // For now, we just log that a lead was received
-  //
-  // TODO: Implement lead retrieval if needed
-  // const leadData = await fetchLeadDetails(client.id, value.leadgen_id);
+  try {
+    // Get access token for this client
+    const clientConfig = await getClientConfig(client.id);
+    const accessToken = clientConfig?.apiKeys?.metaAccessToken;
+
+    if (!accessToken) {
+      console.log("[META-ADS-WEBHOOK] ⚠️ No access token for client");
+      await logLeadEvent(supabase, client.id, value, false, "No access token");
+      return;
+    }
+
+    // Fetch full lead details from Meta API
+    const leadData = await fetchLeadDetails(value.leadgen_id, accessToken);
+
+    if (!leadData) {
+      console.log("[META-ADS-WEBHOOK] ⚠️ Could not fetch lead details");
+      await logLeadEvent(
+        supabase,
+        client.id,
+        value,
+        false,
+        "Failed to fetch lead details",
+      );
+      return;
+    }
+
+    // Parse lead data
+    const parsedLead = parseLeadData(leadData);
+    console.log("[META-ADS-WEBHOOK] Parsed lead:", {
+      phone: parsedLead.phone,
+      email: parsedLead.email,
+      name: parsedLead.full_name,
+    });
+
+    // Create CRM card
+    const result = await createCardFromLead(client.id, parsedLead);
+
+    if (result.success) {
+      console.log("[META-ADS-WEBHOOK] ✅ Card created:", result.cardId);
+
+      // Log success
+      await (supabase as any).from("lead_ads_events").insert({
+        client_id: client.id,
+        leadgen_id: value.leadgen_id,
+        form_id: value.form_id,
+        ad_id: value.ad_id,
+        campaign_id: parsedLead.campaign_id,
+        page_id: value.page_id,
+        phone: parsedLead.phone,
+        email: parsedLead.email,
+        full_name: parsedLead.full_name,
+        lead_data: parsedLead.custom_fields,
+        card_id: result.cardId,
+        processed: true,
+        processed_at: new Date().toISOString(),
+      });
+    } else {
+      console.log("[META-ADS-WEBHOOK] ⚠️ Failed to create card:", result.error);
+      await logLeadEvent(supabase, client.id, value, false, result.error);
+    }
+  } catch (error) {
+    console.error("[META-ADS-WEBHOOK] Error processing lead:", error);
+    await logLeadEvent(
+      supabase,
+      client.id,
+      value,
+      false,
+      error instanceof Error ? error.message : "Unknown error",
+    );
+  }
+}
+
+/**
+ * Log lead event to database
+ */
+async function logLeadEvent(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+  clientId: string,
+  value: LeadgenValue,
+  processed: boolean,
+  errorMessage?: string,
+) {
+  // Note: Using 'as any' because lead_ads_events is not yet in generated types
+  await (supabase as any).from("lead_ads_events").insert({
+    client_id: clientId,
+    leadgen_id: value.leadgen_id,
+    form_id: value.form_id,
+    ad_id: value.ad_id,
+    page_id: value.page_id,
+    lead_data: value,
+    processed,
+    error_message: errorMessage,
+  });
 }
 
 /**

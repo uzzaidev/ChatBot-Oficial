@@ -1,5 +1,10 @@
 "use client";
 
+import { MetaAdsAudienceSync } from "@/components/meta-ads/MetaAdsAudienceSync";
+import { MetaAdsBreakdownTable } from "@/components/meta-ads/MetaAdsBreakdownTable";
+import { MetaAdsBudgetAlerts } from "@/components/meta-ads/MetaAdsBudgetAlerts";
+import { MetaAdsLeadAds } from "@/components/meta-ads/MetaAdsLeadAds";
+import { MetaAdsTrendCharts } from "@/components/meta-ads/MetaAdsTrendCharts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,9 +34,11 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   BarChart3,
+  Bell,
   CheckCircle2,
   DollarSign,
   Eye,
+  FileText,
   LayoutDashboard,
   LineChart,
   Loader2,
@@ -112,7 +119,13 @@ export default function MetaAdsPage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<
-    "overview" | "campaigns" | "events" | "config"
+    | "overview"
+    | "campaigns"
+    | "events"
+    | "lead-ads"
+    | "audiences"
+    | "alerts"
+    | "config"
   >("overview");
 
   // Config state
@@ -366,10 +379,19 @@ export default function MetaAdsPage() {
       <Tabs
         value={activeTab}
         onValueChange={(v) =>
-          setActiveTab(v as "overview" | "campaigns" | "events" | "config")
+          setActiveTab(
+            v as
+              | "overview"
+              | "campaigns"
+              | "events"
+              | "lead-ads"
+              | "audiences"
+              | "alerts"
+              | "config",
+          )
         }
       >
-        <TabsList>
+        <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="overview" className="gap-2">
             <LayoutDashboard className="h-4 w-4" />
             Visão Geral
@@ -382,9 +404,21 @@ export default function MetaAdsPage() {
             <RefreshCcw className="h-4 w-4" />
             Eventos CAPI
           </TabsTrigger>
+          <TabsTrigger value="lead-ads" className="gap-2">
+            <FileText className="h-4 w-4" />
+            Lead Ads
+          </TabsTrigger>
+          <TabsTrigger value="audiences" className="gap-2">
+            <Users className="h-4 w-4" />
+            Audiências
+          </TabsTrigger>
+          <TabsTrigger value="alerts" className="gap-2">
+            <Bell className="h-4 w-4" />
+            Alertas
+          </TabsTrigger>
           <TabsTrigger value="config" className="gap-2">
             <Settings className="h-4 w-4" />
-            Configuração
+            Config
           </TabsTrigger>
         </TabsList>
 
@@ -563,6 +597,9 @@ export default function MetaAdsPage() {
                   </CardContent>
                 </Card>
               )}
+
+              {/* Trend Charts */}
+              <MetaAdsTrendCharts dateFrom={dateFrom} dateTo={dateTo} />
             </>
           ) : (
             <Card>
@@ -581,6 +618,19 @@ export default function MetaAdsPage() {
         {/* CAMPAIGNS TAB */}
         {/* ================================================================ */}
         <TabsContent value="campaigns" className="space-y-4">
+          {/* AdSet/Ad Level Breakdown */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Detalhamento por Ad/AdSet</CardTitle>
+              <CardDescription>
+                Métricas por conjunto de anúncios ou anúncio individual
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <MetaAdsBreakdownTable dateFrom={dateFrom} dateTo={dateTo} />
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Todas as Campanhas</CardTitle>
@@ -765,6 +815,27 @@ export default function MetaAdsPage() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* ================================================================ */}
+        {/* LEAD ADS TAB */}
+        {/* ================================================================ */}
+        <TabsContent value="lead-ads" className="space-y-4">
+          <MetaAdsLeadAds />
+        </TabsContent>
+
+        {/* ================================================================ */}
+        {/* AUDIENCES TAB */}
+        {/* ================================================================ */}
+        <TabsContent value="audiences" className="space-y-4">
+          <MetaAdsAudienceSync />
+        </TabsContent>
+
+        {/* ================================================================ */}
+        {/* ALERTS TAB */}
+        {/* ================================================================ */}
+        <TabsContent value="alerts" className="space-y-4">
+          <MetaAdsBudgetAlerts />
         </TabsContent>
 
         {/* ================================================================ */}
