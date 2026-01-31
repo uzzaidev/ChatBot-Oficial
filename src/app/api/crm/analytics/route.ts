@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
     // 3. Lead sources (origem dos leads)
     const { data: leadSourcesData } = await supabase
       .from("lead_sources")
-      .select("source_type, campaign_name, ad_name, captured_at")
+      .select("source_type, campaign_name, ad_name, captured_at, card_id")
       .eq("client_id", clientId);
 
     const leadSources = leadSourcesData || [];
@@ -97,8 +97,22 @@ export async function GET(request: NextRequest) {
       ? leadSources.filter((ls: any) => new Date(ls.captured_at) >= startDate!)
       : leadSources;
 
+    // Identificar cards SEM lead_source (contato direto)
+    const cardsWithLeadSource = new Set(
+      filteredLeadSources.map((ls: any) => ls.card_id),
+    );
+    const directContactCards = filteredCards.filter(
+      (c: any) => !cardsWithLeadSource.has(c.id),
+    );
+
     // Agrupar por source_type
     const sourcesByType: Record<string, number> = {};
+
+    // Adicionar contatos diretos primeiro
+    if (directContactCards.length > 0) {
+      sourcesByType["direct"] = directContactCards.length;
+    }
+
     filteredLeadSources.forEach((ls: any) => {
       const type = ls.source_type || "organic";
       sourcesByType[type] = (sourcesByType[type] || 0) + 1;
@@ -154,11 +168,16 @@ export async function GET(request: NextRequest) {
       awaiting_attendant: 0,
       awaiting_client: 0,
       neutral: 0,
+      in_progress: 0,
+      resolved: 0,
     };
     filteredCards.forEach((c: any) => {
       const status = c.auto_status || "neutral";
       if (cardsByStatus[status] !== undefined) {
         cardsByStatus[status]++;
+      } else {
+        // Status não mapeado vai para neutral
+        cardsByStatus.neutral++;
       }
     });
 
@@ -215,8 +234,8 @@ export async function GET(request: NextRequest) {
           type,
           count,
           percentage:
-            filteredLeadSources.length > 0
-              ? ((count / filteredLeadSources.length) * 100).toFixed(1)
+            filteredCards.length > 0
+              ? ((count / filteredCards.length) * 100).toFixed(1)
               : "0",
         })),
         topCampaigns,

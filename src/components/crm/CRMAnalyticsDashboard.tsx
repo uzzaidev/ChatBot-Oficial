@@ -89,20 +89,25 @@ interface CRMAnalyticsDashboardProps {
 const SOURCE_TYPE_LABELS: Record<string, string> = {
   meta_ads: "Meta Ads",
   organic: "Orgânico",
-  direct: "Direto",
+  direct: "Contato Direto",
   referral: "Indicação",
+  unknown: "Não Identificado",
 };
 
 const STATUS_LABELS: Record<string, string> = {
   awaiting_attendant: "Aguardando Atendente",
   awaiting_client: "Aguardando Cliente",
   neutral: "Neutro",
+  in_progress: "Em Andamento",
+  resolved: "Resolvido",
 };
 
 const STATUS_COLORS: Record<string, string> = {
   awaiting_attendant: "bg-yellow-500",
   awaiting_client: "bg-blue-500",
   neutral: "bg-gray-500",
+  in_progress: "bg-green-500",
+  resolved: "bg-emerald-600",
 };
 
 const ACTIVITY_TYPE_LABELS: Record<string, string> = {

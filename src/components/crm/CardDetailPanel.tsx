@@ -3,6 +3,12 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -19,6 +25,7 @@ import { ptBR } from "date-fns/locale";
 import {
   ArrowRight,
   Calendar,
+  Check,
   ChevronDown,
   Clock,
   DollarSign,
@@ -54,6 +61,23 @@ interface CardDetailPanelProps {
   onAddTag?: (cardId: string, tagId: string) => Promise<boolean>;
   onRemoveTag?: (cardId: string, tagId: string) => Promise<boolean>;
 }
+
+// Status options for the dropdown
+const STATUS_OPTIONS = [
+  {
+    value: "awaiting_attendant",
+    label: "Aguardando Atendente",
+    color: "bg-yellow-500",
+  },
+  {
+    value: "awaiting_client",
+    label: "Aguardando Cliente",
+    color: "bg-blue-500",
+  },
+  { value: "in_progress", label: "Em Andamento", color: "bg-green-500" },
+  { value: "resolved", label: "Resolvido", color: "bg-emerald-600" },
+  { value: "neutral", label: "Neutro", color: "bg-gray-500" },
+];
 
 const getInitials = (name: string): string => {
   if (!name) return "?";
@@ -92,8 +116,29 @@ export const CardDetailPanel = ({
   const [showTagSelector, setShowTagSelector] = useState(false);
   const [localTagIds, setLocalTagIds] = useState<string[]>([]);
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesScrollRef = useRef<HTMLDivElement>(null);
+
+  // Update card status
+  const updateCardStatus = async (newStatus: string) => {
+    if (!card) return;
+    setUpdatingStatus(true);
+    try {
+      const response = await apiFetch(`/api/crm/cards/${card.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ auto_status: newStatus }),
+      });
+      if (response.ok) {
+        onUpdate?.();
+      }
+    } catch (error) {
+      console.error("Error updating card status:", error);
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
 
   // Sync local tagIds with card.tagIds
   useEffect(() => {
@@ -247,7 +292,39 @@ export const CardDetailPanel = ({
 
           {/* Status & Stats */}
           <div className="flex flex-wrap gap-2">
-            <CardStatusBadge status={card.auto_status} size="md" />
+            {/* Status Dropdown - Clique para mudar */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 gap-1 px-2"
+                  disabled={updatingStatus}
+                >
+                  {updatingStatus ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <CardStatusBadge status={card.auto_status} size="md" />
+                  )}
+                  <ChevronDown className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                {STATUS_OPTIONS.map((option) => (
+                  <DropdownMenuItem
+                    key={option.value}
+                    onClick={() => updateCardStatus(option.value)}
+                    className="gap-2"
+                  >
+                    <div className={`h-2 w-2 rounded-full ${option.color}`} />
+                    {option.label}
+                    {card.auto_status === option.value && (
+                      <Check className="h-3 w-3 ml-auto" />
+                    )}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {card.last_message_at && (
               <Badge variant="outline" className="gap-1">

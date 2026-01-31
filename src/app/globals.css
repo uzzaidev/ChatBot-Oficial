@@ -65,6 +65,10 @@
 
     /* Shadow token */
     --shadow-color: 0 0% 0%;
+
+    /* Message bubble colors (WhatsApp-style) */
+    --message-incoming-bg: 210 14% 20%; /* Dark grey for incoming in dark mode */
+    --message-incoming-text: 210 40% 98%; /* Light text */
   }
 
   .light {
@@ -101,6 +105,10 @@
 
     /* Shadow token (light) */
     --shadow-color: 220 13% 10%;
+
+    /* Message bubble colors (WhatsApp-style - light mode) */
+    --message-incoming-bg: 0 0% 100%; /* White for incoming in light mode */
+    --message-incoming-text: 220 13% 18%; /* Dark text */
   }
 }
 

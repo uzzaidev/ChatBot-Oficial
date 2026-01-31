@@ -204,37 +204,42 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
   // Render real document (PDF, etc)
   const renderDocument = () => {
     if (!mediaMetadata) return null
-    
+
     const isPDF = mediaMetadata.mimeType?.includes('pdf')
     const filename = mediaMetadata.filename || 'Documento'
     const fileSize = mediaMetadata.size ? formatFileSize(mediaMetadata.size) : ''
-    
+
+    // Conditional styles for incoming/outgoing
+    const docBgClass = isIncoming
+      ? 'bg-[hsl(var(--message-incoming-text))]/10 hover:bg-[hsl(var(--message-incoming-text))]/20 border-[hsl(var(--message-incoming-text))]/20'
+      : 'bg-white/10 hover:bg-white/20 border-white/20'
+
     return (
       <div className="mb-2">
         <a
           href={mediaMetadata.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-3 p-3 rounded-lg border transition-colors bg-white/10 hover:bg-white/20 border-white/20"
+          className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${docBgClass}`}
         >
           <div className={`p-2 rounded-lg ${isPDF ? 'bg-red-500/20' : 'bg-blue-500/20'}`}>
             {isPDF ? (
-              <FileText className="h-6 w-6 text-red-200" />
+              <FileText className="h-6 w-6 text-red-400" />
             ) : (
-              <File className="h-6 w-6 text-blue-200" />
+              <File className="h-6 w-6 text-blue-400" />
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate text-white">
+            <p className={`text-sm font-medium truncate ${textColor}`}>
               {filename}
             </p>
             {fileSize && (
-              <p className="text-xs text-white/70">
+              <p className={`text-xs ${textColorMuted}`}>
                 {fileSize}
               </p>
             )}
           </div>
-          <Download className="h-5 w-5 flex-shrink-0 text-white/70" />
+          <Download className={`h-5 w-5 flex-shrink-0 ${textColorMuted}`} />
         </a>
       </div>
     )
@@ -245,11 +250,15 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
     // Check if it's a document with filename in the tag
     const docMatch = message.content.match(/\[documento:\s*([^\]]+)\]/i)
     const displayName = docMatch ? docMatch[1].trim() : legacyFilename
-    
+
+    const legacyBgClass = isIncoming
+      ? 'bg-[hsl(var(--message-incoming-text))]/10'
+      : 'bg-white/10'
+
     return (
-      <div className="flex items-center gap-2 mb-1 p-2 rounded-lg bg-white/10">
-        <FileText className="h-5 w-5 text-white" />
-        <span className="font-medium text-sm text-white">{displayName || 'Arquivo enviado'}</span>
+      <div className={`flex items-center gap-2 mb-1 p-2 rounded-lg ${legacyBgClass}`}>
+        <FileText className={`h-5 w-5 ${textColor}`} />
+        <span className={`font-medium text-sm ${textColor}`}>{displayName || 'Arquivo enviado'}</span>
       </div>
     )
   }
@@ -270,28 +279,39 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
       })
     }
 
+    // Conditional styles for template elements
+    const templateBorderClass = isIncoming
+      ? 'border-[hsl(var(--message-incoming-text))]/20'
+      : 'border-white/20'
+    const templateBadgeBgClass = isIncoming
+      ? 'bg-[hsl(var(--message-incoming-text))]/20'
+      : 'bg-white/20'
+    const templateButtonBgClass = isIncoming
+      ? 'bg-[hsl(var(--message-incoming-text))]/15 hover:bg-[hsl(var(--message-incoming-text))]/25'
+      : 'bg-white/15 hover:bg-white/25'
+
     return (
       <div className="space-y-2">
         {/* Template header with badge */}
-        <div className="flex items-center gap-2 pb-2 border-b border-white/20">
-          <div className="px-2 py-0.5 rounded text-xs font-medium bg-white/20 text-white">
+        <div className={`flex items-center gap-2 pb-2 border-b ${templateBorderClass}`}>
+          <div className={`px-2 py-0.5 rounded text-xs font-medium ${templateBadgeBgClass} ${textColor}`}>
             Template
           </div>
-          <span className="text-xs font-medium text-white/80">
+          <span className={`text-xs font-medium ${textColorSubtle}`}>
             {templateMetadata.template_name}
           </span>
         </div>
 
         {/* Template body content */}
         {bodyText && (
-          <div className="text-sm md:text-base whitespace-pre-wrap text-white">
+          <div className={`text-sm md:text-base whitespace-pre-wrap ${textColor}`}>
             {bodyText}
           </div>
         )}
 
         {/* Footer if exists */}
         {templateMetadata.template_components?.find(c => c.type === 'FOOTER') && (
-          <div className="text-xs pt-2 border-t border-white/20 text-white/70">
+          <div className={`text-xs pt-2 border-t ${templateBorderClass} ${textColorMuted}`}>
             {templateMetadata.template_components.find(c => c.type === 'FOOTER')?.text}
           </div>
         )}
@@ -304,7 +324,7 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
               ?.buttons?.map((button, index) => (
                 <div
                   key={index}
-                  className="text-center py-2 px-3 rounded text-sm font-medium bg-white/15 text-white hover:bg-white/25 transition-colors"
+                  className={`text-center py-2 px-3 rounded text-sm font-medium ${templateButtonBgClass} ${textColor} transition-colors`}
                 >
                   {button.text}
                 </div>
@@ -493,10 +513,20 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
     }
   }
 
+  // Dynamic styles based on message direction (WhatsApp-style)
+  const bubbleStyles = isIncoming
+    ? 'bg-[hsl(var(--message-incoming-bg))] shadow-md border border-border'
+    : 'bg-gradient-to-br from-primary to-secondary shadow-lg'
+
+  // Text color classes - incoming uses CSS variable, outgoing uses white
+  const textColor = isIncoming ? 'text-[hsl(var(--message-incoming-text))]' : 'text-white'
+  const textColorMuted = isIncoming ? 'text-[hsl(var(--message-incoming-text))]/70' : 'text-white/70'
+  const textColorSubtle = isIncoming ? 'text-[hsl(var(--message-incoming-text))]/80' : 'text-white/80'
+
   return (
     <div className={'flex ' + (isIncoming ? 'justify-start' : 'justify-end') + ' mb-2 px-2'}>
       <div
-        className="relative group max-w-[85%] sm:max-w-[75%] md:max-w-[70%] rounded-lg p-3 break-words bg-gradient-to-br from-primary to-secondary text-white shadow-lg"
+        className={`relative group max-w-[85%] sm:max-w-[75%] md:max-w-[70%] rounded-lg p-3 break-words ${bubbleStyles}`}
       >
         {/* Action menu - WhatsApp style dropdown */}
         {(onReaction || onDelete) && (
@@ -510,11 +540,11 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
 
         {renderMediaContent()}
         {textContent && (
-          <p className="whitespace-pre-wrap text-sm md:text-base text-white">
+          <p className={`whitespace-pre-wrap text-sm md:text-base ${textColor}`}>
             {textContent}
           </p>
         )}
-        <p className="text-xs mt-1 flex items-center gap-1 text-white/80">
+        <p className={`text-xs mt-1 flex items-center gap-1 ${textColorSubtle}`}>
           <span>{new Date(message.timestamp).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>
           {renderStatusIcon()}
         </p>
