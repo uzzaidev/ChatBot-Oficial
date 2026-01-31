@@ -725,6 +725,13 @@ export interface Database {
           Omit<MessageTemplate, "id" | "created_at" | "updated_at">
         >;
       };
+      scheduled_messages: {
+        Row: ScheduledMessage;
+        Insert: Omit<ScheduledMessage, "id" | "created_at" | "updated_at" | "contact" | "creator">;
+        Update: Partial<
+          Omit<ScheduledMessage, "id" | "created_at" | "contact" | "creator">
+        >;
+      };
     };
     Views: {};
     Functions: {
@@ -756,17 +763,17 @@ export interface Database {
 // CRM MODULE TYPES
 // =============================================================================
 
-export type AutoStatus = 'awaiting_attendant' | 'awaiting_client' | 'neutral';
+export type AutoStatus = "awaiting_attendant" | "awaiting_client" | "neutral";
 
 export type CRMActivityType =
-  | 'column_move'
-  | 'tag_add'
-  | 'tag_remove'
-  | 'note_add'
-  | 'assigned'
-  | 'status_change'
-  | 'value_change'
-  | 'created';
+  | "column_move"
+  | "tag_add"
+  | "tag_remove"
+  | "note_add"
+  | "assigned"
+  | "status_change"
+  | "value_change"
+  | "created";
 
 export interface CRMColumn {
   id: string;
@@ -798,12 +805,12 @@ export interface CRMCard {
   probability: number;
   expected_close_date: string | null;
   last_message_at: string | null;
-  last_message_direction: 'incoming' | 'outgoing' | null;
+  last_message_direction: "incoming" | "outgoing" | null;
   last_message_preview: string | null;
   moved_to_column_at: string;
   created_at: string;
   updated_at: string;
-  
+
   // Joined data
   contact?: {
     name: string | null;
@@ -842,7 +849,7 @@ export interface CRMNote {
   is_pinned: boolean;
   created_at: string;
   updated_at: string;
-  
+
   // Joined data
   author?: {
     name: string | null;
@@ -860,7 +867,7 @@ export interface CRMActivityLog {
   performed_by: string | null;
   is_automated: boolean;
   created_at: string;
-  
+
   // Joined data
   actor?: {
     name: string | null;
@@ -874,4 +881,43 @@ export interface CRMFilters {
   autoStatus?: AutoStatus;
   dateFrom?: string;
   dateTo?: string;
+}
+
+// =============================================================================
+// SCHEDULED MESSAGES
+// =============================================================================
+
+export type ScheduledMessageStatus =
+  | "pending"
+  | "sent"
+  | "failed"
+  | "cancelled";
+export type ScheduledMessageType = "text" | "template";
+
+export interface ScheduledMessage {
+  id: string;
+  client_id: string;
+  phone: string | number;
+  card_id: string | null;
+  message_type: ScheduledMessageType;
+  content: string | null;
+  template_id: string | null;
+  template_params: Record<string, any> | null;
+  scheduled_for: string;
+  timezone: string;
+  status: ScheduledMessageStatus;
+  sent_at: string | null;
+  error_message: string | null;
+  wamid: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+
+  // Joined data
+  contact?: {
+    name: string | null;
+  };
+  creator?: {
+    name: string | null;
+  };
 }

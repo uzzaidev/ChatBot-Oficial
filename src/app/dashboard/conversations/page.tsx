@@ -2,14 +2,12 @@
 import { ConversationsIndexClient } from "@/components/ConversationsIndexClient";
 import { createClientBrowser } from "@/lib/supabase";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 /**
- * Conversations Index Page - Client Component
- *
- * FASE 3 (Mobile): Convertido para Client Component
+ * Inner component that uses useSearchParams
  */
-export default function ConversationsIndexPage() {
+function ConversationsPageInner() {
   const [clientId, setClientId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -66,5 +64,25 @@ export default function ConversationsIndexPage() {
 
   return (
     <ConversationsIndexClient clientId={clientId} initialPhone={initialPhone} />
+  );
+}
+
+/**
+ * Conversations Index Page - Client Component
+ *
+ * FASE 3 (Mobile): Convertido para Client Component
+ * Wrapped in Suspense for useSearchParams
+ */
+export default function ConversationsIndexPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen bg-silver-50">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mint-500"></div>
+        </div>
+      }
+    >
+      <ConversationsPageInner />
+    </Suspense>
   );
 }
