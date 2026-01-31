@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createRouteHandlerClient } from "@/lib/supabase-server";
 import { logUpdate } from "@/lib/audit";
 import { SecretUpdateSchema, validatePayload } from "@/lib/schemas";
+import { createRouteHandlerClient } from "@/lib/supabase-server";
+import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 export const dynamic = "force-dynamic";
@@ -75,9 +75,12 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (profileError || !profile) {
-      return NextResponse.json({ error: "Perfil não encontrado" }, {
-        status: 404,
-      });
+      return NextResponse.json(
+        { error: "Perfil não encontrado" },
+        {
+          status: 404,
+        },
+      );
     }
 
     const clientId = profile.client_id;
@@ -86,53 +89,50 @@ export async function GET(request: NextRequest) {
     const { data: client, error: clientError } = await supabase
       .from("clients")
       .select(
-        "id, slug, ai_keys_mode, meta_access_token_secret_id, meta_verify_token_secret_id, meta_app_secret_secret_id, meta_phone_number_id, openai_api_key_secret_id, groq_api_key_secret_id",
+        "id, slug, ai_keys_mode, meta_access_token_secret_id, meta_verify_token_secret_id, meta_app_secret_secret_id, meta_phone_number_id, openai_api_key_secret_id, groq_api_key_secret_id, whatsapp_business_account_id, meta_waba_id, meta_dataset_id, meta_ad_account_id",
       )
       .eq("id", clientId)
       .single();
 
     if (clientError || !client) {
-      return NextResponse.json({ error: "Cliente não encontrado" }, {
-        status: 404,
-      });
+      return NextResponse.json(
+        { error: "Cliente não encontrado" },
+        {
+          status: 404,
+        },
+      );
     }
 
     // Buscar secrets descriptografados do Vault
-    const { data: metaAccessToken, error: metaAccessError } = await supabase
-      .rpc(
-        "get_client_secret",
-        {
-          secret_id: client.meta_access_token_secret_id,
-        },
-      );
+    const { data: metaAccessToken, error: metaAccessError } =
+      await supabase.rpc("get_client_secret", {
+        secret_id: client.meta_access_token_secret_id,
+      });
 
-    const { data: metaVerifyToken, error: metaVerifyError } = await supabase
-      .rpc(
-        "get_client_secret",
-        {
-          secret_id: client.meta_verify_token_secret_id,
-        },
-      );
+    const { data: metaVerifyToken, error: metaVerifyError } =
+      await supabase.rpc("get_client_secret", {
+        secret_id: client.meta_verify_token_secret_id,
+      });
 
     // SECURITY FIX (VULN-012): Buscar App Secret (diferente do Verify Token)
     const { data: metaAppSecret, error: metaAppError } =
       client.meta_app_secret_secret_id
         ? await supabase.rpc("get_client_secret", {
-          secret_id: client.meta_app_secret_secret_id,
-        })
+            secret_id: client.meta_app_secret_secret_id,
+          })
         : { data: "", error: null };
 
     const { data: openaiApiKey, error: openaiError } =
       client.openai_api_key_secret_id
         ? await supabase.rpc("get_client_secret", {
-          secret_id: client.openai_api_key_secret_id,
-        })
+            secret_id: client.openai_api_key_secret_id,
+          })
         : { data: "", error: null };
 
     const { data: groqApiKey, error: groqError } = client.groq_api_key_secret_id
       ? await supabase.rpc("get_client_secret", {
-        secret_id: client.groq_api_key_secret_id,
-      })
+          secret_id: client.groq_api_key_secret_id,
+        })
       : { data: "", error: null };
 
     if (metaAccessError || metaVerifyError) {
@@ -144,7 +144,8 @@ export async function GET(request: NextRequest) {
 
     // Construir webhook URL com client_id
     const webhookUrl = `${
-      process.env.WEBHOOK_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL ||
+      process.env.WEBHOOK_BASE_URL ||
+      process.env.NEXT_PUBLIC_SITE_URL ||
       "https://chat.luisfboff.com"
     }/api/webhook/${client.id}`;
 
@@ -158,6 +159,10 @@ export async function GET(request: NextRequest) {
         meta_verify_token: maskSecret(metaVerifyToken),
         meta_app_secret: maskSecret(metaAppSecret), // SECURITY FIX (VULN-012)
         meta_phone_number_id: client.meta_phone_number_id || "",
+        whatsapp_business_account_id:
+          client.whatsapp_business_account_id || client.meta_waba_id || "",
+        meta_dataset_id: client.meta_dataset_id || "",
+        meta_ad_account_id: client.meta_ad_account_id || "",
         openai_api_key: maskSecret(openaiApiKey),
         groq_api_key: maskSecret(groqApiKey),
         webhook_url: webhookUrl,
@@ -166,9 +171,15 @@ export async function GET(request: NextRequest) {
         meta_access_token: !!(metaAccessToken && metaAccessToken.length > 0),
         meta_verify_token: !!(metaVerifyToken && metaVerifyToken.length > 0),
         meta_app_secret: !!(metaAppSecret && metaAppSecret.length > 0), // SECURITY FIX (VULN-012)
-        meta_phone_number_id:
-          !!(client.meta_phone_number_id &&
-            client.meta_phone_number_id.length > 0),
+        meta_phone_number_id: !!(
+          client.meta_phone_number_id && client.meta_phone_number_id.length > 0
+        ),
+        meta_dataset_id: !!(
+          client.meta_dataset_id && client.meta_dataset_id.length > 0
+        ),
+        meta_ad_account_id: !!(
+          client.meta_ad_account_id && client.meta_ad_account_id.length > 0
+        ),
         openai_api_key: !!(openaiApiKey && openaiApiKey.length > 0),
         groq_api_key: !!(groqApiKey && groqApiKey.length > 0),
       },
@@ -232,9 +243,12 @@ export async function PUT(request: NextRequest) {
       .single();
 
     if (profileError || !profile) {
-      return NextResponse.json({ error: "Perfil não encontrado" }, {
-        status: 404,
-      });
+      return NextResponse.json(
+        { error: "Perfil não encontrado" },
+        {
+          status: 404,
+        },
+      );
     }
 
     const clientId = profile.client_id;
@@ -247,9 +261,12 @@ export async function PUT(request: NextRequest) {
       .single();
 
     if (clientError || !client) {
-      return NextResponse.json({ error: "Cliente não encontrado" }, {
-        status: 404,
-      });
+      return NextResponse.json(
+        { error: "Cliente não encontrado" },
+        {
+          status: 404,
+        },
+      );
     }
 
     // Mapear key para secret_id field
@@ -382,8 +399,8 @@ export async function PUT(request: NextRequest) {
       .single();
 
     const secretName = oldSecret?.name || `${client.slug}_${key}`;
-    const secretDescription = oldSecret?.description ||
-      `${key} for client ${client.name}`;
+    const secretDescription =
+      oldSecret?.description || `${key} for client ${client.name}`;
 
     // 2. DELETAR secret antigo PRIMEIRO usando RPC (evita duplicação de nome)
     const { data: deleteResult, error: deleteError } = await supabase.rpc(

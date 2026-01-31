@@ -24,6 +24,7 @@ import {
   MessageSquare,
   Settings,
   Terminal,
+  TrendingUp,
   Users,
   Workflow,
   Zap,
@@ -249,6 +250,15 @@ export function DashboardNavigation({
           isCollapsed={isCollapsed}
           onClick={onLinkClick}
           tooltip="Relatórios e análises de conversas, mensagens e custos"
+        />
+
+        <NavItem
+          href="/dashboard/meta-ads"
+          icon={<TrendingUp className="h-5 w-5 flex-shrink-0" />}
+          label="Meta Ads"
+          isCollapsed={isCollapsed}
+          onClick={onLinkClick}
+          tooltip="Performance de campanhas, ROI e conversões CAPI"
         />
 
         {/* SEÇÃO: ADMINISTRAÇÃO */}

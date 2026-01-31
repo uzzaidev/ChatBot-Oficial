@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 /**
  * Settings Page
@@ -7,90 +7,116 @@
  *
  * Client Component (Mobile Compatible)
  * Motivo: Static Export (Capacitor) não suporta Server Components
- * 
+ *
  * Implementação completa do Settings com:
  * 1. Perfil do Usuário - visualizar/editar nome, email, telefone, alterar senha
  * 2. Variáveis de Ambiente - gerenciar credenciais do Vault (Meta, OpenAI, Groq)
  * 3. Bot Configurations - gerenciar configurações modulares do bot
- * 
+ *
  * Baseado na implementação do desenvolvedor sênior
  * IMPORTANTE: Edição de variáveis requer revalidação de senha
  */
 
-import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Eye, EyeOff, Save, Lock, Copy, Check, Bot, CheckCircle, XCircle, AlertTriangle, Rocket, MessageCircle, Mic } from 'lucide-react'
-import { Textarea } from '@/components/ui/textarea'
+import BotConfigurationManager from "@/components/BotConfigurationManager";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { ToggleSwitch } from '@/components/ui/toggle-switch'
-import { SliderControl } from '@/components/ui/slider-control'
-import BotConfigurationManager from '@/components/BotConfigurationManager'
+} from "@/components/ui/select";
+import { SliderControl } from "@/components/ui/slider-control";
+import { Textarea } from "@/components/ui/textarea";
+import { ToggleSwitch } from "@/components/ui/toggle-switch";
+import {
+  AlertTriangle,
+  Bot,
+  Check,
+  CheckCircle,
+  Copy,
+  Eye,
+  EyeOff,
+  Lock,
+  MessageCircle,
+  Mic,
+  Rocket,
+  Save,
+  XCircle,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 export default function SettingsPage() {
   // Estado do perfil
   const [profile, setProfile] = useState({
-    full_name: '',
-    email: '',
-    phone: '',
-  })
-  const [editingProfile, setEditingProfile] = useState(false)
-  const [loadingProfile, setLoadingProfile] = useState(false)
+    full_name: "",
+    email: "",
+    phone: "",
+  });
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(false);
 
   // Estado da senha
   const [passwordForm, setPasswordForm] = useState({
-    current_password: '',
-    new_password: '',
-    confirm_password: '',
-  })
-  const [loadingPassword, setLoadingPassword] = useState(false)
+    current_password: "",
+    new_password: "",
+    confirm_password: "",
+  });
+  const [loadingPassword, setLoadingPassword] = useState(false);
 
   // Estado das variáveis de ambiente
   const [secrets, setSecrets] = useState({
-    meta_access_token: '',
-    meta_verify_token: '',
-    meta_app_secret: '', // SECURITY FIX (VULN-012)
-    meta_phone_number_id: '',
-    whatsapp_business_account_id: '', // WABA ID
-    openai_api_key: '',
-    groq_api_key: '',
-    webhook_url: '',
-  })
-  const [editingSecrets, setEditingSecrets] = useState(false)
-  const [loadingSecrets, setLoadingSecrets] = useState(false)
-  const [revalidationPassword, setRevalidationPassword] = useState('')
-  const [showRevalidationModal, setShowRevalidationModal] = useState(false)
-  const [revalidating, setRevalidating] = useState(false)
+    meta_access_token: "",
+    meta_verify_token: "",
+    meta_app_secret: "", // SECURITY FIX (VULN-012)
+    meta_phone_number_id: "",
+    whatsapp_business_account_id: "", // WABA ID
+    meta_dataset_id: "", // Meta Ads - Dataset ID for Conversions API
+    meta_ad_account_id: "", // Meta Ads - Ad Account ID for Marketing API
+    openai_api_key: "",
+    groq_api_key: "",
+    webhook_url: "",
+  });
+  const [editingSecrets, setEditingSecrets] = useState(false);
+  const [loadingSecrets, setLoadingSecrets] = useState(false);
+  const [revalidationPassword, setRevalidationPassword] = useState("");
+  const [showRevalidationModal, setShowRevalidationModal] = useState(false);
+  const [revalidating, setRevalidating] = useState(false);
 
-  const [aiKeysMode, setAiKeysMode] = useState<'platform_only' | 'byok_allowed'>('platform_only')
+  const [aiKeysMode, setAiKeysMode] = useState<
+    "platform_only" | "byok_allowed"
+  >("platform_only");
 
   // Estado de visibilidade de senhas
-  const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({})
+  const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>(
+    {},
+  );
 
   // Estado de notificações
   const [notification, setNotification] = useState<{
-    type: 'success' | 'error'
-    message: string
-  } | null>(null)
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
 
   // Estado de cópia
-  const [copied, setCopied] = useState<string | null>(null)
+  const [copied, setCopied] = useState<string | null>(null);
 
   // Estado do Agent Config
   const [agentConfig, setAgentConfig] = useState({
-    system_prompt: '',
-    formatter_prompt: '',
-    openai_model: 'gpt-4o',
-    groq_model: 'llama-3.3-70b-versatile',
-    primary_model_provider: 'groq', // NOVO
+    system_prompt: "",
+    formatter_prompt: "",
+    openai_model: "gpt-4o",
+    groq_model: "llama-3.3-70b-versatile",
+    primary_model_provider: "groq", // NOVO
     settings: {
       enable_rag: false,
       max_tokens: 2000,
@@ -102,79 +128,83 @@ export default function SettingsPage() {
       batching_delay_seconds: 10,
       message_delay_ms: 2000, // Delay between split messages
     },
-  })
-  const [editingAgent, setEditingAgent] = useState(false)
-  const [loadingAgent, setLoadingAgent] = useState(false)
-  const [showAgentRevalidationModal, setShowAgentRevalidationModal] = useState(false)
-  const [agentRevalidationPassword, setAgentRevalidationPassword] = useState('')
-  const [agentRevalidating, setAgentRevalidating] = useState(false)
+  });
+  const [editingAgent, setEditingAgent] = useState(false);
+  const [loadingAgent, setLoadingAgent] = useState(false);
+  const [showAgentRevalidationModal, setShowAgentRevalidationModal] =
+    useState(false);
+  const [agentRevalidationPassword, setAgentRevalidationPassword] =
+    useState("");
+  const [agentRevalidating, setAgentRevalidating] = useState(false);
 
   // Estado do teste de modelo
-  const [testingModel, setTestingModel] = useState(false)
+  const [testingModel, setTestingModel] = useState(false);
   const [testResult, setTestResult] = useState<{
-    success: boolean
-    message: string
-    latency_ms?: number
-  } | null>(null)
+    success: boolean;
+    message: string;
+    latency_ms?: number;
+  } | null>(null);
 
   // Carregar perfil do usuário
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const { apiFetch } = await import('@/lib/api')
-        const response = await apiFetch('/api/user/profile')
-        const data = await response.json()
+        const { apiFetch } = await import("@/lib/api");
+        const response = await apiFetch("/api/user/profile");
+        const data = await response.json();
 
         if (response.ok) {
           setProfile({
-            full_name: data.full_name || '',
-            email: data.email || '',
-            phone: data.phone || '',
-          })
+            full_name: data.full_name || "",
+            email: data.email || "",
+            phone: data.phone || "",
+          });
         }
-      } catch (error) {
-      }
-    }
+      } catch (error) {}
+    };
 
-    fetchProfile()
-  }, [])
+    fetchProfile();
+  }, []);
 
   // Carregar variáveis de ambiente
   useEffect(() => {
     const fetchSecrets = async () => {
       try {
-        const { apiFetch } = await import('@/lib/api')
-        const response = await apiFetch('/api/vault/secrets')
-        const data = await response.json()
+        const { apiFetch } = await import("@/lib/api");
+        const response = await apiFetch("/api/vault/secrets");
+        const data = await response.json();
 
         if (response.ok) {
-          setSecrets(data.secrets || {})
-          if (data.ai_keys_mode === 'platform_only' || data.ai_keys_mode === 'byok_allowed') {
-            setAiKeysMode(data.ai_keys_mode)
+          setSecrets(data.secrets || {});
+          if (
+            data.ai_keys_mode === "platform_only" ||
+            data.ai_keys_mode === "byok_allowed"
+          ) {
+            setAiKeysMode(data.ai_keys_mode);
           }
         }
-      } catch (error) {
-      }
-    }
+      } catch (error) {}
+    };
 
-    fetchSecrets()
-  }, [])
+    fetchSecrets();
+  }, []);
 
   // Carregar configurações do Agent
   useEffect(() => {
     const fetchAgentConfig = async () => {
       try {
-        const { apiFetch } = await import('@/lib/api')
-        const response = await apiFetch('/api/client/config')
-        const data = await response.json()
+        const { apiFetch } = await import("@/lib/api");
+        const response = await apiFetch("/api/client/config");
+        const data = await response.json();
 
         if (response.ok && data.config) {
           setAgentConfig({
-            system_prompt: data.config.system_prompt || '',
-            formatter_prompt: data.config.formatter_prompt || '',
-            openai_model: data.config.openai_model || 'gpt-4o',
-            groq_model: data.config.groq_model || 'llama-3.3-70b-versatile',
-            primary_model_provider: data.config.primary_model_provider || 'groq', // NOVO
+            system_prompt: data.config.system_prompt || "",
+            formatter_prompt: data.config.formatter_prompt || "",
+            openai_model: data.config.openai_model || "gpt-4o",
+            groq_model: data.config.groq_model || "llama-3.3-70b-versatile",
+            primary_model_provider:
+              data.config.primary_model_provider || "groq", // NOVO
             settings: data.config.settings || {
               enable_rag: false,
               max_tokens: 2000,
@@ -186,337 +216,414 @@ export default function SettingsPage() {
               batching_delay_seconds: 10,
               message_delay_ms: 2000,
             },
-          })
+          });
 
-          if (data.config.ai_keys_mode === 'platform_only' || data.config.ai_keys_mode === 'byok_allowed') {
-            setAiKeysMode(data.config.ai_keys_mode)
+          if (
+            data.config.ai_keys_mode === "platform_only" ||
+            data.config.ai_keys_mode === "byok_allowed"
+          ) {
+            setAiKeysMode(data.config.ai_keys_mode);
           }
 
           // Also update WABA ID from client config if present
           if (data.whatsapp_business_account_id) {
-            setSecrets(prev => ({
+            setSecrets((prev) => ({
               ...prev,
-              whatsapp_business_account_id: data.whatsapp_business_account_id
-            }))
+              whatsapp_business_account_id: data.whatsapp_business_account_id,
+            }));
           }
         }
-      } catch (error) {
-      }
-    }
+      } catch (error) {}
+    };
 
-    fetchAgentConfig()
-  }, [])
+    fetchAgentConfig();
+  }, []);
 
   // Atualizar nome do usuário
   const handleUpdateProfile = async () => {
-    setLoadingProfile(true)
-    setNotification(null)
+    setLoadingProfile(true);
+    setNotification(null);
 
     try {
-      const { apiFetch } = await import('@/lib/api')
-      const response = await apiFetch('/api/user/profile', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+      const { apiFetch } = await import("@/lib/api");
+      const response = await apiFetch("/api/user/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ full_name: profile.full_name }),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (response.ok) {
-        setNotification({ type: 'success', message: 'Nome atualizado com sucesso!' })
-        setEditingProfile(false)
+        setNotification({
+          type: "success",
+          message: "Nome atualizado com sucesso!",
+        });
+        setEditingProfile(false);
       } else {
-        setNotification({ type: 'error', message: data.error || 'Erro ao atualizar nome' })
+        setNotification({
+          type: "error",
+          message: data.error || "Erro ao atualizar nome",
+        });
       }
     } catch (error) {
-      setNotification({ type: 'error', message: 'Erro ao atualizar nome' })
+      setNotification({ type: "error", message: "Erro ao atualizar nome" });
     } finally {
-      setLoadingProfile(false)
+      setLoadingProfile(false);
     }
-  }
+  };
 
   // Atualizar senha
   const handleUpdatePassword = async () => {
-    setLoadingPassword(true)
-    setNotification(null)
+    setLoadingPassword(true);
+    setNotification(null);
 
     if (passwordForm.new_password !== passwordForm.confirm_password) {
-      setNotification({ type: 'error', message: 'As senhas não coincidem' })
-      setLoadingPassword(false)
-      return
+      setNotification({ type: "error", message: "As senhas não coincidem" });
+      setLoadingPassword(false);
+      return;
     }
 
     if (passwordForm.new_password.length < 8) {
-      setNotification({ type: 'error', message: 'A senha deve ter pelo menos 8 caracteres' })
-      setLoadingPassword(false)
-      return
+      setNotification({
+        type: "error",
+        message: "A senha deve ter pelo menos 8 caracteres",
+      });
+      setLoadingPassword(false);
+      return;
     }
 
     try {
-      const { apiFetch } = await import('@/lib/api')
-      const response = await apiFetch('/api/user/password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const { apiFetch } = await import("@/lib/api");
+      const response = await apiFetch("/api/user/password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           current_password: passwordForm.current_password,
           new_password: passwordForm.new_password,
         }),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (response.ok) {
-        setNotification({ type: 'success', message: 'Senha atualizada com sucesso!' })
-        setPasswordForm({ current_password: '', new_password: '', confirm_password: '' })
+        setNotification({
+          type: "success",
+          message: "Senha atualizada com sucesso!",
+        });
+        setPasswordForm({
+          current_password: "",
+          new_password: "",
+          confirm_password: "",
+        });
       } else {
-        setNotification({ type: 'error', message: data.error || 'Erro ao atualizar senha' })
+        setNotification({
+          type: "error",
+          message: data.error || "Erro ao atualizar senha",
+        });
       }
     } catch (error) {
-      setNotification({ type: 'error', message: 'Erro ao atualizar senha' })
+      setNotification({ type: "error", message: "Erro ao atualizar senha" });
     } finally {
-      setLoadingPassword(false)
+      setLoadingPassword(false);
     }
-  }
+  };
 
   // Revalidar senha antes de editar variáveis
   const handleRevalidatePassword = async () => {
-    setRevalidating(true)
-    setNotification(null)
+    setRevalidating(true);
+    setNotification(null);
 
     try {
-      const { apiFetch } = await import('@/lib/api')
-      const response = await apiFetch('/api/user/revalidate-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const { apiFetch } = await import("@/lib/api");
+      const response = await apiFetch("/api/user/revalidate-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: revalidationPassword }),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (response.ok && data.valid) {
-        setShowRevalidationModal(false)
-        setEditingSecrets(true)
-        setRevalidationPassword('')
-        setNotification({ type: 'success', message: 'Senha validada! Você pode editar as variáveis.' })
+        setShowRevalidationModal(false);
+        setEditingSecrets(true);
+        setRevalidationPassword("");
+        setNotification({
+          type: "success",
+          message: "Senha validada! Você pode editar as variáveis.",
+        });
       } else {
-        setNotification({ type: 'error', message: 'Senha incorreta' })
+        setNotification({ type: "error", message: "Senha incorreta" });
       }
     } catch (error) {
-      setNotification({ type: 'error', message: 'Erro ao validar senha' })
+      setNotification({ type: "error", message: "Erro ao validar senha" });
     } finally {
-      setRevalidating(false)
+      setRevalidating(false);
     }
-  }
+  };
 
   // Atualizar variável de ambiente
   const handleUpdateSecret = async (key: string, value: string) => {
-    setLoadingSecrets(true)
-    setNotification(null)
+    setLoadingSecrets(true);
+    setNotification(null);
 
     try {
-      const { apiFetch } = await import('@/lib/api')
+      const { apiFetch } = await import("@/lib/api");
 
-      // WABA ID is stored in clients table, not vault
-      if (key === 'whatsapp_business_account_id') {
-        const response = await apiFetch('/api/client/waba-id', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ whatsapp_business_account_id: value }),
-        })
+      // Fields stored in clients table (not vault)
+      const clientTableFields = [
+        "whatsapp_business_account_id",
+        "meta_dataset_id",
+        "meta_ad_account_id",
+      ];
 
-        const data = await response.json()
+      if (clientTableFields.includes(key)) {
+        const response = await apiFetch("/api/client/meta-config", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ [key]: value }),
+        });
+
+        const data = await response.json();
 
         if (response.ok) {
-          setNotification({ type: 'success', message: 'WABA ID atualizado com sucesso!' })
+          const fieldNames: Record<string, string> = {
+            whatsapp_business_account_id: "WABA ID",
+            meta_dataset_id: "Meta Dataset ID",
+            meta_ad_account_id: "Meta Ad Account ID",
+          };
+          setNotification({
+            type: "success",
+            message: `${fieldNames[key] || key} atualizado com sucesso!`,
+          });
           // Update local state
-          setSecrets(prev => ({ ...prev, whatsapp_business_account_id: value }))
+          setSecrets((prev) => ({
+            ...prev,
+            [key]: value,
+          }));
         } else {
-          setNotification({ type: 'error', message: data.error || 'Erro ao atualizar WABA ID' })
+          setNotification({
+            type: "error",
+            message: data.error || `Erro ao atualizar ${key}`,
+          });
         }
       } else {
         // Other secrets go to vault
-        const response = await apiFetch('/api/vault/secrets', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+        const response = await apiFetch("/api/vault/secrets", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ key, value }),
-        })
+        });
 
-        const data = await response.json()
+        const data = await response.json();
 
         if (response.ok) {
-          setNotification({ type: 'success', message: `${key} atualizado com sucesso!` })
+          setNotification({
+            type: "success",
+            message: `${key} atualizado com sucesso!`,
+          });
           // Recarregar secrets para mostrar valor atualizado (mascarado)
-          const refreshResponse = await apiFetch('/api/vault/secrets')
-          const refreshData = await refreshResponse.json()
+          const refreshResponse = await apiFetch("/api/vault/secrets");
+          const refreshData = await refreshResponse.json();
           if (refreshResponse.ok) {
-            setSecrets(refreshData.secrets || {})
-            if (refreshData.ai_keys_mode === 'platform_only' || refreshData.ai_keys_mode === 'byok_allowed') {
-              setAiKeysMode(refreshData.ai_keys_mode)
+            setSecrets(refreshData.secrets || {});
+            if (
+              refreshData.ai_keys_mode === "platform_only" ||
+              refreshData.ai_keys_mode === "byok_allowed"
+            ) {
+              setAiKeysMode(refreshData.ai_keys_mode);
             }
           }
         } else {
           const errorMessage = data.details
             ? `${data.error}: ${data.details}`
-            : data.error || 'Erro ao atualizar variável'
-          setNotification({ type: 'error', message: errorMessage })
+            : data.error || "Erro ao atualizar variável";
+          setNotification({ type: "error", message: errorMessage });
         }
       }
     } catch (error) {
-      setNotification({ type: 'error', message: 'Erro ao atualizar variável' })
+      setNotification({ type: "error", message: "Erro ao atualizar variável" });
     } finally {
-      setLoadingSecrets(false)
+      setLoadingSecrets(false);
     }
-  }
+  };
 
-  const handleUpdateAIKeysMode = async (mode: 'platform_only' | 'byok_allowed') => {
-    setLoadingSecrets(true)
-    setNotification(null)
+  const handleUpdateAIKeysMode = async (
+    mode: "platform_only" | "byok_allowed",
+  ) => {
+    setLoadingSecrets(true);
+    setNotification(null);
 
     try {
-      const { apiFetch } = await import('@/lib/api')
-      const response = await apiFetch('/api/client/config', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+      const { apiFetch } = await import("@/lib/api");
+      const response = await apiFetch("/api/client/config", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ai_keys_mode: mode }),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (response.ok) {
-        setAiKeysMode(mode)
-        setNotification({ type: 'success', message: 'Modo de chaves de IA atualizado com sucesso!' })
+        setAiKeysMode(mode);
+        setNotification({
+          type: "success",
+          message: "Modo de chaves de IA atualizado com sucesso!",
+        });
       } else {
-        setNotification({ type: 'error', message: data.error || 'Erro ao atualizar modo de chaves de IA' })
+        setNotification({
+          type: "error",
+          message: data.error || "Erro ao atualizar modo de chaves de IA",
+        });
       }
     } catch (error) {
-      setNotification({ type: 'error', message: 'Erro ao atualizar modo de chaves de IA' })
+      setNotification({
+        type: "error",
+        message: "Erro ao atualizar modo de chaves de IA",
+      });
     } finally {
-      setLoadingSecrets(false)
+      setLoadingSecrets(false);
     }
-  }
+  };
 
   // Copiar para clipboard
   const handleCopy = (text: string, key: string) => {
-    navigator.clipboard.writeText(text)
-    setCopied(key)
-    setTimeout(() => setCopied(null), 2000)
-  }
+    navigator.clipboard.writeText(text);
+    setCopied(key);
+    setTimeout(() => setCopied(null), 2000);
+  };
 
   // Toggle visibilidade de senha
   const togglePasswordVisibility = (key: string) => {
-    setShowPasswords((prev) => ({ ...prev, [key]: !prev[key] }))
-  }
+    setShowPasswords((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   // Revalidar senha antes de editar configurações do Agent
   const handleRevalidateAgentPassword = async () => {
-    setAgentRevalidating(true)
-    setNotification(null)
+    setAgentRevalidating(true);
+    setNotification(null);
 
     try {
-      const { apiFetch } = await import('@/lib/api')
-      const response = await apiFetch('/api/user/revalidate-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const { apiFetch } = await import("@/lib/api");
+      const response = await apiFetch("/api/user/revalidate-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: agentRevalidationPassword }),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (response.ok && data.valid) {
-        setShowAgentRevalidationModal(false)
-        setEditingAgent(true)
-        setAgentRevalidationPassword('')
-        setNotification({ type: 'success', message: 'Senha validada! Você pode editar as configurações do Agent.' })
+        setShowAgentRevalidationModal(false);
+        setEditingAgent(true);
+        setAgentRevalidationPassword("");
+        setNotification({
+          type: "success",
+          message:
+            "Senha validada! Você pode editar as configurações do Agent.",
+        });
       } else {
-        setNotification({ type: 'error', message: 'Senha incorreta' })
+        setNotification({ type: "error", message: "Senha incorreta" });
       }
     } catch (error) {
-      setNotification({ type: 'error', message: 'Erro ao validar senha' })
+      setNotification({ type: "error", message: "Erro ao validar senha" });
     } finally {
-      setAgentRevalidating(false)
+      setAgentRevalidating(false);
     }
-  }
+  };
 
   // Salvar configurações do Agent
   const handleSaveAgentConfig = async () => {
-    setLoadingAgent(true)
-    setNotification(null)
+    setLoadingAgent(true);
+    setNotification(null);
 
     try {
-      const { apiFetch } = await import('@/lib/api')
-      const response = await apiFetch('/api/client/config', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+      const { apiFetch } = await import("@/lib/api");
+      const response = await apiFetch("/api/client/config", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(agentConfig),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (response.ok) {
-        setNotification({ type: 'success', message: 'Configurações do Agent atualizadas com sucesso!' })
-        setEditingAgent(false)
+        setNotification({
+          type: "success",
+          message: "Configurações do Agent atualizadas com sucesso!",
+        });
+        setEditingAgent(false);
       } else {
-        setNotification({ type: 'error', message: data.error || 'Erro ao atualizar configurações' })
+        setNotification({
+          type: "error",
+          message: data.error || "Erro ao atualizar configurações",
+        });
       }
     } catch (error) {
-      setNotification({ type: 'error', message: 'Erro ao atualizar configurações' })
+      setNotification({
+        type: "error",
+        message: "Erro ao atualizar configurações",
+      });
     } finally {
-      setLoadingAgent(false)
+      setLoadingAgent(false);
     }
-  }
+  };
 
   // Testar modelo selecionado
   const handleTestModel = async () => {
-    setTestingModel(true)
-    setTestResult(null)
-    setNotification(null)
+    setTestingModel(true);
+    setTestResult(null);
+    setNotification(null);
 
     try {
-      const provider = agentConfig.primary_model_provider
-      const model = provider === 'openai' ? agentConfig.openai_model : agentConfig.groq_model
+      const provider = agentConfig.primary_model_provider;
+      const model =
+        provider === "openai"
+          ? agentConfig.openai_model
+          : agentConfig.groq_model;
 
-      const { apiFetch } = await import('@/lib/api')
-      const response = await apiFetch('/api/client/test-model', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const { apiFetch } = await import("@/lib/api");
+      const response = await apiFetch("/api/client/test-model", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ provider, model }),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (data.success) {
         setTestResult({
           success: true,
           message: `${data.message} (${data.latency_ms}ms)`,
           latency_ms: data.latency_ms,
-        })
+        });
         setNotification({
-          type: 'success',
-          message: `Modelo testado com sucesso! Latência: ${data.latency_ms}ms`
-        })
+          type: "success",
+          message: `Modelo testado com sucesso! Latência: ${data.latency_ms}ms`,
+        });
       } else {
         setTestResult({
           success: false,
           message: data.message || data.error,
-        })
+        });
         setNotification({
-          type: 'error',
-          message: `${data.message || data.error}`
-        })
+          type: "error",
+          message: `${data.message || data.error}`,
+        });
       }
     } catch (error) {
       setTestResult({
         success: false,
-        message: 'Erro ao conectar com o servidor',
-      })
+        message: "Erro ao conectar com o servidor",
+      });
       setNotification({
-        type: 'error',
-        message: 'Erro ao testar modelo'
-      })
+        type: "error",
+        message: "Erro ao testar modelo",
+      });
     } finally {
-      setTestingModel(false)
+      setTestingModel(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -526,12 +633,16 @@ export default function SettingsPage() {
           <h1 className="text-4xl font-poppins font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2">
             ⚙️ Configurações
           </h1>
-          <p className="text-muted-foreground text-lg">Gerencie seu perfil, agent e variáveis de ambiente</p>
+          <p className="text-muted-foreground text-lg">
+            Gerencie seu perfil, agent e variáveis de ambiente
+          </p>
         </div>
 
         {/* Notification */}
         {notification && (
-          <Alert variant={notification.type === 'error' ? 'destructive' : 'default'}>
+          <Alert
+            variant={notification.type === "error" ? "destructive" : "default"}
+          >
             <AlertDescription>{notification.message}</AlertDescription>
           </Alert>
         )}
@@ -554,14 +665,21 @@ export default function SettingsPage() {
                 <Input
                   id="full_name"
                   value={profile.full_name}
-                  onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+                  onChange={(e) =>
+                    setProfile({ ...profile, full_name: e.target.value })
+                  }
                   disabled={!editingProfile || loadingProfile}
                 />
                 {!editingProfile ? (
-                  <Button onClick={() => setEditingProfile(true)}>Editar</Button>
+                  <Button onClick={() => setEditingProfile(true)}>
+                    Editar
+                  </Button>
                 ) : (
                   <>
-                    <Button onClick={handleUpdateProfile} disabled={loadingProfile}>
+                    <Button
+                      onClick={handleUpdateProfile}
+                      disabled={loadingProfile}
+                    >
                       <Save className="w-4 h-4 mr-2" />
                       Salvar
                     </Button>
@@ -579,22 +697,28 @@ export default function SettingsPage() {
 
             {/* Email (readonly) */}
             <div>
-              <Label htmlFor="email" className="text-foreground">Email</Label>
-              <Input 
-                id="email" 
-                value={profile.email} 
-                disabled 
-                className="mt-2 bg-muted/50 border-border text-foreground/70" 
+              <Label htmlFor="email" className="text-foreground">
+                Email
+              </Label>
+              <Input
+                id="email"
+                value={profile.email}
+                disabled
+                className="mt-2 bg-muted/50 border-border text-foreground/70"
               />
-              <p className="text-xs text-muted-foreground mt-1">O email não pode ser alterado</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                O email não pode ser alterado
+              </p>
             </div>
 
             {/* Telefone (readonly) */}
             <div>
-              <Label htmlFor="phone" className="text-foreground">Telefone</Label>
+              <Label htmlFor="phone" className="text-foreground">
+                Telefone
+              </Label>
               <Input
                 id="phone"
-                value={profile.phone || 'Não configurado'}
+                value={profile.phone || "Não configurado"}
                 disabled
                 className="mt-2 bg-muted/50 border-border text-foreground/70"
               />
@@ -617,13 +741,18 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4 pt-6">
             <div>
-              <Label htmlFor="current_password" className="text-foreground">Senha Atual</Label>
+              <Label htmlFor="current_password" className="text-foreground">
+                Senha Atual
+              </Label>
               <Input
                 id="current_password"
                 type="password"
                 value={passwordForm.current_password}
                 onChange={(e) =>
-                  setPasswordForm({ ...passwordForm, current_password: e.target.value })
+                  setPasswordForm({
+                    ...passwordForm,
+                    current_password: e.target.value,
+                  })
                 }
                 disabled={loadingPassword}
                 className="mt-2 bg-muted/50 border-border text-foreground"
@@ -632,29 +761,41 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <Label htmlFor="new_password" className="text-foreground">Nova Senha</Label>
+              <Label htmlFor="new_password" className="text-foreground">
+                Nova Senha
+              </Label>
               <Input
                 id="new_password"
                 type="password"
                 value={passwordForm.new_password}
                 onChange={(e) =>
-                  setPasswordForm({ ...passwordForm, new_password: e.target.value })
+                  setPasswordForm({
+                    ...passwordForm,
+                    new_password: e.target.value,
+                  })
                 }
                 disabled={loadingPassword}
                 className="mt-2 bg-muted/50 border-border text-foreground"
                 placeholder="Mínimo 8 caracteres"
               />
-              <p className="text-xs text-muted-foreground mt-1">Mínimo 8 caracteres</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Mínimo 8 caracteres
+              </p>
             </div>
 
             <div>
-              <Label htmlFor="confirm_password" className="text-foreground">Confirmar Nova Senha</Label>
+              <Label htmlFor="confirm_password" className="text-foreground">
+                Confirmar Nova Senha
+              </Label>
               <Input
                 id="confirm_password"
                 type="password"
                 value={passwordForm.confirm_password}
                 onChange={(e) =>
-                  setPasswordForm({ ...passwordForm, confirm_password: e.target.value })
+                  setPasswordForm({
+                    ...passwordForm,
+                    confirm_password: e.target.value,
+                  })
                 }
                 disabled={loadingPassword}
                 className="mt-2 bg-muted/50 border-border text-foreground"
@@ -662,12 +803,12 @@ export default function SettingsPage() {
               />
             </div>
 
-            <Button 
-              onClick={handleUpdatePassword} 
+            <Button
+              onClick={handleUpdatePassword}
               disabled={loadingPassword}
               className="w-full bg-gradient-to-r from-uzz-mint to-uzz-blue text-foreground hover:from-uzz-blue hover:to-uzz-mint"
             >
-              {loadingPassword ? 'Atualizando...' : 'Atualizar Senha'}
+              {loadingPassword ? "Atualizando..." : "Atualizar Senha"}
             </Button>
           </CardContent>
         </Card>
@@ -679,12 +820,15 @@ export default function SettingsPage() {
               <div className="flex items-center gap-3">
                 <Bot className="w-6 h-6 text-uzz-mint" />
                 <div>
-                  <CardTitle className="text-xl font-poppins text-foreground">Configurações do Agent</CardTitle>
+                  <CardTitle className="text-xl font-poppins text-foreground">
+                    Configurações do Agent
+                  </CardTitle>
                   <CardDescription className="text-muted-foreground">
                     Configure os prompts e modelos de IA do seu assistente.
                     <br />
                     <span className="text-xs text-muted-foreground/80">
-                      ℹ️ Groq é usado para conversação (rápido e econômico), OpenAI para mídia (Vision, Whisper)
+                      ℹ️ Groq é usado para conversação (rápido e econômico),
+                      OpenAI para mídia (Vision, Whisper)
                     </span>
                   </CardDescription>
                 </div>
@@ -726,19 +870,25 @@ export default function SettingsPage() {
               <Alert className="bg-amber-500/10 border-amber-500/30">
                 <AlertTriangle className="h-4 w-4 text-amber-500" />
                 <AlertDescription className="text-amber-700 dark:text-amber-200 text-sm">
-                  <strong>Atenção:</strong> Mudanças no System Prompt afetam TODAS as conversas. Teste antes de aplicar em produção.
+                  <strong>Atenção:</strong> Mudanças no System Prompt afetam
+                  TODAS as conversas. Teste antes de aplicar em produção.
                 </AlertDescription>
               </Alert>
             )}
 
             {/* System Prompt */}
             <div>
-              <Label htmlFor="system_prompt" className="text-foreground">System Prompt</Label>
+              <Label htmlFor="system_prompt" className="text-foreground">
+                System Prompt
+              </Label>
               <Textarea
                 id="system_prompt"
                 value={agentConfig.system_prompt}
                 onChange={(e) =>
-                  setAgentConfig({ ...agentConfig, system_prompt: e.target.value })
+                  setAgentConfig({
+                    ...agentConfig,
+                    system_prompt: e.target.value,
+                  })
                 }
                 disabled={!editingAgent}
                 placeholder="## 🤖 Assistente Oficial Uzz.AI
@@ -756,12 +906,17 @@ Você é o assistente oficial de IA da Uzz.AI..."
 
             {/* Formatter Prompt */}
             <div>
-              <Label htmlFor="formatter_prompt" className="text-foreground">Formatter Prompt (Opcional)</Label>
+              <Label htmlFor="formatter_prompt" className="text-foreground">
+                Formatter Prompt (Opcional)
+              </Label>
               <Textarea
                 id="formatter_prompt"
-                value={agentConfig.formatter_prompt || ''}
+                value={agentConfig.formatter_prompt || ""}
                 onChange={(e) =>
-                  setAgentConfig({ ...agentConfig, formatter_prompt: e.target.value })
+                  setAgentConfig({
+                    ...agentConfig,
+                    formatter_prompt: e.target.value,
+                  })
                 }
                 disabled={!editingAgent}
                 placeholder="Formate a resposta de forma clara, objetiva e profissional.
@@ -779,17 +934,24 @@ Você é o assistente oficial de IA da Uzz.AI..."
 
             {/* Primary Provider Selection */}
             <div className="bg-gradient-to-br from-blue-500/10 to-uzz-blue/10 border border-uzz-blue/30 rounded-lg p-4">
-              <Label htmlFor="primary_model_provider" className="text-base font-semibold text-foreground flex items-center gap-2">
+              <Label
+                htmlFor="primary_model_provider"
+                className="text-base font-semibold text-foreground flex items-center gap-2"
+              >
                 🤖 Provedor Principal do Agente
               </Label>
               <p className="text-xs text-muted-foreground mb-3">
-                Escolha qual IA vai responder as mensagens de texto do seu chatbot
+                Escolha qual IA vai responder as mensagens de texto do seu
+                chatbot
               </p>
 
               <Select
                 value={agentConfig.primary_model_provider}
                 onValueChange={(value) =>
-                  setAgentConfig({ ...agentConfig, primary_model_provider: value })
+                  setAgentConfig({
+                    ...agentConfig,
+                    primary_model_provider: value,
+                  })
                 }
                 disabled={!editingAgent}
               >
@@ -801,7 +963,9 @@ Você é o assistente oficial de IA da Uzz.AI..."
                     <div className="flex items-center gap-2">
                       <Rocket className="h-4 w-4 flex-shrink-0" />
                       <div className="flex flex-col items-start">
-                        <span className="font-semibold">Groq (Llama) - Recomendado</span>
+                        <span className="font-semibold">
+                          Groq (Llama) - Recomendado
+                        </span>
                         <span className="text-xs text-muted-foreground">
                           Rápido (~1000 tokens/s) • Econômico (~$0.60/1M tokens)
                         </span>
@@ -814,7 +978,8 @@ Você é o assistente oficial de IA da Uzz.AI..."
                       <div className="flex flex-col items-start">
                         <span className="font-semibold">OpenAI (GPT)</span>
                         <span className="text-xs text-muted-foreground">
-                          Mais inteligente • Mais lento • Mais caro (~$5/1M tokens)
+                          Mais inteligente • Mais lento • Mais caro (~$5/1M
+                          tokens)
                         </span>
                       </div>
                     </div>
@@ -823,22 +988,23 @@ Você é o assistente oficial de IA da Uzz.AI..."
               </Select>
 
               {/* Alertas de custo */}
-              {agentConfig.primary_model_provider === 'openai' && (
+              {agentConfig.primary_model_provider === "openai" && (
                 <Alert className="mt-3 bg-amber-500/10 border-amber-500/30">
                   <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0" />
                   <AlertDescription className="text-amber-700 dark:text-amber-200 text-xs">
-                    <strong>💰 Custo estimado:</strong> GPT-4o é ~8x mais caro que Groq.
-                    Para 100k mensagens/mês, pode custar $500+ vs $60 com Groq.
+                    <strong>💰 Custo estimado:</strong> GPT-4o é ~8x mais caro
+                    que Groq. Para 100k mensagens/mês, pode custar $500+ vs $60
+                    com Groq.
                   </AlertDescription>
                 </Alert>
               )}
 
-              {agentConfig.primary_model_provider === 'groq' && (
+              {agentConfig.primary_model_provider === "groq" && (
                 <Alert className="mt-3 bg-green-500/10 border-green-500/30">
                   <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
                   <AlertDescription className="text-green-700 dark:text-green-200 text-xs">
-                    <strong>✅ Econômico:</strong> Llama 3.3 70B oferece ótima qualidade
-                    com custo muito baixo (~$0.60/1M tokens).
+                    <strong>✅ Econômico:</strong> Llama 3.3 70B oferece ótima
+                    qualidade com custo muito baixo (~$0.60/1M tokens).
                   </AlertDescription>
                 </Alert>
               )}
@@ -858,25 +1024,32 @@ Você é o assistente oficial de IA da Uzz.AI..."
                       Testando modelo...
                     </>
                   ) : (
-                    <>
-                      🧪 Testar Modelo
-                    </>
+                    <>🧪 Testar Modelo</>
                   )}
                 </Button>
               </div>
 
               {/* Resultado do teste */}
               {testResult && (
-                <Alert className={`mt-3 ${testResult.success
-                    ? 'bg-green-500/10 border-green-500/30'
-                    : 'bg-red-500/10 border-red-500/30'
-                  }`}>
+                <Alert
+                  className={`mt-3 ${
+                    testResult.success
+                      ? "bg-green-500/10 border-green-500/30"
+                      : "bg-red-500/10 border-red-500/30"
+                  }`}
+                >
                   {testResult.success ? (
                     <CheckCircle className="h-4 w-4 text-green-500" />
                   ) : (
                     <XCircle className="h-4 w-4 text-red-500" />
                   )}
-                  <AlertDescription className={testResult.success ? 'text-green-700 dark:text-green-200' : 'text-red-700 dark:text-red-200'}>
+                  <AlertDescription
+                    className={
+                      testResult.success
+                        ? "text-green-700 dark:text-green-200"
+                        : "text-red-700 dark:text-red-200"
+                    }
+                  >
                     {testResult.message}
                   </AlertDescription>
                 </Alert>
@@ -897,7 +1070,7 @@ Você é o assistente oficial de IA da Uzz.AI..."
             <div>
               <Label htmlFor="openai_model" className="text-foreground">
                 Modelo OpenAI
-                {agentConfig.primary_model_provider === 'openai' && (
+                {agentConfig.primary_model_provider === "openai" && (
                   <span className="ml-2 text-xs bg-uzz-blue/20 text-uzz-blue px-2 py-0.5 rounded border border-uzz-blue/30">
                     EM USO
                   </span>
@@ -916,38 +1089,40 @@ Você é o assistente oficial de IA da Uzz.AI..."
                 <SelectContent className="bg-popover border-border text-popover-foreground">
                   {agentConfig.openai_model &&
                     ![
-                      'gpt-4o',
-                      'gpt-4o-mini',
-                      'gpt-4-turbo',
-                      'gpt-3.5-turbo',
+                      "gpt-4o",
+                      "gpt-4o-mini",
+                      "gpt-4-turbo",
+                      "gpt-3.5-turbo",
                     ].includes(agentConfig.openai_model) && (
                       <SelectItem value={agentConfig.openai_model}>
                         {agentConfig.openai_model} (Atual)
                       </SelectItem>
                     )}
                   <SelectItem value="gpt-4o">GPT-4o (Recomendado)</SelectItem>
-                  <SelectItem value="gpt-4o-mini">GPT-4o Mini (Mais rápido)</SelectItem>
+                  <SelectItem value="gpt-4o-mini">
+                    GPT-4o Mini (Mais rápido)
+                  </SelectItem>
                   <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
-                  <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo (Econômico)</SelectItem>
+                  <SelectItem value="gpt-3.5-turbo">
+                    GPT-3.5 Turbo (Econômico)
+                  </SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                {agentConfig.primary_model_provider === 'openai'
-                  ? (
-                    <>
-                      <MessageCircle className="h-3 w-3 text-uzz-mint" />
-                      Conversação +
-                      <Mic className="h-3 w-3 ml-1 text-uzz-mint" />
-                      Mídia (transcrição, imagens, PDFs)
-                    </>
-                  )
-                  : (
-                    <>
-                      <Mic className="h-3 w-3 text-muted-foreground" />
-                      Apenas para: Transcrição de áudio, análise de imagens e documentos
-                    </>
-                  )
-                }
+                {agentConfig.primary_model_provider === "openai" ? (
+                  <>
+                    <MessageCircle className="h-3 w-3 text-uzz-mint" />
+                    Conversação +
+                    <Mic className="h-3 w-3 ml-1 text-uzz-mint" />
+                    Mídia (transcrição, imagens, PDFs)
+                  </>
+                ) : (
+                  <>
+                    <Mic className="h-3 w-3 text-muted-foreground" />
+                    Apenas para: Transcrição de áudio, análise de imagens e
+                    documentos
+                  </>
+                )}
               </p>
             </div>
 
@@ -955,7 +1130,7 @@ Você é o assistente oficial de IA da Uzz.AI..."
             <div>
               <Label htmlFor="groq_model" className="text-foreground">
                 Modelo Groq
-                {agentConfig.primary_model_provider === 'groq' && (
+                {agentConfig.primary_model_provider === "groq" && (
                   <span className="ml-2 text-xs bg-uzz-blue/20 text-uzz-blue px-2 py-0.5 rounded border border-uzz-blue/30">
                     EM USO
                   </span>
@@ -974,38 +1149,48 @@ Você é o assistente oficial de IA da Uzz.AI..."
                 <SelectContent className="bg-popover border-border text-popover-foreground">
                   {agentConfig.groq_model &&
                     ![
-                      'llama-3.3-70b-versatile',
-                      'llama-3.1-70b-versatile',
-                      'llama-3.1-8b-instant',
-                      'mixtral-8x7b-32768',
+                      "llama-3.3-70b-versatile",
+                      "llama-3.1-70b-versatile",
+                      "llama-3.1-8b-instant",
+                      "mixtral-8x7b-32768",
                     ].includes(agentConfig.groq_model) && (
                       <SelectItem value={agentConfig.groq_model}>
                         {agentConfig.groq_model} (Atual)
                       </SelectItem>
                     )}
-                  <SelectItem value="llama-3.3-70b-versatile">Llama 3.3 70B (Recomendado)</SelectItem>
-                  <SelectItem value="llama-3.1-70b-versatile">Llama 3.1 70B</SelectItem>
-                  <SelectItem value="llama-3.1-8b-instant">Llama 3.1 8B (Mais rápido)</SelectItem>
-                  <SelectItem value="mixtral-8x7b-32768">Mixtral 8x7B</SelectItem>
+                  <SelectItem value="llama-3.3-70b-versatile">
+                    Llama 3.3 70B (Recomendado)
+                  </SelectItem>
+                  <SelectItem value="llama-3.1-70b-versatile">
+                    Llama 3.1 70B
+                  </SelectItem>
+                  <SelectItem value="llama-3.1-8b-instant">
+                    Llama 3.1 8B (Mais rápido)
+                  </SelectItem>
+                  <SelectItem value="mixtral-8x7b-32768">
+                    Mixtral 8x7B
+                  </SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                {agentConfig.primary_model_provider === 'groq'
-                  ? (
-                    <>
-                      <MessageCircle className="h-3 w-3 text-uzz-mint" />
-                      Usado para: Respostas de texto do agente (conversação principal)
-                    </>
-                  )
-                  : '(Não está sendo usado no momento)'
-                }
+                {agentConfig.primary_model_provider === "groq" ? (
+                  <>
+                    <MessageCircle className="h-3 w-3 text-uzz-mint" />
+                    Usado para: Respostas de texto do agente (conversação
+                    principal)
+                  </>
+                ) : (
+                  "(Não está sendo usado no momento)"
+                )}
               </p>
             </div>
 
             {/* Divisor */}
             <div className="border-t border-border pt-6">
-              <h3 className="font-semibold text-base mb-6 text-foreground">Configurações Avançadas</h3>
-              
+              <h3 className="font-semibold text-base mb-6 text-foreground">
+                Configurações Avançadas
+              </h3>
+
               {/* Toggles */}
               <div className="space-y-4 mb-6">
                 <ToggleSwitch
@@ -1016,7 +1201,10 @@ Você é o assistente oficial de IA da Uzz.AI..."
                   onCheckedChange={(checked) =>
                     setAgentConfig({
                       ...agentConfig,
-                      settings: { ...agentConfig.settings, enable_rag: checked },
+                      settings: {
+                        ...agentConfig.settings,
+                        enable_rag: checked,
+                      },
                     })
                   }
                   disabled={!editingAgent}
@@ -1030,7 +1218,10 @@ Você é o assistente oficial de IA da Uzz.AI..."
                   onCheckedChange={(checked) =>
                     setAgentConfig({
                       ...agentConfig,
-                      settings: { ...agentConfig.settings, enable_tools: checked },
+                      settings: {
+                        ...agentConfig.settings,
+                        enable_tools: checked,
+                      },
                     })
                   }
                   disabled={!editingAgent}
@@ -1044,7 +1235,10 @@ Você é o assistente oficial de IA da Uzz.AI..."
                   onCheckedChange={(checked) =>
                     setAgentConfig({
                       ...agentConfig,
-                      settings: { ...agentConfig.settings, enable_human_handoff: checked },
+                      settings: {
+                        ...agentConfig.settings,
+                        enable_human_handoff: checked,
+                      },
                     })
                   }
                   disabled={!editingAgent}
@@ -1058,7 +1252,10 @@ Você é o assistente oficial de IA da Uzz.AI..."
                   onCheckedChange={(checked) =>
                     setAgentConfig({
                       ...agentConfig,
-                      settings: { ...agentConfig.settings, message_split_enabled: checked },
+                      settings: {
+                        ...agentConfig.settings,
+                        message_split_enabled: checked,
+                      },
                     })
                   }
                   disabled={!editingAgent}
@@ -1109,7 +1306,10 @@ Você é o assistente oficial de IA da Uzz.AI..."
                   onValueChange={(value) =>
                     setAgentConfig({
                       ...agentConfig,
-                      settings: { ...agentConfig.settings, max_chat_history: value },
+                      settings: {
+                        ...agentConfig.settings,
+                        max_chat_history: value,
+                      },
                     })
                   }
                   min={1}
@@ -1126,7 +1326,10 @@ Você é o assistente oficial de IA da Uzz.AI..."
                   onValueChange={(value) =>
                     setAgentConfig({
                       ...agentConfig,
-                      settings: { ...agentConfig.settings, batching_delay_seconds: value },
+                      settings: {
+                        ...agentConfig.settings,
+                        batching_delay_seconds: value,
+                      },
                     })
                   }
                   min={0}
@@ -1144,7 +1347,10 @@ Você é o assistente oficial de IA da Uzz.AI..."
                   onValueChange={(value) =>
                     setAgentConfig({
                       ...agentConfig,
-                      settings: { ...agentConfig.settings, message_delay_ms: value },
+                      settings: {
+                        ...agentConfig.settings,
+                        message_delay_ms: value,
+                      },
                     })
                   }
                   min={0}
@@ -1167,7 +1373,8 @@ Você é o assistente oficial de IA da Uzz.AI..."
                   📄 Envio de Documentos RAG
                 </CardTitle>
                 <CardDescription className="text-muted-foreground">
-                  Configure como o agente envia documentos e imagens da base de conhecimento via WhatsApp
+                  Configure como o agente envia documentos e imagens da base de
+                  conhecimento via WhatsApp
                 </CardDescription>
               </div>
             </div>
@@ -1175,27 +1382,40 @@ Você é o assistente oficial de IA da Uzz.AI..."
           <CardContent className="space-y-6 pt-6">
             <Alert className="bg-blue-500/10 border-blue-500/30">
               <AlertDescription className="text-blue-700 dark:text-blue-200 text-sm">
-                <strong>Nota:</strong> Esta funcionalidade permite que o agente busque e envie automaticamente documentos, catálogos, manuais e imagens armazenados na base de conhecimento quando solicitado pelo usuário. Requer RAG e Function Calling habilitados.
+                <strong>Nota:</strong> Esta funcionalidade permite que o agente
+                busque e envie automaticamente documentos, catálogos, manuais e
+                imagens armazenados na base de conhecimento quando solicitado
+                pelo usuário. Requer RAG e Function Calling habilitados.
               </AlertDescription>
             </Alert>
 
             {/* Status Indicator */}
-            <Alert className={agentConfig.settings.enable_rag && agentConfig.settings.enable_tools 
-              ? 'bg-green-500/10 border-green-500/30' 
-              : 'bg-amber-500/10 border-amber-500/30'
-            }>
-              {agentConfig.settings.enable_rag && agentConfig.settings.enable_tools ? (
+            <Alert
+              className={
+                agentConfig.settings.enable_rag &&
+                agentConfig.settings.enable_tools
+                  ? "bg-green-500/10 border-green-500/30"
+                  : "bg-amber-500/10 border-amber-500/30"
+              }
+            >
+              {agentConfig.settings.enable_rag &&
+              agentConfig.settings.enable_tools ? (
                 <>
                   <CheckCircle className="h-4 w-4 text-green-500" />
                   <AlertDescription className="text-green-700 dark:text-green-200 text-sm">
-                    <strong>✅ Ativo:</strong> Agente pode buscar e enviar documentos via tool <code className="bg-muted px-1 rounded">buscar_documento</code>
+                    <strong>✅ Ativo:</strong> Agente pode buscar e enviar
+                    documentos via tool{" "}
+                    <code className="bg-muted px-1 rounded">
+                      buscar_documento
+                    </code>
                   </AlertDescription>
                 </>
               ) : (
                 <>
                   <AlertTriangle className="h-4 w-4 text-amber-500" />
                   <AlertDescription className="text-amber-700 dark:text-amber-200 text-sm">
-                    <strong>⚠️ Inativo:</strong> Habilite RAG e Function Calling para usar esta funcionalidade
+                    <strong>⚠️ Inativo:</strong> Habilite RAG e Function Calling
+                    para usar esta funcionalidade
                   </AlertDescription>
                 </>
               )}
@@ -1207,7 +1427,10 @@ Você é o assistente oficial de IA da Uzz.AI..."
                 id="enable_document_sending"
                 label="Habilitar envio de documentos"
                 description="Permite que o agente busque e envie documentos da base de conhecimento"
-                checked={agentConfig.settings.enable_rag && agentConfig.settings.enable_tools}
+                checked={
+                  agentConfig.settings.enable_rag &&
+                  agentConfig.settings.enable_tools
+                }
                 onCheckedChange={() => {}} // Disabled - controlled by RAG and Tools
                 disabled={true}
               />
@@ -1257,12 +1480,28 @@ Você é o assistente oficial de IA da Uzz.AI..."
             <div className="border-t border-border pt-4">
               <Alert className="bg-blue-500/10 border-blue-500/30">
                 <AlertDescription>
-                  <h4 className="text-sm font-semibold mb-2 text-blue-700 dark:text-blue-200">💡 Como usar:</h4>
+                  <h4 className="text-sm font-semibold mb-2 text-blue-700 dark:text-blue-200">
+                    💡 Como usar:
+                  </h4>
                   <ul className="text-xs text-blue-700/90 dark:text-blue-200/90 space-y-1 list-disc list-inside">
-                    <li>Faça upload de documentos em <strong>/dashboard/knowledge</strong></li>
-                    <li>Usuário solicita via WhatsApp: <em>&quot;me envia o catálogo&quot;</em></li>
-                    <li>AI aciona tool <code className="bg-muted px-1 rounded">buscar_documento</code> automaticamente</li>
-                    <li>Sistema busca na base, encontra o documento mais relevante</li>
+                    <li>
+                      Faça upload de documentos em{" "}
+                      <strong>/dashboard/knowledge</strong>
+                    </li>
+                    <li>
+                      Usuário solicita via WhatsApp:{" "}
+                      <em>&quot;me envia o catálogo&quot;</em>
+                    </li>
+                    <li>
+                      AI aciona tool{" "}
+                      <code className="bg-muted px-1 rounded">
+                        buscar_documento
+                      </code>{" "}
+                      automaticamente
+                    </li>
+                    <li>
+                      Sistema busca na base, encontra o documento mais relevante
+                    </li>
                     <li>Envia PDF/imagem diretamente no WhatsApp</li>
                   </ul>
                 </AlertDescription>
@@ -1306,15 +1545,22 @@ Você é o assistente oficial de IA da Uzz.AI..."
           <CardContent className="space-y-4 pt-6">
             {/* Meta Access Token */}
             <div>
-              <Label htmlFor="meta_access_token" className="text-foreground">Meta Access Token</Label>
+              <Label htmlFor="meta_access_token" className="text-foreground">
+                Meta Access Token
+              </Label>
               <div className="flex gap-2 mt-2">
                 <div className="relative flex-1">
                   <Input
                     id="meta_access_token"
-                    type={showPasswords['meta_access_token'] ? 'text' : 'password'}
+                    type={
+                      showPasswords["meta_access_token"] ? "text" : "password"
+                    }
                     value={secrets.meta_access_token}
                     onChange={(e) =>
-                      setSecrets({ ...secrets, meta_access_token: e.target.value })
+                      setSecrets({
+                        ...secrets,
+                        meta_access_token: e.target.value,
+                      })
                     }
                     disabled={!editingSecrets}
                     className="bg-muted/50 border-border text-foreground font-mono text-sm"
@@ -1322,10 +1568,12 @@ Você é o assistente oficial de IA da Uzz.AI..."
                   />
                   <button
                     type="button"
-                    onClick={() => togglePasswordVisibility('meta_access_token')}
+                    onClick={() =>
+                      togglePasswordVisibility("meta_access_token")
+                    }
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    {showPasswords['meta_access_token'] ? (
+                    {showPasswords["meta_access_token"] ? (
                       <EyeOff className="w-4 h-4" />
                     ) : (
                       <Eye className="w-4 h-4" />
@@ -1335,7 +1583,10 @@ Você é o assistente oficial de IA da Uzz.AI..."
                 {editingSecrets && (
                   <Button
                     onClick={() =>
-                      handleUpdateSecret('meta_access_token', secrets.meta_access_token)
+                      handleUpdateSecret(
+                        "meta_access_token",
+                        secrets.meta_access_token,
+                      )
                     }
                     disabled={loadingSecrets}
                     className="bg-gradient-to-r from-uzz-mint to-uzz-blue text-foreground hover:from-uzz-blue hover:to-uzz-mint"
@@ -1353,19 +1604,26 @@ Você é o assistente oficial de IA da Uzz.AI..."
                 <div className="relative flex-1">
                   <Input
                     id="meta_verify_token"
-                    type={showPasswords['meta_verify_token'] ? 'text' : 'password'}
+                    type={
+                      showPasswords["meta_verify_token"] ? "text" : "password"
+                    }
                     value={secrets.meta_verify_token}
                     onChange={(e) =>
-                      setSecrets({ ...secrets, meta_verify_token: e.target.value })
+                      setSecrets({
+                        ...secrets,
+                        meta_verify_token: e.target.value,
+                      })
                     }
                     disabled={!editingSecrets}
                   />
                   <button
                     type="button"
-                    onClick={() => togglePasswordVisibility('meta_verify_token')}
+                    onClick={() =>
+                      togglePasswordVisibility("meta_verify_token")
+                    }
                     className="absolute right-2 top-2"
                   >
-                    {showPasswords['meta_verify_token'] ? (
+                    {showPasswords["meta_verify_token"] ? (
                       <EyeOff className="w-4 h-4" />
                     ) : (
                       <Eye className="w-4 h-4" />
@@ -1375,7 +1633,10 @@ Você é o assistente oficial de IA da Uzz.AI..."
                 {editingSecrets && (
                   <Button
                     onClick={() =>
-                      handleUpdateSecret('meta_verify_token', secrets.meta_verify_token)
+                      handleUpdateSecret(
+                        "meta_verify_token",
+                        secrets.meta_verify_token,
+                      )
                     }
                     disabled={loadingSecrets}
                   >
@@ -1397,19 +1658,24 @@ Você é o assistente oficial de IA da Uzz.AI..."
                 <div className="relative flex-1">
                   <Input
                     id="meta_app_secret"
-                    type={showPasswords['meta_app_secret'] ? 'text' : 'password'}
+                    type={
+                      showPasswords["meta_app_secret"] ? "text" : "password"
+                    }
                     value={secrets.meta_app_secret}
                     onChange={(e) =>
-                      setSecrets({ ...secrets, meta_app_secret: e.target.value })
+                      setSecrets({
+                        ...secrets,
+                        meta_app_secret: e.target.value,
+                      })
                     }
                     disabled={!editingSecrets}
                   />
                   <button
                     type="button"
-                    onClick={() => togglePasswordVisibility('meta_app_secret')}
+                    onClick={() => togglePasswordVisibility("meta_app_secret")}
                     className="absolute right-2 top-2"
                   >
-                    {showPasswords['meta_app_secret'] ? (
+                    {showPasswords["meta_app_secret"] ? (
                       <EyeOff className="w-4 h-4" />
                     ) : (
                       <Eye className="w-4 h-4" />
@@ -1419,7 +1685,10 @@ Você é o assistente oficial de IA da Uzz.AI..."
                 {editingSecrets && (
                   <Button
                     onClick={() =>
-                      handleUpdateSecret('meta_app_secret', secrets.meta_app_secret)
+                      handleUpdateSecret(
+                        "meta_app_secret",
+                        secrets.meta_app_secret,
+                      )
                     }
                     disabled={loadingSecrets}
                   >
@@ -1437,14 +1706,20 @@ Você é o assistente oficial de IA da Uzz.AI..."
                   id="meta_phone_number_id"
                   value={secrets.meta_phone_number_id}
                   onChange={(e) =>
-                    setSecrets({ ...secrets, meta_phone_number_id: e.target.value })
+                    setSecrets({
+                      ...secrets,
+                      meta_phone_number_id: e.target.value,
+                    })
                   }
                   disabled={!editingSecrets}
                 />
                 {editingSecrets && (
                   <Button
                     onClick={() =>
-                      handleUpdateSecret('meta_phone_number_id', secrets.meta_phone_number_id)
+                      handleUpdateSecret(
+                        "meta_phone_number_id",
+                        secrets.meta_phone_number_id,
+                      )
                     }
                     disabled={loadingSecrets}
                   >
@@ -1456,13 +1731,18 @@ Você é o assistente oficial de IA da Uzz.AI..."
 
             {/* WhatsApp Business Account ID */}
             <div>
-              <Label htmlFor="whatsapp_business_account_id">WhatsApp Business Account ID (WABA ID)</Label>
+              <Label htmlFor="whatsapp_business_account_id">
+                WhatsApp Business Account ID (WABA ID)
+              </Label>
               <div className="flex gap-2 mt-2">
                 <Input
                   id="whatsapp_business_account_id"
                   value={secrets.whatsapp_business_account_id}
                   onChange={(e) =>
-                    setSecrets({ ...secrets, whatsapp_business_account_id: e.target.value })
+                    setSecrets({
+                      ...secrets,
+                      whatsapp_business_account_id: e.target.value,
+                    })
                   }
                   disabled={!editingSecrets}
                   placeholder="123456789012345"
@@ -1470,7 +1750,10 @@ Você é o assistente oficial de IA da Uzz.AI..."
                 {editingSecrets && (
                   <Button
                     onClick={() =>
-                      handleUpdateSecret('whatsapp_business_account_id', secrets.whatsapp_business_account_id)
+                      handleUpdateSecret(
+                        "whatsapp_business_account_id",
+                        secrets.whatsapp_business_account_id,
+                      )
                     }
                     disabled={loadingSecrets}
                   >
@@ -1483,22 +1766,112 @@ Você é o assistente oficial de IA da Uzz.AI..."
               </p>
             </div>
 
+            {/* Meta Ads Section */}
+            <div className="border-t pt-4 mt-4">
+              <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
+                📊 Meta Ads Integration
+                <span className="text-xs text-muted-foreground">
+                  (Conversions API & Marketing API)
+                </span>
+              </h4>
+            </div>
+
+            {/* Meta Dataset ID */}
+            <div>
+              <Label htmlFor="meta_dataset_id">
+                Meta Dataset ID (Conversions API)
+              </Label>
+              <div className="flex gap-2 mt-2">
+                <Input
+                  id="meta_dataset_id"
+                  value={secrets.meta_dataset_id}
+                  onChange={(e) =>
+                    setSecrets({ ...secrets, meta_dataset_id: e.target.value })
+                  }
+                  disabled={!editingSecrets}
+                  placeholder="1234567890123456"
+                />
+                {editingSecrets && (
+                  <Button
+                    onClick={() =>
+                      handleUpdateSecret(
+                        "meta_dataset_id",
+                        secrets.meta_dataset_id,
+                      )
+                    }
+                    disabled={loadingSecrets}
+                  >
+                    Salvar
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Dataset ID criado no Events Manager para enviar eventos de
+                conversão
+              </p>
+            </div>
+
+            {/* Meta Ad Account ID */}
+            <div>
+              <Label htmlFor="meta_ad_account_id">
+                Meta Ad Account ID (Marketing API)
+              </Label>
+              <div className="flex gap-2 mt-2">
+                <Input
+                  id="meta_ad_account_id"
+                  value={secrets.meta_ad_account_id}
+                  onChange={(e) =>
+                    setSecrets({
+                      ...secrets,
+                      meta_ad_account_id: e.target.value,
+                    })
+                  }
+                  disabled={!editingSecrets}
+                  placeholder="9876543210"
+                />
+                {editingSecrets && (
+                  <Button
+                    onClick={() =>
+                      handleUpdateSecret(
+                        "meta_ad_account_id",
+                        secrets.meta_ad_account_id,
+                      )
+                    }
+                    disabled={loadingSecrets}
+                  >
+                    Salvar
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                ID da conta de anúncios (sem o prefixo &quot;act_&quot;) para
+                buscar métricas de campanhas
+              </p>
+            </div>
+
             {/* Divisor */}
             <div className="border-t my-6"></div>
 
             {/* Seção de Credenciais de IA */}
             <div className="space-y-4">
               <div>
-                <h3 className="font-semibold text-base mb-2">🔑 Credenciais de IA (Fallback)</h3>
+                <h3 className="font-semibold text-base mb-2">
+                  🔑 Credenciais de IA (Fallback)
+                </h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Configure suas chaves de API da OpenAI e Groq. Estas credenciais são usadas como <strong>fallback automático</strong> caso o AI Gateway falhe ou fique sem créditos.
+                  Configure suas chaves de API da OpenAI e Groq. Estas
+                  credenciais são usadas como{" "}
+                  <strong>fallback automático</strong> caso o AI Gateway falhe
+                  ou fique sem créditos.
                 </p>
                 <Alert className="mb-4">
                   <AlertTriangle className="h-4 w-4" />
                   <AlertDescription className="text-xs">
-                    <strong>Como funciona o fallback:</strong> Quando o AI Gateway não está disponível ou apresenta erro,
-                    o sistema automaticamente usa as credenciais abaixo (OpenAI como preferência).
-                    Isto garante que seu chatbot nunca pare de funcionar.
+                    <strong>Como funciona o fallback:</strong> Quando o AI
+                    Gateway não está disponível ou apresenta erro, o sistema
+                    automaticamente usa as credenciais abaixo (OpenAI como
+                    preferência). Isto garante que seu chatbot nunca pare de
+                    funcionar.
                   </AlertDescription>
                 </Alert>
               </div>
@@ -1507,26 +1880,33 @@ Você é o assistente oficial de IA da Uzz.AI..."
               <div>
                 <Label htmlFor="openai_api_key">
                   OpenAI API Key
-                  <span className="text-xs text-blue-600 ml-2">(Usado como fallback principal)</span>
+                  <span className="text-xs text-blue-600 ml-2">
+                    (Usado como fallback principal)
+                  </span>
                 </Label>
                 <div className="flex gap-2 mt-2">
                   <div className="relative flex-1">
                     <Input
                       id="openai_api_key"
-                      type={showPasswords['openai_api_key'] ? 'text' : 'password'}
+                      type={
+                        showPasswords["openai_api_key"] ? "text" : "password"
+                      }
                       value={secrets.openai_api_key}
                       onChange={(e) =>
-                        setSecrets({ ...secrets, openai_api_key: e.target.value })
+                        setSecrets({
+                          ...secrets,
+                          openai_api_key: e.target.value,
+                        })
                       }
                       disabled={!editingSecrets}
                       placeholder="sk-proj-..."
                     />
                     <button
                       type="button"
-                      onClick={() => togglePasswordVisibility('openai_api_key')}
+                      onClick={() => togglePasswordVisibility("openai_api_key")}
                       className="absolute right-2 top-2"
                     >
-                      {showPasswords['openai_api_key'] ? (
+                      {showPasswords["openai_api_key"] ? (
                         <EyeOff className="w-4 h-4" />
                       ) : (
                         <Eye className="w-4 h-4" />
@@ -1536,7 +1916,10 @@ Você é o assistente oficial de IA da Uzz.AI..."
                   {editingSecrets && (
                     <Button
                       onClick={() =>
-                        handleUpdateSecret('openai_api_key', secrets.openai_api_key)
+                        handleUpdateSecret(
+                          "openai_api_key",
+                          secrets.openai_api_key,
+                        )
                       }
                       disabled={loadingSecrets}
                     >
@@ -1545,7 +1928,15 @@ Você é o assistente oficial de IA da Uzz.AI..."
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Obtenha em: <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">platform.openai.com/api-keys</a>
+                  Obtenha em:{" "}
+                  <a
+                    href="https://platform.openai.com/api-keys"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    platform.openai.com/api-keys
+                  </a>
                 </p>
               </div>
 
@@ -1553,13 +1944,15 @@ Você é o assistente oficial de IA da Uzz.AI..."
               <div>
                 <Label htmlFor="groq_api_key">
                   Groq API Key
-                  <span className="text-xs text-muted-foreground ml-2">(Opcional - secundário)</span>
+                  <span className="text-xs text-muted-foreground ml-2">
+                    (Opcional - secundário)
+                  </span>
                 </Label>
                 <div className="flex gap-2 mt-2">
                   <div className="relative flex-1">
                     <Input
                       id="groq_api_key"
-                      type={showPasswords['groq_api_key'] ? 'text' : 'password'}
+                      type={showPasswords["groq_api_key"] ? "text" : "password"}
                       value={secrets.groq_api_key}
                       onChange={(e) =>
                         setSecrets({ ...secrets, groq_api_key: e.target.value })
@@ -1569,10 +1962,10 @@ Você é o assistente oficial de IA da Uzz.AI..."
                     />
                     <button
                       type="button"
-                      onClick={() => togglePasswordVisibility('groq_api_key')}
+                      onClick={() => togglePasswordVisibility("groq_api_key")}
                       className="absolute right-2 top-2"
                     >
-                      {showPasswords['groq_api_key'] ? (
+                      {showPasswords["groq_api_key"] ? (
                         <EyeOff className="w-4 h-4" />
                       ) : (
                         <Eye className="w-4 h-4" />
@@ -1582,7 +1975,7 @@ Você é o assistente oficial de IA da Uzz.AI..."
                   {editingSecrets && (
                     <Button
                       onClick={() =>
-                        handleUpdateSecret('groq_api_key', secrets.groq_api_key)
+                        handleUpdateSecret("groq_api_key", secrets.groq_api_key)
                       }
                       disabled={loadingSecrets}
                     >
@@ -1591,7 +1984,15 @@ Você é o assistente oficial de IA da Uzz.AI..."
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Obtenha em: <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">console.groq.com/keys</a>
+                  Obtenha em:{" "}
+                  <a
+                    href="https://console.groq.com/keys"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    console.groq.com/keys
+                  </a>
                 </p>
               </div>
             </div>
@@ -1607,11 +2008,11 @@ Você é o assistente oficial de IA da Uzz.AI..."
                   className="font-mono text-sm"
                 />
                 <Button
-                  onClick={() => handleCopy(secrets.webhook_url, 'webhook_url')}
+                  onClick={() => handleCopy(secrets.webhook_url, "webhook_url")}
                   variant="outline"
                   size="icon"
                 >
-                  {copied === 'webhook_url' ? (
+                  {copied === "webhook_url" ? (
                     <Check className="w-4 h-4" />
                   ) : (
                     <Copy className="w-4 h-4" />
@@ -1639,7 +2040,9 @@ Você é o assistente oficial de IA da Uzz.AI..."
                 </div>
               </div>
               <Button
-                onClick={() => window.location.href = '/dashboard/settings/tts'}
+                onClick={() =>
+                  (window.location.href = "/dashboard/settings/tts")
+                }
                 variant="default"
                 className="gap-2"
               >
@@ -1652,30 +2055,48 @@ Você é o assistente oficial de IA da Uzz.AI..."
             <Alert>
               <Mic className="h-4 w-4" />
               <AlertDescription>
-                O bot pode converter respostas longas em mensagens de voz (áudio) para melhor experiência do usuário.
-                Configure voz, velocidade e quando usar áudio através da página de configurações completas.
+                O bot pode converter respostas longas em mensagens de voz
+                (áudio) para melhor experiência do usuário. Configure voz,
+                velocidade e quando usar áudio através da página de
+                configurações completas.
               </AlertDescription>
             </Alert>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
               <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">6</p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">Vozes Disponíveis</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  6
+                </p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                  Vozes Disponíveis
+                </p>
               </div>
               <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">HD</p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">Qualidade de Áudio</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  HD
+                </p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                  Qualidade de Áudio
+                </p>
               </div>
               <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">0.5-2x</p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">Velocidade Ajustável</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  0.5-2x
+                </p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                  Velocidade Ajustável
+                </p>
               </div>
             </div>
 
             <div className="border-t pt-4">
-              <h4 className="text-sm font-semibold mb-2">Recursos Disponíveis:</h4>
+              <h4 className="text-sm font-semibold mb-2">
+                Recursos Disponíveis:
+              </h4>
               <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1 list-disc list-inside">
-                <li>Preview de vozes (Alloy, Echo, Fable, Onyx, Nova, Shimmer)</li>
+                <li>
+                  Preview de vozes (Alloy, Echo, Fable, Onyx, Nova, Shimmer)
+                </li>
                 <li>Controle de velocidade de fala (0.5x a 2.0x)</li>
                 <li>Qualidade HD (tts-1-hd) ou Rápida (tts-1)</li>
                 <li>Estatísticas de uso e economia de cache</li>
@@ -1685,8 +2106,10 @@ Você é o assistente oficial de IA da Uzz.AI..."
 
             <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
               <p className="text-xs text-blue-700 dark:text-blue-300">
-                💡 <strong>Dica:</strong> Configure no prompt do sistema quando o bot deve usar áudio.
-                Exemplo: &quot;Use a tool enviar_resposta_em_audio para explicações longas (mais de 500 caracteres)&quot;.
+                💡 <strong>Dica:</strong> Configure no prompt do sistema quando
+                o bot deve usar áudio. Exemplo: &quot;Use a tool
+                enviar_resposta_em_audio para explicações longas (mais de 500
+                caracteres)&quot;.
               </p>
             </div>
           </CardContent>
@@ -1715,7 +2138,9 @@ Você é o assistente oficial de IA da Uzz.AI..."
                   value={revalidationPassword}
                   onChange={(e) => setRevalidationPassword(e.target.value)}
                   disabled={revalidating}
-                  onKeyDown={(e) => e.key === 'Enter' && handleRevalidatePassword()}
+                  onKeyDown={(e) =>
+                    e.key === "Enter" && handleRevalidatePassword()
+                  }
                   className="mt-2"
                 />
               </div>
@@ -1726,13 +2151,13 @@ Você é o assistente oficial de IA da Uzz.AI..."
                   disabled={revalidating || !revalidationPassword}
                   className="flex-1"
                 >
-                  {revalidating ? 'Validando...' : 'Confirmar'}
+                  {revalidating ? "Validando..." : "Confirmar"}
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => {
-                    setShowRevalidationModal(false)
-                    setRevalidationPassword('')
+                    setShowRevalidationModal(false);
+                    setRevalidationPassword("");
                   }}
                   disabled={revalidating}
                 >
@@ -1751,7 +2176,8 @@ Você é o assistente oficial de IA da Uzz.AI..."
             <CardHeader>
               <CardTitle>Confirme sua Senha</CardTitle>
               <CardDescription>
-                Por segurança, confirme sua senha antes de editar as configurações do Agent
+                Por segurança, confirme sua senha antes de editar as
+                configurações do Agent
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -1763,7 +2189,9 @@ Você é o assistente oficial de IA da Uzz.AI..."
                   value={agentRevalidationPassword}
                   onChange={(e) => setAgentRevalidationPassword(e.target.value)}
                   disabled={agentRevalidating}
-                  onKeyDown={(e) => e.key === 'Enter' && handleRevalidateAgentPassword()}
+                  onKeyDown={(e) =>
+                    e.key === "Enter" && handleRevalidateAgentPassword()
+                  }
                   className="mt-2"
                 />
               </div>
@@ -1774,13 +2202,13 @@ Você é o assistente oficial de IA da Uzz.AI..."
                   disabled={agentRevalidating || !agentRevalidationPassword}
                   className="flex-1"
                 >
-                  {agentRevalidating ? 'Validando...' : 'Confirmar'}
+                  {agentRevalidating ? "Validando..." : "Confirmar"}
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => {
-                    setShowAgentRevalidationModal(false)
-                    setAgentRevalidationPassword('')
+                    setShowAgentRevalidationModal(false);
+                    setAgentRevalidationPassword("");
                   }}
                   disabled={agentRevalidating}
                 >
@@ -1792,5 +2220,5 @@ Você é o assistente oficial de IA da Uzz.AI..."
         </div>
       )}
     </div>
-  )
+  );
 }
