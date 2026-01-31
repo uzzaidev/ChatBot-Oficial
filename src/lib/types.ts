@@ -751,3 +751,127 @@ export interface Database {
     };
   };
 }
+
+// =============================================================================
+// CRM MODULE TYPES
+// =============================================================================
+
+export type AutoStatus = 'awaiting_attendant' | 'awaiting_client' | 'neutral';
+
+export type CRMActivityType =
+  | 'column_move'
+  | 'tag_add'
+  | 'tag_remove'
+  | 'note_add'
+  | 'assigned'
+  | 'status_change'
+  | 'value_change'
+  | 'created';
+
+export interface CRMColumn {
+  id: string;
+  client_id: string;
+  name: string;
+  slug: string;
+  color: string;
+  icon: string;
+  position: number;
+  auto_rules: Record<string, any>;
+  is_default: boolean;
+  is_archived: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CRMCard {
+  id: string;
+  client_id: string;
+  column_id: string;
+  phone: string | number;
+  position: number;
+  auto_status: AutoStatus;
+  auto_status_updated_at: string | null;
+  assigned_to: string | null;
+  assigned_at: string | null;
+  estimated_value: number | null;
+  currency: string;
+  probability: number;
+  expected_close_date: string | null;
+  last_message_at: string | null;
+  last_message_direction: 'incoming' | 'outgoing' | null;
+  last_message_preview: string | null;
+  moved_to_column_at: string;
+  created_at: string;
+  updated_at: string;
+  
+  // Joined data
+  contact?: {
+    name: string | null;
+    avatarUrl?: string | null;
+  };
+  assignedUser?: {
+    name: string | null;
+  };
+  tagIds?: string[];
+}
+
+export interface CRMTag {
+  id: string;
+  client_id: string;
+  name: string;
+  color: string;
+  description: string | null;
+  is_system: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CRMCardTag {
+  card_id: string;
+  tag_id: string;
+  assigned_at: string;
+  assigned_by: string | null;
+}
+
+export interface CRMNote {
+  id: string;
+  card_id: string;
+  client_id: string;
+  content: string;
+  created_by: string | null;
+  is_pinned: boolean;
+  created_at: string;
+  updated_at: string;
+  
+  // Joined data
+  author?: {
+    name: string | null;
+  };
+}
+
+export interface CRMActivityLog {
+  id: string;
+  client_id: string;
+  card_id: string;
+  activity_type: CRMActivityType;
+  description: string | null;
+  old_value: Record<string, any> | null;
+  new_value: Record<string, any> | null;
+  performed_by: string | null;
+  is_automated: boolean;
+  created_at: string;
+  
+  // Joined data
+  actor?: {
+    name: string | null;
+  };
+}
+
+export interface CRMFilters {
+  search?: string;
+  tagIds?: string[];
+  assignedTo?: string;
+  autoStatus?: AutoStatus;
+  dateFrom?: string;
+  dateTo?: string;
+}
