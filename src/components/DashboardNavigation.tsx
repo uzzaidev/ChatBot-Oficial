@@ -1,6 +1,6 @@
 'use client'
 
-import { MessageSquare, LayoutDashboard, Settings, BarChart3, ChevronLeft, ChevronRight, GitBranch, Terminal, CheckCircle, BookOpen, Users, Workflow, FileText, Zap, DollarSign } from 'lucide-react'
+import { MessageSquare, LayoutDashboard, Settings, BarChart3, ChevronLeft, ChevronRight, GitBranch, Terminal, CheckCircle, BookOpen, Users, Workflow, FileText, Zap, DollarSign, Kanban } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Separator } from '@/components/ui/separator'
@@ -164,6 +164,16 @@ export function DashboardNavigation({
           isCollapsed={isCollapsed}
           onClick={onLinkClick}
           tooltip="Lista completa de clientes e contatos do WhatsApp"
+        />
+
+        <NavItem
+          href="/dashboard/crm"
+          icon={<Kanban className="h-5 w-5 flex-shrink-0" />}
+          label="CRM"
+          isCollapsed={isCollapsed}
+          onClick={onLinkClick}
+          badge="new"
+          tooltip="Kanban CRM para gerenciar leads e pipeline de vendas"
         />
 
         <NavItem
