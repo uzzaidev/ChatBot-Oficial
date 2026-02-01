@@ -36,7 +36,6 @@ import {
   Sparkles,
   Zap,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 /**
@@ -46,7 +45,6 @@ import { useEffect, useState } from "react";
  * with different personalities and configurations.
  */
 const AgentsPage = () => {
-  const router = useRouter();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
@@ -251,29 +249,39 @@ const AgentsPage = () => {
   };
 
   return (
-    <div className="container max-w-7xl py-6">
+    <div className="container max-w-7xl py-4 px-4 sm:py-6 sm:px-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col gap-4 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-blue-500 bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-blue-500 bg-clip-text text-transparent">
             Agentes de IA
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
             Configure diferentes personalidades para seu assistente
           </p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={() => setScheduleOpen(true)}>
-            <Calendar className="w-4 h-4 mr-2" />
-            Agendamento
+        <div className="flex flex-wrap gap-2 sm:gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 sm:flex-none"
+            onClick={() => setScheduleOpen(true)}
+          >
+            <Calendar className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Agendamento</span>
           </Button>
-          <Button variant="outline" onClick={() => setABTestOpen(true)}>
-            <FlaskConical className="w-4 h-4 mr-2" />
-            Teste A/B
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 sm:flex-none"
+            onClick={() => setABTestOpen(true)}
+          >
+            <FlaskConical className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Teste A/B</span>
           </Button>
-          <Button onClick={handleNewAgent}>
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Agente
+          <Button size="sm" className="flex-1 sm:flex-none" onClick={handleNewAgent}>
+            <Plus className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Novo Agente</span>
           </Button>
         </div>
       </div>
@@ -322,7 +330,7 @@ const AgentsPage = () => {
 
       {/* Agents Grid */}
       {!loading && agents.length > 0 && (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {agents.map((agent) => (
             <Card
               key={agent.id}
@@ -449,14 +457,14 @@ const AgentsPage = () => {
                   )}
                 </div>
 
-                <div className="mt-4 pt-3 border-t text-xs text-muted-foreground flex justify-between">
-                  <span>
+                <div className="mt-4 pt-3 border-t text-xs text-muted-foreground flex flex-wrap justify-between gap-1">
+                  <span className="truncate max-w-[70%]">
                     {agent.primary_provider === "openai" ? "OpenAI" : "Groq"} •{" "}
                     {agent.primary_provider === "openai"
                       ? agent.openai_model
                       : agent.groq_model}
                   </span>
-                  <span>Temp: {agent.temperature}</span>
+                  <span className="flex-shrink-0">Temp: {agent.temperature}</span>
                 </div>
               </CardContent>
             </Card>

@@ -256,7 +256,7 @@ export default function CRMPage() {
           ) : (
             <>
               {/* Mobile: Tab-based columns */}
-              <div className="md:hidden flex-1 overflow-hidden">
+              <div className="md:hidden flex-1 flex flex-col min-h-0">
                 {columns.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
                     <p className="text-sm text-muted-foreground">
@@ -266,10 +266,14 @@ export default function CRMPage() {
                 ) : (
                   <Tabs
                     defaultValue={columns[0]?.id}
-                    className="h-full flex flex-col"
+                    className="h-full flex flex-col min-h-0"
                   >
-                    <ScrollArea className="flex-shrink-0 border-b border-border">
-                      <TabsList className="w-full justify-start px-4">
+                    {/* Tabs header - scrollable horizontally */}
+                    <div
+                      className="flex-shrink-0 border-b border-border overflow-x-auto"
+                      style={{ WebkitOverflowScrolling: "touch" }}
+                    >
+                      <TabsList className="w-max min-w-full justify-start px-4">
                         {columns.map((col) => (
                           <TabsTrigger
                             key={col.id}
@@ -282,7 +286,7 @@ export default function CRMPage() {
                           </TabsTrigger>
                         ))}
                       </TabsList>
-                    </ScrollArea>
+                    </div>
 
                     {columns.map((col) => {
                       const columnCards = cards.filter(
@@ -292,31 +296,30 @@ export default function CRMPage() {
                         <TabsContent
                           key={col.id}
                           value={col.id}
-                          className="flex-1 m-0 overflow-hidden"
+                          className="flex-1 m-0 min-h-0 overflow-auto"
+                          style={{ WebkitOverflowScrolling: "touch" }}
                         >
-                          <ScrollArea className="h-full p-4">
-                            <div className="space-y-2">
-                              {columnCards
-                                .sort((a, b) => a.position - b.position)
-                                .map((card) => (
-                                  <KanbanCard
-                                    key={card.id}
-                                    card={card}
-                                    tags={tags}
-                                    columns={columns}
-                                    onClick={() => handleCardClick(card)}
-                                    onMoveToColumn={(columnId) =>
-                                      handleMoveCard(card.id, columnId)
-                                    }
-                                  />
-                                ))}
-                              {columnCards.length === 0 && (
-                                <p className="text-sm text-muted-foreground text-center py-8">
-                                  Nenhum card nesta coluna
-                                </p>
-                              )}
-                            </div>
-                          </ScrollArea>
+                          <div className="p-4 space-y-2">
+                            {columnCards
+                              .sort((a, b) => a.position - b.position)
+                              .map((card) => (
+                                <KanbanCard
+                                  key={card.id}
+                                  card={card}
+                                  tags={tags}
+                                  columns={columns}
+                                  onClick={() => handleCardClick(card)}
+                                  onMoveToColumn={(columnId) =>
+                                    handleMoveCard(card.id, columnId)
+                                  }
+                                />
+                              ))}
+                            {columnCards.length === 0 && (
+                              <p className="text-sm text-muted-foreground text-center py-8">
+                                Nenhum card nesta coluna
+                              </p>
+                            )}
+                          </div>
                         </TabsContent>
                       );
                     })}
