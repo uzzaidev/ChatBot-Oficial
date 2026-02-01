@@ -516,7 +516,7 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
   // Dynamic styles based on message direction (WhatsApp-style)
   const bubbleStyles = isIncoming
     ? 'bg-[hsl(var(--message-incoming-bg))] shadow-md border border-border'
-    : 'bg-gradient-to-br from-primary to-secondary shadow-lg'
+    : 'bg-[hsl(var(--message-outgoing-bg))] shadow-lg'
 
   // Text color classes - incoming uses CSS variable, outgoing uses white
   const textColor = isIncoming ? 'text-[hsl(var(--message-incoming-text))]' : 'text-white'

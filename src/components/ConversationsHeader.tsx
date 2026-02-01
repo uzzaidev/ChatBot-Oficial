@@ -1,7 +1,9 @@
 'use client'
 
-import { MessageCircle, Bot, User, Workflow, ArrowRight } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { MessageCircle, Bot, User, Workflow, ArrowRight, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { FilterEditorModal, type FilterConfig } from '@/components/FilterEditorModal'
 
 interface ConversationsHeaderProps {
   metrics: {
@@ -20,6 +22,41 @@ export const ConversationsHeader = ({
   statusFilter,
   onStatusChange,
 }: ConversationsHeaderProps) => {
+  const [showFilterModal, setShowFilterModal] = useState(false)
+  const [activeFilters, setActiveFilters] = useState<FilterConfig[]>([
+    { id: 'all', label: 'TODAS', icon: 'MessageCircle', color: 'primary', enabled: true, isCustom: false, filterType: 'status', filterValue: 'all', count: metrics.total },
+    { id: 'bot', label: 'BOT', icon: 'Bot', color: 'secondary', enabled: true, isCustom: false, filterType: 'status', filterValue: 'bot', count: metrics.bot },
+    { id: 'humano', label: 'HUMANO', icon: 'User', color: 'primary', enabled: true, isCustom: false, filterType: 'status', filterValue: 'humano', count: metrics.humano },
+    { id: 'fluxo_inicial', label: 'EM FLOW', icon: 'Workflow', color: '#9b59b6', enabled: true, isCustom: false, filterType: 'status', filterValue: 'fluxo_inicial', count: metrics.emFlow },
+    { id: 'transferido', label: 'TRANSFERIDO', icon: 'ArrowRight', color: 'orange-400', enabled: true, isCustom: false, filterType: 'status', filterValue: 'transferido', count: metrics.transferido },
+  ])
+
+  // Carregar configuração do localStorage ao montar
+  useEffect(() => {
+    const savedFilters = localStorage.getItem('conversationFilters')
+    if (savedFilters) {
+      try {
+        const parsed = JSON.parse(savedFilters) as FilterConfig[]
+        // Atualizar counts com as métricas atuais
+        const updated = parsed.map(filter => {
+          if (filter.id === 'all') return { ...filter, count: metrics.total }
+          if (filter.id === 'bot') return { ...filter, count: metrics.bot }
+          if (filter.id === 'humano') return { ...filter, count: metrics.humano }
+          if (filter.id === 'fluxo_inicial') return { ...filter, count: metrics.emFlow }
+          if (filter.id === 'transferido') return { ...filter, count: metrics.transferido }
+          return filter
+        })
+        setActiveFilters(updated)
+      } catch (error) {
+        console.error('Erro ao carregar filtros:', error)
+      }
+    }
+  }, [metrics.total, metrics.bot, metrics.humano, metrics.emFlow, metrics.transferido])
+
+  const handleSaveFilters = (filters: FilterConfig[]) => {
+    setActiveFilters(filters)
+  }
+
   return (
     <div
       className="w-full border-b border-border/50 px-4 md:px-6 py-2 md:py-2.5 relative bg-card/[0.98]"
@@ -38,14 +75,14 @@ export const ConversationsHeader = ({
       </div>
 
       {/* Cards KPI - Responsivo */}
-      {/* Mobile: Scroll horizontal | Tablet: 3 cols | Desktop: 5 cols */}
+      {/* Mobile: 2 cols | Desktop: 3 cols (Grid 3x2) */}
       <div className="overflow-x-auto pb-1.5 -mx-4 px-4 md:mx-0 md:px-0 md:pb-0 md:overflow-visible">
-        <div className="grid grid-flow-col auto-cols-[minmax(120px,1fr)] md:grid-flow-row md:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-2.5 min-w-max md:min-w-0">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-2.5">
         {/* Card TODAS */}
         <button
           onClick={() => onStatusChange('all')}
           className={cn(
-            "relative p-2 md:p-2.5 rounded-lg border transition-all duration-200 text-left group",
+            "relative p-2.5 md:p-3 rounded-lg border transition-all duration-200 text-left group h-[60px] md:h-[65px]",
             statusFilter === 'all'
               ? "bg-gradient-to-br from-surface to-surface-alt border-primary border-t-2"
               : "bg-surface border-border/50 hover:border-primary/50 hover:shadow-lg"
@@ -67,7 +104,7 @@ export const ConversationsHeader = ({
         <button
           onClick={() => onStatusChange('bot')}
           className={cn(
-            "relative p-2 md:p-2.5 rounded-lg border transition-all duration-200 text-left group",
+            "relative p-2.5 md:p-3 rounded-lg border transition-all duration-200 text-left group h-[60px] md:h-[65px]",
             statusFilter === 'bot'
               ? "bg-gradient-to-br from-surface to-surface-alt border-secondary border-t-2"
               : "bg-surface border-border/50 hover:border-secondary/50 hover:shadow-lg"
@@ -89,7 +126,7 @@ export const ConversationsHeader = ({
         <button
           onClick={() => onStatusChange('humano')}
           className={cn(
-            "relative p-2 md:p-2.5 rounded-lg border transition-all duration-200 text-left group",
+            "relative p-2.5 md:p-3 rounded-lg border transition-all duration-200 text-left group h-[60px] md:h-[65px]",
             statusFilter === 'humano'
               ? "bg-gradient-to-br from-surface to-surface-alt border-primary border-t-2"
               : "bg-surface border-border/50 hover:border-primary/50 hover:shadow-lg"
@@ -111,7 +148,7 @@ export const ConversationsHeader = ({
         <button
           onClick={() => onStatusChange('fluxo_inicial')}
           className={cn(
-            "relative p-2 md:p-2.5 rounded-lg border transition-all duration-200 text-left group",
+            "relative p-2.5 md:p-3 rounded-lg border transition-all duration-200 text-left group h-[60px] md:h-[65px]",
             statusFilter === 'fluxo_inicial'
               ? "bg-gradient-to-br from-surface to-surface-alt border-[#9b59b6] border-t-2"
               : "bg-surface border-border/50 hover:border-[#9b59b6]/50 hover:shadow-lg"
@@ -133,7 +170,7 @@ export const ConversationsHeader = ({
         <button
           onClick={() => onStatusChange('transferido')}
           className={cn(
-            "relative p-2 md:p-2.5 rounded-lg border transition-all duration-200 text-left group",
+            "relative p-2.5 md:p-3 rounded-lg border transition-all duration-200 text-left group h-[60px] md:h-[65px]",
             statusFilter === 'transferido'
               ? "bg-gradient-to-br from-surface to-surface-alt border-orange-400 border-t-2"
               : "bg-surface border-border/50 hover:border-orange-400/50 hover:shadow-lg"
@@ -150,8 +187,30 @@ export const ConversationsHeader = ({
           </div>
           <div className="text-[9px] md:text-[10px] text-muted-foreground truncate">Aguardando</div>
         </button>
+
+        {/* Card + EDITAR */}
+        <button
+          onClick={() => setShowFilterModal(true)}
+          className={cn(
+            "relative p-2.5 md:p-3 rounded-lg border-2 border-dashed transition-all duration-200 group h-[60px] md:h-[65px]",
+            "bg-surface border-border/50 hover:border-primary/50 hover:bg-primary/5 flex flex-col items-center justify-center gap-1"
+          )}
+        >
+          <Settings className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+          <div className="text-[10px] md:text-xs font-medium text-muted-foreground group-hover:text-primary transition-colors uppercase tracking-wide">
+            Editar
+          </div>
+        </button>
       </div>
       </div>
+
+      {/* Modal de Edição de Filtros */}
+      <FilterEditorModal
+        isOpen={showFilterModal}
+        onClose={() => setShowFilterModal(false)}
+        currentFilters={activeFilters}
+        onSave={handleSaveFilters}
+      />
     </div>
   )
 }
