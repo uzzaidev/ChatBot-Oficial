@@ -1,6 +1,5 @@
 "use client";
 
-import { ChatThemePaletteButtonSimple } from "@/components/ChatThemePaletteButtonSimple";
 import { ConversationDetail } from "@/components/ConversationDetail";
 import { ConversationList } from "@/components/ConversationList";
 import { ConversationsHeader } from "@/components/ConversationsHeader";
@@ -318,7 +317,7 @@ export function ConversationsIndexClient({
         </Button>
         {/* Theme Buttons - Mobile */}
         <div className="lg:hidden absolute top-2 right-2 z-30 flex items-center gap-1">
-          <ChatThemePaletteButtonSimple />
+          <ChatThemePaletteButton />
           <ThemeToggle />
         </div>
         <ConversationsHeader
@@ -339,7 +338,7 @@ export function ConversationsIndexClient({
                 Conversas
               </h3>
               <div className="flex items-center gap-1">
-                <ChatThemePaletteButtonSimple />
+                <ChatThemePaletteButton />
                 <ThemeToggle />
                 <Link href="/dashboard">
                   <Button

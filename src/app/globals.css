@@ -70,6 +70,11 @@
     --message-outgoing-bg: 153 100% 18%; /* #005c4b - Verde WhatsApp oficial */
     --message-incoming-bg: 210 14% 20%; /* Dark grey for incoming in dark mode */
     --message-incoming-text: 210 40% 98%; /* Light text */
+
+    /* Chat theme customization (sobrescritas por useChatTheme.ts) */
+    --chat-incoming-color: #2d3338; /* Cor customizável das mensagens recebidas */
+    --chat-outgoing-color: #005c4b;  /* Cor customizável das mensagens enviadas */
+    --chat-background-image: none;   /* Imagem de fundo customizável */
   }
 
   .light {
