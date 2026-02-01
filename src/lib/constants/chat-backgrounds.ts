@@ -20,63 +20,63 @@ export const DEFAULT_BACKGROUNDS: ChatBackground[] = [
     id: 'whatsapp-default',
     name: 'Padrão WhatsApp',
     url: '/assets/chat-backgrounds/whatsapp-default.png',
-    thumbnail: '/assets/chat-backgrounds/thumbs/whatsapp-default-thumb.png',
+    thumbnail: '/assets/chat-backgrounds/thumbs/whatsapp-default.png',
     category: 'default',
     description: 'Fundo padrão original do WhatsApp com padrão sutil'
   },
   {
-    id: 'whatsapp-dark',
+    id: 'dark-solid',
     name: 'Escuro Sólido',
-    url: '/assets/chat-backgrounds/whatsapp-dark.png',
-    thumbnail: '/assets/chat-backgrounds/thumbs/whatsapp-dark-thumb.png',
+    url: '/assets/chat-backgrounds/dark-solid.png',
+    thumbnail: '/assets/chat-backgrounds/thumbs/dark-solid.png',
     category: 'solid',
     description: 'Fundo escuro sólido para modo noturno'
   },
   {
-    id: 'whatsapp-light',
+    id: 'light-solid',
     name: 'Claro Sólido',
-    url: '/assets/chat-backgrounds/whatsapp-light.png',
-    thumbnail: '/assets/chat-backgrounds/thumbs/whatsapp-light-thumb.png',
+    url: '/assets/chat-backgrounds/light-solid.png',
+    thumbnail: '/assets/chat-backgrounds/thumbs/light-solid.png',
     category: 'solid',
     description: 'Fundo claro bege estilo WhatsApp clássico'
   },
   {
-    id: 'whatsapp-abstract-1',
+    id: 'abstract-green',
     name: 'Abstrato Verde',
-    url: '/assets/chat-backgrounds/whatsapp-abstract-1.png',
-    thumbnail: '/assets/chat-backgrounds/thumbs/whatsapp-abstract-1-thumb.png',
+    url: '/assets/chat-backgrounds/abstract-green.png',
+    thumbnail: '/assets/chat-backgrounds/thumbs/abstract-green.png',
     category: 'abstract',
     description: 'Gradiente verde menta com ondas abstratas'
   },
   {
-    id: 'whatsapp-abstract-2',
+    id: 'abstract-purple',
     name: 'Abstrato Roxo',
-    url: '/assets/chat-backgrounds/whatsapp-abstract-2.png',
-    thumbnail: '/assets/chat-backgrounds/thumbs/whatsapp-abstract-2-thumb.png',
+    url: '/assets/chat-backgrounds/abstract-purple.png',
+    thumbnail: '/assets/chat-backgrounds/thumbs/abstract-purple.png',
     category: 'abstract',
     description: 'Gradiente roxo e rosa com formas geométricas'
   },
   {
-    id: 'whatsapp-nature-1',
+    id: 'nature-leaves',
     name: 'Natureza Folhas',
-    url: '/assets/chat-backgrounds/whatsapp-nature-1.png',
-    thumbnail: '/assets/chat-backgrounds/thumbs/whatsapp-nature-1-thumb.png',
+    url: '/assets/chat-backgrounds/nature-leaves.png',
+    thumbnail: '/assets/chat-backgrounds/thumbs/nature-leaves.png',
     category: 'nature',
     description: 'Folhas verdes em fundo escuro com opacidade'
   },
   {
-    id: 'whatsapp-nature-2',
+    id: 'nature-flowers',
     name: 'Natureza Flores',
-    url: '/assets/chat-backgrounds/whatsapp-nature-2.png',
-    thumbnail: '/assets/chat-backgrounds/thumbs/whatsapp-nature-2-thumb.png',
+    url: '/assets/chat-backgrounds/nature-flowers.png',
+    thumbnail: '/assets/chat-backgrounds/thumbs/nature-flowers.png',
     category: 'nature',
     description: 'Flores suaves em fundo claro'
   },
   {
-    id: 'whatsapp-geometric',
+    id: 'geometric',
     name: 'Geométrico',
-    url: '/assets/chat-backgrounds/whatsapp-geometric.png',
-    thumbnail: '/assets/chat-backgrounds/thumbs/whatsapp-geometric-thumb.png',
+    url: '/assets/chat-backgrounds/geometric.png',
+    thumbnail: '/assets/chat-backgrounds/thumbs/geometric.png',
     category: 'geometric',
     description: 'Padrão geométrico sutil em tons neutros'
   }
