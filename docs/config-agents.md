@@ -1773,55 +1773,56 @@ Meu objetivo e entender a necessidade do cliente, apresentar as melhores solucoe
 }
 ```
 
-### Funcionalidades Extras - NÃO IMPLEMENTADAS ❌
+### Funcionalidades Extras - STATUS ATUALIZADO
 
-| Feature                        | Status      | Tabela DB                        | Prioridade |
-| ------------------------------ | ----------- | -------------------------------- | ---------- |
-| **Templates pré-configurados** | ❌ Pendente | N/A (hardcoded)                  | Média      |
-| **Histórico de Versões**       | ❌ Pendente | `agent_versions` (criada)        | Baixa      |
-| **Agendamento por horário**    | ❌ Pendente | `agent_schedules` (criada)       | Baixa      |
-| **A/B Testing**                | ❌ Pendente | `agent_experiments` (não criada) | Baixa      |
+| Feature                        | Status          | Tabela DB                        | Prioridade |
+| ------------------------------ | --------------- | -------------------------------- | ---------- |
+| **Templates pré-configurados** | ✅ Implementado | `src/lib/agent-templates.ts`     | Média      |
+| **Histórico de Versões**       | ✅ Implementado | `agent_versions` + trigger       | Baixa      |
+| **Agendamento por horário**    | ❌ Pendente     | `agent_schedules` (criada)       | Baixa      |
+| **A/B Testing**                | ❌ Pendente     | `agent_experiments` (não criada) | Baixa      |
 
-### Componentes Extras - NÃO IMPLEMENTADOS ❌
+### Componentes Extras - STATUS ATUALIZADO
 
-| Componente                | Status      | Descrição                                  |
-| ------------------------- | ----------- | ------------------------------------------ |
-| `AgentPreviewChat.tsx`    | ❌ Pendente | Chat de preview (integrado no modal atual) |
-| `TemplateSelector.tsx`    | ❌ Pendente | Seletor de templates de agentes            |
-| `AgentVersionHistory.tsx` | ❌ Pendente | Histórico de versões com rollback          |
-| `AgentScheduler.tsx`      | ❌ Pendente | Configuração de horários                   |
-| `ABTestDashboard.tsx`     | ❌ Pendente | Dashboard de experimentos A/B              |
+| Componente                | Status          | Descrição                                  |
+| ------------------------- | --------------- | ------------------------------------------ |
+| `AgentPreviewChat.tsx`    | ✅ Implementado | Chat de preview (integrado no modal atual) |
+| `TemplateSelector.tsx`    | ✅ Implementado | Integrado no `AgentEditorModal.tsx`        |
+| `AgentVersionHistory.tsx` | ✅ Implementado | Histórico de versões com rollback          |
+| `AgentScheduler.tsx`      | ❌ Pendente     | Configuração de horários                   |
+| `ABTestDashboard.tsx`     | ❌ Pendente     | Dashboard de experimentos A/B              |
 
 ---
 
 ## Próximos Passos Recomendados
 
-### Fase 3 - Templates (Prioridade Média)
+### ✅ Fase 3 - Templates (CONCLUÍDA)
 
-1. Criar constantes com templates pré-configurados:
+- [x] Templates definidos em `src/lib/agent-templates.ts`:
+  - Vendedor (tom persuasivo, foco em conversão)
+  - Suporte Técnico (tom empático, foco em resolução)
+  - Qualificador de Leads (tom consultivo)
+  - Atendente Geral (tom neutro)
+  - Consultor Premium (tom profissional)
+- [x] Seletor de templates no `AgentEditorModal.tsx` (aba Identidade)
 
-   - Vendas (tom persuasivo, foco em conversão)
-   - Suporte (tom empático, foco em resolução)
-   - Qualificação (tom consultivo, foco em lead scoring)
-   - Atendente (tom neutro, foco em encaminhamento)
+### ✅ Fase 4 - Histórico de Versões (CONCLUÍDA)
 
-2. Adicionar botão "Usar Template" no AgentEditorModal
+- [x] Trigger SQL para auto-save em `agent_versions` (`20260131_agent_version_trigger.sql`)
+- [x] Componente `AgentVersionHistory.tsx` criado
+- [x] API `/api/agents/[id]/versions` (GET lista, POST cria)
+- [x] API `/api/agents/[id]/versions/[versionId]/restore` (POST restaura)
+- [x] Botão "Histórico" no `AgentEditorModal.tsx`
+- [x] Trigger mantém últimas 20 versões por agente
 
-### Fase 4 - Histórico de Versões (Prioridade Baixa)
-
-1. Implementar trigger SQL para auto-save em `agent_versions`
-2. Criar componente `AgentVersionHistory.tsx`
-3. Adicionar API `/api/agents/[id]/versions`
-4. UI para visualizar e restaurar versões
-
-### Fase 5 - Agendamento (Prioridade Baixa)
+### Fase 5 - Agendamento (Prioridade Baixa) - PENDENTE ❌
 
 1. Criar API `/api/agents/schedules`
 2. Criar componente `AgentScheduler.tsx`
 3. Modificar `getActiveAgent()` para considerar horário
 4. Cron job ou edge function para troca automática
 
-### Fase 6 - A/B Testing (Prioridade Baixa)
+### Fase 6 - A/B Testing (Prioridade Baixa) - PENDENTE ❌
 
 1. Criar tabelas `agent_experiments` e `experiment_assignments`
 2. Implementar lógica de split de tráfego sticky por telefone

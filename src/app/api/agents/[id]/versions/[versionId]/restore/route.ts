@@ -135,8 +135,9 @@ export const POST = async (
       message_delay_ms: snapshot.message_delay_ms as number | null,
       message_split_enabled: snapshot.message_split_enabled as boolean,
       compiled_system_prompt: snapshot.compiled_system_prompt as string | null,
-      compiled_formatter_prompt:
-        snapshot.compiled_formatter_prompt as string | null,
+      compiled_formatter_prompt: snapshot.compiled_formatter_prompt as
+        | string
+        | null,
       updated_at: new Date().toISOString(),
     };
 
