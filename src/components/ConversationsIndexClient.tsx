@@ -325,6 +325,7 @@ export function ConversationsIndexClient({
           metrics={metrics}
           statusFilter={statusFilter}
           onStatusChange={setStatusFilter}
+          clientId={clientId}
         />
       </div>
 
