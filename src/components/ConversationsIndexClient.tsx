@@ -1,5 +1,6 @@
 "use client";
 
+import { ChatThemePaletteButton } from "@/components/ChatThemePaletteButton";
 import { ConversationDetail } from "@/components/ConversationDetail";
 import { ConversationList } from "@/components/ConversationList";
 import { ConversationsHeader } from "@/components/ConversationsHeader";
