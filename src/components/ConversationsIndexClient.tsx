@@ -1,5 +1,6 @@
 "use client";
 
+import { ChatThemePaletteButtonSimple } from "@/components/ChatThemePaletteButtonSimple";
 import { ConversationDetail } from "@/components/ConversationDetail";
 import { ConversationList } from "@/components/ConversationList";
 import { ConversationsHeader } from "@/components/ConversationsHeader";
@@ -18,24 +19,24 @@ import { markConversationAsRead } from "@/lib/api";
 import type { Message } from "@/lib/types";
 import { getInitials } from "@/lib/utils";
 import {
-  ArrowRight,
-  Bot,
-  Home,
-  Menu,
-  MessageCircle,
-  Search,
-  User,
-  Workflow,
-  X,
+    ArrowRight,
+    Bot,
+    Home,
+    Menu,
+    MessageCircle,
+    Search,
+    User,
+    Workflow,
+    X,
 } from "lucide-react";
 import Link from "next/link";
 import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
+    useCallback,
+    useEffect,
+    useLayoutEffect,
+    useMemo,
+    useRef,
+    useState,
 } from "react";
 
 interface ConversationsIndexClientProps {
@@ -315,8 +316,9 @@ export function ConversationsIndexClient({
         >
           <Menu className="h-5 w-5" />
         </Button>
-        {/* Theme Toggle - Mobile */}
-        <div className="lg:hidden absolute top-2 right-2 z-30">
+        {/* Theme Buttons - Mobile */}
+        <div className="lg:hidden absolute top-2 right-2 z-30 flex items-center gap-1">
+          <ChatThemePaletteButtonSimple />
           <ThemeToggle />
         </div>
         <ConversationsHeader
@@ -337,6 +339,7 @@ export function ConversationsIndexClient({
                 Conversas
               </h3>
               <div className="flex items-center gap-1">
+                <ChatThemePaletteButtonSimple />
                 <ThemeToggle />
                 <Link href="/dashboard">
                   <Button
