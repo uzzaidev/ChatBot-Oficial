@@ -1,6 +1,8 @@
 "use client";
 
+import { ABTestDashboard } from "@/components/agents/ABTestDashboard";
 import { AgentEditorModal } from "@/components/agents/AgentEditorModal";
+import { AgentScheduler } from "@/components/agents/AgentScheduler";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,7 +26,9 @@ import type { Agent } from "@/lib/types";
 import {
   Archive,
   Bot,
+  Calendar,
   Copy,
+  FlaskConical,
   MoreVertical,
   Plus,
   Power,
@@ -48,6 +52,8 @@ const AgentsPage = () => {
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [isNewAgent, setIsNewAgent] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [abTestOpen, setABTestOpen] = useState(false);
 
   // Fetch agents on mount
   useEffect(() => {
@@ -257,6 +263,14 @@ const AgentsPage = () => {
           </p>
         </div>
         <div className="flex gap-3">
+          <Button variant="outline" onClick={() => setScheduleOpen(true)}>
+            <Calendar className="w-4 h-4 mr-2" />
+            Agendamento
+          </Button>
+          <Button variant="outline" onClick={() => setABTestOpen(true)}>
+            <FlaskConical className="w-4 h-4 mr-2" />
+            Teste A/B
+          </Button>
           <Button onClick={handleNewAgent}>
             <Plus className="w-4 h-4 mr-2" />
             Novo Agente
@@ -459,6 +473,12 @@ const AgentsPage = () => {
         onSave={handleAgentSaved}
         onClose={handleEditorClose}
       />
+
+      {/* Agent Scheduler Modal */}
+      <AgentScheduler open={scheduleOpen} onOpenChange={setScheduleOpen} />
+
+      {/* A/B Test Dashboard Modal */}
+      <ABTestDashboard open={abTestOpen} onOpenChange={setABTestOpen} />
     </div>
   );
 };

@@ -907,6 +907,20 @@ export interface Database {
         Insert: Omit<AgentVersion, "id" | "created_at">;
         Update: Partial<Omit<AgentVersion, "id" | "created_at">>;
       };
+      agent_schedules: {
+        Row: AgentSchedule;
+        Insert: Omit<AgentSchedule, "id" | "created_at" | "updated_at">;
+        Update: Partial<
+          Omit<AgentSchedule, "id" | "created_at" | "updated_at">
+        >;
+      };
+      agent_experiments: {
+        Row: AgentExperiment;
+        Insert: Omit<AgentExperiment, "id" | "created_at" | "updated_at">;
+        Update: Partial<
+          Omit<AgentExperiment, "id" | "created_at" | "updated_at">
+        >;
+      };
     };
     Views: {};
     Functions: {
