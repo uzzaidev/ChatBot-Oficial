@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { createClientBrowser } from '@/lib/supabase'
 import { DEFAULT_BACKGROUNDS, DEFAULT_CHAT_THEME, type ChatTheme } from '@/lib/constants/chat-backgrounds'
+import { createClientBrowser } from '@/lib/supabase'
+import { useCallback, useEffect, useState } from 'react'
 
 interface UseChatThemeReturn {
   theme: ChatTheme | null
@@ -121,6 +121,8 @@ export const useChatTheme = (): UseChatThemeReturn => {
           background_type: newTheme.backgroundType,
           background_preset: newTheme.backgroundPreset || null,
           background_custom_url: newTheme.backgroundCustomUrl || null,
+        }, {
+          onConflict: 'user_id'  // Resolver conflitos pela coluna user_id (UNIQUE constraint)
         })
 
       if (saveError) {

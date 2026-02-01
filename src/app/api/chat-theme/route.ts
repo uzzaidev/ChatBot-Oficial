@@ -126,6 +126,8 @@ export async function POST(request: NextRequest) {
         background_type: backgroundType,
         background_preset: backgroundPreset || null,
         background_custom_url: backgroundCustomUrl || null,
+      }, {
+        onConflict: 'user_id'  // Resolver conflitos pela coluna user_id (UNIQUE constraint)
       })
       .select()
       .single()
