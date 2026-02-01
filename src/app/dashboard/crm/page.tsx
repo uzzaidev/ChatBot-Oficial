@@ -312,6 +312,7 @@ export default function CRMPage() {
                                   onMoveToColumn={(columnId) =>
                                     handleMoveCard(card.id, columnId)
                                   }
+                                  disableDrag
                                 />
                               ))}
                             {columnCards.length === 0 && (

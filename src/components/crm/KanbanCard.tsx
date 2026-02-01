@@ -26,6 +26,8 @@ export interface KanbanCardProps {
   onMoveToColumn?: (columnId: string) => void;
   isDragging?: boolean;
   columns?: Array<{ id: string; name: string }>;
+  /** Disable drag-and-drop to allow touch scroll on mobile */
+  disableDrag?: boolean;
 }
 
 const getInitials = (name: string): string => {
@@ -54,6 +56,7 @@ export const KanbanCard = ({
   onMoveToColumn,
   isDragging = false,
   columns = [],
+  disableDrag = false,
 }: KanbanCardProps) => {
   const {
     attributes,
@@ -62,7 +65,7 @@ export const KanbanCard = ({
     transform,
     transition,
     isDragging: isSortableDragging,
-  } = useSortable({ id: card.id });
+  } = useSortable({ id: card.id, disabled: disableDrag });
 
   const contactName = card.contact?.name || "Sem nome";
   const cardTags = tags.filter((tag) => card.tagIds?.includes(tag.id));
@@ -72,15 +75,20 @@ export const KanbanCard = ({
     transform: CSS.Transform.toString(transform),
     transition: transition || undefined,
     willChange: isCurrentlyDragging ? "transform" : undefined,
-    touchAction: "none",
+    // Allow touch scroll when drag is disabled (mobile)
+    touchAction: disableDrag ? "auto" : "none",
   } as React.CSSProperties;
+
+  // Only apply drag attributes/listeners when drag is enabled
+  const dragProps = disableDrag ? {} : { ...attributes, ...listeners };
 
   return (
     <Card
-      ref={setNodeRef}
-      style={style}
+      ref={disableDrag ? undefined : setNodeRef}
+      style={disableDrag ? undefined : style}
       className={cn(
-        "bg-card border-border cursor-grab active:cursor-grabbing",
+        "bg-card border-border",
+        !disableDrag && "cursor-grab active:cursor-grabbing",
         "hover:border-primary/50 hover:shadow-md",
         "transition-all duration-200",
         isCurrentlyDragging &&
@@ -91,8 +99,7 @@ export const KanbanCard = ({
           "border-l-4 border-l-yellow-500",
       )}
       onClick={onClick}
-      {...attributes}
-      {...listeners}
+      {...dragProps}
     >
       <CardContent className="p-2.5 space-y-2">
         {/* Header */}
