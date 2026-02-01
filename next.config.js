@@ -22,7 +22,7 @@ const nextConfig = {
   serverExternalPackages: ['pdf-parse', 'fluent-ffmpeg', '@ffmpeg-installer/ffmpeg'],
   // Empty turbopack config to allow webpack config without errors
   turbopack: {},
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, dev }) => {
     if (isServer) {
       // Externalizar pacotes FFmpeg para evitar bundling
       config.externals = config.externals || []
@@ -31,6 +31,26 @@ const nextConfig = {
         '@ffmpeg-installer/ffmpeg': 'commonjs @ffmpeg-installer/ffmpeg',
       })
     }
+
+    // Otimizar watch para evitar Fast Refresh desnecessários em dev
+    if (dev) {
+      config.watchOptions = {
+        ignored: [
+          '**/node_modules/**',
+          '**/.git/**',
+          '**/.next/**',
+          '**/db/**',
+          '**/docs/**',
+          '**/supabase/**',
+          '**/capacitor/**',
+          '**/*.md',
+          '**/*.log',
+        ],
+        aggregateTimeout: 300, // Aguardar 300ms antes de rebuild
+        poll: false, // Desabilitar polling (usa eventos do sistema)
+      }
+    }
+
     return config
   },
   // SECURITY FIX (VULN-011): Configure CORS and security headers

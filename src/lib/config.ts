@@ -108,10 +108,45 @@ export const getEnvironmentInfo = () => {
 // 🔐 MULTI-TENANT CONFIG WITH VAULT
 // ============================================================================
 
-import { createServerClient, createServiceRoleClient } from "./supabase";
-import { getClientSecrets } from "./vault";
-import type { ClientConfig } from "./types";
 import { getSharedGatewayConfig } from "./ai-gateway/config";
+import { createServerClient, createServiceRoleClient } from "./supabase";
+import type { Agent, ClientConfig } from "./types";
+import { getClientSecrets } from "./vault";
+
+/**
+ * 🤖 Busca o agente ativo do cliente
+ *
+ * @param clientId - UUID do cliente
+ * @returns Agente ativo ou null se não houver
+ */
+export const getActiveAgent = async (
+  clientId: string,
+): Promise<Agent | null> => {
+  try {
+    const supabase = createServiceRoleClient();
+
+    // Busca o agente ativo (is_active = true, is_archived = false)
+    const { data: agent, error } = await supabase
+      .from("agents")
+      .select("*")
+      .eq("client_id", clientId)
+      .eq("is_active", true)
+      .eq("is_archived", false)
+      .single();
+
+    if (error || !agent) {
+      console.log(
+        `[getActiveAgent] No active agent found for client ${clientId}`,
+      );
+      return null;
+    }
+
+    return agent as Agent;
+  } catch (error) {
+    console.error("[getActiveAgent] Error:", error);
+    return null;
+  }
+};
 
 /**
  * 🔐 Busca configuração completa do cliente com secrets descriptografados do Vault
@@ -129,12 +164,12 @@ export const getClientConfig = async (
   try {
     const supabase = await createServerClient();
 
-    const { data: client, error } = await supabase
+    const { data: client, error } = (await supabase
       .from("clients")
       .select("*")
       .eq("id", clientId)
       .eq("status", "active")
-      .single() as { data: any; error: any };
+      .single()) as { data: any; error: any };
 
     if (error || !client) {
       return null;
@@ -165,21 +200,23 @@ export const getClientConfig = async (
       );
     }
 
-    const aiKeysMode = (client.ai_keys_mode === "byok_allowed"
-      ? "byok_allowed"
-      : "platform_only") as "platform_only" | "byok_allowed";
+    const aiKeysMode = (
+      client.ai_keys_mode === "byok_allowed" ? "byok_allowed" : "platform_only"
+    ) as "platform_only" | "byok_allowed";
 
     const sharedGatewayConfig = await getSharedGatewayConfig();
     const sharedOpenaiKey = sharedGatewayConfig?.providerKeys?.openai || null;
     const sharedGroqKey = sharedGatewayConfig?.providerKeys?.groq || null;
 
-    const finalOpenaiKey = aiKeysMode === "byok_allowed"
-      ? (secrets.openaiApiKey || sharedOpenaiKey)
-      : sharedOpenaiKey;
+    const finalOpenaiKey =
+      aiKeysMode === "byok_allowed"
+        ? secrets.openaiApiKey || sharedOpenaiKey
+        : sharedOpenaiKey;
 
-    const finalGroqKey = aiKeysMode === "byok_allowed"
-      ? (secrets.groqApiKey || sharedGroqKey)
-      : sharedGroqKey;
+    const finalGroqKey =
+      aiKeysMode === "byok_allowed"
+        ? secrets.groqApiKey || sharedGroqKey
+        : sharedGroqKey;
 
     if (!finalOpenaiKey) {
       throw new Error(
@@ -198,6 +235,92 @@ export const getClientConfig = async (
       );
     }
 
+    // =========================================================================
+    // 🤖 AGENT CONFIG OVERRIDE: Merge active agent settings
+    // =========================================================================
+    const activeAgent = await getActiveAgent(clientId);
+
+    // Base settings from client (fallback)
+    const baseSettings = {
+      batchingDelaySeconds: client.settings?.batching_delay_seconds ?? 10,
+      maxTokens: client.settings?.max_tokens ?? 2048,
+      temperature: client.settings?.temperature ?? 0.7,
+      enableRAG: client.settings?.enable_rag ?? false,
+      enableTools: client.settings?.enable_tools ?? false,
+      enableHumanHandoff: client.settings?.enable_human_handoff ?? true,
+      messageSplitEnabled: client.settings?.message_split_enabled ?? false,
+      maxChatHistory: client.settings?.max_chat_history ?? 15,
+      messageDelayMs: client.settings?.message_delay_ms ?? 2000,
+      tts_enabled: client.tts_enabled ?? false,
+      tts_provider: client.tts_provider ?? "openai",
+      tts_model: client.tts_model ?? "tts-1-hd",
+      tts_voice: client.tts_voice ?? "alloy",
+      tts_speed: client.tts_speed ?? 1.0,
+      tts_auto_offer: client.tts_auto_offer ?? false,
+    };
+
+    // Override with active agent settings if available
+    const finalSettings = activeAgent
+      ? {
+          ...baseSettings,
+          // Timing & Memory from Agent
+          batchingDelaySeconds:
+            activeAgent.batching_delay_seconds ??
+            baseSettings.batchingDelaySeconds,
+          maxChatHistory:
+            activeAgent.max_chat_history ?? baseSettings.maxChatHistory,
+          messageDelayMs:
+            activeAgent.message_delay_ms ?? baseSettings.messageDelayMs,
+          messageSplitEnabled:
+            activeAgent.message_split_enabled ??
+            baseSettings.messageSplitEnabled,
+          // Tools & Features from Agent
+          enableTools: activeAgent.enable_tools ?? baseSettings.enableTools,
+          enableRAG: activeAgent.enable_rag ?? baseSettings.enableRAG,
+          enableHumanHandoff:
+            activeAgent.enable_human_handoff ?? baseSettings.enableHumanHandoff,
+          // Model settings from Agent
+          maxTokens: activeAgent.max_tokens ?? baseSettings.maxTokens,
+          temperature: activeAgent.temperature ?? baseSettings.temperature,
+          // TTS from agent (enable_audio_response)
+          tts_enabled:
+            activeAgent.enable_audio_response ?? baseSettings.tts_enabled,
+        }
+      : baseSettings;
+
+    // Determine prompts - prefer agent's compiled prompts if available
+    const finalPrompts = activeAgent?.compiled_system_prompt
+      ? {
+          systemPrompt: activeAgent.compiled_system_prompt,
+          formatterPrompt:
+            activeAgent.compiled_formatter_prompt ||
+            client.formatter_prompt ||
+            undefined,
+        }
+      : {
+          systemPrompt: client.system_prompt,
+          formatterPrompt: client.formatter_prompt || undefined,
+        };
+
+    // Determine models - prefer agent's models if available
+    const finalModels = activeAgent
+      ? {
+          openaiModel:
+            activeAgent.openai_model || client.openai_model || "gpt-4o",
+          groqModel:
+            activeAgent.groq_model ||
+            client.groq_model ||
+            "llama-3.3-70b-versatile",
+        }
+      : {
+          openaiModel: client.openai_model || "gpt-4o",
+          groqModel: client.groq_model || "llama-3.3-70b-versatile",
+        };
+
+    // Determine primary provider - prefer agent's if available
+    const finalPrimaryProvider =
+      activeAgent?.primary_provider || primaryProvider;
+
     const config: ClientConfig = {
       id: client.id,
       name: client.name,
@@ -205,7 +328,7 @@ export const getClientConfig = async (
       status: client.status,
 
       aiKeysMode,
-      primaryProvider,
+      primaryProvider: finalPrimaryProvider,
 
       apiKeys: {
         metaAccessToken: secrets.metaAccessToken,
@@ -215,32 +338,13 @@ export const getClientConfig = async (
         openaiApiKey: finalOpenaiKey,
         groqApiKey: finalGroqKey || "",
       },
-      prompts: {
-        systemPrompt: client.system_prompt,
-        formatterPrompt: client.formatter_prompt || undefined,
-      },
-      models: {
-        openaiModel: client.openai_model || "gpt-4o",
-        groqModel: client.groq_model || "llama-3.3-70b-versatile",
-      },
-      settings: {
-        batchingDelaySeconds: client.settings.batching_delay_seconds,
-        maxTokens: client.settings.max_tokens,
-        temperature: client.settings.temperature,
-        enableRAG: client.settings.enable_rag,
-        enableTools: client.settings.enable_tools,
-        enableHumanHandoff: client.settings.enable_human_handoff,
-        messageSplitEnabled: client.settings.message_split_enabled,
-        maxChatHistory: client.settings.max_chat_history,
-        messageDelayMs: client.settings.message_delay_ms ?? 2000,
-        tts_enabled: client.tts_enabled ?? false,
-        tts_provider: client.tts_provider ?? "openai",
-        tts_model: client.tts_model ?? "tts-1-hd",
-        tts_voice: client.tts_voice ?? "alloy",
-        tts_speed: client.tts_speed ?? 1.0,
-        tts_auto_offer: client.tts_auto_offer ?? false,
-      },
+      prompts: finalPrompts,
+      models: finalModels,
+      settings: finalSettings,
       notificationEmail: client.notification_email || undefined,
+
+      // 🤖 Include active agent info for reference
+      activeAgent: activeAgent || undefined,
     };
 
     return config;
@@ -408,21 +512,25 @@ export const getBotConfigs = async (
     const configMap = new Map<string, any>();
 
     // Primeiro adicionar defaults
-    (data as any[]).filter((c: any) => c.is_default).forEach((c: any) => {
-      configMap.set(c.config_key, c.config_value);
-    });
+    (data as any[])
+      .filter((c: any) => c.is_default)
+      .forEach((c: any) => {
+        configMap.set(c.config_key, c.config_value);
+      });
 
     // Depois sobrescrever com configs do cliente (se existir)
-    (data as any[]).filter((c: any) => !c.is_default).forEach((c: any) => {
-      configMap.set(c.config_key, c.config_value);
+    (data as any[])
+      .filter((c: any) => !c.is_default)
+      .forEach((c: any) => {
+        configMap.set(c.config_key, c.config_value);
 
-      // Cachear também
-      const cacheKey = `${clientId}:${c.config_key}`;
-      botConfigCache.set(cacheKey, {
-        value: c.config_value,
-        expiresAt: Date.now() + BOT_CONFIG_CACHE_TTL,
+        // Cachear também
+        const cacheKey = `${clientId}:${c.config_key}`;
+        botConfigCache.set(cacheKey, {
+          value: c.config_value,
+          expiresAt: Date.now() + BOT_CONFIG_CACHE_TTL,
+        });
       });
-    });
 
     return configMap;
   } catch (error) {
@@ -453,9 +561,8 @@ export const setBotConfig = async (
   try {
     const supabase = await createServerClient();
 
-    const { error } = await supabase
-      .from("bot_configurations")
-      .upsert({
+    const { error } = await supabase.from("bot_configurations").upsert(
+      {
         client_id: clientId,
         config_key: configKey,
         config_value: configValue,
@@ -463,9 +570,11 @@ export const setBotConfig = async (
         category: metadata?.category,
         is_default: false,
         updated_at: new Date().toISOString(),
-      }, {
+      },
+      {
         onConflict: "client_id,config_key",
-      });
+      },
+    );
 
     if (error) {
       throw new Error(`Erro ao salvar config: ${error.message}`);
@@ -557,16 +666,18 @@ export const listBotConfigs = async (
     const configMap = new Map<string, BotConfig>();
 
     // Primeiro adicionar defaults
-    data.filter((c) => c.is_default).forEach((c) => {
-      configMap.set(c.config_key, c as BotConfig);
-    });
+    data
+      .filter((c) => c.is_default)
+      .forEach((c) => {
+        configMap.set(c.config_key, c as BotConfig);
+      });
 
     // Depois sobrescrever com customs
-    data.filter((c) => !c.is_default && c.client_id === clientId).forEach(
-      (c) => {
+    data
+      .filter((c) => !c.is_default && c.client_id === clientId)
+      .forEach((c) => {
         configMap.set(c.config_key, c as BotConfig);
-      },
-    );
+      });
 
     return Array.from(configMap.values());
   } catch (error) {

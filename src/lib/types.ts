@@ -287,6 +287,23 @@ export interface WhatsAppWebhookPayload {
   entry: WhatsAppWebhookEntry[];
 }
 
+// 🎯 Referral data from Meta Ads (Click-to-WhatsApp)
+export interface ReferralData {
+  source_url?: string;
+  source_type?: string;
+  source_id?: string;
+  headline?: string;
+  body?: string;
+  media_type?: string;
+  ctwa_clid?: string; // Click-to-WhatsApp click ID
+  ad_id?: string;
+  ad_name?: string;
+  adset_id?: string;
+  adset_name?: string;
+  campaign_id?: string;
+  campaign_name?: string;
+}
+
 export interface ParsedMessage {
   phone: string;
   name: string;
@@ -299,6 +316,8 @@ export interface ParsedMessage {
   interactiveType?: "button_reply" | "list_reply";
   interactiveResponseId?: string;
   interactiveResponseTitle?: string;
+  // 🎯 Referral from Meta Ads
+  referral?: ReferralData;
 }
 
 export interface MediaMetadata {
@@ -403,6 +422,149 @@ export interface ClientConfig {
 
   // Notificações
   notificationEmail?: string;
+
+  // Active Agent (NEW - Multi-Agent System)
+  activeAgentId?: string | null;
+  activeAgent?: Agent; // Full agent object when loaded via getClientConfig
+}
+
+/**
+ * 🤖 Agent Configuration (Multi-Agent System)
+ *
+ * Represents an AI agent with structured configuration that gets
+ * compiled into a system prompt. Supports multiple agents per client
+ * with features like A/B testing, scheduling, and version history.
+ */
+export interface Agent {
+  // Identification
+  id: string;
+  client_id: string;
+  name: string;
+  slug: string;
+  avatar_emoji: string;
+  description: string | null;
+
+  // Status
+  is_active: boolean;
+  is_archived: boolean;
+
+  // === COMO RESPONDER (Tone & Style) ===
+  response_tone: "formal" | "friendly" | "professional" | "casual";
+  response_style: "helpful" | "direct" | "educational" | "consultative";
+  language: string;
+  use_emojis: boolean;
+  max_response_length: "short" | "medium" | "long";
+
+  // === O QUE FAZER (Behavior) ===
+  role_description: string | null;
+  primary_goal: string | null;
+  forbidden_topics: string[] | null;
+  always_mention: string[] | null;
+  greeting_message: string | null;
+  fallback_message: string | null;
+
+  // === FERRAMENTAS (Tools) ===
+  enable_human_handoff: boolean;
+  enable_document_search: boolean;
+  enable_audio_response: boolean;
+  enable_tools: boolean; // Function calling (ações, agendamento, etc)
+
+  // === INTEGRACOES (RAG) ===
+  enable_rag: boolean;
+  rag_threshold: number;
+  rag_max_results: number;
+
+  // === MODELO IA (AI Model) ===
+  primary_provider: "groq" | "openai";
+  openai_model: string;
+  groq_model: string;
+  temperature: number;
+  max_tokens: number;
+
+  // === MEMÓRIA & CONTEXTO ===
+  max_chat_history: number; // Quantas mensagens manter no contexto
+
+  // === TIMING & BATCHING ===
+  batching_delay_seconds: number; // Tempo para agrupar mensagens (debounce)
+  message_delay_ms: number; // Delay entre mensagens divididas
+  message_split_enabled: boolean; // Dividir mensagens longas
+
+  // === PROMPT COMPILADO (Generated) ===
+  compiled_system_prompt: string | null;
+  compiled_formatter_prompt: string | null;
+
+  // Timestamps
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Agent Version (Version History)
+ */
+export interface AgentVersion {
+  id: string;
+  agent_id: string;
+  version_number: number;
+  snapshot: Agent;
+  change_description: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+/**
+ * Agent Schedule Rule
+ */
+export interface AgentScheduleRule {
+  agent_id: string;
+  days: number[]; // 0-6 (Sunday-Saturday)
+  start: string; // "HH:MM"
+  end: string; // "HH:MM"
+}
+
+/**
+ * Agent Schedule Configuration
+ */
+export interface AgentSchedule {
+  id: string;
+  client_id: string;
+  is_enabled: boolean;
+  timezone: string;
+  rules: AgentScheduleRule[];
+  default_agent_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Agent A/B Testing Experiment
+ */
+export interface AgentExperiment {
+  id: string;
+  client_id: string;
+  name: string;
+  is_active: boolean;
+  agent_a_id: string;
+  agent_b_id: string;
+  traffic_split: number; // 0-100 (percentage for agent A)
+  total_conversations: number;
+  agent_a_conversations: number;
+  agent_b_conversations: number;
+  started_at: string | null;
+  ended_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Experiment Assignment (Sticky phone-to-agent)
+ */
+export interface ExperimentAssignment {
+  id: string;
+  experiment_id: string;
+  conversation_id: string | null;
+  assigned_agent_id: string;
+  phone: string;
+  created_at: string;
 }
 
 export interface CustomerRecord {
@@ -725,6 +887,40 @@ export interface Database {
           Omit<MessageTemplate, "id" | "created_at" | "updated_at">
         >;
       };
+      scheduled_messages: {
+        Row: ScheduledMessage;
+        Insert: Omit<
+          ScheduledMessage,
+          "id" | "created_at" | "updated_at" | "contact" | "creator"
+        >;
+        Update: Partial<
+          Omit<ScheduledMessage, "id" | "created_at" | "contact" | "creator">
+        >;
+      };
+      agents: {
+        Row: Agent;
+        Insert: Omit<Agent, "id" | "created_at" | "updated_at">;
+        Update: Partial<Omit<Agent, "id" | "created_at" | "updated_at">>;
+      };
+      agent_versions: {
+        Row: AgentVersion;
+        Insert: Omit<AgentVersion, "id" | "created_at">;
+        Update: Partial<Omit<AgentVersion, "id" | "created_at">>;
+      };
+      agent_schedules: {
+        Row: AgentSchedule;
+        Insert: Omit<AgentSchedule, "id" | "created_at" | "updated_at">;
+        Update: Partial<
+          Omit<AgentSchedule, "id" | "created_at" | "updated_at">
+        >;
+      };
+      agent_experiments: {
+        Row: AgentExperiment;
+        Insert: Omit<AgentExperiment, "id" | "created_at" | "updated_at">;
+        Update: Partial<
+          Omit<AgentExperiment, "id" | "created_at" | "updated_at">
+        >;
+      };
     };
     Views: {};
     Functions: {
@@ -749,5 +945,168 @@ export interface Database {
         Returns: string;
       };
     };
+  };
+}
+
+// =============================================================================
+// CRM MODULE TYPES
+// =============================================================================
+
+export type AutoStatus = "awaiting_attendant" | "awaiting_client" | "neutral";
+
+export type CRMActivityType =
+  | "column_move"
+  | "tag_add"
+  | "tag_remove"
+  | "note_add"
+  | "assigned"
+  | "status_change"
+  | "value_change"
+  | "created";
+
+export interface CRMColumn {
+  id: string;
+  client_id: string;
+  name: string;
+  slug: string;
+  color: string;
+  icon: string;
+  position: number;
+  auto_rules: Record<string, any>;
+  is_default: boolean;
+  is_archived: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CRMCard {
+  id: string;
+  client_id: string;
+  column_id: string;
+  phone: string | number;
+  position: number;
+  auto_status: AutoStatus;
+  auto_status_updated_at: string | null;
+  assigned_to: string | null;
+  assigned_at: string | null;
+  estimated_value: number | null;
+  currency: string;
+  probability: number;
+  expected_close_date: string | null;
+  last_message_at: string | null;
+  last_message_direction: "incoming" | "outgoing" | null;
+  last_message_preview: string | null;
+  moved_to_column_at: string;
+  created_at: string;
+  updated_at: string;
+
+  // Joined data
+  contact?: {
+    name: string | null;
+    avatarUrl?: string | null;
+  };
+  assignedUser?: {
+    name: string | null;
+  };
+  tagIds?: string[];
+}
+
+export interface CRMTag {
+  id: string;
+  client_id: string;
+  name: string;
+  color: string;
+  description: string | null;
+  is_system: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CRMCardTag {
+  card_id: string;
+  tag_id: string;
+  assigned_at: string;
+  assigned_by: string | null;
+}
+
+export interface CRMNote {
+  id: string;
+  card_id: string;
+  client_id: string;
+  content: string;
+  created_by: string | null;
+  is_pinned: boolean;
+  created_at: string;
+  updated_at: string;
+
+  // Joined data
+  author?: {
+    name: string | null;
+  };
+}
+
+export interface CRMActivityLog {
+  id: string;
+  client_id: string;
+  card_id: string;
+  activity_type: CRMActivityType;
+  description: string | null;
+  old_value: Record<string, any> | null;
+  new_value: Record<string, any> | null;
+  performed_by: string | null;
+  is_automated: boolean;
+  created_at: string;
+
+  // Joined data
+  actor?: {
+    name: string | null;
+  };
+}
+
+export interface CRMFilters {
+  search?: string;
+  tagIds?: string[];
+  assignedTo?: string;
+  autoStatus?: AutoStatus;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+// =============================================================================
+// SCHEDULED MESSAGES
+// =============================================================================
+
+export type ScheduledMessageStatus =
+  | "pending"
+  | "sent"
+  | "failed"
+  | "cancelled";
+export type ScheduledMessageType = "text" | "template";
+
+export interface ScheduledMessage {
+  id: string;
+  client_id: string;
+  phone: string | number;
+  card_id: string | null;
+  message_type: ScheduledMessageType;
+  content: string | null;
+  template_id: string | null;
+  template_params: Record<string, any> | null;
+  scheduled_for: string;
+  timezone: string;
+  status: ScheduledMessageStatus;
+  sent_at: string | null;
+  error_message: string | null;
+  wamid: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+
+  // Joined data
+  contact?: {
+    name: string | null;
+  };
+  creator?: {
+    name: string | null;
   };
 }

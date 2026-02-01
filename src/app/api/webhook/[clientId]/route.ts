@@ -14,16 +14,15 @@
  * 4. Processa mensagem com config do cliente
  */
 
-import { NextRequest, NextResponse } from "next/server";
 import { processChatbotMessage } from "@/flows/chatbotFlow";
-import { addWebhookMessage } from "@/lib/webhookCache";
 import { getClientConfig } from "@/lib/config";
 import { checkDuplicateMessage, markMessageAsProcessed } from "@/lib/dedup";
-import crypto from "crypto";
-import { checkRateLimit, webhookVerifyLimiter } from "@/lib/rate-limit";
+import { createExecutionLogger } from "@/lib/logger";
+import { addWebhookMessage } from "@/lib/webhookCache";
 import { parseInteractiveMessage } from "@/lib/whatsapp/interactiveMessages";
 import { processStatusUpdate } from "@/nodes/updateMessageStatus";
-import { createExecutionLogger } from "@/lib/logger";
+import crypto from "crypto";
+import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
@@ -49,20 +48,20 @@ export async function GET(
     const searchParams = request.nextUrl.searchParams;
 
     // Log 1: Informações da requisição
-    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('🔔 [WEBHOOK VERIFY] Requisição recebida');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('📅 Timestamp:', timestamp);
-    console.log('🆔 Client ID:', clientId);
-    console.log('🌐 IP:', ip);
-    console.log('🔗 URL completa:', request.url);
+    console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("🔔 [WEBHOOK VERIFY] Requisição recebida");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("📅 Timestamp:", timestamp);
+    console.log("🆔 Client ID:", clientId);
+    console.log("🌐 IP:", ip);
+    console.log("🔗 URL completa:", request.url);
 
     // Log 2: Headers recebidos
     const headers: Record<string, string> = {};
     request.headers.forEach((value, key) => {
       headers[key] = value;
     });
-    console.log('\n📋 Headers recebidos:');
+    console.log("\n📋 Headers recebidos:");
     console.log(JSON.stringify(headers, null, 2));
 
     // Log 3: Query parameters
@@ -70,94 +69,118 @@ export async function GET(
     const token = searchParams.get("hub.verify_token");
     const challenge = searchParams.get("hub.challenge");
 
-    console.log('\n🔍 Query Parameters:');
-    console.log('  hub.mode:', mode);
-    console.log('  hub.verify_token:', token ? `${token.substring(0, 20)}... (${token.length} chars)` : 'NULL');
-    console.log('  hub.challenge:', challenge);
+    console.log("\n🔍 Query Parameters:");
+    console.log("  hub.mode:", mode);
+    console.log(
+      "  hub.verify_token:",
+      token ? `${token.substring(0, 20)}... (${token.length} chars)` : "NULL",
+    );
+    console.log("  hub.challenge:", challenge);
 
     // Mostrar TODOS os query params
-    console.log('\n📝 Todos os query params:');
+    console.log("\n📝 Todos os query params:");
     searchParams.forEach((value, key) => {
       console.log(`  ${key}:`, value);
     });
 
     // Log 4: Buscar config do cliente
-    console.log('\n🔎 Buscando config do cliente no banco...');
+    console.log("\n🔎 Buscando config do cliente no banco...");
     const config = await getClientConfig(clientId);
 
     if (!config) {
-      console.log('❌ [WEBHOOK VERIFY] Cliente não encontrado!');
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+      console.log("❌ [WEBHOOK VERIFY] Cliente não encontrado!");
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
       return new NextResponse("Client not found", { status: 404 });
     }
 
-    console.log('✅ Cliente encontrado:', {
+    console.log("✅ Cliente encontrado:", {
       name: config.name,
       status: config.status,
       phoneNumberId: config.apiKeys.metaPhoneNumberId,
     });
 
     if (config.status !== "active") {
-      console.log('❌ [WEBHOOK VERIFY] Cliente não está ativo!');
-      console.log('   Status atual:', config.status);
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+      console.log("❌ [WEBHOOK VERIFY] Cliente não está ativo!");
+      console.log("   Status atual:", config.status);
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
       return new NextResponse("Client not active", { status: 403 });
     }
 
     // Log 5: Validar verify token
     const expectedToken = config.apiKeys.metaVerifyToken;
 
-    console.log('\n🔐 Validação do Verify Token:');
-    console.log('  Token recebido:', token ? `${token.substring(0, 20)}... (${token.length} chars)` : 'NULL');
-    console.log('  Token esperado:', expectedToken ? `${expectedToken.substring(0, 20)}... (${expectedToken.length} chars)` : 'NULL');
-    console.log('  Tokens iguais?', token === expectedToken);
+    console.log("\n🔐 Validação do Verify Token:");
+    console.log(
+      "  Token recebido:",
+      token ? `${token.substring(0, 20)}... (${token.length} chars)` : "NULL",
+    );
+    console.log(
+      "  Token esperado:",
+      expectedToken
+        ? `${expectedToken.substring(0, 20)}... (${expectedToken.length} chars)`
+        : "NULL",
+    );
+    console.log("  Tokens iguais?", token === expectedToken);
 
     // Comparação character-by-character se tokens não batem
     if (token !== expectedToken) {
       if (token && expectedToken) {
         const minLen = Math.min(token.length, expectedToken.length);
-        console.log('\n⚠️  Tokens diferentes! Comparando char-by-char:');
-        console.log('  Tamanho recebido:', token.length);
-        console.log('  Tamanho esperado:', expectedToken.length);
+        console.log("\n⚠️  Tokens diferentes! Comparando char-by-char:");
+        console.log("  Tamanho recebido:", token.length);
+        console.log("  Tamanho esperado:", expectedToken.length);
         for (let i = 0; i < minLen; i++) {
           if (token[i] !== expectedToken[i]) {
             console.log(`  ❌ Diferença na posição ${i}:`);
-            console.log(`     Recebido: '${token[i]}' (code ${token.charCodeAt(i)})`);
-            console.log(`     Esperado: '${expectedToken[i]}' (code ${expectedToken.charCodeAt(i)})`);
+            console.log(
+              `     Recebido: '${token[i]}' (code ${token.charCodeAt(i)})`,
+            );
+            console.log(
+              `     Esperado: '${
+                expectedToken[i]
+              }' (code ${expectedToken.charCodeAt(i)})`,
+            );
             break;
           }
         }
         if (token.length !== expectedToken.length) {
-          console.log('  ⚠️  Tamanhos diferentes!');
+          console.log("  ⚠️  Tamanhos diferentes!");
         }
       }
     }
 
-    console.log('\n🎯 Validações:');
-    console.log('  hub.mode === "subscribe"?', mode === "subscribe", `(recebido: "${mode}")`);
-    console.log('  tokens iguais?', token === expectedToken);
+    console.log("\n🎯 Validações:");
+    console.log(
+      '  hub.mode === "subscribe"?',
+      mode === "subscribe",
+      `(recebido: "${mode}")`,
+    );
+    console.log("  tokens iguais?", token === expectedToken);
 
     // Log 6: Decisão final
     if (mode === "subscribe" && token === expectedToken) {
-      console.log('\n✅ [WEBHOOK VERIFY] Verificação bem-sucedida!');
-      console.log('📤 Enviando resposta:');
-      console.log('   Status: 200 OK');
-      console.log('   Body:', challenge);
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+      console.log("\n✅ [WEBHOOK VERIFY] Verificação bem-sucedida!");
+      console.log("📤 Enviando resposta:");
+      console.log("   Status: 200 OK");
+      console.log("   Body:", challenge);
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
       return new NextResponse(challenge, { status: 200 });
     } else {
-      console.log('\n❌ [WEBHOOK VERIFY] Verificação falhou!');
-      console.log('📤 Enviando resposta:');
-      console.log('   Status: 403 Forbidden');
-      console.log('   Motivo:', mode !== "subscribe" ? 'mode incorreto' : 'token incorreto');
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+      console.log("\n❌ [WEBHOOK VERIFY] Verificação falhou!");
+      console.log("📤 Enviando resposta:");
+      console.log("   Status: 403 Forbidden");
+      console.log(
+        "   Motivo:",
+        mode !== "subscribe" ? "mode incorreto" : "token incorreto",
+      );
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
       return new NextResponse("Invalid verification token", { status: 403 });
     }
   } catch (error) {
-    console.log('\n❌ [WEBHOOK VERIFY] Erro interno!');
-    console.log('Erro:', error);
-    console.log('Stack:', error instanceof Error ? error.stack : 'N/A');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+    console.log("\n❌ [WEBHOOK VERIFY] Erro interno!");
+    console.log("Erro:", error);
+    console.log("Stack:", error instanceof Error ? error.stack : "N/A");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
     return new NextResponse("Internal error", { status: 500 });
   }
 }
@@ -205,10 +228,9 @@ export async function POST(
       return new NextResponse("App secret not configured", { status: 500 });
     }
 
-    const expectedSignature = "sha256=" + crypto
-      .createHmac("sha256", appSecret)
-      .update(rawBody)
-      .digest("hex");
+    const expectedSignature =
+      "sha256=" +
+      crypto.createHmac("sha256", appSecret).update(rawBody).digest("hex");
 
     // Usar comparação timing-safe
     const signatureBuffer = Buffer.from(signature);
@@ -255,9 +277,12 @@ export async function POST(
           timestamp: statuses[0].timestamp,
         });
 
-        const results: Array<
-          { wamid: string; status: string; ok: boolean; error?: string }
-        > = [];
+        const results: Array<{
+          wamid: string;
+          status: string;
+          ok: boolean;
+          error?: string;
+        }> = [];
         let hasError = false;
         for (const status of statuses) {
           try {
@@ -274,9 +299,10 @@ export async function POST(
               wamid: status.id,
               status: status.status,
               ok: false,
-              error: statusError instanceof Error
-                ? statusError.message
-                : String(statusError),
+              error:
+                statusError instanceof Error
+                  ? statusError.message
+                  : String(statusError),
             });
           }
         }
@@ -288,10 +314,14 @@ export async function POST(
           );
           logger.finishExecution("error");
         } else {
-          logger.logNodeSuccess("Webhook Status Update", {
-            results,
-            executionId,
-          }, nodeStartTime);
+          logger.logNodeSuccess(
+            "Webhook Status Update",
+            {
+              results,
+              executionId,
+            },
+            nodeStartTime,
+          );
           logger.finishExecution("success");
         }
 
@@ -314,7 +344,21 @@ export async function POST(
         const contact = value?.contacts?.[0];
         messageId = message.id || `msg-${Date.now()}`;
 
-        // 🆕 Parse interactive message response
+        // � Log referral data if present (Meta Ads / Click-to-WhatsApp)
+        if (message.referral) {
+          console.log("🎯 [REFERRAL] Lead came from Meta Ad:", {
+            source_type: message.referral.source_type,
+            source_url: message.referral.source_url,
+            headline: message.referral.headline,
+            body: message.referral.body,
+            ctwa_clid: message.referral.ctwa_clid,
+            source_id: message.referral.source_id,
+            ad_id: message.referral.ad_id,
+            campaign_id: message.referral.campaign_id,
+          });
+        }
+
+        // �🆕 Parse interactive message response
         const interactiveResponse = parseInteractiveMessage(message);
 
         if (interactiveResponse) {
@@ -334,10 +378,10 @@ export async function POST(
           type: message.type,
           content: interactiveResponse
             ? `[${interactiveResponse.type}] ${interactiveResponse.title}`
-            : (message.text?.body ||
+            : message.text?.body ||
               message.image?.caption ||
               message.audio?.id ||
-              message.type),
+              message.type,
           raw: body,
         };
 

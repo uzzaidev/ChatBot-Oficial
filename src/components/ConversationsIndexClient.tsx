@@ -1,28 +1,46 @@
-'use client'
+"use client";
 
-import { useState, useMemo, useRef, useCallback, useLayoutEffect } from 'react'
-import { useConversations } from '@/hooks/useConversations'
-import { useGlobalRealtimeNotifications } from '@/hooks/useGlobalRealtimeNotifications'
-import { ConversationList } from '@/components/ConversationList'
-import { ConversationsHeader } from '@/components/ConversationsHeader'
-import { ConversationDetail } from '@/components/ConversationDetail'
-import { SendMessageForm } from '@/components/SendMessageForm'
-import { StatusToggle } from '@/components/StatusToggle'
-import { DragDropZone } from '@/components/DragDropZone'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { MessageCircle, Bot, User, ArrowRight, Search, X, Workflow, Home, Menu } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
-import { EmptyStateSimple } from '@/components/EmptyState'
-import { ThemeToggle } from '@/components/ThemeToggle'
-import { getInitials } from '@/lib/utils'
-import { markConversationAsRead } from '@/lib/api'
-import Link from 'next/link'
-import type { MediaAttachment } from '@/components/MediaPreview'
-import type { Message } from '@/lib/types'
+import { ConversationDetail } from "@/components/ConversationDetail";
+import { ConversationList } from "@/components/ConversationList";
+import { ConversationsHeader } from "@/components/ConversationsHeader";
+import { DragDropZone } from "@/components/DragDropZone";
+import { EmptyStateSimple } from "@/components/EmptyState";
+import type { MediaAttachment } from "@/components/MediaPreview";
+import { SendMessageForm } from "@/components/SendMessageForm";
+import { StatusToggle } from "@/components/StatusToggle";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { useConversations } from "@/hooks/useConversations";
+import { useGlobalRealtimeNotifications } from "@/hooks/useGlobalRealtimeNotifications";
+import { markConversationAsRead } from "@/lib/api";
+import type { Message } from "@/lib/types";
+import { getInitials } from "@/lib/utils";
+import {
+  ArrowRight,
+  Bot,
+  Home,
+  Menu,
+  MessageCircle,
+  Search,
+  User,
+  Workflow,
+  X,
+} from "lucide-react";
+import Link from "next/link";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 interface ConversationsIndexClientProps {
-  clientId: string
+  clientId: string;
+  initialPhone?: string | null;
 }
 
 /**
@@ -34,126 +52,151 @@ interface ConversationsIndexClientProps {
  * - Filtros por status (todas, bot, humano, transferido)
  * - Área central vazia com mensagem para selecionar uma conversa
  */
-export function ConversationsIndexClient({ clientId }: ConversationsIndexClientProps) {
-  const [statusFilter, setStatusFilter] = useState<'all' | 'bot' | 'humano' | 'transferido' | 'fluxo_inicial'>('all')
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedPhone, setSelectedPhone] = useState<string | null>(null)
-  const [attachments, setAttachments] = useState<MediaAttachment[]>([])
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const scrollContainerRef = useRef<HTMLDivElement>(null)
-  const scrollPositionRef = useRef(0)
+export function ConversationsIndexClient({
+  clientId,
+  initialPhone,
+}: ConversationsIndexClientProps) {
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "bot" | "humano" | "transferido" | "fluxo_inicial"
+  >("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedPhone, setSelectedPhone] = useState<string | null>(
+    initialPhone || null,
+  );
+  const [attachments, setAttachments] = useState<MediaAttachment[]>([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const scrollPositionRef = useRef(0);
   // Ref para armazenar referências aos elementos das conversas (para scroll automático)
-  const conversationItemsRef = useRef<Map<string, HTMLDivElement>>(new Map())
+  const conversationItemsRef = useRef<Map<string, HTMLDivElement>>(new Map());
   // Flag para indicar que acabamos de fazer scroll automático (evita restaurar scroll)
-  const justScrolledToConversationRef = useRef(false)
+  const justScrolledToConversationRef = useRef(false);
 
   // Refs para callbacks de optimistic updates
   const optimisticCallbacksRef = useRef<{
-    onOptimisticMessage: (message: Message) => void
-    onMessageError: (tempId: string) => void
-  } | null>(null)
+    onOptimisticMessage: (message: Message) => void;
+    onMessageError: (tempId: string) => void;
+  } | null>(null);
 
   const { conversations, loading, refetchSilent } = useConversations({
     clientId,
-    status: statusFilter === 'all' ? undefined : statusFilter,
+    status: statusFilter === "all" ? undefined : statusFilter,
     enableRealtime: true,
-  })
+  });
+
+  // Efeito para garantir que a conversa inicial seja selecionada
+  // Mesmo que o selectedPhone já esteja definido, precisamos garantir que
+  // a conversa seja encontrada e aberta
+  useEffect(() => {
+    if (initialPhone && !loading && conversations.length > 0) {
+      // Sempre tentar selecionar quando vem da URL
+      const conversation = conversations.find((c) => c.phone === initialPhone);
+      if (conversation && selectedPhone !== initialPhone) {
+        setSelectedPhone(initialPhone);
+      }
+    }
+  }, [initialPhone, loading, conversations]);
 
   // Hook global para notificações em tempo real
   // 🔐 Multi-tenant: Pass clientId for tenant isolation
-  const { lastUpdatePhone } = useGlobalRealtimeNotifications({ clientId })
+  const { lastUpdatePhone } = useGlobalRealtimeNotifications({ clientId });
 
   // Salvar posição do scroll antes de atualizar
   const saveScrollPosition = useCallback(() => {
     if (scrollContainerRef.current) {
-      scrollPositionRef.current = scrollContainerRef.current.scrollTop
+      scrollPositionRef.current = scrollContainerRef.current.scrollTop;
     }
-  }, [])
+  }, []);
 
   // Restaurar posição do scroll após atualização
   const restoreScrollPosition = useCallback(() => {
     if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = scrollPositionRef.current
+      scrollContainerRef.current.scrollTop = scrollPositionRef.current;
     }
-  }, [])
+  }, []);
 
   // Filtrar conversas baseado no termo de pesquisa (após 2 caracteres)
   const filteredConversations = useMemo(() => {
     // Se o termo de pesquisa tiver menos de 2 caracteres, mostrar todas
     if (searchTerm.length < 2) {
-      return conversations
+      return conversations;
     }
 
-    const searchLower = searchTerm.toLowerCase().trim()
+    const searchLower = searchTerm.toLowerCase().trim();
     // Limpar o termo de pesquisa uma vez fora do loop de filter
-    const phoneSearchTerm = searchTerm.replace(/\D/g, '')
+    const phoneSearchTerm = searchTerm.replace(/\D/g, "");
 
     // Filtrar por nome ou telefone
     return conversations.filter((conversation) => {
-      const nameMatch = conversation.name?.toLowerCase().includes(searchLower)
-      const phoneMatch = phoneSearchTerm && conversation.phone?.includes(phoneSearchTerm)
-      return nameMatch || phoneMatch
-    })
-  }, [conversations, searchTerm])
+      const nameMatch = conversation.name?.toLowerCase().includes(searchLower);
+      const phoneMatch =
+        phoneSearchTerm && conversation.phone?.includes(phoneSearchTerm);
+      return nameMatch || phoneMatch;
+    });
+  }, [conversations, searchTerm]);
 
   // Scroll automático para a conversa selecionada quando ela é clicada
   // Ajusta o scroll baseado na data da conversa (conversas mais antigas ficam mais abaixo)
   useLayoutEffect(() => {
     if (selectedPhone && scrollContainerRef.current) {
       // Marcar que vamos fazer scroll automático
-      justScrolledToConversationRef.current = true
-      
+      justScrolledToConversationRef.current = true;
+
       // Pequeno delay para garantir que o DOM foi atualizado
       const timeout = setTimeout(() => {
-        const selectedElement = conversationItemsRef.current.get(selectedPhone)
+        const selectedElement = conversationItemsRef.current.get(selectedPhone);
         if (selectedElement && scrollContainerRef.current) {
-          const container = scrollContainerRef.current
-          const elementTop = selectedElement.offsetTop
-          const elementHeight = selectedElement.offsetHeight
-          const containerHeight = container.clientHeight
-          const containerScrollTop = container.scrollTop
-          const containerScrollBottom = containerScrollTop + containerHeight
-          
+          const container = scrollContainerRef.current;
+          const elementTop = selectedElement.offsetTop;
+          const elementHeight = selectedElement.offsetHeight;
+          const containerHeight = container.clientHeight;
+          const containerScrollTop = container.scrollTop;
+          const containerScrollBottom = containerScrollTop + containerHeight;
+
           // Verificar se o elemento já está visível na viewport
-          const elementBottom = elementTop + elementHeight
-          const isFullyVisible = elementTop >= containerScrollTop && elementBottom <= containerScrollBottom
-          
+          const elementBottom = elementTop + elementHeight;
+          const isFullyVisible =
+            elementTop >= containerScrollTop &&
+            elementBottom <= containerScrollBottom;
+
           // Só fazer scroll se o elemento não estiver totalmente visível
           if (!isFullyVisible) {
             // Calcular posição para centralizar o elemento na viewport
             // Isso garante que conversas antigas (mais abaixo) sejam visíveis
-            const scrollPosition = elementTop - (containerHeight / 2) + (elementHeight / 2)
-            
+            const scrollPosition =
+              elementTop - containerHeight / 2 + elementHeight / 2;
+
             // Scroll suave até a conversa selecionada
             container.scrollTo({
               top: Math.max(0, scrollPosition),
-              behavior: 'smooth'
-            })
-            
+              behavior: "smooth",
+            });
+
             // Salvar a nova posição após um pequeno delay (para aguardar o scroll suave)
             setTimeout(() => {
               if (scrollContainerRef.current) {
-                scrollPositionRef.current = scrollContainerRef.current.scrollTop
+                scrollPositionRef.current =
+                  scrollContainerRef.current.scrollTop;
               }
               // Resetar flag após o scroll completar
-              justScrolledToConversationRef.current = false
-            }, 500) // Aumentado para 500ms para garantir que o scroll suave completou
+              justScrolledToConversationRef.current = false;
+            }, 500); // Aumentado para 500ms para garantir que o scroll suave completou
           } else {
             // Se já está visível, resetar flag imediatamente
-            justScrolledToConversationRef.current = false
+            justScrolledToConversationRef.current = false;
           }
         } else {
           // Se elemento não encontrado, resetar flag
-          justScrolledToConversationRef.current = false
+          justScrolledToConversationRef.current = false;
         }
-      }, 150) // Delay para garantir que o DOM foi atualizado
-      
-      return () => clearTimeout(timeout)
+      }, 150); // Delay para garantir que o DOM foi atualizado
+
+      return () => clearTimeout(timeout);
     } else {
       // Se não há conversa selecionada, resetar flag
-      justScrolledToConversationRef.current = false
+      justScrolledToConversationRef.current = false;
     }
-  }, [selectedPhone])
+  }, [selectedPhone]);
 
   // REMOVIDO: Restaurar scroll quando as conversas são atualizadas
   // Isso estava causando conflito com o scroll automático
@@ -166,93 +209,103 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
     // Só salvar posição se não acabamos de fazer scroll automático
     // Isso evita sobrescrever a posição do scroll automático
     if (!justScrolledToConversationRef.current) {
-      saveScrollPosition()
+      saveScrollPosition();
     }
-  }, [saveScrollPosition])
+  }, [saveScrollPosition]);
 
   const handleClearSearch = useCallback(() => {
-    setSearchTerm('')
-  }, [])
+    setSearchTerm("");
+  }, []);
 
   const handleSelectConversation = useCallback((phone: string) => {
-    setSelectedPhone(phone)
-  }, [])
+    setSelectedPhone(phone);
+  }, []);
 
   // Handlers para attachments
   const handleAddAttachment = useCallback((attachment: MediaAttachment) => {
-    setAttachments((prev) => [...prev, attachment])
-  }, [])
+    setAttachments((prev) => [...prev, attachment]);
+  }, []);
 
-  const handleFileSelect = useCallback((file: File, type: 'image' | 'document') => {
-    const attachment: MediaAttachment = {
-      file,
-      type,
-      preview: type === 'image' ? URL.createObjectURL(file) : undefined,
-    }
-    handleAddAttachment(attachment)
-  }, [handleAddAttachment])
+  const handleFileSelect = useCallback(
+    (file: File, type: "image" | "document") => {
+      const attachment: MediaAttachment = {
+        file,
+        type,
+        preview: type === "image" ? URL.createObjectURL(file) : undefined,
+      };
+      handleAddAttachment(attachment);
+    },
+    [handleAddAttachment],
+  );
 
   const handleRemoveAttachment = useCallback((index: number) => {
-    setAttachments((prev) => prev.filter((_, i) => i !== index))
-  }, [])
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  }, []);
 
   const handleClearAttachments = useCallback(() => {
-    setAttachments([])
-  }, [])
+    setAttachments([]);
+  }, []);
 
   // Callback para capturar os callbacks do ConversationDetail
-  const handleGetOptimisticCallbacks = useCallback((callbacks: {
-    onOptimisticMessage: (message: Message) => void
-    onMessageError: (tempId: string) => void
-  }) => {
-    optimisticCallbacksRef.current = callbacks
-  }, [])
+  const handleGetOptimisticCallbacks = useCallback(
+    (callbacks: {
+      onOptimisticMessage: (message: Message) => void;
+      onMessageError: (tempId: string) => void;
+    }) => {
+      optimisticCallbacksRef.current = callbacks;
+    },
+    [],
+  );
 
   // Callback para marcar como lida
-  const handleMarkAsRead = useCallback(async (conversationPhone: string) => {
-    // Marcar como lida na API
-    const result = await markConversationAsRead(conversationPhone)
+  const handleMarkAsRead = useCallback(
+    async (conversationPhone: string) => {
+      // Marcar como lida na API
+      const result = await markConversationAsRead(conversationPhone);
 
-    if (result.success) {
-      // Refetch silencioso (sem loading) para atualizar UI
-      // O realtime também vai atualizar, mas fazemos refetch imediato para garantir
-      await refetchSilent()
-    }
-  }, [refetchSilent])
+      if (result.success) {
+        // Refetch silencioso (sem loading) para atualizar UI
+        // O realtime também vai atualizar, mas fazemos refetch imediato para garantir
+        await refetchSilent();
+      }
+    },
+    [refetchSilent],
+  );
 
   // Calcular métricas por status
   const metrics = useMemo(() => {
     return {
       total: conversations.length,
-      bot: conversations.filter(c => c.status === 'bot').length,
-      humano: conversations.filter(c => c.status === 'humano').length,
-      emFlow: conversations.filter(c => c.status === 'fluxo_inicial').length,
-      transferido: conversations.filter(c => c.status === 'transferido').length,
-    }
-  }, [conversations])
+      bot: conversations.filter((c) => c.status === "bot").length,
+      humano: conversations.filter((c) => c.status === "humano").length,
+      emFlow: conversations.filter((c) => c.status === "fluxo_inicial").length,
+      transferido: conversations.filter((c) => c.status === "transferido")
+        .length,
+    };
+  }, [conversations]);
 
   // Helper para obter label do status
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
-      all: 'Todas',
-      bot: 'Bot',
-      humano: 'Humano',
-      transferido: 'Transferido',
-      fluxo_inicial: 'Em Flow'
-    }
-    return labels[status] || status
-  }
+      all: "Todas",
+      bot: "Bot",
+      humano: "Humano",
+      transferido: "Transferido",
+      fluxo_inicial: "Em Flow",
+    };
+    return labels[status] || status;
+  };
 
   // Encontrar conversa selecionada
   const selectedConversation = useMemo(() => {
-    if (!selectedPhone) return null
-    return conversations.find(c => c.phone === selectedPhone)
-  }, [selectedPhone, conversations])
+    if (!selectedPhone) return null;
+    return conversations.find((c) => c.phone === selectedPhone);
+  }, [selectedPhone, conversations]);
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden bg-background">
       {/* Header com Cards KPI - Esconde em mobile quando conversa selecionada */}
-      <div className={`relative ${selectedPhone ? 'hidden lg:block' : ''}`}>
+      <div className={`relative ${selectedPhone ? "hidden lg:block" : ""}`}>
         {/* Botão Hambúrguer Mobile - No topo do header */}
         <Button
           variant="ghost"
@@ -280,7 +333,9 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
           {/* Header da Sidebar */}
           <div className="p-4 border-b border-border/50">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-poppins font-semibold text-sm text-foreground/90">Conversas</h3>
+              <h3 className="font-poppins font-semibold text-sm text-foreground/90">
+                Conversas
+              </h3>
               <div className="flex items-center gap-1">
                 <ThemeToggle />
                 <Link href="/dashboard">
@@ -304,7 +359,7 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full bg-surface-sunken border border-border rounded-lg px-10 py-2.5 text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary transition-colors text-sm"
-                style={{ fontFamily: 'Inter, sans-serif' }}
+                style={{ fontFamily: "Inter, sans-serif" }}
               />
               {searchTerm && (
                 <button
@@ -319,7 +374,9 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
             {/* Indicador de pesquisa */}
             {searchTerm.length >= 2 && (
               <p className="text-xs text-muted-foreground mt-2">
-                {filteredConversations.length} resultado{filteredConversations.length !== 1 ? 's' : ''} encontrado{filteredConversations.length !== 1 ? 's' : ''}
+                {filteredConversations.length} resultado
+                {filteredConversations.length !== 1 ? "s" : ""} encontrado
+                {filteredConversations.length !== 1 ? "s" : ""}
               </p>
             )}
             {searchTerm.length === 1 && (
@@ -332,14 +389,10 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
           {/* Filtros Simples - Todas / Não Lidas */}
           <div className="px-4 py-3 border-b border-border/50">
             <div className="flex gap-2">
-              <button
-                className="flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all bg-muted/30 text-muted-foreground hover:bg-muted/50"
-              >
+              <button className="flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all bg-muted/30 text-muted-foreground hover:bg-muted/50">
                 Todas
               </button>
-              <button
-                className="flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all bg-muted/30 text-muted-foreground hover:bg-muted/50"
-              >
+              <button className="flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all bg-muted/30 text-muted-foreground hover:bg-muted/50">
                 Não lidas
               </button>
             </div>
@@ -354,20 +407,31 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
             {filteredConversations.length === 0 && !loading ? (
               <EmptyStateSimple
                 icon={
-                  statusFilter === 'all' ? MessageCircle :
-                    statusFilter === 'bot' ? Bot :
-                      statusFilter === 'humano' ? User :
-                        statusFilter === 'fluxo_inicial' ? Workflow :
-                          statusFilter === 'transferido' ? ArrowRight : MessageCircle
+                  statusFilter === "all"
+                    ? MessageCircle
+                    : statusFilter === "bot"
+                    ? Bot
+                    : statusFilter === "humano"
+                    ? User
+                    : statusFilter === "fluxo_inicial"
+                    ? Workflow
+                    : statusFilter === "transferido"
+                    ? ArrowRight
+                    : MessageCircle
                 }
                 title={
-                  statusFilter === 'all' ? "Nenhuma conversa encontrada" :
-                    `Nenhuma conversa com status "${getStatusLabel(statusFilter)}"`
+                  statusFilter === "all"
+                    ? "Nenhuma conversa encontrada"
+                    : `Nenhuma conversa com status "${getStatusLabel(
+                        statusFilter,
+                      )}"`
                 }
                 description={
-                  statusFilter === 'all'
+                  statusFilter === "all"
                     ? "Quando você receber mensagens no WhatsApp, elas aparecerão aqui"
-                    : `Não há conversas com status "${getStatusLabel(statusFilter)}" no momento. Tente mudar o filtro ou aguarde novas conversas.`
+                    : `Não há conversas com status "${getStatusLabel(
+                        statusFilter,
+                      )}" no momento. Tente mudar o filtro ou aguarde novas conversas.`
                 }
               />
             ) : (
@@ -402,7 +466,9 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
                       <Home className="h-4 w-4" />
                     </Button>
                   </Link>
-                  <h3 className="font-poppins font-semibold text-sm text-foreground/90">Conversas</h3>
+                  <h3 className="font-poppins font-semibold text-sm text-foreground/90">
+                    Conversas
+                  </h3>
                 </div>
 
                 {/* Campo de Pesquisa */}
@@ -414,7 +480,7 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full bg-surface-sunken border border-border rounded-lg px-10 py-2.5 text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary transition-colors text-sm"
-                    style={{ fontFamily: 'Inter, sans-serif' }}
+                    style={{ fontFamily: "Inter, sans-serif" }}
                   />
                   {searchTerm && (
                     <button
@@ -429,7 +495,9 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
                 {/* Indicador de pesquisa */}
                 {searchTerm.length >= 2 && (
                   <p className="text-xs text-muted-foreground mt-2">
-                    {filteredConversations.length} resultado{filteredConversations.length !== 1 ? 's' : ''} encontrado{filteredConversations.length !== 1 ? 's' : ''}
+                    {filteredConversations.length} resultado
+                    {filteredConversations.length !== 1 ? "s" : ""} encontrado
+                    {filteredConversations.length !== 1 ? "s" : ""}
                   </p>
                 )}
                 {searchTerm.length === 1 && (
@@ -442,14 +510,10 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
               {/* Filtros Simples - Todas / Não Lidas */}
               <div className="px-4 py-3 border-b border-border/50">
                 <div className="flex gap-2">
-                  <button
-                    className="flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all bg-muted/30 text-muted-foreground hover:bg-muted/50"
-                  >
+                  <button className="flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all bg-muted/30 text-muted-foreground hover:bg-muted/50">
                     Todas
                   </button>
-                  <button
-                    className="flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all bg-muted/30 text-muted-foreground hover:bg-muted/50"
-                  >
+                  <button className="flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all bg-muted/30 text-muted-foreground hover:bg-muted/50">
                     Não lidas
                   </button>
                 </div>
@@ -460,20 +524,31 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
                 {filteredConversations.length === 0 && !loading ? (
                   <EmptyStateSimple
                     icon={
-                      statusFilter === 'all' ? MessageCircle :
-                        statusFilter === 'bot' ? Bot :
-                          statusFilter === 'humano' ? User :
-                            statusFilter === 'fluxo_inicial' ? Workflow :
-                              statusFilter === 'transferido' ? ArrowRight : MessageCircle
+                      statusFilter === "all"
+                        ? MessageCircle
+                        : statusFilter === "bot"
+                        ? Bot
+                        : statusFilter === "humano"
+                        ? User
+                        : statusFilter === "fluxo_inicial"
+                        ? Workflow
+                        : statusFilter === "transferido"
+                        ? ArrowRight
+                        : MessageCircle
                     }
                     title={
-                      statusFilter === 'all' ? "Nenhuma conversa encontrada" :
-                        `Nenhuma conversa com status "${getStatusLabel(statusFilter)}"`
+                      statusFilter === "all"
+                        ? "Nenhuma conversa encontrada"
+                        : `Nenhuma conversa com status "${getStatusLabel(
+                            statusFilter,
+                          )}"`
                     }
                     description={
-                      statusFilter === 'all'
+                      statusFilter === "all"
                         ? "Quando você receber mensagens no WhatsApp, elas aparecerão aqui"
-                        : `Não há conversas com status "${getStatusLabel(statusFilter)}" no momento. Tente mudar o filtro ou aguarde novas conversas.`
+                        : `Não há conversas com status "${getStatusLabel(
+                            statusFilter,
+                          )}" no momento. Tente mudar o filtro ou aguarde novas conversas.`
                     }
                   />
                 ) : (
@@ -484,8 +559,8 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
                     currentPhone={selectedPhone || undefined}
                     lastUpdatePhone={lastUpdatePhone}
                     onConversationOpen={(phone) => {
-                      handleSelectConversation(phone)
-                      setSidebarOpen(false)
+                      handleSelectConversation(phone);
+                      setSidebarOpen(false);
                     }}
                     onMarkAsRead={handleMarkAsRead}
                     conversationItemsRef={conversationItemsRef}
@@ -515,12 +590,16 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
 
                   <Avatar className="h-10 w-10 flex-shrink-0">
                     <AvatarFallback className="bg-gradient-to-br from-secondary to-primary text-white">
-                      {getInitials(selectedConversation.name || 'Sem nome')}
+                      {getInitials(selectedConversation.name || "Sem nome")}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-foreground truncate">{selectedConversation.name || 'Sem nome'}</h3>
-                    <p className="text-xs text-muted-foreground truncate">{selectedPhone}</p>
+                    <h3 className="font-semibold text-foreground truncate">
+                      {selectedConversation.name || "Sem nome"}
+                    </h3>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {selectedPhone}
+                    </p>
                   </div>
 
                   {/* Status Toggle */}
@@ -555,8 +634,12 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
                   onAddAttachment={handleFileSelect}
                   onRemoveAttachment={handleRemoveAttachment}
                   onClearAttachments={handleClearAttachments}
-                  onOptimisticMessage={optimisticCallbacksRef.current?.onOptimisticMessage}
-                  onMessageError={optimisticCallbacksRef.current?.onMessageError}
+                  onOptimisticMessage={
+                    optimisticCallbacksRef.current?.onOptimisticMessage
+                  }
+                  onMessageError={
+                    optimisticCallbacksRef.current?.onMessageError
+                  }
                 />
               </div>
             </>
@@ -564,9 +647,7 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
             <div className="flex-1 flex items-center justify-center relative">
               <div className="text-center max-w-md px-6">
                 <div className="mb-6 flex justify-center">
-                  <div
-                    className="h-20 w-20 rounded-full flex items-center justify-center border-2 bg-surface border-primary shadow-glow"
-                  >
+                  <div className="h-20 w-20 rounded-full flex items-center justify-center border-2 bg-surface border-primary shadow-glow">
                     <MessageCircle className="h-10 w-10 text-primary" />
                   </div>
                 </div>
@@ -574,7 +655,7 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
                   Selecione uma conversa
                 </h2>
                 <p className="text-muted-foreground mb-6 max-w-xs mx-auto leading-relaxed">
-                  {typeof window !== 'undefined' && window.innerWidth < 1024
+                  {typeof window !== "undefined" && window.innerWidth < 1024
                     ? "Toque no menu acima para ver suas conversas"
                     : "Escolha uma conversa na lista ao lado para visualizar e responder mensagens"}
                 </p>
@@ -594,5 +675,5 @@ export function ConversationsIndexClient({ clientId }: ConversationsIndexClientP
         </div>
       </div>
     </div>
-  )
+  );
 }

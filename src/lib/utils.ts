@@ -1,65 +1,65 @@
-import { type ClassValue, clsx } from 'clsx'
-import { twMerge } from 'tailwind-merge'
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 export const cn = (...inputs: ClassValue[]) => {
-  return twMerge(clsx(inputs))
-}
+  return twMerge(clsx(inputs));
+};
 
 export const formatPhone = (phone: string | number): string => {
-  const phoneStr = String(phone)
-  const cleaned = phoneStr.replace(/\D/g, '')
+  const phoneStr = String(phone);
+  const cleaned = phoneStr.replace(/\D/g, "");
 
-  if (cleaned.startsWith('55') && cleaned.length === 13) {
-    const countryCode = cleaned.slice(0, 2)
-    const areaCode = cleaned.slice(2, 4)
-    const firstPart = cleaned.slice(4, 9)
-    const secondPart = cleaned.slice(9, 13)
-    return `+${countryCode} (${areaCode}) ${firstPart}-${secondPart}`
+  if (cleaned.startsWith("55") && cleaned.length === 13) {
+    const countryCode = cleaned.slice(0, 2);
+    const areaCode = cleaned.slice(2, 4);
+    const firstPart = cleaned.slice(4, 9);
+    const secondPart = cleaned.slice(9, 13);
+    return `+${countryCode} (${areaCode}) ${firstPart}-${secondPart}`;
   }
 
-  return phoneStr
-}
+  return phoneStr;
+};
 
 export const formatDateTime = (isoString: string): string => {
-  const date = new Date(isoString)
-  const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
-  const diffMins = Math.floor(diffMs / 60000)
-  const diffHours = Math.floor(diffMs / 3600000)
-  const diffDays = Math.floor(diffMs / 86400000)
+  const date = new Date(isoString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
 
   if (diffMins < 1) {
-    return 'Agora'
+    return "Agora";
   }
 
   if (diffMins < 60) {
-    return `${diffMins}m atrás`
+    return `${diffMins}m atrás`;
   }
 
   if (diffHours < 24) {
-    return `${diffHours}h atrás`
+    return `${diffHours}h atrás`;
   }
 
   if (diffDays < 7) {
-    return `${diffDays}d atrás`
+    return `${diffDays}d atrás`;
   }
 
-  return date.toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
+  return date.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
 
 export const formatTime = (isoString: string): string => {
-  const date = new Date(isoString)
-  return date.toLocaleTimeString('pt-BR', {
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
+  const date = new Date(isoString);
+  return date.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
 
 /**
  * Formata a data para exibição como separador de mensagens (estilo WhatsApp)
@@ -70,179 +70,201 @@ export const formatTime = (isoString: string): string => {
  * - "24/11/2025" (datas mais antigas)
  */
 export const formatMessageDate = (isoString: string): string => {
-  const date = new Date(isoString)
-  const now = new Date()
-  
+  const date = new Date(isoString);
+  const now = new Date();
+
   // Reseta as horas para comparar apenas as datas
-  const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate())
-  const nowOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  
-  const diffMs = nowOnly.getTime() - dateOnly.getTime()
-  const diffDays = Math.floor(diffMs / 86400000)
-  
+  const dateOnly = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+  );
+  const nowOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  const diffMs = nowOnly.getTime() - dateOnly.getTime();
+  const diffDays = Math.floor(diffMs / 86400000);
+
   // Hoje
   if (diffDays === 0) {
-    return 'Hoje'
+    return "Hoje";
   }
-  
+
   // Ontem
   if (diffDays === 1) {
-    return 'Ontem'
+    return "Ontem";
   }
-  
+
   // Esta semana (últimos 7 dias) - mostra dia da semana
   if (diffDays > 1 && diffDays <= 7) {
-    return date.toLocaleDateString('pt-BR', { weekday: 'long' })
+    return date.toLocaleDateString("pt-BR", { weekday: "long" });
   }
-  
+
   // Datas mais antigas - mostra data completa
-  return date.toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
-}
+  return date.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+};
 
 /**
  * Verifica se duas datas são do mesmo dia
  */
 export const isSameDay = (date1: string, date2: string): boolean => {
-  const d1 = new Date(date1)
-  const d2 = new Date(date2)
-  
+  const d1 = new Date(date1);
+  const d2 = new Date(date2);
+
   return (
     d1.getFullYear() === d2.getFullYear() &&
     d1.getMonth() === d2.getMonth() &&
     d1.getDate() === d2.getDate()
-  )
-}
+  );
+};
 
 export const formatCurrency = (value: number): string => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(value)
-}
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(value);
+};
 
 export const formatCurrencyUSD = (value: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(value)
-}
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(value);
+};
 
-export const calculateOpenAICost = (tokens: number, model: string = 'gpt-4'): number => {
+export const formatNumber = (value: number): string => {
+  return new Intl.NumberFormat("pt-BR").format(value);
+};
+
+export const formatPercent = (value: number): string => {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "percent",
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(value / 100);
+};
+
+export const calculateOpenAICost = (
+  tokens: number,
+  model: string = "gpt-4",
+): number => {
   const costPerToken: Record<string, number> = {
-    'gpt-4': 0.00003,
-    'gpt-4-turbo': 0.00001,
-    'gpt-3.5-turbo': 0.0000015,
-    'llama-3.3-70b': 0.00000059,
-  }
+    "gpt-4": 0.00003,
+    "gpt-4-turbo": 0.00001,
+    "gpt-3.5-turbo": 0.0000015,
+    "llama-3.3-70b": 0.00000059,
+  };
 
-  const rate = costPerToken[model] || costPerToken['gpt-4']
-  return tokens * rate
-}
+  const rate = costPerToken[model] || costPerToken["gpt-4"];
+  return tokens * rate;
+};
 
 export const estimateWhatsAppCost = (): number => {
-  return 0.005
-}
+  return 0.005;
+};
 
 export const truncateText = (text: string, maxLength: number = 100): string => {
   // Trim trailing whitespace first (e.g., \n\n from n8n AI formatter)
-  const trimmed = text.trimEnd()
+  const trimmed = text.trimEnd();
   if (trimmed.length <= maxLength) {
-    return trimmed
+    return trimmed;
   }
-  return `${trimmed.slice(0, maxLength)}...`
-}
+  return `${trimmed.slice(0, maxLength)}...`;
+};
 
 export const getInitials = (name: string): string => {
-  const words = name.trim().split(' ')
+  const words = name.trim().split(" ");
   if (words.length === 1) {
-    return words[0].charAt(0).toUpperCase()
+    return words[0].charAt(0).toUpperCase();
   }
-  return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase()
-}
+  return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
+};
 
 export const getStatusColor = (status: string): string => {
   const colors: Record<string, string> = {
-    bot: 'bg-green-500',
-    waiting: 'bg-yellow-500',
-    human: 'bg-blue-500',
-    sent: 'bg-green-500',
-    delivered: 'bg-green-600',
-    read: 'bg-blue-500',
-    failed: 'bg-red-500',
-    queued: 'bg-gray-500',
-  }
+    bot: "bg-green-500",
+    waiting: "bg-yellow-500",
+    human: "bg-blue-500",
+    sent: "bg-green-500",
+    delivered: "bg-green-600",
+    read: "bg-blue-500",
+    failed: "bg-red-500",
+    queued: "bg-gray-500",
+  };
 
-  return colors[status] || 'bg-gray-500'
-}
+  return colors[status] || "bg-gray-500";
+};
 
 export const getStatusLabel = (status: string): string => {
   const labels: Record<string, string> = {
-    bot: 'Bot',
-    waiting: 'Aguardando',
-    human: 'Humano',
-    sent: 'Enviada',
-    delivered: 'Entregue',
-    read: 'Lida',
-    failed: 'Falhou',
-    queued: 'Na fila',
-  }
+    bot: "Bot",
+    waiting: "Aguardando",
+    human: "Humano",
+    sent: "Enviada",
+    delivered: "Entregue",
+    read: "Lida",
+    failed: "Falhou",
+    queued: "Na fila",
+  };
 
-  return labels[status] || status
-}
+  return labels[status] || status;
+};
 
 export const cleanMessageContent = (content: string): string => {
-  if (!content || typeof content !== 'string') {
-    return content || ''
+  if (!content || typeof content !== "string") {
+    return content || "";
   }
 
   // Remove tags de function calls com closing tag (ex: <function=transferir_atendimento>{...}</function>)
   // Usa [^] ao invés de [\s\S] para capturar qualquer caractere incluindo newlines
-  let cleaned = content.replace(/<function=[^>]+>[^]*?<\/function>/gi, '')
+  let cleaned = content.replace(/<function=[^>]+>[^]*?<\/function>/gi, "");
 
   // Remove tags de function sem closing tag (ex: <function=AI_Agent_Tool>{...})
-  cleaned = cleaned.replace(/<function=[^>]*>\{[^}]*\}/gi, '')
+  cleaned = cleaned.replace(/<function=[^>]*>\{[^}]*\}/gi, "");
 
   // Remove espaços extras, mas mantém quebras de linha internas
-  cleaned = cleaned.trim()
+  cleaned = cleaned.trim();
 
-  return cleaned
-}
+  return cleaned;
+};
 
 /**
  * Throttle function - limits how often a function can be called
  * @param fn - Function to throttle
  * @param delay - Minimum time between calls in milliseconds
  * @returns Throttled function
- * 
+ *
  * @example
  * const throttledScroll = throttle(() => console.log('scroll'), 100)
  * element.addEventListener('scroll', throttledScroll)
  */
-export const throttle = <T extends (...args: unknown[]) => void>(fn: T, delay: number): T => {
-  let lastCall = 0
-  let timeoutId: NodeJS.Timeout | null = null
-  
+export const throttle = <T extends (...args: unknown[]) => void>(
+  fn: T,
+  delay: number,
+): T => {
+  let lastCall = 0;
+  let timeoutId: NodeJS.Timeout | null = null;
+
   return ((...args: unknown[]) => {
-    const now = Date.now()
-    const remaining = delay - (now - lastCall)
-    
+    const now = Date.now();
+    const remaining = delay - (now - lastCall);
+
     if (remaining <= 0) {
       if (timeoutId) {
-        clearTimeout(timeoutId)
-        timeoutId = null
+        clearTimeout(timeoutId);
+        timeoutId = null;
       }
-      lastCall = now
-      fn(...args)
+      lastCall = now;
+      fn(...args);
     } else if (!timeoutId) {
       timeoutId = setTimeout(() => {
-        lastCall = Date.now()
-        timeoutId = null
-        fn(...args)
-      }, remaining)
+        lastCall = Date.now();
+        timeoutId = null;
+        fn(...args);
+      }, remaining);
     }
-  }) as T
-}
+  }) as T;
+};
