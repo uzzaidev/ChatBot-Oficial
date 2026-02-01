@@ -788,9 +788,9 @@ export const processChatbotMessage = async (
     ) {
       logger.logNodeStart("9. Batch Messages", { phone: parsedMessage.phone });
       batchedContent = await batchMessages(
-        parsedMessage.phone, 
+        parsedMessage.phone,
         config.id,
-        config.settings.batchingDelaySeconds // 🤖 Use agent config
+        config.settings.batchingDelaySeconds, // 🤖 Use agent config
       );
       logger.logNodeSuccess("9. Batch Messages", {
         contentLength: batchedContent?.length || 0,

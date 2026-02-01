@@ -108,10 +108,10 @@ export const getEnvironmentInfo = () => {
 // 🔐 MULTI-TENANT CONFIG WITH VAULT
 // ============================================================================
 
-import { createServerClient, createServiceRoleClient } from "./supabase";
-import { getClientSecrets } from "./vault";
-import type { Agent, ClientConfig } from "./types";
 import { getSharedGatewayConfig } from "./ai-gateway/config";
+import { createServerClient, createServiceRoleClient } from "./supabase";
+import type { Agent, ClientConfig } from "./types";
+import { getClientSecrets } from "./vault";
 
 /**
  * 🤖 Busca o agente ativo do cliente
@@ -119,7 +119,9 @@ import { getSharedGatewayConfig } from "./ai-gateway/config";
  * @param clientId - UUID do cliente
  * @returns Agente ativo ou null se não houver
  */
-export const getActiveAgent = async (clientId: string): Promise<Agent | null> => {
+export const getActiveAgent = async (
+  clientId: string,
+): Promise<Agent | null> => {
   try {
     const supabase = createServiceRoleClient();
 
@@ -133,7 +135,9 @@ export const getActiveAgent = async (clientId: string): Promise<Agent | null> =>
       .single();
 
     if (error || !agent) {
-      console.log(`[getActiveAgent] No active agent found for client ${clientId}`);
+      console.log(
+        `[getActiveAgent] No active agent found for client ${clientId}`,
+      );
       return null;
     }
 
@@ -160,12 +164,12 @@ export const getClientConfig = async (
   try {
     const supabase = await createServerClient();
 
-    const { data: client, error } = await supabase
+    const { data: client, error } = (await supabase
       .from("clients")
       .select("*")
       .eq("id", clientId)
       .eq("status", "active")
-      .single() as { data: any; error: any };
+      .single()) as { data: any; error: any };
 
     if (error || !client) {
       return null;
@@ -196,21 +200,23 @@ export const getClientConfig = async (
       );
     }
 
-    const aiKeysMode = (client.ai_keys_mode === "byok_allowed"
-      ? "byok_allowed"
-      : "platform_only") as "platform_only" | "byok_allowed";
+    const aiKeysMode = (
+      client.ai_keys_mode === "byok_allowed" ? "byok_allowed" : "platform_only"
+    ) as "platform_only" | "byok_allowed";
 
     const sharedGatewayConfig = await getSharedGatewayConfig();
     const sharedOpenaiKey = sharedGatewayConfig?.providerKeys?.openai || null;
     const sharedGroqKey = sharedGatewayConfig?.providerKeys?.groq || null;
 
-    const finalOpenaiKey = aiKeysMode === "byok_allowed"
-      ? (secrets.openaiApiKey || sharedOpenaiKey)
-      : sharedOpenaiKey;
+    const finalOpenaiKey =
+      aiKeysMode === "byok_allowed"
+        ? secrets.openaiApiKey || sharedOpenaiKey
+        : sharedOpenaiKey;
 
-    const finalGroqKey = aiKeysMode === "byok_allowed"
-      ? (secrets.groqApiKey || sharedGroqKey)
-      : sharedGroqKey;
+    const finalGroqKey =
+      aiKeysMode === "byok_allowed"
+        ? secrets.groqApiKey || sharedGroqKey
+        : sharedGroqKey;
 
     if (!finalOpenaiKey) {
       throw new Error(
@@ -258,19 +264,27 @@ export const getClientConfig = async (
       ? {
           ...baseSettings,
           // Timing & Memory from Agent
-          batchingDelaySeconds: activeAgent.batching_delay_seconds ?? baseSettings.batchingDelaySeconds,
-          maxChatHistory: activeAgent.max_chat_history ?? baseSettings.maxChatHistory,
-          messageDelayMs: activeAgent.message_delay_ms ?? baseSettings.messageDelayMs,
-          messageSplitEnabled: activeAgent.message_split_enabled ?? baseSettings.messageSplitEnabled,
+          batchingDelaySeconds:
+            activeAgent.batching_delay_seconds ??
+            baseSettings.batchingDelaySeconds,
+          maxChatHistory:
+            activeAgent.max_chat_history ?? baseSettings.maxChatHistory,
+          messageDelayMs:
+            activeAgent.message_delay_ms ?? baseSettings.messageDelayMs,
+          messageSplitEnabled:
+            activeAgent.message_split_enabled ??
+            baseSettings.messageSplitEnabled,
           // Tools & Features from Agent
           enableTools: activeAgent.enable_tools ?? baseSettings.enableTools,
           enableRAG: activeAgent.enable_rag ?? baseSettings.enableRAG,
-          enableHumanHandoff: activeAgent.enable_human_handoff ?? baseSettings.enableHumanHandoff,
+          enableHumanHandoff:
+            activeAgent.enable_human_handoff ?? baseSettings.enableHumanHandoff,
           // Model settings from Agent
           maxTokens: activeAgent.max_tokens ?? baseSettings.maxTokens,
           temperature: activeAgent.temperature ?? baseSettings.temperature,
           // TTS from agent (enable_audio_response)
-          tts_enabled: activeAgent.enable_audio_response ?? baseSettings.tts_enabled,
+          tts_enabled:
+            activeAgent.enable_audio_response ?? baseSettings.tts_enabled,
         }
       : baseSettings;
 
@@ -278,7 +292,10 @@ export const getClientConfig = async (
     const finalPrompts = activeAgent?.compiled_system_prompt
       ? {
           systemPrompt: activeAgent.compiled_system_prompt,
-          formatterPrompt: activeAgent.compiled_formatter_prompt || client.formatter_prompt || undefined,
+          formatterPrompt:
+            activeAgent.compiled_formatter_prompt ||
+            client.formatter_prompt ||
+            undefined,
         }
       : {
           systemPrompt: client.system_prompt,
@@ -288,8 +305,12 @@ export const getClientConfig = async (
     // Determine models - prefer agent's models if available
     const finalModels = activeAgent
       ? {
-          openaiModel: activeAgent.openai_model || client.openai_model || "gpt-4o",
-          groqModel: activeAgent.groq_model || client.groq_model || "llama-3.3-70b-versatile",
+          openaiModel:
+            activeAgent.openai_model || client.openai_model || "gpt-4o",
+          groqModel:
+            activeAgent.groq_model ||
+            client.groq_model ||
+            "llama-3.3-70b-versatile",
         }
       : {
           openaiModel: client.openai_model || "gpt-4o",
@@ -297,7 +318,8 @@ export const getClientConfig = async (
         };
 
     // Determine primary provider - prefer agent's if available
-    const finalPrimaryProvider = activeAgent?.primary_provider || primaryProvider;
+    const finalPrimaryProvider =
+      activeAgent?.primary_provider || primaryProvider;
 
     const config: ClientConfig = {
       id: client.id,
@@ -490,21 +512,25 @@ export const getBotConfigs = async (
     const configMap = new Map<string, any>();
 
     // Primeiro adicionar defaults
-    (data as any[]).filter((c: any) => c.is_default).forEach((c: any) => {
-      configMap.set(c.config_key, c.config_value);
-    });
+    (data as any[])
+      .filter((c: any) => c.is_default)
+      .forEach((c: any) => {
+        configMap.set(c.config_key, c.config_value);
+      });
 
     // Depois sobrescrever com configs do cliente (se existir)
-    (data as any[]).filter((c: any) => !c.is_default).forEach((c: any) => {
-      configMap.set(c.config_key, c.config_value);
+    (data as any[])
+      .filter((c: any) => !c.is_default)
+      .forEach((c: any) => {
+        configMap.set(c.config_key, c.config_value);
 
-      // Cachear também
-      const cacheKey = `${clientId}:${c.config_key}`;
-      botConfigCache.set(cacheKey, {
-        value: c.config_value,
-        expiresAt: Date.now() + BOT_CONFIG_CACHE_TTL,
+        // Cachear também
+        const cacheKey = `${clientId}:${c.config_key}`;
+        botConfigCache.set(cacheKey, {
+          value: c.config_value,
+          expiresAt: Date.now() + BOT_CONFIG_CACHE_TTL,
+        });
       });
-    });
 
     return configMap;
   } catch (error) {
@@ -535,9 +561,8 @@ export const setBotConfig = async (
   try {
     const supabase = await createServerClient();
 
-    const { error } = await supabase
-      .from("bot_configurations")
-      .upsert({
+    const { error } = await supabase.from("bot_configurations").upsert(
+      {
         client_id: clientId,
         config_key: configKey,
         config_value: configValue,
@@ -545,9 +570,11 @@ export const setBotConfig = async (
         category: metadata?.category,
         is_default: false,
         updated_at: new Date().toISOString(),
-      }, {
+      },
+      {
         onConflict: "client_id,config_key",
-      });
+      },
+    );
 
     if (error) {
       throw new Error(`Erro ao salvar config: ${error.message}`);
@@ -639,16 +666,18 @@ export const listBotConfigs = async (
     const configMap = new Map<string, BotConfig>();
 
     // Primeiro adicionar defaults
-    data.filter((c) => c.is_default).forEach((c) => {
-      configMap.set(c.config_key, c as BotConfig);
-    });
+    data
+      .filter((c) => c.is_default)
+      .forEach((c) => {
+        configMap.set(c.config_key, c as BotConfig);
+      });
 
     // Depois sobrescrever com customs
-    data.filter((c) => !c.is_default && c.client_id === clientId).forEach(
-      (c) => {
+    data
+      .filter((c) => !c.is_default && c.client_id === clientId)
+      .forEach((c) => {
         configMap.set(c.config_key, c as BotConfig);
-      },
-    );
+      });
 
     return Array.from(configMap.values());
   } catch (error) {

@@ -1497,10 +1497,138 @@ Tenho amplo conhecimento sobre nosso catalogo de produtos e estou sempre dispost
 
 ---
 
-## Proximos Passos
+## ✅ Status de Implementação (Atualizado: 2026-01-31)
 
-1. Aplicar migrations: `supabase db push`
-2. Implementar API routes
-3. Criar componentes React
-4. Integrar com `generateAIResponse.ts`
-5. Adicionar link no sidebar do dashboard
+### Funcionalidades Core - IMPLEMENTADAS ✅
+
+| Feature | Status | Localização |
+|---------|--------|-------------|
+| Tabela `agents` | ✅ Completa | `supabase/migrations/20260131_create_agents_table.sql` |
+| Campos de timing | ✅ Completa | `supabase/migrations/20260131_add_agent_timing_fields.sql` |
+| API GET `/api/agents` | ✅ Completa | `src/app/api/agents/route.ts` |
+| API GET `/api/agents/[id]` | ✅ Completa | `src/app/api/agents/[id]/route.ts` |
+| API POST `/api/agents` | ✅ Completa | `src/app/api/agents/route.ts` |
+| API PATCH `/api/agents/[id]` | ✅ Completa | `src/app/api/agents/[id]/route.ts` |
+| API DELETE `/api/agents/[id]` | ✅ Completa | `src/app/api/agents/[id]/route.ts` |
+| API POST `/api/agents/[id]/activate` | ✅ Completa | `src/app/api/agents/[id]/activate/route.ts` |
+| API POST `/api/agents/[id]/test` | ✅ Completa | `src/app/api/agents/[id]/test/route.ts` |
+| Dashboard página `/dashboard/agents` | ✅ Completa | `src/app/dashboard/agents/page.tsx` |
+| Cards de Agentes (lista) | ✅ Completa | `src/app/dashboard/agents/page.tsx` |
+| AgentEditor (formulário) | ✅ Completa | `src/components/agents/AgentEditor.tsx` |
+| AgentEditorModal | ✅ Completa | `src/components/agents/AgentEditorModal.tsx` |
+| Preview/Teste no Editor | ✅ Completa | Integrado no AgentEditorModal |
+| Ativação com 1 clique | ✅ Completa | `handleActivateAgent()` |
+| Link no sidebar | ✅ Completa | Sidebar do dashboard |
+
+### Integração Backend - IMPLEMENTADA ✅
+
+| Feature | Status | Detalhes |
+|---------|--------|----------|
+| `getActiveAgent()` | ✅ Completa | `src/lib/config.ts` - busca agente ativo |
+| `getClientConfig()` merge | ✅ Completa | Mescla config do agente ativo |
+| `batchMessages` usa timing | ✅ Completa | `batching_delay_seconds` do agente |
+| `getChatHistory` usa config | ✅ Completa | `maxChatHistory` do agente |
+| `sendWhatsAppMessage` usa delay | ✅ Completa | `messageDelayMs` do agente |
+| `generateAIResponse` usa agente | ✅ Completa | Via `config.prompts.systemPrompt` |
+| Model/Provider do agente | ✅ Completa | `primaryProvider`, `openaiModel`, `groqModel` |
+| Temperature/MaxTokens | ✅ Completa | Via `config.settings.temperature/maxTokens` |
+| Tools (enableTools) | ✅ Completa | Via `config.settings.enableTools` |
+
+### Campos do Agente Usados pelo Backend
+
+```typescript
+// getClientConfig() agora mescla automaticamente:
+{
+  settings: {
+    batchingDelaySeconds: agent.batching_delay_seconds,     // ✅
+    maxChatHistory: agent.max_chat_history,                 // ✅
+    messageDelayMs: agent.message_delay_ms,                 // ✅
+    messageSplitEnabled: agent.message_split_enabled,       // ✅
+    enableTools: agent.enable_tools,                        // ✅
+    enableRAG: agent.enable_rag,                            // ✅
+    enableHumanHandoff: agent.enable_human_handoff,         // ✅
+    maxTokens: agent.max_tokens,                            // ✅
+    temperature: agent.temperature,                         // ✅
+    tts_enabled: agent.enable_audio_response,               // ✅
+  },
+  prompts: {
+    systemPrompt: agent.compiled_system_prompt,             // ✅
+    formatterPrompt: agent.compiled_formatter_prompt,       // ✅
+  },
+  models: {
+    openaiModel: agent.openai_model,                        // ✅
+    groqModel: agent.groq_model,                            // ✅
+  },
+  primaryProvider: agent.primary_provider,                  // ✅
+  activeAgent: agent,                                       // ✅ (referência completa)
+}
+```
+
+### Funcionalidades Extras - NÃO IMPLEMENTADAS ❌
+
+| Feature | Status | Tabela DB | Prioridade |
+|---------|--------|-----------|------------|
+| **Templates pré-configurados** | ❌ Pendente | N/A (hardcoded) | Média |
+| **Histórico de Versões** | ❌ Pendente | `agent_versions` (criada) | Baixa |
+| **Agendamento por horário** | ❌ Pendente | `agent_schedules` (criada) | Baixa |
+| **A/B Testing** | ❌ Pendente | `agent_experiments` (não criada) | Baixa |
+
+### Componentes Extras - NÃO IMPLEMENTADOS ❌
+
+| Componente | Status | Descrição |
+|------------|--------|-----------|
+| `AgentPreviewChat.tsx` | ❌ Pendente | Chat de preview (integrado no modal atual) |
+| `TemplateSelector.tsx` | ❌ Pendente | Seletor de templates de agentes |
+| `AgentVersionHistory.tsx` | ❌ Pendente | Histórico de versões com rollback |
+| `AgentScheduler.tsx` | ❌ Pendente | Configuração de horários |
+| `ABTestDashboard.tsx` | ❌ Pendente | Dashboard de experimentos A/B |
+
+---
+
+## Próximos Passos Recomendados
+
+### Fase 3 - Templates (Prioridade Média)
+
+1. Criar constantes com templates pré-configurados:
+   - Vendas (tom persuasivo, foco em conversão)
+   - Suporte (tom empático, foco em resolução)
+   - Qualificação (tom consultivo, foco em lead scoring)
+   - Atendente (tom neutro, foco em encaminhamento)
+
+2. Adicionar botão "Usar Template" no AgentEditorModal
+
+### Fase 4 - Histórico de Versões (Prioridade Baixa)
+
+1. Implementar trigger SQL para auto-save em `agent_versions`
+2. Criar componente `AgentVersionHistory.tsx`
+3. Adicionar API `/api/agents/[id]/versions`
+4. UI para visualizar e restaurar versões
+
+### Fase 5 - Agendamento (Prioridade Baixa)
+
+1. Criar API `/api/agents/schedules`
+2. Criar componente `AgentScheduler.tsx`
+3. Modificar `getActiveAgent()` para considerar horário
+4. Cron job ou edge function para troca automática
+
+### Fase 6 - A/B Testing (Prioridade Baixa)
+
+1. Criar tabelas `agent_experiments` e `experiment_assignments`
+2. Implementar lógica de split de tráfego sticky por telefone
+3. Criar dashboard de métricas comparativas
+
+---
+
+## Conclusão
+
+**O core do sistema de agentes está 100% funcional!**
+
+O `generateAIResponse.ts` JÁ USA as configurações do agente ativo via:
+1. `config.prompts.systemPrompt` → vem do `agent.compiled_system_prompt`
+2. `config.settings.temperature` → vem do `agent.temperature`
+3. `config.settings.maxTokens` → vem do `agent.max_tokens`
+4. `config.settings.enableTools` → vem do `agent.enable_tools`
+5. `config.primaryProvider` → vem do `agent.primary_provider`
+6. `config.models.openaiModel/groqModel` → vem do `agent.openai_model/groq_model`
+
+A integração é transparente - basta ativar um agente no dashboard e todo o backend passa a usar suas configurações.
