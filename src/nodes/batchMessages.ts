@@ -25,9 +25,14 @@ const delay = (ms: number): Promise<void> => {
  *
  * @param phone - User's phone number
  * @param clientId - Client ID for configuration lookup
+ * @param batchingDelaySeconds - Optional delay from active agent config (overrides bot_configurations)
  * @returns Concatenated message content, or empty string if should skip
  */
-export const batchMessages = async (phone: string, clientId: string): Promise<string> => {
+export const batchMessages = async (
+  phone: string, 
+  clientId: string,
+  batchingDelaySeconds?: number
+): Promise<string> => {
   const lockKey = `batch_lock:${phone}`
   const debounceKey = `debounce:${phone}`
   const messagesKey = `messages:${phone}`
@@ -37,11 +42,17 @@ export const batchMessages = async (phone: string, clientId: string): Promise<st
   const executionId = crypto.randomUUID()
 
   try {
-    // Get configurable delay from bot_configurations (default 30s)
-    const delayConfig = await getBotConfig(clientId, 'batching:delay_seconds')
-    const delaySeconds = delayConfig?.config_value
-      ? Number(delayConfig.config_value) || 30
-      : 30
+    // Priority: 1) Agent config, 2) bot_configurations, 3) default 30s
+    let delaySeconds = batchingDelaySeconds
+    
+    if (delaySeconds === undefined) {
+      // Fallback to bot_configurations if no agent config provided
+      const delayConfig = await getBotConfig(clientId, 'batching:delay_seconds')
+      delaySeconds = delayConfig?.config_value
+        ? Number(delayConfig.config_value) || 30
+        : 30
+    }
+    
     const BATCH_DELAY_MS = delaySeconds * 1000
 
     // Lock TTL must cover: batch wait + AI processing + message sending

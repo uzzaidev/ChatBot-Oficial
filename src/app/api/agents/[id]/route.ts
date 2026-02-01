@@ -186,6 +186,18 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (body.rag_max_results !== undefined)
       updateData.rag_max_results = body.rag_max_results;
 
+    // Timing & Memory (NEW - Agent-level configuration)
+    if (body.enable_tools !== undefined)
+      updateData.enable_tools = body.enable_tools;
+    if (body.max_chat_history !== undefined)
+      updateData.max_chat_history = body.max_chat_history;
+    if (body.batching_delay_seconds !== undefined)
+      updateData.batching_delay_seconds = body.batching_delay_seconds;
+    if (body.message_delay_ms !== undefined)
+      updateData.message_delay_ms = body.message_delay_ms;
+    if (body.message_split_enabled !== undefined)
+      updateData.message_split_enabled = body.message_split_enabled;
+
     // Model
     if (body.primary_provider !== undefined)
       updateData.primary_provider = body.primary_provider;

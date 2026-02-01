@@ -425,6 +425,7 @@ export interface ClientConfig {
 
   // Active Agent (NEW - Multi-Agent System)
   activeAgentId?: string | null;
+  activeAgent?: Agent; // Full agent object when loaded via getClientConfig
 }
 
 /**

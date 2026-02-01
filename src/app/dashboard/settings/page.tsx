@@ -1281,7 +1281,7 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          {/* Card Bot Configurations */}
+          {/* Card Agentes IA - Centraliza todas configurações de comportamento */}
           <Card className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/30 hover:border-purple-500/50 transition-colors">
             <CardContent className="pt-6">
               <div className="flex items-start justify-between">
@@ -1291,22 +1291,22 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-foreground">
-                      Configurações do Bot
+                      Agentes IA
                     </h3>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Prompts, regras, limites e personalidade
+                      Comportamento, timing, prompts e modelo de IA
                     </p>
                     <div className="flex gap-2 mt-2">
                       <span className="text-xs bg-purple-500/20 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded">
-                        Prompts
+                        Multi-Agente
                       </span>
                       <span className="text-xs bg-purple-500/20 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded">
-                        Regras
+                        Timing
                       </span>
                     </div>
                   </div>
                 </div>
-                <Link href="/dashboard/settings/bot">
+                <Link href="/dashboard/agents">
                   <Button
                     variant="ghost"
                     size="icon"
