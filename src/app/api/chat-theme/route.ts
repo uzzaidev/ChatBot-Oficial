@@ -44,6 +44,8 @@ export async function GET(request: NextRequest) {
     const theme = data ? {
       incomingMessageColor: data.incoming_message_color,
       outgoingMessageColor: data.outgoing_message_color,
+      incomingTextColor: data.incoming_text_color || '#FFFFFF',
+      outgoingTextColor: data.outgoing_text_color || '#FFFFFF',
       backgroundType: data.background_type,
       backgroundPreset: data.background_preset,
       backgroundCustomUrl: data.background_custom_url,
@@ -86,6 +88,8 @@ export async function POST(request: NextRequest) {
     const {
       incomingMessageColor,
       outgoingMessageColor,
+      incomingTextColor,
+      outgoingTextColor,
       backgroundType,
       backgroundPreset,
       backgroundCustomUrl,
@@ -123,6 +127,8 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         incoming_message_color: incomingMessageColor,
         outgoing_message_color: outgoingMessageColor,
+        incoming_text_color: incomingTextColor || '#FFFFFF',
+        outgoing_text_color: outgoingTextColor || '#FFFFFF',
         background_type: backgroundType,
         background_preset: backgroundPreset || null,
         background_custom_url: backgroundCustomUrl || null,
@@ -144,6 +150,8 @@ export async function POST(request: NextRequest) {
     const theme = {
       incomingMessageColor: data.incoming_message_color,
       outgoingMessageColor: data.outgoing_message_color,
+      incomingTextColor: data.incoming_text_color,
+      outgoingTextColor: data.outgoing_text_color,
       backgroundType: data.background_type,
       backgroundPreset: data.background_preset,
       backgroundCustomUrl: data.background_custom_url,

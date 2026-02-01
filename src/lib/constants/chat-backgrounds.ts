@@ -110,23 +110,53 @@ export const DEFAULT_MESSAGE_COLORS = {
 } as const
 
 /**
- * Tipo para configuração de tema
+ * Tema de Personalização das Conversas
+ *
+ * Define cores e background da área de chat
  */
 export interface ChatTheme {
-  incomingMessageColor: string
-  outgoingMessageColor: string
+  // Cores de fundo das mensagens
+  incomingMessageColor: string // Cor de fundo das mensagens recebidas (#RRGGBB)
+  outgoingMessageColor: string // Cor de fundo das mensagens enviadas (#RRGGBB)
+  
+  // Cores do texto das mensagens
+  incomingTextColor: string // Cor do texto das mensagens recebidas (#RRGGBB)
+  outgoingTextColor: string // Cor do texto das mensagens enviadas (#RRGGBB)
+
+  // Background da área de conversas
   backgroundType: 'default' | 'preset' | 'custom'
-  backgroundPreset?: string
-  backgroundCustomUrl?: string
+  backgroundPreset?: string // ID do preset (ex: 'whatsapp-default')
+  backgroundCustomUrl?: string // URL da imagem customizada
 }
 
 /**
- * Tema padrão
+ * Tema Padrão do WhatsApp
+ *
+ * Cores e background padrão ao iniciar a aplicação
  */
 export const DEFAULT_CHAT_THEME: ChatTheme = {
-  incomingMessageColor: DEFAULT_MESSAGE_COLORS.incoming.dark,
-  outgoingMessageColor: DEFAULT_MESSAGE_COLORS.outgoing.default,
+  // Cores de fundo (padrão WhatsApp)
+  incomingMessageColor: '#2d3338', // Cinza escuro (mensagens recebidas)
+  outgoingMessageColor: '#005c4b', // Verde WhatsApp (mensagens enviadas)
+  
+  // Cores do texto (branco para contraste)
+  incomingTextColor: '#FFFFFF', // Texto branco nas mensagens recebidas
+  outgoingTextColor: '#FFFFFF', // Texto branco nas mensagens enviadas
+
+  // Background padrão
   backgroundType: 'default',
-  backgroundPreset: undefined,
-  backgroundCustomUrl: undefined,
+  backgroundPreset: 'whatsapp-default',
 }
+
+/**
+ * Categorias de Fundos
+ *
+ * Usado para agrupar fundos por tipo na interface
+ */
+export const BACKGROUND_CATEGORIES = [
+  { id: 'default', name: 'Padrão' },
+  { id: 'solid', name: 'Sólidos' },
+  { id: 'abstract', name: 'Abstratos' },
+  { id: 'nature', name: 'Natureza' },
+  { id: 'geometric', name: 'Geométricos' },
+] as const

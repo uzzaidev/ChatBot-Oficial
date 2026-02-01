@@ -1,23 +1,23 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Label } from '@/components/ui/label'
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Upload, RotateCcw, Loader2, CheckCircle2 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { Label } from '@/components/ui/label'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useToast } from '@/hooks/use-toast'
 import { useChatTheme } from '@/hooks/useChatTheme'
 import { DEFAULT_BACKGROUNDS, DEFAULT_CHAT_THEME, type ChatTheme } from '@/lib/constants/chat-backgrounds'
-import { useToast } from '@/hooks/use-toast'
+import { cn } from '@/lib/utils'
+import { CheckCircle2, Loader2, RotateCcw, Upload } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 
 interface ChatThemeCustomizerModalProps {
   isOpen: boolean
@@ -215,112 +215,211 @@ export const ChatThemeCustomizerModal = ({
           {/* TAB 1: CORES DAS MENSAGENS                   */}
           {/* ============================================ */}
           <TabsContent value="colors" className="space-y-6 mt-6">
-            {/* Cor Mensagens Recebidas */}
-            <div className="space-y-3">
-              <Label className="text-sm font-semibold">Cor das Mensagens Recebidas</Label>
-              <div className="flex items-center gap-4">
-                <div className="relative">
+            {/* Cor das Mensagens Recebidas */}
+          <div className="space-y-3">
+            <Label htmlFor="incoming-bg-color">Cor das Mensagens Recebidas</Label>
+            
+            <div className="flex gap-3">
+              {/* Cor de fundo */}
+              <div className="flex-1">
+                <Label htmlFor="incoming-bg-color" className="text-xs text-muted-foreground">
+                  Fundo
+                </Label>
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-10 h-10 rounded border cursor-pointer"
+                    style={{ backgroundColor: previewTheme.incomingMessageColor }}
+                    onClick={() => document.getElementById('incoming-bg-color')?.click()}
+                  />
                   <Input
+                    id="incoming-bg-color"
                     type="color"
                     value={previewTheme.incomingMessageColor}
-                    onChange={(e) => setPreviewTheme(prev => ({
-                      ...prev,
-                      incomingMessageColor: e.target.value
-                    }))}
-                    className="w-20 h-12 cursor-pointer"
+                    onChange={(e) =>
+                      setPreviewTheme({ ...previewTheme, incomingMessageColor: e.target.value })
+                    }
+                    className="w-20"
+                  />
+                  <Input
+                    type="text"
+                    value={previewTheme.incomingMessageColor.toUpperCase()}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      if (/^#[0-9A-F]{0,6}$/i.test(value)) {
+                        setPreviewTheme({ ...previewTheme, incomingMessageColor: value })
+                      }
+                    }}
+                    placeholder="#2d3338"
+                    className="font-mono"
+                    maxLength={7}
                   />
                 </div>
-                <Input
-                  type="text"
-                  value={previewTheme.incomingMessageColor.toUpperCase()}
-                  onChange={(e) => {
-                    const value = e.target.value
-                    if (/^#[0-9A-F]{0,6}$/i.test(value)) {
-                      setPreviewTheme(prev => ({
-                        ...prev,
-                        incomingMessageColor: value
-                      }))
-                    }
-                  }}
-                  placeholder="#2D3338"
-                  className="flex-1 font-mono"
-                  maxLength={7}
-                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Cor de fundo das mensagens que você recebe
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Cor de fundo das mensagens que você recebe
-              </p>
-            </div>
 
-            {/* Cor Mensagens Enviadas */}
-            <div className="space-y-3">
-              <Label className="text-sm font-semibold">Cor das Mensagens Enviadas</Label>
-              <div className="flex items-center gap-4">
-                <div className="relative">
+              {/* Cor do texto */}
+              <div className="flex-1">
+                <Label htmlFor="incoming-text-color" className="text-xs text-muted-foreground">
+                  Texto
+                </Label>
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-10 h-10 rounded border cursor-pointer"
+                    style={{ backgroundColor: previewTheme.incomingTextColor }}
+                    onClick={() => document.getElementById('incoming-text-color')?.click()}
+                  />
                   <Input
+                    id="incoming-text-color"
+                    type="color"
+                    value={previewTheme.incomingTextColor}
+                    onChange={(e) =>
+                      setPreviewTheme({ ...previewTheme, incomingTextColor: e.target.value })
+                    }
+                    className="w-20"
+                  />
+                  <Input
+                    type="text"
+                    value={previewTheme.incomingTextColor.toUpperCase()}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      if (/^#[0-9A-F]{0,6}$/i.test(value)) {
+                        setPreviewTheme({ ...previewTheme, incomingTextColor: value })
+                      }
+                 }}
+                    placeholder="#FFFFFF"
+                    className="font-mono"
+                    maxLength={7}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Cor do texto nas mensagens recebidas
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Cor das Mensagens Enviadas */}
+          <div className="space-y-3">
+            <Label htmlFor="outgoing-bg-color">Cor das Mensagens Enviadas</Label>
+            
+            <div className="flex gap-3">
+              {/* Cor de fundo */}
+              <div className="flex-1">
+                <Label htmlFor="outgoing-bg-color" className="text-xs text-muted-foreground">
+                  Fundo
+                </Label>
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-10 h-10 rounded border cursor-pointer"
+                    style={{ backgroundColor: previewTheme.outgoingMessageColor }}
+                    onClick={() => document.getElementById('outgoing-bg-color')?.click()}
+                  />
+                  <Input
+                    id="outgoing-bg-color"
                     type="color"
                     value={previewTheme.outgoingMessageColor}
-                    onChange={(e) => setPreviewTheme(prev => ({
-                      ...prev,
-                      outgoingMessageColor: e.target.value
-                    }))}
-                    className="w-20 h-12 cursor-pointer"
+                    onChange={(e) =>
+                      setPreviewTheme({ ...previewTheme, outgoingMessageColor: e.target.value })
+                    }
+                    className="w-20"
+                  />
+                  <Input
+                    type="text"
+                    value={previewTheme.outgoingMessageColor.toUpperCase()}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      if (/^#[0-9A-F]{0,6}$/i.test(value)) {
+                        setPreviewTheme({ ...previewTheme, outgoingMessageColor: value })
+                      }
+                    }}
+                    placeholder="#005c4b"
+                    className="font-mono"
+                    maxLength={7}
                   />
                 </div>
-                <Input
-                  type="text"
-                  value={previewTheme.outgoingMessageColor.toUpperCase()}
-                  onChange={(e) => {
-                    const value = e.target.value
-                    if (/^#[0-9A-F]{0,6}$/i.test(value)) {
-                      setPreviewTheme(prev => ({
-                        ...prev,
-                        outgoingMessageColor: value
-                      }))
-                    }
-                  }}
-                  placeholder="#005C4B"
-                  className="flex-1 font-mono"
-                  maxLength={7}
-                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Cor de fundo das mensagens que você envia
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Cor de fundo das mensagens que você envia
-              </p>
+
+              {/* Cor do texto */}
+              <div className="flex-1">
+                <Label htmlFor="outgoing-text-color" className="text-xs text-muted-foreground">
+                  Texto
+                </Label>
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-10 h-10 rounded border cursor-pointer"
+                    style={{ backgroundColor: previewTheme.outgoingTextColor }}
+                    onClick={() => document.getElementById('outgoing-text-color')?.click()}
+                  />
+                  <Input
+                    id="outgoing-text-color"
+                    type="color"
+                    value={previewTheme.outgoingTextColor}
+                    onChange={(e) =>
+                      setPreviewTheme({ ...previewTheme, outgoingTextColor: e.target.value })
+                    }
+                    className="w-20"
+                  />
+                  <Input
+                    type="text"
+                    value={previewTheme.outgoingTextColor.toUpperCase()}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      if (/^#[0-9A-F]{0,6}$/i.test(value)) {
+                        setPreviewTheme({ ...previewTheme, outgoingTextColor: value })
+                      }
+                    }}
+                    placeholder="#FFFFFF"
+                    className="font-mono"
+                    maxLength={7}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Cor do texto nas mensagens enviadas
+                </p>
+              </div>
             </div>
+          </div>
 
-            {/* Preview Exemplo */}
-            <div className="border rounded-lg p-6 space-y-3 bg-muted/30">
-              <p className="text-sm font-semibold mb-4">Preview:</p>
-
-              {/* Exemplo de mensagem recebida */}
+          {/* Preview */}
+          <div className="space-y-2">
+            <Label>Preview:</Label>
+            <div className="space-y-2 p-4 bg-muted/30 rounded-lg">
+              {/* Mensagem recebida */}
               <div className="flex justify-start">
                 <div
-                  className="rounded-lg p-3 max-w-xs shadow-sm"
-                  style={{ backgroundColor: previewTheme.incomingMessageColor }}
+                  className="px-4 py-2 rounded-lg max-w-[70%]"
+                  style={{
+                    backgroundColor: previewTheme.incomingMessageColor,
+                    color: previewTheme.incomingTextColor,
+                  }}
                 >
-                  <p className="text-sm text-white">
-                    Olá! Esta é uma mensagem recebida.
-                  </p>
-                  <p className="text-xs text-white/70 mt-1">10:30</p>
+                  <p className="text-sm">Olá Este é uma mensagem recebida.</p>
+                  <span className="text-xs opacity-70">10:30</span>
                 </div>
               </div>
 
-              {/* Exemplo de mensagem enviada */}
+              {/* Mensagem enviada */}
               <div className="flex justify-end">
                 <div
-                  className="rounded-lg p-3 max-w-xs shadow-sm"
-                  style={{ backgroundColor: previewTheme.outgoingMessageColor }}
+                  className="px-4 py-2 rounded-lg max-w-[70%]"
+                  style={{
+                    backgroundColor: previewTheme.outgoingMessageColor,
+                    color: previewTheme.outgoingTextColor,
+                  }}
                 >
-                  <p className="text-sm text-white">
-                    Esta é uma mensagem enviada por você!
-                  </p>
-                  <p className="text-xs text-white/90 mt-1 flex items-center gap-1">
-                    10:31 <CheckCircle2 className="h-3 w-3" />
-                  </p>
+                  <p className="text-sm">Esta é uma mensagem enviada por você!</p>
+                  <span className="text-xs opacity-70 flex items-center gap-1">
+                    10:31 <CheckCircle2 className="w-3 h-3" />
+                  </span>
                 </div>
               </div>
             </div>
+          </div>
           </TabsContent>
 
           {/* ============================================ */}

@@ -79,6 +79,8 @@ export const useChatTheme = (): UseChatThemeReturn => {
         const loadedTheme: ChatTheme = {
           incomingMessageColor: data.incoming_message_color,
           outgoingMessageColor: data.outgoing_message_color,
+          incomingTextColor: data.incoming_text_color || '#FFFFFF',
+          outgoingTextColor: data.outgoing_text_color || '#FFFFFF',
           backgroundType: data.background_type as ChatTheme['backgroundType'],
           backgroundPreset: data.background_preset || undefined,
           backgroundCustomUrl: data.background_custom_url || undefined,
@@ -118,6 +120,8 @@ export const useChatTheme = (): UseChatThemeReturn => {
           user_id: user.id,
           incoming_message_color: newTheme.incomingMessageColor,
           outgoing_message_color: newTheme.outgoingMessageColor,
+          incoming_text_color: newTheme.incomingTextColor,
+          outgoing_text_color: newTheme.outgoingTextColor,
           background_type: newTheme.backgroundType,
           background_preset: newTheme.backgroundPreset || null,
           background_custom_url: newTheme.backgroundCustomUrl || null,
