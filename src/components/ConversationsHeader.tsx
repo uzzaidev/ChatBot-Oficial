@@ -94,10 +94,12 @@ export const ConversationsHeader = ({
             </div>
             <MessageCircle className="h-3.5 w-3.5 md:h-4 md:w-4 opacity-40 group-hover:opacity-60 transition-opacity text-primary" />
           </div>
-          <div className="font-exo2 text-xl md:text-2xl font-bold text-foreground mb-0.5">
-            {metrics.total}
+          <div className="flex items-baseline gap-2">
+            <span className="font-exo2 text-xl md:text-2xl font-bold text-foreground">
+              {metrics.total}
+            </span>
+            <span className="text-[9px] md:text-[10px] text-muted-foreground truncate">Total de conversas</span>
           </div>
-          <div className="text-[9px] md:text-[10px] text-muted-foreground truncate">Total de conversas</div>
         </button>
 
         {/* Card BOT RESPONDENDO */}
@@ -116,10 +118,12 @@ export const ConversationsHeader = ({
             </div>
             <Bot className="h-3.5 w-3.5 md:h-4 md:w-4 opacity-40 group-hover:opacity-60 transition-opacity flex-shrink-0 text-secondary" />
           </div>
-          <div className="font-exo2 text-xl md:text-2xl font-bold text-foreground mb-0.5">
-            {metrics.bot}
+          <div className="flex items-baseline gap-2">
+            <span className="font-exo2 text-xl md:text-2xl font-bold text-foreground">
+              {metrics.bot}
+            </span>
+            <span className="text-[9px] md:text-[10px] text-muted-foreground truncate">Bot ativo</span>
           </div>
-          <div className="text-[9px] md:text-[10px] text-muted-foreground truncate">Bot ativo</div>
         </button>
 
         {/* Card HUMANO */}
@@ -138,10 +142,12 @@ export const ConversationsHeader = ({
             </div>
             <User className="h-3.5 w-3.5 md:h-4 md:w-4 opacity-40 group-hover:opacity-60 transition-opacity text-primary" />
           </div>
-          <div className="font-exo2 text-xl md:text-2xl font-bold text-foreground mb-0.5">
-            {metrics.humano}
+          <div className="flex items-baseline gap-2">
+            <span className="font-exo2 text-xl md:text-2xl font-bold text-foreground">
+              {metrics.humano}
+            </span>
+            <span className="text-[9px] md:text-[10px] text-muted-foreground truncate">Atend. humano</span>
           </div>
-          <div className="text-[9px] md:text-[10px] text-muted-foreground truncate">Atend. humano</div>
         </button>
 
         {/* Card EM FLOW */}
@@ -160,10 +166,12 @@ export const ConversationsHeader = ({
             </div>
             <Workflow className="h-3.5 w-3.5 md:h-4 md:w-4 opacity-40 group-hover:opacity-60 transition-opacity text-[#9b59b6]" />
           </div>
-          <div className="font-exo2 text-xl md:text-2xl font-bold text-foreground mb-0.5">
-            {metrics.emFlow}
+          <div className="flex items-baseline gap-2">
+            <span className="font-exo2 text-xl md:text-2xl font-bold text-foreground">
+              {metrics.emFlow}
+            </span>
+            <span className="text-[9px] md:text-[10px] text-muted-foreground truncate">Flow interativo</span>
           </div>
-          <div className="text-[9px] md:text-[10px] text-muted-foreground truncate">Flow interativo</div>
         </button>
 
         {/* Card TRANSFERIDO */}
@@ -182,10 +190,12 @@ export const ConversationsHeader = ({
             </div>
             <ArrowRight className="h-3.5 w-3.5 md:h-4 md:w-4 opacity-40 group-hover:opacity-60 transition-opacity flex-shrink-0 text-orange-400" />
           </div>
-          <div className="font-exo2 text-xl md:text-2xl font-bold text-foreground mb-0.5">
-            {metrics.transferido}
+          <div className="flex items-baseline gap-2">
+            <span className="font-exo2 text-xl md:text-2xl font-bold text-foreground">
+              {metrics.transferido}
+            </span>
+            <span className="text-[9px] md:text-[10px] text-muted-foreground truncate">Aguardando</span>
           </div>
-          <div className="text-[9px] md:text-[10px] text-muted-foreground truncate">Aguardando</div>
         </button>
 
         {/* Card + EDITAR */}
