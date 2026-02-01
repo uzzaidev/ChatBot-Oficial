@@ -1372,8 +1372,9 @@ export const AgentEditorModal = ({
               </TabsContent>
 
               {/* TEST TAB */}
-              <TabsContent value="test" className="p-6 mt-0 h-full">
-                <div className="flex flex-col h-[500px] border rounded-lg overflow-hidden">
+              <TabsContent value="test" className="p-6 mt-0">
+                {/* Height: 90vh modal - ~80px header - ~48px tabs - ~80px footer - ~48px padding */}
+                <div className="flex flex-col h-[calc(90vh-256px)] border rounded-lg overflow-hidden">
                   {/* Chat header */}
                   <div className="px-4 py-3 border-b bg-muted/30 flex items-center justify-between">
                     <div className="flex items-center gap-2">
