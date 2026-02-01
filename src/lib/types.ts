@@ -897,6 +897,16 @@ export interface Database {
           Omit<ScheduledMessage, "id" | "created_at" | "contact" | "creator">
         >;
       };
+      agents: {
+        Row: Agent;
+        Insert: Omit<Agent, "id" | "created_at" | "updated_at">;
+        Update: Partial<Omit<Agent, "id" | "created_at" | "updated_at">>;
+      };
+      agent_versions: {
+        Row: AgentVersion;
+        Insert: Omit<AgentVersion, "id" | "created_at">;
+        Update: Partial<Omit<AgentVersion, "id" | "created_at">>;
+      };
     };
     Views: {};
     Functions: {
