@@ -93,6 +93,7 @@
     "redis": "^5.9.0",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
+    "uuid": "^13.0.0",
     "xlsx": "^0.18.5",
     "zod": "^4.1.13",
     "zustand": "^5.0.9"
@@ -107,6 +108,7 @@
     "@types/pdf-parse": "^1.1.5",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/uuid": "^11.0.0",
     "autoprefixer": "^10.4.21",
     "baseline-browser-mapping": "^2.9.17",
     "cross-env": "^10.1.0",
