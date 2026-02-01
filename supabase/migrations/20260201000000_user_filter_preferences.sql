@@ -42,9 +42,9 @@ CREATE TABLE IF NOT EXISTS user_filter_preferences (
   )
 );
 
-CREATE INDEX idx_user_filter_prefs_user ON user_filter_preferences(user_id);
-CREATE INDEX idx_user_filter_prefs_position ON user_filter_preferences(user_id, "position");
-CREATE INDEX idx_user_filter_prefs_enabled ON user_filter_preferences(user_id, enabled) WHERE enabled = true;
+CREATE INDEX IF NOT EXISTS idx_user_filter_prefs_user ON user_filter_preferences(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_filter_prefs_position ON user_filter_preferences(user_id, "position");
+CREATE INDEX IF NOT EXISTS idx_user_filter_prefs_enabled ON user_filter_preferences(user_id, enabled) WHERE enabled = true;
 
 COMMENT ON TABLE user_filter_preferences IS 'Preferências de filtros do usuário no header de conversações';
 COMMENT ON COLUMN user_filter_preferences.filter_type IS 'Tipo de filtro: default (status), tag (crm_tags), column (crm_columns/estágios)';
@@ -57,24 +57,29 @@ COMMENT ON COLUMN user_filter_preferences.default_filter_value IS 'Valor do filt
 ALTER TABLE user_filter_preferences ENABLE ROW LEVEL SECURITY;
 
 -- Service role full access
+DROP POLICY IF EXISTS "Service role full access filter_prefs" ON user_filter_preferences;
 CREATE POLICY "Service role full access filter_prefs" ON user_filter_preferences
   FOR ALL
   USING (auth.role() = 'service_role');
 
 -- Users can only see/manage their own preferences
+DROP POLICY IF EXISTS "Users view own filter preferences" ON user_filter_preferences;
 CREATE POLICY "Users view own filter preferences" ON user_filter_preferences
   FOR SELECT
   USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users insert own filter preferences" ON user_filter_preferences;
 CREATE POLICY "Users insert own filter preferences" ON user_filter_preferences
   FOR INSERT
   WITH CHECK (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users update own filter preferences" ON user_filter_preferences;
 CREATE POLICY "Users update own filter preferences" ON user_filter_preferences
   FOR UPDATE
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users delete own filter preferences" ON user_filter_preferences;
 CREATE POLICY "Users delete own filter preferences" ON user_filter_preferences
   FOR DELETE
   USING (user_id = auth.uid());
@@ -102,9 +107,9 @@ DECLARE
   v_client_id UUID;
 BEGIN
   -- Get user's client_id
-  SELECT client_id INTO v_client_id
+  SELECT user_profiles.client_id INTO v_client_id
   FROM user_profiles
-  WHERE id = p_user_id;
+  WHERE user_profiles.id = p_user_id;
 
   RETURN QUERY
   WITH prefs AS (
@@ -134,8 +139,8 @@ BEGIN
     COALESCE(
       prefs.custom_label,
       CASE
-        WHEN prefs.filter_type = 'tag' THEN (SELECT name FROM crm_tags WHERE id = prefs.filter_id)
-        WHEN prefs.filter_type = 'column' THEN (SELECT name FROM crm_columns WHERE id = prefs.filter_id)
+        WHEN prefs.filter_type = 'tag' THEN (SELECT crm_tags.name FROM crm_tags WHERE crm_tags.id = prefs.filter_id)
+        WHEN prefs.filter_type = 'column' THEN (SELECT crm_columns.name FROM crm_columns WHERE crm_columns.id = prefs.filter_id)
         WHEN prefs.default_filter_value = 'all' THEN 'Todas'
         WHEN prefs.default_filter_value = 'bot' THEN 'Bot'
         WHEN prefs.default_filter_value = 'humano' THEN 'Humano'
@@ -148,7 +153,7 @@ BEGIN
     COALESCE(
       prefs.custom_icon,
       CASE
-        WHEN prefs.filter_type = 'column' THEN (SELECT icon FROM crm_columns WHERE id = prefs.filter_id)
+        WHEN prefs.filter_type = 'column' THEN (SELECT crm_columns.icon FROM crm_columns WHERE crm_columns.id = prefs.filter_id)
         WHEN prefs.default_filter_value = 'all' THEN 'MessageCircle'
         WHEN prefs.default_filter_value = 'bot' THEN 'Bot'
         WHEN prefs.default_filter_value = 'humano' THEN 'User'
@@ -161,23 +166,23 @@ BEGIN
     COALESCE(
       prefs.custom_color,
       CASE
-        WHEN prefs.filter_type = 'tag' THEN (SELECT color FROM crm_tags WHERE id = prefs.filter_id)
-        WHEN prefs.filter_type = 'column' THEN (SELECT color FROM crm_columns WHERE id = prefs.filter_id)
+        WHEN prefs.filter_type = 'tag' THEN (SELECT crm_tags.color FROM crm_tags WHERE crm_tags.id = prefs.filter_id)
+        WHEN prefs.filter_type = 'column' THEN (SELECT crm_columns.color FROM crm_columns WHERE crm_columns.id = prefs.filter_id)
         ELSE 'primary'
       END
     ) AS color,
     -- Count conversations matching this filter
     CASE
       WHEN prefs.filter_type = 'default' AND prefs.default_filter_value = 'all' THEN
-        (SELECT COUNT(*) FROM clientes_whatsapp WHERE client_id = v_client_id)
+        (SELECT COUNT(*) FROM clientes_whatsapp WHERE clientes_whatsapp.client_id = v_client_id)
       WHEN prefs.filter_type = 'default' AND prefs.default_filter_value IN ('bot', 'humano', 'transferido', 'fluxo_inicial') THEN
-        (SELECT COUNT(*) FROM clientes_whatsapp WHERE client_id = v_client_id AND status = prefs.default_filter_value)
+        (SELECT COUNT(*) FROM clientes_whatsapp WHERE clientes_whatsapp.client_id = v_client_id AND clientes_whatsapp.status = prefs.default_filter_value)
       WHEN prefs.filter_type = 'tag' THEN
         (SELECT COUNT(*) FROM crm_card_tags cct
          JOIN crm_cards cc ON cct.card_id = cc.id
          WHERE cct.tag_id = prefs.filter_id AND cc.client_id = v_client_id)
       WHEN prefs.filter_type = 'column' THEN
-        (SELECT COUNT(*) FROM crm_cards WHERE column_id = prefs.filter_id AND client_id = v_client_id)
+        (SELECT COUNT(*) FROM crm_cards WHERE crm_cards.column_id = prefs.filter_id AND crm_cards.client_id = v_client_id)
       ELSE 0
     END AS count
   FROM prefs;
@@ -189,6 +194,7 @@ COMMENT ON FUNCTION get_user_filters_with_details IS 'Retorna filtros do usuári
 -- -----------------------------------------------------------------------------
 -- 4. TRIGGER - Updated At
 -- -----------------------------------------------------------------------------
+DROP TRIGGER IF EXISTS trg_user_filter_prefs_updated_at ON user_filter_preferences;
 CREATE TRIGGER trg_user_filter_prefs_updated_at
 BEFORE UPDATE ON user_filter_preferences
 FOR EACH ROW
@@ -258,6 +264,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_auto_create_default_filters ON auth.users;
 CREATE TRIGGER trg_auto_create_default_filters
 AFTER INSERT ON auth.users
 FOR EACH ROW

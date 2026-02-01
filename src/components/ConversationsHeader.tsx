@@ -83,9 +83,9 @@ export const ConversationsHeader = ({
             </p>
           </div>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-2.5">
+        <div className="flex flex-wrap gap-2 md:gap-2.5">
           {[1, 2, 3, 4, 5, 6].map(i => (
-            <div key={i} className="h-[60px] md:h-[65px] rounded-lg border border-border bg-surface animate-pulse" />
+            <div key={i} className="h-[52px] w-[140px] md:w-[160px] rounded-lg border border-border bg-surface animate-pulse" />
           ))}
         </div>
       </div>
@@ -108,9 +108,9 @@ export const ConversationsHeader = ({
         </div>
       </div>
 
-      {/* Cards KPI - Responsivo (Grid 3x2) */}
+      {/* Cards KPI - Responsivo (Flex wrap) */}
       <div className="overflow-x-auto pb-1.5 -mx-4 px-4 md:mx-0 md:px-0 md:pb-0 md:overflow-visible">
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-2.5">
+        <div className="flex flex-wrap gap-2 md:gap-2.5">
           {/* Renderizar filtros do banco */}
           {enabledFilters.map((filter) => {
             const IconComponent = ICON_MAP[filter.icon] || Tag
@@ -128,38 +128,31 @@ export const ConversationsHeader = ({
                 }}
                 disabled={!filterValue}  // Desabilita tags e columns por enquanto
                 className={cn(
-                  "relative p-2.5 md:p-3 rounded-lg border transition-all duration-200 text-left group h-[60px] md:h-[65px]",
+                  "relative px-3 md:px-4 py-2.5 md:py-3 rounded-lg border transition-all duration-200 group",
+                  "flex items-center gap-2 md:gap-3 min-w-fit",
                   isActive
                     ? `bg-gradient-to-br from-surface to-surface-alt ${colorClass} border-t-2`
                     : "bg-surface border-border/50 hover:border-primary/50 hover:shadow-lg",
                   !filterValue && "opacity-50 cursor-not-allowed"
                 )}
               >
-                <div className="flex items-start justify-between mb-1 md:mb-1.5">
-                  <div className={cn(
-                    "text-[10px] md:text-xs font-medium tracking-wide uppercase truncate pr-1",
-                    isActive ? colorClass.split(' ')[0] : "text-muted-foreground"
-                  )}>
-                    {filter.label}
-                  </div>
-                  <IconComponent className={cn(
-                    "h-3.5 w-3.5 md:h-4 md:w-4 opacity-40 group-hover:opacity-60 transition-opacity flex-shrink-0",
-                    colorClass.split(' ')[0]
-                  )} />
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="font-exo2 text-xl md:text-2xl font-bold text-foreground">
-                    {filter.count}
-                  </span>
-                  <span className="text-[9px] md:text-[10px] text-muted-foreground truncate">
-                    {filter.filter_type === 'default' && filter.default_filter_value === 'all' && 'Total de conversas'}
-                    {filter.filter_type === 'default' && filter.default_filter_value === 'bot' && 'Bot ativo'}
-                    {filter.filter_type === 'default' && filter.default_filter_value === 'humano' && 'Atend. humano'}
-                    {filter.filter_type === 'default' && filter.default_filter_value === 'fluxo_inicial' && 'Flow interativo'}
-                    {filter.filter_type === 'default' && filter.default_filter_value === 'transferido' && 'Aguardando'}
-                    {filter.filter_type === 'tag' && 'com tag'}
-                    {filter.filter_type === 'column' && 'no estágio'}
-                  </span>
+                {/* Ícone */}
+                <IconComponent className={cn(
+                  "h-4 w-4 md:h-5 md:w-5 opacity-50 group-hover:opacity-70 transition-opacity flex-shrink-0",
+                  colorClass.split(' ')[0]
+                )} />
+
+                {/* Número */}
+                <span className="font-exo2 text-xl md:text-2xl font-bold text-foreground">
+                  {filter.count}
+                </span>
+
+                {/* Título */}
+                <div className={cn(
+                  "text-[10px] md:text-xs font-medium tracking-wide uppercase whitespace-nowrap",
+                  isActive ? colorClass.split(' ')[0] : "text-muted-foreground"
+                )}>
+                  {filter.label}
                 </div>
               </button>
             )
@@ -169,8 +162,9 @@ export const ConversationsHeader = ({
           <button
             onClick={() => setShowFilterModal(true)}
             className={cn(
-              "relative p-2.5 md:p-3 rounded-lg border-2 border-dashed transition-all duration-200 group h-[60px] md:h-[65px]",
-              "bg-surface border-border/50 hover:border-primary/50 hover:bg-primary/5 flex flex-col items-center justify-center gap-1"
+              "relative px-3 md:px-4 py-2.5 md:py-3 rounded-lg border-2 border-dashed transition-all duration-200 group",
+              "bg-surface border-border/50 hover:border-primary/50 hover:bg-primary/5",
+              "flex items-center justify-center gap-2 min-w-fit"
             )}
           >
             <Settings className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground group-hover:text-primary transition-colors" />
