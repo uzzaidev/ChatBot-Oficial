@@ -25,6 +25,7 @@ import { createServerClient, createServiceRoleClient } from "@/lib/supabase";
 import { processDocumentWithChunking } from "@/nodes/processDocumentWithChunking";
 import { getSharedGatewayConfig } from "@/lib/ai-gateway/config";
 import { analyzeImageFromBuffer } from "@/lib/openai";
+import { getBotConfig } from "@/lib/config";
 // pdf-parse v1.1.0 uses a function-based API that works in serverless environments
 // It bundles an older version of pdf.js (v1.9.426) that doesn't require browser APIs like DOMMatrix
 import * as pdfParseModule from "pdf-parse";
@@ -32,10 +33,11 @@ const pdfParse = (pdfParseModule as any).default || pdfParseModule;
 
 export const dynamic = "force-dynamic";
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const DEFAULT_MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB padrão
 const ALLOWED_TYPES = [
   "application/pdf",
   "text/plain",
+  "text/markdown",
   "image/jpeg",
   "image/png",
   "image/webp",
@@ -48,6 +50,7 @@ const EMPTY_TEXT_ERROR_MESSAGES: Record<string, string> = {
   "application/pdf":
     "O PDF não contém texto extraível. Verifique se não é um PDF de imagens ou protegido.",
   "text/plain": "O arquivo de texto está vazio.",
+  "text/markdown": "O arquivo Markdown está vazio.",
   "image/jpeg": "Não foi possível extrair texto da imagem.",
   "image/png": "Não foi possível extrair texto da imagem.",
   "image/webp": "Não foi possível extrair texto da imagem.",
@@ -294,6 +297,18 @@ export async function POST(request: NextRequest) {
     // 2.5. Create service role client for Storage operations (bypasses RLS)
     const supabaseServiceRole = createServiceRoleClient();
 
+    // 2.6. Buscar tamanho máximo configurado do backend
+    let maxFileSize = DEFAULT_MAX_FILE_SIZE;
+    try {
+      const maxUploadSizeConfig = await getBotConfig(clientId, 'knowledge_media:max_upload_size_mb');
+      if (maxUploadSizeConfig !== null) {
+        maxFileSize = Number(maxUploadSizeConfig) * 1024 * 1024; // Converter MB para bytes
+      }
+    } catch (error) {
+      // Usa valor padrão se der erro
+      console.error('Erro ao buscar tamanho máximo de upload:', error);
+    }
+
     // 3. Parse multipart form data
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
@@ -307,16 +322,22 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Validate file
-    if (!ALLOWED_TYPES.includes(file.type)) {
+    // Check MIME type or file extension for .md files
+    const fileName = file.name.toLowerCase()
+    const isMarkdown = fileName.endsWith('.md') || fileName.endsWith('.markdown')
+    const isValidType = ALLOWED_TYPES.includes(file.type) || isMarkdown
+    
+    if (!isValidType) {
       return NextResponse.json(
-        { error: `Invalid file type. Allowed: ${ALLOWED_TYPES.join(", ")}` },
+        { error: `Invalid file type. Allowed: PDF, TXT, MD, and images (JPG, PNG, WEBP)` },
         { status: 400 },
       );
     }
 
-    if (file.size > MAX_FILE_SIZE) {
+    if (file.size > maxFileSize) {
+      const maxSizeMB = maxFileSize / 1024 / 1024;
       return NextResponse.json(
-        { error: `File too large. Max size: ${MAX_FILE_SIZE / 1024 / 1024}MB` },
+        { error: `File too large. Max size: ${maxSizeMB}MB` },
         { status: 400 },
       );
     }
@@ -378,6 +399,9 @@ export async function POST(request: NextRequest) {
           { status: 400 },
         );
       }
+    } else if (file.type === "text/markdown" || isMarkdown) {
+      // Markdown files - treat as plain text
+      text = await file.text();
     } else {
       // text/plain
       text = await file.text();

@@ -514,9 +514,14 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
   }
 
   // Dynamic styles based on message direction (WhatsApp-style)
+  // Use inline styles with CSS variables for dynamic theming
+  const bubbleColorStyle = isIncoming
+    ? { backgroundColor: 'var(--chat-incoming-color, #2d3338)' }
+    : { backgroundColor: 'var(--chat-outgoing-color, #005c4b)' }
+
   const bubbleStyles = isIncoming
-    ? 'bg-[hsl(var(--message-incoming-bg))] shadow-md border border-border'
-    : 'bg-gradient-to-br from-primary to-secondary shadow-lg'
+    ? 'shadow-md border border-border'
+    : 'shadow-lg'
 
   // Text color classes - incoming uses CSS variable, outgoing uses white
   const textColor = isIncoming ? 'text-[hsl(var(--message-incoming-text))]' : 'text-white'
@@ -527,6 +532,7 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
     <div className={'flex ' + (isIncoming ? 'justify-start' : 'justify-end') + ' mb-2 px-2'}>
       <div
         className={`relative group max-w-[85%] sm:max-w-[75%] md:max-w-[70%] rounded-lg p-3 break-words ${bubbleStyles}`}
+        style={bubbleColorStyle}
       >
         {/* Action menu - WhatsApp style dropdown */}
         {(onReaction || onDelete) && (

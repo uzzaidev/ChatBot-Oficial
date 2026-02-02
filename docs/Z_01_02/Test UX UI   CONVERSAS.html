@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM Gestão de Conversas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Fonte Inter */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+
+        /* Scrollbar customizada */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+
+        /* Animação do Modal */
+        .modal-enter { opacity: 0; transform: scale(0.95); }
+        .modal-enter-active { opacity: 1; transform: scale(1); transition: opacity 0.2s, transform 0.2s; }
+        .modal-exit { opacity: 0; transform: scale(0.95); transition: opacity 0.2s, transform 0.2s; }
+
+        /* Estilo dos Cards de Header */
+        .stat-card {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.15);
+            border-color: #00a884;
+        }
+        .stat-card.active {
+            border-color: #00a884;
+            background-color: #2a3942;
+        }
+        
+        /* Estilo especial para o card de adicionar/editar */
+        .add-card {
+            border-style: dashed;
+            border-color: #4b5563;
+        }
+        .add-card:hover {
+            border-color: #00a884;
+            background-color: rgba(0, 168, 132, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-[#111b21] h-screen flex text-gray-100 overflow-hidden">
+
+    <!-- SIDEBAR (Navegação Esquerda) -->
+    <aside class="w-16 bg-[#202c33] flex flex-col items-center py-4 gap-6 border-r border-gray-700 z-20 flex-shrink-0">
+        <div class="p-2 mb-2">
+            <i class="fab fa-whatsapp text-3xl text-[#00a884]"></i>
+        </div>
+        <div class="nav-item group relative cursor-pointer text-[#00a884]"><i class="fas fa-inbox text-xl"></i><span class="absolute left-14 bg-black text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-50">Gestão</span></div>
+        <div class="nav-item group relative cursor-pointer text-gray-400 hover:text-white"><i class="fas fa-users text-xl"></i></div>
+        <div class="nav-item group relative cursor-pointer text-gray-400 hover:text-white"><i class="fas fa-chart-pie text-xl"></i></div>
+        <div class="mt-auto mb-4 cursor-pointer"><img src="https://ui-avatars.com/api/?name=Admin&background=00a884&color=fff" class="w-8 h-8 rounded-full border border-gray-500"></div>
+    </aside>
+
+    <!-- ÁREA PRINCIPAL -->
+    <main class="flex-1 flex flex-col relative min-w-0">
+        
+        <!-- TOP HEADER (Estatísticas / Filtros) -->
+        <!-- Altura aumentada e scroll se necessário -->
+        <header class="bg-[#202c33] border-b border-gray-700 p-6 shadow-md z-10 overflow-y-auto max-h-[50vh]">
+            <div class="mb-4 flex justify-between items-center">
+                <h1 class="text-xl font-bold text-white flex items-center gap-2">
+                    <span class="text-gray-400 font-normal">Gestão /</span> Conversas
+                </h1>
+                <span class="text-xs text-gray-500 bg-gray-800 px-2 py-1 rounded border border-gray-700">Visão Geral</span>
+            </div>
+
+            <!-- Grid 3x3 (3 colunas, 3 linhas) -->
+            <div class="grid grid-cols-3 gap-4">
+                
+                <!-- 1. TODAS -->
+                <div onclick="openGroup('todas')" class="stat-card bg-[#111b21] border border-gray-700 p-3 rounded-lg flex flex-col justify-between h-20 relative overflow-hidden group">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-[#00a884]"></div>
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Todas</span>
+                        <i class="fas fa-comments text-gray-600 group-hover:text-[#00a884] transition"></i>
+                    </div>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-2xl font-bold text-white">45</span>
+                        <span class="text-[10px] text-gray-500">Conversas</span>
+                    </div>
+                </div>
+
+                <!-- 2. BOT -->
+                <div onclick="openGroup('bot')" class="stat-card bg-[#111b21] border border-gray-700 p-3 rounded-lg flex flex-col justify-between h-20 relative overflow-hidden group">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Bot</span>
+                        <i class="fas fa-robot text-gray-600 group-hover:text-red-500 transition"></i>
+                    </div>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-2xl font-bold text-white">12</span>
+                        <span class="text-[10px] text-gray-500">Ativos</span>
+                    </div>
+                </div>
+
+                <!-- 3. HUMANO -->
+                <div onclick="openGroup('humano')" class="stat-card bg-[#111b21] border border-gray-700 p-3 rounded-lg flex flex-col justify-between h-20 relative overflow-hidden group">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Humano</span>
+                        <i class="fas fa-headset text-gray-600 group-hover:text-blue-500 transition"></i>
+                    </div>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-2xl font-bold text-white">8</span>
+                        <span class="text-[10px] text-gray-500">Em atend.</span>
+                    </div>
+                </div>
+
+                <!-- 4. EM FLOW -->
+                <div onclick="openGroup('flow')" class="stat-card bg-[#111b21] border border-gray-700 p-3 rounded-lg flex flex-col justify-between h-20 relative overflow-hidden group">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-purple-500"></div>
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Em Flow</span>
+                        <i class="fas fa-network-wired text-gray-600 group-hover:text-purple-500 transition"></i>
+                    </div>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-2xl font-bold text-white">5</span>
+                        <span class="text-[10px] text-gray-500">No fluxo</span>
+                    </div>
+                </div>
+
+                <!-- 5. VEIO PELO INSTA -->
+                <div onclick="openGroup('insta')" class="stat-card bg-[#111b21] border border-gray-700 p-3 rounded-lg flex flex-col justify-between h-20 relative overflow-hidden group">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-pink-600"></div>
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Veio pelo Insta</span>
+                        <i class="fab fa-instagram text-gray-600 group-hover:text-pink-600 transition"></i>
+                    </div>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-2xl font-bold text-white">9</span>
+                        <span class="text-[10px] text-gray-500">Leads</span>
+                    </div>
+                </div>
+
+                <!-- 6. CADASTROU -->
+                <div onclick="openGroup('cadastro')" class="stat-card bg-[#111b21] border border-gray-700 p-3 rounded-lg flex flex-col justify-between h-20 relative overflow-hidden group">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-green-500"></div>
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Cadastrou</span>
+                        <i class="fas fa-user-check text-gray-600 group-hover:text-green-500 transition"></i>
+                    </div>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-2xl font-bold text-white">4</span>
+                        <span class="text-[10px] text-gray-500">Novos</span>
+                    </div>
+                </div>
+
+                <!-- 7. AGENDADOS -->
+                <div onclick="openGroup('agendados')" class="stat-card bg-[#111b21] border border-gray-700 p-3 rounded-lg flex flex-col justify-between h-20 relative overflow-hidden group">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-orange-500"></div>
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Agendados</span>
+                        <i class="fas fa-calendar-alt text-gray-600 group-hover:text-orange-500 transition"></i>
+                    </div>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-2xl font-bold text-white">3</span>
+                        <span class="text-[10px] text-gray-500">Reuniões</span>
+                    </div>
+                </div>
+
+                <!-- 8. FINALIZADOS -->
+                <div onclick="openGroup('finalizados')" class="stat-card bg-[#111b21] border border-gray-700 p-3 rounded-lg flex flex-col justify-between h-20 relative overflow-hidden group">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-gray-500"></div>
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Finalizados</span>
+                        <i class="fas fa-check-circle text-gray-600 group-hover:text-gray-400 transition"></i>
+                    </div>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-2xl font-bold text-white">4</span>
+                        <span class="text-[10px] text-gray-500">Hoje</span>
+                    </div>
+                </div>
+
+                <!-- 9. + EDITAR (Botão de Ação) -->
+                <div class="stat-card add-card bg-[#111b21] p-3 rounded-lg flex flex-col items-center justify-center h-20 text-gray-400 hover:text-[#00a884] transition cursor-pointer">
+                    <i class="fas fa-plus text-xl mb-1"></i>
+                    <span class="text-xs font-semibold uppercase tracking-wider">Editar / Novo</span>
+                </div>
+
+            </div>
+        </header>
+
+        <!-- CONTAINER CENTRAL -->
+        <div class="flex-1 flex overflow-hidden relative">
+            
+            <!-- ÁREA DE CHAT (Inicialmente com Empty State) -->
+            <div id="chat-area" class="flex-1 bg-[#0b141a] flex flex-col relative w-full h-full">
+                <!-- Imagem de Fundo Padrão do WhatsApp -->
+                <div class="absolute inset-0 opacity-5 pointer-events-none" style="background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');"></div>
+                
+                <!-- Estado Vazio (Sem conversa selecionada) -->
+                <div id="empty-state" class="flex-1 flex flex-col items-center justify-center text-center p-10 z-10">
+                    <div class="w-32 h-32 bg-[#202c33] rounded-full flex items-center justify-center mb-6 shadow-lg animate-pulse">
+                        <i class="fas fa-comments text-5xl text-[#00a884]"></i>
+                    </div>
+                    <h2 class="text-2xl font-light text-gray-200 mb-2">Selecione um grupo acima</h2>
+                    <p class="text-gray-500 max-w-md">Clique nos cards (Insta, Bot, Agendados, etc.) para abrir a lista de conversas.</p>
+                </div>
+
+                <!-- Interface de Chat Real (Oculta por padrão) -->
+                <div id="chat-interface" class="hidden flex-col h-full z-10">
+                    <!-- Chat Header -->
+                    <div class="bg-[#202c33] px-4 py-3 flex justify-between items-center border-b border-gray-700 shadow-sm z-20">
+                        <div class="flex items-center gap-3">
+                            <img id="chat-avatar" src="" class="w-10 h-10 rounded-full object-cover">
+                            <div>
+                                <h3 id="chat-name" class="font-medium text-white">Nome do Contato</h3>
+                                <p class="text-xs text-gray-400">online hoje às 14:30</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4 text-gray-400">
+                            <i class="fas fa-search cursor-pointer hover:text-white"></i>
+                            <i class="fas fa-paperclip cursor-pointer hover:text-white"></i>
+                            <i class="fas fa-ellipsis-v cursor-pointer hover:text-white"></i>
+                        </div>
+                    </div>
+
+                    <!-- Chat Messages -->
+                    <div class="flex-1 overflow-y-auto p-8 space-y-4" id="messages-container">
+                        <!-- Mensagens injetadas via JS -->
+                    </div>
+
+                    <!-- Chat Input -->
+                    <div class="bg-[#202c33] px-4 py-3 flex items-center gap-4 z-20 border-t border-gray-700">
+                        <i class="far fa-smile text-2xl text-gray-400 cursor-pointer hover:text-white"></i>
+                        <input type="text" placeholder="Digite uma mensagem" class="flex-1 bg-[#2a3942] rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-1 focus:ring-[#00a884] placeholder-gray-500">
+                        <button class="text-[#00a884] hover:text-[#029676] transition"><i class="fas fa-paper-plane text-xl"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- POP-UP (MODAL) DA LISTA DE GRUPOS -->
+            <div id="group-modal" class="absolute top-4 left-4 bottom-4 w-96 bg-[#202c33] shadow-2xl rounded-xl border border-gray-700 transform -translate-x-full transition-transform duration-300 z-30 flex flex-col hidden">
+                
+                <!-- Modal Header -->
+                <div class="p-4 border-b border-gray-700 flex justify-between items-center bg-[#111b21] rounded-t-xl">
+                    <h3 class="font-bold text-lg text-white flex items-center gap-2">
+                        <i id="modal-icon" class="fas fa-list text-[#00a884]"></i>
+                        <span id="modal-title">Grupo</span>
+                    </h3>
+                    <button onclick="closeModal()" class="text-gray-500 hover:text-white">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <!-- Search inside Modal -->
+                <div class="p-3 bg-[#111b21]">
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-3 top-3 text-gray-500 text-sm"></i>
+                        <input type="text" placeholder="Pesquisar..." class="w-full bg-[#202c33] text-gray-200 text-sm rounded-lg pl-10 pr-3 py-2 focus:outline-none focus:border-[#00a884] border border-transparent">
+                    </div>
+                </div>
+
+                <!-- List Content -->
+                <div id="modal-list" class="flex-1 overflow-y-auto overflow-x-hidden">
+                    <!-- Lista de contatos gerada via JS -->
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // Dados Mockados - Expandidos
+        const data = {
+            'bot': [
+                { id: 1, name: "Pedro Vitor PV", msg: "Se precisar de mais detalhes...", time: "19h atrás", unread: 9, status: "Em Flow", avatar: "PV" },
+                { id: 2, name: "Pedro Henrique Corso", msg: "Documentos enviados: INDICE...", time: "1d atrás", unread: 8, status: "Em Flow", avatar: "PC" },
+                { id: 3, name: "Luis Fernando Boff", msg: "Como posso ajudar você hoje?", time: "2d atrás", unread: 0, status: "Bot", avatar: "LF" }
+            ],
+            'humano': [
+                { id: 5, name: "João Souza", msg: "Aguardo o retorno.", time: "10 min", unread: 2, status: "Humano", avatar: "JS" },
+                { id: 8, name: "Ana Clara", msg: "Poderia verificar o anexo?", time: "30 min", unread: 1, status: "Humano", avatar: "AC" }
+            ],
+            'flow': [
+                { id: 6, name: "Carlos Tech", msg: "Sim, selecionei a opção 2.", time: "14:30", unread: 1, status: "Flow", avatar: "CT" }
+            ],
+            'insta': [
+                { id: 9, name: "@marcos_design", msg: "Vi o story sobre a promoção", time: "5 min", unread: 1, status: "Insta", avatar: "MD" },
+                { id: 10, name: "@julia.fit", msg: "Quanto custa o plano mensal?", time: "1h atrás", unread: 0, status: "Insta", avatar: "JF" }
+            ],
+            'cadastro': [
+                { id: 11, name: "Loja Exemplo Ltda", msg: "Cadastro realizado com sucesso!", time: "Ontem", unread: 0, status: "Novo", avatar: "LE" }
+            ],
+            'agendados': [
+                { id: 12, name: "Roberto M. (CEO)", msg: "Confirmado para às 16h.", time: "09:00", unread: 0, status: "Agenda", avatar: "RM" }
+            ],
+            'finalizados': [
+                 { id: 4, name: "Maria Silva", msg: "Obrigada pelo atendimento!", time: "Hoje", unread: 0, status: "Finalizado", avatar: "MS" },
+            ]
+        };
+
+        // Combine all for 'todas'
+        data['todas'] = [
+            ...data['bot'], ...data['humano'], ...data['flow'], 
+            ...data['insta'], ...data['cadastro'], ...data['agendados'], ...data['finalizados']
+        ];
+
+        const modal = document.getElementById('group-modal');
+        const modalList = document.getElementById('modal-list');
+        const modalTitle = document.getElementById('modal-title');
+        const emptyState = document.getElementById('empty-state');
+        const chatInterface = document.getElementById('chat-interface');
+        
+        let currentGroup = '';
+
+        function openGroup(groupKey) {
+            currentGroup = groupKey;
+            const items = data[groupKey] || [];
+            
+            // Map de nomes amigáveis
+            const titles = {
+                'todas': 'Todas as Conversas',
+                'bot': 'Atendimentos por Bot',
+                'humano': 'Atendimentos Humanos',
+                'flow': 'Conversas em Fluxo',
+                'insta': 'Leads do Instagram',
+                'cadastro': 'Novos Cadastros',
+                'agendados': 'Reuniões Agendadas',
+                'finalizados': 'Conversas Finalizadas'
+            };
+
+            modalTitle.innerText = titles[groupKey] || groupKey;
+            modalList.innerHTML = '';
+            
+            if (items.length === 0) {
+                modalList.innerHTML = `<div class="p-8 text-center text-gray-500 text-sm">Nenhuma conversa neste grupo.</div>`;
+            } else {
+                items.forEach(item => {
+                    const el = document.createElement('div');
+                    el.className = "flex items-center gap-3 p-3 hover:bg-[#2a3942] cursor-pointer border-b border-gray-800 transition relative group-item";
+                    el.onclick = () => openChat(item);
+                    el.innerHTML = `
+                        <div class="relative">
+                            <div class="w-10 h-10 rounded-full bg-[#00a884] text-white flex items-center justify-center font-bold text-sm overflow-hidden">
+                                ${item.avatar.length > 2 ? `<img src="${item.avatar}" class="w-full h-full object-cover">` : item.avatar}
+                            </div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-baseline mb-1">
+                                <span class="font-medium text-gray-200 truncate text-sm">${item.name}</span>
+                                <span class="text-[10px] text-gray-500">${item.time}</span>
+                            </div>
+                            <p class="text-xs text-gray-400 truncate">${item.msg}</p>
+                            
+                             <div class="mt-2 flex gap-1">
+                                <span class="text-[9px] px-1.5 py-0.5 rounded border border-gray-600 text-gray-400 bg-gray-800/50">
+                                    <i class="fas fa-hashtag text-[8px] mr-1"></i>${item.status}
+                                </span>
+                             </div>
+                        </div>
+                        ${item.unread ? `<div class="absolute right-3 top-10 bg-[#00a884] text-[#111b21] text-[10px] font-bold px-1.5 rounded-full min-w-[18px] text-center">${item.unread}</div>` : ''}
+                    `;
+                    modalList.appendChild(el);
+                });
+            }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('-translate-x-full');
+            }, 10);
+        }
+
+        function closeModal() {
+            modal.classList.add('-translate-x-full');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        function openChat(contact) {
+            emptyState.classList.add('hidden');
+            chatInterface.classList.remove('hidden');
+            chatInterface.classList.add('flex');
+
+            document.getElementById('chat-name').innerText = contact.name;
+            document.getElementById('chat-avatar').src = `https://ui-avatars.com/api/?name=${contact.avatar}&background=00a884&color=fff`;
+
+            const msgContainer = document.getElementById('messages-container');
+            msgContainer.innerHTML = `
+                 <div class="flex justify-center mb-4">
+                    <span class="bg-[#1f2c34] text-[#8696a0] text-xs px-3 py-1.5 rounded-lg shadow uppercase">Hoje</span>
+                </div>
+                <div class="flex flex-col space-y-1 items-start group">
+                    <div class="bg-[#202c33] p-3 rounded-lg rounded-tl-none max-w-md text-sm text-gray-100 shadow-sm relative">
+                        <p>Olá, ${contact.name}! Como posso ajudar?</p>
+                        <span class="text-[10px] text-gray-400 block text-right mt-1">10:00</span>
+                    </div>
+                </div>
+                <div class="flex flex-col space-y-1 items-end group">
+                    <div class="bg-[#005c4b] p-3 rounded-lg rounded-tr-none max-w-md text-sm text-white shadow-sm relative">
+                        <p>${contact.msg}</p>
+                         <span class="text-[10px] text-green-100 block text-right mt-1 flex items-center justify-end gap-1">
+                            10:02 <i class="fas fa-check-double text-blue-300"></i>
+                        </span>
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

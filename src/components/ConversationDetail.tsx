@@ -687,7 +687,16 @@ export const ConversationDetail = ({
             <span className="text-sm text-muted-foreground">Nenhuma mensagem ainda</span>
           </div>
         ) : (
-          <ScrollArea ref={scrollAreaRef} className="h-full px-2 md:px-4">
+          <ScrollArea
+            ref={scrollAreaRef}
+            className="h-full px-2 md:px-4"
+            style={{
+              backgroundImage: 'var(--chat-background-image, none)',
+              backgroundSize: 'auto',
+              backgroundRepeat: 'repeat',
+              backgroundPosition: 'center',
+            }}
+          >
             <div className="py-3 md:py-4 space-y-2">
               {messagesWithDates.map((item, index) => {
                 if (item.type === 'date') {

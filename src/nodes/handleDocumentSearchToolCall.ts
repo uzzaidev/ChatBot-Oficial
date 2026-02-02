@@ -22,6 +22,7 @@ import { searchDocumentInKnowledge } from "./searchDocumentInKnowledge";
 import { sendDocumentMessage, sendImageMessage } from "@/lib/meta";
 import { saveChatMessage, ErrorDetails } from "@/nodes/saveChatMessage";
 import type { ClientConfig, StoredMediaMetadata } from "@/lib/types";
+import { createServiceRoleClient } from "@/lib/supabase";
 
 export interface HandleDocumentSearchInput {
   /** Tool call object do AI response */
@@ -45,7 +46,10 @@ export interface HandleDocumentSearchInput {
 
 export interface HandleDocumentSearchOutput {
   /** Sucesso ou falha */
-  success: boolean;
+  success: boolean
+  
+  /** Quantidade de arquivos de texto (.txt/.md) encontrados (não enviados como anexo) */
+  textFilesFound?: number;
 
   /** Mensagem para retornar ao agente (será incluída na conversa) */
   message: string;
@@ -187,13 +191,62 @@ export const handleDocumentSearchToolCall = async (
 
     // 4. Enviar documentos via WhatsApp
     let sentCount = 0;
+    let textFilesFound = 0; // Contador de arquivos .txt/.md encontrados (não enviados)
+    const textFilesNames: string[] = []; // Nomes dos arquivos de texto encontrados
+    const textFilesContent: string[] = []; // Conteúdo dos arquivos de texto (para o agente usar)
     const filesSent: string[] = [];
     const filesMetadata: Array<
       { url: string; filename: string; mimeType: string; size: number }
     > = [];
     const errors: string[] = [];
 
+    // Buscar conteúdo dos arquivos de texto encontrados
+    const supabaseServiceRole = createServiceRoleClient();
+    const supabaseAny = supabaseServiceRole as any;
+
     for (const doc of results) {
+      // ✅ FILTRO: Arquivos .txt e .md NUNCA são enviados como anexo
+      // Eles são usados apenas para RAG (busca semântica de informações)
+      const fileName = doc.filename.toLowerCase();
+      const isTextFile = fileName.endsWith('.txt') || 
+                        fileName.endsWith('.md') || 
+                        fileName.endsWith('.markdown') ||
+                        doc.originalMimeType === 'text/plain' ||
+                        doc.originalMimeType === 'text/markdown';
+      
+      if (isTextFile) {
+        // Arquivo de texto - buscar TODOS os chunks para retornar conteúdo ao agente
+        console.log(`ℹ️ [handleDocumentSearchToolCall] Found text file, fetching content: ${doc.filename}`);
+        textFilesFound++;
+        textFilesNames.push(doc.filename);
+        
+        try {
+          // Buscar todos os chunks deste arquivo
+          const { data: chunks, error: chunksError } = await supabaseAny
+            .from("documents")
+            .select("content, metadata")
+            .eq("client_id", clientId)
+            .eq("metadata->>filename", doc.filename)
+            .order("metadata->>chunkIndex", { ascending: true });
+
+          if (!chunksError && chunks && chunks.length > 0) {
+            // Concatenar conteúdo de todos os chunks
+            const fullContent = chunks
+              .map((chunk: any) => chunk.content)
+              .join("\n\n");
+            
+            textFilesContent.push(`\n\n---\n📄 ${doc.filename}\n---\n${fullContent}`);
+            console.log(`✅ [handleDocumentSearchToolCall] Retrieved ${chunks.length} chunks from ${doc.filename}`);
+          } else {
+            console.warn(`⚠️ [handleDocumentSearchToolCall] No chunks found for ${doc.filename}`);
+          }
+        } catch (fetchError) {
+          console.error(`❌ [handleDocumentSearchToolCall] Error fetching chunks for ${doc.filename}:`, fetchError);
+        }
+        
+        continue; // Pula para o próximo documento (não envia como anexo)
+      }
+
       // Determinar tipo de mídia baseado no MIME type (moved outside try for catch access)
       const isImage = doc.originalMimeType.startsWith("image/");
 
@@ -299,13 +352,32 @@ export const handleDocumentSearchToolCall = async (
     // 5. Montar mensagem de retorno
     // ✅ FIX: Errors are now saved as failed messages in the conversation
     // No need to return error messages - they're visible in the chat
-    const message = "";
+    let message = "";
+    
+    // Informar sobre arquivos de texto encontrados e incluir o CONTEÚDO para o agente usar
+    if (textFilesFound > 0) {
+      message += `ℹ️ Encontrei ${textFilesFound} arquivo(s) de texto (${textFilesNames.join(', ')}). `;
+      message += "Estes arquivos são usados apenas para busca de informações (RAG) e não são enviados como anexo.\n\n";
+      message += "**CONTEÚDO DOS ARQUIVOS DE TEXTO ENCONTRADOS:**\n";
+      message += "Use as informações abaixo para responder ao usuário com precisão:\n";
+      message += textFilesContent.join("\n\n");
+      message += "\n\n---\n";
+      message += "**IMPORTANTE:** Use essas informações para responder ao usuário. Cite que a informação vem da base de conhecimento.\n";
+    }
+    
+    if (sentCount > 0) {
+      if (message) message += "\n\n";
+      message += `✅ Enviei ${sentCount} documento(s) via WhatsApp: ${filesSent.join(', ')}.`;
+    } else if (textFilesFound === 0) {
+      message = "Nenhum documento encontrado para enviar.";
+    }
 
     return {
-      success: sentCount > 0,
+      success: sentCount > 0 || textFilesFound > 0, // Sucesso se enviou arquivos OU encontrou arquivos de texto
       message,
       documentsFound: results.length,
       documentsSent: sentCount,
+      textFilesFound, // Novo campo: quantidade de arquivos de texto encontrados
       filesSent,
       filesMetadata,
       searchMetadata: metadata,
