@@ -72,9 +72,12 @@
     --message-incoming-text: 210 40% 98%; /* Light text */
 
     /* Chat theme customization (sobrescritas por useChatTheme.ts) */
-    --chat-incoming-color: #2d3338; /* Cor customizável das mensagens recebidas */
-    --chat-outgoing-color: #005c4b;  /* Cor customizável das mensagens enviadas */
-    --chat-background-image: none;   /* Imagem de fundo customizável */
+    /* Dark mode: incoming cinza escuro, outgoing verde - ambos com texto branco */
+    --chat-incoming-color: #202c33; /* Cinza escuro WhatsApp style */
+    --chat-outgoing-color: #005c4b; /* Verde WhatsApp oficial */
+    --chat-incoming-text-color: #FFFFFF; /* Texto branco para incoming */
+    --chat-outgoing-text-color: #FFFFFF; /* Texto branco para outgoing */
+    --chat-background-image: none;  /* Imagem de fundo customizável */
   }
 
   .light {
@@ -116,6 +119,13 @@
     --message-outgoing-bg: 153 100% 18%; /* #005c4b - Verde WhatsApp oficial */
     --message-incoming-bg: 0 0% 100%; /* White for incoming in light mode */
     --message-incoming-text: 220 13% 18%; /* Dark text */
+
+    /* Chat theme customization (light mode) */
+    /* Light mode: incoming branco/cinza claro com texto escuro, outgoing verde com texto branco */
+    --chat-incoming-color: #ffffff; /* Branco para mensagens recebidas */
+    --chat-outgoing-color: #128c7e; /* Verde WhatsApp (um pouco mais claro para light mode) */
+    --chat-incoming-text-color: #1f2937; /* Texto escuro para incoming no light mode */
+    --chat-outgoing-text-color: #FFFFFF; /* Texto branco para outgoing */
   }
 }
 

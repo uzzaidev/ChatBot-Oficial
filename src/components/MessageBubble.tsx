@@ -523,10 +523,17 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
     ? 'shadow-md border border-border'
     : 'shadow-lg'
 
-  // Text color classes - incoming uses CSS variable, outgoing uses white
-  const textColor = isIncoming ? 'text-[hsl(var(--message-incoming-text))]' : 'text-white'
-  const textColorMuted = isIncoming ? 'text-[hsl(var(--message-incoming-text))]/70' : 'text-white/70'
-  const textColorSubtle = isIncoming ? 'text-[hsl(var(--message-incoming-text))]/80' : 'text-white/80'
+  // Text color classes - uses CSS variables for customizable theme colors
+  // Falls back to default white if CSS variable not set
+  const textColor = isIncoming
+    ? 'text-[var(--chat-incoming-text-color,#FFFFFF)]'
+    : 'text-[var(--chat-outgoing-text-color,#FFFFFF)]'
+  const textColorMuted = isIncoming
+    ? 'text-[var(--chat-incoming-text-color,#FFFFFF)]/70'
+    : 'text-[var(--chat-outgoing-text-color,#FFFFFF)]/70'
+  const textColorSubtle = isIncoming
+    ? 'text-[var(--chat-incoming-text-color,#FFFFFF)]/80'
+    : 'text-[var(--chat-outgoing-text-color,#FFFFFF)]/80'
 
   return (
     <div className={'flex ' + (isIncoming ? 'justify-start' : 'justify-end') + ' mb-2 px-2'}>

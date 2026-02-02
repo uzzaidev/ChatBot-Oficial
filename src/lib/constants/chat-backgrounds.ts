@@ -13,6 +13,13 @@ export interface ChatBackground {
   thumbnail: string
   category: 'default' | 'solid' | 'abstract' | 'nature' | 'geometric'
   description?: string
+  /** Suggested colors for this background - auto-applied when selecting */
+  suggestedColors?: {
+    incomingBg: string
+    incomingText: string
+    outgoingBg: string
+    outgoingText: string
+  }
 }
 
 export const DEFAULT_BACKGROUNDS: ChatBackground[] = [
@@ -22,7 +29,13 @@ export const DEFAULT_BACKGROUNDS: ChatBackground[] = [
     url: '/assets/chat-backgrounds/whatsapp-default.png',
     thumbnail: '/assets/chat-backgrounds/thumbs/whatsapp-default.png',
     category: 'default',
-    description: 'Fundo padrão original do WhatsApp com padrão sutil'
+    description: 'Fundo padrão original do WhatsApp com padrão sutil',
+    suggestedColors: {
+      incomingBg: '#202c33',
+      incomingText: '#FFFFFF',
+      outgoingBg: '#005c4b',
+      outgoingText: '#FFFFFF',
+    }
   },
   {
     id: 'dark-solid',
@@ -30,7 +43,13 @@ export const DEFAULT_BACKGROUNDS: ChatBackground[] = [
     url: '/assets/chat-backgrounds/dark-solid.png',
     thumbnail: '/assets/chat-backgrounds/thumbs/dark-solid.png',
     category: 'solid',
-    description: 'Fundo escuro sólido para modo noturno'
+    description: 'Fundo escuro sólido para modo noturno',
+    suggestedColors: {
+      incomingBg: '#2a2f32',
+      incomingText: '#FFFFFF',
+      outgoingBg: '#005c4b',
+      outgoingText: '#FFFFFF',
+    }
   },
   {
     id: 'light-solid',
@@ -38,7 +57,13 @@ export const DEFAULT_BACKGROUNDS: ChatBackground[] = [
     url: '/assets/chat-backgrounds/light-solid.png',
     thumbnail: '/assets/chat-backgrounds/thumbs/light-solid.png',
     category: 'solid',
-    description: 'Fundo claro bege estilo WhatsApp clássico'
+    description: 'Fundo claro bege estilo WhatsApp clássico',
+    suggestedColors: {
+      incomingBg: '#FFFFFF',
+      incomingText: '#1f2937',
+      outgoingBg: '#d9fdd3',
+      outgoingText: '#1f2937',
+    }
   },
   {
     id: 'abstract-green',
@@ -46,7 +71,13 @@ export const DEFAULT_BACKGROUNDS: ChatBackground[] = [
     url: '/assets/chat-backgrounds/abstract-green.png',
     thumbnail: '/assets/chat-backgrounds/thumbs/abstract-green.png',
     category: 'abstract',
-    description: 'Gradiente verde menta com ondas abstratas'
+    description: 'Gradiente verde menta com ondas abstratas',
+    suggestedColors: {
+      incomingBg: '#1a3a32',
+      incomingText: '#FFFFFF',
+      outgoingBg: '#0d5c4b',
+      outgoingText: '#FFFFFF',
+    }
   },
   {
     id: 'abstract-purple',
@@ -54,7 +85,13 @@ export const DEFAULT_BACKGROUNDS: ChatBackground[] = [
     url: '/assets/chat-backgrounds/abstract-purple.png',
     thumbnail: '/assets/chat-backgrounds/thumbs/abstract-purple.png',
     category: 'abstract',
-    description: 'Gradiente roxo e rosa com formas geométricas'
+    description: 'Gradiente roxo e rosa com formas geométricas',
+    suggestedColors: {
+      incomingBg: '#2d2440',
+      incomingText: '#FFFFFF',
+      outgoingBg: '#5b3a7a',
+      outgoingText: '#FFFFFF',
+    }
   },
   {
     id: 'nature-leaves',
@@ -62,7 +99,13 @@ export const DEFAULT_BACKGROUNDS: ChatBackground[] = [
     url: '/assets/chat-backgrounds/nature-leaves.png',
     thumbnail: '/assets/chat-backgrounds/thumbs/nature-leaves.png',
     category: 'nature',
-    description: 'Folhas verdes em fundo escuro com opacidade'
+    description: 'Folhas verdes em fundo escuro com opacidade',
+    suggestedColors: {
+      incomingBg: '#1e3a2f',
+      incomingText: '#FFFFFF',
+      outgoingBg: '#0d5c4b',
+      outgoingText: '#FFFFFF',
+    }
   },
   {
     id: 'nature-flowers',
@@ -70,7 +113,13 @@ export const DEFAULT_BACKGROUNDS: ChatBackground[] = [
     url: '/assets/chat-backgrounds/nature-flowers.png',
     thumbnail: '/assets/chat-backgrounds/thumbs/nature-flowers.png',
     category: 'nature',
-    description: 'Flores suaves em fundo claro'
+    description: 'Flores suaves em fundo claro',
+    suggestedColors: {
+      incomingBg: '#FFFFFF',
+      incomingText: '#1f2937',
+      outgoingBg: '#dcf8c6',
+      outgoingText: '#1f2937',
+    }
   },
   {
     id: 'geometric',
@@ -78,7 +127,13 @@ export const DEFAULT_BACKGROUNDS: ChatBackground[] = [
     url: '/assets/chat-backgrounds/geometric.png',
     thumbnail: '/assets/chat-backgrounds/thumbs/geometric.png',
     category: 'geometric',
-    description: 'Padrão geométrico sutil em tons neutros'
+    description: 'Padrão geométrico sutil em tons neutros',
+    suggestedColors: {
+      incomingBg: '#e8e8e8',
+      incomingText: '#1f2937',
+      outgoingBg: '#128c7e',
+      outgoingText: '#FFFFFF',
+    }
   }
 ]
 

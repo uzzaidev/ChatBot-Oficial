@@ -149,7 +149,7 @@ export const useChatTheme = (): UseChatThemeReturn => {
    * (usado para preview em tempo real e aplicação persistente)
    */
   const applyTheme = useCallback((themeToApply: ChatTheme) => {
-    // Aplicar cores das mensagens via CSS variables
+    // Aplicar cores de fundo das mensagens via CSS variables
     document.documentElement.style.setProperty(
       '--chat-incoming-color',
       themeToApply.incomingMessageColor
@@ -157,6 +157,16 @@ export const useChatTheme = (): UseChatThemeReturn => {
     document.documentElement.style.setProperty(
       '--chat-outgoing-color',
       themeToApply.outgoingMessageColor
+    )
+
+    // Aplicar cores de texto das mensagens via CSS variables
+    document.documentElement.style.setProperty(
+      '--chat-incoming-text-color',
+      themeToApply.incomingTextColor || '#FFFFFF'
+    )
+    document.documentElement.style.setProperty(
+      '--chat-outgoing-text-color',
+      themeToApply.outgoingTextColor || '#FFFFFF'
     )
 
     // Aplicar background
