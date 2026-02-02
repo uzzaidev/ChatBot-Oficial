@@ -23,7 +23,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient, createServiceRoleClient } from "@/lib/supabase";
 import { processDocumentWithChunking } from "@/nodes/processDocumentWithChunking";
-import { getSharedGatewayConfig } from "@/lib/ai-gateway/config";
 import { analyzeImageFromBuffer } from "@/lib/openai";
 import { getBotConfig } from "@/lib/config";
 // pdf-parse v1.1.0 uses a function-based API that works in serverless environments
@@ -55,51 +54,6 @@ const EMPTY_TEXT_ERROR_MESSAGES: Record<string, string> = {
   "image/png": "Não foi possível extrair texto da imagem.",
   "image/webp": "Não foi possível extrair texto da imagem.",
   "image/jpg": "Não foi possível extrair texto da imagem.",
-};
-
-const resolveOpenAIApiKey = async (
-  clientId: string,
-  supabaseServiceRole: ReturnType<typeof createServiceRoleClient>,
-): Promise<string> => {
-  const supabaseAny = supabaseServiceRole as any;
-
-  const { data: client, error } = await supabaseAny
-    .from("clients")
-    .select("ai_keys_mode, openai_api_key_secret_id")
-    .eq("id", clientId)
-    .single();
-
-  if (error || !client) {
-    throw new Error("Client config not found");
-  }
-
-  const aiKeysMode =
-    (client.ai_keys_mode === "byok_allowed"
-      ? "byok_allowed"
-      : "platform_only") as "platform_only" | "byok_allowed";
-
-  const sharedGatewayConfig = await getSharedGatewayConfig();
-  const sharedOpenaiKey = sharedGatewayConfig?.providerKeys?.openai || null;
-
-  const byokOpenaiKey =
-    aiKeysMode === "byok_allowed" && client.openai_api_key_secret_id
-      ? await supabaseAny
-        .rpc("get_client_secret", {
-          secret_id: client.openai_api_key_secret_id,
-        })
-        .then((res: any) => (res?.data as string | null) || null)
-        .catch(() => null)
-      : null;
-
-  const finalOpenaiKey = aiKeysMode === "byok_allowed"
-    ? (byokOpenaiKey || sharedOpenaiKey)
-    : sharedOpenaiKey;
-
-  if (!finalOpenaiKey) {
-    throw new Error("Shared OpenAI API key not configured");
-  }
-
-  return finalOpenaiKey;
 };
 
 /**
@@ -236,23 +190,26 @@ const categorizeOpenAIError = (
 /**
  * Extract text from image using OpenAI Vision API (GPT-4o)
  * Serverless-compatible, no canvas dependencies
- * REQUIRES client to have OpenAI API key configured in Vault
+ *
+ * MULTI-TENANT: Uses client's OpenAI API key directly from Vault
+ * (analyzeImageFromBuffer automatically fetches key via getClientOpenAIKey)
  */
 const extractTextFromImage = async (
   buffer: Buffer,
   mimeType: string,
-  openaiApiKey: string,
   clientId: string,
 ): Promise<string> => {
   const OCR_PROMPT =
     "Extraia TODO o texto desta imagem. Retorne APENAS o texto extraído, sem explicações. " +
     'Se não houver texto, retorne exatamente: "No text found".';
 
+  // analyzeImageFromBuffer uses getClientOpenAIKey(clientId) from Vault internally
+  // No need to pass apiKey - it's fetched directly from client's Vault
   const result = await analyzeImageFromBuffer(
     buffer,
     OCR_PROMPT,
     mimeType,
-    openaiApiKey,
+    undefined, // apiKey not needed - fetched from Vault
     clientId,
   );
 
@@ -367,29 +324,13 @@ export async function POST(request: NextRequest) {
         );
       }
     } else if (file.type.startsWith("image/")) {
-      let openaiKeyForOCR: string;
-      try {
-        openaiKeyForOCR = await resolveOpenAIApiKey(
-          clientId,
-          supabaseServiceRole,
-        );
-      } catch (resolveError) {
-        return NextResponse.json(
-          {
-            error:
-              "Chave compartilhada da OpenAI não configurada. Contate o suporte para habilitar OCR/embeddings.",
-          },
-          { status: 400 },
-        );
-      }
-
       // Image OCR extraction using OpenAI Vision (serverless-compatible)
+      // Uses client's OpenAI key directly from Vault (multi-tenant)
       const buffer = Buffer.from(await file.arrayBuffer());
       try {
         text = await extractTextFromImage(
           buffer,
           file.type,
-          openaiKeyForOCR,
           clientId,
         );
       } catch (ocrError) {
@@ -447,21 +388,9 @@ export async function POST(request: NextRequest) {
 
     const originalFileUrl = publicUrlData.publicUrl;
 
-    // 8. Get client config for OpenAI API key (REQUIRED for embeddings)
-    let openaiApiKey: string;
-    try {
-      openaiApiKey = await resolveOpenAIApiKey(clientId, supabaseServiceRole);
-    } catch (resolveError) {
-      return NextResponse.json(
-        {
-          error:
-            "Chave compartilhada da OpenAI não configurada. Contate o suporte para habilitar embeddings.",
-        },
-        { status: 400 },
-      );
-    }
-
-    // 9. Process document with chunking (includes original file metadata)
+    // 8. Process document with chunking (includes original file metadata)
+    // generateEmbedding() uses getClientOpenAIKey(clientId) from Vault internally
+    // No need to resolve API key here - multi-tenant isolation handled by lib/openai.ts
     let result;
     try {
       result = await processDocumentWithChunking({
@@ -474,13 +403,13 @@ export async function POST(request: NextRequest) {
           uploadedBy: user.email || user.id,
           fileSize: file.size,
           mimeType: file.type,
-          // NEW: Original file metadata for WhatsApp sending
+          // Original file metadata for WhatsApp sending
           original_file_url: originalFileUrl,
           original_file_path: storagePath,
           original_file_size: file.size,
           original_mime_type: file.type,
         },
-        openaiApiKey,
+        // openaiApiKey not needed - generateEmbedding() fetches from Vault
       });
     } catch (processingError) {
       const { message: processingErrorMessage } = categorizeOpenAIError(
