@@ -230,16 +230,16 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className={`text-sm font-medium truncate ${textColor}`}>
+            <p className="text-sm font-medium truncate" style={textColorStyle}>
               {filename}
             </p>
             {fileSize && (
-              <p className={`text-xs ${textColorMuted}`}>
+              <p className="text-xs" style={textColorMutedStyle}>
                 {fileSize}
               </p>
             )}
           </div>
-          <Download className={`h-5 w-5 flex-shrink-0 ${textColorMuted}`} />
+          <Download className="h-5 w-5 flex-shrink-0" style={textColorMutedStyle} />
         </a>
       </div>
     )
@@ -257,8 +257,8 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
 
     return (
       <div className={`flex items-center gap-2 mb-1 p-2 rounded-lg ${legacyBgClass}`}>
-        <FileText className={`h-5 w-5 ${textColor}`} />
-        <span className={`font-medium text-sm ${textColor}`}>{displayName || 'Arquivo enviado'}</span>
+        <FileText className="h-5 w-5" style={textColorStyle} />
+        <span className="font-medium text-sm" style={textColorStyle}>{displayName || 'Arquivo enviado'}</span>
       </div>
     )
   }
@@ -294,24 +294,24 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
       <div className="space-y-2">
         {/* Template header with badge */}
         <div className={`flex items-center gap-2 pb-2 border-b ${templateBorderClass}`}>
-          <div className={`px-2 py-0.5 rounded text-xs font-medium ${templateBadgeBgClass} ${textColor}`}>
+          <div className={`px-2 py-0.5 rounded text-xs font-medium ${templateBadgeBgClass}`} style={textColorStyle}>
             Template
           </div>
-          <span className={`text-xs font-medium ${textColorSubtle}`}>
+          <span className="text-xs font-medium" style={textColorSubtleStyle}>
             {templateMetadata.template_name}
           </span>
         </div>
 
         {/* Template body content */}
         {bodyText && (
-          <div className={`text-sm md:text-base whitespace-pre-wrap ${textColor}`}>
+          <div className="text-sm md:text-base whitespace-pre-wrap" style={textColorStyle}>
             {bodyText}
           </div>
         )}
 
         {/* Footer if exists */}
         {templateMetadata.template_components?.find(c => c.type === 'FOOTER') && (
-          <div className={`text-xs pt-2 border-t ${templateBorderClass} ${textColorMuted}`}>
+          <div className={`text-xs pt-2 border-t ${templateBorderClass}`} style={textColorMutedStyle}>
             {templateMetadata.template_components.find(c => c.type === 'FOOTER')?.text}
           </div>
         )}
@@ -324,7 +324,8 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
               ?.buttons?.map((button, index) => (
                 <div
                   key={index}
-                  className={`text-center py-2 px-3 rounded text-sm font-medium ${templateButtonBgClass} ${textColor} transition-colors`}
+                  className={`text-center py-2 px-3 rounded text-sm font-medium ${templateButtonBgClass} transition-colors`}
+                  style={textColorStyle}
                 >
                   {button.text}
                 </div>
@@ -429,28 +430,33 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
     if (isIncoming) return null
 
     const statusIconClass = 'h-4 w-4 inline-block ml-1'
+    // Use CSS variable for status icon colors (outgoing messages only)
+    const statusColorStyle = (opacity: number) => ({
+      color: textColorVar,
+      opacity
+    })
 
     switch (message.status) {
       case 'pending':
       case 'queued':
       case 'sending':
         // Clock icon for pending/sending
-        return <Clock className={`${statusIconClass} text-white/60`} />
+        return <Clock className={statusIconClass} style={statusColorStyle(0.6)} />
 
       case 'sent':
         // Single check for sent
-        return <Check className={`${statusIconClass} text-white/70`} />
+        return <Check className={statusIconClass} style={statusColorStyle(0.7)} />
 
       case 'delivered':
         // Double check for delivered
-        return <CheckCheck className={`${statusIconClass} text-white/80`} />
+        return <CheckCheck className={statusIconClass} style={statusColorStyle(0.8)} />
 
       case 'read':
-        // Double check in lighter shade for read (distinguishes from delivered)
-        return <CheckCheck className={`${statusIconClass} text-white`} />
+        // Double check full opacity for read
+        return <CheckCheck className={statusIconClass} style={statusColorStyle(1)} />
 
       case 'failed':
-        // Red X for failed (click to view error details) - using red-300 for visibility on green
+        // Red X for failed (click to view error details)
         if (!errorDetails) {
           return <XCircle className={`${statusIconClass} text-red-300`} />
         }
@@ -523,17 +529,27 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
     ? 'shadow-md border border-border'
     : 'shadow-lg'
 
-  // Text color classes - uses CSS variables for customizable theme colors
-  // Falls back to default white if CSS variable not set
+  // Text color styles - uses CSS variables for customizable theme colors
+  // Note: Tailwind's opacity modifiers don't work with CSS variables, so we use inline styles
+  const textColorVar = isIncoming
+    ? 'var(--chat-incoming-text-color, #FFFFFF)'
+    : 'var(--chat-outgoing-text-color, #FFFFFF)'
+
+  // Inline style objects for text colors with proper opacity support
+  const textColorStyle = { color: textColorVar }
+  const textColorMutedStyle = { color: textColorVar, opacity: 0.7 }
+  const textColorSubtleStyle = { color: textColorVar, opacity: 0.8 }
+
+  // Keep class for compatibility with existing code that uses textColor as class
   const textColor = isIncoming
     ? 'text-[var(--chat-incoming-text-color,#FFFFFF)]'
     : 'text-[var(--chat-outgoing-text-color,#FFFFFF)]'
   const textColorMuted = isIncoming
-    ? 'text-[var(--chat-incoming-text-color,#FFFFFF)]/70'
-    : 'text-[var(--chat-outgoing-text-color,#FFFFFF)]/70'
+    ? 'text-[var(--chat-incoming-text-color,#FFFFFF)]'
+    : 'text-[var(--chat-outgoing-text-color,#FFFFFF)]'
   const textColorSubtle = isIncoming
-    ? 'text-[var(--chat-incoming-text-color,#FFFFFF)]/80'
-    : 'text-[var(--chat-outgoing-text-color,#FFFFFF)]/80'
+    ? 'text-[var(--chat-incoming-text-color,#FFFFFF)]'
+    : 'text-[var(--chat-outgoing-text-color,#FFFFFF)]'
 
   return (
     <div className={'flex ' + (isIncoming ? 'justify-start' : 'justify-end') + ' mb-2 px-2'}>
@@ -553,11 +569,11 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
 
         {renderMediaContent()}
         {textContent && (
-          <p className={`whitespace-pre-wrap text-sm md:text-base ${textColor}`}>
+          <p className="whitespace-pre-wrap text-sm md:text-base" style={textColorStyle}>
             {textContent}
           </p>
         )}
-        <p className={`text-xs mt-1 flex items-center gap-1 ${textColorSubtle}`}>
+        <p className="text-xs mt-1 flex items-center gap-1" style={textColorSubtleStyle}>
           <span>{new Date(message.timestamp).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>
           {renderStatusIcon()}
         </p>

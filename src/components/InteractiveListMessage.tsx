@@ -41,48 +41,52 @@ export const InteractiveListMessage = ({
 }: InteractiveListMessageProps) => {
   const totalRows = sections.reduce((sum, section) => sum + section.rows.length, 0)
 
-  // Dynamic colors based on message direction
-  // Uses CSS variables for customizable theme colors
-  const textColor = isIncoming
-    ? 'text-[var(--chat-incoming-text-color,#FFFFFF)]'
-    : 'text-[var(--chat-outgoing-text-color,#FFFFFF)]'
-  const textColorMuted = isIncoming
-    ? 'text-[var(--chat-incoming-text-color,#FFFFFF)]/70'
-    : 'text-[var(--chat-outgoing-text-color,#FFFFFF)]/70'
-  const textColorSubtle = isIncoming
-    ? 'text-[var(--chat-incoming-text-color,#FFFFFF)]/80'
-    : 'text-[var(--chat-outgoing-text-color,#FFFFFF)]/80'
+  // CSS variable for text color based on message direction
+  const textColorVar = isIncoming
+    ? 'var(--chat-incoming-text-color, #FFFFFF)'
+    : 'var(--chat-outgoing-text-color, #FFFFFF)'
+
+  // Inline style objects for text colors with proper opacity support
+  // Note: Tailwind's opacity modifiers don't work with CSS variables
+  const textColorStyle = { color: textColorVar }
+  const textColorMutedStyle = { color: textColorVar, opacity: 0.7 }
+  const textColorSubtleStyle = { color: textColorVar, opacity: 0.8 }
+
+  // Border and background still use Tailwind (they work differently)
   const borderColor = isIncoming
-    ? 'border-[var(--chat-incoming-text-color,#FFFFFF)]/20'
-    : 'border-[var(--chat-outgoing-text-color,#FFFFFF)]/20'
+    ? 'border-white/20'
+    : 'border-white/20'
   const buttonBg = isIncoming
-    ? 'bg-[var(--chat-incoming-text-color,#FFFFFF)]/10 hover:bg-[var(--chat-incoming-text-color,#FFFFFF)]/20'
-    : 'bg-[var(--chat-outgoing-text-color,#FFFFFF)]/15 hover:bg-[var(--chat-outgoing-text-color,#FFFFFF)]/25'
+    ? 'bg-white/10 hover:bg-white/20'
+    : 'bg-white/15 hover:bg-white/25'
 
   return (
     <div className="space-y-2">
       {/* Header */}
       {header && (
-        <div className={`text-sm font-semibold ${textColor}`}>
+        <div className="text-sm font-semibold" style={textColorStyle}>
           {header}
         </div>
       )}
 
       {/* Body text */}
-      <div className={`text-sm ${textColor}`}>
+      <div className="text-sm" style={textColorStyle}>
         {body}
       </div>
 
       {/* Footer text */}
       {footer && (
-        <div className={`text-xs ${textColorMuted}`}>
+        <div className="text-xs" style={textColorMutedStyle}>
           {footer}
         </div>
       )}
 
       {/* List Button */}
       <div className={`mt-3 pt-3 border-t ${borderColor}`}>
-        <div className={`flex items-center justify-between py-2 px-3 rounded-md border transition-colors ${borderColor} ${buttonBg} ${textColor}`}>
+        <div
+          className={`flex items-center justify-between py-2 px-3 rounded-md border transition-colors ${borderColor} ${buttonBg}`}
+          style={textColorStyle}
+        >
           <div className="flex items-center gap-2">
             <List className="h-4 w-4" />
             <span className="text-sm font-medium">{buttonText}</span>
@@ -92,7 +96,7 @@ export const InteractiveListMessage = ({
       </div>
 
       {/* Sections Preview - Collapsed */}
-      <div className={`text-xs mt-2 ${textColorSubtle}`}>
+      <div className="text-xs mt-2" style={textColorSubtleStyle}>
         <div className="space-y-1">
           {sections.map((section, idx) => (
             <div key={idx} className="flex items-start gap-2">
@@ -106,7 +110,7 @@ export const InteractiveListMessage = ({
       </div>
 
       {/* Helper text */}
-      <div className={`text-xs italic mt-2 ${textColorMuted}`}>
+      <div className="text-xs italic mt-2" style={textColorMutedStyle}>
         {totalRows} {totalRows === 1 ? 'opção' : 'opções'} de resposta
       </div>
     </div>
