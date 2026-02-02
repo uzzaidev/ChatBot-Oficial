@@ -85,7 +85,7 @@ export const ConversationsHeader = ({
         </div>
         <div className="flex flex-wrap gap-2 md:gap-2.5">
           {[1, 2, 3, 4, 5, 6].map(i => (
-            <div key={i} className="h-[52px] w-[140px] md:w-[160px] rounded-lg border border-border bg-surface animate-pulse" />
+            <div key={i} className="h-[36px] w-[100px] md:w-[120px] rounded-lg border border-border bg-surface animate-pulse" />
           ))}
         </div>
       </div>
@@ -128,8 +128,8 @@ export const ConversationsHeader = ({
                 }}
                 disabled={!filterValue}  // Desabilita tags e columns por enquanto
                 className={cn(
-                  "relative px-3 md:px-4 py-2.5 md:py-3 rounded-lg border transition-all duration-200 group",
-                  "flex items-center gap-2 md:gap-3 min-w-fit",
+                  "relative px-2.5 md:px-3 py-1.5 md:py-2 rounded-lg border transition-all duration-200 group",
+                  "flex items-center gap-1.5 md:gap-2 min-w-fit",
                   isActive
                     ? `bg-gradient-to-br from-surface to-surface-alt ${colorClass} border-t-2`
                     : "bg-surface border-border/50 hover:border-primary/50 hover:shadow-lg",
@@ -138,18 +138,18 @@ export const ConversationsHeader = ({
               >
                 {/* Ícone */}
                 <IconComponent className={cn(
-                  "h-4 w-4 md:h-5 md:w-5 opacity-50 group-hover:opacity-70 transition-opacity flex-shrink-0",
+                  "h-3.5 w-3.5 md:h-4 md:w-4 opacity-50 group-hover:opacity-70 transition-opacity flex-shrink-0",
                   colorClass.split(' ')[0]
                 )} />
 
                 {/* Número */}
-                <span className="font-exo2 text-xl md:text-2xl font-bold text-foreground">
+                <span className="font-exo2 text-sm md:text-base font-semibold text-foreground">
                   {filter.count}
                 </span>
 
                 {/* Título */}
                 <div className={cn(
-                  "text-[10px] md:text-xs font-medium tracking-wide uppercase whitespace-nowrap",
+                  "text-[9px] md:text-[10px] font-medium tracking-wide uppercase whitespace-nowrap",
                   isActive ? colorClass.split(' ')[0] : "text-muted-foreground"
                 )}>
                   {filter.label}
@@ -162,13 +162,13 @@ export const ConversationsHeader = ({
           <button
             onClick={() => setShowFilterModal(true)}
             className={cn(
-              "relative px-3 md:px-4 py-2.5 md:py-3 rounded-lg border-2 border-dashed transition-all duration-200 group",
+              "relative px-2.5 md:px-3 py-1.5 md:py-2 rounded-lg border-2 border-dashed transition-all duration-200 group",
               "bg-surface border-border/50 hover:border-primary/50 hover:bg-primary/5",
-              "flex items-center justify-center gap-2 min-w-fit"
+              "flex items-center justify-center gap-1.5 min-w-fit"
             )}
           >
-            <Settings className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground group-hover:text-primary transition-colors" />
-            <div className="text-[10px] md:text-xs font-medium text-muted-foreground group-hover:text-primary transition-colors uppercase tracking-wide">
+            <Settings className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+            <div className="text-[9px] md:text-[10px] font-medium text-muted-foreground group-hover:text-primary transition-colors uppercase tracking-wide">
               Editar
             </div>
           </button>

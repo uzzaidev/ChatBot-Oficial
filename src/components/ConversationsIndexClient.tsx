@@ -318,7 +318,8 @@ export function ConversationsIndexClient({
         </Button>
         {/* Theme Buttons - Mobile */}
         <div className="lg:hidden absolute top-2 right-2 z-30 flex items-center gap-1">
-          <ChatThemePaletteButton />
+          {/* ChatThemePaletteButton temporarily hidden - theme customization not working */}
+          {/* <ChatThemePaletteButton /> */}
           <ThemeToggle />
         </div>
         <ConversationsHeader
@@ -340,7 +341,8 @@ export function ConversationsIndexClient({
                 Conversas
               </h3>
               <div className="flex items-center gap-1">
-                <ChatThemePaletteButton />
+                {/* ChatThemePaletteButton temporarily hidden - theme customization not working */}
+                {/* <ChatThemePaletteButton /> */}
                 <ThemeToggle />
                 <Link href="/dashboard">
                   <Button
