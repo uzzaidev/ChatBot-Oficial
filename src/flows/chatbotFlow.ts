@@ -1355,6 +1355,8 @@ export const processChatbotMessage = async (
             documentSearchResult.textFilesFound > 0 &&
             documentSearchResult.message
           ) {
+            console.log(`📄 [NODE 15.6] Text files found (${documentSearchResult.textFilesFound}), making follow-up AI call with document content (${documentSearchResult.message.length} chars)`);
+
             logger.logNodeStart("15.6. Follow-up AI with Document Content", {
               textFilesFound: documentSearchResult.textFilesFound,
               messageLength: documentSearchResult.message.length,
@@ -1373,10 +1375,14 @@ export const processChatbotMessage = async (
             aiResponse.content = followUpResponse.content;
             aiResponse.toolCalls = undefined;
 
+            console.log(`✅ [NODE 15.6] Follow-up AI response generated: ${followUpResponse.content?.length || 0} chars, preview: "${(followUpResponse.content || "").substring(0, 120)}..."`);
+
             logger.logNodeSuccess("15.6. Follow-up AI with Document Content", {
               responseLength: followUpResponse.content?.length || 0,
               responsePreview: (followUpResponse.content || "").substring(0, 100),
             });
+          } else {
+            console.log(`⚠️ [NODE 15.5] No text files found and no documents sent. textFilesFound=${documentSearchResult.textFilesFound}, documentsSent=${documentSearchResult.documentsSent}, hasMessage=${!!documentSearchResult.message}`);
           }
           // Se não encontrou nada, aiResponse.content ficará vazio
           // e o fluxo sairá normalmente na verificação da linha abaixo

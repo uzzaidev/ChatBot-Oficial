@@ -265,13 +265,7 @@ export const getClientVaultCredentials = async (
       client.groq_api_key_secret_id || null,
     ])
 
-    console.log('[Vault] Retrieved client-specific credentials', {
-      clientId,
-      hasOpenAI: !!openaiApiKey,
-      hasGroq: !!groqApiKey,
-      openaiSecretId: client.openai_api_key_secret_id?.substring(0, 8) + '...' || 'none',
-      groqSecretId: client.groq_api_key_secret_id?.substring(0, 8) + '...' || 'none',
-    })
+    // Vault credentials retrieved successfully
 
     return {
       openaiApiKey,
@@ -317,12 +311,7 @@ export const getClientOpenAIKey = async (
     // Descriptografar secret
     const openaiApiKey = await getSecret(client.openai_api_key_secret_id)
 
-    console.log('[Vault] Retrieved client OpenAI key from Vault', {
-      clientId,
-      hasKey: !!openaiApiKey,
-      secretId: client.openai_api_key_secret_id.substring(0, 8) + '...',
-      keyPrefix: openaiApiKey ? openaiApiKey.substring(0, 10) + '...' : 'none',
-    })
+    // Vault OpenAI key retrieved successfully
 
     return openaiApiKey
   } catch (error) {

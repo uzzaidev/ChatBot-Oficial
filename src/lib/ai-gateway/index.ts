@@ -172,7 +172,6 @@ export const callAI = async (config: AICallConfig): Promise<AIResponse> => {
       }
     } else {
       // Route through direct SDK (Gateway disabled)
-      console.log("[AI Gateway] Gateway disabled, using client credentials");
       return await callAIDirectly(config, startTime);
     }
   } catch (error) {
@@ -364,25 +363,12 @@ const callAIDirectly = async (
   startTime: number,
   fallbackReason?: string,
 ): Promise<AIResponse> => {
-  console.log("[AI Gateway][Fallback] Using client Vault credentials", {
-    clientId: config.clientId,
-    clientName: config.clientConfig.name,
-    primaryProvider: config.clientConfig.primaryModelProvider,
-    fallbackReason,
-  });
-
   const { messages, tools, settings = {} } = config;
   const normalizedTools = normalizeToolsForAISDK(tools);
 
   // ✨ ALWAYS use OpenAI for fallback (more stable and reliable)
   const provider = "openai";
   const model = config.clientConfig.openaiModel || "gpt-4o-mini";
-
-  console.log("[AI Gateway][Fallback] Using OpenAI as fallback provider", {
-    primaryProvider: config.clientConfig.primaryModelProvider,
-    fallbackProvider: provider,
-    fallbackModel: model,
-  });
 
   // Import OpenAI SDK (always use OpenAI for fallback)
   const { createOpenAI } = await import("@ai-sdk/openai");
@@ -426,14 +412,6 @@ const callAIDirectly = async (
       `Secret ID: ${client.openai_api_key_secret_id}`,
     );
   }
-
-  console.log("[AI Gateway][Fallback] Using OpenAI API key from Vault (client-specific)", {
-    provider,
-    clientId: config.clientId,
-    hasKey: !!apiKey,
-    keyPrefix: apiKey.substring(0, 10) + "...",
-    secretId: client.openai_api_key_secret_id.substring(0, 8) + "...",
-  });
 
   // Create OpenAI provider instance and model
   const openaiProvider = createOpenAI({ apiKey });
@@ -521,14 +499,7 @@ const callAIDirectly = async (
     });
   }
 
-  console.log("[AI Gateway][Fallback] Response generated successfully", {
-    provider,
-    model,
-    wasFallback: !!fallbackReason,
-    promptTokens,
-    completionTokens,
-    latencyMs,
-  });
+  console.log(`[AI] ${config.clientConfig.name}: ${model}, ${latencyMs}ms, ${promptTokens}+${completionTokens} tokens${fallbackReason ? ` (fallback: ${fallbackReason})` : ""}`);
 
   return response;
 };

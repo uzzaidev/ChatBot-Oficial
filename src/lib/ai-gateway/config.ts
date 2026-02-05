@@ -71,7 +71,7 @@ export const getSharedGatewayConfig = async (): Promise<
     // Check cache
     const now = Date.now();
     if (cachedConfig && (now - cacheTimestamp) < CACHE_TTL_MS) {
-      console.log("[AI Gateway] Using cached shared config");
+      // Using cached shared config
       return cachedConfig;
     }
 

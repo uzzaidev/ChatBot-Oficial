@@ -372,10 +372,7 @@ export const generateEmbedding = async (
       );
     }
 
-    console.log("[Embeddings] Using client-specific OpenAI key from Vault", {
-      clientId,
-      keyPrefix: clientKey.substring(0, 10) + "...",
-    });
+    // Embeddings: using client Vault key
 
     // Create OpenAI provider instance with client's own key
     const openai = createOpenAI({

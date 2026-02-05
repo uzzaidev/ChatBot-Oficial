@@ -298,14 +298,6 @@ export const generateAIResponse = async (
     }
 
     // 🌐 SEMPRE usa callAI() - ele decide internamente se usa Gateway ou credenciais do cliente
-    console.log("[AI Gateway] Preparing AI request:", {
-      clientId: config.id,
-      clientName: config.name,
-      primaryProvider: config.primaryProvider,
-      messageCount: messages.length,
-      toolsEnabled: enableTools && config.settings.enableTools,
-      includeDateTimeInfo,
-    });
 
     // Convert ChatMessage[] to CoreMessage[]
     const coreMessages: CoreMessage[] = messages.map((msg) => ({
@@ -372,20 +364,9 @@ export const generateAIResponse = async (
         },
       });
 
-      // 🔍 Log response details
-      console.log("[AI Gateway] Response received:", {
-        provider: result.provider,
-        model: result.model,
-        wasCached: result.wasCached,
-        wasFallback: result.wasFallback,
-        fallbackReason: result.fallbackReason,
-        promptTokens: result.usage.promptTokens,
-        completionTokens: result.usage.completionTokens,
-        cachedTokens: result.usage.cachedTokens,
-        latencyMs: result.latencyMs,
-        requestId: result.requestId,
-        contentLength: result.text?.length || 0,
-      });
+      // 🔍 Log response summary
+      const toolCallNames = result.toolCalls?.map((tc: any) => tc.function.name).join(",") || "";
+      console.log(`🤖 [AI] ${config.name}: model=${result.model}, ${result.latencyMs}ms, content=${result.text?.length || 0}chars${toolCallNames ? `, tools=[${toolCallNames}]` : ""}`);
 
       // Log usage to gateway_usage_logs
       await logGatewayUsage({
