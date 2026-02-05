@@ -1348,8 +1348,38 @@ export const processChatbotMessage = async (
             };
           }
 
-          // Se não encontrou ou falhou, AI response content terá a mensagem
-          // Continue o fluxo normal
+          // Se encontrou arquivos de texto mas não enviou anexos, fazer segunda chamada à IA
+          // com o conteúdo dos documentos para gerar resposta adequada
+          if (
+            documentSearchResult.textFilesFound &&
+            documentSearchResult.textFilesFound > 0 &&
+            documentSearchResult.message
+          ) {
+            logger.logNodeStart("15.6. Follow-up AI with Document Content", {
+              textFilesFound: documentSearchResult.textFilesFound,
+              messageLength: documentSearchResult.message.length,
+            });
+
+            const followUpResponse = await generateAIResponse({
+              message: batchedContent,
+              chatHistory: chatHistory2,
+              ragContext: documentSearchResult.message,
+              customerName: parsedMessage.name,
+              config,
+              greetingInstruction: continuityInfo.greetingInstruction,
+              enableTools: false,
+            });
+
+            aiResponse.content = followUpResponse.content;
+            aiResponse.toolCalls = undefined;
+
+            logger.logNodeSuccess("15.6. Follow-up AI with Document Content", {
+              responseLength: followUpResponse.content?.length || 0,
+              responsePreview: (followUpResponse.content || "").substring(0, 100),
+            });
+          }
+          // Se não encontrou nada, aiResponse.content ficará vazio
+          // e o fluxo sairá normalmente na verificação da linha abaixo
         }
 
         // Tool 3: enviar_resposta_em_audio (NEW - TTS)
