@@ -1294,53 +1294,11 @@ export const processChatbotMessage = async (
             filesSent: documentSearchResult.filesSent,
           });
 
-          // Se enviou documentos, salvar mensagem de confirmação no histórico
+          // Se enviou documentos, finalizar (mensagens já foram salvas em handleDocumentSearchToolCall)
           if (
             documentSearchResult.documentsSent &&
             documentSearchResult.documentsSent > 0
           ) {
-            const confirmationMessage =
-              documentSearchResult.message ||
-              `Documentos enviados: ${documentSearchResult.filesSent?.join(
-                ", ",
-              )}`;
-
-            // Preparar media metadata para o primeiro arquivo enviado (para exibir no frontend)
-            let mediaMetadata = undefined;
-            if (
-              documentSearchResult.filesMetadata &&
-              documentSearchResult.filesMetadata.length > 0
-            ) {
-              const firstFile = documentSearchResult.filesMetadata[0];
-              // Determinar tipo baseado no MIME type
-              let mediaType: "image" | "audio" | "document" | "video" =
-                "document";
-              if (firstFile.mimeType.startsWith("image/")) {
-                mediaType = "image";
-              } else if (firstFile.mimeType.startsWith("audio/")) {
-                mediaType = "audio";
-              } else if (firstFile.mimeType.startsWith("video/")) {
-                mediaType = "video";
-              }
-
-              mediaMetadata = {
-                type: mediaType,
-                url: firstFile.url,
-                mimeType: firstFile.mimeType,
-                filename: firstFile.filename,
-                size: firstFile.size,
-              };
-            }
-
-            // Salvar mensagem de confirmação no histórico
-            await saveChatMessage({
-              phone: parsedMessage.phone,
-              message: confirmationMessage,
-              type: "ai",
-              clientId: config.id,
-              mediaMetadata,
-            });
-
             logger.finishExecution("success");
             return {
               success: true,
