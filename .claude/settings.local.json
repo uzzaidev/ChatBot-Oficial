@@ -64,7 +64,9 @@
       "Bash(git mv:*)",
       "Bash(powershell -ExecutionPolicy Bypass -File fix-await.ps1)",
       "Bash(git cherry-pick:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(npx next lint:*)",
+      "Bash(npm run lint:*)"
     ],
     "deny": [],
     "ask": []

@@ -14,9 +14,9 @@ import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
 import { useChatTheme } from '@/hooks/useChatTheme'
-import { DEFAULT_BACKGROUNDS, DEFAULT_CHAT_THEME, type ChatTheme } from '@/lib/constants/chat-backgrounds'
+import { DEFAULT_BACKGROUNDS, DEFAULT_CHAT_THEME, type ChatTheme, type ChatThemeModeColors } from '@/lib/constants/chat-backgrounds'
 import { cn } from '@/lib/utils'
-import { CheckCircle2, Loader2, RotateCcw, Upload } from 'lucide-react'
+import { CheckCircle2, Loader2, Moon, RotateCcw, Sun, Upload } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 interface ChatThemeCustomizerModalProps {
@@ -25,14 +25,14 @@ interface ChatThemeCustomizerModalProps {
 }
 
 /**
- * Modal de Personalização de Tema das Conversas
+ * Modal de Personalização de Tema das Conversas (Dual-Mode)
  *
  * Features:
- * - Tab 1: Seleção de cores das mensagens (recebidas e enviadas) com color picker
- * - Tab 2: Seleção de fundo (presets do WhatsApp + upload de imagem customizada)
- * - Preview em tempo real (sem salvar)
- * - Botão "Restaurar Padrão"
- * - Botão "Salvar" para persistir no banco
+ * - Seletor de modo (Escuro / Claro) para editar cores de cada modo
+ * - Color pickers para mensagens recebidas e enviadas
+ * - Preview lado a lado (dark + light)
+ * - Seleção de fundo (presets + upload)
+ * - Responsive (mobile-first)
  */
 export const ChatThemeCustomizerModal = ({
   isOpen,
@@ -42,35 +42,32 @@ export const ChatThemeCustomizerModal = ({
   const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Estado local do tema (para preview)
   const [previewTheme, setPreviewTheme] = useState<ChatTheme>(DEFAULT_CHAT_THEME)
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [colorMode, setColorMode] = useState<'dark' | 'light'>('dark')
 
-  // Carregar tema atual ao abrir o modal
+  // Load current theme when modal opens
   useEffect(() => {
-    if (isOpen && currentTheme) {
-      setPreviewTheme(currentTheme)
+    if (isOpen) {
+      setPreviewTheme(currentTheme ?? DEFAULT_CHAT_THEME)
     }
   }, [isOpen, currentTheme])
 
-  // Aplicar preview em tempo real
+  // Apply preview in real-time
   useEffect(() => {
     if (isOpen) {
       applyTheme(previewTheme)
     }
   }, [previewTheme, isOpen, applyTheme])
 
-  // Restaurar tema original ao fechar sem salvar
+  // Restore original theme when closing without saving
   useEffect(() => {
     if (!isOpen && currentTheme) {
       applyTheme(currentTheme)
     }
   }, [isOpen, currentTheme, applyTheme])
 
-  /**
-   * Salvar tema no banco de dados
-   */
   const handleSave = async () => {
     try {
       setSaving(true)
@@ -80,7 +77,7 @@ export const ChatThemeCustomizerModal = ({
         description: 'Suas preferências foram salvas com sucesso.',
       })
       onClose()
-    } catch (error) {
+    } catch {
       toast({
         title: 'Erro ao salvar',
         description: 'Não foi possível salvar o tema. Tente novamente.',
@@ -91,9 +88,6 @@ export const ChatThemeCustomizerModal = ({
     }
   }
 
-  /**
-   * Restaurar tema padrão
-   */
   const handleReset = async () => {
     try {
       setSaving(true)
@@ -103,7 +97,7 @@ export const ChatThemeCustomizerModal = ({
         title: 'Tema restaurado',
         description: 'Voltou para as configurações padrão.',
       })
-    } catch (error) {
+    } catch {
       toast({
         title: 'Erro ao restaurar',
         description: 'Não foi possível restaurar o tema padrão.',
@@ -114,14 +108,10 @@ export const ChatThemeCustomizerModal = ({
     }
   }
 
-  /**
-   * Upload de imagem customizada
-   */
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
 
-    // Validar tamanho (5MB)
     const MAX_SIZE = 5 * 1024 * 1024
     if (file.size > MAX_SIZE) {
       toast({
@@ -132,7 +122,6 @@ export const ChatThemeCustomizerModal = ({
       return
     }
 
-    // Validar tipo
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
     if (!allowedTypes.includes(file.type)) {
       toast({
@@ -145,25 +134,21 @@ export const ChatThemeCustomizerModal = ({
 
     try {
       setUploading(true)
-
-      // Criar FormData para upload
       const formData = new FormData()
       formData.append('file', file)
 
-      // Fazer upload via API
       const response = await fetch('/api/chat-theme/upload', {
         method: 'POST',
         body: formData,
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Erro ao fazer upload')
+        const err = await response.json()
+        throw new Error(err.error || 'Erro ao fazer upload')
       }
 
       const data = await response.json()
 
-      // Atualizar preview com a URL da imagem
       setPreviewTheme(prev => ({
         ...prev,
         backgroundType: 'custom',
@@ -175,291 +160,191 @@ export const ChatThemeCustomizerModal = ({
         title: 'Upload concluído!',
         description: 'Sua imagem foi enviada com sucesso.',
       })
-    } catch (error) {
+    } catch (err) {
       toast({
         title: 'Erro no upload',
-        description: error instanceof Error ? error.message : 'Erro desconhecido',
+        description: err instanceof Error ? err.message : 'Erro desconhecido',
         variant: 'destructive',
       })
     } finally {
       setUploading(false)
-      // Limpar input
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
     }
   }
 
+  // Helper to update color for current editing mode
+  const updateColor = (field: keyof ChatThemeModeColors, value: string) => {
+    setPreviewTheme(prev => ({
+      ...prev,
+      [colorMode]: {
+        ...prev[colorMode],
+        [field]: value,
+      },
+    }))
+  }
+
+  // Current editing mode colors
+  const modeColors = previewTheme[colorMode]
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-[95vw] sm:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold flex items-center gap-2">
-            <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-              🎨
-            </span>
+          <DialogTitle className="text-lg sm:text-xl font-bold flex items-center gap-2">
             Personalizar Tema das Conversas
           </DialogTitle>
           <DialogDescription>
-            Customize as cores das mensagens e o fundo da área de conversas
+            Configure cores para modo escuro e claro separadamente
           </DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="colors" className="mt-4">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="colors">Cores das Mensagens</TabsTrigger>
+            <TabsTrigger value="colors">Cores</TabsTrigger>
             <TabsTrigger value="background">Fundo</TabsTrigger>
           </TabsList>
 
           {/* ============================================ */}
           {/* TAB 1: CORES DAS MENSAGENS                   */}
           {/* ============================================ */}
-          <TabsContent value="colors" className="space-y-6 mt-6">
-            {/* Cor das Mensagens Recebidas */}
-          <div className="space-y-3">
-            <Label htmlFor="incoming-bg-color">Cor das Mensagens Recebidas</Label>
-            
-            <div className="flex gap-3">
-              {/* Cor de fundo */}
-              <div className="flex-1">
-                <Label htmlFor="incoming-bg-color" className="text-xs text-muted-foreground">
-                  Fundo
-                </Label>
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-10 h-10 rounded border cursor-pointer"
-                    style={{ backgroundColor: previewTheme.incomingMessageColor }}
-                    onClick={() => document.getElementById('incoming-bg-color')?.click()}
-                  />
-                  <Input
-                    id="incoming-bg-color"
-                    type="color"
-                    value={previewTheme.incomingMessageColor}
-                    onChange={(e) =>
-                      setPreviewTheme({ ...previewTheme, incomingMessageColor: e.target.value })
-                    }
-                    className="w-20"
-                  />
-                  <Input
-                    type="text"
-                    value={previewTheme.incomingMessageColor.toUpperCase()}
-                    onChange={(e) => {
-                      const value = e.target.value
-                      if (/^#[0-9A-F]{0,6}$/i.test(value)) {
-                        setPreviewTheme({ ...previewTheme, incomingMessageColor: value })
-                      }
-                    }}
-                    placeholder="#2d3338"
-                    className="font-mono"
-                    maxLength={7}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Cor de fundo das mensagens que você recebe
-                </p>
-              </div>
+          <TabsContent value="colors" className="space-y-5 mt-4">
+            {/* Mode Selector */}
+            <div className="flex items-center justify-center gap-2">
+              <Button
+                variant={colorMode === 'dark' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setColorMode('dark')}
+                className="flex items-center gap-1.5"
+              >
+                <Moon className="h-4 w-4" />
+                Modo Escuro
+              </Button>
+              <Button
+                variant={colorMode === 'light' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setColorMode('light')}
+                className="flex items-center gap-1.5"
+              >
+                <Sun className="h-4 w-4" />
+                Modo Claro
+              </Button>
+            </div>
 
-              {/* Cor do texto */}
-              <div className="flex-1">
-                <Label htmlFor="incoming-text-color" className="text-xs text-muted-foreground">
-                  Texto
-                </Label>
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-10 h-10 rounded border cursor-pointer"
-                    style={{ backgroundColor: previewTheme.incomingTextColor }}
-                    onClick={() => document.getElementById('incoming-text-color')?.click()}
-                  />
-                  <Input
-                    id="incoming-text-color"
-                    type="color"
-                    value={previewTheme.incomingTextColor}
-                    onChange={(e) =>
-                      setPreviewTheme({ ...previewTheme, incomingTextColor: e.target.value })
-                    }
-                    className="w-20"
-                  />
-                  <Input
-                    type="text"
-                    value={previewTheme.incomingTextColor.toUpperCase()}
-                    onChange={(e) => {
-                      const value = e.target.value
-                      if (/^#[0-9A-F]{0,6}$/i.test(value)) {
-                        setPreviewTheme({ ...previewTheme, incomingTextColor: value })
-                      }
-                 }}
-                    placeholder="#FFFFFF"
-                    className="font-mono"
-                    maxLength={7}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Cor do texto nas mensagens recebidas
-                </p>
+            {/* Incoming Message Colors */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">
+                Mensagens Recebidas
+              </Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <ColorPicker
+                  label="Fundo"
+                  id={`incoming-bg-${colorMode}`}
+                  value={modeColors.incomingMessageColor}
+                  onChange={(v) => updateColor('incomingMessageColor', v)}
+                />
+                <ColorPicker
+                  label="Texto"
+                  id={`incoming-text-${colorMode}`}
+                  value={modeColors.incomingTextColor}
+                  onChange={(v) => updateColor('incomingTextColor', v)}
+                />
               </div>
             </div>
-          </div>
 
-          {/* Cor das Mensagens Enviadas */}
-          <div className="space-y-3">
-            <Label htmlFor="outgoing-bg-color">Cor das Mensagens Enviadas</Label>
-            
-            <div className="flex gap-3">
-              {/* Cor de fundo */}
-              <div className="flex-1">
-                <Label htmlFor="outgoing-bg-color" className="text-xs text-muted-foreground">
-                  Fundo
-                </Label>
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-10 h-10 rounded border cursor-pointer"
-                    style={{ backgroundColor: previewTheme.outgoingMessageColor }}
-                    onClick={() => document.getElementById('outgoing-bg-color')?.click()}
-                  />
-                  <Input
-                    id="outgoing-bg-color"
-                    type="color"
-                    value={previewTheme.outgoingMessageColor}
-                    onChange={(e) =>
-                      setPreviewTheme({ ...previewTheme, outgoingMessageColor: e.target.value })
-                    }
-                    className="w-20"
-                  />
-                  <Input
-                    type="text"
-                    value={previewTheme.outgoingMessageColor.toUpperCase()}
-                    onChange={(e) => {
-                      const value = e.target.value
-                      if (/^#[0-9A-F]{0,6}$/i.test(value)) {
-                        setPreviewTheme({ ...previewTheme, outgoingMessageColor: value })
-                      }
-                    }}
-                    placeholder="#005c4b"
-                    className="font-mono"
-                    maxLength={7}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Cor de fundo das mensagens que você envia
-                </p>
-              </div>
-
-              {/* Cor do texto */}
-              <div className="flex-1">
-                <Label htmlFor="outgoing-text-color" className="text-xs text-muted-foreground">
-                  Texto
-                </Label>
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-10 h-10 rounded border cursor-pointer"
-                    style={{ backgroundColor: previewTheme.outgoingTextColor }}
-                    onClick={() => document.getElementById('outgoing-text-color')?.click()}
-                  />
-                  <Input
-                    id="outgoing-text-color"
-                    type="color"
-                    value={previewTheme.outgoingTextColor}
-                    onChange={(e) =>
-                      setPreviewTheme({ ...previewTheme, outgoingTextColor: e.target.value })
-                    }
-                    className="w-20"
-                  />
-                  <Input
-                    type="text"
-                    value={previewTheme.outgoingTextColor.toUpperCase()}
-                    onChange={(e) => {
-                      const value = e.target.value
-                      if (/^#[0-9A-F]{0,6}$/i.test(value)) {
-                        setPreviewTheme({ ...previewTheme, outgoingTextColor: value })
-                      }
-                    }}
-                    placeholder="#FFFFFF"
-                    className="font-mono"
-                    maxLength={7}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Cor do texto nas mensagens enviadas
-                </p>
+            {/* Outgoing Message Colors */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">
+                Mensagens Enviadas
+              </Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <ColorPicker
+                  label="Fundo"
+                  id={`outgoing-bg-${colorMode}`}
+                  value={modeColors.outgoingMessageColor}
+                  onChange={(v) => updateColor('outgoingMessageColor', v)}
+                />
+                <ColorPicker
+                  label="Texto"
+                  id={`outgoing-text-${colorMode}`}
+                  value={modeColors.outgoingTextColor}
+                  onChange={(v) => updateColor('outgoingTextColor', v)}
+                />
               </div>
             </div>
-          </div>
 
-          {/* Preview */}
-          <div className="space-y-2">
-            <Label>Preview:</Label>
-            <div className="space-y-2 p-4 bg-muted/30 rounded-lg">
-              {/* Mensagem recebida */}
-              <div className="flex justify-start">
-                <div
-                  className="px-4 py-2 rounded-lg max-w-[70%]"
-                  style={{
-                    backgroundColor: previewTheme.incomingMessageColor,
-                    color: previewTheme.incomingTextColor,
-                  }}
-                >
-                  <p className="text-sm">Olá Este é uma mensagem recebida.</p>
-                  <span className="text-xs opacity-70">10:30</span>
-                </div>
-              </div>
-
-              {/* Mensagem enviada */}
-              <div className="flex justify-end">
-                <div
-                  className="px-4 py-2 rounded-lg max-w-[70%]"
-                  style={{
-                    backgroundColor: previewTheme.outgoingMessageColor,
-                    color: previewTheme.outgoingTextColor,
-                  }}
-                >
-                  <p className="text-sm">Esta é uma mensagem enviada por você!</p>
-                  <span className="text-xs opacity-70 flex items-center gap-1">
-                    10:31 <CheckCircle2 className="w-3 h-3" />
-                  </span>
-                </div>
+            {/* Dual-Mode Preview */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Preview</Label>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                <PreviewPanel
+                  mode="dark"
+                  colors={previewTheme.dark}
+                />
+                <PreviewPanel
+                  mode="light"
+                  colors={previewTheme.light}
+                />
               </div>
             </div>
-          </div>
           </TabsContent>
 
           {/* ============================================ */}
           {/* TAB 2: FUNDO                                 */}
           {/* ============================================ */}
-          <TabsContent value="background" className="space-y-6 mt-6">
-            {/* Galeria de Fundos Padrão */}
-            <div className="space-y-3">
-              <Label className="text-sm font-semibold">Fundos Padrão do WhatsApp</Label>
-              <div className="grid grid-cols-4 gap-3">
+          <TabsContent value="background" className="space-y-5 mt-4">
+            {/* Preset Backgrounds Gallery */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Fundos Padrão</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                 {DEFAULT_BACKGROUNDS.map((bg) => (
                   <button
                     key={bg.id}
-                    onClick={() => setPreviewTheme(prev => ({
-                      ...prev,
-                      backgroundType: 'preset',
-                      backgroundPreset: bg.id,
-                      backgroundCustomUrl: undefined,
-                    }))}
+                    onClick={() => {
+                      const suggested = bg.suggestedColors
+                      setPreviewTheme(prev => ({
+                        ...prev,
+                        backgroundType: 'preset',
+                        backgroundPreset: bg.id,
+                        backgroundCustomUrl: undefined,
+                        ...(suggested && {
+                          dark: {
+                            incomingMessageColor: suggested.dark.incomingBg,
+                            outgoingMessageColor: suggested.dark.outgoingBg,
+                            incomingTextColor: suggested.dark.incomingText,
+                            outgoingTextColor: suggested.dark.outgoingText,
+                          },
+                          light: {
+                            incomingMessageColor: suggested.light.incomingBg,
+                            outgoingMessageColor: suggested.light.outgoingBg,
+                            incomingTextColor: suggested.light.incomingText,
+                            outgoingTextColor: suggested.light.outgoingText,
+                          },
+                        }),
+                      }))
+                    }}
                     className={cn(
-                      "relative rounded-lg overflow-hidden border-2 transition-all hover:scale-105",
+                      'relative rounded-lg overflow-hidden border-2 transition-all hover:scale-105',
                       previewTheme.backgroundType === 'preset' && previewTheme.backgroundPreset === bg.id
-                        ? "border-primary ring-2 ring-primary ring-offset-2"
-                        : "border-transparent hover:border-primary/50"
+                        ? 'border-primary ring-2 ring-primary ring-offset-2'
+                        : 'border-transparent hover:border-primary/50'
                     )}
                     title={bg.description}
                   >
                     <img
                       src={bg.thumbnail}
                       alt={bg.name}
-                      className="w-full h-20 object-cover"
+                      className="w-full h-16 sm:h-20 object-cover"
                     />
-                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-1.5">
-                      <p className="text-xs text-white text-center truncate font-medium">
+                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-1">
+                      <p className="text-[10px] sm:text-xs text-white text-center truncate font-medium">
                         {bg.name}
                       </p>
                     </div>
                     {previewTheme.backgroundType === 'preset' && previewTheme.backgroundPreset === bg.id && (
-                      <div className="absolute top-1 right-1 bg-primary rounded-full p-1">
-                        <CheckCircle2 className="h-4 w-4 text-white" />
+                      <div className="absolute top-1 right-1 bg-primary rounded-full p-0.5">
+                        <CheckCircle2 className="h-3 w-3 text-white" />
                       </div>
                     )}
                   </button>
@@ -467,8 +352,8 @@ export const ChatThemeCustomizerModal = ({
               </div>
             </div>
 
-            {/* Sem Fundo (Padrão) */}
-            <div className="space-y-3">
+            {/* No Background */}
+            <div className="space-y-2">
               <Label className="text-sm font-semibold">Sem Fundo</Label>
               <button
                 onClick={() => setPreviewTheme(prev => ({
@@ -478,21 +363,21 @@ export const ChatThemeCustomizerModal = ({
                   backgroundCustomUrl: undefined,
                 }))}
                 className={cn(
-                  "w-full p-4 rounded-lg border-2 transition-all text-left",
+                  'w-full p-3 rounded-lg border-2 transition-all text-left',
                   previewTheme.backgroundType === 'default'
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary/50"
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border hover:border-primary/50'
                 )}
               >
                 <p className="font-medium text-sm">Usar fundo padrão do tema</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Sem imagem de fundo (depende do tema claro/escuro)
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Sem imagem de fundo (adapta ao modo claro/escuro)
                 </p>
               </button>
             </div>
 
-            {/* Upload de Imagem Customizada */}
-            <div className="space-y-3">
+            {/* Custom Upload */}
+            <div className="space-y-2">
               <Label className="text-sm font-semibold">Imagem Personalizada</Label>
               <input
                 ref={fileInputRef}
@@ -505,47 +390,37 @@ export const ChatThemeCustomizerModal = ({
               <label
                 htmlFor="background-upload"
                 className={cn(
-                  "flex items-center justify-center gap-3 border-2 border-dashed rounded-lg p-8 cursor-pointer transition-all",
+                  'flex items-center justify-center gap-3 border-2 border-dashed rounded-lg p-6 cursor-pointer transition-all',
                   uploading
-                    ? "border-primary bg-primary/5 cursor-not-allowed"
-                    : "border-border hover:border-primary hover:bg-primary/5"
+                    ? 'border-primary bg-primary/5 cursor-not-allowed'
+                    : 'border-border hover:border-primary hover:bg-primary/5'
                 )}
               >
                 {uploading ? (
                   <>
-                    <Loader2 className="h-6 w-6 text-primary animate-spin" />
-                    <span className="text-sm font-medium text-primary">
-                      Fazendo upload...
-                    </span>
+                    <Loader2 className="h-5 w-5 text-primary animate-spin" />
+                    <span className="text-sm font-medium text-primary">Fazendo upload...</span>
                   </>
                 ) : (
                   <>
-                    <Upload className="h-6 w-6 text-muted-foreground" />
+                    <Upload className="h-5 w-5 text-muted-foreground" />
                     <div className="text-center">
-                      <p className="text-sm font-medium text-foreground">
-                        Clique para fazer upload
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        JPEG, PNG ou WebP (máx. 5MB)
-                      </p>
+                      <p className="text-sm font-medium text-foreground">Clique para upload</p>
+                      <p className="text-xs text-muted-foreground">JPEG, PNG ou WebP (max 5MB)</p>
                     </div>
                   </>
                 )}
               </label>
 
-              {/* Preview da Imagem Customizada */}
               {previewTheme.backgroundType === 'custom' && previewTheme.backgroundCustomUrl && (
                 <div className="relative rounded-lg overflow-hidden border-2 border-primary">
                   <img
                     src={previewTheme.backgroundCustomUrl}
                     alt="Background customizado"
-                    className="w-full h-32 object-cover"
+                    className="w-full h-24 object-cover"
                   />
-                  <div className="absolute top-2 right-2 bg-primary rounded-full p-1.5">
-                    <CheckCircle2 className="h-4 w-4 text-white" />
-                  </div>
-                  <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-2">
-                    <p className="text-xs text-white font-medium">Imagem personalizada</p>
+                  <div className="absolute top-1.5 right-1.5 bg-primary rounded-full p-1">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-white" />
                   </div>
                 </div>
               )}
@@ -553,26 +428,29 @@ export const ChatThemeCustomizerModal = ({
           </TabsContent>
         </Tabs>
 
-        <DialogFooter className="mt-6 flex justify-between items-center">
+        <DialogFooter className="mt-4 flex-col sm:flex-row gap-2">
           <Button
             variant="outline"
             onClick={handleReset}
             disabled={saving || uploading}
+            className="w-full sm:w-auto"
           >
             <RotateCcw className="h-4 w-4 mr-2" />
             Restaurar Padrão
           </Button>
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full sm:w-auto">
             <Button
               variant="outline"
               onClick={onClose}
               disabled={saving || uploading}
+              className="flex-1 sm:flex-initial"
             >
               Cancelar
             </Button>
             <Button
               onClick={handleSave}
               disabled={saving || uploading}
+              className="flex-1 sm:flex-initial"
             >
               {saving ? (
                 <>
@@ -592,3 +470,94 @@ export const ChatThemeCustomizerModal = ({
     </Dialog>
   )
 }
+
+/* ============================================ */
+/* Sub-components                               */
+/* ============================================ */
+
+interface ColorPickerProps {
+  label: string
+  id: string
+  value: string
+  onChange: (value: string) => void
+}
+
+const ColorPicker = ({ label, id, value, onChange }: ColorPickerProps) => (
+  <div className="space-y-1">
+    <Label htmlFor={id} className="text-xs text-muted-foreground">{label}</Label>
+    <div className="flex items-center gap-2">
+      <div
+        className="w-9 h-9 rounded border border-border cursor-pointer flex-shrink-0"
+        style={{ backgroundColor: value }}
+        onClick={() => document.getElementById(id)?.click()}
+      />
+      <Input
+        id={id}
+        type="color"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-16 flex-shrink-0 p-1 h-9"
+      />
+      <Input
+        type="text"
+        value={value.toUpperCase()}
+        onChange={(e) => {
+          const v = e.target.value
+          if (/^#[0-9A-F]{0,6}$/i.test(v)) {
+            onChange(v)
+          }
+        }}
+        placeholder="#000000"
+        className="font-mono text-xs h-9 flex-1 min-w-0"
+        maxLength={7}
+      />
+    </div>
+  </div>
+)
+
+interface PreviewPanelProps {
+  mode: 'dark' | 'light'
+  colors: ChatThemeModeColors
+}
+
+const PreviewPanel = ({ mode, colors }: PreviewPanelProps) => (
+  <div className="space-y-1.5">
+    <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+      {mode === 'dark' ? <Moon className="h-3.5 w-3.5" /> : <Sun className="h-3.5 w-3.5" />}
+      {mode === 'dark' ? 'Modo Escuro' : 'Modo Claro'}
+    </div>
+    <div
+      className="p-3 rounded-lg space-y-2"
+      style={{ backgroundColor: mode === 'dark' ? '#0b141a' : '#efeae2' }}
+    >
+      {/* Incoming */}
+      <div className="flex justify-start">
+        <div
+          className="px-3 py-1.5 rounded-lg max-w-[75%]"
+          style={{
+            backgroundColor: colors.incomingMessageColor,
+            color: colors.incomingTextColor,
+          }}
+        >
+          <p className="text-xs">Mensagem recebida</p>
+          <span className="text-[10px] opacity-70">10:30</span>
+        </div>
+      </div>
+      {/* Outgoing */}
+      <div className="flex justify-end">
+        <div
+          className="px-3 py-1.5 rounded-lg max-w-[75%]"
+          style={{
+            backgroundColor: colors.outgoingMessageColor,
+            color: colors.outgoingTextColor,
+          }}
+        >
+          <p className="text-xs">Mensagem enviada</p>
+          <span className="text-[10px] opacity-70 flex items-center gap-0.5">
+            10:31 <CheckCircle2 className="w-2.5 h-2.5" />
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+)

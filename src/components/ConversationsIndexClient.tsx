@@ -13,6 +13,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { useChatTheme } from "@/hooks/useChatTheme";
 import { useConversations } from "@/hooks/useConversations";
 import { useGlobalRealtimeNotifications } from "@/hooks/useGlobalRealtimeNotifications";
 import { markConversationAsRead } from "@/lib/api";
@@ -57,6 +58,9 @@ export function ConversationsIndexClient({
   clientId,
   initialPhone,
 }: ConversationsIndexClientProps) {
+  // Load and apply saved chat theme (bubble colors) on mount + react to dark/light mode changes
+  useChatTheme();
+
   const [statusFilter, setStatusFilter] = useState<
     "all" | "bot" | "humano" | "transferido" | "fluxo_inicial"
   >("all");
@@ -318,8 +322,7 @@ export function ConversationsIndexClient({
         </Button>
         {/* Theme Buttons - Mobile */}
         <div className="lg:hidden absolute top-2 right-2 z-30 flex items-center gap-1">
-          {/* ChatThemePaletteButton temporarily hidden - theme customization not working */}
-          {/* <ChatThemePaletteButton /> */}
+          <ChatThemePaletteButton />
           <ThemeToggle />
         </div>
         <ConversationsHeader
@@ -341,8 +344,7 @@ export function ConversationsIndexClient({
                 Conversas
               </h3>
               <div className="flex items-center gap-1">
-                {/* ChatThemePaletteButton temporarily hidden - theme customization not working */}
-                {/* <ChatThemePaletteButton /> */}
+                <ChatThemePaletteButton />
                 <ThemeToggle />
                 <Link href="/dashboard">
                   <Button

@@ -6,6 +6,49 @@
  * IMPORTANTE: As imagens devem estar em /public/assets/chat-backgrounds/
  */
 
+/**
+ * Cores de um modo (dark ou light)
+ */
+export interface ChatThemeModeColors {
+  incomingMessageColor: string
+  outgoingMessageColor: string
+  incomingTextColor: string
+  outgoingTextColor: string
+}
+
+/**
+ * Tema de Personalização das Conversas
+ *
+ * Define cores separadas para dark e light mode + background da área de chat
+ */
+export interface ChatTheme {
+  dark: ChatThemeModeColors
+  light: ChatThemeModeColors
+
+  // Background da área de conversas (compartilhado entre modos)
+  backgroundType: 'default' | 'preset' | 'custom'
+  backgroundPreset?: string
+  backgroundCustomUrl?: string
+}
+
+/**
+ * Suggested colors for a background preset (dual-mode)
+ */
+export interface BackgroundSuggestedColors {
+  dark: {
+    incomingBg: string
+    incomingText: string
+    outgoingBg: string
+    outgoingText: string
+  }
+  light: {
+    incomingBg: string
+    incomingText: string
+    outgoingBg: string
+    outgoingText: string
+  }
+}
+
 export interface ChatBackground {
   id: string
   name: string
@@ -13,13 +56,7 @@ export interface ChatBackground {
   thumbnail: string
   category: 'default' | 'solid' | 'abstract' | 'nature' | 'geometric'
   description?: string
-  /** Suggested colors for this background - auto-applied when selecting */
-  suggestedColors?: {
-    incomingBg: string
-    incomingText: string
-    outgoingBg: string
-    outgoingText: string
-  }
+  suggestedColors?: BackgroundSuggestedColors
 }
 
 export const DEFAULT_BACKGROUNDS: ChatBackground[] = [
@@ -31,11 +68,19 @@ export const DEFAULT_BACKGROUNDS: ChatBackground[] = [
     category: 'default',
     description: 'Fundo padrão original do WhatsApp com padrão sutil',
     suggestedColors: {
-      incomingBg: '#202c33',
-      incomingText: '#FFFFFF',
-      outgoingBg: '#005c4b',
-      outgoingText: '#FFFFFF',
-    }
+      dark: {
+        incomingBg: '#202c33',
+        incomingText: '#FFFFFF',
+        outgoingBg: '#005c4b',
+        outgoingText: '#FFFFFF',
+      },
+      light: {
+        incomingBg: '#FFFFFF',
+        incomingText: '#1f2937',
+        outgoingBg: '#d9fdd3',
+        outgoingText: '#1f2937',
+      },
+    },
   },
   {
     id: 'dark-solid',
@@ -45,11 +90,19 @@ export const DEFAULT_BACKGROUNDS: ChatBackground[] = [
     category: 'solid',
     description: 'Fundo escuro sólido para modo noturno',
     suggestedColors: {
-      incomingBg: '#2a2f32',
-      incomingText: '#FFFFFF',
-      outgoingBg: '#005c4b',
-      outgoingText: '#FFFFFF',
-    }
+      dark: {
+        incomingBg: '#2a2f32',
+        incomingText: '#FFFFFF',
+        outgoingBg: '#005c4b',
+        outgoingText: '#FFFFFF',
+      },
+      light: {
+        incomingBg: '#f0f0f0',
+        incomingText: '#1f2937',
+        outgoingBg: '#d9fdd3',
+        outgoingText: '#1f2937',
+      },
+    },
   },
   {
     id: 'light-solid',
@@ -59,11 +112,19 @@ export const DEFAULT_BACKGROUNDS: ChatBackground[] = [
     category: 'solid',
     description: 'Fundo claro bege estilo WhatsApp clássico',
     suggestedColors: {
-      incomingBg: '#FFFFFF',
-      incomingText: '#1f2937',
-      outgoingBg: '#d9fdd3',
-      outgoingText: '#1f2937',
-    }
+      dark: {
+        incomingBg: '#2d3338',
+        incomingText: '#FFFFFF',
+        outgoingBg: '#005c4b',
+        outgoingText: '#FFFFFF',
+      },
+      light: {
+        incomingBg: '#FFFFFF',
+        incomingText: '#1f2937',
+        outgoingBg: '#d9fdd3',
+        outgoingText: '#1f2937',
+      },
+    },
   },
   {
     id: 'abstract-green',
@@ -73,11 +134,19 @@ export const DEFAULT_BACKGROUNDS: ChatBackground[] = [
     category: 'abstract',
     description: 'Gradiente verde menta com ondas abstratas',
     suggestedColors: {
-      incomingBg: '#1a3a32',
-      incomingText: '#FFFFFF',
-      outgoingBg: '#0d5c4b',
-      outgoingText: '#FFFFFF',
-    }
+      dark: {
+        incomingBg: '#1a3a32',
+        incomingText: '#FFFFFF',
+        outgoingBg: '#0d5c4b',
+        outgoingText: '#FFFFFF',
+      },
+      light: {
+        incomingBg: '#e8f5e9',
+        incomingText: '#1f2937',
+        outgoingBg: '#a5d6a7',
+        outgoingText: '#1f2937',
+      },
+    },
   },
   {
     id: 'abstract-purple',
@@ -87,11 +156,19 @@ export const DEFAULT_BACKGROUNDS: ChatBackground[] = [
     category: 'abstract',
     description: 'Gradiente roxo e rosa com formas geométricas',
     suggestedColors: {
-      incomingBg: '#2d2440',
-      incomingText: '#FFFFFF',
-      outgoingBg: '#5b3a7a',
-      outgoingText: '#FFFFFF',
-    }
+      dark: {
+        incomingBg: '#2d2440',
+        incomingText: '#FFFFFF',
+        outgoingBg: '#5b3a7a',
+        outgoingText: '#FFFFFF',
+      },
+      light: {
+        incomingBg: '#f3e5f5',
+        incomingText: '#1f2937',
+        outgoingBg: '#ce93d8',
+        outgoingText: '#1f2937',
+      },
+    },
   },
   {
     id: 'nature-leaves',
@@ -101,11 +178,19 @@ export const DEFAULT_BACKGROUNDS: ChatBackground[] = [
     category: 'nature',
     description: 'Folhas verdes em fundo escuro com opacidade',
     suggestedColors: {
-      incomingBg: '#1e3a2f',
-      incomingText: '#FFFFFF',
-      outgoingBg: '#0d5c4b',
-      outgoingText: '#FFFFFF',
-    }
+      dark: {
+        incomingBg: '#1e3a2f',
+        incomingText: '#FFFFFF',
+        outgoingBg: '#0d5c4b',
+        outgoingText: '#FFFFFF',
+      },
+      light: {
+        incomingBg: '#e8f5e9',
+        incomingText: '#1f2937',
+        outgoingBg: '#81c784',
+        outgoingText: '#1f2937',
+      },
+    },
   },
   {
     id: 'nature-flowers',
@@ -115,11 +200,19 @@ export const DEFAULT_BACKGROUNDS: ChatBackground[] = [
     category: 'nature',
     description: 'Flores suaves em fundo claro',
     suggestedColors: {
-      incomingBg: '#FFFFFF',
-      incomingText: '#1f2937',
-      outgoingBg: '#dcf8c6',
-      outgoingText: '#1f2937',
-    }
+      dark: {
+        incomingBg: '#2d3338',
+        incomingText: '#FFFFFF',
+        outgoingBg: '#005c4b',
+        outgoingText: '#FFFFFF',
+      },
+      light: {
+        incomingBg: '#FFFFFF',
+        incomingText: '#1f2937',
+        outgoingBg: '#dcf8c6',
+        outgoingText: '#1f2937',
+      },
+    },
   },
   {
     id: 'geometric',
@@ -129,84 +222,68 @@ export const DEFAULT_BACKGROUNDS: ChatBackground[] = [
     category: 'geometric',
     description: 'Padrão geométrico sutil em tons neutros',
     suggestedColors: {
-      incomingBg: '#e8e8e8',
-      incomingText: '#1f2937',
-      outgoingBg: '#128c7e',
-      outgoingText: '#FFFFFF',
-    }
-  }
+      dark: {
+        incomingBg: '#2d3338',
+        incomingText: '#FFFFFF',
+        outgoingBg: '#128c7e',
+        outgoingText: '#FFFFFF',
+      },
+      light: {
+        incomingBg: '#e8e8e8',
+        incomingText: '#1f2937',
+        outgoingBg: '#128c7e',
+        outgoingText: '#FFFFFF',
+      },
+    },
+  },
 ]
 
 /**
  * Buscar background por ID
  */
-export function getBackgroundById(id: string): ChatBackground | undefined {
-  return DEFAULT_BACKGROUNDS.find(bg => bg.id === id)
-}
+export const getBackgroundById = (id: string): ChatBackground | undefined =>
+  DEFAULT_BACKGROUNDS.find(bg => bg.id === id)
 
 /**
  * Filtrar backgrounds por categoria
  */
-export function getBackgroundsByCategory(category: ChatBackground['category']): ChatBackground[] {
-  return DEFAULT_BACKGROUNDS.filter(bg => bg.category === category)
-}
+export const getBackgroundsByCategory = (category: ChatBackground['category']): ChatBackground[] =>
+  DEFAULT_BACKGROUNDS.filter(bg => bg.category === category)
 
 /**
  * Cores padrão para mensagens
  */
 export const DEFAULT_MESSAGE_COLORS = {
   incoming: {
-    dark: '#2d3338',  // Cinza escuro (modo escuro)
-    light: '#ffffff', // Branco (modo claro)
+    dark: '#2d3338',
+    light: '#ffffff',
   },
   outgoing: {
-    default: '#005c4b', // Verde WhatsApp oficial
-  }
+    default: '#005c4b',
+  },
 } as const
 
 /**
- * Tema de Personalização das Conversas
- *
- * Define cores e background da área de chat
- */
-export interface ChatTheme {
-  // Cores de fundo das mensagens
-  incomingMessageColor: string // Cor de fundo das mensagens recebidas (#RRGGBB)
-  outgoingMessageColor: string // Cor de fundo das mensagens enviadas (#RRGGBB)
-  
-  // Cores do texto das mensagens
-  incomingTextColor: string // Cor do texto das mensagens recebidas (#RRGGBB)
-  outgoingTextColor: string // Cor do texto das mensagens enviadas (#RRGGBB)
-
-  // Background da área de conversas
-  backgroundType: 'default' | 'preset' | 'custom'
-  backgroundPreset?: string // ID do preset (ex: 'whatsapp-default')
-  backgroundCustomUrl?: string // URL da imagem customizada
-}
-
-/**
- * Tema Padrão do WhatsApp
- *
- * Cores e background padrão ao iniciar a aplicação
+ * Tema Padrão do WhatsApp (dual-mode)
  */
 export const DEFAULT_CHAT_THEME: ChatTheme = {
-  // Cores de fundo (padrão WhatsApp)
-  incomingMessageColor: '#2d3338', // Cinza escuro (mensagens recebidas)
-  outgoingMessageColor: '#005c4b', // Verde WhatsApp (mensagens enviadas)
-  
-  // Cores do texto (branco para contraste)
-  incomingTextColor: '#FFFFFF', // Texto branco nas mensagens recebidas
-  outgoingTextColor: '#FFFFFF', // Texto branco nas mensagens enviadas
-
-  // Background padrão
+  dark: {
+    incomingMessageColor: '#202c33',
+    outgoingMessageColor: '#005c4b',
+    incomingTextColor: '#FFFFFF',
+    outgoingTextColor: '#FFFFFF',
+  },
+  light: {
+    incomingMessageColor: '#ffffff',
+    outgoingMessageColor: '#128c7e',
+    incomingTextColor: '#1f2937',
+    outgoingTextColor: '#FFFFFF',
+  },
   backgroundType: 'default',
-  backgroundPreset: 'whatsapp-default',
 }
 
 /**
  * Categorias de Fundos
- *
- * Usado para agrupar fundos por tipo na interface
  */
 export const BACKGROUND_CATEGORIES = [
   { id: 'default', name: 'Padrão' },

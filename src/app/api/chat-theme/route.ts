@@ -6,15 +6,12 @@ export const dynamic = 'force-dynamic'
 /**
  * GET /api/chat-theme
  *
- * Busca o tema personalizado do usuário autenticado
- *
- * @returns {object} { theme: ChatTheme | null }
+ * Busca o tema personalizado do usuário autenticado (dual-mode: dark + light)
  */
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createRouteHandlerClient(request)
 
-    // Verificar autenticação
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
@@ -24,14 +21,13 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Buscar tema do usuário
     const { data, error } = await supabase
       .from('user_chat_themes')
       .select('*')
       .eq('user_id', user.id)
       .single()
 
-    // PGRST116 = no rows found (usuário ainda não tem tema customizado)
+    // PGRST116 = no rows found
     if (error && error.code !== 'PGRST116') {
       console.error('Erro ao buscar tema:', error)
       return NextResponse.json(
@@ -40,12 +36,19 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Formatar resposta
     const theme = data ? {
-      incomingMessageColor: data.incoming_message_color,
-      outgoingMessageColor: data.outgoing_message_color,
-      incomingTextColor: data.incoming_text_color || '#FFFFFF',
-      outgoingTextColor: data.outgoing_text_color || '#FFFFFF',
+      dark: {
+        incomingMessageColor: data.incoming_message_color,
+        outgoingMessageColor: data.outgoing_message_color,
+        incomingTextColor: data.incoming_text_color || '#FFFFFF',
+        outgoingTextColor: data.outgoing_text_color || '#FFFFFF',
+      },
+      light: {
+        incomingMessageColor: data.incoming_message_color_light || '#ffffff',
+        outgoingMessageColor: data.outgoing_message_color_light || '#128c7e',
+        incomingTextColor: data.incoming_text_color_light || '#1f2937',
+        outgoingTextColor: data.outgoing_text_color_light || '#FFFFFF',
+      },
       backgroundType: data.background_type,
       backgroundPreset: data.background_preset,
       backgroundCustomUrl: data.background_custom_url,
@@ -64,16 +67,12 @@ export async function GET(request: NextRequest) {
 /**
  * POST /api/chat-theme
  *
- * Salva ou atualiza o tema personalizado do usuário
- *
- * @body {object} { incomingMessageColor, outgoingMessageColor, backgroundType, backgroundPreset?, backgroundCustomUrl? }
- * @returns {object} { theme: ChatTheme }
+ * Salva ou atualiza o tema personalizado do usuário (dual-mode)
  */
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createRouteHandlerClient(request)
 
-    // Verificar autenticação
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
@@ -83,36 +82,34 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Parsear body
     const body = await request.json()
-    const {
-      incomingMessageColor,
-      outgoingMessageColor,
-      incomingTextColor,
-      outgoingTextColor,
-      backgroundType,
-      backgroundPreset,
-      backgroundCustomUrl,
-    } = body
+    const { dark, light, backgroundType, backgroundPreset, backgroundCustomUrl } = body
 
-    // Validações básicas
-    if (!incomingMessageColor || !outgoingMessageColor || !backgroundType) {
+    // Validações
+    if (!dark || !light || !backgroundType) {
       return NextResponse.json(
-        { error: 'Campos obrigatórios faltando' },
+        { error: 'Campos obrigatórios faltando (dark, light, backgroundType)' },
         { status: 400 }
       )
     }
 
     // Validar formato de cor hex (#RRGGBB)
     const hexRegex = /^#[0-9A-F]{6}$/i
-    if (!hexRegex.test(incomingMessageColor) || !hexRegex.test(outgoingMessageColor)) {
+    const allColors = [
+      dark.incomingMessageColor, dark.outgoingMessageColor,
+      dark.incomingTextColor, dark.outgoingTextColor,
+      light.incomingMessageColor, light.outgoingMessageColor,
+      light.incomingTextColor, light.outgoingTextColor,
+    ]
+
+    const invalidColor = allColors.find(c => !hexRegex.test(c))
+    if (invalidColor) {
       return NextResponse.json(
-        { error: 'Formato de cor inválido. Use #RRGGBB' },
+        { error: `Formato de cor inválido: ${invalidColor}. Use #RRGGBB` },
         { status: 400 }
       )
     }
 
-    // Validar backgroundType
     if (!['default', 'preset', 'custom'].includes(backgroundType)) {
       return NextResponse.json(
         { error: 'backgroundType inválido' },
@@ -120,20 +117,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Salvar ou atualizar tema (upsert)
     const { data, error } = await supabase
       .from('user_chat_themes')
       .upsert({
         user_id: user.id,
-        incoming_message_color: incomingMessageColor,
-        outgoing_message_color: outgoingMessageColor,
-        incoming_text_color: incomingTextColor || '#FFFFFF',
-        outgoing_text_color: outgoingTextColor || '#FFFFFF',
+        // Dark mode (existing columns)
+        incoming_message_color: dark.incomingMessageColor,
+        outgoing_message_color: dark.outgoingMessageColor,
+        incoming_text_color: dark.incomingTextColor,
+        outgoing_text_color: dark.outgoingTextColor,
+        // Light mode (new columns)
+        incoming_message_color_light: light.incomingMessageColor,
+        outgoing_message_color_light: light.outgoingMessageColor,
+        incoming_text_color_light: light.incomingTextColor,
+        outgoing_text_color_light: light.outgoingTextColor,
+        // Background (shared)
         background_type: backgroundType,
         background_preset: backgroundPreset || null,
         background_custom_url: backgroundCustomUrl || null,
       }, {
-        onConflict: 'user_id'  // Resolver conflitos pela coluna user_id (UNIQUE constraint)
+        onConflict: 'user_id',
       })
       .select()
       .single()
@@ -146,12 +149,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Formatar resposta
     const theme = {
-      incomingMessageColor: data.incoming_message_color,
-      outgoingMessageColor: data.outgoing_message_color,
-      incomingTextColor: data.incoming_text_color,
-      outgoingTextColor: data.outgoing_text_color,
+      dark: {
+        incomingMessageColor: data.incoming_message_color,
+        outgoingMessageColor: data.outgoing_message_color,
+        incomingTextColor: data.incoming_text_color,
+        outgoingTextColor: data.outgoing_text_color,
+      },
+      light: {
+        incomingMessageColor: data.incoming_message_color_light,
+        outgoingMessageColor: data.outgoing_message_color_light,
+        incomingTextColor: data.incoming_text_color_light,
+        outgoingTextColor: data.outgoing_text_color_light,
+      },
       backgroundType: data.background_type,
       backgroundPreset: data.background_preset,
       backgroundCustomUrl: data.background_custom_url,
@@ -170,15 +180,12 @@ export async function POST(request: NextRequest) {
 /**
  * DELETE /api/chat-theme
  *
- * Deleta o tema personalizado do usuário (volta para o padrão)
- *
- * @returns {object} { success: boolean }
+ * Deleta o tema personalizado do usuário (volta para o padrão CSS)
  */
 export async function DELETE(request: NextRequest) {
   try {
     const supabase = await createRouteHandlerClient(request)
 
-    // Verificar autenticação
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
@@ -188,7 +195,6 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    // Deletar tema do usuário
     const { error } = await supabase
       .from('user_chat_themes')
       .delete()
