@@ -234,7 +234,7 @@ export const checkInteractiveFlow = async (
       };
     }
 
-    // 4. No flow available at all
+    // 4. No flow available at all - update status to 'bot' if needed
     console.log(`➡️ [NODE 15] No flow matched, continuing to AI`);
     console.log(
       `➡️ [NODE 15] Summary: clientId=${clientId}, phone=${phone}, content="${content}"`,
@@ -242,6 +242,36 @@ export const checkInteractiveFlow = async (
     console.log(
       `➡️ [NODE 15] No active flows found for this client. Check if there are flows in interactive_flows table with is_active=true and client_id=${clientId}`,
     );
+
+    // 🔧 FIX: Update status to 'bot' when no flow is available
+    // This ensures the tag is updated when falling back from flow to bot
+    const { data: currentCustomer } = await (supabase as any)
+      .from("clientes_whatsapp")
+      .select("status")
+      .eq("telefone", phone)
+      .eq("client_id", clientId)
+      .maybeSingle();
+
+    if (currentCustomer && currentCustomer.status === "fluxo_inicial") {
+      console.log(
+        `🔄 [NODE 15] Updating status from 'fluxo_inicial' to 'bot' (no flow available)`,
+      );
+      const { error: statusError } = await (supabase as any)
+        .from("clientes_whatsapp")
+        .update({ status: "bot" })
+        .eq("telefone", phone)
+        .eq("client_id", clientId);
+
+      if (statusError) {
+        console.error(
+          `❌ [NODE 15] Failed to update status to bot: ${statusError.message}`,
+        );
+      } else {
+        console.log(
+          `✅ [NODE 15] Status changed: fluxo_inicial → bot (${phone})`,
+        );
+      }
+    }
 
     return {
       shouldContinueToAI: true,

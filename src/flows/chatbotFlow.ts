@@ -291,13 +291,34 @@ export const processChatbotMessage = async (
         return { success: true };
       }
 
-      // If flow wasn't executed (edge case), log warning and continue to AI
+      // If flow wasn't executed (edge case), update status to 'bot' and continue to AI
       console.warn(
-        "⚠️ [chatbotFlow] Status is fluxo_inicial but flow was not executed",
+        "⚠️ [chatbotFlow] Status is fluxo_inicial but flow was not executed - updating to bot",
       );
+
+      // 🔧 FIX: Update status to 'bot' when no flow was executed
+      const { error: statusUpdateError } = await supabase
+        .from("clientes_whatsapp")
+        .update({ status: "bot" })
+        .eq("telefone", parsedMessage.phone)
+        .eq("client_id", config.id);
+
+      if (statusUpdateError) {
+        console.error(
+          `❌ [chatbotFlow] Failed to update status to bot: ${statusUpdateError.message}`,
+        );
+      } else {
+        console.log(
+          `✅ [chatbotFlow] Status changed: fluxo_inicial → bot (${parsedMessage.phone})`,
+        );
+        // Update local customer object for consistency in this execution
+        customer.status = "bot";
+      }
+
       logger.logNodeSuccess("3.1. Route to Interactive Flow", {
         flowExecuted: false,
         continuingToAI: true,
+        statusUpdatedToBot: !statusUpdateError,
       });
     }
 

@@ -845,7 +845,8 @@ export const ConversationDetail = ({
         </div>
       )}
 
-      <div className="flex-1 overflow-hidden">
+      {/* min-h-0 is crucial for flex children to allow scrolling */}
+      <div className="flex-1 min-h-0">
         {shouldShowLoading ? (
           <div className="flex items-center justify-center h-full">
             <div className="flex flex-col items-center gap-2">
