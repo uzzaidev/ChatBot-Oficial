@@ -129,10 +129,10 @@ export function ConversationsIndexClient({
             name: data.contact.name || "Sem nome",
             status: data.contact.status || "bot",
             last_update: new Date().toISOString(),
-            message_count: 0,
-            unread_count: 0,
             last_message: null,
             client_id: clientId,
+            assigned_to: null,
+            created_at: new Date().toISOString(),
           });
         } else {
           // Contato não existe - criar conversa virtual mínima
@@ -142,10 +142,10 @@ export function ConversationsIndexClient({
             name: "Novo Contato",
             status: "bot",
             last_update: new Date().toISOString(),
-            message_count: 0,
-            unread_count: 0,
             last_message: null,
             client_id: clientId,
+            assigned_to: null,
+            created_at: new Date().toISOString(),
           });
         }
       } catch (error) {
@@ -157,10 +157,10 @@ export function ConversationsIndexClient({
           name: "Novo Contato",
           status: "bot",
           last_update: new Date().toISOString(),
-          message_count: 0,
-          unread_count: 0,
           last_message: null,
           client_id: clientId,
+          assigned_to: null,
+          created_at: new Date().toISOString(),
         });
       } finally {
         setLoadingVirtualContact(false);
