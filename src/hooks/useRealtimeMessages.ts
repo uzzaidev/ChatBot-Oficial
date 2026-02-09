@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
 import { createClientBrowser } from "@/lib/supabase";
-import { cleanMessageContent } from "@/lib/utils";
 import type { Message } from "@/lib/types";
-import type { RealtimeChannel } from "@supabase/supabase-js";
+import { cleanMessageContent } from "@/lib/utils";
 import { Capacitor } from "@capacitor/core";
+import type { RealtimeChannel } from "@supabase/supabase-js";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 // Imports condicionais para mobile
 let App: any;
@@ -20,9 +20,10 @@ interface UseRealtimeMessagesOptions {
   onNewMessage?: (message: Message) => void;
   onMessageUpdate?: (update: {
     messageId: string;
-    status: Message["status"];
+    status?: Message["status"];
     errorDetails?: unknown;
     statusUpdatedAt?: string;
+    reactions?: Array<{ emoji: string; reactedBy: string; reactedAt: string }>;
   }) => void;
 }
 
@@ -126,8 +127,8 @@ export const useRealtimeMessages = ({
             }
 
             // Generate consistent message ID
-            const messageId = data.id?.toString() ||
-              `msg-${data.created_at || Date.now()}`;
+            const messageId =
+              data.id?.toString() || `msg-${data.created_at || Date.now()}`;
 
             // Prefer dedupe by wamid when present (avoids duplicates across tables)
             const wamid =
@@ -185,8 +186,7 @@ export const useRealtimeMessages = ({
             if (onNewMessageRef.current) {
               onNewMessageRef.current(newMessage);
             }
-          } catch (error) {
-          }
+          } catch (error) {}
         },
       )
       .on(
@@ -206,23 +206,41 @@ export const useRealtimeMessages = ({
               return;
             }
 
-            // Only process if status changed (status update from WhatsApp)
-            if (!data.status) {
-              return;
-            }
-
             const messageId = data.id?.toString();
             if (!messageId) {
               return;
             }
 
-            // Notify about status update (include error_details + updated_at for failed tooltips)
-            if (onMessageUpdateRef.current) {
+            // Check for reaction updates in message JSON
+            let reactions:
+              | Array<{ emoji: string; reactedBy: string; reactedAt: string }>
+              | undefined;
+            if (data.message) {
+              try {
+                const msgData =
+                  typeof data.message === "string"
+                    ? JSON.parse(data.message)
+                    : data.message;
+                if (msgData?.metadata?.reactions) {
+                  reactions = msgData.metadata.reactions;
+                  console.log(
+                    `😊 [Realtime] Reaction update for message ${messageId}:`,
+                    reactions,
+                  );
+                }
+              } catch {
+                // Ignore parse errors
+              }
+            }
+
+            // Notify about update (status change OR reaction update)
+            if (onMessageUpdateRef.current && (data.status || reactions)) {
               onMessageUpdateRef.current({
                 messageId,
                 status: data.status,
                 errorDetails: data.error_details ?? undefined,
                 statusUpdatedAt: data.updated_at ?? undefined,
+                reactions,
               });
             }
           } catch (error) {
@@ -245,8 +263,8 @@ export const useRealtimeMessages = ({
             if (!data || data.phone !== phone) return;
 
             // Generate consistent message ID
-            const messageId = data.id?.toString() ||
-              `msg-${data.timestamp || Date.now()}`;
+            const messageId =
+              data.id?.toString() || `msg-${data.timestamp || Date.now()}`;
 
             let parsedMetadata: Record<string, unknown> | null = null;
             if (data.metadata) {
@@ -264,7 +282,7 @@ export const useRealtimeMessages = ({
             // Prefer dedupe by wamid when present (avoids duplicates across tables)
             const wamid =
               parsedMetadata &&
-                typeof (parsedMetadata as any).wamid === "string"
+              typeof (parsedMetadata as any).wamid === "string"
                 ? String((parsedMetadata as any).wamid)
                 : null;
             const dedupeKey = wamid ? `wamid:${wamid}` : `id:${messageId}`;
@@ -274,8 +292,8 @@ export const useRealtimeMessages = ({
               return; // Skip duplicate
             }
 
-            const hasInteractive = parsedMetadata &&
-              (parsedMetadata as any).interactive;
+            const hasInteractive =
+              parsedMetadata && (parsedMetadata as any).interactive;
             const messageType: Message["type"] = hasInteractive
               ? "interactive"
               : data.type || "text";
@@ -302,8 +320,7 @@ export const useRealtimeMessages = ({
             if (onNewMessageRef.current) {
               onNewMessageRef.current(newMessage);
             }
-          } catch (error) {
-          }
+          } catch (error) {}
         },
       )
       .on(
@@ -387,7 +404,8 @@ export const useRealtimeMessages = ({
 
       // Double-check conditions before reconnecting
       if (
-        !isReconnectingRef.current && channelRef.current?.state === "closed"
+        !isReconnectingRef.current &&
+        channelRef.current?.state === "closed"
       ) {
         hasAttemptedRef.current = false;
         setupRealtimeSubscription();

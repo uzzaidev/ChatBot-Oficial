@@ -45,6 +45,13 @@ export const ConversationDetail = ({
       }
     >
   >({});
+  // 😊 Track reaction updates received via realtime
+  const [reactionUpdates, setReactionUpdates] = useState<
+    Record<
+      string,
+      Array<{ emoji: string; reactedBy: string; reactedAt: string }>
+    >
+  >({});
   const [stickyDate, setStickyDate] = useState<string | null>(null);
   const [newMessagesCount, setNewMessagesCount] = useState(0);
   const [isUserAtBottom, setIsUserAtBottom] = useState(true);
@@ -113,6 +120,7 @@ export const ConversationDetail = ({
     setOptimisticMessages([]);
     setDeletedMessageIds(new Set());
     setStatusUpdates({});
+    setReactionUpdates({});
     setNewMessagesCount(0);
     shouldScrollRef.current = true;
     lastFetchedIdsRef.current.clear();
@@ -337,13 +345,33 @@ export const ConversationDetail = ({
       };
     });
 
-    return messagesWithStatusOverrides;
+    // 😊 Apply reaction updates from realtime
+    const messagesWithReactions = messagesWithStatusOverrides.map((message) => {
+      const reactionUpdate = reactionUpdates[message.id];
+      if (!reactionUpdate) return message;
+
+      const baseMeta =
+        message.metadata && typeof message.metadata === "object"
+          ? (message.metadata as Record<string, unknown>)
+          : {};
+
+      return {
+        ...message,
+        metadata: {
+          ...baseMeta,
+          reactions: reactionUpdate,
+        },
+      };
+    });
+
+    return messagesWithReactions;
   }, [
     fetchedMessages,
     realtimeMessages,
     optimisticMessages,
     deletedMessageIds,
     statusUpdates,
+    reactionUpdates,
   ]);
 
   // Check if user is at bottom - uses the state that's updated by scroll handler
@@ -548,18 +576,36 @@ export const ConversationDetail = ({
     [toast],
   );
 
-  // Handle message status update from realtime
+  // Handle message status update from realtime (including reactions)
   const handleMessageStatusUpdate = useCallback(
     (update: {
       messageId: string;
-      status: Message["status"];
+      status?: Message["status"];
       errorDetails?: unknown;
       statusUpdatedAt?: string;
+      reactions?: Array<{
+        emoji: string;
+        reactedBy: string;
+        reactedAt: string;
+      }>;
     }) => {
-      const { messageId, status, errorDetails, statusUpdatedAt } = update;
-      console.log("📊 Status update received:", { messageId, status });
+      const { messageId, status, errorDetails, statusUpdatedAt, reactions } =
+        update;
 
-      applyStatusUpdate({ messageId, status, errorDetails, statusUpdatedAt });
+      // Handle status update
+      if (status) {
+        console.log("📊 Status update received:", { messageId, status });
+        applyStatusUpdate({ messageId, status, errorDetails, statusUpdatedAt });
+      }
+
+      // Handle reaction update - store in reactionUpdates state
+      if (reactions) {
+        console.log("😊 Reaction update received:", { messageId, reactions });
+        setReactionUpdates((prev) => ({
+          ...prev,
+          [messageId]: reactions,
+        }));
+      }
     },
     [applyStatusUpdate],
   );
