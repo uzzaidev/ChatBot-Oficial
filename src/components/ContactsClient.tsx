@@ -146,7 +146,8 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
       setNewName("");
       setNewStatus("bot");
       // Redirecionar para a página de chat com o novo contato
-      router.push(`/dashboard/chat?phone=${cleanPhone}&client_id=${clientId}`);
+      // Usar window.location para garantir navegação limpa sem cache
+      window.location.href = `/dashboard/chat?phone=${cleanPhone}&client_id=${clientId}`;
     } else {
       toast({
         title: "Erro",
