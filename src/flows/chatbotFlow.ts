@@ -324,7 +324,8 @@ export const processChatbotMessage = async (
       shouldProcessMedia &&
       (parsedMessage.type === "audio" ||
         parsedMessage.type === "image" ||
-        parsedMessage.type === "document") &&
+        parsedMessage.type === "document" ||
+        parsedMessage.type === "sticker") &&
       parsedMessage.metadata?.id
     ) {
       logger.logNodeStart("4. Process Media", { type: parsedMessage.type });
@@ -612,6 +613,50 @@ export const processChatbotMessage = async (
           logger.finishExecution("error");
           return { success: false, error: errorMessage };
         }
+      } else if (
+        parsedMessage.type === "sticker" &&
+        parsedMessage.metadata?.id
+      ) {
+        // 🎨 Download and store sticker (no AI analysis needed)
+        const stickerBuffer = await downloadMetaMedia(
+          parsedMessage.metadata.id,
+          config.apiKeys.metaAccessToken,
+        );
+        logger.logNodeSuccess("4a. Download Sticker", {
+          size: stickerBuffer.length,
+        });
+
+        // 📎 Upload sticker to Supabase Storage
+        try {
+          const mimeType = parsedMessage.metadata.mimeType || "image/webp";
+          const extension = getExtensionFromMimeType(mimeType, "webp");
+          const filename = `sticker_${
+            parsedMessage.phone
+          }_${Date.now()}.${extension}`;
+          const stickerUrl = await uploadFileToStorage(
+            stickerBuffer,
+            filename,
+            mimeType,
+            config.id,
+          );
+          mediaMetadata = {
+            type: "sticker",
+            url: stickerUrl,
+            mimeType,
+            filename,
+            size: stickerBuffer.length,
+          };
+          logger.logNodeSuccess("4a.1. Upload Sticker to Storage", {
+            url: stickerUrl,
+          });
+        } catch (uploadError) {
+          // Failed to upload sticker to storage - non-critical
+          logger.logNodeError("4a.1. Upload Sticker", uploadError);
+        }
+
+        // 🎨 Stickers don't need AI analysis - just save and continue
+        processedContent = "[Sticker]";
+        logger.logNodeSuccess("4b. Sticker Processed", { type: "sticker" });
       }
     } else if (!shouldProcessMedia) {
       logger.logNodeSuccess("4. Process Media", {
@@ -1313,7 +1358,9 @@ export const processChatbotMessage = async (
             documentSearchResult.textFilesFound > 0 &&
             documentSearchResult.message
           ) {
-            console.log(`📄 [NODE 15.6] Text files found (${documentSearchResult.textFilesFound}), making follow-up AI call with document content (${documentSearchResult.message.length} chars)`);
+            console.log(
+              `📄 [NODE 15.6] Text files found (${documentSearchResult.textFilesFound}), making follow-up AI call with document content (${documentSearchResult.message.length} chars)`,
+            );
 
             logger.logNodeStart("15.6. Follow-up AI with Document Content", {
               textFilesFound: documentSearchResult.textFilesFound,
@@ -1333,14 +1380,30 @@ export const processChatbotMessage = async (
             aiResponse.content = followUpResponse.content;
             aiResponse.toolCalls = undefined;
 
-            console.log(`✅ [NODE 15.6] Follow-up AI response generated: ${followUpResponse.content?.length || 0} chars, preview: "${(followUpResponse.content || "").substring(0, 120)}..."`);
+            console.log(
+              `✅ [NODE 15.6] Follow-up AI response generated: ${
+                followUpResponse.content?.length || 0
+              } chars, preview: "${(followUpResponse.content || "").substring(
+                0,
+                120,
+              )}..."`,
+            );
 
             logger.logNodeSuccess("15.6. Follow-up AI with Document Content", {
               responseLength: followUpResponse.content?.length || 0,
-              responsePreview: (followUpResponse.content || "").substring(0, 100),
+              responsePreview: (followUpResponse.content || "").substring(
+                0,
+                100,
+              ),
             });
           } else {
-            console.log(`⚠️ [NODE 15.5] No text files found and no documents sent. textFilesFound=${documentSearchResult.textFilesFound}, documentsSent=${documentSearchResult.documentsSent}, hasMessage=${!!documentSearchResult.message}`);
+            console.log(
+              `⚠️ [NODE 15.5] No text files found and no documents sent. textFilesFound=${
+                documentSearchResult.textFilesFound
+              }, documentsSent=${
+                documentSearchResult.documentsSent
+              }, hasMessage=${!!documentSearchResult.message}`,
+            );
           }
           // Se não encontrou nada, aiResponse.content ficará vazio
           // e o fluxo sairá normalmente na verificação da linha abaixo

@@ -10,9 +10,25 @@ export type MessageType =
   | "image"
   | "document"
   | "video"
-  | "interactive";
+  | "interactive"
+  | "sticker"
+  | "reaction";
 
-export type StoredMediaType = "image" | "audio" | "document" | "video";
+export type StoredMediaType =
+  | "image"
+  | "audio"
+  | "document"
+  | "video"
+  | "sticker";
+
+/**
+ * 😊 Reaction data for messages (WhatsApp-style reactions)
+ */
+export interface ReactionData {
+  emoji: string;
+  reactedBy: string; // phone number of reactor
+  reactedAt: string; // ISO timestamp
+}
 
 export type MessageDirection = "incoming" | "outgoing";
 
@@ -318,6 +334,9 @@ export interface ParsedMessage {
   interactiveResponseTitle?: string;
   // 🎯 Referral from Meta Ads
   referral?: ReferralData;
+  // 😊 Reaction fields (WhatsApp reactions)
+  reactionEmoji?: string;
+  reactionMessageId?: string; // wamid of the message being reacted to
 }
 
 export interface MediaMetadata {

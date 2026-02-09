@@ -20,6 +20,7 @@ import { checkDuplicateMessage, markMessageAsProcessed } from "@/lib/dedup";
 import { createExecutionLogger } from "@/lib/logger";
 import { addWebhookMessage } from "@/lib/webhookCache";
 import { parseInteractiveMessage } from "@/lib/whatsapp/interactiveMessages";
+import { updateMessageReaction } from "@/nodes/updateMessageReaction";
 import { processStatusUpdate } from "@/nodes/updateMessageStatus";
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
@@ -329,6 +330,45 @@ export async function POST(
       }
     } catch (statusError) {
       console.error("❌ Error checking for status updates:", statusError);
+    }
+
+    // 3.5 Check if this is a reaction (not a regular message)
+    // 😊 Reactions should update existing messages, not create new ones
+    try {
+      const entry = body.entry?.[0];
+      const change = entry?.changes?.[0];
+      const value = change?.value;
+      const message = value?.messages?.[0];
+
+      if (message && message.type === "reaction" && message.reaction) {
+        const reaction = message.reaction;
+        const reactorPhone = message.from;
+
+        console.log("😊 Processing reaction:", {
+          emoji: reaction.emoji || "(removed)",
+          targetMessage: reaction.message_id,
+          from: reactorPhone,
+        });
+
+        // Update the existing message with the reaction
+        const result = await updateMessageReaction({
+          targetWamid: reaction.message_id,
+          emoji: reaction.emoji || "",
+          reactorPhone,
+          clientId,
+        });
+
+        if (result.success) {
+          console.log("✅ Reaction processed successfully");
+        } else {
+          console.log("⚠️ Reaction not applied:", result.error);
+        }
+
+        // Always return 200 for reactions - don't process further
+        return new NextResponse("REACTION_PROCESSED", { status: 200 });
+      }
+    } catch (reactionError) {
+      console.error("❌ Error processing reaction:", reactionError);
     }
 
     // 4. Extrair mensagem e adicionar ao cache

@@ -47,6 +47,8 @@ export const parseMessage = (
     let interactiveResponseId: string | undefined;
     let interactiveResponseTitle: string | undefined;
     let referral: ReferralData | undefined;
+    let reactionEmoji: string | undefined;
+    let reactionMessageId: string | undefined;
 
     if (type === "text" && "text" in message) {
       content = message.text.body;
@@ -86,6 +88,22 @@ export const parseMessage = (
         interactiveResponseTitle = interactive.list_reply.title;
         content = interactive.list_reply.title;
       }
+    } else if (type === "sticker" && "sticker" in message) {
+      // 🎨 Parse sticker message (WhatsApp stickers are webp images)
+      const sticker = (message as any).sticker;
+      content = "";
+      metadata = {
+        id: sticker.id,
+        mimeType: sticker.mime_type || "image/webp",
+        sha256: sticker.sha256,
+      };
+    } else if (type === "reaction" && "reaction" in message) {
+      // 😊 Parse reaction message (emoji reactions to messages)
+      // Reactions don't have content - they update existing messages
+      const reaction = (message as any).reaction;
+      content = reaction.emoji || "";
+      reactionEmoji = reaction.emoji;
+      reactionMessageId = reaction.message_id;
     }
 
     // 🎯 Parse referral data (Click-to-WhatsApp ads / Meta Ads)
@@ -121,6 +139,8 @@ export const parseMessage = (
       interactiveResponseId,
       interactiveResponseTitle,
       referral,
+      reactionEmoji,
+      reactionMessageId,
     };
   } catch (error) {
     const errorMessage =

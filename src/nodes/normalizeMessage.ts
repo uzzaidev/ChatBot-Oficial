@@ -1,52 +1,60 @@
-import { ParsedMessage } from '@/lib/types'
+import { ParsedMessage } from "@/lib/types";
 
 export interface NormalizedMessage {
-  phone: string
-  name: string
-  content: string
-  timestamp: string
+  phone: string;
+  name: string;
+  content: string;
+  timestamp: string;
 }
 
 export interface NormalizeMessageInput {
-  parsedMessage: ParsedMessage
-  processedContent?: string
+  parsedMessage: ParsedMessage;
+  processedContent?: string;
 }
 
-export const normalizeMessage = (input: NormalizeMessageInput): NormalizedMessage => {
+export const normalizeMessage = (
+  input: NormalizeMessageInput,
+): NormalizedMessage => {
   try {
-    const { parsedMessage, processedContent } = input
-    const { phone, name, type, content, timestamp } = parsedMessage
+    const { parsedMessage, processedContent } = input;
+    const { phone, name, type, content, timestamp } = parsedMessage;
 
-    let normalizedContent = ''
+    let normalizedContent = "";
 
-    if (type === 'text') {
-      normalizedContent = content
-    } else if (type === 'audio' && processedContent) {
-      normalizedContent = processedContent
-    } else if (type === 'image' && processedContent) {
+    if (type === "text") {
+      normalizedContent = content;
+    } else if (type === "audio" && processedContent) {
+      normalizedContent = processedContent;
+    } else if (type === "image" && processedContent) {
       // Para imagem: enviar descrição + legenda para o AI processar
       if (content && content.trim().length > 0) {
-        normalizedContent = `[Imagem] Descrição: ${processedContent}\nLegenda do usuário: ${content}`
+        normalizedContent = `[Imagem] Descrição: ${processedContent}\nLegenda do usuário: ${content}`;
       } else {
-        normalizedContent = `[Imagem] Descrição: ${processedContent}`
+        normalizedContent = `[Imagem] Descrição: ${processedContent}`;
       }
-    } else if (type === 'document') {
+    } else if (type === "document") {
       // Para documento: enviar conteúdo extraído + legenda se houver
-      const filename = parsedMessage.metadata?.filename || 'documento'
+      const filename = parsedMessage.metadata?.filename || "documento";
       if (processedContent) {
         if (content && content.trim().length > 0) {
-          normalizedContent = `[Documento: ${filename}] Conteúdo: ${processedContent}\nLegenda do usuário: ${content}`
+          normalizedContent = `[Documento: ${filename}] Conteúdo: ${processedContent}\nLegenda do usuário: ${content}`;
         } else {
-          normalizedContent = `[Documento: ${filename}] Conteúdo: ${processedContent}`
+          normalizedContent = `[Documento: ${filename}] Conteúdo: ${processedContent}`;
         }
       } else {
         // Documento sem conteúdo extraído (fallback)
         if (content && content.trim().length > 0) {
-          normalizedContent = `[Documento: ${filename}] ${content}`
+          normalizedContent = `[Documento: ${filename}] ${content}`;
         } else {
-          normalizedContent = `[Documento: ${filename}] Arquivo recebido`
+          normalizedContent = `[Documento: ${filename}] Arquivo recebido`;
         }
       }
+    } else if (type === "sticker") {
+      // 🎨 Para sticker: mensagem simples indicando sticker
+      normalizedContent = "[Sticker enviado]";
+    } else if (type === "reaction") {
+      // 😊 Para reaction: não normaliza como mensagem nova (tratamento especial no webhook)
+      normalizedContent = "";
     }
 
     return {
@@ -54,9 +62,10 @@ export const normalizeMessage = (input: NormalizeMessageInput): NormalizedMessag
       name,
       content: normalizedContent,
       timestamp,
-    }
+    };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    throw new Error(`Failed to normalize message: ${errorMessage}`)
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    throw new Error(`Failed to normalize message: ${errorMessage}`);
   }
-}
+};

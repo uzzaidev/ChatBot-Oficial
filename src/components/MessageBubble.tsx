@@ -1,170 +1,240 @@
-'use client'
+"use client";
 
-import type { Message, StoredMediaMetadata } from '@/lib/types'
-import { FileText, Download, Play, File, Check, CheckCheck, Clock, XCircle } from 'lucide-react'
-import Image from 'next/image'
-import { useState } from 'react'
-import { MessageActionMenu } from '@/components/MessageActionMenu'
-import { AudioMessage } from '@/components/AudioMessage'
-import { InteractiveButtonsMessage } from '@/components/InteractiveButtonsMessage'
-import { InteractiveListMessage } from '@/components/InteractiveListMessage'
+import { AudioMessage } from "@/components/AudioMessage";
+import { InteractiveButtonsMessage } from "@/components/InteractiveButtonsMessage";
+import { InteractiveListMessage } from "@/components/InteractiveListMessage";
+import { MessageActionMenu } from "@/components/MessageActionMenu";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from "@/components/ui/dropdown-menu";
+import type { Message, StoredMediaMetadata } from "@/lib/types";
+import {
+  Check,
+  CheckCheck,
+  Clock,
+  Download,
+  File,
+  FileText,
+  XCircle,
+} from "lucide-react";
+import Image from "next/image";
+import { useState } from "react";
 
 interface MessageBubbleProps {
-  message: Message
-  onReaction?: (messageId: string, emoji: string) => Promise<void>
-  onDelete?: (messageId: string, mediaUrl?: string) => Promise<void>
+  message: Message;
+  onReaction?: (messageId: string, emoji: string) => Promise<void>;
+  onDelete?: (messageId: string, mediaUrl?: string) => Promise<void>;
 }
 
 // Type guard for stored media metadata
 const isStoredMediaMetadata = (obj: unknown): obj is StoredMediaMetadata => {
-  if (!obj || typeof obj !== 'object') return false
-  const meta = obj as Record<string, unknown>
+  if (!obj || typeof obj !== "object") return false;
+  const meta = obj as Record<string, unknown>;
   return (
-    typeof meta.type === 'string' &&
-    ['image', 'audio', 'document', 'video'].includes(meta.type) &&
-    typeof meta.url === 'string' &&
-    typeof meta.mimeType === 'string'
-  )
+    typeof meta.type === "string" &&
+    ["image", "audio", "document", "video", "sticker"].includes(meta.type) &&
+    typeof meta.url === "string" &&
+    typeof meta.mimeType === "string"
+  );
+};
+
+// 😊 Type guard for reaction data
+interface ReactionData {
+  emoji: string;
+  reactedBy: string;
+  reactedAt: string;
 }
+
+const isReactionsArray = (obj: unknown): obj is ReactionData[] => {
+  if (!Array.isArray(obj)) return false;
+  return obj.every(
+    (item) =>
+      typeof item === "object" &&
+      item !== null &&
+      typeof (item as ReactionData).emoji === "string" &&
+      typeof (item as ReactionData).reactedBy === "string",
+  );
+};
+
+// 😊 Check if text contains only emojis (for larger display)
+const isEmojiOnly = (text: string): boolean => {
+  // Remove whitespace and check if remaining text is only emojis
+  const cleaned = text.trim();
+  if (!cleaned) return false;
+  // Emoji regex pattern (covers most common emojis)
+  const emojiRegex =
+    /^[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{200D}\s]+$/u;
+  return emojiRegex.test(cleaned) && cleaned.length <= 12; // Max ~3-4 emojis
+};
 
 // Type guards for interactive message metadata
 interface InteractiveButtonsMetadata {
-  type: 'button'
-  body: string
-  footer?: string
-  buttons: Array<{ id: string; title: string }>
+  type: "button";
+  body: string;
+  footer?: string;
+  buttons: Array<{ id: string; title: string }>;
 }
 
 interface InteractiveListMetadata {
-  type: 'list'
-  header?: string
-  body: string
-  footer?: string
-  buttonText: string
+  type: "list";
+  header?: string;
+  body: string;
+  footer?: string;
+  buttonText: string;
   sections: Array<{
-    title: string
-    rows: Array<{ id: string; title: string; description?: string }>
-  }>
+    title: string;
+    rows: Array<{ id: string; title: string; description?: string }>;
+  }>;
 }
 
 // Type guard for template message metadata
 interface TemplateMessageMetadata {
-  template_id: string
-  template_name: string
+  template_id: string;
+  template_name: string;
   template_components?: Array<{
-    type: string
-    text?: string
-    format?: string
-    buttons?: Array<{ type: string; text: string }>
-  }>
-  parameters?: string[]
-  whatsapp_message_id?: string
+    type: string;
+    text?: string;
+    format?: string;
+    buttons?: Array<{ type: string; text: string }>;
+  }>;
+  parameters?: string[];
+  whatsapp_message_id?: string;
 }
 
-type InteractiveMetadata = InteractiveButtonsMetadata | InteractiveListMetadata
+type InteractiveMetadata = InteractiveButtonsMetadata | InteractiveListMetadata;
 
 const isInteractiveMetadata = (obj: unknown): obj is InteractiveMetadata => {
-  if (!obj || typeof obj !== 'object') return false
-  const meta = obj as Record<string, unknown>
+  if (!obj || typeof obj !== "object") return false;
+  const meta = obj as Record<string, unknown>;
   return (
-    typeof meta.type === 'string' &&
-    (meta.type === 'button' || meta.type === 'list')
-  )
-}
+    typeof meta.type === "string" &&
+    (meta.type === "button" || meta.type === "list")
+  );
+};
 
 const isTemplateMetadata = (obj: unknown): obj is TemplateMessageMetadata => {
-  if (!obj || typeof obj !== 'object') return false
-  const meta = obj as Record<string, unknown>
+  if (!obj || typeof obj !== "object") return false;
+  const meta = obj as Record<string, unknown>;
   return (
-    typeof meta.template_id === 'string' &&
-    typeof meta.template_name === 'string'
-  )
-}
+    typeof meta.template_id === "string" &&
+    typeof meta.template_name === "string"
+  );
+};
 
-export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubbleProps) => {
-  const isIncoming = message.direction === 'incoming'
-  const [imageError, setImageError] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
-  
+export const MessageBubble = ({
+  message,
+  onReaction,
+  onDelete,
+}: MessageBubbleProps) => {
+  const isIncoming = message.direction === "incoming";
+  const [imageError, setImageError] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // 📎 Extract media metadata from message with type guard
-  const rawMediaMetadata = message.metadata && typeof message.metadata === 'object' 
-    ? (message.metadata as Record<string, unknown>).media 
-    : null
-  const mediaMetadata: StoredMediaMetadata | null = isStoredMediaMetadata(rawMediaMetadata) ? rawMediaMetadata : null
-  const hasRealMedia = mediaMetadata !== null
+  const rawMediaMetadata =
+    message.metadata && typeof message.metadata === "object"
+      ? (message.metadata as Record<string, unknown>).media
+      : null;
+  const mediaMetadata: StoredMediaMetadata | null = isStoredMediaMetadata(
+    rawMediaMetadata,
+  )
+    ? rawMediaMetadata
+    : null;
+  const hasRealMedia = mediaMetadata !== null;
 
   // 🔘 Extract interactive message metadata
-  const rawInteractiveMetadata = message.metadata && typeof message.metadata === 'object'
-    ? (message.metadata as Record<string, unknown>).interactive
-    : null
-  const interactiveMetadata: InteractiveMetadata | null = isInteractiveMetadata(rawInteractiveMetadata) 
-    ? rawInteractiveMetadata 
-    : null
+  const rawInteractiveMetadata =
+    message.metadata && typeof message.metadata === "object"
+      ? (message.metadata as Record<string, unknown>).interactive
+      : null;
+  const interactiveMetadata: InteractiveMetadata | null = isInteractiveMetadata(
+    rawInteractiveMetadata,
+  )
+    ? rawInteractiveMetadata
+    : null;
 
   // 📝 Extract template message metadata
-  const templateMetadata: TemplateMessageMetadata | null = 
-    message.metadata && typeof message.metadata === 'object' && isTemplateMetadata(message.metadata)
-      ? message.metadata as TemplateMessageMetadata
-      : null
+  const templateMetadata: TemplateMessageMetadata | null =
+    message.metadata &&
+    typeof message.metadata === "object" &&
+    isTemplateMetadata(message.metadata)
+      ? (message.metadata as TemplateMessageMetadata)
+      : null;
 
   // 📱 Extract wamid for WhatsApp reactions
-  const wamid = message.metadata && typeof message.metadata === 'object'
-    ? (message.metadata as Record<string, unknown>).wamid as string | undefined
-    : undefined
+  const wamid =
+    message.metadata && typeof message.metadata === "object"
+      ? ((message.metadata as Record<string, unknown>).wamid as
+          | string
+          | undefined)
+      : undefined;
+
+  // 😊 Extract reactions from message metadata
+  const rawReactions =
+    message.metadata && typeof message.metadata === "object"
+      ? (message.metadata as Record<string, unknown>).reactions
+      : null;
+  const reactions: ReactionData[] = isReactionsArray(rawReactions)
+    ? rawReactions
+    : [];
 
   // ❌ Extract error details for failed status
   const errorDetails = (() => {
-    if (!message.metadata || typeof message.metadata !== 'object') return null
-    const raw = (message.metadata as Record<string, unknown>).error_details
-    if (!raw) return null
+    if (!message.metadata || typeof message.metadata !== "object") return null;
+    const raw = (message.metadata as Record<string, unknown>).error_details;
+    if (!raw) return null;
 
-    if (typeof raw === 'string') {
+    if (typeof raw === "string") {
       try {
-        return JSON.parse(raw) as Record<string, unknown>
+        return JSON.parse(raw) as Record<string, unknown>;
       } catch {
-        return { message: raw }
+        return { message: raw };
       }
     }
 
-    if (typeof raw === 'object') {
-      return raw as Record<string, unknown>
+    if (typeof raw === "object") {
+      return raw as Record<string, unknown>;
     }
 
-    return null
-  })()
+    return null;
+  })();
 
   const errorHint = (() => {
-    const code = typeof (errorDetails as any)?.code === 'number' ? (errorDetails as any).code : null
+    const code =
+      typeof (errorDetails as any)?.code === "number"
+        ? (errorDetails as any).code
+        : null;
     if (code === 131047) {
-      return 'Janela de 24h fechada (re-engagement). Envie um template e aguarde o usuário responder para reabrir a janela.'
+      return "Janela de 24h fechada (re-engagement). Envie um template e aguarde o usuário responder para reabrir a janela.";
     }
-    return null
-  })()
-  
+    return null;
+  })();
+
   // Fallback for legacy messages without real media
-  const hasLegacyMediaTag = message.content.match(/\[(image|imagem|audio|áudio|document|documento|documento:[^\]]*)\]/i)
-  const legacyFilename = message.content.match(/\[(?:documento:\s*)?([^\]]+)\]/i)?.[1]?.trim() || 'Arquivo'
+  const hasLegacyMediaTag = message.content.match(
+    /\[(image|imagem|audio|áudio|document|documento|documento:[^\]]*)\]/i,
+  );
+  const legacyFilename =
+    message.content.match(/\[(?:documento:\s*)?([^\]]+)\]/i)?.[1]?.trim() ||
+    "Arquivo";
 
   // Render real image
   const renderImage = () => {
-    if (!mediaMetadata || imageError) return null
-    
+    if (!mediaMetadata || imageError) return null;
+
     return (
       <div className="relative mb-2 rounded-lg overflow-hidden max-w-[280px]">
         <Image
           src={mediaMetadata.url}
-          alt={mediaMetadata.filename || 'Imagem'}
+          alt={mediaMetadata.filename || "Imagem"}
           width={280}
           height={200}
           className="object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-          onClick={() => window.open(mediaMetadata.url, '_blank')}
+          onClick={() => window.open(mediaMetadata.url, "_blank")}
           onError={() => setImageError(true)}
           unoptimized
         />
@@ -178,16 +248,16 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
           <Download className="h-4 w-4" />
         </a>
       </div>
-    )
-  }
+    );
+  };
 
   // Render real audio
   const renderAudio = () => {
-    if (!mediaMetadata) return null
+    if (!mediaMetadata) return null;
 
     // Check if message has transcription and duration (TTS message)
-    const transcription = (message as any).transcription || ''
-    const audioDuration = (message as any).audio_duration_seconds || 0
+    const transcription = (message as any).transcription || "";
+    const audioDuration = (message as any).audio_duration_seconds || 0;
 
     // Use AudioMessage component with waveform and transcription
     return (
@@ -195,24 +265,26 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
         audioUrl={mediaMetadata.url}
         transcription={transcription}
         durationSeconds={audioDuration}
-        direction={isIncoming ? 'inbound' : 'outbound'}
+        direction={isIncoming ? "inbound" : "outbound"}
         timestamp={message.timestamp}
       />
-    )
-  }
+    );
+  };
 
   // Render real document (PDF, etc)
   const renderDocument = () => {
-    if (!mediaMetadata) return null
+    if (!mediaMetadata) return null;
 
-    const isPDF = mediaMetadata.mimeType?.includes('pdf')
-    const filename = mediaMetadata.filename || 'Documento'
-    const fileSize = mediaMetadata.size ? formatFileSize(mediaMetadata.size) : ''
+    const isPDF = mediaMetadata.mimeType?.includes("pdf");
+    const filename = mediaMetadata.filename || "Documento";
+    const fileSize = mediaMetadata.size
+      ? formatFileSize(mediaMetadata.size)
+      : "";
 
     // Conditional styles for incoming/outgoing
     const docBgClass = isIncoming
-      ? 'bg-[hsl(var(--message-incoming-text))]/10 hover:bg-[hsl(var(--message-incoming-text))]/20 border-[hsl(var(--message-incoming-text))]/20'
-      : 'bg-white/10 hover:bg-white/20 border-white/20'
+      ? "bg-[hsl(var(--message-incoming-text))]/10 hover:bg-[hsl(var(--message-incoming-text))]/20 border-[hsl(var(--message-incoming-text))]/20"
+      : "bg-white/10 hover:bg-white/20 border-white/20";
 
     return (
       <div className="mb-2">
@@ -222,7 +294,11 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
           rel="noopener noreferrer"
           className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${docBgClass}`}
         >
-          <div className={`p-2 rounded-lg ${isPDF ? 'bg-red-500/20' : 'bg-blue-500/20'}`}>
+          <div
+            className={`p-2 rounded-lg ${
+              isPDF ? "bg-red-500/20" : "bg-blue-500/20"
+            }`}
+          >
             {isPDF ? (
               <FileText className="h-6 w-6 text-red-400" />
             ) : (
@@ -239,62 +315,100 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
               </p>
             )}
           </div>
-          <Download className="h-5 w-5 flex-shrink-0" style={textColorMutedStyle} />
+          <Download
+            className="h-5 w-5 flex-shrink-0"
+            style={textColorMutedStyle}
+          />
         </a>
       </div>
-    )
-  }
+    );
+  };
+
+  // 🎨 Render sticker (borderless webp image)
+  const renderSticker = () => {
+    if (!mediaMetadata || imageError) return null;
+
+    return (
+      <div className="relative mb-2">
+        {/* Stickers are displayed without bubble background, larger and borderless */}
+        <Image
+          src={mediaMetadata.url}
+          alt="Sticker"
+          width={180}
+          height={180}
+          className="object-contain cursor-pointer hover:scale-105 transition-transform"
+          onClick={() => window.open(mediaMetadata.url, "_blank")}
+          onError={() => setImageError(true)}
+          unoptimized
+        />
+      </div>
+    );
+  };
 
   // Render legacy media tag (fallback for old messages)
   const renderLegacyMedia = () => {
     // Check if it's a document with filename in the tag
-    const docMatch = message.content.match(/\[documento:\s*([^\]]+)\]/i)
-    const displayName = docMatch ? docMatch[1].trim() : legacyFilename
+    const docMatch = message.content.match(/\[documento:\s*([^\]]+)\]/i);
+    const displayName = docMatch ? docMatch[1].trim() : legacyFilename;
 
     const legacyBgClass = isIncoming
-      ? 'bg-[hsl(var(--message-incoming-text))]/10'
-      : 'bg-white/10'
+      ? "bg-[hsl(var(--message-incoming-text))]/10"
+      : "bg-white/10";
 
     return (
-      <div className={`flex items-center gap-2 mb-1 p-2 rounded-lg ${legacyBgClass}`}>
+      <div
+        className={`flex items-center gap-2 mb-1 p-2 rounded-lg ${legacyBgClass}`}
+      >
         <FileText className="h-5 w-5" style={textColorStyle} />
-        <span className="font-medium text-sm" style={textColorStyle}>{displayName || 'Arquivo enviado'}</span>
+        <span className="font-medium text-sm" style={textColorStyle}>
+          {displayName || "Arquivo enviado"}
+        </span>
       </div>
-    )
-  }
+    );
+  };
 
   // Render template message content
   const renderTemplateMessage = () => {
-    if (!templateMetadata) return null
+    if (!templateMetadata) return null;
 
     // Get the body component from template
-    const bodyComponent = templateMetadata.template_components?.find(c => c.type === 'BODY')
-    let bodyText = bodyComponent?.text || ''
+    const bodyComponent = templateMetadata.template_components?.find(
+      (c) => c.type === "BODY",
+    );
+    let bodyText = bodyComponent?.text || "";
 
     // Replace variables with parameters
     if (templateMetadata.parameters && bodyComponent?.text) {
       templateMetadata.parameters.forEach((param, index) => {
-        const placeholder = `{{${index + 1}}}`
-        bodyText = bodyText.replace(new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g'), param)
-      })
+        const placeholder = `{{${index + 1}}}`;
+        bodyText = bodyText.replace(
+          new RegExp(placeholder.replace(/[{}]/g, "\\$&"), "g"),
+          param,
+        );
+      });
     }
 
     // Conditional styles for template elements
     const templateBorderClass = isIncoming
-      ? 'border-[hsl(var(--message-incoming-text))]/20'
-      : 'border-white/20'
+      ? "border-[hsl(var(--message-incoming-text))]/20"
+      : "border-white/20";
     const templateBadgeBgClass = isIncoming
-      ? 'bg-[hsl(var(--message-incoming-text))]/20'
-      : 'bg-white/20'
+      ? "bg-[hsl(var(--message-incoming-text))]/20"
+      : "bg-white/20";
     const templateButtonBgClass = isIncoming
-      ? 'bg-[hsl(var(--message-incoming-text))]/15 hover:bg-[hsl(var(--message-incoming-text))]/25'
-      : 'bg-white/15 hover:bg-white/25'
+      ? "bg-[hsl(var(--message-incoming-text))]/15 hover:bg-[hsl(var(--message-incoming-text))]/25"
+      : "bg-white/15 hover:bg-white/25";
 
     return (
       <div className="space-y-2">
         {/* Template header with badge */}
-        <div className={`flex items-center gap-2 pb-2 border-b ${templateBorderClass}`}>
-          <div className={`px-2 py-0.5 rounded text-xs font-medium ${templateBadgeBgClass}`} style={textColorStyle}>
+        <div
+          className={`flex items-center gap-2 pb-2 border-b ${templateBorderClass}`}
+        >
+          <div
+            className={`px-2 py-0.5 rounded text-xs font-medium ${templateBadgeBgClass}`}
+            style={textColorStyle}
+          >
             Template
           </div>
           <span className="text-xs font-medium" style={textColorSubtleStyle}>
@@ -304,23 +418,36 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
 
         {/* Template body content */}
         {bodyText && (
-          <div className="text-sm md:text-base whitespace-pre-wrap" style={textColorStyle}>
+          <div
+            className="text-sm md:text-base whitespace-pre-wrap"
+            style={textColorStyle}
+          >
             {bodyText}
           </div>
         )}
 
         {/* Footer if exists */}
-        {templateMetadata.template_components?.find(c => c.type === 'FOOTER') && (
-          <div className={`text-xs pt-2 border-t ${templateBorderClass}`} style={textColorMutedStyle}>
-            {templateMetadata.template_components.find(c => c.type === 'FOOTER')?.text}
+        {templateMetadata.template_components?.find(
+          (c) => c.type === "FOOTER",
+        ) && (
+          <div
+            className={`text-xs pt-2 border-t ${templateBorderClass}`}
+            style={textColorMutedStyle}
+          >
+            {
+              templateMetadata.template_components.find(
+                (c) => c.type === "FOOTER",
+              )?.text
+            }
           </div>
         )}
 
         {/* Buttons if exist */}
-        {templateMetadata.template_components?.find(c => c.type === 'BUTTONS')?.buttons && (
+        {templateMetadata.template_components?.find((c) => c.type === "BUTTONS")
+          ?.buttons && (
           <div className="flex flex-col gap-1 pt-2">
             {templateMetadata.template_components
-              .find(c => c.type === 'BUTTONS')
+              .find((c) => c.type === "BUTTONS")
               ?.buttons?.map((button, index) => (
                 <div
                   key={index}
@@ -333,19 +460,19 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
           </div>
         )}
       </div>
-    )
-  }
+    );
+  };
 
   // Render media content based on type
   const renderMediaContent = () => {
     // Handle template messages first
     if (templateMetadata) {
-      return renderTemplateMessage()
+      return renderTemplateMessage();
     }
 
     // Handle interactive messages
-    if (message.type === 'interactive' && interactiveMetadata) {
-      if (interactiveMetadata.type === 'button') {
+    if (message.type === "interactive" && interactiveMetadata) {
+      if (interactiveMetadata.type === "button") {
         return (
           <InteractiveButtonsMessage
             body={interactiveMetadata.body}
@@ -353,8 +480,8 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
             buttons={interactiveMetadata.buttons}
             isIncoming={isIncoming}
           />
-        )
-      } else if (interactiveMetadata.type === 'list') {
+        );
+      } else if (interactiveMetadata.type === "list") {
         return (
           <InteractiveListMessage
             header={interactiveMetadata.header}
@@ -364,101 +491,120 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
             sections={interactiveMetadata.sections}
             isIncoming={isIncoming}
           />
-        )
+        );
       }
     }
 
     // Handle regular media content
     if (!hasRealMedia) {
       if (hasLegacyMediaTag) {
-        return renderLegacyMedia()
+        return renderLegacyMedia();
       }
-      return null
+      return null;
     }
 
     switch (mediaMetadata.type) {
-      case 'image':
-        return renderImage()
-      case 'audio':
-        return renderAudio()
-      case 'document':
-        return renderDocument()
+      case "image":
+        return renderImage();
+      case "audio":
+        return renderAudio();
+      case "document":
+        return renderDocument();
+      case "sticker":
+        return renderSticker();
       default:
-        return null
+        return null;
     }
-  }
+  };
 
   // Get text content to display
   const getTextContent = () => {
     // For template messages, don't show text content (it's in the template component)
     if (templateMetadata) {
-      return ''
+      return "";
     }
-    
+
     // For interactive messages, don't show text content (it's in the interactive component)
-    if (message.type === 'interactive' && interactiveMetadata) {
-      return ''
+    if (message.type === "interactive" && interactiveMetadata) {
+      return "";
     }
-    
-    if (hasRealMedia && mediaMetadata.type === 'image') {
+
+    if (hasRealMedia && mediaMetadata.type === "image") {
       // For images with real media, show description/caption
-      return message.content.replace(/\[Imagem recebida\]\s*/i, '').trim()
+      return message.content.replace(/\[Imagem recebida\]\s*/i, "").trim();
     }
-    if (hasRealMedia && mediaMetadata.type === 'document') {
+    if (hasRealMedia && mediaMetadata.type === "document") {
       // For documents with real media, show content after the document tag
-      return message.content.replace(/\[Documento:[^\]]*\]\s*/i, '').trim()
+      return message.content.replace(/\[Documento:[^\]]*\]\s*/i, "").trim();
     }
-    if (hasRealMedia && mediaMetadata.type === 'audio') {
+    if (hasRealMedia && mediaMetadata.type === "audio") {
       // For TTS audio messages, don't show text content (transcription is inside AudioMessage component)
-      return ''
+      return "";
+    }
+    if (hasRealMedia && mediaMetadata.type === "sticker") {
+      // For stickers, don't show text content (sticker image is self-explanatory)
+      return "";
     }
     if (hasLegacyMediaTag) {
       // For legacy media tags, extract content after the tag
-      const contentAfterTag = message.content.replace(/\[[^\]]+\]\s*/, '').trim()
+      const contentAfterTag = message.content
+        .replace(/\[[^\]]+\]\s*/, "")
+        .trim();
       // If there's meaningful content after the tag, return it; otherwise return empty
       // The renderLegacyMedia will show the filename
-      return contentAfterTag.length > 0 ? contentAfterTag : ''
+      return contentAfterTag.length > 0 ? contentAfterTag : "";
     }
-    return message.content
-  }
+    return message.content;
+  };
 
-  const textContent = getTextContent()
+  const textContent = getTextContent();
 
   // Render WhatsApp-style status icon
   const renderStatusIcon = () => {
     // Only show status for outgoing messages
-    if (isIncoming) return null
+    if (isIncoming) return null;
 
-    const statusIconClass = 'h-4 w-4 inline-block ml-1'
+    const statusIconClass = "h-4 w-4 inline-block ml-1";
     // Use CSS variable for status icon colors (outgoing messages only)
     const statusColorStyle = (opacity: number) => ({
       color: textColorVar,
-      opacity
-    })
+      opacity,
+    });
 
     switch (message.status) {
-      case 'pending':
-      case 'queued':
-      case 'sending':
+      case "pending":
+      case "queued":
+      case "sending":
         // Clock icon for pending/sending
-        return <Clock className={statusIconClass} style={statusColorStyle(0.6)} />
+        return (
+          <Clock className={statusIconClass} style={statusColorStyle(0.6)} />
+        );
 
-      case 'sent':
+      case "sent":
         // Single check for sent
-        return <Check className={statusIconClass} style={statusColorStyle(0.7)} />
+        return (
+          <Check className={statusIconClass} style={statusColorStyle(0.7)} />
+        );
 
-      case 'delivered':
+      case "delivered":
         // Double check for delivered
-        return <CheckCheck className={statusIconClass} style={statusColorStyle(0.8)} />
+        return (
+          <CheckCheck
+            className={statusIconClass}
+            style={statusColorStyle(0.8)}
+          />
+        );
 
-      case 'read':
+      case "read":
         // Double check full opacity for read
-        return <CheckCheck className={statusIconClass} style={statusColorStyle(1)} />
+        return (
+          <CheckCheck className={statusIconClass} style={statusColorStyle(1)} />
+        );
 
-      case 'failed':
+      case "failed":
         // Red X for failed (click to view error details)
         if (!errorDetails) {
-          return <XCircle className={`${statusIconClass} text-red-300`} />
+          return <XCircle className={`${statusIconClass} text-red-300`} />;
         }
 
         return (
@@ -476,14 +622,23 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
               <DropdownMenuLabel>Falha no envio</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <div className="px-2 py-1.5 text-xs space-y-1">
-                {typeof (errorDetails as any)?.code === 'number' && (
-                  <div><span className="font-medium">Código:</span> {(errorDetails as any).code}</div>
+                {typeof (errorDetails as any)?.code === "number" && (
+                  <div>
+                    <span className="font-medium">Código:</span>{" "}
+                    {(errorDetails as any).code}
+                  </div>
                 )}
-                {typeof (errorDetails as any)?.title === 'string' && (
-                  <div><span className="font-medium">Título:</span> {(errorDetails as any).title}</div>
+                {typeof (errorDetails as any)?.title === "string" && (
+                  <div>
+                    <span className="font-medium">Título:</span>{" "}
+                    {(errorDetails as any).title}
+                  </div>
                 )}
-                {typeof (errorDetails as any)?.message === 'string' && (
-                  <div><span className="font-medium">Mensagem:</span> {(errorDetails as any).message}</div>
+                {typeof (errorDetails as any)?.message === "string" && (
+                  <div>
+                    <span className="font-medium">Mensagem:</span>{" "}
+                    {(errorDetails as any).message}
+                  </div>
                 )}
                 {errorHint && (
                   <div className="pt-1 text-muted-foreground">{errorHint}</div>
@@ -491,68 +646,80 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
               </div>
             </DropdownMenuContent>
           </DropdownMenu>
-        )
+        );
 
       default:
-        return null
+        return null;
     }
-  }
+  };
 
   // Handle reaction - uses wamid if available for WhatsApp API
   const handleReaction = async (emoji: string) => {
     if (onReaction) {
       // Pass wamid for reactions (required by WhatsApp API) or fallback to message.id
-      const reactionId = wamid || message.id
-      await onReaction(reactionId, emoji)
+      const reactionId = wamid || message.id;
+      await onReaction(reactionId, emoji);
     }
-  }
+  };
 
   // Handle delete
   const handleDelete = async () => {
     if (onDelete) {
-      setIsDeleting(true)
+      setIsDeleting(true);
       try {
-        await onDelete(message.id, mediaMetadata?.url)
+        await onDelete(message.id, mediaMetadata?.url);
       } finally {
-        setIsDeleting(false)
+        setIsDeleting(false);
       }
     }
-  }
+  };
 
   // Dynamic styles based on message direction (WhatsApp-style)
   // Use inline styles with CSS variables for dynamic theming
-  const bubbleColorStyle = isIncoming
-    ? { backgroundColor: 'var(--chat-incoming-color, #2d3338)' }
-    : { backgroundColor: 'var(--chat-outgoing-color, #005c4b)' }
+  // Check if this is a sticker-only message (no bubble background)
+  const isStickerOnly =
+    hasRealMedia && mediaMetadata?.type === "sticker" && !textContent;
 
-  const bubbleStyles = isIncoming
-    ? 'shadow-md border border-border'
-    : 'shadow-lg'
+  const bubbleColorStyle = isStickerOnly
+    ? { backgroundColor: "transparent" }
+    : isIncoming
+    ? { backgroundColor: "var(--chat-incoming-color, #2d3338)" }
+    : { backgroundColor: "var(--chat-outgoing-color, #005c4b)" };
+
+  const bubbleStyles = isStickerOnly
+    ? "" // No shadow/border for stickers
+    : isIncoming
+    ? "shadow-md border border-border"
+    : "shadow-lg";
 
   // Text color styles - uses CSS variables for customizable theme colors
   // Note: Tailwind's opacity modifiers don't work with CSS variables, so we use inline styles
   const textColorVar = isIncoming
-    ? 'var(--chat-incoming-text-color, #FFFFFF)'
-    : 'var(--chat-outgoing-text-color, #FFFFFF)'
+    ? "var(--chat-incoming-text-color, #FFFFFF)"
+    : "var(--chat-outgoing-text-color, #FFFFFF)";
 
   // Inline style objects for text colors with proper opacity support
-  const textColorStyle = { color: textColorVar }
-  const textColorMutedStyle = { color: textColorVar, opacity: 0.7 }
-  const textColorSubtleStyle = { color: textColorVar, opacity: 0.8 }
+  const textColorStyle = { color: textColorVar };
+  const textColorMutedStyle = { color: textColorVar, opacity: 0.7 };
+  const textColorSubtleStyle = { color: textColorVar, opacity: 0.8 };
 
   // Keep class for compatibility with existing code that uses textColor as class
   const textColor = isIncoming
-    ? 'text-[var(--chat-incoming-text-color,#FFFFFF)]'
-    : 'text-[var(--chat-outgoing-text-color,#FFFFFF)]'
+    ? "text-[var(--chat-incoming-text-color,#FFFFFF)]"
+    : "text-[var(--chat-outgoing-text-color,#FFFFFF)]";
   const textColorMuted = isIncoming
-    ? 'text-[var(--chat-incoming-text-color,#FFFFFF)]'
-    : 'text-[var(--chat-outgoing-text-color,#FFFFFF)]'
+    ? "text-[var(--chat-incoming-text-color,#FFFFFF)]"
+    : "text-[var(--chat-outgoing-text-color,#FFFFFF)]";
   const textColorSubtle = isIncoming
-    ? 'text-[var(--chat-incoming-text-color,#FFFFFF)]'
-    : 'text-[var(--chat-outgoing-text-color,#FFFFFF)]'
+    ? "text-[var(--chat-incoming-text-color,#FFFFFF)]"
+    : "text-[var(--chat-outgoing-text-color,#FFFFFF)]";
 
   return (
-    <div className={'flex ' + (isIncoming ? 'justify-start' : 'justify-end') + ' mb-2 px-2'}>
+    <div
+      className={
+        "flex " + (isIncoming ? "justify-start" : "justify-end") + " mb-2 px-2"
+      }
+    >
       <div
         className={`relative group max-w-[85%] sm:max-w-[75%] md:max-w-[70%] rounded-lg p-3 break-words ${bubbleStyles}`}
         style={bubbleColorStyle}
@@ -569,24 +736,61 @@ export const MessageBubble = ({ message, onReaction, onDelete }: MessageBubblePr
 
         {renderMediaContent()}
         {textContent && (
-          <p className="whitespace-pre-wrap text-sm md:text-base" style={textColorStyle}>
+          <p
+            className={`whitespace-pre-wrap ${
+              isEmojiOnly(textContent)
+                ? "text-4xl leading-tight" // Emoji-only: larger display like WhatsApp
+                : "text-sm md:text-base"
+            }`}
+            style={isEmojiOnly(textContent) ? undefined : textColorStyle}
+          >
             {textContent}
           </p>
         )}
-        <p className="text-xs mt-1 flex items-center gap-1" style={textColorSubtleStyle}>
-          <span>{new Date(message.timestamp).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>
+
+        {/* 😊 Reactions display */}
+        {reactions.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-1.5 -mb-1">
+            {reactions.map((reaction, index) => (
+              <span
+                key={`${reaction.reactedBy}-${index}`}
+                className="inline-flex items-center bg-black/20 dark:bg-white/20 rounded-full px-1.5 py-0.5 text-sm"
+                title={`${reaction.reactedBy} reagiu em ${new Date(
+                  reaction.reactedAt,
+                ).toLocaleString("pt-BR")}`}
+              >
+                {reaction.emoji}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <p
+          className={`text-xs mt-1 flex items-center gap-1 ${
+            isStickerOnly
+              ? "bg-black/60 text-white rounded px-1.5 py-0.5 w-fit"
+              : ""
+          }`}
+          style={isStickerOnly ? undefined : textColorSubtleStyle}
+        >
+          <span>
+            {new Date(message.timestamp).toLocaleTimeString("pt-BR", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </span>
           {renderStatusIcon()}
         </p>
       </div>
     </div>
-  )
-}
+  );
+};
 
 // Helper function to format file size
 const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return '0 B'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
-}
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+};
