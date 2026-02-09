@@ -11,13 +11,13 @@
  * @created 2025-12-06
  */
 
-import { create } from "zustand";
-import { immer } from "zustand/middleware/immer";
 import type {
   FlowBlock,
   FlowEdge,
   InteractiveFlow,
 } from "@/types/interactiveFlows";
+import { create } from "zustand";
+import { immer } from "zustand/middleware/immer";
 
 // ReactFlow Node type (compatible with @xyflow/react)
 export interface FlowNode {
@@ -107,6 +107,11 @@ export const useFlowStore = create<FlowState>()(
     ...initialState,
 
     loadFlow: async (flowId: string) => {
+      // Validate flowId before making API call
+      if (!flowId || flowId === "undefined" || flowId === "null") {
+        throw new Error("Invalid flowId: " + flowId);
+      }
+
       try {
         const response = await fetch(`/api/flows/${flowId}`);
 

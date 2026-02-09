@@ -12,25 +12,25 @@
  * @created 2025-12-06
  */
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { ReactFlowProvider } from '@xyflow/react'
-import '@xyflow/react/dist/style.css'
+import FlowCanvas from '@/components/flows/FlowCanvas'
+import FlowPropertiesPanel from '@/components/flows/FlowPropertiesPanel'
+import FlowSidebar from '@/components/flows/FlowSidebar'
+import FlowToolbar from '@/components/flows/FlowToolbar'
 import { createClientBrowser } from '@/lib/supabase'
 import { useFlowStore } from '@/stores/flowStore'
-import FlowCanvas from '@/components/flows/FlowCanvas'
-import FlowToolbar from '@/components/flows/FlowToolbar'
-import FlowSidebar from '@/components/flows/FlowSidebar'
-import FlowPropertiesPanel from '@/components/flows/FlowPropertiesPanel'
+import { ReactFlowProvider } from '@xyflow/react'
+import '@xyflow/react/dist/style.css'
+import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 
 interface FlowEditorPageProps {
-  params: { flowId: string }
+  params: Promise<{ flowId: string }>
 }
 
 export default function FlowEditorPage({ params }: FlowEditorPageProps) {
-  const { flowId } = params
   const router = useRouter()
   const { loadFlow, reset } = useFlowStore()
+  const [isReady, setIsReady] = useState(false)
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -42,6 +42,16 @@ export default function FlowEditorPage({ params }: FlowEditorPageProps) {
         return
       }
 
+      // Await params (Next.js 15+ requirement)
+      const { flowId } = await params
+
+      // Validate flowId
+      if (!flowId || flowId === 'undefined') {
+        console.error('Invalid flowId:', flowId)
+        router.push('/dashboard/flows')
+        return
+      }
+
       // Load flow if not new
       if (flowId !== 'new') {
         try {
@@ -50,15 +60,26 @@ export default function FlowEditorPage({ params }: FlowEditorPageProps) {
           console.error('Failed to load flow:', error)
           alert('Erro ao carregar flow. Redirecionando...')
           router.push('/dashboard/flows')
+          return
         }
       } else {
         // Reset store for new flow
         reset()
       }
+
+      setIsReady(true)
     }
 
     checkAuth()
-  }, [flowId, loadFlow, reset, router])
+  }, [params, loadFlow, reset, router])
+
+  if (!isReady) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      </div>
+    )
+  }
 
   return (
     <ReactFlowProvider>
