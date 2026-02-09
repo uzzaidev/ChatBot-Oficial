@@ -188,6 +188,9 @@ export const ChatThemeCustomizerModal = ({
   // Current editing mode colors
   const modeColors = previewTheme[colorMode]
 
+  // Resolve background URL for preview
+  const backgroundUrl = getPreviewBackgroundUrl(previewTheme)
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[95vw] sm:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -281,10 +284,12 @@ export const ChatThemeCustomizerModal = ({
                 <PreviewPanel
                   mode="dark"
                   colors={previewTheme.dark}
+                  backgroundUrl={getPreviewBackgroundUrl(previewTheme)}
                 />
                 <PreviewPanel
                   mode="light"
                   colors={previewTheme.light}
+                  backgroundUrl={getPreviewBackgroundUrl(previewTheme)}
                 />
               </div>
             </div>
@@ -425,6 +430,23 @@ export const ChatThemeCustomizerModal = ({
                 </div>
               )}
             </div>
+
+            {/* Preview com fundo + cores */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Preview com Fundo</Label>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                <PreviewPanel
+                  mode="dark"
+                  colors={previewTheme.dark}
+                  backgroundUrl={backgroundUrl}
+                />
+                <PreviewPanel
+                  mode="light"
+                  colors={previewTheme.light}
+                  backgroundUrl={backgroundUrl}
+                />
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
 
@@ -515,49 +537,74 @@ const ColorPicker = ({ label, id, value, onChange }: ColorPickerProps) => (
   </div>
 )
 
+/**
+ * Resolve the background image URL from the current preview theme
+ */
+const getPreviewBackgroundUrl = (theme: ChatTheme): string | undefined => {
+  if (theme.backgroundType === 'preset' && theme.backgroundPreset) {
+    const preset = DEFAULT_BACKGROUNDS.find(bg => bg.id === theme.backgroundPreset)
+    return preset?.url
+  }
+  if (theme.backgroundType === 'custom' && theme.backgroundCustomUrl) {
+    return theme.backgroundCustomUrl
+  }
+  return undefined
+}
+
 interface PreviewPanelProps {
   mode: 'dark' | 'light'
   colors: ChatThemeModeColors
+  backgroundUrl?: string
 }
 
-const PreviewPanel = ({ mode, colors }: PreviewPanelProps) => (
-  <div className="space-y-1.5">
-    <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-      {mode === 'dark' ? <Moon className="h-3.5 w-3.5" /> : <Sun className="h-3.5 w-3.5" />}
-      {mode === 'dark' ? 'Modo Escuro' : 'Modo Claro'}
-    </div>
-    <div
-      className="p-3 rounded-lg space-y-2"
-      style={{ backgroundColor: mode === 'dark' ? '#0b141a' : '#efeae2' }}
-    >
-      {/* Incoming */}
-      <div className="flex justify-start">
-        <div
-          className="px-3 py-1.5 rounded-lg max-w-[75%]"
-          style={{
-            backgroundColor: colors.incomingMessageColor,
-            color: colors.incomingTextColor,
-          }}
-        >
-          <p className="text-xs">Mensagem recebida</p>
-          <span className="text-[10px] opacity-70">10:30</span>
+const PreviewPanel = ({ mode, colors, backgroundUrl }: PreviewPanelProps) => {
+  const fallbackBg = mode === 'dark' ? '#0b141a' : '#efeae2'
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        {mode === 'dark' ? <Moon className="h-3.5 w-3.5" /> : <Sun className="h-3.5 w-3.5" />}
+        {mode === 'dark' ? 'Modo Escuro' : 'Modo Claro'}
+      </div>
+      <div
+        className="p-3 rounded-lg space-y-2 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundColor: fallbackBg,
+          ...(backgroundUrl && {
+            backgroundImage: `url('${backgroundUrl}')`,
+            backgroundSize: 'cover',
+          }),
+        }}
+      >
+        {/* Incoming */}
+        <div className="flex justify-start">
+          <div
+            className="px-3 py-1.5 rounded-lg max-w-[75%] shadow-sm"
+            style={{
+              backgroundColor: colors.incomingMessageColor,
+              color: colors.incomingTextColor,
+            }}
+          >
+            <p className="text-xs">Mensagem recebida</p>
+            <span className="text-[10px] opacity-70">10:30</span>
+          </div>
+        </div>
+        {/* Outgoing */}
+        <div className="flex justify-end">
+          <div
+            className="px-3 py-1.5 rounded-lg max-w-[75%] shadow-sm"
+            style={{
+              backgroundColor: colors.outgoingMessageColor,
+              color: colors.outgoingTextColor,
+            }}
+          >
+            <p className="text-xs">Mensagem enviada</p>
+            <span className="text-[10px] opacity-70 flex items-center gap-0.5">
+              10:31 <CheckCircle2 className="w-2.5 h-2.5" />
+            </span>
+          </div>
         </div>
       </div>
-      {/* Outgoing */}
-      <div className="flex justify-end">
-        <div
-          className="px-3 py-1.5 rounded-lg max-w-[75%]"
-          style={{
-            backgroundColor: colors.outgoingMessageColor,
-            color: colors.outgoingTextColor,
-          }}
-        >
-          <p className="text-xs">Mensagem enviada</p>
-          <span className="text-[10px] opacity-70 flex items-center gap-0.5">
-            10:31 <CheckCircle2 className="w-2.5 h-2.5" />
-          </span>
-        </div>
-      </div>
     </div>
-  </div>
-)
+  )
+}
