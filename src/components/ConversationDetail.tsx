@@ -1,24 +1,24 @@
-'use client'
+"use client";
 
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { MessageBubble } from '@/components/MessageBubble'
-import { DateSeparator } from '@/components/DateSeparator'
-import { useMessages } from '@/hooks/useMessages'
-import { useRealtimeMessages } from '@/hooks/useRealtimeMessages'
-import type { Message } from '@/lib/types'
-import { isSameDay, formatMessageDate, throttle } from '@/lib/utils'
-import { useToast } from '@/hooks/use-toast'
+import { DateSeparator } from "@/components/DateSeparator";
+import { MessageBubble } from "@/components/MessageBubble";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from "@/hooks/use-toast";
+import { useMessages } from "@/hooks/useMessages";
+import { useRealtimeMessages } from "@/hooks/useRealtimeMessages";
+import type { Message } from "@/lib/types";
+import { formatMessageDate, isSameDay, throttle } from "@/lib/utils";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 interface ConversationDetailProps {
-  phone: string
-  clientId: string
-  conversationName?: string
+  phone: string;
+  clientId: string;
+  conversationName?: string;
   onGetOptimisticCallbacks?: (callbacks: {
-    onOptimisticMessage: (message: Message) => void
-    onMessageError: (tempId: string) => void
-  }) => void
-  onMarkAsRead?: (phone: string) => void
+    onOptimisticMessage: (message: Message) => void;
+    onMessageError: (tempId: string) => void;
+  }) => void;
+  onMarkAsRead?: (phone: string) => void;
 }
 
 export const ConversationDetail = ({
@@ -28,99 +28,113 @@ export const ConversationDetail = ({
   onGetOptimisticCallbacks,
   onMarkAsRead,
 }: ConversationDetailProps) => {
-  const scrollAreaRef = useRef<HTMLDivElement>(null)
-  const sentDebounceTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map())
-  const [realtimeMessages, setRealtimeMessages] = useState<Message[]>([])
-  const [optimisticMessages, setOptimisticMessages] = useState<Message[]>([])
-  const [deletedMessageIds, setDeletedMessageIds] = useState<Set<string>>(new Set())
-  const [statusUpdates, setStatusUpdates] = useState<Record<string, {
-    status: Message['status']
-    errorDetails?: unknown
-    statusUpdatedAt?: string
-  }>>({})
-  const [stickyDate, setStickyDate] = useState<string | null>(null)
-  const [newMessagesCount, setNewMessagesCount] = useState(0)
-  const [isUserAtBottom, setIsUserAtBottom] = useState(true)
-  const dateRefs = useRef<Map<string, HTMLDivElement>>(new Map())
-  const shouldScrollRef = useRef(true)
-  const lastFetchedIdsRef = useRef<Set<string>>(new Set())
-  const { toast } = useToast()
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const sentDebounceTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const [realtimeMessages, setRealtimeMessages] = useState<Message[]>([]);
+  const [optimisticMessages, setOptimisticMessages] = useState<Message[]>([]);
+  const [deletedMessageIds, setDeletedMessageIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [statusUpdates, setStatusUpdates] = useState<
+    Record<
+      string,
+      {
+        status: Message["status"];
+        errorDetails?: unknown;
+        statusUpdatedAt?: string;
+      }
+    >
+  >({});
+  const [stickyDate, setStickyDate] = useState<string | null>(null);
+  const [newMessagesCount, setNewMessagesCount] = useState(0);
+  const [isUserAtBottom, setIsUserAtBottom] = useState(true);
+  const dateRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const shouldScrollRef = useRef(true);
+  const lastFetchedIdsRef = useRef<Set<string>>(new Set());
+  const { toast } = useToast();
 
   // CORREÇÃO: loading agora é initialLoading (só true no primeiro fetch)
   // Refetches/polling não fazem a UI desaparecer, evitando o "piscar"
-  const { messages: fetchedMessages, loading, error } = useMessages({
+  const {
+    messages: fetchedMessages,
+    loading,
+    error,
+  } = useMessages({
     clientId,
     phone,
     // Sem polling - vamos depender 100% do realtime
-  })
-  
+  });
+
   // Estado local para controlar se deve mostrar loading
   // Só mostra loading se realmente não tem mensagens ainda
-  const [hasShownMessages, setHasShownMessages] = useState(false)
-  
+  const [hasShownMessages, setHasShownMessages] = useState(false);
+
   // Atualizar flag quando mensagens são carregadas pela primeira vez
   useEffect(() => {
     if (fetchedMessages.length > 0 && !hasShownMessages) {
-      setHasShownMessages(true)
+      setHasShownMessages(true);
+      // Scroll para o fim quando carrega mensagens pela primeira vez
+      shouldScrollRef.current = true;
     }
-  }, [fetchedMessages.length, hasShownMessages])
-  
+  }, [fetchedMessages.length, hasShownMessages]);
+
   // Reset flag quando troca de conversa
   useEffect(() => {
-    setHasShownMessages(false)
-  }, [phone])
-  
+    setHasShownMessages(false);
+  }, [phone]);
+
   // Determinar se deve mostrar loading
   // Só mostra se está carregando E ainda não mostrou mensagens
-  const shouldShowLoading = loading && !hasShownMessages && fetchedMessages.length === 0
+  const shouldShowLoading =
+    loading && !hasShownMessages && fetchedMessages.length === 0;
 
   // Memoize fetched message IDs for efficient lookup
   const fetchedMessageIds = useMemo(() => {
-    return new Set<string>(fetchedMessages.map(m => m.id))
-  }, [fetchedMessages])
+    return new Set<string>(fetchedMessages.map((m) => m.id));
+  }, [fetchedMessages]);
 
   // Track fetched message IDs to prevent memory accumulation
   useEffect(() => {
     // Clean up realtime messages that are now in fetched messages
     if (fetchedMessageIds.size > 0 && realtimeMessages.length > 0) {
-      setRealtimeMessages(prev => {
-        const filtered = prev.filter(msg => !fetchedMessageIds.has(msg.id))
+      setRealtimeMessages((prev) => {
+        const filtered = prev.filter((msg) => !fetchedMessageIds.has(msg.id));
         // Only update if something changed
-        return filtered.length === prev.length ? prev : filtered
-      })
+        return filtered.length === prev.length ? prev : filtered;
+      });
     }
-    
-    lastFetchedIdsRef.current = fetchedMessageIds
-  }, [fetchedMessageIds, realtimeMessages.length])
+
+    lastFetchedIdsRef.current = fetchedMessageIds;
+  }, [fetchedMessageIds, realtimeMessages.length]);
 
   // Clear realtime messages when phone changes
   useEffect(() => {
-    setRealtimeMessages([])
-    setOptimisticMessages([])
-    setDeletedMessageIds(new Set())
-    setStatusUpdates({})
-    setNewMessagesCount(0)
-    shouldScrollRef.current = true
-    lastFetchedIdsRef.current.clear()
+    setRealtimeMessages([]);
+    setOptimisticMessages([]);
+    setDeletedMessageIds(new Set());
+    setStatusUpdates({});
+    setNewMessagesCount(0);
+    shouldScrollRef.current = true;
+    lastFetchedIdsRef.current.clear();
 
     // Clear any pending sent-debounce timers
-    sentDebounceTimersRef.current.forEach(timeout => clearTimeout(timeout))
-    sentDebounceTimersRef.current.clear()
-  }, [phone])
+    sentDebounceTimersRef.current.forEach((timeout) => clearTimeout(timeout));
+    sentDebounceTimersRef.current.clear();
+  }, [phone]);
 
   // Mark conversation as read when opened
   useEffect(() => {
     if (phone && onMarkAsRead && !loading) {
       // Small delay to ensure messages are loaded first
       const timer = setTimeout(() => {
-        onMarkAsRead(phone)
-      }, 500)
+        onMarkAsRead(phone);
+      }, 500);
 
-      return () => clearTimeout(timer)
+      return () => clearTimeout(timer);
     }
-  }, [phone, onMarkAsRead, loading])
+  }, [phone, onMarkAsRead, loading]);
 
-  const statusRank = useCallback((status: Message['status']): number => {
+  const statusRank = useCallback((status: Message["status"]): number => {
     const ranks: Record<string, number> = {
       pending: 0,
       queued: 0,
@@ -129,363 +143,426 @@ export const ConversationDetail = ({
       delivered: 2,
       read: 3,
       failed: 4,
-    }
-    return ranks[status] ?? 0
-  }, [])
+    };
+    return ranks[status] ?? 0;
+  }, []);
 
-  const commitStatusUpdate = useCallback((update: {
-    messageId: string
-    status: Message['status']
-    errorDetails?: unknown
-    statusUpdatedAt?: string
-  }) => {
-    const { messageId, status, errorDetails, statusUpdatedAt } = update
+  const commitStatusUpdate = useCallback(
+    (update: {
+      messageId: string;
+      status: Message["status"];
+      errorDetails?: unknown;
+      statusUpdatedAt?: string;
+    }) => {
+      const { messageId, status, errorDetails, statusUpdatedAt } = update;
 
-    setStatusUpdates(prev => {
-      const current = prev[messageId]
-      const currentRank = current ? statusRank(current.status) : -1
-      const nextRank = statusRank(status)
-      if (current && nextRank < currentRank) {
-        return prev
+      setStatusUpdates((prev) => {
+        const current = prev[messageId];
+        const currentRank = current ? statusRank(current.status) : -1;
+        const nextRank = statusRank(status);
+        if (current && nextRank < currentRank) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          [messageId]: { status, errorDetails, statusUpdatedAt },
+        };
+      });
+
+      const mergeMeta = (msg: Message): Message => {
+        const currentRank = statusRank(msg.status);
+        const nextRank = statusRank(status);
+        if (nextRank < currentRank) return msg;
+
+        const baseMeta =
+          msg.metadata && typeof msg.metadata === "object"
+            ? (msg.metadata as Record<string, unknown>)
+            : {};
+        const mergedMeta: Record<string, unknown> = {
+          ...baseMeta,
+          ...(errorDetails ? { error_details: errorDetails } : {}),
+          ...(statusUpdatedAt ? { status_updated_at: statusUpdatedAt } : {}),
+        };
+
+        return {
+          ...msg,
+          status,
+          metadata: Object.keys(mergedMeta).length > 0 ? mergedMeta : null,
+        };
+      };
+
+      setRealtimeMessages((prev) =>
+        prev.map((msg) => (msg.id === messageId ? mergeMeta(msg) : msg)),
+      );
+      setOptimisticMessages((prev) =>
+        prev.map((msg) => (msg.id === messageId ? mergeMeta(msg) : msg)),
+      );
+    },
+    [statusRank],
+  );
+
+  const applyStatusUpdate = useCallback(
+    (update: {
+      messageId: string;
+      status: Message["status"];
+      errorDetails?: unknown;
+      statusUpdatedAt?: string;
+    }) => {
+      const { messageId, status } = update;
+
+      // Cancel any pending sent-debounce if a stronger status arrives
+      const existingTimer = sentDebounceTimersRef.current.get(messageId);
+      const cancelSentDebounce = existingTimer
+        ? () => {
+            clearTimeout(existingTimer);
+            sentDebounceTimersRef.current.delete(messageId);
+          }
+        : null;
+
+      if (status !== "sent") {
+        if (cancelSentDebounce) cancelSentDebounce();
+        commitStatusUpdate(update);
+        return;
       }
 
-      return {
-        ...prev,
-        [messageId]: { status, errorDetails, statusUpdatedAt },
-      }
-    })
-
-    const mergeMeta = (msg: Message): Message => {
-      const currentRank = statusRank(msg.status)
-      const nextRank = statusRank(status)
-      if (nextRank < currentRank) return msg
-
-      const baseMeta = msg.metadata && typeof msg.metadata === 'object'
-        ? msg.metadata as Record<string, unknown>
-        : {}
-      const mergedMeta: Record<string, unknown> = {
-        ...baseMeta,
-        ...(errorDetails ? { error_details: errorDetails } : {}),
-        ...(statusUpdatedAt ? { status_updated_at: statusUpdatedAt } : {}),
+      // Debounce 'sent' so quick failures don't briefly show ✓
+      if (sentDebounceTimersRef.current.has(messageId)) {
+        return;
       }
 
-      return {
-        ...msg,
-        status,
-        metadata: Object.keys(mergedMeta).length > 0 ? mergedMeta : null,
-      }
-    }
+      const SENT_DEBOUNCE_MS = 1200;
+      const timeout = setTimeout(() => {
+        sentDebounceTimersRef.current.delete(messageId);
+        commitStatusUpdate(update);
+      }, SENT_DEBOUNCE_MS);
 
-    setRealtimeMessages(prev => prev.map(msg => (msg.id === messageId ? mergeMeta(msg) : msg)))
-    setOptimisticMessages(prev => prev.map(msg => (msg.id === messageId ? mergeMeta(msg) : msg)))
-  }, [statusRank])
-
-  const applyStatusUpdate = useCallback((update: {
-    messageId: string
-    status: Message['status']
-    errorDetails?: unknown
-    statusUpdatedAt?: string
-  }) => {
-    const { messageId, status } = update
-
-    // Cancel any pending sent-debounce if a stronger status arrives
-    const existingTimer = sentDebounceTimersRef.current.get(messageId)
-    const cancelSentDebounce = existingTimer
-      ? () => {
-        clearTimeout(existingTimer)
-        sentDebounceTimersRef.current.delete(messageId)
-      }
-      : null
-
-    if (status !== 'sent') {
-      if (cancelSentDebounce) cancelSentDebounce()
-      commitStatusUpdate(update)
-      return
-    }
-
-    // Debounce 'sent' so quick failures don't briefly show ✓
-    if (sentDebounceTimersRef.current.has(messageId)) {
-      return
-    }
-
-    const SENT_DEBOUNCE_MS = 1200
-    const timeout = setTimeout(() => {
-      sentDebounceTimersRef.current.delete(messageId)
-      commitStatusUpdate(update)
-    }, SENT_DEBOUNCE_MS)
-
-    sentDebounceTimersRef.current.set(messageId, timeout)
-  }, [commitStatusUpdate])
+      sentDebounceTimersRef.current.set(messageId, timeout);
+    },
+    [commitStatusUpdate],
+  );
 
   // Combine fetched + realtime + optimistic messages, removing duplicates and deleted messages
   const messages = useMemo(() => {
-    const allMessages = [...fetchedMessages, ...realtimeMessages, ...optimisticMessages]
+    const allMessages = [
+      ...fetchedMessages,
+      ...realtimeMessages,
+      ...optimisticMessages,
+    ];
 
     // Remove duplicates based on message ID and filter out deleted messages
     const getWamid = (msg: Message): string | null => {
-      if (!msg.metadata || typeof msg.metadata !== 'object') return null
-      const raw = (msg.metadata as Record<string, unknown>).wamid
-      return typeof raw === 'string' && raw.length > 0 ? raw : null
-    }
+      if (!msg.metadata || typeof msg.metadata !== "object") return null;
+      const raw = (msg.metadata as Record<string, unknown>).wamid;
+      return typeof raw === "string" && raw.length > 0 ? raw : null;
+    };
 
     const preferMessage = (current: Message, next: Message): Message => {
       // Prefer interactive rendering if either is interactive
-      if (current.type !== 'interactive' && next.type === 'interactive') return next
-      if (current.type === 'interactive' && next.type !== 'interactive') return current
+      if (current.type !== "interactive" && next.type === "interactive")
+        return next;
+      if (current.type === "interactive" && next.type !== "interactive")
+        return current;
 
       // Prefer the one with richer metadata (wamid/error details/media)
-      const currentMetaSize = current.metadata && typeof current.metadata === 'object'
-        ? Object.keys(current.metadata as Record<string, unknown>).length
-        : 0
-      const nextMetaSize = next.metadata && typeof next.metadata === 'object'
-        ? Object.keys(next.metadata as Record<string, unknown>).length
-        : 0
-      if (nextMetaSize > currentMetaSize) return next
+      const currentMetaSize =
+        current.metadata && typeof current.metadata === "object"
+          ? Object.keys(current.metadata as Record<string, unknown>).length
+          : 0;
+      const nextMetaSize =
+        next.metadata && typeof next.metadata === "object"
+          ? Object.keys(next.metadata as Record<string, unknown>).length
+          : 0;
+      if (nextMetaSize > currentMetaSize) return next;
 
       // Default: keep current
-      return current
-    }
+      return current;
+    };
 
-    const byKey = new Map<string, Message>()
+    const byKey = new Map<string, Message>();
     for (const message of allMessages) {
-      const isDeleted = deletedMessageIds.has(message.id)
-      if (isDeleted) continue
+      const isDeleted = deletedMessageIds.has(message.id);
+      if (isDeleted) continue;
 
-      const wamid = getWamid(message)
-      const key = wamid ? `wamid:${wamid}` : `id:${message.id}`
+      const wamid = getWamid(message);
+      const key = wamid ? `wamid:${wamid}` : `id:${message.id}`;
 
-      const existing = byKey.get(key)
+      const existing = byKey.get(key);
       if (!existing) {
-        byKey.set(key, message)
-        continue
+        byKey.set(key, message);
+        continue;
       }
 
-      byKey.set(key, preferMessage(existing, message))
+      byKey.set(key, preferMessage(existing, message));
     }
 
-    const uniqueMessages = Array.from(byKey.values())
+    const uniqueMessages = Array.from(byKey.values());
 
     // Sort by timestamp
-    uniqueMessages.sort((a, b) =>
-      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-    )
+    uniqueMessages.sort(
+      (a, b) =>
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+    );
 
     // Apply status updates even if the message lives in fetchedMessages
-    const messagesWithStatusOverrides = uniqueMessages.map(message => {
-      const override = statusUpdates[message.id]
-      if (!override) return message
+    const messagesWithStatusOverrides = uniqueMessages.map((message) => {
+      const override = statusUpdates[message.id];
+      if (!override) return message;
 
-      const nextStatus = override.status
-      const shouldUpdateStatus = nextStatus && nextStatus !== message.status
-      const hasExtra = Boolean(override.errorDetails) || Boolean(override.statusUpdatedAt)
-      if (!shouldUpdateStatus && !hasExtra) return message
+      const nextStatus = override.status;
+      const shouldUpdateStatus = nextStatus && nextStatus !== message.status;
+      const hasExtra =
+        Boolean(override.errorDetails) || Boolean(override.statusUpdatedAt);
+      if (!shouldUpdateStatus && !hasExtra) return message;
 
-      const baseMeta = message.metadata && typeof message.metadata === 'object'
-        ? message.metadata as Record<string, unknown>
-        : {}
+      const baseMeta =
+        message.metadata && typeof message.metadata === "object"
+          ? (message.metadata as Record<string, unknown>)
+          : {};
 
       const mergedMeta: Record<string, unknown> = {
         ...baseMeta,
-        ...(override.errorDetails ? { error_details: override.errorDetails } : {}),
-        ...(override.statusUpdatedAt ? { status_updated_at: override.statusUpdatedAt } : {}),
-      }
+        ...(override.errorDetails
+          ? { error_details: override.errorDetails }
+          : {}),
+        ...(override.statusUpdatedAt
+          ? { status_updated_at: override.statusUpdatedAt }
+          : {}),
+      };
 
       return {
         ...message,
         ...(shouldUpdateStatus ? { status: nextStatus } : {}),
         metadata: Object.keys(mergedMeta).length > 0 ? mergedMeta : null,
-      }
-    })
+      };
+    });
 
-    return messagesWithStatusOverrides
-  }, [fetchedMessages, realtimeMessages, optimisticMessages, deletedMessageIds, statusUpdates])
+    return messagesWithStatusOverrides;
+  }, [
+    fetchedMessages,
+    realtimeMessages,
+    optimisticMessages,
+    deletedMessageIds,
+    statusUpdates,
+  ]);
 
   // Check if user is at bottom - uses the state that's updated by scroll handler
   const checkIfUserAtBottom = useCallback(() => {
     // Also do a fresh check in case state is stale
-    const scrollElement = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]')
-    if (!scrollElement) return isUserAtBottom
+    const scrollElement = scrollAreaRef.current?.querySelector(
+      "[data-radix-scroll-area-viewport]",
+    );
+    if (!scrollElement) return isUserAtBottom;
 
-    const threshold = 100 // 100px do fim
-    const freshIsAtBottom = scrollElement.scrollHeight - scrollElement.scrollTop - scrollElement.clientHeight < threshold
-    return freshIsAtBottom
-  }, [isUserAtBottom])
+    const threshold = 100; // 100px do fim
+    const freshIsAtBottom =
+      scrollElement.scrollHeight -
+        scrollElement.scrollTop -
+        scrollElement.clientHeight <
+      threshold;
+    return freshIsAtBottom;
+  }, [isUserAtBottom]);
 
   // Scroll to bottom
   const scrollToBottom = useCallback(() => {
-    const scrollElement = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]')
+    const scrollElement = scrollAreaRef.current?.querySelector(
+      "[data-radix-scroll-area-viewport]",
+    );
     if (scrollElement) {
-      scrollElement.scrollTop = scrollElement.scrollHeight
-      setIsUserAtBottom(true)
-      setNewMessagesCount(0)
+      scrollElement.scrollTop = scrollElement.scrollHeight;
+      setIsUserAtBottom(true);
+      setNewMessagesCount(0);
     }
-  }, [])
+  }, []);
 
   // Handle optimistic message (from SendMessageForm)
   const handleOptimisticMessage = useCallback((message: Message) => {
-    setOptimisticMessages(prev => [...prev, message])
-    shouldScrollRef.current = true // Always scroll for user's own messages
-  }, [])
+    setOptimisticMessages((prev) => [...prev, message]);
+    shouldScrollRef.current = true; // Always scroll for user's own messages
+  }, []);
 
   // Handle message error (remove optimistic message)
   const handleMessageError = useCallback((tempId: string) => {
-    setOptimisticMessages(prev => prev.filter(msg => msg.id !== tempId))
-  }, [])
+    setOptimisticMessages((prev) => prev.filter((msg) => msg.id !== tempId));
+  }, []);
 
   // Stable callback for handling new messages from realtime
-  const handleNewMessage = useCallback((newMessage: Message) => {
-    // Reconcile optimistic outgoing message to avoid flicker/disappear.
-    // If we receive a confirmed outgoing message that matches an optimistic one,
-    // remove the optimistic entry and keep only the confirmed one.
-    if (newMessage.direction === 'outgoing') {
-      setOptimisticMessages(prev => {
-        if (prev.length === 0) return prev
+  const handleNewMessage = useCallback(
+    (newMessage: Message) => {
+      // Reconcile optimistic outgoing message to avoid flicker/disappear.
+      // If we receive a confirmed outgoing message that matches an optimistic one,
+      // remove the optimistic entry and keep only the confirmed one.
+      if (newMessage.direction === "outgoing") {
+        setOptimisticMessages((prev) => {
+          if (prev.length === 0) return prev;
 
-        const normalizedNew = (newMessage.content || '').trim()
-        const newTs = new Date(newMessage.timestamp).getTime()
-        const MAX_SKEW_MS = 30_000
+          const normalizedNew = (newMessage.content || "").trim();
+          const newTs = new Date(newMessage.timestamp).getTime();
+          const MAX_SKEW_MS = 30_000;
 
-        const reduced = prev.reduce((acc, m) => {
-          if (acc.removedOne) {
-            return { ...acc, kept: [...acc.kept, m] }
-          }
+          const reduced = prev.reduce(
+            (acc, m) => {
+              if (acc.removedOne) {
+                return { ...acc, kept: [...acc.kept, m] };
+              }
 
-          if (m.direction !== 'outgoing') {
-            return { ...acc, kept: [...acc.kept, m] }
-          }
+              if (m.direction !== "outgoing") {
+                return { ...acc, kept: [...acc.kept, m] };
+              }
 
-          const normalizedOld = (m.content || '').trim()
-          const oldTs = new Date(m.timestamp).getTime()
-          const closeInTime = Math.abs(newTs - oldTs) <= MAX_SKEW_MS
-          const sameContent = normalizedOld.length > 0 && normalizedOld === normalizedNew
+              const normalizedOld = (m.content || "").trim();
+              const oldTs = new Date(m.timestamp).getTime();
+              const closeInTime = Math.abs(newTs - oldTs) <= MAX_SKEW_MS;
+              const sameContent =
+                normalizedOld.length > 0 && normalizedOld === normalizedNew;
 
-          if (closeInTime && sameContent) {
-            return { ...acc, removedOne: true }
-          }
+              if (closeInTime && sameContent) {
+                return { ...acc, removedOne: true };
+              }
 
-          return { ...acc, kept: [...acc.kept, m] }
-        }, { kept: [] as Message[], removedOne: false })
+              return { ...acc, kept: [...acc.kept, m] };
+            },
+            { kept: [] as Message[], removedOne: false },
+          );
 
-        return reduced.kept
-      })
-    }
-
-    // Add realtime message (hold 'sent' briefly to avoid ✓ flash before ❌)
-    const shouldHoldSent = newMessage.direction === 'outgoing' && newMessage.status === 'sent'
-    const stagedMessage = shouldHoldSent ? { ...newMessage, status: 'pending' as const } : newMessage
-
-    setRealtimeMessages(prev => {
-      // Check if message already exists in realtime messages
-      const exists = prev.some(msg => msg.id === newMessage.id)
-      if (exists) {
-        return prev
+          return reduced.kept;
+        });
       }
 
-      return [...prev, stagedMessage]
-    })
+      // Add realtime message (hold 'sent' briefly to avoid ✓ flash before ❌)
+      const shouldHoldSent =
+        newMessage.direction === "outgoing" && newMessage.status === "sent";
+      const stagedMessage = shouldHoldSent
+        ? { ...newMessage, status: "pending" as const }
+        : newMessage;
 
-    if (shouldHoldSent) {
-      applyStatusUpdate({
-        messageId: newMessage.id,
-        status: 'sent',
-      })
-    }
+      setRealtimeMessages((prev) => {
+        // Check if message already exists in realtime messages
+        const exists = prev.some((msg) => msg.id === newMessage.id);
+        if (exists) {
+          return prev;
+        }
 
-    // Marcar conversa como lida (já que está visualizando)
-    if (onMarkAsRead) {
-      onMarkAsRead(phone)
-    }
+        return [...prev, stagedMessage];
+      });
 
-    // Se usuário está no fim, scroll automático
-    const isAtBottom = checkIfUserAtBottom()
-    if (isAtBottom) {
-      shouldScrollRef.current = true
-    } else {
-      // Se não está no fim, incrementa contador (badge UI handles notification)
-      setNewMessagesCount(prev => prev + 1)
-    }
-  }, [applyStatusUpdate, checkIfUserAtBottom, onMarkAsRead, phone])
+      if (shouldHoldSent) {
+        applyStatusUpdate({
+          messageId: newMessage.id,
+          status: "sent",
+        });
+      }
+
+      // Marcar conversa como lida (já que está visualizando)
+      if (onMarkAsRead) {
+        onMarkAsRead(phone);
+      }
+
+      // Se usuário está no fim, scroll automático
+      const isAtBottom = checkIfUserAtBottom();
+      if (isAtBottom) {
+        shouldScrollRef.current = true;
+      } else {
+        // Se não está no fim, incrementa contador (badge UI handles notification)
+        setNewMessagesCount((prev) => prev + 1);
+      }
+    },
+    [applyStatusUpdate, checkIfUserAtBottom, onMarkAsRead, phone],
+  );
 
   // Handle message reaction via WhatsApp API
-  const handleReaction = useCallback(async (messageId: string, emoji: string) => {
-    try {
-      const response = await fetch('/api/commands/react-message', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone,
-          messageId,
-          emoji,
-        }),
-      })
+  const handleReaction = useCallback(
+    async (messageId: string, emoji: string) => {
+      try {
+        const response = await fetch("/api/commands/react-message", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            phone,
+            messageId,
+            emoji,
+          }),
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to send reaction')
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to send reaction");
+        }
+
+        toast({
+          title: emoji ? "Reação enviada" : "Reação removida",
+          description: emoji
+            ? `Você reagiu com ${emoji}`
+            : "Reação removida com sucesso",
+        });
+      } catch (error) {
+        toast({
+          title: "Erro ao reagir",
+          description:
+            error instanceof Error ? error.message : "Erro desconhecido",
+          variant: "destructive",
+        });
       }
-
-      toast({
-        title: emoji ? 'Reação enviada' : 'Reação removida',
-        description: emoji ? `Você reagiu com ${emoji}` : 'Reação removida com sucesso',
-      })
-    } catch (error) {
-      toast({
-        title: 'Erro ao reagir',
-        description: error instanceof Error ? error.message : 'Erro desconhecido',
-        variant: 'destructive',
-      })
-    }
-  }, [phone, toast])
+    },
+    [phone, toast],
+  );
 
   // Handle message deletion
-  const handleDelete = useCallback(async (messageId: string, mediaUrl?: string) => {
-    try {
-      const response = await fetch('/api/commands/delete-message', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messageId,
-          mediaUrl,
-        }),
-      })
+  const handleDelete = useCallback(
+    async (messageId: string, mediaUrl?: string) => {
+      try {
+        const response = await fetch("/api/commands/delete-message", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messageId,
+            mediaUrl,
+          }),
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to delete message')
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to delete message");
+        }
+
+        // Optimistically remove from UI
+        setDeletedMessageIds((prev) => {
+          const newSet = new Set(prev);
+          newSet.add(messageId);
+          return newSet;
+        });
+
+        toast({
+          title: "Mensagem apagada",
+          description: "A mensagem foi removida com sucesso",
+        });
+      } catch (error) {
+        toast({
+          title: "Erro ao apagar",
+          description:
+            error instanceof Error ? error.message : "Erro desconhecido",
+          variant: "destructive",
+        });
       }
-
-      // Optimistically remove from UI
-      setDeletedMessageIds(prev => {
-        const newSet = new Set(prev)
-        newSet.add(messageId)
-        return newSet
-      })
-
-      toast({
-        title: 'Mensagem apagada',
-        description: 'A mensagem foi removida com sucesso',
-      })
-    } catch (error) {
-      toast({
-        title: 'Erro ao apagar',
-        description: error instanceof Error ? error.message : 'Erro desconhecido',
-        variant: 'destructive',
-      })
-    }
-  }, [toast])
+    },
+    [toast],
+  );
 
   // Handle message status update from realtime
-  const handleMessageStatusUpdate = useCallback((update: {
-    messageId: string
-    status: Message['status']
-    errorDetails?: unknown
-    statusUpdatedAt?: string
-  }) => {
-    const { messageId, status, errorDetails, statusUpdatedAt } = update
-    console.log('📊 Status update received:', { messageId, status })
+  const handleMessageStatusUpdate = useCallback(
+    (update: {
+      messageId: string;
+      status: Message["status"];
+      errorDetails?: unknown;
+      statusUpdatedAt?: string;
+    }) => {
+      const { messageId, status, errorDetails, statusUpdatedAt } = update;
+      console.log("📊 Status update received:", { messageId, status });
 
-    applyStatusUpdate({ messageId, status, errorDetails, statusUpdatedAt })
-  }, [applyStatusUpdate])
+      applyStatusUpdate({ messageId, status, errorDetails, statusUpdatedAt });
+    },
+    [applyStatusUpdate],
+  );
 
   // Realtime subscription para novas mensagens (depois do handleNewMessage)
   const { isConnected: realtimeConnected } = useRealtimeMessages({
@@ -493,7 +570,7 @@ export const ConversationDetail = ({
     phone,
     onNewMessage: handleNewMessage,
     onMessageUpdate: handleMessageStatusUpdate,
-  })
+  });
 
   // Expose optimistic callbacks to parent (after declarations)
   useEffect(() => {
@@ -501,134 +578,150 @@ export const ConversationDetail = ({
       onGetOptimisticCallbacks({
         onOptimisticMessage: handleOptimisticMessage,
         onMessageError: handleMessageError,
-      })
+      });
     }
-  }, [onGetOptimisticCallbacks, handleOptimisticMessage, handleMessageError])
+  }, [onGetOptimisticCallbacks, handleOptimisticMessage, handleMessageError]);
 
   // Smart scroll - só faz scroll se usuário estava no fim ou se é mensagem própria
   useEffect(() => {
     if (shouldScrollRef.current) {
-      const scrollElement = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]')
+      const scrollElement = scrollAreaRef.current?.querySelector(
+        "[data-radix-scroll-area-viewport]",
+      );
       if (scrollElement) {
         // Pequeno delay para garantir que DOM foi atualizado
         setTimeout(() => {
-          scrollElement.scrollTop = scrollElement.scrollHeight
-          setIsUserAtBottom(true)
-          setNewMessagesCount(0)
-          shouldScrollRef.current = false
-        }, 50)
+          scrollElement.scrollTop = scrollElement.scrollHeight;
+          setIsUserAtBottom(true);
+          setNewMessagesCount(0);
+          shouldScrollRef.current = false;
+        }, 50);
       }
     }
-  }, [messages])
+  }, [messages]);
 
   // Helper function to calculate current sticky date from refs
-  const calculateStickyDate = useCallback((scrollElement: Element): string | null => {
-    const STICKY_HEADER_OFFSET = 50
-    let currentDate: string | null = null
-    let currentDateElement: HTMLDivElement | null = null
-    const containerRect = scrollElement.getBoundingClientRect()
+  const calculateStickyDate = useCallback(
+    (scrollElement: Element): string | null => {
+      const STICKY_HEADER_OFFSET = 50;
+      let currentDate: string | null = null;
+      let currentDateElement: HTMLDivElement | null = null;
+      const containerRect = scrollElement.getBoundingClientRect();
 
-    dateRefs.current.forEach((element, date) => {
-      const rect = element.getBoundingClientRect()
-      if (rect.top <= containerRect.top + STICKY_HEADER_OFFSET) {
-        currentDate = date
-        currentDateElement = element
+      dateRefs.current.forEach((element, date) => {
+        const rect = element.getBoundingClientRect();
+        if (rect.top <= containerRect.top + STICKY_HEADER_OFFSET) {
+          currentDate = date;
+          currentDateElement = element;
+        }
+      });
+
+      // Hide sticky when the inline date separator is still visible
+      // to avoid showing the same date twice
+      if (currentDateElement) {
+        const rect = (
+          currentDateElement as HTMLDivElement
+        ).getBoundingClientRect();
+        if (rect.bottom > containerRect.top + 10) {
+          return null;
+        }
       }
-    })
 
-    // Hide sticky when the inline date separator is still visible
-    // to avoid showing the same date twice
-    if (currentDateElement) {
-      const rect = (currentDateElement as HTMLDivElement).getBoundingClientRect()
-      if (rect.bottom > containerRect.top + 10) {
-        return null
-      }
-    }
-
-    return currentDate
-  }, [])
+      return currentDate;
+    },
+    [],
+  );
 
   // Combined scroll handler - throttled to prevent mobile freezing
   // Single useEffect with both scroll position and sticky date tracking
   // Setup once and relies on refs for current data
   useEffect(() => {
-    const scrollElement = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]')
-    if (!scrollElement) return
+    const scrollElement = scrollAreaRef.current?.querySelector(
+      "[data-radix-scroll-area-viewport]",
+    );
+    if (!scrollElement) return;
 
     // Combined handler for both scroll position and sticky date
     const handleScrollUpdate = () => {
       // Check if user is at bottom (within 100px)
-      const threshold = 100
-      const isAtBottom = scrollElement.scrollHeight - scrollElement.scrollTop - scrollElement.clientHeight < threshold
-      setIsUserAtBottom(isAtBottom)
+      const threshold = 100;
+      const isAtBottom =
+        scrollElement.scrollHeight -
+          scrollElement.scrollTop -
+          scrollElement.clientHeight <
+        threshold;
+      setIsUserAtBottom(isAtBottom);
 
       // Update sticky date header using refs (always current)
-      setStickyDate(calculateStickyDate(scrollElement))
-    }
+      setStickyDate(calculateStickyDate(scrollElement));
+    };
 
     // Throttle scroll handler to 100ms - prevents excessive updates on mobile
-    const throttledScrollHandler = throttle(handleScrollUpdate, 100)
+    const throttledScrollHandler = throttle(handleScrollUpdate, 100);
 
-    scrollElement.addEventListener('scroll', throttledScrollHandler, { passive: true })
+    scrollElement.addEventListener("scroll", throttledScrollHandler, {
+      passive: true,
+    });
     // Initial call to set the date
-    handleScrollUpdate()
+    handleScrollUpdate();
 
     return () => {
-      scrollElement.removeEventListener('scroll', throttledScrollHandler)
-    }
-  }, [calculateStickyDate]) // calculateStickyDate is stable (uses useCallback)
+      scrollElement.removeEventListener("scroll", throttledScrollHandler);
+    };
+  }, [calculateStickyDate]); // calculateStickyDate is stable (uses useCallback)
 
   // Trigger sticky date update when messages change (for initial render and new messages)
   useEffect(() => {
     // Delay to allow DOM to update with new messages
     const timeout = setTimeout(() => {
-      const scrollElement = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]')
-      if (!scrollElement) return
+      const scrollElement = scrollAreaRef.current?.querySelector(
+        "[data-radix-scroll-area-viewport]",
+      );
+      if (!scrollElement) return;
 
-      setStickyDate(calculateStickyDate(scrollElement))
-    }, 100)
+      setStickyDate(calculateStickyDate(scrollElement));
+    }, 100);
 
-    return () => clearTimeout(timeout)
-  }, [messages.length, calculateStickyDate])
+    return () => clearTimeout(timeout);
+  }, [messages.length, calculateStickyDate]);
 
   // Clear date refs when conversation changes
   useEffect(() => {
-    dateRefs.current.clear()
-  }, [phone])
+    dateRefs.current.clear();
+  }, [phone]);
 
   // Group messages with date separators
   const messagesWithDates = useMemo(() => {
     const result: Array<
-      | { type: 'message'; message: Message }
-      | { type: 'date'; date: string }
-    > = []
-    
+      { type: "message"; message: Message } | { type: "date"; date: string }
+    > = [];
+
     messages.forEach((message, index) => {
       // Add date separator if this is the first message or day changed
       if (index === 0) {
         result.push({
-          type: 'date',
+          type: "date",
           date: formatMessageDate(message.timestamp),
-        })
+        });
       } else {
-        const prevMessage = messages[index - 1]
+        const prevMessage = messages[index - 1];
         if (!isSameDay(prevMessage.timestamp, message.timestamp)) {
           result.push({
-            type: 'date',
+            type: "date",
             date: formatMessageDate(message.timestamp),
-          })
+          });
         }
       }
-      
+
       // Add message
       result.push({
-        type: 'message',
+        type: "message",
         message: message,
-      })
-    })
-    
-    return result
-  }, [messages])
+      });
+    });
+
+    return result;
+  }, [messages]);
 
   if (error) {
     return (
@@ -637,7 +730,7 @@ export const ConversationDetail = ({
           Erro ao carregar mensagens: {error}
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -659,7 +752,8 @@ export const ConversationDetail = ({
             className="bg-mint-600 hover:bg-mint-700 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 transition-all animate-in slide-in-from-bottom-5"
           >
             <span className="text-sm font-medium">
-              {newMessagesCount} nova{newMessagesCount > 1 ? 's' : ''} mensagem{newMessagesCount > 1 ? 's' : ''}
+              {newMessagesCount} nova{newMessagesCount > 1 ? "s" : ""} mensagem
+              {newMessagesCount > 1 ? "s" : ""}
             </span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -668,50 +762,85 @@ export const ConversationDetail = ({
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 14l-7 7m0 0l-7-7m7 7V3"
+              />
             </svg>
           </button>
         </div>
       )}
-      
+
+      {/* Botão de ir para mais recente (sem novas mensagens) */}
+      {!isUserAtBottom && newMessagesCount === 0 && messages.length > 0 && (
+        <div className="absolute bottom-20 right-4 z-20">
+          <button
+            onClick={scrollToBottom}
+            className="bg-muted hover:bg-muted/80 text-muted-foreground p-3 rounded-full shadow-lg transition-all animate-in slide-in-from-bottom-5"
+            title="Ir para mensagens recentes"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 14l-7 7m0 0l-7-7m7 7V3"
+              />
+            </svg>
+          </button>
+        </div>
+      )}
+
       <div className="flex-1 overflow-hidden">
         {shouldShowLoading ? (
           <div className="flex items-center justify-center h-full">
             <div className="flex flex-col items-center gap-2">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              <span className="text-sm text-muted-foreground">Carregando mensagens...</span>
+              <span className="text-sm text-muted-foreground">
+                Carregando mensagens...
+              </span>
             </div>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
-            <span className="text-sm text-muted-foreground">Nenhuma mensagem ainda</span>
+            <span className="text-sm text-muted-foreground">
+              Nenhuma mensagem ainda
+            </span>
           </div>
         ) : (
           <ScrollArea
             ref={scrollAreaRef}
             className="h-full px-2 md:px-4"
             style={{
-              backgroundImage: 'var(--chat-background-image, none)',
-              backgroundSize: 'auto',
-              backgroundRepeat: 'repeat',
-              backgroundPosition: 'center',
+              backgroundImage: "var(--chat-background-image, none)",
+              backgroundSize: "auto",
+              backgroundRepeat: "repeat",
+              backgroundPosition: "center",
             }}
           >
             <div className="py-3 md:py-4 space-y-2">
               {messagesWithDates.map((item, index) => {
-                if (item.type === 'date') {
+                if (item.type === "date") {
                   return (
-                    <div 
+                    <div
                       key={`date-${index}`}
                       ref={(el) => {
                         if (el) {
-                          dateRefs.current.set(item.date, el)
+                          dateRefs.current.set(item.date, el);
                         }
                       }}
                     >
                       <DateSeparator date={item.date} />
                     </div>
-                  )
+                  );
                 } else {
                   return (
                     <MessageBubble
@@ -720,7 +849,7 @@ export const ConversationDetail = ({
                       onReaction={handleReaction}
                       onDelete={handleDelete}
                     />
-                  )
+                  );
                 }
               })}
             </div>
@@ -728,5 +857,5 @@ export const ConversationDetail = ({
         )}
       </div>
     </div>
-  )
-}
+  );
+};

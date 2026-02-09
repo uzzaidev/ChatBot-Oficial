@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
-import { cleanMessageContent } from "@/lib/utils";
 import { query } from "@/lib/postgres";
-import type { Message, MessageType } from "@/lib/types";
 import { getClientIdFromSession } from "@/lib/supabase-server";
+import type { Message, MessageType } from "@/lib/types";
+import { cleanMessageContent } from "@/lib/utils";
+import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +14,8 @@ const VALID_MESSAGE_TYPES = new Set<MessageType>([
   "document",
   "video",
   "interactive",
+  "sticker",
+  "reaction",
 ]);
 
 interface RouteParams {
@@ -51,8 +53,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
          AND client_id = $2`,
         [phone, clientId],
       );
-    } catch (pgError) {
-    }
+    } catch (pgError) {}
 
     // 🔐 SECURITY: Filter messages by authenticated user's client_id
     // Buscar TODAS as mensagens via PostgreSQL direto (sem limite)
@@ -84,8 +85,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const dataReversed = (data || []).reverse();
 
     // Transformar dados do n8n_chat_histories para formato Message
-    const n8nMessages: Message[] = dataReversed.map(
-      (item: any, index: number) => {
+    const n8nMessages: Message[] = dataReversed
+      .map((item: any, index: number) => {
         // O n8n_chat_histories salva message como JSON:
         // { "type": "human" | "ai", "content": "...", "additional_kwargs": {}, "response_metadata": {} }
 
@@ -130,10 +131,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
         // 📎 Determine message type based on media metadata with validation
         const rawMsgType = mediaMetadata?.type || "text";
-        const msgType: MessageType =
-          VALID_MESSAGE_TYPES.has(rawMsgType as MessageType)
-            ? (rawMsgType as MessageType)
-            : "text";
+        const msgType: MessageType = VALID_MESSAGE_TYPES.has(
+          rawMsgType as MessageType,
+        )
+          ? (rawMsgType as MessageType)
+          : "text";
 
         // 📱 Include wamid in metadata for reactions
         const metadata: Record<string, unknown> = {};
@@ -149,6 +151,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         if (item.updated_at) {
           metadata.status_updated_at = item.updated_at;
         }
+        // 😊 Extract reactions from message JSON (stored by updateMessageReaction)
+        if (messageData.metadata?.reactions) {
+          metadata.reactions = messageData.metadata.reactions;
+        }
 
         return {
           id: item.id?.toString() || `msg-${index}`,
@@ -158,21 +164,22 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           name: messageType === "human" ? "Cliente" : "Bot",
           content: cleanedContent,
           type: msgType,
-          direction: messageType === "human"
-            ? ("incoming" as const)
-            : ("outgoing" as const),
+          direction:
+            messageType === "human"
+              ? ("incoming" as const)
+              : ("outgoing" as const),
           status: (item.status || "sent") as Message["status"],
           timestamp: item.created_at || new Date().toISOString(),
           metadata: Object.keys(metadata).length > 0 ? metadata : null,
           transcription: item.transcription || null,
           audio_duration_seconds: item.audio_duration_seconds || null,
         };
-      },
-    ).filter(Boolean) as Message[];
+      })
+      .filter(Boolean) as Message[];
 
     // Mensagens persistidas diretamente na tabela messages (ex: interativos)
-    const savedMessages: Message[] = (interactiveData || []).map(
-      (item: any, index: number) => {
+    const savedMessages: Message[] = (interactiveData || [])
+      .map((item: any, index: number) => {
         const parsedMetadata = (() => {
           if (!item.metadata) return null;
           if (typeof item.metadata === "string") {
@@ -185,9 +192,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           return item.metadata;
         })();
 
-        const metadata = parsedMetadata && typeof parsedMetadata === "object"
-          ? parsedMetadata as Record<string, unknown>
-          : null;
+        const metadata =
+          parsedMetadata && typeof parsedMetadata === "object"
+            ? (parsedMetadata as Record<string, unknown>)
+            : null;
 
         const msgType: MessageType = (() => {
           if (metadata && (metadata as any).interactive) return "interactive";
@@ -197,15 +205,17 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           return "text";
         })();
 
-        const direction = item.direction === "incoming"
-          ? "incoming"
-          : "outgoing";
+        const direction =
+          item.direction === "incoming" ? "incoming" : "outgoing";
 
         // Evitar duplicar mensagens de texto do usuário já salvas em n8n_chat_histories
-        const isDuplicableIncomingText = direction === "incoming" &&
+        const isDuplicableIncomingText =
+          direction === "incoming" &&
           msgType === "text" &&
-          !((metadata as any)?.interactive_response_id ||
-            (metadata as any)?.interactive);
+          !(
+            (metadata as any)?.interactive_response_id ||
+            (metadata as any)?.interactive
+          );
 
         if (isDuplicableIncomingText) {
           return null;
@@ -226,8 +236,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           transcription: item.transcription || null,
           audio_duration_seconds: item.audio_duration_seconds || null,
         };
-      },
-    ).filter(Boolean) as Message[];
+      })
+      .filter(Boolean) as Message[];
 
     // Combinar e ordenar por timestamp
     const combined = [...n8nMessages, ...savedMessages];
@@ -252,9 +262,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         current.metadata && typeof current.metadata === "object"
           ? Object.keys(current.metadata as Record<string, unknown>).length
           : 0;
-      const nextMetaSize = next.metadata && typeof next.metadata === "object"
-        ? Object.keys(next.metadata as Record<string, unknown>).length
-        : 0;
+      const nextMetaSize =
+        next.metadata && typeof next.metadata === "object"
+          ? Object.keys(next.metadata as Record<string, unknown>).length
+          : 0;
       if (nextMetaSize > currentMetaSize) return next;
 
       return current;
@@ -276,18 +287,21 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
     });
 
-    return NextResponse.json({
-      messages,
-      total: messages.length,
-      phone,
-    }, {
-      headers: {
-        "Cache-Control":
-          "no-store, no-cache, must-revalidate, proxy-revalidate",
-        "Pragma": "no-cache",
-        "Expires": "0",
+    return NextResponse.json(
+      {
+        messages,
+        total: messages.length,
+        phone,
       },
-    });
+      {
+        headers: {
+          "Cache-Control":
+            "no-store, no-cache, must-revalidate, proxy-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      },
+    );
   } catch (error) {
     console.error("/api/messages error", error);
     return NextResponse.json(

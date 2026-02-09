@@ -54,38 +54,37 @@ export const updateMessageReaction = async (
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
   try {
-    // 1. Find the message by wamid (stored in metadata.wamid)
-    // Messages are stored in n8n_chat_histories with metadata containing wamid
+    // 1. Find the message by wamid column (dedicated column in n8n_chat_histories)
+    console.log(
+      `🔍 [Reaction] Searching for message with wamid: ${targetWamid}, clientId: ${clientId}`,
+    );
+
     const { data: messages, error: findError } = await supabase
       .from("n8n_chat_histories")
-      .select("id, message, client_id")
+      .select("id, message, wamid")
       .eq("client_id", clientId)
-      .not("message", "is", null);
+      .eq("wamid", targetWamid)
+      .limit(1);
 
     if (findError) {
       console.error("❌ [Reaction] Error finding message:", findError);
       return { success: false, updated: false, error: findError.message };
     }
 
-    // 2. Search for the message with matching wamid in metadata
-    let targetMessage: { id: number; message: Record<string, unknown> } | null =
-      null;
-
-    for (const row of messages || []) {
-      const msgData = row.message as Record<string, unknown> | null;
-      if (msgData && msgData.metadata) {
-        const metadata = msgData.metadata as Record<string, unknown>;
-        if (metadata.wamid === targetWamid) {
-          targetMessage = { id: row.id, message: msgData };
-          break;
+    // 2. Check if message was found
+    const targetMessage = messages?.[0]
+      ? {
+          id: messages[0].id as number,
+          message: messages[0].message as Record<string, unknown>,
         }
-      }
-    }
+      : null;
 
     if (!targetMessage) {
       console.log(`⚠️ [Reaction] Message not found for wamid: ${targetWamid}`);
       return { success: true, updated: false, error: "Message not found" };
     }
+
+    console.log(`✅ [Reaction] Found message id: ${targetMessage.id}`);
 
     // 3. Update the message's metadata with the reaction
     const existingMetadata =
