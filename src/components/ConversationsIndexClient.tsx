@@ -112,7 +112,12 @@ export function ConversationsIndexClient({
       // Verificar se já existe na lista de conversas
       const existingConversation = conversations.find((c) => c.phone === selectedPhone);
       if (existingConversation) {
-        setVirtualContact(null);
+        if (virtualContact) setVirtualContact(null);
+        return;
+      }
+
+      // Se já temos o virtual contact para este telefone, não buscar novamente
+      if (virtualContact && virtualContact.phone === selectedPhone) {
         return;
       }
 
@@ -168,7 +173,18 @@ export function ConversationsIndexClient({
     };
 
     fetchVirtualContact();
-  }, [selectedPhone, loading, conversations, clientId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPhone, loading, clientId]);
+
+  // Efeito para limpar virtual contact quando a conversa real aparecer
+  useEffect(() => {
+    if (virtualContact && selectedPhone) {
+      const existingConversation = conversations.find((c) => c.phone === selectedPhone);
+      if (existingConversation) {
+        setVirtualContact(null);
+      }
+    }
+  }, [conversations, selectedPhone, virtualContact]);
 
   // Hook global para notificações em tempo real
   // 🔐 Multi-tenant: Pass clientId for tenant isolation
