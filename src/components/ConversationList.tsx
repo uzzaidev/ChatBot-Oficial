@@ -1,13 +1,9 @@
 'use client'
 
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { StatusBadge } from '@/components/StatusBadge'
-import { formatPhone, formatDateTime, getInitials, truncateText } from '@/lib/utils'
 import type { ConversationWithCount } from '@/lib/types'
-import { MessageCircle, User, Workflow, Bot, ArrowRight } from 'lucide-react'
+import { cn, formatDateTime, formatPhone, getInitials, truncateText } from '@/lib/utils'
+import { ArrowRight, Bot, User, Workflow } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { cn } from '@/lib/utils'
-import { EmptyStateSimple } from '@/components/EmptyState'
 
 interface ConversationListProps {
   conversations: ConversationWithCount[]
@@ -41,11 +37,11 @@ export const ConversationList = ({
     }
 
     // Se callback onConversationOpen fornecido, usar ele (não redirecionar)
-    // Caso contrário, redirecionar para página de chat
+    // Caso contrário, redirecionar para página de conversas
     if (onConversationOpen) {
       onConversationOpen(phone)
     } else {
-      router.push(`/dashboard/chat?phone=${phone}&client_id=${clientId}`)
+      router.push(`/dashboard/conversations?phone=${phone}`)
     }
 
     // Marcar conversa como lida ao abrir

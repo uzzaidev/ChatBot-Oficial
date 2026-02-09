@@ -16,28 +16,28 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useChatTheme } from "@/hooks/useChatTheme";
 import { useConversations } from "@/hooks/useConversations";
 import { useGlobalRealtimeNotifications } from "@/hooks/useGlobalRealtimeNotifications";
-import { markConversationAsRead } from "@/lib/api";
-import type { Message } from "@/lib/types";
+import { apiFetch, markConversationAsRead } from "@/lib/api";
+import type { Conversation, Message } from "@/lib/types";
 import { getInitials } from "@/lib/utils";
 import {
-    ArrowRight,
-    Bot,
-    Home,
-    Menu,
-    MessageCircle,
-    Search,
-    User,
-    Workflow,
-    X,
+  ArrowRight,
+  Bot,
+  Home,
+  Menu,
+  MessageCircle,
+  Search,
+  User,
+  Workflow,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import {
-    useCallback,
-    useEffect,
-    useLayoutEffect,
-    useMemo,
-    useRef,
-    useState,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
 } from "react";
 
 interface ConversationsIndexClientProps {
@@ -89,18 +89,86 @@ export function ConversationsIndexClient({
     enableRealtime: true,
   });
 
+  // Estado para contato virtual (quando contato existe mas não tem conversa ainda)
+  const [virtualContact, setVirtualContact] = useState<Conversation | null>(null);
+  const [loadingVirtualContact, setLoadingVirtualContact] = useState(false);
+
   // Efeito para garantir que a conversa inicial seja selecionada
-  // Mesmo que o selectedPhone já esteja definido, precisamos garantir que
-  // a conversa seja encontrada e aberta
+  // Funciona tanto para conversas existentes quanto para novos contatos
   useEffect(() => {
-    if (initialPhone && !loading && conversations.length > 0) {
-      // Sempre tentar selecionar quando vem da URL
-      const conversation = conversations.find((c) => c.phone === initialPhone);
-      if (conversation && selectedPhone !== initialPhone) {
+    if (initialPhone && !loading) {
+      // Se o telefone da URL é diferente do atual, selecionar
+      if (selectedPhone !== initialPhone) {
         setSelectedPhone(initialPhone);
       }
     }
-  }, [initialPhone, loading, conversations]);
+  }, [initialPhone, loading]);
+
+  // Efeito para buscar contato virtual quando o telefone não está nas conversas
+  useEffect(() => {
+    const fetchVirtualContact = async () => {
+      if (!selectedPhone || loading) return;
+
+      // Verificar se já existe na lista de conversas
+      const existingConversation = conversations.find((c) => c.phone === selectedPhone);
+      if (existingConversation) {
+        setVirtualContact(null);
+        return;
+      }
+
+      // Buscar informações do contato na API
+      setLoadingVirtualContact(true);
+      try {
+        const response = await apiFetch(`/api/contacts/${selectedPhone}`);
+        if (response.ok) {
+          const data = await response.json();
+          // Criar conversa virtual com os dados do contato
+          setVirtualContact({
+            id: `virtual-${selectedPhone}`,
+            phone: data.contact.phone,
+            name: data.contact.name || "Sem nome",
+            status: data.contact.status || "bot",
+            last_update: new Date().toISOString(),
+            message_count: 0,
+            unread_count: 0,
+            last_message: null,
+            client_id: clientId,
+          });
+        } else {
+          // Contato não existe - criar conversa virtual mínima
+          setVirtualContact({
+            id: `virtual-${selectedPhone}`,
+            phone: selectedPhone,
+            name: "Novo Contato",
+            status: "bot",
+            last_update: new Date().toISOString(),
+            message_count: 0,
+            unread_count: 0,
+            last_message: null,
+            client_id: clientId,
+          });
+        }
+      } catch (error) {
+        console.error("Erro ao buscar contato:", error);
+        // Em caso de erro, criar conversa virtual mínima
+        setVirtualContact({
+          id: `virtual-${selectedPhone}`,
+          phone: selectedPhone,
+          name: "Novo Contato",
+          status: "bot",
+          last_update: new Date().toISOString(),
+          message_count: 0,
+          unread_count: 0,
+          last_message: null,
+          client_id: clientId,
+        });
+      } finally {
+        setLoadingVirtualContact(false);
+      }
+    };
+
+    fetchVirtualContact();
+  }, [selectedPhone, loading, conversations, clientId]);
 
   // Hook global para notificações em tempo real
   // 🔐 Multi-tenant: Pass clientId for tenant isolation
@@ -301,11 +369,15 @@ export function ConversationsIndexClient({
     return labels[status] || status;
   };
 
-  // Encontrar conversa selecionada
+  // Encontrar conversa selecionada (ou usar contato virtual)
   const selectedConversation = useMemo(() => {
     if (!selectedPhone) return null;
-    return conversations.find((c) => c.phone === selectedPhone);
-  }, [selectedPhone, conversations]);
+    // Primeiro tentar encontrar na lista de conversas reais
+    const realConversation = conversations.find((c) => c.phone === selectedPhone);
+    if (realConversation) return realConversation;
+    // Se não encontrar, usar o contato virtual (se existir)
+    return virtualContact;
+  }, [selectedPhone, conversations, virtualContact]);
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden bg-background">
@@ -581,7 +653,11 @@ export function ConversationsIndexClient({
 
         {/* Área Principal - Chat ou Empty State */}
         <div className="flex-1 flex flex-col bg-surface">
-          {selectedConversation && selectedPhone ? (
+          {loadingVirtualContact && selectedPhone ? (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : selectedConversation && selectedPhone ? (
             <>
               {/* Header do Chat */}
               <div className="bg-card p-3 border-b border-border">

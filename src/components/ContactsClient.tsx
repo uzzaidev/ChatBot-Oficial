@@ -145,9 +145,9 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
       setNewPhone("");
       setNewName("");
       setNewStatus("bot");
-      // Redirecionar para a página de chat com o novo contato
+      // Redirecionar para a página de conversas com o novo contato
       // Usar window.location para garantir navegação limpa sem cache
-      window.location.href = `/dashboard/chat?phone=${cleanPhone}&client_id=${clientId}`;
+      window.location.href = `/dashboard/conversations?phone=${cleanPhone}`;
     } else {
       toast({
         title: "Erro",
@@ -809,7 +809,7 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
               {/* Actions */}
               <div className="flex gap-2 pt-4">
                 <Link
-                  href={`/dashboard/chat?phone=${selectedContact.phone}&client_id=${clientId}`}
+                  href={`/dashboard/conversations?phone=${selectedContact.phone}`}
                   className="flex-1"
                 >
                   <Button variant="outline" className="w-full">

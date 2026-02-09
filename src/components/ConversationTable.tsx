@@ -1,11 +1,13 @@
 'use client'
 
-import { formatPhone, formatDateTime, getInitials, truncateText } from '@/lib/utils'
-import type { ConversationWithCount } from '@/lib/types'
-import { MessageCircle, User, Workflow, Bot, ArrowRight, MoreVertical } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   Table,
   TableBody,
@@ -14,13 +16,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import type { ConversationWithCount } from '@/lib/types'
+import { cn, formatDateTime, formatPhone, getInitials, truncateText } from '@/lib/utils'
+import { ArrowRight, Bot, MessageCircle, MoreVertical, User, Workflow } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 interface ConversationTableProps {
   conversations: ConversationWithCount[]
@@ -47,11 +46,11 @@ export const ConversationTable = ({
     }
 
     // Se callback onConversationOpen fornecido, usar ele (não redirecionar)
-    // Caso contrário, redirecionar para página de chat
+    // Caso contrário, redirecionar para página de conversas
     if (onConversationOpen) {
       onConversationOpen(phone)
     } else {
-      router.push(`/dashboard/chat?phone=${phone}&client_id=${clientId}`)
+      router.push(`/dashboard/conversations?phone=${phone}`)
     }
   }
 
