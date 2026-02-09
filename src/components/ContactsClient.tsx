@@ -1,31 +1,8 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useContacts, Contact } from '@/hooks/useContacts'
-import { useToast } from '@/hooks/use-toast'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { EmptyState } from "@/components/EmptyState";
+import { StatusBadge } from "@/components/StatusBadge";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,287 +12,341 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { StatusBadge } from '@/components/StatusBadge'
-import { formatPhone, getInitials, formatDateTime } from '@/lib/utils'
-import type { ConversationStatus, ContactImportResult } from '@/lib/types'
+} from "@/components/ui/alert-dialog";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
-  Users,
-  Plus,
-  Upload,
-  Download,
-  Search,
-  Bot,
-  User,
-  ArrowRight,
-  List,
-  Phone,
-  Trash2,
-  X,
-  CheckCircle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
+import { Contact, useContacts } from "@/hooks/useContacts";
+import { apiFetch } from "@/lib/api";
+import type { ContactImportResult, ConversationStatus } from "@/lib/types";
+import { formatDateTime, formatPhone, getInitials } from "@/lib/utils";
+import {
   AlertCircle,
+  ArrowRight,
+  Bot,
+  CheckCircle,
+  Download,
   LayoutDashboard,
+  List,
   MessageCircle,
+  Phone,
+  Plus,
+  Search,
+  Trash2,
+  Upload,
+  User,
+  Users,
   Workflow,
-} from 'lucide-react'
-import Link from 'next/link'
-import { apiFetch } from '@/lib/api'
-import { EmptyState } from '@/components/EmptyState'
-import { ThemeToggle } from '@/components/ThemeToggle'
+  X,
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 interface ContactsClientProps {
-  clientId: string
+  clientId: string;
 }
 
 export function ContactsClient({ clientId }: ContactsClientProps) {
-  const [statusFilter, setStatusFilter] = useState<'all' | ConversationStatus>('all')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [contactToDelete, setContactToDelete] = useState<Contact | null>(null)
-  const { toast } = useToast()
+  const router = useRouter();
+  const [statusFilter, setStatusFilter] = useState<"all" | ConversationStatus>(
+    "all",
+  );
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
+  const { toast } = useToast();
 
   // Form states
-  const [newPhone, setNewPhone] = useState('')
-  const [newName, setNewName] = useState('')
-  const [newStatus, setNewStatus] = useState<ConversationStatus>('bot')
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [newPhone, setNewPhone] = useState("");
+  const [newName, setNewName] = useState("");
+  const [newStatus, setNewStatus] = useState<ConversationStatus>("bot");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Import states
-  const [importFile, setImportFile] = useState<File | null>(null)
-  const [importResult, setImportResult] = useState<ContactImportResult | null>(null)
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importResult, setImportResult] = useState<ContactImportResult | null>(
+    null,
+  );
 
-  const { contacts, loading, addContact, updateContact, deleteContact, importContacts } =
-    useContacts({
-      clientId,
-      status: statusFilter === 'all' ? undefined : statusFilter,
-    })
+  const {
+    contacts,
+    loading,
+    addContact,
+    updateContact,
+    deleteContact,
+    importContacts,
+  } = useContacts({
+    clientId,
+    status: statusFilter === "all" ? undefined : statusFilter,
+  });
 
   // Filter contacts by search query
   const filteredContacts = contacts.filter((contact) => {
-    if (!searchQuery) return true
-    const query = searchQuery.toLowerCase()
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
     return (
       contact.phone.includes(query) ||
       contact.name.toLowerCase().includes(query)
-    )
-  })
+    );
+  });
 
   const handleAddContact = async () => {
     if (!newPhone.trim()) {
       toast({
-        title: 'Erro',
-        description: 'Telefone é obrigatório',
-        variant: 'destructive',
-      })
-      return
+        title: "Erro",
+        description: "Telefone é obrigatório",
+        variant: "destructive",
+      });
+      return;
     }
 
-    setIsSubmitting(true)
-    const result = await addContact(newPhone, newName || undefined, newStatus)
-    setIsSubmitting(false)
+    setIsSubmitting(true);
+    const result = await addContact(newPhone, newName || undefined, newStatus);
+    setIsSubmitting(false);
 
     if (result) {
       toast({
-        title: 'Sucesso',
-        description: 'Contato adicionado com sucesso',
-      })
-      setIsAddDialogOpen(false)
-      setNewPhone('')
-      setNewName('')
-      setNewStatus('bot')
+        title: "Sucesso",
+        description: "Contato adicionado! Redirecionando para conversa...",
+      });
+      setIsAddDialogOpen(false);
+      const cleanPhone = newPhone.replace(/\D/g, "");
+      setNewPhone("");
+      setNewName("");
+      setNewStatus("bot");
+      // Redirecionar para a página de chat com o novo contato
+      router.push(`/dashboard/chat?phone=${cleanPhone}&client_id=${clientId}`);
     } else {
       toast({
-        title: 'Erro',
-        description: 'Falha ao adicionar contato',
-        variant: 'destructive',
-      })
+        title: "Erro",
+        description: "Falha ao adicionar contato",
+        variant: "destructive",
+      });
     }
-  }
+  };
 
-  const handleUpdateContactStatus = async (phone: string, status: ConversationStatus) => {
-    const result = await updateContact(phone, { status })
+  const handleUpdateContactStatus = async (
+    phone: string,
+    status: ConversationStatus,
+  ) => {
+    const result = await updateContact(phone, { status });
     if (result) {
       toast({
-        title: 'Sucesso',
-        description: 'Status atualizado com sucesso',
-      })
+        title: "Sucesso",
+        description: "Status atualizado com sucesso",
+      });
       if (selectedContact?.phone === phone) {
-        setSelectedContact(result)
+        setSelectedContact(result);
       }
     } else {
       toast({
-        title: 'Erro',
-        description: 'Falha ao atualizar status',
-        variant: 'destructive',
-      })
+        title: "Erro",
+        description: "Falha ao atualizar status",
+        variant: "destructive",
+      });
     }
-  }
+  };
 
   const handleDeleteContact = async () => {
-    if (!contactToDelete) return
+    if (!contactToDelete) return;
 
-    const result = await deleteContact(contactToDelete.phone)
+    const result = await deleteContact(contactToDelete.phone);
     if (result) {
       toast({
-        title: 'Sucesso',
-        description: 'Contato removido com sucesso',
-      })
+        title: "Sucesso",
+        description: "Contato removido com sucesso",
+      });
       if (selectedContact?.phone === contactToDelete.phone) {
-        setSelectedContact(null)
+        setSelectedContact(null);
       }
     } else {
       toast({
-        title: 'Erro',
-        description: 'Falha ao remover contato',
-        variant: 'destructive',
-      })
+        title: "Erro",
+        description: "Falha ao remover contato",
+        variant: "destructive",
+      });
     }
-    setIsDeleteDialogOpen(false)
-    setContactToDelete(null)
-  }
+    setIsDeleteDialogOpen(false);
+    setContactToDelete(null);
+  };
 
   const handleDownloadTemplate = async () => {
     try {
-      const response = await apiFetch('/api/contacts/template')
+      const response = await apiFetch("/api/contacts/template");
       if (!response.ok) {
-        throw new Error('Falha ao baixar template')
+        throw new Error("Falha ao baixar template");
       }
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'template_contatos.csv'
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "template_contatos.csv";
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     } catch (error) {
       toast({
-        title: 'Erro',
-        description: 'Falha ao baixar template',
-        variant: 'destructive',
-      })
+        title: "Erro",
+        description: "Falha ao baixar template",
+        variant: "destructive",
+      });
     }
-  }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+    const file = e.target.files?.[0];
     if (file) {
-      setImportFile(file)
-      setImportResult(null)
+      setImportFile(file);
+      setImportResult(null);
     }
-  }
+  };
 
   /**
    * Parse CSV content handling quoted fields with commas
    * Implements RFC 4180 basic parsing
    */
   const parseCSVLine = (line: string): string[] => {
-    const result: string[] = []
-    let current = ''
-    let inQuotes = false
+    const result: string[] = [];
+    let current = "";
+    let inQuotes = false;
 
     for (let i = 0; i < line.length; i++) {
-      const char = line[i]
-      const nextChar = line[i + 1]
+      const char = line[i];
+      const nextChar = line[i + 1];
 
       if (char === '"') {
         if (inQuotes && nextChar === '"') {
           // Escaped quote
-          current += '"'
-          i++
+          current += '"';
+          i++;
         } else {
           // Toggle quote state
-          inQuotes = !inQuotes
+          inQuotes = !inQuotes;
         }
-      } else if (char === ',' && !inQuotes) {
-        result.push(current.trim())
-        current = ''
+      } else if (char === "," && !inQuotes) {
+        result.push(current.trim());
+        current = "";
       } else {
-        current += char
+        current += char;
       }
     }
 
-    result.push(current.trim())
-    return result
-  }
+    result.push(current.trim());
+    return result;
+  };
 
-  const parseCSV = (content: string): Array<{ phone: string; name?: string; status?: string }> => {
-    const lines = content.trim().split('\n')
-    if (lines.length < 2) return []
+  const parseCSV = (
+    content: string,
+  ): Array<{ phone: string; name?: string; status?: string }> => {
+    const lines = content.trim().split("\n");
+    if (lines.length < 2) return [];
 
     // Parse header using RFC 4180 parsing
-    const header = parseCSVLine(lines[0]).map((h) => h.toLowerCase())
-    const phoneIndex = header.findIndex((h) => h === 'telefone' || h === 'phone')
-    const nameIndex = header.findIndex((h) => h === 'nome' || h === 'name')
-    const statusIndex = header.findIndex((h) => h === 'status')
+    const header = parseCSVLine(lines[0]).map((h) => h.toLowerCase());
+    const phoneIndex = header.findIndex(
+      (h) => h === "telefone" || h === "phone",
+    );
+    const nameIndex = header.findIndex((h) => h === "nome" || h === "name");
+    const statusIndex = header.findIndex((h) => h === "status");
 
-    if (phoneIndex === -1) return []
+    if (phoneIndex === -1) return [];
 
     // Parse data rows
-    return lines.slice(1).map((line) => {
-      const values = parseCSVLine(line)
-      return {
-        phone: values[phoneIndex] || '',
-        name: nameIndex !== -1 ? values[nameIndex] : undefined,
-        status: statusIndex !== -1 ? values[statusIndex] : undefined,
-      }
-    }).filter((c) => c.phone)
-  }
+    return lines
+      .slice(1)
+      .map((line) => {
+        const values = parseCSVLine(line);
+        return {
+          phone: values[phoneIndex] || "",
+          name: nameIndex !== -1 ? values[nameIndex] : undefined,
+          status: statusIndex !== -1 ? values[statusIndex] : undefined,
+        };
+      })
+      .filter((c) => c.phone);
+  };
 
   const handleImport = async () => {
     if (!importFile) {
       toast({
-        title: 'Erro',
-        description: 'Selecione um arquivo CSV',
-        variant: 'destructive',
-      })
-      return
+        title: "Erro",
+        description: "Selecione um arquivo CSV",
+        variant: "destructive",
+      });
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
     try {
-      const content = await importFile.text()
-      const contactsList = parseCSV(content)
+      const content = await importFile.text();
+      const contactsList = parseCSV(content);
 
       if (contactsList.length === 0) {
         toast({
-          title: 'Erro',
-          description: 'Arquivo CSV inválido ou vazio',
-          variant: 'destructive',
-        })
-        setIsSubmitting(false)
-        return
+          title: "Erro",
+          description: "Arquivo CSV inválido ou vazio",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
       }
 
-      const result = await importContacts(contactsList)
+      const result = await importContacts(contactsList);
       if (result) {
-        setImportResult(result)
+        setImportResult(result);
         toast({
-          title: 'Importação concluída',
+          title: "Importação concluída",
           description: `${result.imported} contatos importados, ${result.skipped} ignorados, ${result.errors.length} erros`,
-        })
+        });
       }
     } catch (error) {
       toast({
-        title: 'Erro',
-        description: 'Falha ao processar arquivo',
-        variant: 'destructive',
-      })
+        title: "Erro",
+        description: "Falha ao processar arquivo",
+        variant: "destructive",
+      });
     }
 
-    setIsSubmitting(false)
-  }
+    setIsSubmitting(false);
+  };
 
   const closeImportDialog = () => {
-    setIsImportDialogOpen(false)
-    setImportFile(null)
-    setImportResult(null)
-  }
+    setIsImportDialogOpen(false);
+    setImportFile(null);
+    setImportResult(null);
+  };
 
   return (
     <div className="fixed inset-0 flex overflow-hidden bg-background">
@@ -326,12 +357,18 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
               <Users className="h-6 w-6 text-primary" />
-              <h2 className="font-poppins font-semibold text-lg text-primary">Contatos</h2>
+              <h2 className="font-poppins font-semibold text-lg text-primary">
+                Contatos
+              </h2>
             </div>
             <div className="flex items-center gap-1">
               <ThemeToggle />
               <Link href="/dashboard">
-                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground hover:bg-muted/50">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                >
                   <LayoutDashboard className="h-4 w-4" />
                 </Button>
               </Link>
@@ -353,7 +390,10 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
           <div className="flex gap-2">
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
-                <Button size="sm" className="flex-1 bg-primary hover:bg-primary/90 text-white">
+                <Button
+                  size="sm"
+                  className="flex-1 bg-primary hover:bg-primary/90 text-white"
+                >
                   <Plus className="h-4 w-4 mr-1" />
                   Adicionar
                 </Button>
@@ -389,7 +429,12 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="status">Status de Atendimento</Label>
-                    <Select value={newStatus} onValueChange={(v) => setNewStatus(v as ConversationStatus)}>
+                    <Select
+                      value={newStatus}
+                      onValueChange={(v) =>
+                        setNewStatus(v as ConversationStatus)
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o status" />
                       </SelectTrigger>
@@ -423,22 +468,32 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsAddDialogOpen(false)}
+                  >
                     Cancelar
                   </Button>
                   <Button onClick={handleAddContact} disabled={isSubmitting}>
-                    {isSubmitting ? 'Adicionando...' : 'Adicionar'}
+                    {isSubmitting ? "Adicionando..." : "Adicionar"}
                   </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
 
-            <Dialog open={isImportDialogOpen} onOpenChange={(open) => {
-              if (!open) closeImportDialog()
-              else setIsImportDialogOpen(true)
-            }}>
+            <Dialog
+              open={isImportDialogOpen}
+              onOpenChange={(open) => {
+                if (!open) closeImportDialog();
+                else setIsImportDialogOpen(true);
+              }}
+            >
               <DialogTrigger asChild>
-                <Button size="sm" variant="outline" className="flex-1 border-border text-foreground/90 hover:bg-muted/50 hover:text-foreground">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 border-border text-foreground/90 hover:bg-muted/50 hover:text-foreground"
+                >
                   <Upload className="h-4 w-4 mr-1" />
                   Importar
                 </Button>
@@ -452,7 +507,11 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDownloadTemplate}
+                    >
                       <Download className="h-4 w-4 mr-1" />
                       Baixar Template
                     </Button>
@@ -466,14 +525,17 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                       onChange={handleFileChange}
                     />
                     <p className="text-xs text-muted-foreground">
-                      O arquivo deve seguir o formato do template (telefone, nome, status)
+                      O arquivo deve seguir o formato do template (telefone,
+                      nome, status)
                     </p>
                   </div>
 
                   {importResult && (
                     <Card>
                       <CardHeader className="py-3">
-                        <CardTitle className="text-sm">Resultado da Importação</CardTitle>
+                        <CardTitle className="text-sm">
+                          Resultado da Importação
+                        </CardTitle>
                       </CardHeader>
                       <CardContent className="py-2 space-y-2">
                         <div className="flex justify-between text-sm">
@@ -485,11 +547,15 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                             <CheckCircle className="h-4 w-4 text-green-500" />
                             Importados:
                           </span>
-                          <Badge className="bg-green-500">{importResult.imported}</Badge>
+                          <Badge className="bg-green-500">
+                            {importResult.imported}
+                          </Badge>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span>Ignorados (já existem):</span>
-                          <Badge variant="secondary">{importResult.skipped}</Badge>
+                          <Badge variant="secondary">
+                            {importResult.skipped}
+                          </Badge>
                         </div>
                         {importResult.errors.length > 0 && (
                           <div className="space-y-2">
@@ -498,12 +564,18 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                                 <AlertCircle className="h-4 w-4 text-red-500" />
                                 Erros:
                               </span>
-                              <Badge variant="destructive">{importResult.errors.length}</Badge>
+                              <Badge variant="destructive">
+                                {importResult.errors.length}
+                              </Badge>
                             </div>
                             <div className="max-h-32 overflow-y-auto text-xs space-y-1">
                               {importResult.errors.map((err, idx) => (
-                                <div key={idx} className="text-red-600 bg-red-50 p-2 rounded">
-                                  Linha {err.row}: {err.phone || '(vazio)'} - {err.error}
+                                <div
+                                  key={idx}
+                                  className="text-red-600 bg-red-50 p-2 rounded"
+                                >
+                                  Linha {err.row}: {err.phone || "(vazio)"} -{" "}
+                                  {err.error}
                                 </div>
                               ))}
                             </div>
@@ -517,8 +589,11 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                   <Button variant="outline" onClick={closeImportDialog}>
                     Fechar
                   </Button>
-                  <Button onClick={handleImport} disabled={isSubmitting || !importFile}>
-                    {isSubmitting ? 'Importando...' : 'Importar'}
+                  <Button
+                    onClick={handleImport}
+                    disabled={isSubmitting || !importFile}
+                  >
+                    {isSubmitting ? "Importando..." : "Importar"}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -528,7 +603,10 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
 
         {/* Status Filter Tabs */}
         <div className="border-b border-border/50">
-          <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as any)}>
+          <Tabs
+            value={statusFilter}
+            onValueChange={(value) => setStatusFilter(value as any)}
+          >
             <TabsList className="w-full justify-start rounded-none h-auto p-0 bg-transparent overflow-x-auto">
               <TabsTrigger
                 value="all"
@@ -601,20 +679,20 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                 key={contact.id}
                 className={`flex items-center gap-3 p-3 cursor-pointer transition-colors duration-200 border-b border-border/50 ${
                   selectedContact?.id === contact.id
-                    ? 'bg-gradient-to-r from-primary/10 to-transparent border-l-2 border-l-primary'
-                    : 'hover:bg-muted/50'
+                    ? "bg-gradient-to-r from-primary/10 to-transparent border-l-2 border-l-primary"
+                    : "hover:bg-muted/50"
                 }`}
                 onClick={() => setSelectedContact(contact)}
               >
                 <Avatar className="h-12 w-12 flex-shrink-0">
                   <AvatarFallback className="bg-gradient-to-br from-secondary to-primary text-white text-sm font-poppins font-semibold">
-                    {getInitials(contact.name || 'Sem nome')}
+                    {getInitials(contact.name || "Sem nome")}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-semibold text-sm truncate text-foreground">
-                      {contact.name || 'Sem nome'}
+                      {contact.name || "Sem nome"}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
@@ -622,7 +700,11 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                       {formatPhone(contact.phone)}
                     </p>
                     <div className="ml-2">
-                      <StatusBadge status={contact.status} showIcon={false} size="sm" />
+                      <StatusBadge
+                        status={contact.status}
+                        showIcon={false}
+                        size="sm"
+                      />
                     </div>
                   </div>
                 </div>
@@ -648,10 +730,10 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
               </div>
               <Avatar className="h-20 w-20 mx-auto mb-4">
                 <AvatarFallback className="bg-gradient-to-br from-uzz-mint to-uzz-blue text-white text-2xl font-poppins font-bold">
-                  {getInitials(selectedContact.name || 'Sem nome')}
+                  {getInitials(selectedContact.name || "Sem nome")}
                 </AvatarFallback>
               </Avatar>
-              <CardTitle>{selectedContact.name || 'Sem nome'}</CardTitle>
+              <CardTitle>{selectedContact.name || "Sem nome"}</CardTitle>
               <CardDescription className="flex items-center justify-center gap-2">
                 <Phone className="h-4 w-4" />
                 {formatPhone(selectedContact.phone)}
@@ -664,7 +746,10 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                 <Select
                   value={selectedContact.status}
                   onValueChange={(v) =>
-                    handleUpdateContactStatus(selectedContact.phone, v as ConversationStatus)
+                    handleUpdateContactStatus(
+                      selectedContact.phone,
+                      v as ConversationStatus,
+                    )
                   }
                 >
                   <SelectTrigger>
@@ -698,13 +783,13 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  {selectedContact.status === 'bot'
-                    ? 'Este contato será atendido pelo bot automaticamente'
-                    : selectedContact.status === 'humano'
-                    ? 'Este contato será atendido por um humano'
-                    : selectedContact.status === 'transferido'
-                    ? 'Este contato foi transferido para atendimento humano'
-                    : 'Este contato está em um fluxo interativo'}
+                  {selectedContact.status === "bot"
+                    ? "Este contato será atendido pelo bot automaticamente"
+                    : selectedContact.status === "humano"
+                    ? "Este contato será atendido por um humano"
+                    : selectedContact.status === "transferido"
+                    ? "Este contato foi transferido para atendimento humano"
+                    : "Este contato está em um fluxo interativo"}
                 </p>
               </div>
 
@@ -722,7 +807,10 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
 
               {/* Actions */}
               <div className="flex gap-2 pt-4">
-                <Link href={`/dashboard/chat?phone=${selectedContact.phone}&client_id=${clientId}`} className="flex-1">
+                <Link
+                  href={`/dashboard/chat?phone=${selectedContact.phone}&client_id=${clientId}`}
+                  className="flex-1"
+                >
                   <Button variant="outline" className="w-full">
                     <MessageCircle className="h-4 w-4 mr-2" />
                     Ver Conversas
@@ -732,8 +820,8 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                   variant="destructive"
                   size="icon"
                   onClick={() => {
-                    setContactToDelete(selectedContact)
-                    setIsDeleteDialogOpen(true)
+                    setContactToDelete(selectedContact);
+                    setIsDeleteDialogOpen(true);
                   }}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -744,9 +832,7 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
         ) : (
           <div className="text-center">
             <div className="mb-6 flex justify-center">
-              <div
-                className="h-20 w-20 rounded-full flex items-center justify-center border-2 bg-surface border-primary shadow-glow"
-              >
+              <div className="h-20 w-20 rounded-full flex items-center justify-center border-2 bg-surface border-primary shadow-glow">
                 <Users className="h-10 w-10 text-primary" />
               </div>
             </div>
@@ -761,14 +847,20 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
       </div>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja remover o contato{' '}
-              <strong>{contactToDelete?.name || formatPhone(contactToDelete?.phone || '')}</strong>?
-              Esta ação não pode ser desfeita.
+              Tem certeza que deseja remover o contato{" "}
+              <strong>
+                {contactToDelete?.name ||
+                  formatPhone(contactToDelete?.phone || "")}
+              </strong>
+              ? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -785,5 +877,5 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  )
+  );
 }

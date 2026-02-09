@@ -1,9 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -11,18 +8,21 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { toast } from '@/hooks/use-toast';
-import { apiFetch } from '@/lib/api';
-import type { MessageTemplate } from '@/lib/types';
-import { CheckCircle, Loader2 } from 'lucide-react';
+} from "@/components/ui/select";
+import { toast } from "@/hooks/use-toast";
+import { apiFetch } from "@/lib/api";
+import type { MessageTemplate } from "@/lib/types";
+import { CheckCircle, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface TemplateSelectorDialogProps {
   open: boolean;
@@ -42,15 +42,30 @@ export const TemplateSelectorDialog = ({
   const [templates, setTemplates] = useState<MessageTemplate[]>([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [parameters, setParameters] = useState<string[]>([]);
 
   const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
 
+  // Reset state when dialog closes or phone changes
+  useEffect(() => {
+    if (!open) {
+      // Reset when dialog closes
+      setSelectedTemplateId("");
+      setParameters([]);
+    }
+  }, [open]);
+
+  // Reset when phone changes (switching to different contact)
+  useEffect(() => {
+    setSelectedTemplateId("");
+    setParameters([]);
+  }, [phone]);
+
   // Extract variable count from template body
   const getVariableCount = (template: MessageTemplate | undefined): number => {
     if (!template) return 0;
-    const bodyComponent = template.components.find((c) => c.type === 'BODY');
+    const bodyComponent = template.components.find((c) => c.type === "BODY");
     if (!bodyComponent || !bodyComponent.text) return 0;
 
     const matches = bodyComponent.text.match(/\{\{\d+\}\}/g);
@@ -65,23 +80,23 @@ export const TemplateSelectorDialog = ({
       const fetchTemplates = async () => {
         try {
           setLoading(true);
-          const response = await apiFetch('/api/templates?status=APPROVED');
+          const response = await apiFetch("/api/templates?status=APPROVED");
           const data = await response.json();
 
           if (response.ok) {
             setTemplates(data.templates || []);
           } else {
             toast({
-              title: 'Erro',
-              description: data.error || 'Falha ao carregar templates',
-              variant: 'destructive',
+              title: "Erro",
+              description: data.error || "Falha ao carregar templates",
+              variant: "destructive",
             });
           }
         } catch (error) {
           toast({
-            title: 'Erro',
-            description: 'Falha ao carregar templates',
-            variant: 'destructive',
+            title: "Erro",
+            description: "Falha ao carregar templates",
+            variant: "destructive",
           });
         } finally {
           setLoading(false);
@@ -94,15 +109,15 @@ export const TemplateSelectorDialog = ({
 
   // Reset parameters when template changes
   useEffect(() => {
-    setParameters(new Array(variableCount).fill(''));
+    setParameters(new Array(variableCount).fill(""));
   }, [selectedTemplateId, variableCount]);
 
   const handleSend = async () => {
     if (!selectedTemplate) {
       toast({
-        title: 'Atenção',
-        description: 'Selecione um template',
-        variant: 'destructive',
+        title: "Atenção",
+        description: "Selecione um template",
+        variant: "destructive",
       });
       return;
     }
@@ -110,9 +125,9 @@ export const TemplateSelectorDialog = ({
     // Validate parameters
     if (variableCount > 0 && parameters.some((p) => !p.trim())) {
       toast({
-        title: 'Atenção',
-        description: 'Preencha todos os parâmetros do template',
-        variant: 'destructive',
+        title: "Atenção",
+        description: "Preencha todos os parâmetros do template",
+        variant: "destructive",
       });
       return;
     }
@@ -120,38 +135,41 @@ export const TemplateSelectorDialog = ({
     try {
       setSending(true);
 
-      const response = await apiFetch(`/api/templates/${selectedTemplate.id}/send`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await apiFetch(
+        `/api/templates/${selectedTemplate.id}/send`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            phone,
+            parameters: variableCount > 0 ? parameters : undefined,
+          }),
         },
-        body: JSON.stringify({
-          phone,
-          parameters: variableCount > 0 ? parameters : undefined,
-        }),
-      });
+      );
 
       const data = await response.json();
 
       if (response.ok) {
         toast({
-          title: 'Template Enviado',
+          title: "Template Enviado",
           description: `Template "${selectedTemplate.name}" enviado com sucesso!`,
         });
 
         onOpenChange(false);
-        
+
         if (onTemplateSent) {
           onTemplateSent();
         }
       } else {
-        throw new Error(data.error || 'Falha ao enviar template');
+        throw new Error(data.error || "Falha ao enviar template");
       }
     } catch (error: any) {
       toast({
-        title: 'Erro',
-        description: error.message || 'Falha ao enviar template',
-        variant: 'destructive',
+        title: "Erro",
+        description: error.message || "Falha ao enviar template",
+        variant: "destructive",
       });
     } finally {
       setSending(false);
@@ -185,7 +203,10 @@ export const TemplateSelectorDialog = ({
               {/* Template Selection */}
               <div>
                 <Label htmlFor="template">Template</Label>
-                <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+                <Select
+                  value={selectedTemplateId}
+                  onValueChange={setSelectedTemplateId}
+                >
                   <SelectTrigger id="template" className="mt-2">
                     <SelectValue placeholder="Selecione um template" />
                   </SelectTrigger>
@@ -205,20 +226,25 @@ export const TemplateSelectorDialog = ({
               {/* Template Preview */}
               {selectedTemplate && (
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                  <p className="text-sm font-semibold text-gray-700 mb-2">Prévia:</p>
+                  <p className="text-sm font-semibold text-gray-700 mb-2">
+                    Prévia:
+                  </p>
                   {selectedTemplate.components.map((component, index) => {
-                    if (component.type === 'BODY' && component.text) {
+                    if (component.type === "BODY" && component.text) {
                       let previewText = component.text;
                       // Replace variables with parameters or placeholders
                       parameters.forEach((param, idx) => {
                         const placeholder = `{{${idx + 1}}}`;
                         previewText = previewText.replace(
-                          new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g'),
-                          param || placeholder
+                          new RegExp(placeholder.replace(/[{}]/g, "\\$&"), "g"),
+                          param || placeholder,
                         );
                       });
                       return (
-                        <p key={index} className="text-sm text-gray-800 whitespace-pre-wrap">
+                        <p
+                          key={index}
+                          className="text-sm text-gray-800 whitespace-pre-wrap"
+                        >
                           {previewText}
                         </p>
                       );
@@ -234,12 +260,15 @@ export const TemplateSelectorDialog = ({
                   <Label>Parâmetros do Template</Label>
                   {Array.from({ length: variableCount }).map((_, index) => (
                     <div key={index}>
-                      <Label htmlFor={`param-${index}`} className="text-xs text-gray-600">
+                      <Label
+                        htmlFor={`param-${index}`}
+                        className="text-xs text-gray-600"
+                      >
                         Variável {index + 1} ({`{{${index + 1}}}`})
                       </Label>
                       <Input
                         id={`param-${index}`}
-                        value={parameters[index] || ''}
+                        value={parameters[index] || ""}
                         onChange={(e) => {
                           const newParams = [...parameters];
                           newParams[index] = e.target.value;
@@ -264,7 +293,11 @@ export const TemplateSelectorDialog = ({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={sending}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={sending}
+          >
             Cancelar
           </Button>
           <Button
@@ -277,7 +310,7 @@ export const TemplateSelectorDialog = ({
                 Enviando...
               </>
             ) : (
-              'Enviar Template'
+              "Enviar Template"
             )}
           </Button>
         </DialogFooter>
