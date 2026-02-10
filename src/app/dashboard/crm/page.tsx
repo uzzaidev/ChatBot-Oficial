@@ -117,7 +117,7 @@ export default function CRMPage() {
   };
 
   const handleEditColumn = (column: CRMColumn) => {
-    console.log('[CRM] Edit column clicked:', column);
+    console.log("[CRM] Edit column clicked:", column);
     setEditingColumn(column);
   };
 
@@ -127,10 +127,10 @@ export default function CRMPage() {
     icon?: string;
   }) => {
     if (!editingColumn) return null;
-    console.log('[CRM] Saving column:', editingColumn.id, data);
+    console.log("[CRM] Saving column:", editingColumn.id, data);
     const result = await updateColumn(editingColumn.id, data);
     if (result) {
-      console.log('[CRM] Column updated successfully');
+      console.log("[CRM] Column updated successfully");
       setEditingColumn(null);
       await refetchColumns();
     }
@@ -138,31 +138,31 @@ export default function CRMPage() {
   };
 
   const handleDeleteColumn = async (columnId: string) => {
-    console.log('[CRM] Delete column clicked:', columnId);
+    console.log("[CRM] Delete column clicked:", columnId);
     const column = columns.find((c) => c.id === columnId);
     if (!column) {
-      console.log('[CRM] Column not found');
+      console.log("[CRM] Column not found");
       return;
     }
 
     const cardCount = cards.filter((c) => c.column_id === columnId).length;
-    console.log('[CRM] Column has', cardCount, 'cards');
+    console.log("[CRM] Column has", cardCount, "cards");
     setDeletingColumn({ column, cardCount });
   };
 
   const confirmDeleteColumn = async () => {
     if (!deletingColumn) {
-      console.log('[CRM] No column to delete');
+      console.log("[CRM] No column to delete");
       return;
     }
     if (deletingColumn.cardCount > 0) {
-      console.log('[CRM] Cannot delete column with cards');
+      console.log("[CRM] Cannot delete column with cards");
       return;
     }
-    console.log('[CRM] Deleting column:', deletingColumn.column.id);
+    console.log("[CRM] Deleting column:", deletingColumn.column.id);
     const success = await deleteColumn(deletingColumn.column.id);
     if (success) {
-      console.log('[CRM] Column deleted successfully');
+      console.log("[CRM] Column deleted successfully");
       await refetchColumns();
     }
     setDeletingColumn(null);

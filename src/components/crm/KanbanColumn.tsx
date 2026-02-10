@@ -103,7 +103,7 @@ export const KanbanColumn = ({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               {onEditColumn && (
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();

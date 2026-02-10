@@ -16,11 +16,7 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import {
-  SortableContext,
-  horizontalListSortingStrategy,
-  sortableKeyboardCoordinates,
-} from "@dnd-kit/sortable";
+import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useCallback, useMemo, useState } from "react";
 import { KanbanCard } from "./KanbanCard";
 import { KanbanColumn } from "./KanbanColumn";
@@ -37,7 +33,9 @@ interface KanbanBoardProps {
   onCardClick: (card: CRMCard) => void;
   onEditColumn?: (column: CRMColumn) => void;
   onDeleteColumn?: (columnId: string) => void;
-  onReorderColumns?: (columnOrders: Array<{ id: string; position: number }>) => Promise<boolean>;
+  onReorderColumns?: (
+    columnOrders: Array<{ id: string; position: number }>,
+  ) => Promise<boolean>;
 }
 
 // Measuring configuration for better performance
