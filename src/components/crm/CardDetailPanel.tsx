@@ -67,14 +67,14 @@ const STATUS_OPTIONS = [
   {
     value: "awaiting_attendant",
     label: "Aguardando Atendente",
-    color: "bg-yellow-500",
+    color: "bg-red-500",
   },
   {
     value: "awaiting_client",
     label: "Aguardando Cliente",
-    color: "bg-blue-500",
+    color: "bg-yellow-500",
   },
-  { value: "in_progress", label: "Em Andamento", color: "bg-green-500" },
+  { value: "in_progress", label: "Em Andamento", color: "bg-blue-500" },
   { value: "resolved", label: "Resolvido", color: "bg-emerald-600" },
   { value: "neutral", label: "Neutro", color: "bg-gray-500" },
 ];

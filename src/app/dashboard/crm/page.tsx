@@ -5,6 +5,8 @@ import { CRMAnalyticsDashboard } from "@/components/crm/CRMAnalyticsDashboard";
 import { CRMFiltersComponent } from "@/components/crm/CRMFilters";
 import { CardDetailPanel } from "@/components/crm/CardDetailPanel";
 import { CreateColumnDialog } from "@/components/crm/CreateColumnDialog";
+import { DeleteColumnDialog } from "@/components/crm/DeleteColumnDialog";
+import { EditColumnDialog } from "@/components/crm/EditColumnDialog";
 import { KanbanBoard } from "@/components/crm/KanbanBoard";
 import { KanbanCard } from "@/components/crm/KanbanCard";
 import { TagsManager } from "@/components/crm/TagsManager";
@@ -16,7 +18,7 @@ import { useCRMCards } from "@/hooks/useCRMCards";
 import { useCRMColumns } from "@/hooks/useCRMColumns";
 import { useCRMTags } from "@/hooks/useCRMTags";
 import { createBrowserClient } from "@/lib/supabase-browser";
-import type { CRMCard, CRMFilters } from "@/lib/types";
+import type { CRMCard, CRMColumn, CRMFilters } from "@/lib/types";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { BarChart3, Kanban, LayoutGrid, List, Loader2 } from "lucide-react";
@@ -35,6 +37,11 @@ export default function CRMPage() {
   const [activeTab, setActiveTab] = useState<"pipeline" | "analytics">(
     "pipeline",
   );
+  const [editingColumn, setEditingColumn] = useState<CRMColumn | null>(null);
+  const [deletingColumn, setDeletingColumn] = useState<{
+    column: CRMColumn;
+    cardCount: number;
+  } | null>(null);
 
   // Fetch client_id from session
   useEffect(() => {
@@ -67,6 +74,8 @@ export default function CRMPage() {
     columns,
     loading: columnsLoading,
     createColumn,
+    updateColumn,
+    deleteColumn,
     refetch: refetchColumns,
   } = useCRMColumns(clientId);
 
@@ -105,6 +114,37 @@ export default function CRMPage() {
 
   const handleUpdateCard = async () => {
     await refetchCards();
+  };
+
+  const handleEditColumn = (column: CRMColumn) => {
+    setEditingColumn(column);
+  };
+
+  const handleSaveColumn = async (data: {
+    name: string;
+    color?: string;
+    icon?: string;
+  }) => {
+    if (!editingColumn) return null;
+    const result = await updateColumn(editingColumn.id, data);
+    if (result) {
+      setEditingColumn(null);
+    }
+    return result;
+  };
+
+  const handleDeleteColumn = async (columnId: string) => {
+    const column = columns.find((c) => c.id === columnId);
+    if (!column) return;
+
+    const cardCount = cards.filter((c) => c.column_id === columnId).length;
+    setDeletingColumn({ column, cardCount });
+  };
+
+  const confirmDeleteColumn = async () => {
+    if (!deletingColumn || deletingColumn.cardCount > 0) return;
+    await deleteColumn(deletingColumn.column.id);
+    setDeletingColumn(null);
   };
 
   if (isLoading) {
@@ -344,6 +384,8 @@ export default function CRMPage() {
                     tags={tags}
                     onMoveCard={handleMoveCard}
                     onCardClick={handleCardClick}
+                    onEditColumn={handleEditColumn}
+                    onDeleteColumn={handleDeleteColumn}
                   />
                 ) : (
                   /* List View */
@@ -404,6 +446,29 @@ export default function CRMPage() {
                                   ))}
                                   {cardTags.length > 3 && (
                                     <span className="px-2 py-0.5 text-xs rounded-full bg-muted text-muted-foreground">
+                                      {/* Edit Column Dialog */}
+                                      <EditColumnDialog
+                                        column={editingColumn}
+                                        open={!!editingColumn}
+                                        onOpenChange={(open) =>
+                                          !open && setEditingColumn(null)
+                                        }
+                                        onSave={handleSaveColumn}
+                                      />
+                                      {/* Delete Column Dialog */}
+                                      <DeleteColumnDialog
+                                        open={!!deletingColumn}
+                                        onOpenChange={(open) =>
+                                          !open && setDeletingColumn(null)
+                                        }
+                                        onConfirm={confirmDeleteColumn}
+                                        columnName={
+                                          deletingColumn?.column.name || ""
+                                        }
+                                        cardCount={
+                                          deletingColumn?.cardCount || 0
+                                        }
+                                      />
                                       +{cardTags.length - 3}
                                     </span>
                                   )}

@@ -81,39 +81,49 @@ export const KanbanColumn = ({
       )}
     >
       {/* Column Header */}
-      <div className="flex items-center justify-between p-3 border-b border-border">
+      <div className="flex items-center justify-between gap-2 p-3 border-b border-border">
         <ColumnHeader
           name={column.name}
           count={cards.length}
           icon={column.icon}
         />
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {onEditColumn && (
-              <DropdownMenuItem onClick={onEditColumn}>
-                <Settings className="h-4 w-4 mr-2" />
-                Configurações
-              </DropdownMenuItem>
-            )}
-            {onEditColumn && onDeleteColumn && <DropdownMenuSeparator />}
-            {onDeleteColumn && (
-              <DropdownMenuItem
-                onClick={onDeleteColumn}
-                className="text-destructive focus:text-destructive"
-                disabled={column.is_default}
+        {(onEditColumn || onDeleteColumn) && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 flex-shrink-0 hover:bg-accent"
+                aria-label="Opções da coluna"
               >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Excluir coluna
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+                <MoreHorizontal className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                <span className="sr-only">Opções</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              {onEditColumn && (
+                <DropdownMenuItem onClick={onEditColumn}>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Editar coluna
+                </DropdownMenuItem>
+              )}
+              {onEditColumn && onDeleteColumn && <DropdownMenuSeparator />}
+              {onDeleteColumn && (
+                <DropdownMenuItem
+                  onClick={onDeleteColumn}
+                  className="text-destructive focus:text-destructive"
+                  disabled={column.is_default}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  {column.is_default
+                    ? "Não pode excluir (coluna padrão)"
+                    : "Excluir coluna"}
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
 
       {/* Cards */}

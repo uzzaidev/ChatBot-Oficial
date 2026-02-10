@@ -97,6 +97,8 @@ export const KanbanCard = ({
           "border-l-4 border-l-destructive",
         card.auto_status === "awaiting_client" &&
           "border-l-4 border-l-yellow-500",
+        card.auto_status === "in_progress" && "border-l-4 border-l-blue-500",
+        card.auto_status === "resolved" && "border-l-4 border-l-emerald-500",
       )}
       onClick={onClick}
       {...dragProps}

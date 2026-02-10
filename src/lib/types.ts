@@ -971,7 +971,12 @@ export interface Database {
 // CRM MODULE TYPES
 // =============================================================================
 
-export type AutoStatus = "awaiting_attendant" | "awaiting_client" | "neutral";
+export type AutoStatus =
+  | "awaiting_attendant"
+  | "awaiting_client"
+  | "neutral"
+  | "in_progress"
+  | "resolved";
 
 export type CRMActivityType =
   | "column_move"
