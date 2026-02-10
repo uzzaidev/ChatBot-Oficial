@@ -63,6 +63,7 @@ export const EditColumnDialog = ({
   // Update form when column changes
   useEffect(() => {
     if (column) {
+      console.log('[EditColumnDialog] Column loaded:', column);
       setName(column.name);
       setColor(column.color);
       setIcon(column.icon);
@@ -70,8 +71,12 @@ export const EditColumnDialog = ({
   }, [column]);
 
   const handleSave = async () => {
-    if (!name.trim() || !column) return;
+    if (!name.trim() || !column) {
+      console.log('[EditColumnDialog] Cannot save, missing name or column');
+      return;
+    }
 
+    console.log('[EditColumnDialog] Saving column:', { name, color, icon });
     setLoading(true);
     try {
       const result = await onSave({
@@ -81,8 +86,13 @@ export const EditColumnDialog = ({
       });
 
       if (result) {
+        console.log('[EditColumnDialog] Save successful');
         onOpenChange(false);
+      } else {
+        console.log('[EditColumnDialog] Save failed');
       }
+    } catch (error) {
+      console.error('[EditColumnDialog] Save error:', error);
     } finally {
       setLoading(false);
     }

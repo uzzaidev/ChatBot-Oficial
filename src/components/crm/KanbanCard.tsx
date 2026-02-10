@@ -112,11 +112,11 @@ export const KanbanCard = ({
             </AvatarFallback>
           </Avatar>
 
-          <div className="flex-1 min-w-0">
-            <p className="font-medium text-sm text-foreground truncate">
+          <div className="flex-1 min-w-0 overflow-hidden">
+            <p className="font-medium text-sm text-foreground truncate break-words">
               {contactName}
             </p>
-            <p className="text-[11px] text-muted-foreground truncate">
+            <p className="text-[11px] text-muted-foreground truncate break-all">
               {formatPhone(card.phone)}
             </p>
           </div>

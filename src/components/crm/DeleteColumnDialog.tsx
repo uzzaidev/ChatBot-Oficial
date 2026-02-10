@@ -27,9 +27,12 @@ export const DeleteColumnDialog = ({
   cardCount = 0,
 }: DeleteColumnDialogProps) => {
   const handleConfirm = async () => {
+    console.log('[DeleteColumnDialog] Confirming delete for:', columnName);
     await onConfirm();
     onOpenChange(false);
   };
+
+  console.log('[DeleteColumnDialog] Render - open:', open, 'column:', columnName, 'cards:', cardCount);
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>

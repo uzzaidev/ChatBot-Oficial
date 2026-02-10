@@ -71,7 +71,7 @@ export const KanbanColumn = ({
     <div
       ref={setNodeRef}
       className={cn(
-        "flex flex-col w-[260px] min-w-[260px] max-w-[260px] shrink-0",
+        "flex flex-col w-[280px] min-w-[280px] max-w-[280px] shrink-0",
         "bg-card rounded-lg border border-border",
         "border-t-4",
         "transition-all duration-200 ease-in-out",
@@ -103,7 +103,13 @@ export const KanbanColumn = ({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               {onEditColumn && (
-                <DropdownMenuItem onClick={onEditColumn}>
+                <DropdownMenuItem 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onEditColumn();
+                  }}
+                >
                   <Settings className="h-4 w-4 mr-2" />
                   Editar coluna
                 </DropdownMenuItem>
@@ -111,7 +117,11 @@ export const KanbanColumn = ({
               {onEditColumn && onDeleteColumn && <DropdownMenuSeparator />}
               {onDeleteColumn && (
                 <DropdownMenuItem
-                  onClick={onDeleteColumn}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onDeleteColumn();
+                  }}
                   className="text-destructive focus:text-destructive"
                   disabled={column.is_default}
                 >

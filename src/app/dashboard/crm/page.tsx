@@ -117,6 +117,7 @@ export default function CRMPage() {
   };
 
   const handleEditColumn = (column: CRMColumn) => {
+    console.log('[CRM] Edit column clicked:', column);
     setEditingColumn(column);
   };
 
@@ -126,24 +127,44 @@ export default function CRMPage() {
     icon?: string;
   }) => {
     if (!editingColumn) return null;
+    console.log('[CRM] Saving column:', editingColumn.id, data);
     const result = await updateColumn(editingColumn.id, data);
     if (result) {
+      console.log('[CRM] Column updated successfully');
       setEditingColumn(null);
+      await refetchColumns();
     }
     return result;
   };
 
   const handleDeleteColumn = async (columnId: string) => {
+    console.log('[CRM] Delete column clicked:', columnId);
     const column = columns.find((c) => c.id === columnId);
-    if (!column) return;
+    if (!column) {
+      console.log('[CRM] Column not found');
+      return;
+    }
 
     const cardCount = cards.filter((c) => c.column_id === columnId).length;
+    console.log('[CRM] Column has', cardCount, 'cards');
     setDeletingColumn({ column, cardCount });
   };
 
   const confirmDeleteColumn = async () => {
-    if (!deletingColumn || deletingColumn.cardCount > 0) return;
-    await deleteColumn(deletingColumn.column.id);
+    if (!deletingColumn) {
+      console.log('[CRM] No column to delete');
+      return;
+    }
+    if (deletingColumn.cardCount > 0) {
+      console.log('[CRM] Cannot delete column with cards');
+      return;
+    }
+    console.log('[CRM] Deleting column:', deletingColumn.column.id);
+    const success = await deleteColumn(deletingColumn.column.id);
+    if (success) {
+      console.log('[CRM] Column deleted successfully');
+      await refetchColumns();
+    }
     setDeletingColumn(null);
   };
 
@@ -446,29 +467,6 @@ export default function CRMPage() {
                                   ))}
                                   {cardTags.length > 3 && (
                                     <span className="px-2 py-0.5 text-xs rounded-full bg-muted text-muted-foreground">
-                                      {/* Edit Column Dialog */}
-                                      <EditColumnDialog
-                                        column={editingColumn}
-                                        open={!!editingColumn}
-                                        onOpenChange={(open) =>
-                                          !open && setEditingColumn(null)
-                                        }
-                                        onSave={handleSaveColumn}
-                                      />
-                                      {/* Delete Column Dialog */}
-                                      <DeleteColumnDialog
-                                        open={!!deletingColumn}
-                                        onOpenChange={(open) =>
-                                          !open && setDeletingColumn(null)
-                                        }
-                                        onConfirm={confirmDeleteColumn}
-                                        columnName={
-                                          deletingColumn?.column.name || ""
-                                        }
-                                        cardCount={
-                                          deletingColumn?.cardCount || 0
-                                        }
-                                      />
                                       +{cardTags.length - 3}
                                     </span>
                                   )}
@@ -501,6 +499,23 @@ export default function CRMPage() {
         tags={tags}
         onAddTag={addTag}
         onRemoveTag={removeTag}
+      />
+
+      {/* Edit Column Dialog */}
+      <EditColumnDialog
+        column={editingColumn}
+        open={!!editingColumn}
+        onOpenChange={(open) => !open && setEditingColumn(null)}
+        onSave={handleSaveColumn}
+      />
+
+      {/* Delete Column Dialog */}
+      <DeleteColumnDialog
+        open={!!deletingColumn}
+        onOpenChange={(open) => !open && setDeletingColumn(null)}
+        onConfirm={confirmDeleteColumn}
+        columnName={deletingColumn?.column.name || ""}
+        cardCount={deletingColumn?.cardCount || 0}
       />
     </div>
   );
