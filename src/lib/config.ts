@@ -108,7 +108,6 @@ export const getEnvironmentInfo = () => {
 // 🔐 MULTI-TENANT CONFIG WITH VAULT
 // ============================================================================
 
-import { getSharedGatewayConfig } from "./ai-gateway/config";
 import { createServerClient, createServiceRoleClient } from "./supabase";
 import type { Agent, ClientConfig } from "./types";
 import { getClientSecrets } from "./vault";
@@ -200,28 +199,14 @@ export const getClientConfig = async (
       );
     }
 
-    const aiKeysMode = (
-      client.ai_keys_mode === "byok_allowed" ? "byok_allowed" : "platform_only"
-    ) as "platform_only" | "byok_allowed";
-
-    const sharedGatewayConfig = await getSharedGatewayConfig();
-    const sharedOpenaiKey = sharedGatewayConfig?.providerKeys?.openai || null;
-    const sharedGroqKey = sharedGatewayConfig?.providerKeys?.groq || null;
-
-    const finalOpenaiKey =
-      aiKeysMode === "byok_allowed"
-        ? secrets.openaiApiKey || sharedOpenaiKey
-        : sharedOpenaiKey;
-
-    const finalGroqKey =
-      aiKeysMode === "byok_allowed"
-        ? secrets.groqApiKey || sharedGroqKey
-        : sharedGroqKey;
+    // Use only Vault credentials (no shared Gateway keys)
+    const finalOpenaiKey = secrets.openaiApiKey;
+    const finalGroqKey = secrets.groqApiKey;
 
     if (!finalOpenaiKey) {
       throw new Error(
         `[getClientConfig] Missing OpenAI API key for client ${clientId}. ` +
-          `Configure shared OpenAI key in shared_gateway_config (Vault).`,
+          `Configure in Vault via /dashboard/settings`,
       );
     }
 
@@ -231,7 +216,7 @@ export const getClientConfig = async (
     if (primaryProvider === "groq" && !finalGroqKey) {
       throw new Error(
         `[getClientConfig] Missing Groq API key for client ${clientId}. ` +
-          `Configure shared Groq key in shared_gateway_config (Vault) or switch primary provider to OpenAI.`,
+          `Configure in Vault via /dashboard/settings or switch primary provider to OpenAI.`,
       );
     }
 
@@ -327,7 +312,6 @@ export const getClientConfig = async (
       slug: client.slug,
       status: client.status,
 
-      aiKeysMode,
       primaryProvider: finalPrimaryProvider,
 
       apiKeys: {

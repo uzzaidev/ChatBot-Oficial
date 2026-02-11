@@ -80,10 +80,11 @@ export const convertTextToSpeech = async (
         const audioBuffer = Buffer.from(await response.arrayBuffer());
 
         // 🚀 FASE 7: Log cache hit to unified tracking
-        const { logGatewayUsage } = await import(
-          "@/lib/ai-gateway/usage-tracking"
+        const { trackUnifiedUsage } = await import(
+          "@/lib/unified-tracking"
         );
-        await logGatewayUsage({
+        await trackUnifiedUsage({
+          apiType: "tts",
           clientId,
           conversationId: conversationId || undefined,
           phone,
@@ -261,8 +262,9 @@ export const convertTextToSpeech = async (
     modelName = model || "eleven_monolingual_v1";
   }
 
-  const { logGatewayUsage } = await import("@/lib/ai-gateway/usage-tracking");
-  await logGatewayUsage({
+  const { trackUnifiedUsage } = await import("@/lib/unified-tracking");
+  await trackUnifiedUsage({
+          apiType: "tts",
     clientId,
     conversationId: conversationId || undefined,
     phone,

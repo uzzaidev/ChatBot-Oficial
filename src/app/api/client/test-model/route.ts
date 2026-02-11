@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@/lib/supabase-server'
-import { callAI } from '@/lib/ai-gateway'
+import { callDirectAI } from '@/lib/direct-ai-client'
 import type { CoreMessage } from 'ai'
 
 export const dynamic = 'force-dynamic'
@@ -8,9 +8,7 @@ export const dynamic = 'force-dynamic'
 /**
  * POST /api/client/test-model
  *
- * 🚀 MIGRATED TO AI GATEWAY
- *
- * Testa se um modelo de IA está configurado corretamente através do AI Gateway
+ * Testa se um modelo de IA está configurado corretamente usando credenciais Vault
  *
  * Body:
  * {
@@ -85,24 +83,21 @@ export async function POST(request: NextRequest) {
     ]
 
     try {
-      // 🚀 Test via AI Gateway (uses shared config)
-      const response = await callAI({
+      // Test using direct Vault credentials
+      const response = await callDirectAI({
         clientId,
         clientConfig: {
           id: clientId,
           name: 'test-model',
-          slug: 'test-model',
           primaryModelProvider: provider,
           openaiModel: provider === 'openai' ? model : undefined,
           groqModel: provider === 'groq' ? model : undefined,
-          systemPrompt: '',
         },
         messages: testMessages,
         settings: {
           temperature: 0.5,
           maxTokens: 50,
         },
-        stream: false,
         skipUsageLogging: true, // Don't log test calls
       })
 
@@ -111,7 +106,7 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        message: `✅ Modelo ${provider.toUpperCase()} funcionando corretamente via Gateway!`,
+        message: `✅ Modelo ${provider.toUpperCase()} funcionando corretamente!`,
         latency_ms: latency,
         response: response.text,
         model,
@@ -130,7 +125,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
           success: false,
           error: 'API Key inválida',
-          message: `A API Key do ${provider.toUpperCase()} está incorreta. Verifique a configuração do Gateway.`,
+          message: `A API Key do ${provider.toUpperCase()} está incorreta. Verifique a configuração em /dashboard/settings.`,
         })
       }
 

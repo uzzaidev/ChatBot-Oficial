@@ -119,10 +119,11 @@ export const transcribeAudio = async (
     // 🚀 FASE 7: Unified tracking in gateway_usage_logs
     // Whisper pricing: $0.006 per minute
     if (clientId) {
-      const { logGatewayUsage } = await import("@/lib/ai-gateway/usage-tracking");
+      const { trackUnifiedUsage } = await import("@/lib/unified-tracking");
       const costUSD = (estimatedDurationSeconds / 60) * 0.006;
 
-      await logGatewayUsage({
+      await trackUnifiedUsage({
+        apiType: "chat",
         clientId,
         conversationId: conversationId || undefined, // Optional - may not exist at NODE 4
         phone,
@@ -216,7 +217,7 @@ export const analyzeImageFromBuffer = async (
     // This ensures multi-tenant isolation - each client uses their OWN API key
     const { generateText } = await import("ai");
     const { createOpenAI } = await import("@ai-sdk/openai");
-    const { logGatewayUsage } = await import("./ai-gateway/usage-tracking");
+    const { trackUnifiedUsage } = await import("./unified-tracking");
 
     // Get client's OpenAI key directly from Vault
     if (!clientId) {
@@ -295,7 +296,8 @@ export const analyzeImageFromBuffer = async (
 
     // 📊 Log to unified gateway_usage_logs with cache metrics
     if (clientId) {
-      await logGatewayUsage({
+      await trackUnifiedUsage({
+        apiType: "chat",
         clientId,
         conversationId, // ✨ FASE 8: Track by conversation
         phone,
@@ -353,7 +355,7 @@ export const generateEmbedding = async (
     // This ensures multi-tenant isolation - each client uses their OWN API key
     const { embed } = await import("ai");
     const { createOpenAI } = await import("@ai-sdk/openai");
-    const { logGatewayUsage } = await import("./ai-gateway/usage-tracking");
+    const { trackUnifiedUsage } = await import("./unified-tracking");
 
     // Get client's OpenAI key directly from Vault
     if (!clientId) {
@@ -409,7 +411,8 @@ export const generateEmbedding = async (
 
     // 📊 Log to unified gateway_usage_logs
     if (clientId) {
-      await logGatewayUsage({
+      await trackUnifiedUsage({
+        apiType: "chat",
         clientId,
         conversationId: null, // Embeddings geralmente não têm conversa
         phone: null,
@@ -483,7 +486,7 @@ export const summarizePDFContent = async (
     // This ensures multi-tenant isolation - each client uses their OWN API key
     const { generateText } = await import("ai");
     const { createOpenAI } = await import("@ai-sdk/openai");
-    const { logGatewayUsage } = await import("./ai-gateway/usage-tracking");
+    const { trackUnifiedUsage } = await import("./unified-tracking");
 
     // Get client's OpenAI key directly from Vault
     if (!clientId) {
@@ -560,7 +563,8 @@ ${pdfText.substring(0, 12000)}`; // 12k chars = ~3k tokens
 
     // 📊 Log to unified gateway_usage_logs with cache metrics
     if (clientId) {
-      await logGatewayUsage({
+      await trackUnifiedUsage({
+        apiType: "chat",
         clientId,
         conversationId, // ✨ FASE 8: Track by conversation
         phone,

@@ -5,7 +5,7 @@
  * Uses the agent's compiled prompts or live config to generate a response.
  */
 
-import { callAI } from "@/lib/ai-gateway";
+import { callDirectAI } from "@/lib/direct-ai-client";
 import {
   compileFormatterPrompt,
   compileSystemPrompt,
@@ -115,18 +115,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       { role: "user" as const, content: message },
     ];
 
-    // Call AI using the ai-gateway with proper AICallConfig interface
+    // Call AI using direct Vault credentials
     const startTime = Date.now();
-    const result = await callAI({
+    const result = await callDirectAI({
       clientId: profile.client_id,
       clientConfig: {
         id: client.id,
         name: client.name,
-        slug: client.slug,
         primaryModelProvider: agentConfig.primary_provider || "groq",
         openaiModel: agentConfig.openai_model || "gpt-4o",
         groqModel: agentConfig.groq_model || "llama-3.3-70b-versatile",
-        systemPrompt: fullSystemPrompt,
       },
       messages,
       settings: {
@@ -143,7 +141,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       latencyMs,
       model: result.model,
       provider: result.provider,
-      wasCached: result.wasCached,
       usage: result.usage,
     });
   } catch (error) {

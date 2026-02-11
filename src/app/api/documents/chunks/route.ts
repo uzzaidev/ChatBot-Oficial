@@ -18,7 +18,6 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient, createServiceRoleClient } from "@/lib/supabase";
-import { getSharedGatewayConfig } from "@/lib/ai-gateway/config";
 
 export const dynamic = "force-dynamic";
 
@@ -117,47 +116,19 @@ export async function GET(request: NextRequest) {
 
 const resolveOpenAIApiKey = async (
   clientId: string,
-  supabaseServiceRole: ReturnType<typeof createServiceRoleClient>,
 ): Promise<string> => {
-  const supabaseAny = supabaseServiceRole as any;
+  // Use Vault credentials (replaces Gateway shared keys)
+  const { getClientOpenAIKey } = await import("@/lib/vault");
+  const openaiApiKey = await getClientOpenAIKey(clientId);
 
-  const { data: client, error } = await supabaseAny
-    .from("clients")
-    .select("ai_keys_mode, openai_api_key_secret_id")
-    .eq("id", clientId)
-    .single();
-
-  if (error || !client) {
-    throw new Error("Client config not found");
+  if (!openaiApiKey) {
+    throw new Error(
+      `No OpenAI API key in Vault for client ${clientId}. ` +
+      `Configure in /dashboard/settings`
+    );
   }
 
-  const aiKeysMode =
-    (client.ai_keys_mode === "byok_allowed"
-      ? "byok_allowed"
-      : "platform_only") as "platform_only" | "byok_allowed";
-
-  const sharedGatewayConfig = await getSharedGatewayConfig();
-  const sharedOpenaiKey = sharedGatewayConfig?.providerKeys?.openai || null;
-
-  const byokOpenaiKey =
-    aiKeysMode === "byok_allowed" && client.openai_api_key_secret_id
-      ? await supabaseAny
-        .rpc("get_client_secret", {
-          secret_id: client.openai_api_key_secret_id,
-        })
-        .then((res: any) => (res?.data as string | null) || null)
-        .catch(() => null)
-      : null;
-
-  const finalOpenaiKey = aiKeysMode === "byok_allowed"
-    ? (byokOpenaiKey || sharedOpenaiKey)
-    : sharedOpenaiKey;
-
-  if (!finalOpenaiKey) {
-    throw new Error("Shared OpenAI API key not configured");
-  }
-
-  return finalOpenaiKey;
+  return openaiApiKey;
 };
 
 /**
@@ -216,15 +187,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 4. Resolve OpenAI API key (platform-only default; BYOK optional)
+    // 4. Resolve OpenAI API key from Vault
     const supabaseServiceRole = createServiceRoleClient();
 
     let openaiApiKey: string;
     try {
-      openaiApiKey = await resolveOpenAIApiKey(clientId, supabaseServiceRole);
+      openaiApiKey = await resolveOpenAIApiKey(clientId);
     } catch (resolveError) {
       return NextResponse.json(
-        { error: "Shared OpenAI API key not configured" },
+        { error: "OpenAI API key not configured in Vault" },
         { status: 400 },
       );
     }
