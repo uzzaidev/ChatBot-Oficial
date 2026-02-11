@@ -11,10 +11,10 @@ REM Configurações do Supabase
 set DB_HOST=aws-1-sa-east-1.pooler.supabase.com
 set DB_PORT=6543
 set DB_NAME=postgres
-set DB_USER=postgres.jhodhxvvhohygijqcxbo
+set DB_USER=postgres.vczfsmymvjvxuxlqswai
 set DB_SCHEMA=auth
 set BACKUP_DIR=.
-set PGPASSWORD=affJLwPDtzPm0LYI
+set PGPASSWORD=yX7DuOtr9Ei0ecdG
 
 REM Criar timestamp para o arquivo
 for /f "tokens=2 delims==" %%I in ('wmic os get localdatetime /value') do set datetime=%%I
