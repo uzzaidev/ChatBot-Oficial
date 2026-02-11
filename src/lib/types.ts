@@ -940,6 +940,51 @@ export interface Database {
           Omit<AgentExperiment, "id" | "created_at" | "updated_at">
         >;
       };
+      openai_usage_cache: {
+        Row: {
+          id: string;
+          client_id: string;
+          usage_date: string;
+          model_name: string;
+          api_source: string;
+          api_source_label: string;
+          num_model_requests: number;
+          input_tokens: number;
+          output_tokens: number;
+          total_tokens: number;
+          estimated_cost_usd: number;
+          real_cost_usd: number | null;
+          has_real_cost: boolean;
+          fetched_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          client_id: string;
+          usage_date: string;
+          model_name: string;
+          api_source: string;
+          api_source_label: string;
+          num_model_requests?: number;
+          input_tokens?: number;
+          output_tokens?: number;
+          total_tokens?: number;
+          estimated_cost_usd?: number;
+          real_cost_usd?: number | null;
+          has_real_cost?: boolean;
+          fetched_at?: string;
+        };
+        Update: Partial<{
+          num_model_requests: number;
+          input_tokens: number;
+          output_tokens: number;
+          total_tokens: number;
+          estimated_cost_usd: number;
+          real_cost_usd: number | null;
+          has_real_cost: boolean;
+          fetched_at: string;
+        }>;
+      };
     };
     Views: {};
     Functions: {

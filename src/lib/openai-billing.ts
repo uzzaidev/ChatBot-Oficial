@@ -53,6 +53,40 @@ export interface OpenAIBillingUsage {
   total_usage: number; // Total USD spent
 }
 
+/**
+ * 💰 NEW: Real cost data from /v1/organization/costs API
+ */
+export interface OpenAICostResult {
+  object: "organization.costs.result";
+  amount: {
+    value: string; // Cost in USD (string with many decimals)
+    currency: string; // "usd"
+  };
+  line_item: string | null;
+  user_id: string | null;
+  project_id: string | null;
+  organization_id: string;
+  project_name: string | null;
+  organization_name: string;
+  user_email: string | null;
+}
+
+export interface OpenAICostBucket {
+  object: "bucket";
+  start_time: number; // Unix timestamp
+  end_time: number; // Unix timestamp
+  start_time_iso?: string;
+  end_time_iso?: string;
+  results: OpenAICostResult[];
+}
+
+export interface OpenAICostsResponse {
+  object: "page";
+  has_more: boolean;
+  next_page?: string;
+  data: OpenAICostBucket[];
+}
+
 // =====================================================
 // USAGE API
 // =====================================================
@@ -208,6 +242,157 @@ export async function getOpenAIBillingUsage(
 // =====================================================
 
 /**
+ * 💰 Get REAL costs from OpenAI (not estimates!)
+ *
+ * Uses /v1/organization/costs API that returns actual billed amounts.
+ * Requires Admin Key with api.usage.read scope.
+ *
+ * @param clientId - Client UUID
+ * @param startDate - Start date (YYYY-MM-DD)
+ * @param endDate - End date (YYYY-MM-DD)
+ * @returns Real cost data with pagination
+ */
+export async function getOpenAIRealCosts(
+  clientId: string,
+  startDate: string,
+  endDate: string,
+) {
+  try {
+    const apiKey = await getClientOpenAIAdminKey(clientId);
+    if (!apiKey) {
+      throw new Error(
+        `No OpenAI Admin API key configured for client ${clientId}`,
+      );
+    }
+
+    console.log(
+      "[Real Costs] 🔑 Using Admin Key:",
+      apiKey.substring(0, 20) + "...",
+    );
+
+    // Convert dates to Unix timestamps
+    const startTimestamp = Math.floor(
+      new Date(startDate + "T00:00:00Z").getTime() / 1000,
+    );
+    const endTimestamp = Math.floor(
+      new Date(endDate + "T23:59:59Z").getTime() / 1000,
+    );
+
+    console.log("[Real Costs] 💰 Fetching real cost data...");
+
+    // Fetch ALL pages (OpenAI API uses pagination)
+    const allBuckets: OpenAICostBucket[] = [];
+    let currentPage: string | undefined = undefined;
+    let pageCount = 0;
+    const MAX_PAGES = 100;
+
+    do {
+      pageCount++;
+
+      const queryParams = new URLSearchParams({
+        start_time: startTimestamp.toString(),
+        end_time: endTimestamp.toString(),
+      });
+      if (currentPage) queryParams.append("page", currentPage);
+
+      const response = await fetch(
+        `https://api.openai.com/v1/organization/costs?${queryParams.toString()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(
+          `OpenAI Costs API error: ${response.status} - ${error}`,
+        );
+      }
+
+      const pageData: OpenAICostsResponse = await response.json();
+      console.log(`[Real Costs] ✅ Page ${pageCount}:`, {
+        buckets: pageData.data.length,
+        has_more: pageData.has_more,
+      });
+
+      allBuckets.push(...pageData.data);
+
+      if (pageData.has_more && pageData.next_page) {
+        currentPage = pageData.next_page;
+      } else {
+        currentPage = undefined;
+      }
+
+      if (pageCount >= MAX_PAGES) {
+        console.warn("[Real Costs] ⚠️ Reached MAX_PAGES limit");
+        break;
+      }
+    } while (currentPage);
+
+    console.log("[Real Costs] ✅ Pagination complete:", {
+      total_pages: pageCount,
+      total_buckets: allBuckets.length,
+    });
+
+    // Aggregate costs
+    let totalCost = 0;
+    const dailyCosts: Record<string, number> = {};
+    const projectBreakdown: Record<
+      string,
+      { cost: number; project_name: string }
+    > = {};
+
+    allBuckets.forEach((bucket) => {
+      const date = new Date(bucket.start_time * 1000)
+        .toISOString()
+        .split("T")[0];
+
+      bucket.results.forEach((result) => {
+        const cost = parseFloat(result.amount.value);
+        totalCost += cost;
+
+        // Daily breakdown
+        if (!dailyCosts[date]) dailyCosts[date] = 0;
+        dailyCosts[date] += cost;
+
+        // Project breakdown
+        if (result.project_id) {
+          if (!projectBreakdown[result.project_id]) {
+            projectBreakdown[result.project_id] = {
+              cost: 0,
+              project_name: result.project_name || "Unknown",
+            };
+          }
+          projectBreakdown[result.project_id].cost += cost;
+        }
+      });
+    });
+
+    const days = Math.ceil(
+      (new Date(endDate).getTime() - new Date(startDate).getTime()) /
+        (1000 * 60 * 60 * 24),
+    );
+
+    return {
+      real_cost_usd: totalCost,
+      daily_costs: dailyCosts,
+      projects: projectBreakdown,
+      period_days: days,
+      start_date: startDate,
+      end_date: endDate,
+      all_data_fetched: true,
+      pages_fetched: pageCount,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to get real costs: ${errorMessage}`);
+  }
+}
+
+/**
  * Get comprehensive billing summary for a client
  *
  * ⚠️ DEPRECATED: This function requires billing admin scopes (api.read, billing access)
@@ -289,15 +474,23 @@ export async function getOpenAIBillingSummary(
 }
 
 /**
- * Get SIMPLIFIED billing summary using only usage API (works with api.usage.read scope)
+ * Get billing summary using ONLY usage API that works with Admin Keys
  *
- * This version doesn't require billing admin access - only usage read access
- * Use this if your Admin Key only has api.usage.read scope
+ * ⚠️ IMPORTANT: OpenAI billing limits APIs (/v1/dashboard/billing/*) are BROWSER ONLY.
+ * They require a session key obtained by logging in via web browser, NOT API keys.
+ * Even Admin Keys with "All" permissions cannot access these endpoints programmatically.
+ *
+ * This function:
+ * 1. Fetches usage data using Admin Key (works with api.usage.read scope)
+ * 2. Calculates estimated costs based on public OpenAI pricing
+ * 3. Does NOT include billing limits (hard/soft limits are browser-only)
+ *
+ * To see billing limits: Log in to https://platform.openai.com/account/billing/overview
  *
  * @param clientId - Client UUID
  * @param startDate - Start date (YYYY-MM-DD)
  * @param endDate - End date (YYYY-MM-DD)
- * @returns Simplified usage summary (no billing limits info)
+ * @returns Usage summary with estimated costs (no billing limits)
  */
 export async function getOpenAISimplifiedBillingSummary(
   clientId: string,
@@ -312,6 +505,11 @@ export async function getOpenAISimplifiedBillingSummary(
       );
     }
 
+    console.log(
+      "[Billing Summary] 🔑 Using Admin Key:",
+      apiKey.substring(0, 20) + "...",
+    );
+
     // Convert dates to Unix timestamps
     const startTimestamp = Math.floor(
       new Date(startDate + "T00:00:00Z").getTime() / 1000,
@@ -320,39 +518,38 @@ export async function getOpenAISimplifiedBillingSummary(
       new Date(endDate + "T23:59:59Z").getTime() / 1000,
     );
 
-    // Call usage API (works with api.usage.read scope)
-    const queryParams = new URLSearchParams({
-      start_time: startTimestamp.toString(),
-      end_time: endTimestamp.toString(),
-      bucket_width: "1d",
-    });
+    // ==================================================
+    // Call ALL usage API endpoints (works with api.usage.read scope)
+    // WITH PAGINATION to fetch ALL data
+    // ALSO: Fetch REAL costs from /v1/organization/costs in parallel
+    // ==================================================
 
-    const response = await fetch(
-      `https://api.openai.com/v1/organization/usage/completions?${queryParams.toString()}`,
-      {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-      },
-    );
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`OpenAI Usage API error: ${response.status} - ${error}`);
-    }
+    const USAGE_ENDPOINTS = [
+      "completions",
+      "embeddings",
+      "images",
+      "moderations",
+      "audio_speeches",
+      "audio_transcriptions",
+      "code_interpreter_sessions",
+      "vector_stores",
+    ];
 
     interface UsageBucket {
       object: "bucket";
       start_time: number;
       end_time: number;
       results: Array<{
-        aggregation_timestamp: number;
-        n_requests: number;
-        operation: string;
-        snapshot_id: string;
-        n_context_tokens_total: number;
-        n_generated_tokens_total: number;
+        object: string;
+        num_model_requests: number;
+        model: string | null;
+        input_tokens: number;
+        output_tokens: number;
+        input_cached_tokens?: number;
+        input_uncached_tokens?: number;
+        project_id?: string | null;
+        user_id?: string | null;
+        api_key_id?: string | null;
       }>;
     }
 
@@ -360,9 +557,97 @@ export async function getOpenAISimplifiedBillingSummary(
       object: "list";
       data: UsageBucket[];
       has_more: boolean;
+      next_page?: string;
     }
 
-    const data: UsageResponse = await response.json();
+    console.log(
+      "[Billing Summary] 📊 Fetching usage data from all endpoints...",
+    );
+
+    // Fetch ALL pages from ALL endpoints
+    const allBuckets: UsageBucket[] = [];
+    let totalPageCount = 0;
+    const MAX_PAGES = 100;
+
+    for (const endpointPath of USAGE_ENDPOINTS) {
+      let currentPage: string | undefined = undefined;
+      let pageCount = 0;
+
+      try {
+        do {
+          pageCount++;
+
+          const queryParams = new URLSearchParams({
+            start_time: startTimestamp.toString(),
+            end_time: endTimestamp.toString(),
+            bucket_width: "1d",
+          });
+          // Only use group_by=model for endpoints that support it
+          if (endpointPath === "completions" || endpointPath === "embeddings") {
+            queryParams.append("group_by", "model");
+          }
+          if (currentPage) queryParams.append("page", currentPage);
+
+          const response = await fetch(
+            `https://api.openai.com/v1/organization/usage/${endpointPath}?${queryParams.toString()}`,
+            {
+              headers: {
+                Authorization: `Bearer ${apiKey}`,
+                "Content-Type": "application/json",
+              },
+            },
+          );
+
+          if (!response.ok) {
+            // 404/400 = endpoint not available or never used, skip
+            if (response.status === 404 || response.status === 400) {
+              console.log(
+                `[Billing Summary] ⏭️ ${endpointPath}: not available (${response.status})`,
+              );
+              break;
+            }
+            const error = await response.text();
+            console.warn(
+              `[Billing Summary] ⚠️ ${endpointPath} error: ${response.status} - ${error}`,
+            );
+            break;
+          }
+
+          const pageData: UsageResponse = await response.json();
+          allBuckets.push(...pageData.data);
+
+          // Early exit: if first page has no results in any bucket, skip remaining
+          if (
+            pageCount === 1 &&
+            pageData.data.every((b) => !b.results || b.results.length === 0)
+          ) {
+            break;
+          }
+
+          if (pageData.has_more && pageData.next_page) {
+            currentPage = pageData.next_page;
+          } else {
+            currentPage = undefined;
+          }
+
+          if (pageCount >= MAX_PAGES) break;
+        } while (currentPage);
+      } catch (endpointError) {
+        console.warn(
+          `[Billing Summary] ⚠️ ${endpointPath}: fetch failed`,
+          endpointError instanceof Error
+            ? endpointError.message
+            : String(endpointError),
+        );
+      }
+
+      totalPageCount += pageCount;
+    }
+
+    console.log("[Billing Summary] ✅ All endpoints fetched:", {
+      total_pages: totalPageCount,
+      total_buckets: allBuckets.length,
+    });
 
     // Extract and aggregate all records
     let totalRequests = 0;
@@ -377,23 +662,30 @@ export async function getOpenAISimplifiedBillingSummary(
         inputTokens: number;
         outputTokens: number;
         estimatedCost: number;
+        realCost?: number;
       }
     > = {};
 
-    data.data.forEach((bucket) => {
+    allBuckets.forEach((bucket) => {
       bucket.results.forEach((record) => {
-        const model = record.snapshot_id;
+        // Use model name, fallback to "aggregated" if null
+        const model = record.model || "aggregated";
+
+        // Normalize: some endpoints may not have token fields
+        const inputTokens = record.input_tokens || 0;
+        const outputTokens = record.output_tokens || 0;
+        const requests = record.num_model_requests || 0;
 
         // Aggregate totals
-        totalRequests += record.n_requests;
-        totalInputTokens += record.n_context_tokens_total;
-        totalOutputTokens += record.n_generated_tokens_total;
+        totalRequests += requests;
+        totalInputTokens += inputTokens;
+        totalOutputTokens += outputTokens;
 
         // Estimate cost (rough approximation)
         const cost = estimateCost(
-          model,
-          record.n_context_tokens_total,
-          record.n_generated_tokens_total,
+          model === "aggregated" ? "gpt-4o-mini" : model,
+          inputTokens,
+          outputTokens,
         );
         totalCost += cost;
 
@@ -406,9 +698,9 @@ export async function getOpenAISimplifiedBillingSummary(
             estimatedCost: 0,
           };
         }
-        modelBreakdown[model].requests += record.n_requests;
-        modelBreakdown[model].inputTokens += record.n_context_tokens_total;
-        modelBreakdown[model].outputTokens += record.n_generated_tokens_total;
+        modelBreakdown[model].requests += requests;
+        modelBreakdown[model].inputTokens += inputTokens;
+        modelBreakdown[model].outputTokens += outputTokens;
         modelBreakdown[model].estimatedCost += cost;
       });
     });
@@ -419,13 +711,133 @@ export async function getOpenAISimplifiedBillingSummary(
         (1000 * 60 * 60 * 24),
     );
 
-    return {
-      // Usage summary (NO billing limits - we don't have access to that)
+    // ==================================================
+    // 💰 Fetch REAL costs from /v1/organization/costs
+    // ==================================================
+    let realCostUsd: number | null = null;
+    let realCostDailyCosts: Record<string, number> = {};
+    let costFetchSuccess = false;
+
+    try {
+      console.log(
+        "[Billing Summary] 💰 Fetching REAL costs from /v1/organization/costs...",
+      );
+
+      const allCostBuckets: OpenAICostBucket[] = [];
+      let costPage: string | undefined = undefined;
+      let costPageCount = 0;
+
+      do {
+        costPageCount++;
+
+        const costParams = new URLSearchParams({
+          start_time: startTimestamp.toString(),
+          end_time: endTimestamp.toString(),
+        });
+        if (costPage) costParams.append("page", costPage);
+
+        const costResponse = await fetch(
+          `https://api.openai.com/v1/organization/costs?${costParams.toString()}`,
+          {
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+            },
+          },
+        );
+
+        if (!costResponse.ok) {
+          const costError = await costResponse.text();
+          console.warn(
+            `[Billing Summary] ⚠️ Costs API error: ${costResponse.status} - ${costError}`,
+          );
+          break;
+        }
+
+        const costData: OpenAICostsResponse = await costResponse.json();
+        console.log(`[Billing Summary] 💰 Costs page ${costPageCount}:`, {
+          buckets: costData.data.length,
+          has_more: costData.has_more,
+        });
+
+        allCostBuckets.push(...costData.data);
+
+        if (costData.has_more && costData.next_page) {
+          costPage = costData.next_page;
+        } else {
+          costPage = undefined;
+        }
+
+        if (costPageCount >= MAX_PAGES) {
+          console.warn("[Billing Summary] ⚠️ Costs: Reached MAX_PAGES limit");
+          break;
+        }
+      } while (costPage);
+
+      // Aggregate real costs
+      let totalRealCost = 0;
+      allCostBuckets.forEach((bucket) => {
+        const date = new Date(bucket.start_time * 1000)
+          .toISOString()
+          .split("T")[0];
+
+        bucket.results.forEach((result) => {
+          const cost = parseFloat(result.amount.value);
+          totalRealCost += cost;
+
+          if (!realCostDailyCosts[date]) realCostDailyCosts[date] = 0;
+          realCostDailyCosts[date] += cost;
+        });
+      });
+
+      realCostUsd = totalRealCost;
+      costFetchSuccess = true;
+
+      // 💰 Distribute real cost to model breakdown proportionally
+      if (totalCost > 0) {
+        Object.keys(modelBreakdown).forEach((model) => {
+          const proportion = modelBreakdown[model].estimatedCost / totalCost;
+          modelBreakdown[model].realCost = totalRealCost * proportion;
+        });
+      } else {
+        // If all estimates are 0, distribute by total tokens
+        const grandTotalTokens = totalInputTokens + totalOutputTokens;
+        Object.keys(modelBreakdown).forEach((model) => {
+          const modelTokens =
+            modelBreakdown[model].inputTokens +
+            modelBreakdown[model].outputTokens;
+          const proportion =
+            grandTotalTokens > 0 ? modelTokens / grandTotalTokens : 0;
+          modelBreakdown[model].realCost = totalRealCost * proportion;
+        });
+      }
+
+      console.log("[Billing Summary] 💰 Real costs fetched:", {
+        real_cost_usd: totalRealCost.toFixed(6),
+        estimated_cost_usd: totalCost.toFixed(6),
+        cost_pages: costPageCount,
+        cost_buckets: allCostBuckets.length,
+      });
+    } catch (costError) {
+      console.warn(
+        "[Billing Summary] ⚠️ Could not fetch real costs, using estimates:",
+        costError instanceof Error ? costError.message : String(costError),
+      );
+    }
+
+    // Build response (usage data + REAL costs when available)
+    const summary = {
+      // Usage summary
       total_requests: totalRequests,
       total_input_tokens: totalInputTokens,
       total_output_tokens: totalOutputTokens,
       totalTokens: totalInputTokens + totalOutputTokens,
       estimated_cost_usd: totalCost,
+
+      // 💰 REAL costs from OpenAI (when available)
+      real_cost_usd: realCostUsd,
+      has_real_costs: costFetchSuccess,
+      daily_costs: costFetchSuccess ? realCostDailyCosts : undefined,
 
       // Model breakdown
       models: modelBreakdown,
@@ -434,16 +846,28 @@ export async function getOpenAISimplifiedBillingSummary(
       period_days: days,
       start_date: startDate,
       end_date: endDate,
-      has_more: data.has_more,
+      all_data_fetched: true,
+      pages_fetched: totalPageCount,
 
       // Note
-      note: "This is a simplified summary using only usage API. Billing limits require additional scopes.",
+      note: costFetchSuccess
+        ? "Custos REAIS da OpenAI obtidos via /v1/organization/costs. Custos do dia atual podem não estar incluídos (processamento com atraso de ~24h)."
+        : "Dados de uso da OpenAI API. Custos são estimativas baseadas em preços públicos.",
     };
+
+    console.log("[Billing Summary] ✅ Summary generated:", {
+      total_cost_estimated: totalCost.toFixed(4),
+      total_cost_real: realCostUsd?.toFixed(6) ?? "N/A",
+      has_real_costs: costFetchSuccess,
+      total_requests: totalRequests,
+      pages_fetched: totalPageCount,
+      buckets: allBuckets.length,
+    });
+
+    return summary;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new Error(
-      `Failed to get simplified billing summary: ${errorMessage}`,
-    );
+    throw new Error(`Failed to get billing summary: ${errorMessage}`);
   }
 }
 
@@ -462,6 +886,12 @@ function estimateCost(
     "gpt-4o-mini": { input: 0.15 / 1_000_000, output: 0.6 / 1_000_000 },
     "gpt-4-turbo": { input: 10 / 1_000_000, output: 30 / 1_000_000 },
     "gpt-3.5-turbo": { input: 0.5 / 1_000_000, output: 1.5 / 1_000_000 },
+    "gpt-5": { input: 3 / 1_000_000, output: 12 / 1_000_000 },
+    "text-embedding-3-small": { input: 0.02 / 1_000_000, output: 0 },
+    "text-embedding-3-large": { input: 0.13 / 1_000_000, output: 0 },
+    "text-embedding-ada": { input: 0.1 / 1_000_000, output: 0 },
+    whisper: { input: 0.006 / 60, output: 0 },
+    tts: { input: 15 / 1_000_000, output: 0 },
   };
 
   // Find matching model (handle versions like gpt-4o-2024-08-06)

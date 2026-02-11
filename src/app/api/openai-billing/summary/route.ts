@@ -9,14 +9,14 @@
  */
 
 import { getOpenAISimplifiedBillingSummary } from "@/lib/openai-billing";
-import { createServerClient } from "@/lib/supabase-server";
+import { createRouteHandlerClient } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerClient();
+    const supabase = await createRouteHandlerClient(request);
 
     // Get current user's client_id
     const {

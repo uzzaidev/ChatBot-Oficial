@@ -24,7 +24,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertCircle,
-  CheckCircle2,
   Cloud,
   CreditCard,
   Database,
@@ -36,13 +35,23 @@ import { useEffect, useState } from "react";
 
 interface OpenAIUsageRecord {
   date: string;
-  snapshot_id: string;
-  operation: string;
-  n_requests: number;
-  n_context_tokens_total: number;
-  n_generated_tokens_total: number;
+  model_name: string;
+  num_model_requests: number;
+  input_tokens: number;
+  output_tokens: number;
   total_tokens: number;
   estimated_cost_usd: number;
+  // 💰 Real cost (from /v1/organization/costs)
+  real_cost_usd?: number | null;
+  has_real_cost?: boolean;
+  // 🔌 API source endpoint
+  api_source?: string;
+  api_source_label?: string;
+  // Optional fields from new API
+  input_cached_tokens?: number;
+  input_uncached_tokens?: number;
+  bucket_start_time?: number;
+  bucket_start_iso?: string;
 }
 
 interface OurTrackingRecord {
@@ -56,25 +65,18 @@ interface OurTrackingRecord {
   cost_brl: number;
 }
 
-interface Discrepancy {
-  client_id: string;
-  usage_date: string;
-  model_name: string;
-  openai_input_tokens: number;
-  openai_output_tokens: number;
-  our_input_tokens: number;
-  our_output_tokens: number;
-  input_token_discrepancy_pct: number;
-  output_token_discrepancy_pct: number;
-}
-
 interface OpenAIBillingSummary {
-  // Simplified version - NO subscription limits (requires billing admin scope)
+  // Usage data (from /v1/organization/usage/completions API)
   total_requests: number;
   total_input_tokens: number;
   total_output_tokens: number;
   totalTokens: number;
   estimated_cost_usd: number;
+
+  // 💰 REAL costs (from /v1/organization/costs API)
+  real_cost_usd: number | null;
+  has_real_costs: boolean;
+  daily_costs?: Record<string, number>;
 
   // Model breakdown
   models: Record<
@@ -84,6 +86,7 @@ interface OpenAIBillingSummary {
       inputTokens: number;
       outputTokens: number;
       estimatedCost: number;
+      realCost?: number;
     }
   >;
 
@@ -91,9 +94,10 @@ interface OpenAIBillingSummary {
   period_days: number;
   start_date: string;
   end_date: string;
-  has_more: boolean;
+  all_data_fetched: boolean;
+  pages_fetched: number;
 
-  // Note
+  // Note about limitations
   note: string;
 }
 
@@ -103,26 +107,37 @@ export default function AnalyticsComparisonPage() {
   const [loadingBilling, setLoadingBilling] = useState(false);
   const [openAIData, setOpenAIData] = useState<OpenAIUsageRecord[]>([]);
   const [ourData, setOurData] = useState<OurTrackingRecord[]>([]);
-  const [discrepancies, setDiscrepancies] = useState<Discrepancy[]>([]);
   const [billingSummary, setBillingSummary] =
     useState<OpenAIBillingSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdateStatus, setLastUpdateStatus] = useState<
+    "success" | "error" | "idle"
+  >("idle");
+  const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
+  const [hasFetched, setHasFetched] = useState(false);
+  const [cacheLastFetchedAt, setCacheLastFetchedAt] = useState<string | null>(
+    null,
+  );
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Filters
+  // Filters (período padrão: últimos 30 dias para capturar dados do billing cycle)
   const [startDate, setStartDate] = useState(
-    new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+    new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
   );
   const [endDate, setEndDate] = useState(
     new Date().toISOString().split("T")[0],
   );
   const [projectId, setProjectId] = useState("");
 
-  const fetchOpenAIData = async () => {
+  const fetchOpenAIData = async (source: "cache" | "refresh" = "cache") => {
     try {
       setLoadingOpenAI(true);
+      setError(null);
+      if (source === "refresh") setIsRefreshing(true);
       const params = new URLSearchParams({
         start_date: startDate,
         end_date: endDate,
+        source,
       });
       if (projectId) params.append("project_id", projectId);
 
@@ -130,15 +145,26 @@ export default function AnalyticsComparisonPage() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Failed to fetch OpenAI data");
+        throw new Error(result.error || "Erro ao buscar dados da OpenAI");
       }
 
-      setOpenAIData(result.data);
+      console.log(
+        `[OpenAI Data] source=${source}`,
+        result.data?.length,
+        "records",
+      );
+      setOpenAIData(result.data || []);
+      if (result.last_fetched_at) {
+        setCacheLastFetchedAt(result.last_fetched_at);
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
+      console.error("[Erro OpenAI]", errorMessage);
       setError(errorMessage);
+      throw err;
     } finally {
       setLoadingOpenAI(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -154,37 +180,26 @@ export default function AnalyticsComparisonPage() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Failed to fetch our tracking data");
+        throw new Error(
+          result.error || "Erro ao buscar dados do nosso tracking",
+        );
       }
 
-      setOurData(result.data);
+      console.log("[Our Tracking Data]", result.data);
+      setOurData(result.data || []);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
+      console.error("[Erro Our Tracking]", errorMessage);
       setError(errorMessage);
+      throw err;
     } finally {
       setLoadingOurs(false);
-    }
-  };
-
-  const fetchDiscrepancies = async () => {
-    try {
-      const response = await fetch(
-        `/api/analytics/discrepancies?start_date=${startDate}&end_date=${endDate}`,
-      );
-      const result = await response.json();
-
-      if (response.ok) {
-        setDiscrepancies(result.data || []);
-      }
-    } catch (err) {
-      console.error("Failed to fetch discrepancies:", err);
     }
   };
 
   const fetchBillingSummary = async () => {
     try {
       setLoadingBilling(true);
-      setError(null);
 
       // Calculate days between dates
       const days = Math.ceil(
@@ -196,37 +211,83 @@ export default function AnalyticsComparisonPage() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Failed to fetch billing summary");
+        throw new Error(result.error || "Erro ao buscar resumo de billing");
       }
 
+      console.log("[Billing Summary]", result.data);
       setBillingSummary(result.data);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      console.error("Failed to fetch billing summary:", errorMessage);
-      // Don't set error here - billing is optional
+      console.error("[Erro Billing Summary]:", errorMessage);
+      // Don't set global error - billing is optional but log for debugging
+      setBillingSummary(null);
     } finally {
       setLoadingBilling(false);
     }
   };
 
   const fetchAll = async () => {
-    await Promise.all([
-      fetchOpenAIData(),
-      fetchOurData(),
-      fetchDiscrepancies(),
-      fetchBillingSummary(),
-    ]);
+    try {
+      setLastUpdateStatus("idle");
+      setError(null);
+
+      await Promise.all([
+        fetchOpenAIData("refresh"),
+        fetchOurData(),
+        fetchBillingSummary(),
+      ]);
+
+      setLastUpdateStatus("success");
+      setLastUpdateTime(new Date());
+      setHasFetched(true);
+    } catch (err) {
+      setLastUpdateStatus("error");
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setError(errorMessage);
+      setHasFetched(true);
+    }
   };
 
+  // Auto-load cached data on page mount (no OpenAI API calls)
   useEffect(() => {
-    fetchAll();
+    const loadCache = async () => {
+      try {
+        setLoadingOpenAI(true);
+        const params = new URLSearchParams({
+          start_date: startDate,
+          end_date: endDate,
+          source: "cache",
+        });
+        const response = await fetch(`/api/openai-billing/detailed?${params}`);
+        const result = await response.json();
+        if (response.ok && result.data && result.data.length > 0) {
+          setOpenAIData(result.data);
+          setHasFetched(true);
+          if (result.last_fetched_at) {
+            setCacheLastFetchedAt(result.last_fetched_at);
+          }
+          console.log(
+            `[Cache] Loaded ${result.data.length} records from cache`,
+          );
+        }
+      } catch {
+        // Cache miss is fine, user can click Atualizar
+      } finally {
+        setLoadingOpenAI(false);
+      }
+    };
+    loadCache();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Calculate comparison stats
   const comparisonStats = {
     openai: {
       totalTokens: openAIData.reduce((sum, r) => sum + r.total_tokens, 0),
-      totalRequests: openAIData.reduce((sum, r) => sum + r.n_requests, 0),
+      totalRequests: openAIData.reduce(
+        (sum, r) => sum + r.num_model_requests,
+        0,
+      ),
       totalCost: openAIData.reduce((sum, r) => sum + r.estimated_cost_usd, 0),
     },
     ours: {
@@ -235,18 +296,6 @@ export default function AnalyticsComparisonPage() {
       totalCost: ourData.reduce((sum, r) => sum + r.cost_brl, 0),
     },
   };
-
-  const tokenDiscrepancy =
-    comparisonStats.openai.totalTokens > 0
-      ? (
-          (Math.abs(
-            comparisonStats.ours.totalTokens -
-              comparisonStats.openai.totalTokens,
-          ) /
-            comparisonStats.openai.totalTokens) *
-          100
-        ).toFixed(2)
-      : "0";
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -257,15 +306,53 @@ export default function AnalyticsComparisonPage() {
             Compare dados oficiais da OpenAI com nosso tracking interno
           </p>
         </div>
-        <Button onClick={fetchAll} disabled={loadingOpenAI || loadingOurs}>
-          <RefreshCw
-            className={`mr-2 h-4 w-4 ${
-              loadingOpenAI || loadingOurs ? "animate-spin" : ""
-            }`}
-          />
-          Atualizar Tudo
-        </Button>
+        <div className="flex items-center gap-3">
+          {cacheLastFetchedAt && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Database className="h-3 w-3" />
+              <span>
+                Cache: {new Date(cacheLastFetchedAt).toLocaleString("pt-BR")}
+              </span>
+            </div>
+          )}
+          {lastUpdateStatus === "success" && lastUpdateTime && (
+            <div className="flex items-center gap-2 text-sm text-green-600">
+              <Cloud className="h-4 w-4" />
+              <span>
+                Atualizado {lastUpdateTime.toLocaleTimeString("pt-BR")}
+              </span>
+            </div>
+          )}
+          {lastUpdateStatus === "error" && (
+            <div className="flex items-center gap-2 text-sm text-destructive">
+              <AlertCircle className="h-4 w-4" />
+              <span>Erro ao atualizar</span>
+            </div>
+          )}
+          <Button
+            onClick={fetchAll}
+            disabled={loadingOpenAI || loadingOurs || loadingBilling}
+          >
+            <RefreshCw
+              className={`mr-2 h-4 w-4 ${
+                loadingOpenAI || loadingOurs || loadingBilling
+                  ? "animate-spin"
+                  : ""
+              }`}
+            />
+            {isRefreshing ? "Buscando da OpenAI..." : "Atualizar Tudo"}
+          </Button>
+        </div>
       </div>
+
+      {/* Error Alert */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Erro ao carregar dados</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
       {/* Filters Card */}
       <Card>
@@ -308,7 +395,7 @@ export default function AnalyticsComparisonPage() {
         </CardContent>
       </Card>
 
-      {/* OpenAI Billing Overview - Simplified Version (No Limits) */}
+      {/* OpenAI Billing Overview - Enhanced Version */}
       {billingSummary && (
         <Card className="border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
           <CardHeader>
@@ -316,11 +403,10 @@ export default function AnalyticsComparisonPage() {
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <CreditCard className="h-5 w-5" />
-                  OpenAI Usage Overview
+                  Resumo de Uso OpenAI
                 </CardTitle>
                 <CardDescription>
-                  Uso estimado da sua conta OpenAI ({billingSummary.period_days}{" "}
-                  dias)
+                  Uso da sua conta OpenAI ({billingSummary.period_days} dias)
                 </CardDescription>
               </div>
               <Badge variant="outline" className="gap-1">
@@ -330,18 +416,76 @@ export default function AnalyticsComparisonPage() {
             </div>
           </CardHeader>
           <CardContent>
+            {/* Info Alert */}
+            {billingSummary.has_real_costs ? (
+              <Alert className="mb-6 border-green-200 dark:border-green-900 bg-green-50 dark:bg-green-950/20">
+                <AlertCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                <AlertTitle className="text-green-900 dark:text-green-100">
+                  ✅ Custos Reais da OpenAI
+                </AlertTitle>
+                <AlertDescription className="text-green-800 dark:text-green-200">
+                  Os custos exibidos são <strong>valores reais</strong> obtidos
+                  diretamente do billing da OpenAI via API.
+                  <br />
+                  <span className="text-xs mt-1 block">
+                    ⏳ <strong>Nota:</strong> Custos do dia atual podem não
+                    estar incluídos (processamento com atraso de ~24h). Valores
+                    em <span className="text-green-700">verde</span> = custo
+                    real, valores com{" "}
+                    <span className="text-muted-foreground">~</span> =
+                    estimativa (dia atual sem custo real disponível).
+                  </span>
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <Alert className="mb-6 border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/20">
+                <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <AlertTitle className="text-blue-900 dark:text-blue-100">
+                  ℹ️ Sobre Custos e Limites
+                </AlertTitle>
+                <AlertDescription className="text-blue-800 dark:text-blue-200">
+                  Os custos são <strong>estimativas</strong> baseadas nos preços
+                  públicos da OpenAI (precisão ~99%). Para custos reais, acesse{" "}
+                  <a
+                    href="https://platform.openai.com/account/billing/overview"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline font-medium hover:text-blue-600"
+                  >
+                    Dashboard da OpenAI
+                  </a>
+                  .
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Usage Summary */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               {/* Total Cost */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <DollarSign className="h-4 w-4" />
-                  Custo Estimado (Período)
+                  {billingSummary.has_real_costs
+                    ? "Custo Real (Período)"
+                    : "Custo Estimado (Período)"}
                 </div>
                 <div className="text-2xl font-bold text-primary">
-                  ${billingSummary.estimated_cost_usd.toFixed(4)}
+                  $
+                  {billingSummary.has_real_costs &&
+                  billingSummary.real_cost_usd !== null
+                    ? billingSummary.real_cost_usd.toFixed(4)
+                    : billingSummary.estimated_cost_usd.toFixed(4)}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {billingSummary.start_date} a {billingSummary.end_date}
+                  {billingSummary.has_real_costs && (
+                    <Badge
+                      variant="outline"
+                      className="ml-2 text-green-600 border-green-600"
+                    >
+                      Real
+                    </Badge>
+                  )}
                 </p>
               </div>
 
@@ -384,7 +528,11 @@ export default function AnalyticsComparisonPage() {
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {Object.entries(billingSummary.models)
-                    .sort(([, a], [, b]) => b.estimatedCost - a.estimatedCost)
+                    .sort(
+                      ([, a], [, b]) =>
+                        (b.realCost ?? b.estimatedCost) -
+                        (a.realCost ?? a.estimatedCost),
+                    )
                     .map(([model, stats]) => (
                       <div
                         key={model}
@@ -392,8 +540,18 @@ export default function AnalyticsComparisonPage() {
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-medium text-sm">{model}</span>
-                          <Badge variant="secondary">
-                            ${stats.estimatedCost.toFixed(4)}
+                          <Badge
+                            variant={
+                              stats.realCost !== undefined
+                                ? "default"
+                                : "secondary"
+                            }
+                            className={
+                              stats.realCost !== undefined ? "bg-green-600" : ""
+                            }
+                          >
+                            $
+                            {(stats.realCost ?? stats.estimatedCost).toFixed(4)}
                           </Badge>
                         </div>
                         <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
@@ -417,19 +575,17 @@ export default function AnalyticsComparisonPage() {
             )}
 
             {/* Info Alert */}
-            <Alert className="mt-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>ℹ️ Dados Simplificados</AlertTitle>
-              <AlertDescription>
-                {billingSummary.note}
-                <br />
-                <span className="text-xs">
+            {!billingSummary.has_real_costs && (
+              <Alert className="mt-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>ℹ️ Dados Simplificados</AlertTitle>
+                <AlertDescription>
                   Os custos mostrados são estimativas baseadas em preços
-                  públicos. Para limites de billing e valores exatos, configure
-                  um Admin Key com scope de billing admin.
-                </span>
-              </AlertDescription>
-            </Alert>
+                  públicos. Para valores exatos, verifique se sua Admin Key
+                  possui escopo de leitura de custos.
+                </AlertDescription>
+              </Alert>
+            )}
           </CardContent>
         </Card>
       )}
@@ -441,8 +597,8 @@ export default function AnalyticsComparisonPage() {
             <Skeleton className="h-4 w-64 mt-2" />
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-4 gap-4">
-              {Array.from({ length: 4 }).map((_, i) => (
+            <div className="grid grid-cols-3 gap-4">
+              {Array.from({ length: 3 }).map((_, i) => (
                 <Skeleton key={i} className="h-24" />
               ))}
             </div>
@@ -451,12 +607,39 @@ export default function AnalyticsComparisonPage() {
         </Card>
       )}
 
+      {!loadingBilling && !billingSummary && !error && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>⚠️ Resumo de Billing Indisponível</AlertTitle>
+          <AlertDescription>
+            Não foi possível carregar o resumo de billing da OpenAI. Verifique
+            se:
+            <ul className="list-disc list-inside mt-2 text-sm">
+              <li>A OpenAI Admin Key está configurada em Configurações</li>
+              <li>
+                A chave tem permissão{" "}
+                <code className="bg-muted px-1 py-0.5 rounded">
+                  api.usage.read
+                </code>
+              </li>
+              <li>Existe uso da API no período selecionado</li>
+            </ul>
+            <p className="mt-2 text-xs">
+              <strong>Nota:</strong> As informações de "créditos disponíveis" e
+              "limites de gasto" (hard/soft limits) requerem permissões de
+              billing admin que não estão disponíveis com o scope básico
+              api.usage.read. Esta limitação é da própria API da OpenAI.
+            </p>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Comparison Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total de Tokens
+              Total de Tokens (OpenAI)
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -477,20 +660,6 @@ export default function AnalyticsComparisonPage() {
               <span className="text-lg font-bold">
                 {comparisonStats.ours.totalTokens.toLocaleString()}
               </span>
-            </div>
-            <div className="pt-2 border-t">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">
-                  Discrepância
-                </span>
-                <Badge
-                  variant={
-                    parseFloat(tokenDiscrepancy) > 5 ? "destructive" : "default"
-                  }
-                >
-                  {tokenDiscrepancy}%
-                </Badge>
-              </div>
             </div>
           </CardContent>
         </Card>
@@ -522,38 +691,11 @@ export default function AnalyticsComparisonPage() {
             </div>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Discrepâncias Detectadas
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{discrepancies.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Diferenças {">"} 5% detectadas
-            </p>
-          </CardContent>
-        </Card>
       </div>
-
-      {/* Discrepancies Alert */}
-      {discrepancies.length > 0 && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Atenção: Discrepâncias detectadas!</AlertTitle>
-          <AlertDescription>
-            Foram encontradas {discrepancies.length} discrepâncias
-            significativas ({">"} 5%) entre nosso tracking e os dados oficiais
-            da OpenAI. Verifique a aba "Discrepâncias" para mais detalhes.
-          </AlertDescription>
-        </Alert>
-      )}
 
       {/* Tabs with Data */}
       <Tabs defaultValue="openai" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="openai" className="flex items-center gap-2">
             <Cloud className="h-4 w-4" />
             OpenAI API (Oficial)
@@ -561,14 +703,6 @@ export default function AnalyticsComparisonPage() {
           <TabsTrigger value="ours" className="flex items-center gap-2">
             <Database className="h-4 w-4" />
             Nosso Tracking
-          </TabsTrigger>
-          <TabsTrigger
-            value="discrepancies"
-            className="flex items-center gap-2"
-          >
-            <AlertCircle className="h-4 w-4" />
-            Discrepâncias{" "}
-            {discrepancies.length > 0 && `(${discrepancies.length})`}
           </TabsTrigger>
         </TabsList>
 
@@ -587,7 +721,7 @@ export default function AnalyticsComparisonPage() {
                   </CardDescription>
                 </div>
                 <Badge variant="default" className="gap-1">
-                  <CheckCircle2 className="h-3 w-3" />
+                  <Cloud className="h-3 w-3" />
                   Oficial
                 </Badge>
               </div>
@@ -599,7 +733,7 @@ export default function AnalyticsComparisonPage() {
                     <TableRow>
                       <TableHead>Data</TableHead>
                       <TableHead>Modelo</TableHead>
-                      <TableHead>Operação</TableHead>
+                      <TableHead>Fonte API</TableHead>
                       <TableHead className="text-right">Requests</TableHead>
                       <TableHead className="text-right">Input Tokens</TableHead>
                       <TableHead className="text-right">
@@ -624,40 +758,57 @@ export default function AnalyticsComparisonPage() {
                       <TableRow>
                         <TableCell
                           colSpan={8}
-                          className="text-center text-muted-foreground"
+                          className="text-center text-muted-foreground py-8"
                         >
-                          Nenhum dado encontrado para o período selecionado
+                          {hasFetched
+                            ? 'Nenhum dado no cache para este período. Clique em "Atualizar Tudo" para buscar da OpenAI.'
+                            : "Carregando cache..."}
                         </TableCell>
                       </TableRow>
                     ) : (
-                      openAIData.map((record, index) => (
-                        <TableRow key={index}>
-                          <TableCell className="font-medium">
-                            {record.date}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">
-                              {record.snapshot_id}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{record.operation}</TableCell>
-                          <TableCell className="text-right">
-                            {record.n_requests}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {record.n_context_tokens_total.toLocaleString()}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {record.n_generated_tokens_total.toLocaleString()}
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {record.total_tokens.toLocaleString()}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            ${record.estimated_cost_usd.toFixed(4)}
-                          </TableCell>
-                        </TableRow>
-                      ))
+                      [...openAIData]
+                        .sort((a, b) => b.date.localeCompare(a.date))
+                        .map((record, index) => (
+                          <TableRow key={index}>
+                            <TableCell className="font-medium">
+                              {record.date}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {record.model_name}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="secondary">
+                                {record.api_source_label || "Completions"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {record.num_model_requests}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {record.input_tokens.toLocaleString()}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {record.output_tokens.toLocaleString()}
+                            </TableCell>
+                            <TableCell className="text-right font-medium">
+                              {record.total_tokens.toLocaleString()}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {record.has_real_cost &&
+                              record.real_cost_usd != null ? (
+                                <span className="text-green-600 font-medium">
+                                  ${record.real_cost_usd.toFixed(4)}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">
+                                  ~${record.estimated_cost_usd.toFixed(4)}
+                                </span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))
                     )}
                   </TableBody>
                 </Table>
@@ -714,147 +865,50 @@ export default function AnalyticsComparisonPage() {
                       <TableRow>
                         <TableCell
                           colSpan={8}
-                          className="text-center text-muted-foreground"
+                          className="text-center text-muted-foreground py-8"
                         >
-                          Nenhum dado encontrado para o período selecionado
+                          {hasFetched
+                            ? "Nenhum dado encontrado para o período selecionado"
+                            : 'Clique em "Atualizar Tudo" para carregar os dados'}
                         </TableCell>
                       </TableRow>
                     ) : (
-                      ourData.map((record, index) => (
-                        <TableRow key={index}>
-                          <TableCell className="font-medium">
-                            {record.date}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{record.model_name}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge>{record.provider}</Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {record.total_requests}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {record.input_tokens.toLocaleString()}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {record.output_tokens.toLocaleString()}
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {record.total_tokens.toLocaleString()}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            R$ {record.cost_brl.toFixed(2)}
-                          </TableCell>
-                        </TableRow>
-                      ))
+                      [...ourData]
+                        .sort((a, b) => b.date.localeCompare(a.date))
+                        .map((record, index) => (
+                          <TableRow key={index}>
+                            <TableCell className="font-medium">
+                              {record.date}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {record.model_name}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge>{record.provider}</Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {record.total_requests}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {record.input_tokens.toLocaleString()}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {record.output_tokens.toLocaleString()}
+                            </TableCell>
+                            <TableCell className="text-right font-medium">
+                              {record.total_tokens.toLocaleString()}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              R$ {record.cost_brl.toFixed(2)}
+                            </TableCell>
+                          </TableRow>
+                        ))
                     )}
                   </TableBody>
                 </Table>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Discrepancies Tab */}
-        <TabsContent value="discrepancies" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5" />
-                Discrepâncias Detectadas
-              </CardTitle>
-              <CardDescription>
-                Comparação entre nosso tracking e dados oficiais da OpenAI
-                (apenas {">"} 5%)
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {discrepancies.length === 0 ? (
-                <div className="text-center py-12">
-                  <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Tudo certo!</h3>
-                  <p className="text-muted-foreground">
-                    Não foram detectadas discrepâncias significativas entre
-                    nosso tracking e os dados da OpenAI.
-                  </p>
-                </div>
-              ) : (
-                <div className="rounded-md border overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Data</TableHead>
-                        <TableHead>Modelo</TableHead>
-                        <TableHead className="text-right">
-                          OpenAI Input
-                        </TableHead>
-                        <TableHead className="text-right">
-                          Nosso Input
-                        </TableHead>
-                        <TableHead className="text-right">
-                          Diferença Input
-                        </TableHead>
-                        <TableHead className="text-right">
-                          OpenAI Output
-                        </TableHead>
-                        <TableHead className="text-right">
-                          Nosso Output
-                        </TableHead>
-                        <TableHead className="text-right">
-                          Diferença Output
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {discrepancies.map((disc, index) => (
-                        <TableRow key={index}>
-                          <TableCell className="font-medium">
-                            {disc.usage_date}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{disc.model_name}</Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {disc.openai_input_tokens.toLocaleString()}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {disc.our_input_tokens.toLocaleString()}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Badge
-                              variant={
-                                disc.input_token_discrepancy_pct > 10
-                                  ? "destructive"
-                                  : "secondary"
-                              }
-                            >
-                              {disc.input_token_discrepancy_pct.toFixed(1)}%
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {disc.openai_output_tokens.toLocaleString()}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {disc.our_output_tokens.toLocaleString()}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Badge
-                              variant={
-                                disc.output_token_discrepancy_pct > 10
-                                  ? "destructive"
-                                  : "secondary"
-                              }
-                            >
-                              {disc.output_token_discrepancy_pct.toFixed(1)}%
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
             </CardContent>
           </Card>
         </TabsContent>
