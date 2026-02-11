@@ -177,12 +177,11 @@ Analise se a mensagem corresponde a alguma FAQ do catálogo. Responda com JSON.`
 
   try {
     // Use Direct AI (Vault credentials)
-    const result = await callDirectAI({
+    const aiResponse = await callDirectAI({
       clientId,
       clientConfig: {
         id: clientId,
         name: "Fast Track Router",
-        slug: "fast-track-router",
         primaryModelProvider: "openai", // Force OpenAI for consistency
         openaiModel: routerModel,
         groqModel: "llama-3.3-70b-versatile",
@@ -194,8 +193,8 @@ Analise se a mensagem corresponde a alguma FAQ do catálogo. Responda com JSON.`
       },
     });
 
-    const responseText = result.text;
-    const modelUsed = result.model || routerModel;
+    const responseText = aiResponse.text;
+    const modelUsed = aiResponse.model || routerModel;
 
     // Parse JSON response
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);

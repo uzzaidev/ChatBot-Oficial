@@ -84,17 +84,14 @@ export const classifyIntent = async (input: ClassifyIntentInput): Promise<Classi
       clientConfig: {
         id: clientId,
         name: 'intent-classifier',
-        slug: 'intent-classifier',
         primaryModelProvider: 'groq',
         groqModel: 'llama-3.3-70b-versatile',
-        systemPrompt: '',
       },
       messages,
       settings: {
         temperature: promptConfig.temperature || 0.1,
         maxTokens: promptConfig.max_tokens || 10,
       },
-      stream: false,
       skipUsageLogging: false, // Track usage
     })
 

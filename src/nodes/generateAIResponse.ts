@@ -310,11 +310,9 @@ export const generateAIResponse = async (
         clientConfig: {
           id: config.id,
           name: config.name,
-          slug: config.slug,
           primaryModelProvider: config.primaryProvider,
           openaiModel: config.models.openaiModel,
           groqModel: config.models.groqModel,
-          systemPrompt: config.prompts.systemPrompt,
         },
         messages: coreMessages,
         tools: enableTools && config.settings.enableTools

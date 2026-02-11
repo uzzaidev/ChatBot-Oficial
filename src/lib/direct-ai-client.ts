@@ -226,26 +226,47 @@ export const callDirectAI = async (
     // 5. Normalize tools
     const normalizedTools = normalizeToolsForAISDK(config.tools);
 
-    // 6. Call AI
+    // 6. Build generate params (only include defined parameters)
     console.log("[Direct AI] Calling AI with", config.messages.length, "messages");
-    const result = await generateText({
+    const generateParams: any = {
       model: modelInstance,
       messages: config.messages,
       tools: normalizedTools,
-      temperature: config.settings?.temperature,
-      maxTokens: config.settings?.maxTokens,
-      topP: config.settings?.topP,
-      frequencyPenalty: config.settings?.frequencyPenalty,
-      presencePenalty: config.settings?.presencePenalty,
-    });
+    };
+
+    // Add optional parameters only if defined
+    if (config.settings?.temperature !== undefined) {
+      generateParams.temperature = config.settings.temperature;
+    }
+    if (config.settings?.maxTokens !== undefined) {
+      generateParams.maxTokens = config.settings.maxTokens;
+    }
+    if (config.settings?.topP !== undefined) {
+      generateParams.topP = config.settings.topP;
+    }
+    if (config.settings?.frequencyPenalty !== undefined) {
+      generateParams.frequencyPenalty = config.settings.frequencyPenalty;
+    }
+    if (config.settings?.presencePenalty !== undefined) {
+      generateParams.presencePenalty = config.settings.presencePenalty;
+    }
+
+    // 7. Call AI
+    const result = await generateText(generateParams);
 
     const latencyMs = Date.now() - startTime;
     console.log("[Direct AI] Response received in", latencyMs, "ms");
 
-    // 7. Normalize tool calls
+    // 8. Normalize tool calls
     const normalizedToolCalls = normalizeToolCalls(result.toolCalls);
 
-    // 8. Log usage (async, non-blocking)
+    // 9. Extract usage (cast to any for compatibility)
+    const usage = result.usage as any;
+    const promptTokens = usage.promptTokens || 0;
+    const completionTokens = usage.completionTokens || 0;
+    const totalTokens = usage.totalTokens || (promptTokens + completionTokens);
+
+    // 10. Log usage (async, non-blocking)
     if (!config.skipUsageLogging) {
       logDirectAIUsage({
         clientId: config.clientId,
@@ -253,22 +274,22 @@ export const callDirectAI = async (
         phone: config.phone || "unknown",
         provider: provider as "openai" | "groq",
         modelName: model,
-        inputTokens: result.usage.promptTokens,
-        outputTokens: result.usage.completionTokens,
+        inputTokens: promptTokens,
+        outputTokens: completionTokens,
         latencyMs,
       }).catch((err) => {
         console.error("[Direct AI] Failed to log usage:", err);
       });
     }
 
-    // 9. Return standardized response
+    // 11. Return standardized response
     return {
       text: result.text,
       toolCalls: normalizedToolCalls,
       usage: {
-        promptTokens: result.usage.promptTokens,
-        completionTokens: result.usage.completionTokens,
-        totalTokens: result.usage.totalTokens,
+        promptTokens,
+        completionTokens,
+        totalTokens,
       },
       model,
       provider,
