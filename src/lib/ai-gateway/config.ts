@@ -1,9 +1,19 @@
 /**
  * AI GATEWAY - SHARED CONFIGURATION MANAGER
  *
- * Fetches SHARED gateway configuration (ONE config for all clients)
- * Keys are shared across all clients, control is done via budget per client
+ * ⚠️ DEPRECATED - This module is deprecated and will be removed in a future version.
+ *
+ * Use client-specific Vault credentials via `src/lib/vault.ts` instead.
+ *
+ * @deprecated Use vault.ts for client-specific credentials
  */
+
+// Log deprecation warning
+console.warn(
+  "[DEPRECATED] ai-gateway/config.ts is deprecated. " +
+  "Use src/lib/vault.ts for client-specific credentials. " +
+  "This module will be removed in a future version."
+);
 
 import "server-only";
 

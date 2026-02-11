@@ -44,16 +44,7 @@ npm run dev                      # Start dev server (localhost:3000)
 **Prerequisites:**
 - Create `.env.local` from `.env.example`
 - Apply migrations: `supabase db push`
-
-### AI Gateway Setup (NEW!)
-
-**Quick Start:**
-1. Get keys: OpenAI (`sk-proj-...`), Groq (`gsk_...`)
-2. Configure: `/dashboard/ai-gateway/setup`
-3. Test: `curl http://localhost:3000/api/test/gateway`
-4. Enable for client: `UPDATE clients SET use_ai_gateway = true WHERE id = '...'`
-
-**Docs:** See `AI_GATEWAY_QUICKSTART.md` for detailed setup
+- Configure client API keys in Vault (OpenAI/Groq)
 
 ### Key Entry Points
 
@@ -68,8 +59,8 @@ npm run dev                      # Start dev server (localhost:3000)
 | **RAG Knowledge** | `/dashboard/knowledge` (PDF/TXT upload) |
 | **Database Schema** | `docs/tables/tabelas.md` ⚠️ CRITICAL |
 | **Migrations** | `supabase/migrations/*`, `db/MIGRATION_WORKFLOW.md` |
-| **AI Gateway Setup** | `/dashboard/ai-gateway/setup` (admin only) |
-| **AI Gateway Test** | `/api/test/gateway` (validates config) |
+| **Direct AI Client** | `src/lib/direct-ai-client.ts` (main AI interface) |
+| **Vault Credentials** | `src/lib/vault.ts` (client-specific API keys) |
 
 ### Common Commands
 
@@ -176,46 +167,55 @@ Top 5 chunks injected into AI prompt
 
 **Human Handoff:** Tool call → Update status → Summarize conversation → Email → Stop bot
 
-### AI Gateway (NEW!)
+### Direct AI Client (Vault-Only Credentials)
 
-**Status:** ✅ Backend Ready | ⏳ Awaiting Configuration
+**Status:** ✅ Active (AI Gateway deprecated)
 
-**Architecture:** Shared keys with multi-tenant tracking
-- ✅ ONE gateway key (`vck_...`) for all clients
-- ✅ Provider keys shared (OpenAI, Groq, Anthropic, Google)
-- ✅ Per-client control via feature flag (`use_ai_gateway`)
-- ✅ Multi-tenant usage tracking (`gateway_usage_logs`)
-- ✅ Cache grátis (70% economia em requests repetidos)
-- ✅ Fallback automático entre providers
-- ✅ **Fallback para credenciais do cliente** (se Gateway falhar)
-- ✅ ZERO markup sobre preços dos providers
+**Architecture:** Client-specific Vault credentials with direct SDK calls
+- ✅ Each client uses their OWN API keys from Vault (complete multi-tenant isolation)
+- ✅ Supports OpenAI and Groq providers
+- ✅ Budget enforcement via `checkBudgetAvailable()`
+- ✅ Usage tracking to `gateway_usage_logs` table (backward compatible)
+- ✅ Tool calls: human handoff, document search, TTS
+- ✅ No shared keys, no gateway abstraction
+- ✅ Transparent errors (no hidden fallback failures)
 
-**Fallback Strategy (Auto-Resilience):**
-1. **Try AI Gateway first** (if enabled and configured)
-2. **If Gateway fails** (no credits, API down, etc.) → **Automatically fallback to OpenAI** using client's Vault credentials
-3. **Always uses OpenAI for fallback** (most stable and reliable provider)
-4. **Logs track fallback** (reason, provider, latency) in `gateway_usage_logs`
-5. **Zero downtime** - Users never see errors due to Gateway issues
-
-**Setup (5 minutos):**
-1. Get keys: OpenAI (`sk-proj-...`), Groq (`gsk_...`)
-2. Configure: http://localhost:3000/dashboard/ai-gateway/setup
-3. Test: `curl http://localhost:3000/api/test/gateway`
-4. Enable for client: `UPDATE clients SET use_ai_gateway = true WHERE id = '...'`
-5. **Test fallback:** `curl "http://localhost:3000/api/test/ai-fallback?clientId=YOUR_UUID"`
+**Why Direct AI:**
+- Simpler architecture (less code to maintain)
+- Better multi-tenant isolation
+- More transparent errors
+- No gateway credit management overhead
+- Direct control over provider choice per client
 
 **Key Files:**
-- `src/lib/ai-gateway/index.ts` - Main interface (`callAI()`)
-- `src/lib/ai-gateway/config.ts` - Shared config manager
-- `src/lib/ai-gateway/providers.ts` - Provider factory
-- `src/lib/ai-gateway/usage-tracking.ts` - Multi-tenant tracking
-- `src/lib/currency.ts` - USD→BRL conversion (24h cache)
+- `src/lib/direct-ai-client.ts` - Main AI interface (`callDirectAI()`)
+- `src/lib/direct-ai-tracking.ts` - Simplified usage tracking
+- `src/lib/vault.ts` - Vault credential management
+- `src/lib/unified-tracking.ts` - Budget enforcement and usage logging
+
+**Usage Example:**
+```typescript
+import { callDirectAI } from '@/lib/direct-ai-client'
+
+const result = await callDirectAI({
+  clientId: 'uuid',
+  clientConfig: {
+    primaryModelProvider: 'openai',
+    openaiModel: 'gpt-4o-mini'
+  },
+  messages: [...],
+  tools: {...}, // Optional
+  settings: { temperature: 1, maxTokens: 1000 }
+})
+```
+
+**Budget Enforcement:** Automatic via `checkBudgetAvailable()`
+**Usage Tracking:** Automatic via `logDirectAIUsage()`
+**Credentials:** Retrieved from Supabase Vault per client
 
 **Database Tables:**
-- `shared_gateway_config` - Global config (1 record only)
 - `ai_models_registry` - Model catalog with pricing
 - `gateway_usage_logs` - Per-request tracking (multi-tenant)
-- `gateway_cache_performance` - Cache metrics
 - `client_budgets` - Budget control per client
 
 **Monitoring:**
@@ -232,8 +232,6 @@ WHERE gul.created_at > NOW() - INTERVAL '24 hours'
 GROUP BY c.name
 ORDER BY cost_brl DESC;
 ```
-
-**Docs:** `AI_GATEWAY_QUICKSTART.md` para setup detalhado
 
 ---
 
@@ -525,6 +523,9 @@ GMAIL_APP_PASSWORD=
 - `src/app/api/webhook/[clientId]/route.ts` - Webhook entry
 - `src/nodes/*` - All node functions
 - `src/lib/config.ts` - Multi-tenant config (Vault)
+- `src/lib/direct-ai-client.ts` - Direct AI interface (replaces Gateway)
+- `src/lib/direct-ai-tracking.ts` - Simplified usage tracking
+- `src/lib/vault.ts` - Vault credential management
 - `docs/tables/tabelas.md` - **Database schema (CRITICAL)**
 - `db/MIGRATION_WORKFLOW.md` - Migration guide
 - `.env.example` - Required env vars

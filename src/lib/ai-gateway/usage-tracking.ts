@@ -1,9 +1,19 @@
 /**
  * AI GATEWAY - USAGE TRACKING
  *
- * Logs AI usage to gateway_usage_logs table
- * Updates budget usage and cache performance metrics
+ * ⚠️ DEPRECATED - This module is deprecated and will be removed in a future version.
+ *
+ * Use `src/lib/direct-ai-tracking.ts` instead for simplified usage tracking.
+ *
+ * @deprecated Use direct-ai-tracking.ts for usage logging
  */
+
+// Log deprecation warning
+console.warn(
+  "[DEPRECATED] ai-gateway/usage-tracking.ts is deprecated. " +
+  "Use src/lib/direct-ai-tracking.ts for usage logging. " +
+  "This module will be removed in a future version."
+);
 
 import { createServerClient } from "@/lib/supabase-server";
 import { convertUSDtoBRL, getExchangeRate } from "@/lib/currency";

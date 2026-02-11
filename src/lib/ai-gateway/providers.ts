@@ -1,9 +1,19 @@
 /**
  * AI GATEWAY - PROVIDER FACTORY
  *
- * Factory functions for Vercel AI SDK providers
- * Supports: OpenAI, Anthropic, Groq, Google
+ * ⚠️ DEPRECATED - This module is deprecated and will be removed in a future version.
+ *
+ * Use direct provider instances in `src/lib/direct-ai-client.ts` instead.
+ *
+ * @deprecated Use direct-ai-client.ts for provider instances
  */
+
+// Log deprecation warning
+console.warn(
+  "[DEPRECATED] ai-gateway/providers.ts is deprecated. " +
+  "Use src/lib/direct-ai-client.ts for provider instances. " +
+  "This module will be removed in a future version."
+);
 
 import { createOpenAI } from '@ai-sdk/openai'
 import { createAnthropic } from '@ai-sdk/anthropic'

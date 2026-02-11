@@ -1,9 +1,28 @@
 /**
  * AI GATEWAY - MAIN INTERFACE
  *
- * Unified interface for AI calls - abstracts gateway vs direct SDK
- * Supports: OpenAI, Groq, Anthropic, Google
+ * ⚠️ DEPRECATED - This module is deprecated and will be removed in a future version.
+ *
+ * Use `src/lib/direct-ai-client.ts` instead for all AI calls.
+ *
+ * Migration:
+ * - Replace `import { callAI } from '@/lib/ai-gateway'`
+ * - With `import { callDirectAI } from '@/lib/direct-ai-client'`
+ *
+ * Reason for deprecation:
+ * - Simplifies architecture (no shared keys, no gateway abstraction)
+ * - Better multi-tenant isolation (each client uses own Vault credentials)
+ * - More transparent errors (no hidden fallback failures)
+ *
+ * @deprecated Use direct-ai-client.ts instead
  */
+
+// Log deprecation warning
+console.warn(
+  "[DEPRECATED] ai-gateway/index.ts is deprecated. " +
+  "Use src/lib/direct-ai-client.ts instead. " +
+  "This module will be removed in a future version."
+);
 
 import { generateText, streamText } from "ai";
 import type { CoreMessage } from "ai";

@@ -1,5 +1,5 @@
 import { getBotConfig, getBotConfigs } from '@/lib/config'
-import { callAI } from '@/lib/ai-gateway'
+import { callDirectAI } from '@/lib/direct-ai-client'
 import type { CoreMessage } from 'ai'
 
 export interface ClassifyIntentInput {
@@ -78,8 +78,8 @@ export const classifyIntent = async (input: ClassifyIntentInput): Promise<Classi
       },
     ]
 
-    // 🚀 Call via AI Gateway (shared Groq config)
-    const response = await callAI({
+    // 🚀 Call via Direct AI (Vault credentials)
+    const response = await callDirectAI({
       clientId,
       clientConfig: {
         id: clientId,

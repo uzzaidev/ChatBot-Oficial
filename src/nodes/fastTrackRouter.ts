@@ -1,6 +1,5 @@
 import { getBotConfigs } from "@/lib/config";
-import { callAI } from "@/lib/ai-gateway";
-import { shouldUseGateway } from "@/lib/ai-gateway/config";
+import { callDirectAI } from "@/lib/direct-ai-client";
 import type { CoreMessage } from "ai";
 import { createServiceRoleClient } from "@/lib/supabase";
 
@@ -177,67 +176,26 @@ Analise se a mensagem corresponde a alguma FAQ do catálogo. Responda com JSON.`
   ];
 
   try {
-    // Use AI Gateway if enabled
-    const useGateway = await shouldUseGateway(clientId);
+    // Use Direct AI (Vault credentials)
+    const result = await callDirectAI({
+      clientId,
+      clientConfig: {
+        id: clientId,
+        name: "Fast Track Router",
+        slug: "fast-track-router",
+        primaryModelProvider: "openai", // Force OpenAI for consistency
+        openaiModel: routerModel,
+        groqModel: "llama-3.3-70b-versatile",
+      },
+      messages,
+      settings: {
+        temperature: 0.1, // Low temperature for consistent classification
+        maxTokens: 150,
+      },
+    });
 
-    let responseText = "";
-    let modelUsed = routerModel;
-
-    if (useGateway) {
-      // Route through AI Gateway using configured router model
-      const result = await callAI({
-        clientId,
-        clientConfig: {
-          id: clientId,
-          name: "Fast Track Router",
-          slug: "fast-track-router",
-          primaryModelProvider: "openai", // Force OpenAI for consistency
-          openaiModel: routerModel,
-          groqModel: "llama-3.3-70b-versatile",
-        },
-        messages,
-        settings: {
-          temperature: 0.1, // Low temperature for consistent classification
-          maxTokens: 150,
-        },
-      });
-
-      responseText = result.text;
-      modelUsed = result.model || routerModel;
-    } else {
-      // Direct OpenAI call (fallback)
-      const supabase = createServiceRoleClient();
-      const { data: client, error: clientError } = await supabase
-        .from("clients")
-        .select("openai_api_key")
-        .eq("id", clientId)
-        .single() as { data: { openai_api_key: string } | null, error: any };
-
-      if (clientError || !client || !client.openai_api_key) {
-        throw new Error("OpenAI API key not configured");
-      }
-
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${client.openai_api_key}`,
-        },
-        body: JSON.stringify({
-          model: routerModel,
-          messages,
-          temperature: 0.1,
-          max_tokens: 150,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      responseText = data.choices[0]?.message?.content || "";
-    }
+    const responseText = result.text;
+    const modelUsed = result.model || routerModel;
 
     // Parse JSON response
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);

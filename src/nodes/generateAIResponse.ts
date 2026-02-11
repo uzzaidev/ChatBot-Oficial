@@ -1,6 +1,5 @@
 import { AIResponse, ChatMessage, ClientConfig } from "@/lib/types";
-import { callAI } from "@/lib/ai-gateway";
-import { logGatewayUsage } from "@/lib/ai-gateway/usage-tracking";
+import { callDirectAI } from "@/lib/direct-ai-client";
 import { checkBudgetAvailable } from "@/lib/unified-tracking";
 import type { CoreMessage } from "ai";
 import { z } from "zod";
@@ -297,7 +296,7 @@ export const generateAIResponse = async (
       );
     }
 
-    // 🌐 SEMPRE usa callAI() - ele decide internamente se usa Gateway ou credenciais do cliente
+    // 🌐 SEMPRE usa callDirectAI() - credenciais diretas do Vault do cliente
 
     // Convert ChatMessage[] to CoreMessage[]
     const coreMessages: CoreMessage[] = messages.map((msg) => ({
@@ -305,8 +304,8 @@ export const generateAIResponse = async (
       content: msg.content,
     }));
 
-    // Call AI - Gateway ou fallback para credenciais do cliente
-    const result = await callAI({
+    // Call AI - Direct SDK with Vault credentials
+    const result = await callDirectAI({
         clientId: config.id,
         clientConfig: {
           id: config.id,
@@ -368,23 +367,6 @@ export const generateAIResponse = async (
       const toolCallNames = result.toolCalls?.map((tc: any) => tc.function.name).join(",") || "";
       console.log(`🤖 [AI] ${config.name}: model=${result.model}, ${result.latencyMs}ms, content=${result.text?.length || 0}chars${toolCallNames ? `, tools=[${toolCallNames}]` : ""}`);
 
-      // Log usage to gateway_usage_logs
-      await logGatewayUsage({
-        clientId: config.id,
-        conversationId: input.conversationId, // ✨ FASE 8: Passed from flow
-        phone: input.phone || customerName, // ✨ FASE 8: Actual phone number
-        provider: result.provider,
-        modelName: result.model,
-        inputTokens: result.usage.promptTokens,
-        outputTokens: result.usage.completionTokens,
-        cachedTokens: result.usage.cachedTokens,
-        latencyMs: result.latencyMs,
-        wasCached: result.wasCached,
-        wasFallback: result.wasFallback,
-        fallbackReason: result.fallbackReason,
-        requestId: result.requestId,
-      });
-
     // Convert back to AIResponse format
     return {
       content: result.text,
@@ -393,19 +375,19 @@ export const generateAIResponse = async (
         result.finishReason === "end_turn",
       model: result.model,
       provider: result.provider as any,
-      requestId: result.requestId,
-      wasCached: result.wasCached,
-      wasFallback: result.wasFallback,
-      fallbackReason: result.fallbackReason,
-      primaryAttemptedProvider: result.primaryAttemptedProvider as any,
-      primaryAttemptedModel: result.primaryAttemptedModel,
-      fallbackUsedProvider: result.fallbackUsedProvider as any,
-      fallbackUsedModel: result.fallbackUsedModel,
+      requestId: undefined, // No request ID for direct calls
+      wasCached: false, // No caching for direct calls
+      wasFallback: false, // No fallback - direct calls only
+      fallbackReason: undefined,
+      primaryAttemptedProvider: result.provider as any,
+      primaryAttemptedModel: result.model,
+      fallbackUsedProvider: undefined,
+      fallbackUsedModel: undefined,
       usage: {
         prompt_tokens: result.usage.promptTokens,
         completion_tokens: result.usage.completionTokens,
         total_tokens: result.usage.totalTokens,
-        cached_tokens: result.usage.cachedTokens,
+        cached_tokens: 0, // No caching for direct calls
       },
     };
   } catch (error) {
