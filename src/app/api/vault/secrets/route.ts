@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
     const { data: client, error: clientError } = await supabase
       .from("clients")
       .select(
-        "id, slug, ai_keys_mode, meta_access_token_secret_id, meta_verify_token_secret_id, meta_app_secret_secret_id, meta_phone_number_id, openai_api_key_secret_id, groq_api_key_secret_id, whatsapp_business_account_id, meta_waba_id, meta_dataset_id, meta_ad_account_id",
+        "id, slug, ai_keys_mode, meta_access_token_secret_id, meta_verify_token_secret_id, meta_app_secret_secret_id, meta_phone_number_id, openai_api_key_secret_id, openai_admin_key_secret_id, groq_api_key_secret_id, whatsapp_business_account_id, meta_waba_id, meta_dataset_id, meta_ad_account_id",
       )
       .eq("id", clientId)
       .single();
@@ -129,6 +129,13 @@ export async function GET(request: NextRequest) {
           })
         : { data: "", error: null };
 
+    const { data: openaiAdminKey, error: openaiAdminError } =
+      client.openai_admin_key_secret_id
+        ? await supabase.rpc("get_client_secret", {
+            secret_id: client.openai_admin_key_secret_id,
+          })
+        : { data: "", error: null };
+
     const { data: groqApiKey, error: groqError } = client.groq_api_key_secret_id
       ? await supabase.rpc("get_client_secret", {
           secret_id: client.groq_api_key_secret_id,
@@ -164,6 +171,7 @@ export async function GET(request: NextRequest) {
         meta_dataset_id: client.meta_dataset_id || "",
         meta_ad_account_id: client.meta_ad_account_id || "",
         openai_api_key: maskSecret(openaiApiKey),
+        openai_admin_key: maskSecret(openaiAdminKey),
         groq_api_key: maskSecret(groqApiKey),
         webhook_url: webhookUrl,
       },
@@ -181,6 +189,7 @@ export async function GET(request: NextRequest) {
           client.meta_ad_account_id && client.meta_ad_account_id.length > 0
         ),
         openai_api_key: !!(openaiApiKey && openaiApiKey.length > 0),
+        openai_admin_key: !!(openaiAdminKey && openaiAdminKey.length > 0),
         groq_api_key: !!(groqApiKey && groqApiKey.length > 0),
       },
     });
@@ -275,6 +284,7 @@ export async function PUT(request: NextRequest) {
       meta_verify_token: "meta_verify_token_secret_id",
       meta_app_secret: "meta_app_secret_secret_id", // SECURITY FIX (VULN-012)
       openai_api_key: "openai_api_key_secret_id",
+      openai_admin_key: "openai_admin_key_secret_id", // Admin key for billing/usage APIs
       groq_api_key: "groq_api_key_secret_id",
     };
 

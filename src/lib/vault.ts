@@ -319,3 +319,45 @@ export const getClientOpenAIKey = async (
     throw new Error(`Failed to get client OpenAI key from Vault: ${errorMessage}`)
   }
 }
+
+/**
+ * 🔐 Busca chave OpenAI ADMIN DIRETAMENTE do Vault do cliente
+ *
+ * Esta chave tem permissões especiais (scope: api.usage.read) para billing/usage APIs.
+ * Diferente da chave normal que é usada apenas para chat/embeddings.
+ *
+ * @param clientId - UUID do cliente
+ * @returns Admin key OpenAI do cliente ou null se não configurada
+ * @throws Error se o cliente não existir
+ */
+export const getClientOpenAIAdminKey = async (
+  clientId: string
+): Promise<string | null> => {
+  try {
+    const supabase = await createServerClient()
+
+    // Buscar ID do secret OpenAI Admin do cliente
+    const { data: client, error } = await supabase
+      .from('clients')
+      .select('openai_admin_key_secret_id')
+      .eq('id', clientId)
+      .single()
+
+    if (error || !client) {
+      throw new Error(`Client not found: ${clientId}`)
+    }
+
+    if (!client.openai_admin_key_secret_id) {
+      console.warn('[Vault] Client has no OpenAI Admin key configured', { clientId })
+      return null
+    }
+
+    // Descriptografar secret
+    const openaiAdminKey = await getSecret(client.openai_admin_key_secret_id)
+
+    return openaiAdminKey
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    throw new Error(`Failed to get client OpenAI Admin key from Vault: ${errorMessage}`)
+  }
+}

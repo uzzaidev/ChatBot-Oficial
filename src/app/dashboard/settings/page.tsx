@@ -78,6 +78,7 @@ export default function SettingsPage() {
     meta_dataset_id: "", // Meta Ads - Dataset ID for Conversions API
     meta_ad_account_id: "", // Meta Ads - Ad Account ID for Marketing API
     openai_api_key: "",
+    openai_admin_key: "",
     groq_api_key: "",
     webhook_url: "",
   });
@@ -1152,6 +1153,71 @@ export default function SettingsPage() {
                   >
                     platform.openai.com/api-keys
                   </a>
+                </p>
+              </div>
+
+              {/* OpenAI Admin API Key */}
+              <div>
+                <Label htmlFor="openai_admin_key">
+                  OpenAI Admin API Key
+                  <span className="text-xs text-orange-600 ml-2">
+                    (Para analytics/billing - scope: api.usage.read)
+                  </span>
+                </Label>
+                <div className="flex gap-2 mt-2">
+                  <div className="relative flex-1">
+                    <Input
+                      id="openai_admin_key"
+                      type={
+                        showPasswords["openai_admin_key"] ? "text" : "password"
+                      }
+                      value={secrets.openai_admin_key}
+                      onChange={(e) =>
+                        setSecrets({
+                          ...secrets,
+                          openai_admin_key: e.target.value,
+                        })
+                      }
+                      disabled={!editingSecrets}
+                      placeholder="sk-proj-... (com permissão de usage)"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => togglePasswordVisibility("openai_admin_key")}
+                      className="absolute right-2 top-2"
+                    >
+                      {showPasswords["openai_admin_key"] ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                  {editingSecrets && (
+                    <Button
+                      onClick={() =>
+                        handleUpdateSecret(
+                          "openai_admin_key",
+                          secrets.openai_admin_key,
+                        )
+                      }
+                      disabled={loadingSecrets}
+                    >
+                      Salvar
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Crie uma key com permissão "api.usage.read" em:{" "}
+                  <a
+                    href="https://platform.openai.com/api-keys"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    platform.openai.com/api-keys
+                  </a>
+                  {" "}→ Permissions → Enable "api.usage.read"
                 </p>
               </div>
 

@@ -9,7 +9,7 @@
  * Docs: https://platform.openai.com/docs/api-reference/usage
  */
 
-import { getClientOpenAIKey } from "./vault";
+import { getClientOpenAIAdminKey } from "./vault";
 
 // =====================================================
 // TYPES
@@ -66,13 +66,15 @@ export interface OpenAIBillingUsage {
  */
 export async function getOpenAIUsage(
   clientId: string,
-  date?: string
+  date?: string,
 ): Promise<OpenAIUsageResponse> {
   try {
-    // Get client's OpenAI API key from Vault
-    const apiKey = await getClientOpenAIKey(clientId);
+    // Get client's OpenAI Admin API key from Vault (needs api.usage.read scope)
+    const apiKey = await getClientOpenAIAdminKey(clientId);
     if (!apiKey) {
-      throw new Error(`No OpenAI API key configured for client ${clientId}`);
+      throw new Error(
+        `No OpenAI Admin API key configured for client ${clientId}`,
+      );
     }
 
     // Default to today if no date provided
@@ -85,7 +87,7 @@ export async function getOpenAIUsage(
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     if (!response.ok) {
@@ -112,12 +114,15 @@ export async function getOpenAIUsage(
  * @returns Subscription details with spending limits
  */
 export async function getOpenAISubscription(
-  clientId: string
+  clientId: string,
 ): Promise<OpenAISubscription> {
   try {
-    const apiKey = await getClientOpenAIKey(clientId);
+    // Get client's OpenAI Admin API key from Vault (needs api.usage.read scope)
+    const apiKey = await getClientOpenAIAdminKey(clientId);
     if (!apiKey) {
-      throw new Error(`No OpenAI API key configured for client ${clientId}`);
+      throw new Error(
+        `No OpenAI Admin API key configured for client ${clientId}`,
+      );
     }
 
     const response = await fetch(
@@ -127,13 +132,13 @@ export async function getOpenAISubscription(
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     if (!response.ok) {
       const error = await response.text();
       throw new Error(
-        `OpenAI Subscription API error: ${response.status} - ${error}`
+        `OpenAI Subscription API error: ${response.status} - ${error}`,
       );
     }
 
@@ -160,12 +165,15 @@ export async function getOpenAISubscription(
 export async function getOpenAIBillingUsage(
   clientId: string,
   startDate: string,
-  endDate?: string
+  endDate?: string,
 ): Promise<OpenAIBillingUsage> {
   try {
-    const apiKey = await getClientOpenAIKey(clientId);
+    // Get client's OpenAI Admin API key from Vault (needs api.usage.read scope)
+    const apiKey = await getClientOpenAIAdminKey(clientId);
     if (!apiKey) {
-      throw new Error(`No OpenAI API key configured for client ${clientId}`);
+      throw new Error(
+        `No OpenAI Admin API key configured for client ${clientId}`,
+      );
     }
 
     const targetEndDate = endDate || new Date().toISOString().split("T")[0];
@@ -177,13 +185,13 @@ export async function getOpenAIBillingUsage(
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     if (!response.ok) {
       const error = await response.text();
       throw new Error(
-        `OpenAI Billing Usage API error: ${response.status} - ${error}`
+        `OpenAI Billing Usage API error: ${response.status} - ${error}`,
       );
     }
 
@@ -202,13 +210,16 @@ export async function getOpenAIBillingUsage(
 /**
  * Get comprehensive billing summary for a client
  *
+ * ⚠️ DEPRECATED: This function requires billing admin scopes (api.read, billing access)
+ * Use getOpenAISimplifiedBillingSummary() instead if you only have api.usage.read scope
+ *
  * @param clientId - Client UUID
  * @param days - Number of days to look back (default 30)
  * @returns Comprehensive billing summary
  */
 export async function getOpenAIBillingSummary(
   clientId: string,
-  days: number = 30
+  days: number = 30,
 ) {
   try {
     // Calculate date range
@@ -277,6 +288,190 @@ export async function getOpenAIBillingSummary(
   }
 }
 
+/**
+ * Get SIMPLIFIED billing summary using only usage API (works with api.usage.read scope)
+ *
+ * This version doesn't require billing admin access - only usage read access
+ * Use this if your Admin Key only has api.usage.read scope
+ *
+ * @param clientId - Client UUID
+ * @param startDate - Start date (YYYY-MM-DD)
+ * @param endDate - End date (YYYY-MM-DD)
+ * @returns Simplified usage summary (no billing limits info)
+ */
+export async function getOpenAISimplifiedBillingSummary(
+  clientId: string,
+  startDate: string,
+  endDate: string,
+) {
+  try {
+    const apiKey = await getClientOpenAIAdminKey(clientId);
+    if (!apiKey) {
+      throw new Error(
+        `No OpenAI Admin API key configured for client ${clientId}`,
+      );
+    }
+
+    // Convert dates to Unix timestamps
+    const startTimestamp = Math.floor(
+      new Date(startDate + "T00:00:00Z").getTime() / 1000,
+    );
+    const endTimestamp = Math.floor(
+      new Date(endDate + "T23:59:59Z").getTime() / 1000,
+    );
+
+    // Call usage API (works with api.usage.read scope)
+    const queryParams = new URLSearchParams({
+      start_time: startTimestamp.toString(),
+      end_time: endTimestamp.toString(),
+      bucket_width: "1d",
+    });
+
+    const response = await fetch(
+      `https://api.openai.com/v1/organization/usage/completions?${queryParams.toString()}`,
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`OpenAI Usage API error: ${response.status} - ${error}`);
+    }
+
+    interface UsageBucket {
+      object: "bucket";
+      start_time: number;
+      end_time: number;
+      results: Array<{
+        aggregation_timestamp: number;
+        n_requests: number;
+        operation: string;
+        snapshot_id: string;
+        n_context_tokens_total: number;
+        n_generated_tokens_total: number;
+      }>;
+    }
+
+    interface UsageResponse {
+      object: "list";
+      data: UsageBucket[];
+      has_more: boolean;
+    }
+
+    const data: UsageResponse = await response.json();
+
+    // Extract and aggregate all records
+    let totalRequests = 0;
+    let totalInputTokens = 0;
+    let totalOutputTokens = 0;
+    let totalCost = 0;
+
+    const modelBreakdown: Record<
+      string,
+      {
+        requests: number;
+        inputTokens: number;
+        outputTokens: number;
+        estimatedCost: number;
+      }
+    > = {};
+
+    data.data.forEach((bucket) => {
+      bucket.results.forEach((record) => {
+        const model = record.snapshot_id;
+
+        // Aggregate totals
+        totalRequests += record.n_requests;
+        totalInputTokens += record.n_context_tokens_total;
+        totalOutputTokens += record.n_generated_tokens_total;
+
+        // Estimate cost (rough approximation)
+        const cost = estimateCost(
+          model,
+          record.n_context_tokens_total,
+          record.n_generated_tokens_total,
+        );
+        totalCost += cost;
+
+        // Model breakdown
+        if (!modelBreakdown[model]) {
+          modelBreakdown[model] = {
+            requests: 0,
+            inputTokens: 0,
+            outputTokens: 0,
+            estimatedCost: 0,
+          };
+        }
+        modelBreakdown[model].requests += record.n_requests;
+        modelBreakdown[model].inputTokens += record.n_context_tokens_total;
+        modelBreakdown[model].outputTokens += record.n_generated_tokens_total;
+        modelBreakdown[model].estimatedCost += cost;
+      });
+    });
+
+    // Calculate days
+    const days = Math.ceil(
+      (new Date(endDate).getTime() - new Date(startDate).getTime()) /
+        (1000 * 60 * 60 * 24),
+    );
+
+    return {
+      // Usage summary (NO billing limits - we don't have access to that)
+      total_requests: totalRequests,
+      total_input_tokens: totalInputTokens,
+      total_output_tokens: totalOutputTokens,
+      totalTokens: totalInputTokens + totalOutputTokens,
+      estimated_cost_usd: totalCost,
+
+      // Model breakdown
+      models: modelBreakdown,
+
+      // Period info
+      period_days: days,
+      start_date: startDate,
+      end_date: endDate,
+      has_more: data.has_more,
+
+      // Note
+      note: "This is a simplified summary using only usage API. Billing limits require additional scopes.",
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(
+      `Failed to get simplified billing summary: ${errorMessage}`,
+    );
+  }
+}
+
+/**
+ * Estimate cost based on model and tokens
+ * Rough approximation - real cost should come from OpenAI's billing API
+ */
+function estimateCost(
+  model: string,
+  inputTokens: number,
+  outputTokens: number,
+): number {
+  // Pricing as of Feb 2026 (approximate)
+  const pricing: Record<string, { input: number; output: number }> = {
+    "gpt-4o": { input: 2.5 / 1_000_000, output: 10 / 1_000_000 },
+    "gpt-4o-mini": { input: 0.15 / 1_000_000, output: 0.6 / 1_000_000 },
+    "gpt-4-turbo": { input: 10 / 1_000_000, output: 30 / 1_000_000 },
+    "gpt-3.5-turbo": { input: 0.5 / 1_000_000, output: 1.5 / 1_000_000 },
+  };
+
+  // Find matching model (handle versions like gpt-4o-2024-08-06)
+  const modelKey = Object.keys(pricing).find((key) => model.startsWith(key));
+  if (!modelKey) return 0;
+
+  const rates = pricing[modelKey];
+  return inputTokens * rates.input + outputTokens * rates.output;
+}
+
 // =====================================================
 // SYNC TO DATABASE
 // =====================================================
@@ -291,7 +486,7 @@ export async function getOpenAIBillingSummary(
  */
 export async function syncOpenAIUsageToDatabase(
   clientId: string,
-  date?: string
+  date?: string,
 ) {
   try {
     const targetDate = date || new Date().toISOString().split("T")[0];
@@ -301,7 +496,9 @@ export async function syncOpenAIUsageToDatabase(
     // This will allow us to compare our tracking vs OpenAI's official numbers
     // and detect any discrepancies
 
-    console.log(`[OpenAI Sync] Synced ${usageData.data.length} records for ${targetDate}`);
+    console.log(
+      `[OpenAI Sync] Synced ${usageData.data.length} records for ${targetDate}`,
+    );
 
     return {
       success: true,

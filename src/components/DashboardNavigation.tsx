@@ -250,12 +250,12 @@ export function DashboardNavigation({
         {/* SEÇÃO: ANÁLISE */}
         <NavSection title="Análise" isCollapsed={isCollapsed} />
         <NavItem
-          href="/dashboard/analytics"
+          href="/dashboard/analytics-comparison"
           icon={<BarChart3 className="h-5 w-5 flex-shrink-0" />}
           label="Analytics"
           isCollapsed={isCollapsed}
           onClick={onLinkClick}
-          tooltip="Relatórios e análises de conversas, mensagens e custos"
+          tooltip="Comparação de dados OpenAI oficial vs nosso tracking"
         />
 
         <NavItem
