@@ -1,0 +1,53 @@
+{
+  "object": "list",
+  "daily_costs": [
+    {
+      "timestamp": 1707609600,
+      "line_items": [
+        {
+          "name": "GPT-4o",
+          "cost": 5.25
+        },
+        {
+          "name": "GPT-4o mini",
+          "cost": 1.50
+        },
+        {
+          "name": "Text embedding 3 small",
+          "cost": 0.15
+        }
+      ]
+    },
+    {
+      "timestamp": 1707696000,
+      "line_items": [
+        {
+          "name": "GPT-4o",
+          "cost": 4.80
+        },
+        {
+          "name": "GPT-4o mini",
+          "cost": 1.20
+        }
+      ]
+    },
+    {
+      "timestamp": 1707782400,
+      "line_items": [
+        {
+          "name": "GPT-4o",
+          "cost": 6.10
+        },
+        {
+          "name": "GPT-4o mini",
+          "cost": 1.85
+        },
+        {
+          "name": "Whisper",
+          "cost": 0.25
+        }
+      ]
+    }
+  ],
+  "total_usage": 21.10
+}

@@ -1,0 +1,30 @@
+{
+  "object": "billing_subscription",
+  "has_payment_method": true,
+  "canceled": false,
+  "canceled_at": null,
+  "delinquent": false,
+  "access_until": 1735689600,
+  "soft_limit": 75.00,
+  "hard_limit": 100.00,
+  "system_hard_limit": 10000.00,
+  "soft_limit_usd": 75.00,
+  "hard_limit_usd": 100.00,
+  "plan": {
+    "title": "Pay as you go",
+    "id": "payg"
+  },
+  "account_name": "Minha Empresa LTDA",
+  "po_number": null,
+  "billing_email": "billing@empresa.com",
+  "tax_ids": null,
+  "billing_address": {
+    "city": "São Paulo",
+    "line1": "Rua Exemplo, 123",
+    "line2": "Sala 456",
+    "state": "SP",
+    "country": "BR",
+    "postal_code": "01234-567"
+  },
+  "business_address": null
+}

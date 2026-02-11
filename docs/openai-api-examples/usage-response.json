@@ -1,0 +1,43 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "aggregation_timestamp": 1707609600,
+      "n_requests": 150,
+      "operation": "chat.completions",
+      "snapshot_id": "gpt-4o-2024-08-06",
+      "n_context_tokens_total": 50000,
+      "n_generated_tokens_total": 10000,
+      "project_id": "proj_T7QCBrdiCiTGoFDnuN0DKWD7",
+      "user_id": null,
+      "api_key_id": "key_abc123",
+      "model": "gpt-4o"
+    },
+    {
+      "aggregation_timestamp": 1707696000,
+      "n_requests": 85,
+      "operation": "chat.completions",
+      "snapshot_id": "gpt-4o-mini-2024-07-18",
+      "n_context_tokens_total": 25000,
+      "n_generated_tokens_total": 5000,
+      "project_id": "proj_T7QCBrdiCiTGoFDnuN0DKWD7",
+      "user_id": null,
+      "api_key_id": "key_abc123",
+      "model": "gpt-4o-mini"
+    },
+    {
+      "aggregation_timestamp": 1707696000,
+      "n_requests": 50,
+      "operation": "embeddings",
+      "snapshot_id": "text-embedding-3-small",
+      "n_context_tokens_total": 15000,
+      "n_generated_tokens_total": 0,
+      "project_id": "proj_T7QCBrdiCiTGoFDnuN0DKWD7",
+      "user_id": null,
+      "api_key_id": "key_abc123",
+      "model": "text-embedding-3-small"
+    }
+  ],
+  "has_more": false,
+  "next_page": null
+}

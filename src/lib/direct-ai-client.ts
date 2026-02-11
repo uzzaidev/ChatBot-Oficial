@@ -262,6 +262,10 @@ export const callDirectAI = async (
 
     // 9. Extract usage (cast to any for compatibility)
     const usage = result.usage as any;
+
+    // Debug: Log full usage object to see structure
+    console.log("[Direct AI] Usage object:", JSON.stringify(usage, null, 2));
+
     const promptTokens = usage.promptTokens || 0;
     const completionTokens = usage.completionTokens || 0;
     const totalTokens = usage.totalTokens || (promptTokens + completionTokens);
