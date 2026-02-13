@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { exchangeCodeForToken, fetchWABADetails } from '@/lib/meta-oauth'
 import { cookies } from 'next/headers'
-import { createServerClient } from '@/lib/supabase/server'
+import { createServerClient } from '@/lib/supabase-server'
 import { createSecret } from '@/lib/vault'
 
 export const dynamic = 'force-dynamic'

@@ -8,7 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase/server'
+import { createServerClient } from '@/lib/supabase-server'
 import crypto from 'crypto'
 
 export const dynamic = 'force-dynamic'
