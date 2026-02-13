@@ -29,31 +29,72 @@ export const dynamic = 'force-dynamic'
  * We must return hub.challenge if token matches
  */
 export async function GET(request: NextRequest) {
+  const timestamp = new Date().toISOString()
+
   try {
     const { searchParams } = new URL(request.url)
     const mode = searchParams.get('hub.mode')
     const token = searchParams.get('hub.verify_token')
     const challenge = searchParams.get('hub.challenge')
 
-    console.log('[Webhook GET] Verification request:', { mode, token: token?.slice(0, 5) + '...' })
+    // Log detalhado (igual ao webhook legacy)
+    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('🔔 [WEBHOOK VERIFY - MULTI-TENANT] Requisição recebida')
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('📅 Timestamp:', timestamp)
+    console.log('🔗 URL completa:', request.url)
+    console.log('\n🔍 Query Parameters:')
+    console.log('  hub.mode:', mode)
+    console.log('  hub.verify_token:', token ? `${token.substring(0, 20)}... (${token.length} chars)` : 'NULL')
+    console.log('  hub.challenge:', challenge)
 
     // Validate token (shared platform token, not per-client)
     const VERIFY_TOKEN = process.env.META_PLATFORM_VERIFY_TOKEN
 
+    console.log('\n🔐 Validação do Verify Token:')
+    console.log('  Token recebido:', token ? `${token.substring(0, 20)}... (${token.length} chars)` : 'NULL')
+    console.log('  Token esperado:', VERIFY_TOKEN ? `${VERIFY_TOKEN.substring(0, 20)}... (${VERIFY_TOKEN.length} chars)` : 'NULL')
+    console.log('  Tokens iguais?', token === VERIFY_TOKEN)
+
     if (!VERIFY_TOKEN) {
-      console.error('[Webhook GET] META_PLATFORM_VERIFY_TOKEN not set')
+      console.error('❌ [Webhook GET] META_PLATFORM_VERIFY_TOKEN not set in environment')
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n')
       return new NextResponse('Server configuration error', { status: 500 })
     }
 
+    // Comparação character-by-character se tokens não batem
+    if (token !== VERIFY_TOKEN) {
+      if (token && VERIFY_TOKEN) {
+        const minLen = Math.min(token.length, VERIFY_TOKEN.length)
+        console.log('\n⚠️  Tokens diferentes! Comparando char-by-char:')
+        console.log('  Tamanho recebido:', token.length)
+        console.log('  Tamanho esperado:', VERIFY_TOKEN.length)
+        for (let i = 0; i < minLen; i++) {
+          if (token[i] !== VERIFY_TOKEN[i]) {
+            console.log(`  ❌ Diferença na posição ${i}:`)
+            console.log(`     Recebido: '${token[i]}' (code ${token.charCodeAt(i)})`)
+            console.log(`     Esperado: '${VERIFY_TOKEN[i]}' (code ${VERIFY_TOKEN.charCodeAt(i)})`)
+            break
+          }
+        }
+      }
+    }
+
     if (mode === 'subscribe' && token === VERIFY_TOKEN) {
-      console.log('[Webhook GET] ✅ Verification successful')
+      console.log('\n✅ [Webhook GET] Verification successful!')
+      console.log('   Retornando challenge:', challenge)
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n')
       return new NextResponse(challenge, { status: 200 })
     }
 
-    console.warn('[Webhook GET] ❌ Verification failed:', { mode, tokenMatch: token === VERIFY_TOKEN })
+    console.warn('\n❌ [Webhook GET] Verification failed!')
+    console.warn('   Modo:', mode, '(esperado: subscribe)')
+    console.warn('   Token match:', token === VERIFY_TOKEN)
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n')
     return new NextResponse('Forbidden', { status: 403 })
   } catch (error) {
-    console.error('[Webhook GET] Error:', error)
+    console.error('\n❌ [Webhook GET] Error:', error)
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n')
     return new NextResponse('Internal error', { status: 500 })
   }
 }
