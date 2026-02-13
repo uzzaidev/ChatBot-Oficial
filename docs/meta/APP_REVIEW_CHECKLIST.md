@@ -1,314 +1,483 @@
 # App Review Checklist - Material Necessário
 
 **Status:** Preparando submissão
-**Data:** 13 de fevereiro de 2026
+**Data:** 13 de fevereiro de 2026 (atualizado com auditoria real do código)
 
 ---
 
-## 📋 Materiais Necessários por Permissão
+## 🎯 RESUMO EXECUTIVO
+
+### ✅ SOLICITAR AGORA (temos código + screenshots possíveis)
+
+| #   | Permissão                         | Tipo     | Screenshots?                                                        |
+| --- | --------------------------------- | -------- | ------------------------------------------------------------------- |
+| 1   | `whatsapp_business_messaging`     | Standard | ✅ Dashboard conversas, chat detail, ConnectWhatsAppButton, webhook |
+| 2   | `whatsapp_business_management`    | Standard | ✅ Templates (list/sync/submit/delete), Settings                    |
+| 3   | `whatsapp_business_manage_events` | Standard | ✅ CAPI implementada (419 linhas), tab CAPI Events no Meta Ads      |
+| 4   | `ads_read`                        | Standard | ✅ Meta Ads dashboard 7 tabs (read/analytics)                       |
+| 5   | `pages_show_list`                 | Standard | ✅ OAuth flow implementado                                          |
+| 6   | `pages_read_engagement`           | Standard | ✅ OAuth flow implementado                                          |
+| 7   | `business_management`             | Standard | ✅ OAuth callback (196 linhas)                                      |
+| 8   | `email`                           | Standard | ✅ Login/Register pages                                             |
+| 9   | `public_profile`                  | Standard | ✅ Login/Register pages                                             |
+| 10  | `manage_app_solution`             | Standard | ✅ OAuth flow                                                       |
+
+### ⛔ NÃO SOLICITAR AGORA (sem código/screenshots)
+
+| #     | Permissão                   | Tipo            | Motivo                                                                                                                        |
+| ----- | --------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| 11    | `ads_management`            | **Advanced** ⚠️ | Não temos wizard "Criar Campanha CTWA" — dashboard é read/analytics only. Screencast exigido pelo review não pode ser gravado |
+| 12    | `pages_manage_ads`          | Standard        | Depende de ads_management funcional                                                                                           |
+| 13    | `catalog_management`        | Standard        | Zero código implementado                                                                                                      |
+| 14    | `instagram_basic`           | Standard        | Zero código Instagram no projeto                                                                                              |
+| 15    | `instagram_manage_messages` | Standard        | Zero código Instagram no projeto                                                                                              |
+| 16    | `instagram_manage_comments` | Standard        | Zero código Instagram no projeto                                                                                              |
+| 17-26 | Threads (10 permissões)     | Standard        | Zero código Threads no projeto                                                                                                |
+
+---
+
+## 📋 Detalhamento por Permissão
 
 ### 1️⃣ WhatsApp Business Platform
 
-#### **whatsapp_business_messaging** (Standard - Não requer review)
+#### ✅ **whatsapp_business_messaging** (Standard - Não requer review) — SOLICITAR
 
-**Screenshots Necessários:**
-- [ ] ❌ Dashboard mostrando conversas WhatsApp
-- [ ] ❌ Cliente enviando mensagem no WhatsApp
-- [ ] ❌ Bot respondendo automaticamente
-- [ ] ❌ Histórico de conversas no dashboard
-- [ ] ⏳ Página de onboarding (existe `/test-oauth` mas não é final)
+**Screenshots Possíveis (temos UI pronta):**
+
+- [x] ✅ Dashboard mostrando conversas WhatsApp (`/dashboard/conversations` — `ConversationsIndexClient`)
+- [x] ✅ Chat detail com message bubbles (`/dashboard/chat?phone=...` — `ConversationPageClient`)
+- [x] ✅ Botão "Conectar WhatsApp" (`ConnectWhatsAppButton.tsx`)
+- [x] ✅ Página test-oauth com fluxo Embedded Signup (`/test-oauth`)
+- [x] ✅ Pipeline de processamento backend (`src/flows/chatbotFlow.ts` — 1646 linhas, 14 nodes)
+- [x] ✅ Webhook funcionando (`/api/webhook/[clientId]/route.ts` — 474 linhas, HMAC validation)
+- [ ] ⏳ Bot respondendo no WhatsApp (precisa OAuth funcionar para demo real)
+- [ ] ⏳ Página de onboarding final (callback redireciona para `/onboarding` mas **página NÃO EXISTE**)
 
 **Vídeo (2-3 min):**
-- [ ] ❌ [0:00-0:30] Login no dashboard
-- [ ] ⏳ [0:30-1:00] Clicar "Conectar WhatsApp" → OAuth Meta (temos código, mas OAuth ainda não funciona)
-- [ ] ❌ [1:00-1:30] Autorizar WABA
-- [ ] ❌ [1:30-2:00] Configurar chatbot (prompt, modelo)
-- [ ] ❌ [2:00-2:30] Cliente final enviando mensagem
-- [ ] ❌ [2:30-3:00] Bot respondendo
-- [ ] ❌ [3:00-3:30] Visualizar conversa no dashboard
 
-**Status:** ⚠️ **CÓDIGO PRONTO, MAS NÃO TESTÁVEL** (OAuth bloqueado)
+- [x] ✅ [0:00-0:30] Login no dashboard (página implementada: `/login` — 319 linhas)
+- [ ] ⏳ [0:30-1:00] Clicar "Conectar WhatsApp" → OAuth Meta (código pronto, OAuth bloqueado pela Meta)
+- [ ] ⏳ [1:00-1:30] Autorizar WABA (bloqueado)
+- [x] ✅ [1:30-2:00] Configurar chatbot — prompt, modelo (`/dashboard/settings` — 1442 linhas)
+- [ ] ⏳ [2:00-2:30] Cliente final enviando mensagem (precisa OAuth funcionar)
+- [ ] ⏳ [2:30-3:00] Bot respondendo (precisa OAuth funcionar)
+- [x] ✅ [3:00-3:30] Visualizar conversa no dashboard (UI pronta)
 
-**O que temos:**
-- ✅ Código OAuth implementado (`/api/auth/meta/*`)
-- ✅ Botão "Conectar WhatsApp" (`ConnectWhatsAppButton.tsx`)
-- ✅ Webhook funcionando (`/api/webhook`)
-- ✅ Pipeline de processamento (14 nodes)
-- ✅ Dashboard de conversas (`/dashboard/conversations`)
+**Status:** ✅ **CÓDIGO 100% IMPLEMENTADO** — Screenshots da UI possíveis agora, demo end-to-end aguarda OAuth
 
-**O que falta:**
-- ❌ OAuth funcionando (bloqueado pela Meta)
-- ❌ Página de onboarding final (só temos `/test-oauth` temporário)
-- ❌ Screenshots finais
-- ❌ Vídeo demonstrativo
+**Código implementado:**
 
----
+- ✅ OAuth completo: `/api/auth/meta/init`, `/callback`, `/deauth` (3 routes)
+- ✅ `meta-oauth.ts` (181 linhas): `getMetaOAuthURL()`, `exchangeCodeForToken()`, `fetchWABADetails()`
+- ✅ `ConnectWhatsAppButton.tsx`: Componente funcional
+- ✅ Webhook per-client: `/api/webhook/[clientId]/route.ts` (474 linhas) — HMAC, dedup, multi-tenant
+- ✅ `chatbotFlow.ts` (1646 linhas): Pipeline completo de 14 nodes
+- ✅ 38 processing nodes em `src/nodes/` (transcription, image analysis, RAG, TTS, etc.)
+- ✅ Dashboard: conversations list + chat detail com realtime
+- ✅ Contacts page: `/dashboard/contacts`
 
-#### **whatsapp_business_management** (Standard - Não requer review)
+**O que falta (bloqueado):**
 
-**Screenshots Necessários:**
-- [ ] ❌ Dashboard mostrando WABAs conectados
-- [ ] ❌ Lista de números de telefone
-- [ ] ❌ Templates de mensagem (se tiver)
-- [ ] ❌ Configurações de webhook
-
-**Status:** ⚠️ **FUNCIONALIDADE PARCIAL**
-
-**O que temos:**
-- ✅ Listagem de clients (`/dashboard/admin/clients`)
-- ✅ Configuração de cliente (OpenAI keys, etc.)
-- ⏳ Webhook configurado (mas webhook único ainda não ativo em prod)
-
-**O que falta:**
-- ❌ Interface para gerenciar múltiplos phone numbers
-- ❌ Interface para gerenciar templates
-- ❌ Dashboard mostrando health status do WABA
+- ⏳ OAuth funcionando (erro genérico da Meta — aguardando resolução)
+- ❌ Página `/onboarding` (referenciada no callback mas **NÃO implementada**)
+- ⏳ Screenshots de demo end-to-end (após OAuth funcionar)
+- ⏳ Vídeo demonstrativo (após OAuth funcionar)
 
 ---
 
-#### **whatsapp_business_manage_events** (Standard - Não requer review)
+#### ✅ **whatsapp_business_management** (Standard - Não requer review) — SOLICITAR
 
-**Screenshots Necessários:**
-- [ ] ❌ Dashboard mostrando eventos enviados (Lead, Purchase)
-- [ ] ❌ Integração com Conversions API
-- [ ] ❌ Log de eventos
+**Screenshots Possíveis:**
 
-**Status:** ❌ **NÃO IMPLEMENTADO**
+- [x] ✅ Templates de mensagem — list, sync, submit, delete (`/dashboard/templates` — 193 linhas)
+- [x] ✅ Configurações de cliente — OpenAI keys, modelo, system prompt (`/dashboard/settings` — 1442 linhas)
+- [x] ✅ Vault de credenciais no Settings
+- [ ] ⏳ Dashboard mostrando WABAs conectados (após OAuth funcionar)
 
-**O que temos:**
-- ✅ Infraestrutura de tracking (`gateway_usage_logs`)
-- ✅ Sistema de analytics (`/dashboard/analytics`)
+**Status:** ✅ **IMPLEMENTADO** — Templates + Settings prontos para screenshot
+
+**Código implementado:**
+
+- ✅ Templates page: list, sync da Meta API, submit para aprovação, delete
+- ✅ Settings page: profile, vault secrets, bot config, TTS
+- ✅ Webhook configuração automática no OAuth callback
 
 **O que falta:**
-- ❌ Integração com Conversions API (enviar eventos para Meta)
-- ❌ Tracking de eventos de conversão (Lead, Purchase)
-- ❌ Dashboard mostrando eventos enviados
-- ❌ Código completo de Conversions API
+
+- ⏳ Interface para gerenciar múltiplos phone numbers (melhoraria review)
+- ⏳ Dashboard mostrando health status/quality rating do WABA
+
+---
+
+#### ✅ **whatsapp_business_manage_events** (Standard - Não requer review) — SOLICITAR
+
+**Screenshots Possíveis:**
+
+- [x] ✅ Tab "CAPI Events" no Meta Ads dashboard mostrando eventos enviados
+- [x] ✅ Configuração de Dataset ID na tab "Config" do Meta Ads
+- [x] ✅ CRM Kanban board onde mover card dispara evento de conversão (`/dashboard/crm` — 523 linhas)
+
+**Status:** ✅ **IMPLEMENTADO** (corrigido — antes marcado incorretamente como "0%")
+
+**Código implementado:**
+
+- ✅ `src/nodes/sendConversionEvent.ts` (419 linhas) — Implementação COMPLETA:
+  - Envia eventos `Lead`, `QualifiedLead`, `Purchase` para Meta Conversions API
+  - Usa `ctwa_clid` para atribuição de anúncio Click-to-WhatsApp
+  - Envia `custom_data` (value, currency) para ROI tracking
+  - Loga eventos na tabela `conversion_events_log`
+  - Suporta deduplicação de eventos
+- ✅ `src/nodes/captureLeadSource.ts` — Captura `ctwa_clid` do webhook
+- ✅ `src/nodes/updateCRMCardStatus.ts` — Auto-atualiza CRM e dispara CAPI
+- ✅ Tab "CAPI Events" no Meta Ads dashboard — tabela com histórico de eventos
+- ✅ Tab "Config" com campo para Dataset ID
+
+**O que falta:**
+
+- ⏳ Demo real de evento sendo enviado (precisa campanha CTWA ativa)
 
 ---
 
 ### 2️⃣ Meta Ads / Marketing API
 
-#### **ads_management** (Advanced - ⚠️ REQUER REVIEW)
+#### ⛔ **ads_management** (Advanced - ⚠️ REQUER REVIEW) — NÃO SOLICITAR AGORA
 
-**Screenshots Necessários:**
-- [ ] ✅ Dashboard Meta Ads (TEMOS: `/dashboard/meta-ads`)
-- [ ] ✅ Integração OpenAI tracking (TEMOS: código implementado)
-- [ ] ⏳ Criação de campanha (temos interface parcial)
-- [ ] ❌ Conversions API enviando eventos
-- [ ] ❌ Relatórios de performance
-
-**Status:** 🟡 **IMPLEMENTADO PARCIALMENTE**
+> **⚠️ MOTIVO:** Esta é a única permissão **Advanced** que exige review formal com screencast obrigatório. O screencast deve mostrar **criação de campanha CTWA end-to-end**. Nosso dashboard Meta Ads é **read/analytics only** — não temos wizard "Criar Campanha". Sem isso, o review será **rejeitado**.
 
 **O que temos:**
-- ✅ Dashboard Meta Ads completo (`/dashboard/meta-ads`)
-- ✅ Billing sync (`/api/admin/meta-ads/billing/sync`)
-- ✅ Usage tracking (`openai_usage_cache` table)
-- ✅ Analytics de custos
 
-**O que falta:**
-- ❌ **CRÍTICO:** Conversions API implementada (enviar eventos Lead/Purchase)
-- ❌ Interface para criar campanhas (temos parcial)
-- ❌ Click-to-WhatsApp ads funcionando end-to-end
+- ✅ Dashboard Meta Ads completo (`/dashboard/meta-ads` — 1032 linhas, 7 tabs)
+- ✅ Leitura de campanhas existentes (insights, spend, impressions, clicks)
+- ✅ Tab "CAPI Events" com histórico de conversões
+- ✅ Tab "Lead Ads" para formulários capturados
+- ✅ Tab "Audiences" para sync de audiências customizadas
+- ✅ Tab "Alerts" para monitoramento de budget
+- ✅ Tab "Config" para configuração de Ad Account, Access Token, Dataset ID
+- ✅ Componentes: `MetaAdsTrendCharts`, `MetaAdsBreakdownTable`, `MetaAdsBudgetAlerts`, `MetaAdsAudienceSync`, `MetaAdsLeadAds`
 
-**Prioridade:** 🔴 **ALTA** - Única permissão Advanced que EXIGE review
+**O que falta para solicitar:**
+
+- ❌ **CRÍTICO:** Wizard "Criar Campanha CTWA" (formulário: objetivo, orçamento, público, creative, CTA)
+- ❌ **CRÍTICO:** Pausar/retomar campanha via API no dashboard
+- ❌ **CRÍTICO:** Screencast end-to-end de criação de campanha
+
+**Quando solicitar:** Após implementar wizard de criação de campanha (~8-12 horas de dev)
 
 ---
 
-#### **ads_read**, **catalog_management**, etc. (Standard - Não requer review)
+#### ✅ **ads_read** (Standard - Não requer review) — SOLICITAR
 
-**Screenshots Necessários:**
-- [ ] ⏳ Dashboard lendo dados de campanhas (temos parcial)
-- [ ] ❌ Catálogo de produtos (não implementado)
-- [ ] ❌ Insights de anúncios
+**Screenshots Possíveis:**
 
-**Status:** 🟡 **IMPLEMENTADO PARCIALMENTE**
+- [x] ✅ Dashboard Meta Ads — tab "Overview" com métricas (spend, impressions, clicks, CTR)
+- [x] ✅ Tab "Campaigns" com lista de campanhas e insights
+- [x] ✅ Gráficos de tendência (`MetaAdsTrendCharts`)
+- [x] ✅ Breakdown table (`MetaAdsBreakdownTable`)
+- [x] ✅ Analytics de custos
 
-**O que temos:**
-- ✅ Leitura de billing data
-- ✅ Dashboard básico de analytics
+**Status:** ✅ **IMPLEMENTADO** — Dashboard rico, read-only, 7 tabs funcionais
 
-**O que falta:**
-- ❌ Product catalog management
-- ❌ Insights detalhados de campanhas
+---
+
+#### ⛔ **pages_manage_ads** (Standard) — NÃO SOLICITAR AGORA
+
+> **⚠️ MOTIVO:** Depende de `ads_management` funcional (criação de ads associados a Pages). Sem o wizard de campanha, não conseguimos demonstrar esta permissão.
+
+---
+
+#### ✅ **pages_show_list** (Standard) — SOLICITAR
+
+**Screenshots:** OAuth flow que lista Pages do usuário durante Embedded Signup.
+**Código:** `meta-oauth.ts` → `getMetaOAuthURL()` solicita `pages_show_list` no scope.
+
+---
+
+#### ✅ **pages_read_engagement** (Standard) — SOLICITAR
+
+**Screenshots:** OAuth flow + referências no Meta Ads dashboard.
+**Código:** Implementado como dependência de `ads_read`.
+
+---
+
+#### ⛔ **catalog_management** (Standard) — NÃO SOLICITAR AGORA
+
+> **⚠️ MOTIVO:** Zero código implementado. Não existe:
+>
+> - Nenhuma página `/dashboard/product-catalog`
+> - Nenhum componente de upload de produtos
+> - Nenhuma integração com Product Catalog API
+> - Nenhum envio de product messages no chat
+
+**Quando solicitar:** Após implementar funcionalidade de catálogo (~12-16 horas de dev)
 
 ---
 
 ### 3️⃣ Instagram Graph API
 
-#### **instagram_manage_messages**, **instagram_manage_comments** (Standard)
+#### ⛔ **instagram_basic**, **instagram_manage_messages**, **instagram_manage_comments** — NÃO SOLICITAR AGORA
 
-**Screenshots Necessários:**
-- [ ] ❌ Bot respondendo DMs do Instagram
-- [ ] ❌ Bot respondendo comentários
-- [ ] ❌ Dashboard mostrando conversas Instagram
+> **⚠️ MOTIVO:** Zero código Instagram em todo o projeto. Não existe:
+>
+> - Nenhuma página Instagram no dashboard
+> - Nenhum webhook handler para Instagram
+> - Nenhum parser de mensagens Instagram
+> - Nenhum componente de DM ou comentários
+> - A única menção é um texto descritivo "Facebook/Instagram" no `MetaAdsLeadAds.tsx`
 
-**Status:** ❌ **NÃO IMPLEMENTADO**
+**O que seria necessário implementar:**
 
-**O que temos:**
-- ✅ Arquitetura multi-canal (suporta adicionar)
-- ✅ Sistema de conversas genérico
+- Webhook handler para Instagram Messaging API
+- Parser de mensagens Instagram → formato unificado
+- Componentes de DM no dashboard de conversas (multi-canal)
+- Bot respondendo DMs e comentários
+- **Estimativa:** 12-16 horas de dev
 
-**O que falta:**
-- ❌ Webhook Instagram configurado
-- ❌ Parser de mensagens Instagram
-- ❌ Resposta automática Instagram
-- ❌ Dashboard Instagram
-
-**Prioridade:** 🟡 **MÉDIA** - Standard (não bloqueia review), mas seria bom ter
+**Quando solicitar:** Após implementar integração Instagram completa
 
 ---
 
-### 4️⃣ Threads API (10 permissões - Todas Standard)
+### 4️⃣ Threads API (10 permissões)
 
-**Screenshots Necessários:**
-- [ ] ❌ Bot no Threads respondendo menções
-- [ ] ❌ Publicação automática
-- [ ] ❌ Analytics de Threads
+#### ⛔ **threads_basic**, **threads_content_publish**, **threads_manage_replies**, etc. — NÃO SOLICITAR AGORA
 
-**Status:** ❌ **NÃO IMPLEMENTADO**
+> **⚠️ MOTIVO:** Zero código Threads em todo o projeto. Nenhuma referência a Threads em `src/`.
 
-**Prioridade:** 🟢 **BAIXA** - Standard e não essencial agora
+**Quando solicitar:** Após implementar integração Threads completa (~8-12 horas de dev)
+
+---
+
+### 5️⃣ Permissões Compartilhadas
+
+#### ✅ **business_management** (Standard) — SOLICITAR
+
+**Screenshots:** OAuth callback que acessa Business Manager para listar WABAs.
+**Código:** `src/app/api/auth/meta/callback/route.ts` (196 linhas) — exchanges code, fetches WABA details, creates client.
+
+---
+
+#### ✅ **email** (Standard) — SOLICITAR
+
+**Screenshots:** Login page (`/login` — 319 linhas), Register page (`/register` — 298 linhas).
+**Código:** Supabase Auth com email/password.
+
+---
+
+#### ✅ **public_profile** (Standard) — SOLICITAR
+
+**Screenshots:** Header do dashboard com nome do usuário.
+**Código:** OAuth flow obtém nome + foto do perfil.
+
+---
+
+#### ✅ **manage_app_solution** (Standard) — SOLICITAR
+
+**Screenshots:** OAuth flow durante setup.
+**Código:** Referenciado nas permissões do OAuth scope.
 
 ---
 
 ## 📸 Screenshots que PODEMOS Fazer Agora
 
-### ✅ Prontos para Screenshot
+### ✅ Prontos para Screenshot (20+ telas)
 
-1. **Dashboard Principal**
-   - `/dashboard` - Tela inicial ✅
-   - `/dashboard/conversations` - Lista de conversas ✅
-   - `/dashboard/admin/clients` - Gerenciamento de clientes ✅
+1. **Landing Page & Auth**
 
-2. **Meta Ads Dashboard**
-   - `/dashboard/meta-ads` - Dashboard completo ✅
-   - `/dashboard/meta-ads/usage` - Usage tracking ✅
-   - Analytics de custos ✅
+   - `/` — Landing page com Hero, Highlights, Plans, Security, CTA ✅
+   - `/login` — Login com email/password + auth biométrica (319 linhas) ✅
+   - `/register` — Registro com auto-provisioning de client (298 linhas) ✅
 
-3. **Analytics**
-   - `/dashboard/analytics` - Métricas gerais ✅
-   - Gráficos de uso ✅
+2. **Dashboard Principal**
 
-4. **Configurações**
-   - Settings de cliente ✅
-   - AI configuration ✅
+   - `/dashboard` — Tela inicial com metric cards (`DashboardClient`) ✅
+   - `/dashboard/conversations` — Lista de conversas com busca (`ConversationsIndexClient`) ✅
+   - `/dashboard/chat?phone=...` — Chat detail com message bubbles e realtime ✅
+   - `/dashboard/contacts` — Gerenciamento de contatos ✅
+
+3. **CRM Kanban**
+
+   - `/dashboard/crm` — Board completo com drag-drop (523 linhas + 17 componentes) ✅
+   - Cards, colunas customizáveis, tags, timeline, notas ✅
+   - Analytics do pipeline ✅
+
+4. **Meta Ads Dashboard**
+
+   - `/dashboard/meta-ads` — 7 tabs (1032 linhas) ✅
+   - Overview: spend, impressions, clicks, leads, conversions, ROI ✅
+   - Campaigns: lista com insights ✅
+   - CAPI Events: histórico de eventos de conversão ✅
+   - Lead Ads: formulários capturados ✅
+   - Audiences: sync com Custom Audiences ✅
+   - Alerts: monitoramento de budget ✅
+   - Config: Ad Account ID, Access Token, Dataset ID ✅
 
 5. **Knowledge Base (RAG)**
-   - `/dashboard/knowledge` - Upload de documentos ✅
-   - Sistema de embeddings ✅
 
-### ⏳ Parcialmente Prontos (precisam melhorias visuais)
+   - `/dashboard/knowledge` — Upload de documentos (drag-drop PDF/TXT/MD) ✅
+   - Lista de documentos + chunks viewer ✅
 
-1. **Onboarding OAuth**
-   - `/test-oauth` - Existe mas é temporário
-   - Precisa criar página final de onboarding
+6. **Agents**
 
-2. **Flow Architecture**
-   - `/dashboard/flow-architecture` - Diagrama do pipeline ✅
-   - Mas não é necessário para review
+   - `/dashboard/agents` — Multi-agent setup, A/B test, scheduler (495 linhas) ✅
 
-### ❌ Não Podemos Fazer Ainda (bloqueados)
+7. **Flows**
 
-1. **OAuth Flow Completo**
-   - ❌ Bloqueado pelo erro da Meta
-   - ❌ Não conseguimos mostrar seleção de WABA
-   - ❌ Não conseguimos criar client via OAuth
+   - `/dashboard/flows` — Lista, criar, editar, deletar flows (239 linhas) ✅
 
-2. **Conversas WhatsApp Reais**
-   - ❌ Precisa OAuth funcionando primeiro
-   - ❌ Precisa WABA conectado
+8. **Templates WhatsApp**
 
-3. **Conversions API**
-   - ❌ Código não implementado
-   - ❌ Eventos não estão sendo enviados
+   - `/dashboard/templates` — List, sync, submit, delete (193 linhas) ✅
 
-4. **Instagram/Threads**
-   - ❌ Nada implementado
+9. **Analytics (3 páginas)**
+
+   - `/dashboard/analytics` — Unified analytics ✅
+   - `/dashboard/analytics-comparison` — OpenAI usage + cost charts (919 linhas) ✅
+   - `/dashboard/openai-analytics` — Recharts bar/line/pie (456 linhas) ✅
+
+10. **Settings**
+
+    - `/dashboard/settings` — Profile, vault secrets, bot config (1442 linhas) ✅
+    - `/dashboard/settings/tts` — Text-to-speech config (527 linhas) ✅
+
+11. **AI Gateway**
+
+    - `/dashboard/ai-gateway` — Hub com 6 sub-seções ✅
+    - Setup, cache, models, analytics, budget, test, validation ✅
+
+12. **Admin**
+
+    - `/dashboard/admin/budget-plans` — Budget limits per client (474 linhas) ✅
+
+13. **Conectar WhatsApp**
+
+    - `/test-oauth` — ConnectWhatsAppButton com explicação step-by-step ✅
+
+14. **Páginas Legais**
+
+    - `/privacy` — Privacy Policy completa, branded Uzz.AI (273 linhas) ✅
+    - `/terms` — Terms of Service completo (266 linhas) ✅
+
+15. **Outros**
+    - `/dashboard/flow-architecture` — ReactFlow visual editor ✅
+    - `/dashboard/backend` — Terminal-style execution log (707 linhas) ✅
+    - `/dashboard/test-interactive` — Test WhatsApp buttons/lists (297 linhas) ✅
+
+### ⏳ Precisam ser criados/melhorados
+
+1. **Página `/onboarding`** — Callback OAuth redireciona para ela, mas **NÃO EXISTE**
+2. **Página `/dpa`** — Referenciada no META_APP_REVIEW.md mas **NÃO EXISTE**
+
+### ❌ Não Podemos Fazer (bloqueados ou sem código)
+
+1. **OAuth Flow Completo no WhatsApp real** — ⏳ Bloqueado pelo erro genérico da Meta
+2. **Demo de bot respondendo em tempo real** — ⏳ Precisa OAuth funcionar
+3. **Criação de campanha CTWA** — ❌ Wizard não implementado
+4. **Instagram (DMs, comentários, dashboard)** — ❌ Zero código
+5. **Threads (publicação, menções, analytics)** — ❌ Zero código
+6. **Product Catalog** — ❌ Zero código
+7. **Pasta `docs/screenshots/`** — ❌ Não existe (precisa criar e popular)
+8. **Pasta `docs/videos/`** — ❌ Não existe (precisa criar e gravar)
 
 ---
 
 ## 🎯 Prioridade de Desenvolvimento para App Review
 
-### 🔴 **CRÍTICO (Bloqueia Review de ads_management)**
+### 🔴 CRÍTICO (bloqueia submissão)
 
-1. **Conversions API** ⭐⭐⭐
-   - Implementar envio de eventos (Lead, Purchase, AddToCart)
-   - Integrar com pipeline de mensagens
-   - Dashboard mostrando eventos enviados
-   - **Tempo estimado:** 8-12 horas
+1. **Resolver OAuth com Meta** ⭐⭐⭐
 
-2. **OAuth Funcionando** ⭐⭐⭐
-   - Resolver bloqueio da Meta
-   - Testar end-to-end
-   - **Tempo estimado:** Aguardando Meta
+   - Sem isso, nenhum screenshot de flow funcional end-to-end
+   - **Status:** Aguardando Meta resolver erro genérico
+   - **Ação:** Continuar follow-up com suporte Meta
 
-3. **Screenshots/Vídeo WhatsApp** ⭐⭐⭐
-   - Gravar OAuth flow
-   - Mostrar bot respondendo
-   - Dashboard de conversas
-   - **Tempo estimado:** 2-3 horas (após OAuth funcionar)
+2. **Criar pasta `docs/screenshots/` e tirar prints** ⭐⭐⭐
+   - 20+ telas prontas para screenshot (ver lista acima)
+   - **Tempo estimado:** 2-3 horas
+   - **Ação:** Navegar cada tela, tirar print, nomear conforme META_APP_REVIEW.md
 
-### 🟡 **IMPORTANTE (Melhora chances de aprovação)**
+### 🟡 IMPORTANTE (melhora chances de aprovação)
 
-4. **Página de Onboarding Final**
-   - Substituir `/test-oauth` por onboarding real
-   - Multi-step wizard
+3. **Criar página `/onboarding`** ⭐⭐
+
+   - OAuth callback redireciona para `/onboarding?step=ai-config&client_id=...`
+   - Página não existe — precisa criar multi-step wizard
    - **Tempo estimado:** 4-6 horas
 
-5. **Dashboard WABA Management**
-   - Mostrar phone numbers
-   - Health status
-   - **Tempo estimado:** 3-4 horas
+4. **Criar página `/dpa`** ⭐
 
-6. **Privacy Policy & Terms**
-   - Criar páginas públicas
-   - `/privacy` e `/terms`
+   - Data Processing Agreement referenciado no META_APP_REVIEW.md
    - **Tempo estimado:** 2-3 horas
 
-### 🟢 **OPCIONAL (Não bloqueia review)**
+5. **Gravar vídeos demonstrativos** ⭐⭐
+   - Screen recording do dashboard (mesmo sem OAuth real)
+   - **Tempo estimado:** 3-4 horas (após screenshots)
 
-7. **Instagram Integration**
-   - DMs e comentários
-   - **Tempo estimado:** 12-16 horas
+### 🟢 FUTURO (para solicitar permissões adicionais)
 
-8. **Threads Integration**
-   - Publicação e menções
-   - **Tempo estimado:** 8-12 horas
+6. **Wizard "Criar Campanha CTWA"** — Para solicitar `ads_management` (8-12h)
+7. **Integração Instagram** — Para solicitar instagram\_\* (12-16h)
+8. **Integração Threads** — Para solicitar threads\_\* (8-12h)
+9. **Product Catalog** — Para solicitar `catalog_management` (12-16h)
 
 ---
 
-## 📊 Status Geral
+## 📊 Status Geral (Corrigido)
 
-| Categoria | Status | Pronto para Review? |
-|-----------|--------|---------------------|
-| WhatsApp Messaging | 🟡 70% | ⏳ Aguardando OAuth |
-| WhatsApp Management | 🟡 60% | ⏳ Aguardando OAuth |
-| WhatsApp Events (Conversions API) | 🔴 0% | ❌ **BLOQUEIA ADS_MANAGEMENT** |
-| Meta Ads Dashboard | ✅ 90% | ✅ Sim |
-| Meta Ads Creation | 🟡 40% | ⏳ Parcial |
-| Instagram | 🔴 0% | ✅ Não bloqueia (Standard) |
-| Threads | 🔴 0% | ✅ Não bloqueia (Standard) |
-| Privacy/Terms | 🔴 0% | ⚠️ Necessário para review |
+| Categoria                 | Status  | Pronto p/ Review?               | Recomendação                        |
+| ------------------------- | ------- | ------------------------------- | ----------------------------------- |
+| WhatsApp Messaging        | ✅ 90%  | ⏳ Aguardando OAuth             | ✅ SOLICITAR                        |
+| WhatsApp Management       | ✅ 80%  | ✅ Templates + Settings prontos | ✅ SOLICITAR                        |
+| WhatsApp Events (CAPI)    | ✅ 90%  | ✅ Implementado (419 linhas)    | ✅ SOLICITAR                        |
+| Meta Ads Dashboard (read) | ✅ 95%  | ✅ 7 tabs completas             | ✅ SOLICITAR (`ads_read`)           |
+| Meta Ads Creation (write) | 🔴 10%  | ❌ Sem wizard de campanha       | ⛔ NÃO SOLICITAR (`ads_management`) |
+| Pages (show/read)         | ✅ 80%  | ✅ OAuth flow                   | ✅ SOLICITAR                        |
+| Pages (manage ads)        | 🔴 10%  | ❌ Depende de ads_management    | ⛔ NÃO SOLICITAR                    |
+| Business Management       | ✅ 80%  | ✅ OAuth callback               | ✅ SOLICITAR                        |
+| Email / Public Profile    | ✅ 100% | ✅ Login/Register               | ✅ SOLICITAR                        |
+| Catalog Management        | 🔴 0%   | ❌ Zero código                  | ⛔ NÃO SOLICITAR                    |
+| Instagram (3 permissões)  | 🔴 0%   | ❌ Zero código                  | ⛔ NÃO SOLICITAR                    |
+| Threads (10 permissões)   | 🔴 0%   | ❌ Zero código                  | ⛔ NÃO SOLICITAR                    |
+| Privacy Policy            | ✅ 100% | ✅ `/privacy` (273 linhas)      | ✅ PRONTO                           |
+| Terms of Service          | ✅ 100% | ✅ `/terms` (266 linhas)        | ✅ PRONTO                           |
+| DPA                       | 🔴 0%   | ❌ Página não existe            | 🟡 CRIAR                            |
+| CRM                       | ✅ 95%  | ✅ Kanban completo              | ✅ PRONTO (suporta CAPI)            |
 
 **Conclusão:**
-- ✅ **Pode submeter permissões Standard** (WhatsApp, Pages, etc.) - Não requerem review
-- ❌ **NÃO pode submeter ads_management ainda** - Falta Conversions API
-- ⏳ **OAuth precisa funcionar** para fazer screenshots
+
+- ✅ **Pode solicitar 10 permissões Standard AGORA** (WhatsApp 3, ads_read, pages 2, business, email, public_profile, manage_app_solution)
+- ⛔ **NÃO solicitar 16 permissões** até implementar features (ads_management, pages_manage_ads, catalog, Instagram 3, Threads 10)
+- ⏳ **OAuth precisa funcionar** para screenshots end-to-end do WhatsApp
 
 ---
 
 ## 🎬 Próximos Passos (Ordem de Prioridade)
 
 1. ⏳ **Aguardar OAuth funcionar** (bloqueado pela Meta)
-2. 🔴 **Implementar Conversions API** (CRÍTICO para ads_management)
-3. 🟡 **Criar Privacy Policy e Terms** (necessário)
-4. 🟡 **Finalizar página de onboarding**
-5. ⏳ **Fazer screenshots após OAuth funcionar**
-6. ⏳ **Gravar vídeo demonstrativo** (após OAuth)
-7. 🟢 **Submeter App Review** (quando tudo estiver pronto)
+2. 📸 **Tirar screenshots das 20+ telas prontas** (2-3 horas, pode fazer agora)
+3. 🟡 **Criar página `/onboarding`** (referenciada no callback OAuth)
+4. 🟡 **Criar página `/dpa`** (Data Processing Agreement)
+5. 📹 **Gravar vídeos demonstrativos** (após OAuth funcionar)
+6. ✅ **Submeter 10 permissões Standard** (quando screenshots + OAuth prontos)
+7. 🟢 **Implementar wizard de campanha CTWA** (para futuro `ads_management`)
+8. 🟢 **Implementar Instagram/Threads** (para futuras permissões)
+
+---
+
+## ⚠️ Correções vs. Versão Anterior
+
+| Item                         | Antes (incorreto)                   | Agora (correto)                                                              |
+| ---------------------------- | ----------------------------------- | ---------------------------------------------------------------------------- |
+| Conversions API              | "🔴 0% NÃO IMPLEMENTADO"            | ✅ 90% — `sendConversionEvent.ts` (419 linhas)                               |
+| Privacy/Terms                | "🔴 0%"                             | ✅ 100% — `/privacy` (273 linhas) + `/terms` (266 linhas)                    |
+| WhatsApp Messaging           | "⚠️ CÓDIGO PRONTO MAS NÃO TESTÁVEL" | ✅ 90% — UI completa, pipeline 14 nodes, 38 processing nodes                 |
+| whatsapp_business_management | "❌ Sem templates"                  | ✅ Templates page implementada (list/sync/submit/delete)                     |
+| CRM                          | Não mencionado                      | ✅ 95% — Kanban board com 17 componentes, 523 linhas                         |
+| Meta Ads Dashboard           | "40% parcial"                       | ✅ 95% — 1032 linhas, 7 tabs, 5 componentes dedicados                        |
+| Onboarding page              | "existe /test-oauth"                | ⚠️ `/onboarding` NÃO EXISTE (callback redireciona mas página não foi criada) |
+| DPA page                     | Não mencionado                      | ❌ Não existe (referenciada no META_APP_REVIEW.md)                           |
+| Instagram/Threads            | "Arquitetura multi-canal suporta"   | ❌ Zero código — nenhuma linha em todo o `src/`                              |
 
 ---
 
 **Última Atualização:** 13 de fevereiro de 2026
 **Status OAuth:** ⏳ Aguardando Meta resolver erro genérico
+**Auditoria:** Baseada em análise completa do código-fonte (grep + file reads)
