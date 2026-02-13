@@ -31,12 +31,12 @@ export const getMetaOAuthURL = (state: string): string => {
     client_id: config.appId,
     redirect_uri: config.redirectUri,
     state, // CSRF protection
-    // Embedded Signup uses configuration_id instead of scope
-    // config_id: config.configId, // Uncomment when you get the Configuration ID from Meta Dashboard
+    config_id: config.configId, // Embedded Signup Configuration ID
+    response_type: 'code',
+    override_default_response_type: 'true',
   })
 
-  // Note: Embedded Signup URL may differ from standard OAuth
-  // Check Meta docs for exact endpoint (might be /dialog/oauth or specific Embedded Signup URL)
+  // Embedded Signup OAuth URL
   return `https://www.facebook.com/v18.0/dialog/oauth?${params.toString()}`
 }
 
@@ -150,18 +150,22 @@ export const fetchWABADetails = async (accessToken: string): Promise<WABADetails
 const getOAuthConfig = (): MetaOAuthConfig => {
   const appId = process.env.META_PLATFORM_APP_ID
   const appSecret = process.env.META_PLATFORM_APP_SECRET
-  const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://uzzap.uzzai.com.br'
+  const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://uzzapp.uzzai.com.br'
   const configId = process.env.META_EMBEDDED_SIGNUP_CONFIG_ID
 
   if (!appId || !appSecret) {
     throw new Error('Missing META_PLATFORM_APP_ID or META_PLATFORM_APP_SECRET')
   }
 
+  if (!configId) {
+    throw new Error('Missing META_EMBEDDED_SIGNUP_CONFIG_ID - required for Embedded Signup')
+  }
+
   return {
     appId,
     appSecret,
     redirectUri: `${baseUrl}/api/auth/meta/callback`,
-    configId: configId || '', // Optional for now
+    configId,
   }
 }
 
