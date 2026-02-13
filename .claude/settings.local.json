@@ -69,7 +69,8 @@
       "Bash(npm run lint:*)",
       "WebFetch(domain:developers.facebook.com)",
       "WebFetch(domain:medium.com)",
-      "WebFetch(domain:docs.360dialog.com)"
+      "WebFetch(domain:docs.360dialog.com)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []
