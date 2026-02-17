@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       .from('clients')
       .select('id, name, meta_display_phone, status')
       .eq('id', clientId)
-      .eq('status', 'pending_setup')
+      .in('status', ['pending_setup', 'active']) // active allowed for step 3 (bot-config)
       .single()
 
     if (error || !client) {

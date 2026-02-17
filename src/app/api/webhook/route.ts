@@ -20,6 +20,9 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
+import { getClientByWABAId } from '@/lib/waba-lookup'
+import { handleUnknownWABA } from '@/lib/auto-provision'
+import { processChatbotMessage } from '@/flows/chatbotFlow'
 
 export const dynamic = 'force-dynamic'
 
@@ -145,24 +148,26 @@ export async function POST(request: NextRequest) {
 
     console.log('[Webhook POST] 📱 WABA ID:', wabaId)
 
-    // 5. TODO: Lookup client by WABA ID
-    // const client = await getClientByWABA(wabaId)
-    // if (!client) {
-    //   // Auto-provision new client
-    //   client = await autoProvisionClient(wabaId, body)
-    // }
+    // 5. Lookup client by WABA ID
+    const config = await getClientByWABAId(wabaId)
 
-    // 6. TODO: Process message with existing flow
-    // await processChatbotMessage(body, client)
+    if (!config) {
+      // Unknown WABA - log and acknowledge (don't error, Meta will retry)
+      await handleUnknownWABA(wabaId, body)
+      return NextResponse.json({ status: 'EVENT_RECEIVED' }, { status: 200 })
+    }
 
-    // For now, just acknowledge receipt (Meta requires 200 OK within 20 seconds)
-    console.log('[Webhook POST] ✅ Message received (processing not implemented yet)')
+    console.log(`[Webhook POST] ✅ Client found: ${config.name} (${config.id})`)
 
-    return NextResponse.json({
-      status: 'EVENT_RECEIVED',
-      wabaId,
-      note: 'Webhook in transition - processing not active yet'
-    }, { status: 200 })
+    // 6. Process message with existing chatbot flow
+    try {
+      await processChatbotMessage(body, config)
+    } catch (flowError) {
+      // Log but still return 200 (Meta will retry on non-200)
+      console.error('[Webhook POST] Flow error:', flowError)
+    }
+
+    return NextResponse.json({ status: 'EVENT_RECEIVED' }, { status: 200 })
 
   } catch (error) {
     console.error('[Webhook POST] Error:', error)

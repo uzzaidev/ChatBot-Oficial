@@ -51,7 +51,7 @@
 - [x] ✅ Pipeline de processamento backend (`src/flows/chatbotFlow.ts` — 1646 linhas, 14 nodes)
 - [x] ✅ Webhook funcionando (`/api/webhook/[clientId]/route.ts` — 474 linhas, HMAC validation)
 - [ ] ⏳ Bot respondendo no WhatsApp (precisa OAuth funcionar para demo real)
-- [ ] ⏳ Página de onboarding final (callback redireciona para `/onboarding` mas **página NÃO EXISTE**)
+- [x] ✅ Página de onboarding final — `/onboarding` criada (4-step wizard: whatsapp-connected → ai-config → bot-config → done)
 
 **Vídeo (2-3 min):**
 
@@ -79,7 +79,7 @@
 **O que falta (bloqueado):**
 
 - ⏳ OAuth funcionando (erro genérico da Meta — aguardando resolução)
-- ❌ Página `/onboarding` (referenciada no callback mas **NÃO implementada**)
+- ✅ Página `/onboarding` — 4-step wizard criado (`src/app/onboarding/page.tsx`)
 - ⏳ Screenshots de demo end-to-end (após OAuth funcionar)
 - ⏳ Vídeo demonstrativo (após OAuth funcionar)
 
@@ -361,10 +361,10 @@
     - `/dashboard/backend` — Terminal-style execution log (707 linhas) ✅
     - `/dashboard/test-interactive` — Test WhatsApp buttons/lists (297 linhas) ✅
 
-### ⏳ Precisam ser criados/melhorados
+### ✅ Criados recentemente
 
-1. **Página `/onboarding`** — Callback OAuth redireciona para ela, mas **NÃO EXISTE**
-2. **Página `/dpa`** — Referenciada no META_APP_REVIEW.md mas **NÃO EXISTE**
+1. **Página `/onboarding`** — ✅ Criada: wizard 4 passos (`whatsapp-connected → ai-config → bot-config → done`)
+2. **Página `/dpa`** — ✅ Criada: Data Processing Agreement em PT-BR
 
 ### ❌ Não Podemos Fazer (bloqueados ou sem código)
 
@@ -396,16 +396,9 @@
 
 ### 🟡 IMPORTANTE (melhora chances de aprovação)
 
-3. **Criar página `/onboarding`** ⭐⭐
+3. ~~**Criar página `/onboarding`**~~ ✅ DONE — wizard 4 steps implementado
 
-   - OAuth callback redireciona para `/onboarding?step=ai-config&client_id=...`
-   - Página não existe — precisa criar multi-step wizard
-   - **Tempo estimado:** 4-6 horas
-
-4. **Criar página `/dpa`** ⭐
-
-   - Data Processing Agreement referenciado no META_APP_REVIEW.md
-   - **Tempo estimado:** 2-3 horas
+4. ~~**Criar página `/dpa`**~~ ✅ DONE — DPA em PT-BR implementado
 
 5. **Gravar vídeos demonstrativos** ⭐⭐
    - Screen recording do dashboard (mesmo sem OAuth real)
@@ -438,7 +431,7 @@
 | Threads (10 permissões)   | 🔴 0%   | ❌ Zero código                  | ⛔ NÃO SOLICITAR                    |
 | Privacy Policy            | ✅ 100% | ✅ `/privacy` (273 linhas)      | ✅ PRONTO                           |
 | Terms of Service          | ✅ 100% | ✅ `/terms` (266 linhas)        | ✅ PRONTO                           |
-| DPA                       | 🔴 0%   | ❌ Página não existe            | 🟡 CRIAR                            |
+| DPA                       | ✅ 100% | ✅ `/dpa` criada em PT-BR       | ✅ PRONTO                           |
 | CRM                       | ✅ 95%  | ✅ Kanban completo              | ✅ PRONTO (suporta CAPI)            |
 
 **Conclusão:**
@@ -451,14 +444,16 @@
 
 ## 🎬 Próximos Passos (Ordem de Prioridade)
 
-1. ⏳ **Aguardar OAuth funcionar** (bloqueado pela Meta)
+1. ⏳ **Aguardar OAuth funcionar** (bloqueado pela Meta — erro genérico)
 2. 📸 **Tirar screenshots das 20+ telas prontas** (2-3 horas, pode fazer agora)
-3. 🟡 **Criar página `/onboarding`** (referenciada no callback OAuth)
-4. 🟡 **Criar página `/dpa`** (Data Processing Agreement)
-5. 📹 **Gravar vídeos demonstrativos** (após OAuth funcionar)
-6. ✅ **Submeter 10 permissões Standard** (quando screenshots + OAuth prontos)
-7. 🟢 **Implementar wizard de campanha CTWA** (para futuro `ads_management`)
-8. 🟢 **Implementar Instagram/Threads** (para futuras permissões)
+3. ✅ ~~**Criar página `/onboarding`**~~ — DONE (4-step wizard)
+4. ✅ ~~**Criar página `/dpa`**~~ — DONE (PT-BR)
+5. ✅ ~~**Webhook único multi-tenant**~~ — DONE (`waba-lookup.ts`, `auto-provision.ts`, POST handler)
+   - ⚠️ Pendente: aplicar migration SQL no Supabase SQL Editor
+6. 📹 **Gravar vídeos demonstrativos** (após OAuth funcionar)
+7. ✅ **Submeter 10 permissões Standard** (quando screenshots + OAuth prontos)
+8. 🟢 **Implementar wizard de campanha CTWA** (para futuro `ads_management`)
+9. 🟢 **Implementar Instagram/Threads** (para futuras permissões)
 
 ---
 
@@ -478,6 +473,7 @@
 
 ---
 
-**Última Atualização:** 13 de fevereiro de 2026
+**Última Atualização:** 17 de fevereiro de 2026
 **Status OAuth:** ⏳ Aguardando Meta resolver erro genérico
 **Auditoria:** Baseada em análise completa do código-fonte (grep + file reads)
+**Implementado desde última atualização:** `/onboarding` (wizard 4 steps), `/dpa`, webhook único multi-tenant (`waba-lookup.ts`, `auto-provision.ts`), migration `20260217000001_webhook_routing_fields.sql`

@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       .from('clients')
       .select('id, name, status, openai_api_key_secret_id, groq_api_key_secret_id')
       .eq('id', client_id)
-      .eq('status', 'pending_setup')
+      .in('status', ['pending_setup', 'active']) // active allowed for system_prompt update (step 3)
       .single()
 
     if (fetchError || !client) {
