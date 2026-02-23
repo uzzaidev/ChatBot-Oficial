@@ -64,6 +64,7 @@ export function ConversationsIndexClient({
   const [statusFilter, setStatusFilter] = useState<
     "all" | "bot" | "humano" | "transferido" | "fluxo_inicial"
   >("all");
+  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPhone, setSelectedPhone] = useState<string | null>(
     initialPhone || null,
@@ -204,11 +205,18 @@ export function ConversationsIndexClient({
     }
   }, []);
 
-  // Filtrar conversas baseado no termo de pesquisa (após 2 caracteres)
+  // Filtrar conversas baseado no termo de pesquisa (após 2 caracteres) e filtro de não lidas
   const filteredConversations = useMemo(() => {
-    // Se o termo de pesquisa tiver menos de 2 caracteres, mostrar todas
+    let result = conversations;
+
+    // Filtrar por não lidas
+    if (showUnreadOnly) {
+      result = result.filter((c) => (c.unread_count ?? 0) > 0);
+    }
+
+    // Se o termo de pesquisa tiver menos de 2 caracteres, retornar sem filtro de texto
     if (searchTerm.length < 2) {
-      return conversations;
+      return result;
     }
 
     const searchLower = searchTerm.toLowerCase().trim();
@@ -216,13 +224,13 @@ export function ConversationsIndexClient({
     const phoneSearchTerm = searchTerm.replace(/\D/g, "");
 
     // Filtrar por nome ou telefone
-    return conversations.filter((conversation) => {
+    return result.filter((conversation) => {
       const nameMatch = conversation.name?.toLowerCase().includes(searchLower);
       const phoneMatch =
         phoneSearchTerm && conversation.phone?.includes(phoneSearchTerm);
       return nameMatch || phoneMatch;
     });
-  }, [conversations, searchTerm]);
+  }, [conversations, searchTerm, showUnreadOnly]);
 
   // Scroll automático para a conversa selecionada quando ela é clicada
   // Ajusta o scroll baseado na data da conversa (conversas mais antigas ficam mais abaixo)
@@ -485,10 +493,24 @@ export function ConversationsIndexClient({
           {/* Filtros Simples - Todas / Não Lidas */}
           <div className="px-4 py-3 border-b border-border/50">
             <div className="flex gap-2">
-              <button className="flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all bg-muted/30 text-muted-foreground hover:bg-muted/50">
+              <button
+                onClick={() => setShowUnreadOnly(false)}
+                className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                  !showUnreadOnly
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
+                }`}
+              >
                 Todas
               </button>
-              <button className="flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all bg-muted/30 text-muted-foreground hover:bg-muted/50">
+              <button
+                onClick={() => setShowUnreadOnly(true)}
+                className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                  showUnreadOnly
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
+                }`}
+              >
                 Não lidas
               </button>
             </div>
@@ -503,7 +525,9 @@ export function ConversationsIndexClient({
             {filteredConversations.length === 0 && !loading ? (
               <EmptyStateSimple
                 icon={
-                  statusFilter === "all"
+                  showUnreadOnly
+                    ? MessageCircle
+                    : statusFilter === "all"
                     ? MessageCircle
                     : statusFilter === "bot"
                     ? Bot
@@ -516,14 +540,18 @@ export function ConversationsIndexClient({
                     : MessageCircle
                 }
                 title={
-                  statusFilter === "all"
+                  showUnreadOnly
+                    ? "Nenhuma conversa não lida"
+                    : statusFilter === "all"
                     ? "Nenhuma conversa encontrada"
                     : `Nenhuma conversa com status "${getStatusLabel(
                         statusFilter,
                       )}"`
                 }
                 description={
-                  statusFilter === "all"
+                  showUnreadOnly
+                    ? "Todas as conversas já foram lidas. Clique em \"Todas\" para ver todas as conversas."
+                    : statusFilter === "all"
                     ? "Quando você receber mensagens no WhatsApp, elas aparecerão aqui"
                     : `Não há conversas com status "${getStatusLabel(
                         statusFilter,
@@ -606,10 +634,24 @@ export function ConversationsIndexClient({
               {/* Filtros Simples - Todas / Não Lidas */}
               <div className="px-4 py-3 border-b border-border/50">
                 <div className="flex gap-2">
-                  <button className="flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all bg-muted/30 text-muted-foreground hover:bg-muted/50">
+                  <button
+                    onClick={() => setShowUnreadOnly(false)}
+                    className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                      !showUnreadOnly
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
+                    }`}
+                  >
                     Todas
                   </button>
-                  <button className="flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all bg-muted/30 text-muted-foreground hover:bg-muted/50">
+                  <button
+                    onClick={() => setShowUnreadOnly(true)}
+                    className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                      showUnreadOnly
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
+                    }`}
+                  >
                     Não lidas
                   </button>
                 </div>
@@ -620,7 +662,9 @@ export function ConversationsIndexClient({
                 {filteredConversations.length === 0 && !loading ? (
                   <EmptyStateSimple
                     icon={
-                      statusFilter === "all"
+                      showUnreadOnly
+                        ? MessageCircle
+                        : statusFilter === "all"
                         ? MessageCircle
                         : statusFilter === "bot"
                         ? Bot
@@ -633,14 +677,18 @@ export function ConversationsIndexClient({
                         : MessageCircle
                     }
                     title={
-                      statusFilter === "all"
+                      showUnreadOnly
+                        ? "Nenhuma conversa não lida"
+                        : statusFilter === "all"
                         ? "Nenhuma conversa encontrada"
                         : `Nenhuma conversa com status "${getStatusLabel(
                             statusFilter,
                           )}"`
                     }
                     description={
-                      statusFilter === "all"
+                      showUnreadOnly
+                        ? "Todas as conversas já foram lidas. Clique em \"Todas\" para ver todas as conversas."
+                        : statusFilter === "all"
                         ? "Quando você receber mensagens no WhatsApp, elas aparecerão aqui"
                         : `Não há conversas com status "${getStatusLabel(
                             statusFilter,
