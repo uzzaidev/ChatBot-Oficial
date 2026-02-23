@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useToast } from '@/hooks/use-toast'
+import { apiFetch } from '@/lib/api'
 
 export interface FilterPreference {
   id: string
@@ -57,7 +58,7 @@ export const useFilterPreferences = (): UseFilterPreferencesReturn => {
       setLoading(true)
       setError(null)
 
-      const response = await fetch('/api/filters/preferences', {
+      const response = await apiFetch('/api/filters/preferences', {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       })
@@ -83,7 +84,7 @@ export const useFilterPreferences = (): UseFilterPreferencesReturn => {
    */
   const saveFilters = useCallback(async (newFilters: FilterPreferenceInput[]): Promise<boolean> => {
     try {
-      const response = await fetch('/api/filters/preferences', {
+      const response = await apiFetch('/api/filters/preferences', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ filters: newFilters }),
@@ -125,7 +126,7 @@ export const useFilterPreferences = (): UseFilterPreferencesReturn => {
     updates: { enabled?: boolean; position?: number }
   ): Promise<boolean> => {
     try {
-      const response = await fetch('/api/filters/preferences', {
+      const response = await apiFetch('/api/filters/preferences', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, ...updates }),

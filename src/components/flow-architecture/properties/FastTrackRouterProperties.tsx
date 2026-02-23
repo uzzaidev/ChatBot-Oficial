@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { apiFetch } from '@/lib/api'
 
 interface FastTrackCatalogItem {
   topic: string
@@ -189,7 +190,7 @@ export default function FastTrackRouterProperties({
     const fetchModels = async () => {
       try {
         setLoadingModels(true)
-        const response = await fetch('/api/ai-gateway/models')
+        const response = await apiFetch('/api/ai-gateway/models')
         if (!response.ok) {
           throw new Error('Failed to fetch models')
         }

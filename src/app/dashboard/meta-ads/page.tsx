@@ -53,6 +53,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { apiFetch } from "@/lib/api";
 
 // ============================================================================
 // Types
@@ -159,7 +160,7 @@ export default function MetaAdsPage() {
   const fetchConfig = useCallback(async () => {
     try {
       setConfigLoading(true);
-      const res = await fetch("/api/client/meta-config");
+      const res = await apiFetch("/api/client/meta-config");
       if (res.ok) {
         const data = await res.json();
         setConfig(data);
@@ -201,7 +202,7 @@ export default function MetaAdsPage() {
   const fetchEvents = useCallback(async () => {
     try {
       setEventsLoading(true);
-      const res = await fetch("/api/crm/conversion-events?limit=50");
+      const res = await apiFetch("/api/crm/conversion-events?limit=50");
       if (res.ok) {
         const data = await res.json();
         setEvents(data.events || []);

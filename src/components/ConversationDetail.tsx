@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/lib/api";
 import { DateSeparator } from "@/components/DateSeparator";
 import { MessageBubble } from "@/components/MessageBubble";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -502,7 +503,7 @@ export const ConversationDetail = ({
   const handleReaction = useCallback(
     async (messageId: string, emoji: string) => {
       try {
-        const response = await fetch("/api/commands/react-message", {
+        const response = await apiFetch("/api/commands/react-message", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -539,7 +540,7 @@ export const ConversationDetail = ({
   const handleDelete = useCallback(
     async (messageId: string, mediaUrl?: string) => {
       try {
-        const response = await fetch("/api/commands/delete-message", {
+        const response = await apiFetch("/api/commands/delete-message", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

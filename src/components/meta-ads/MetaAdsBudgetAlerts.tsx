@@ -41,6 +41,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { apiFetch } from "@/lib/api";
 
 // ============================================================================
 // Types
@@ -89,7 +90,7 @@ export function MetaAdsBudgetAlerts() {
   const fetchAlerts = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/crm/budget-alerts");
+      const res = await apiFetch("/api/crm/budget-alerts");
       const data = await res.json();
 
       setAlerts(data.alerts || []);
@@ -117,7 +118,7 @@ export function MetaAdsBudgetAlerts() {
 
     try {
       setCreating(true);
-      const res = await fetch("/api/crm/budget-alerts", {
+      const res = await apiFetch("/api/crm/budget-alerts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

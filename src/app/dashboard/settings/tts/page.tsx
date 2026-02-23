@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { Volume2, Play, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { apiFetch } from '@/lib/api'
 
 interface TTSConfig {
   tts_enabled: boolean
@@ -86,7 +87,7 @@ const PREVIEW_TEXT = 'Olá! Eu sou o assistente de inteligência artificial. Com
 
   const loadConfig = async () => {
     try {
-      const response = await fetch('/api/settings/tts')
+      const response = await apiFetch('/api/settings/tts')
       if (response.ok) {
         const data = await response.json()
         setConfig(data.config)
@@ -99,7 +100,7 @@ const PREVIEW_TEXT = 'Olá! Eu sou o assistente de inteligência artificial. Com
 
   const loadStats = async () => {
     try {
-      const response = await fetch('/api/settings/tts/stats')
+      const response = await apiFetch('/api/settings/tts/stats')
       if (response.ok) {
         const data = await response.json()
         setStats(data.stats)
@@ -111,7 +112,7 @@ const PREVIEW_TEXT = 'Olá! Eu sou o assistente de inteligência artificial. Com
   const saveConfig = async () => {
     setSaving(true)
     try {
-      const response = await fetch('/api/settings/tts', {
+      const response = await apiFetch('/api/settings/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config)
@@ -139,7 +140,7 @@ const PREVIEW_TEXT = 'Olá! Eu sou o assistente de inteligência artificial. Com
   const playVoicePreview = async (voiceId: string) => {
     setPlayingVoice(voiceId)
     try {
-      const response = await fetch('/api/test/tts', {
+      const response = await apiFetch('/api/test/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

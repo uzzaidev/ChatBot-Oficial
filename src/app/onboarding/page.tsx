@@ -2,6 +2,7 @@
 
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useState, useEffect, Suspense } from 'react'
+import { apiFetch } from '@/lib/api'
 
 type OnboardingStep = 'whatsapp-connected' | 'ai-config' | 'bot-config' | 'done'
 
@@ -231,7 +232,7 @@ const AIConfigStep = ({
         payload.groq_key = formState.groqKey.trim()
       }
 
-      const response = await fetch('/api/onboarding/configure-ai', {
+      const response = await apiFetch('/api/onboarding/configure-ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -369,7 +370,7 @@ const BotConfigStep = ({
     setSubmitError(null)
 
     try {
-      const response = await fetch('/api/onboarding/configure-ai', {
+      const response = await apiFetch('/api/onboarding/configure-ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

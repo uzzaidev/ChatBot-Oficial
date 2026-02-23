@@ -1,5 +1,6 @@
 'use client'
 
+import { apiFetch } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import {
     Dialog,
@@ -137,7 +138,7 @@ export const ChatThemeCustomizerModal = ({
       const formData = new FormData()
       formData.append('file', file)
 
-      const response = await fetch('/api/chat-theme/upload', {
+      const response = await apiFetch('/api/chat-theme/upload', {
         method: 'POST',
         body: formData,
       })

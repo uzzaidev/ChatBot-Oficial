@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
+import { apiFetch } from '@/lib/api'
 
 interface UseBudgetParams {
   clientId: string
@@ -105,7 +106,7 @@ export const useBudget = ({
     setError(null)
 
     try {
-      const response = await fetch('/api/budget/config', {
+      const response = await apiFetch('/api/budget/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -134,7 +135,7 @@ export const useBudget = ({
     setError(null)
 
     try {
-      const response = await fetch('/api/budget/config', {
+      const response = await apiFetch('/api/budget/config', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clientId }),

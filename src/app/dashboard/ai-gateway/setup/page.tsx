@@ -37,6 +37,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { createClientBrowser } from '@/lib/supabase'
+import { apiFetch } from '@/lib/api'
 
 export default function AIGatewaySetupPage() {
   const [loading, setLoading] = useState(false)
@@ -119,7 +120,7 @@ export default function AIGatewaySetupPage() {
     setError(null)
 
     try {
-      const response = await fetch('/api/ai-gateway/setup')
+      const response = await apiFetch('/api/ai-gateway/setup')
 
       if (!response.ok) {
         const data = await response.json()
@@ -163,7 +164,7 @@ export default function AIGatewaySetupPage() {
 
     const fetchModels = async () => {
       try {
-        const response = await fetch('/api/ai-gateway/models')
+        const response = await apiFetch('/api/ai-gateway/models')
         if (!response.ok) return
 
         const data = await response.json()
@@ -191,7 +192,7 @@ export default function AIGatewaySetupPage() {
 
     const fetchClients = async () => {
       try {
-        const response = await fetch('/api/admin/clients')
+        const response = await apiFetch('/api/admin/clients')
         if (!response.ok) return
         const data = await response.json()
         const normalized = Array.isArray(data.clients)
@@ -261,7 +262,7 @@ export default function AIGatewaySetupPage() {
       if (provider === 'openai') payload.openaiModel = modelName
       if (provider === 'groq') payload.groqModel = modelName
 
-      const response = await fetch('/api/admin/clients/apply-ai-config', {
+      const response = await apiFetch('/api/admin/clients/apply-ai-config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -332,7 +333,7 @@ export default function AIGatewaySetupPage() {
         throw new Error('Gateway API Key deve começar com vck_')
       }
 
-      const response = await fetch('/api/ai-gateway/setup', {
+      const response = await apiFetch('/api/ai-gateway/setup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -389,7 +390,7 @@ export default function AIGatewaySetupPage() {
     setSuccess(null)
 
     try {
-      const response = await fetch('/api/ai-gateway/setup', {
+      const response = await apiFetch('/api/ai-gateway/setup', {
         method: 'DELETE',
       })
 

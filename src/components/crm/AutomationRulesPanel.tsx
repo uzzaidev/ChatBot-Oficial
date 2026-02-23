@@ -59,6 +59,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { apiFetch } from "@/lib/api";
 
 // Types
 interface TriggerCondition {
@@ -215,7 +216,7 @@ export function AutomationRulesPanel({
   // Toggle rule active status
   const toggleRuleActive = async (ruleId: string, isActive: boolean) => {
     try {
-      const res = await fetch("/api/crm/automation-rules", {
+      const res = await apiFetch("/api/crm/automation-rules", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: ruleId, isActive }),
@@ -238,7 +239,7 @@ export function AutomationRulesPanel({
     if (!settings) return;
 
     try {
-      const res = await fetch("/api/crm/settings", {
+      const res = await apiFetch("/api/crm/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ clientId, ...updates }),
@@ -297,7 +298,7 @@ export function AutomationRulesPanel({
         isActive: true,
       };
 
-      const res = await fetch("/api/crm/automation-rules", {
+      const res = await apiFetch("/api/crm/automation-rules", {
         method: editingRule ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

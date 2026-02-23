@@ -16,6 +16,7 @@ import { Switch } from '@/components/ui/switch'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Save, AlertTriangle, Check } from 'lucide-react'
 import { BudgetProgressBar } from './BudgetProgressBar'
+import { apiFetch } from '@/lib/api'
 
 interface BudgetConfigurationProps {
   clientId: string
@@ -63,7 +64,7 @@ export const BudgetConfiguration = ({
         throw new Error('Budget limit deve ser maior que 0')
       }
 
-      const response = await fetch('/api/budget/config', {
+      const response = await apiFetch('/api/budget/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -96,7 +97,7 @@ export const BudgetConfiguration = ({
     setSuccess(null)
 
     try {
-      const response = await fetch('/api/budget/config', {
+      const response = await apiFetch('/api/budget/config', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clientId }),

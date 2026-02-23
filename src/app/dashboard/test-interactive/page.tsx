@@ -26,6 +26,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Send, CheckCircle2, XCircle } from 'lucide-react'
+import { apiFetch } from '@/lib/api'
 
 type MessageType = 'buttons' | 'list'
 
@@ -52,7 +53,7 @@ export default function TestInteractivePage() {
     setResponse(null)
 
     try {
-      const res = await fetch('/api/test/interactive/send', {
+      const res = await apiFetch('/api/test/interactive/send', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

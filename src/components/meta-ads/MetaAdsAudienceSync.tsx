@@ -39,6 +39,7 @@ import {
   Users,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { apiFetch } from "@/lib/api";
 
 // ============================================================================
 // Types
@@ -76,7 +77,7 @@ export function MetaAdsAudienceSync() {
   const fetchAudiences = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/crm/meta-audiences");
+      const res = await apiFetch("/api/crm/meta-audiences");
       const data = await res.json();
 
       setAudiences(data.audiences || []);
@@ -104,7 +105,7 @@ export function MetaAdsAudienceSync() {
 
     try {
       setSyncing(true);
-      const res = await fetch("/api/crm/meta-audiences", {
+      const res = await apiFetch("/api/crm/meta-audiences", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

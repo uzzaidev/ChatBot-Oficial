@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DollarSign, TrendingUp, CreditCard, AlertCircle } from "lucide-react";
+import { apiFetch } from "@/lib/api";
 
 interface BillingSummary {
   hasPaymentMethod: boolean;
@@ -38,7 +39,7 @@ export function OpenAIBillingCard() {
     async function fetchBilling() {
       try {
         setLoading(true);
-        const response = await fetch("/api/openai-billing/summary?days=30");
+        const response = await apiFetch("/api/openai-billing/summary?days=30");
         const data = await response.json();
 
         if (!response.ok) {

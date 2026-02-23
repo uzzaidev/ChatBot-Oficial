@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Loader2, DollarSign, AlertTriangle, RefreshCw, TrendingUp } from 'lucide-react'
 import { AIGatewayNav } from '@/components/AIGatewayNav'
+import { apiFetch } from '@/lib/api'
 
 interface ClientBudget {
   id: string
@@ -43,7 +44,7 @@ export default function AIGatewayBudgetPage() {
     setError(null)
 
     try {
-      const response = await fetch('/api/ai-gateway/budgets')
+      const response = await apiFetch('/api/ai-gateway/budgets')
 
       if (!response.ok) {
         const data = await response.json()

@@ -15,6 +15,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClientBrowser } from '@/lib/supabase'
+import { apiFetch } from '@/lib/api'
 import type { InteractiveFlow } from '@/types/interactiveFlows'
 import { Plus, Edit, Trash2, Copy, Play, Pause, Power, PowerOff, Workflow } from 'lucide-react'
 import { EmptyState } from '@/components/EmptyState'
@@ -38,7 +39,7 @@ export default function FlowsListPage() {
         return
       }
 
-      const response = await fetch('/api/flows')
+      const response = await apiFetch('/api/flows')
       
       if (!response.ok) {
         throw new Error('Failed to load flows')

@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { createClientBrowser } from '@/lib/supabase'
+import { apiFetch } from '@/lib/api'
 
 interface AdminClient {
   id: string
@@ -113,7 +114,7 @@ export default function AIGatewayCachePage() {
         setIsAdmin(hasAdminAccess)
 
         if (hasAdminAccess) {
-          const response = await fetch('/api/admin/clients')
+          const response = await apiFetch('/api/admin/clients')
           if (response.ok) {
             const data = await response.json().catch(() => ({}))
             setAdminClients(Array.isArray(data.clients) ? data.clients : [])
@@ -154,7 +155,7 @@ export default function AIGatewayCachePage() {
     }
 
     try {
-      const response = await fetch('/api/ai-gateway/cache', {
+      const response = await apiFetch('/api/ai-gateway/cache', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cacheKey }),
@@ -178,7 +179,7 @@ export default function AIGatewayCachePage() {
     }
 
     try {
-      const response = await fetch('/api/ai-gateway/cache', {
+      const response = await apiFetch('/api/ai-gateway/cache', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cacheKey: 'ALL' }),

@@ -17,6 +17,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Loader2, Play, CheckCircle, XCircle, AlertTriangle, Clock } from 'lucide-react'
 import { AIGatewayNav } from '@/components/AIGatewayNav'
+import { apiFetch } from '@/lib/api'
 
 interface TestResult {
   timestamp: string
@@ -53,7 +54,7 @@ export default function AIGatewayTestPage() {
     setResult(null)
 
     try {
-      const response = await fetch('/api/ai-gateway/test', {
+      const response = await apiFetch('/api/ai-gateway/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

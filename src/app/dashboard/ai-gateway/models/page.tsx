@@ -34,6 +34,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Edit, Trash2, Check, AlertTriangle, Save, Plus, Play } from 'lucide-react'
 import { AIGatewayNav } from '@/components/AIGatewayNav'
 import { createClientBrowser } from '@/lib/supabase'
+import { apiFetch } from '@/lib/api'
 
 interface AIModel {
   id: string
@@ -141,7 +142,7 @@ export default function AIGatewayModelsPage() {
     setError(null)
 
     try {
-      const response = await fetch('/api/ai-gateway/models')
+      const response = await apiFetch('/api/ai-gateway/models')
 
       if (!response.ok) {
         const data = await response.json()
@@ -190,7 +191,7 @@ export default function AIGatewayModelsPage() {
     setTestingModelId(model.id)
 
     try {
-      const response = await fetch('/api/ai-gateway/models/test', {
+      const response = await apiFetch('/api/ai-gateway/models/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -250,7 +251,7 @@ export default function AIGatewayModelsPage() {
     }
 
     try {
-      const response = await fetch('/api/ai-gateway/models', {
+      const response = await apiFetch('/api/ai-gateway/models', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -300,7 +301,7 @@ export default function AIGatewayModelsPage() {
         throw new Error('cachedInputPricePerMillion inválido')
       }
 
-      const response = await fetch('/api/ai-gateway/models', {
+      const response = await apiFetch('/api/ai-gateway/models', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

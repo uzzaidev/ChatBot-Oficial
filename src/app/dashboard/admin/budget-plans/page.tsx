@@ -29,6 +29,7 @@ import {
   Coins,
   TrendingUp
 } from 'lucide-react'
+import { apiFetch } from '@/lib/api'
 
 interface BudgetConfig {
   client_id: string
@@ -75,13 +76,13 @@ export default function AdminBudgetPlansPage() {
     setLoading(true)
     try {
       // Fetch budgets
-      const budgetsRes = await fetch('/api/admin/budgets')
+      const budgetsRes = await apiFetch('/api/admin/budgets')
       if (!budgetsRes.ok) throw new Error('Failed to fetch budgets')
       const budgetsData = await budgetsRes.json()
       setBudgets(budgetsData.budgets || [])
 
       // Fetch clients
-      const clientsRes = await fetch('/api/admin/clients')
+      const clientsRes = await apiFetch('/api/admin/clients')
       if (!clientsRes.ok) throw new Error('Failed to fetch clients')
       const clientsData = await clientsRes.json()
       setClients(clientsData.clients || [])
@@ -103,7 +104,7 @@ export default function AdminBudgetPlansPage() {
     setSuccess(null)
 
     try {
-      const response = await fetch('/api/admin/budgets', {
+      const response = await apiFetch('/api/admin/budgets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

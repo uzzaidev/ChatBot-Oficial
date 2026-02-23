@@ -11,6 +11,7 @@
  * @created 2025-12-06
  */
 
+import { apiFetch } from "@/lib/api";
 import type {
   FlowBlock,
   FlowEdge,
@@ -210,7 +211,7 @@ export const useFlowStore = create<FlowState>()(
         // Check if creating new or updating existing
         if (!state.flowId || state.flowId === "new") {
           // Create new flow
-          const response = await fetch("/api/flows", {
+          const response = await apiFetch("/api/flows", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

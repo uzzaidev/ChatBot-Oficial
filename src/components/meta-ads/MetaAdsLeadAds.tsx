@@ -28,6 +28,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { apiFetch } from "@/lib/api";
 
 // ============================================================================
 // Types
@@ -68,7 +69,7 @@ export function MetaAdsLeadAds() {
   const fetchEvents = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/crm/lead-ads-events?limit=50");
+      const res = await apiFetch("/api/crm/lead-ads-events?limit=50");
       const data = await res.json();
 
       setEvents(data.events || []);
