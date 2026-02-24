@@ -1,4 +1,4 @@
-package com.chatbot.app;
+package com.uzzai.uzzapp;
 
 import com.getcapacitor.BridgeActivity;
 

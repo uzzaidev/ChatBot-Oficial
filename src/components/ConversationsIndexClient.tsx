@@ -404,7 +404,7 @@ export function ConversationsIndexClient({
   }, [selectedPhone, conversations, virtualContact]);
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden bg-background">
+    <div className="fixed inset-0 flex flex-col overflow-hidden bg-background pt-[calc(var(--safe-area-inset-top)+8px)] pb-[calc(var(--safe-area-inset-bottom)+8px)] lg:pt-0 lg:pb-0">
       {/* Header com Cards KPI - Esconde em mobile quando conversa selecionada */}
       <div className={`relative ${selectedPhone ? "hidden lg:block" : ""}`}>
         {/* Botão Hambúrguer Mobile - No topo do header */}
