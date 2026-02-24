@@ -102,9 +102,11 @@ export const useMessages = ({
       // Só reseta se o phone realmente mudou (não é o mesmo valor)
       if (previousPhoneRef.current !== phone) {
         previousPhoneRef.current = phone
-        // Reset ao trocar de conversa
+        // Reset ao trocar de conversa - limpa mensagens antigas imediatamente
+        // para evitar race condition no scroll (shouldScrollRef era consumido pelas mensagens antigas)
         hasFetchedRef.current = false
         setInitialLoading(true)
+        setMessages([])
         fetchMessages()
       }
     } else {
