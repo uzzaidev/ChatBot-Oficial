@@ -65,3 +65,6 @@ db/backup/
 .kiro/steering/byterover-rules.md
 .qoder/rules/byterover-rules.md
 .augment/rules/byterover-rules.md
+# Firebase Admin local secrets
+uzzapp-firebase-adminsdk-*.json
+.secrets/

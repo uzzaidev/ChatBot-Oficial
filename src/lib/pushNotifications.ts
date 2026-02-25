@@ -137,9 +137,10 @@ const handleNotificationAction = (action: any) => {
     const notification = action.notification;
     const data = notification.data || {};
 
-    // Exemplo: Se notificação tem chat_id, navegar para chat
-    if (data.chat_id) {
-      window.location.href = `/dashboard/chat/${data.chat_id}`;
+    // Conversas usam query param (?phone=...) no app atual.
+    const phone = data.phone || data.chat_id || data.conversation_phone;
+    if (phone) {
+      window.location.href = `/dashboard/chat?phone=${encodeURIComponent(phone)}`;
     } else if (data.type === "message") {
       // Navegar para lista de conversas
       window.location.href = "/dashboard/conversations";
