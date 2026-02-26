@@ -187,6 +187,29 @@ export async function POST(request: NextRequest) {
     // ========================================
     // 4. Criar usuário no Supabase Auth
     // ========================================
+    const createUserPayload = {
+      email,
+      password: `[${password?.length} chars]`,
+      email_confirm: false,
+      user_metadata: {
+        client_id: clientId,
+        full_name: fullName,
+      },
+    };
+    console.log(
+      "[Register] createUser payload:",
+      JSON.stringify(createUserPayload, null, 2),
+    );
+    console.log(
+      "[Register] email type:",
+      typeof email,
+      "| value repr:",
+      JSON.stringify(email),
+    );
+    console.log("[Register] password length:", password?.length);
+    console.log("[Register] clientId:", clientId);
+    console.log("[Register] fullName:", fullName);
+
     const { data: authData, error: authError } =
       await supabase.auth.admin.createUser({
         email,
@@ -197,6 +220,14 @@ export async function POST(request: NextRequest) {
           full_name: fullName,
         },
       });
+
+    console.log("[Register] createUser result:", {
+      userId: authData?.user?.id ?? null,
+      userEmail: authData?.user?.email ?? null,
+      errorMessage: authError?.message ?? null,
+      errorCode: authError?.code ?? null,
+      errorStatus: authError?.status ?? null,
+    });
 
     if (authError || !authData.user) {
       // Rollback: deletar client e secrets do Vault criados
@@ -296,25 +327,11 @@ export async function POST(request: NextRequest) {
     }
 
     // ========================================
-    // 6. Enviar email de confirmação
+    // 6. Email de confirmação
     // ========================================
-    const baseUrl =
-      process.env.NEXT_PUBLIC_URL ?? "https://uzzapp.uzzai.com.br";
-
-    // Use anon client to trigger Supabase's built-in confirmation email
-    const { createClient: createAnonClient } = await import(
-      "@supabase/supabase-js"
-    );
-    const anonClient = createAnonClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    );
-
-    await anonClient.auth.resend({
-      type: "signup",
-      email,
-      options: { emailRedirectTo: `${baseUrl}/auth/confirm` },
-    });
+    // O auth.admin.createUser com email_confirm: false já dispara
+    // o email de confirmação automaticamente pelo Supabase.
+    // Não é necessário chamar resend() — evita duplicação e rate limit.
 
     return NextResponse.json({
       success: true,
