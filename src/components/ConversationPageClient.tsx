@@ -283,7 +283,7 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
   ), [statusFilter])
 
   return (
-    <div className="fixed inset-0 flex overflow-hidden bg-background">
+    <div className="fixed inset-0 flex overflow-hidden bg-background pt-[calc(var(--safe-area-inset-top)+8px)] pb-[calc(var(--safe-area-inset-bottom)+8px)] lg:pt-0 lg:pb-0">
       {/* Sidebar Desktop - Oculta em mobile (< lg) */}
       <div className="hidden lg:flex w-96 border-r border-border flex-col bg-card">
         {sidebarHeader}
