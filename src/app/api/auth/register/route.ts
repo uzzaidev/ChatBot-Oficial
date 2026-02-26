@@ -214,9 +214,9 @@ export async function POST(request: NextRequest) {
         groqApiKeySecretData,
       ]) {
         if (secretId) {
-          await (supabase as any)
-            .rpc("delete_vault_secret", { p_id: secretId })
-            .catch(() => {});
+          try {
+            await (supabase as any).rpc('delete_vault_secret', { p_id: secretId })
+          } catch (_) { /* best-effort, ignorar erro de limpeza */ }
         }
       }
 

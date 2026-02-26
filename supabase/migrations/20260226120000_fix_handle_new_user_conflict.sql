@@ -11,6 +11,10 @@
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
+  -- Limpar órfãos com mesmo email mas id diferente (tentativas anteriores falhas)
+  DELETE FROM public.user_profiles
+  WHERE email = NEW.email AND id <> NEW.id;
+
   INSERT INTO public.user_profiles (id, email, role, client_id, full_name)
   VALUES (
     NEW.id,
@@ -19,7 +23,10 @@ BEGIN
     NULLIF(NEW.raw_user_meta_data->>'client_id', '')::UUID,
     NEW.raw_user_meta_data->>'full_name'
   )
-  ON CONFLICT (id) DO NOTHING;
+  ON CONFLICT (id) DO UPDATE SET
+    email = EXCLUDED.email,
+    client_id = COALESCE(EXCLUDED.client_id, public.user_profiles.client_id),
+    full_name = COALESCE(EXCLUDED.full_name, public.user_profiles.full_name);
 
   RETURN NEW;
 EXCEPTION WHEN OTHERS THEN
