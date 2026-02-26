@@ -49,6 +49,20 @@ export async function POST(request: NextRequest) {
     const supabase = createServiceRoleClient();
 
     // ========================================
+    // 0. Verificar se email já existe (antes de qualquer outra operação)
+    // ========================================
+    // Usar RPC que consulta auth.users diretamente (mais confiável que listUsers paginado)
+    const { data: emailExists } = await (supabase as any).rpc('check_email_exists', {
+      p_email: email.toLowerCase(),
+    })
+    if (emailExists) {
+      return NextResponse.json(
+        { error: 'Este email já está cadastrado. Faça login ou use outro email.' },
+        { status: 409 }
+      )
+    }
+
+    // ========================================
     // 1. Gerar slug único para o cliente
     // ========================================
     const baseSlug = companyName
