@@ -51,14 +51,20 @@ export async function POST(request: NextRequest) {
     // ========================================
     // 0. Verificar se email já existe (antes de qualquer outra operação)
     // ========================================
-    // Usar RPC que consulta auth.users diretamente (mais confiável que listUsers paginado)
-    const { data: emailExists } = await (supabase as any).rpc(
-      "check_email_exists",
-      {
-        p_email: email.toLowerCase(),
-      },
+    // Verificação direto via admin API — sem RPC que pode ter permissão bloqueada
+    const { data: listData } = await supabase.auth.admin.listUsers({
+      page: 1,
+      perPage: 1000,
+    });
+    const emailAlreadyExists = listData?.users?.some(
+      (u) => u.email?.toLowerCase() === email.toLowerCase(),
     );
-    if (emailExists) {
+    console.log("[Register] email check:", {
+      email,
+      emailAlreadyExists,
+      total: listData?.users?.length,
+    });
+    if (emailAlreadyExists) {
       return NextResponse.json(
         {
           error:
@@ -176,6 +182,21 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (clientError || !newClient) {
+      // Rollback: limpar secrets do Vault
+      for (const secretId of [
+        metaAccessTokenSecretData,
+        metaVerifyTokenSecretData,
+        openaiApiKeySecretData,
+        groqApiKeySecretData,
+      ]) {
+        if (secretId) {
+          try {
+            await (supabase as any).rpc("delete_vault_secret", {
+              p_id: secretId,
+            });
+          } catch (_) {}
+        }
+      }
       console.error("[Register] Erro ao criar cliente:", clientError);
       return NextResponse.json(
         {
@@ -215,8 +236,12 @@ export async function POST(request: NextRequest) {
       ]) {
         if (secretId) {
           try {
-            await (supabase as any).rpc('delete_vault_secret', { p_id: secretId })
-          } catch (_) { /* best-effort, ignorar erro de limpeza */ }
+            await (supabase as any).rpc("delete_vault_secret", {
+              p_id: secretId,
+            });
+          } catch (_) {
+            /* best-effort, ignorar erro de limpeza */
+          }
         }
       }
 
@@ -266,10 +291,23 @@ export async function POST(request: NextRequest) {
       );
 
     if (manualProfileError) {
-      // Rollback: deletar usuário e client
+      // Rollback completo: auth user + client + secrets
       await supabase.auth.admin.deleteUser(authData.user.id);
       await (supabase as any).from("clients").delete().eq("id", clientId);
-
+      for (const secretId of [
+        metaAccessTokenSecretData,
+        metaVerifyTokenSecretData,
+        openaiApiKeySecretData,
+        groqApiKeySecretData,
+      ]) {
+        if (secretId) {
+          try {
+            await (supabase as any).rpc("delete_vault_secret", {
+              p_id: secretId,
+            });
+          } catch (_) {}
+        }
+      }
       console.error(
         "[Register] Erro ao criar user_profile:",
         manualProfileError,
