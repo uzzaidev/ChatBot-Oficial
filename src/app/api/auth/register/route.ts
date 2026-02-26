@@ -49,35 +49,6 @@ export async function POST(request: NextRequest) {
     const supabase = createServiceRoleClient();
 
     // ========================================
-    // 0. Verificar se email já existe (antes de qualquer outra operação)
-    // ========================================
-    // Verificação direto via admin API — sem RPC que pode ter permissão bloqueada
-    const { data: listData } = await supabase.auth.admin.listUsers({
-      page: 1,
-      perPage: 1000,
-    });
-    const userList = (listData?.users ?? []) as Array<{
-      email?: string | null;
-    }>;
-    const emailAlreadyExists = userList.some(
-      (u) => u.email?.toLowerCase() === email.toLowerCase(),
-    );
-    console.log("[Register] email check:", {
-      email,
-      emailAlreadyExists,
-      total: userList.length,
-    });
-    if (emailAlreadyExists) {
-      return NextResponse.json(
-        {
-          error:
-            "Este email já está cadastrado. Faça login ou use outro email.",
-        },
-        { status: 409 },
-      );
-    }
-
-    // ========================================
     // 1. Gerar slug único para o cliente
     // ========================================
     const baseSlug = companyName
