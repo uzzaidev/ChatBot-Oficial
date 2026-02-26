@@ -154,3 +154,22 @@ export const onAuthStateChange = (
 
   return () => subscription.unsubscribe()
 }
+
+export const signInWithOAuth = async (
+  provider: 'google' | 'github' | 'azure',
+  inviteToken?: string
+) => {
+  const supabase = createBrowserClient()
+  const base = window.location.origin
+  const redirectTo = inviteToken
+    ? `${base}/auth/callback?invite_token=${encodeURIComponent(inviteToken)}`
+    : `${base}/auth/callback`
+
+  return supabase.auth.signInWithOAuth({
+    provider,
+    options: {
+      redirectTo,
+      ...(provider === 'azure' && { scopes: 'openid profile email' }),
+    },
+  })
+}

@@ -57,9 +57,19 @@ export const AuthMonitor = () => {
 
     checkSession()
 
-    // Cleanup: Cancelar subscription quando componente desmontar
+    // Check session every 5 minutes when tab is active
+    const intervalId = setInterval(async () => {
+      if (document.visibilityState !== 'visible') return
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        router.push('/login?reason=session_expired')
+        router.refresh()
+      }
+    }, 5 * 60 * 1000)
+
     return () => {
       subscription.unsubscribe()
+      clearInterval(intervalId)
     }
   }, [router])
 

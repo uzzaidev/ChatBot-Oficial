@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
       password,
-      email_confirm: true, // Auto-confirmar email
+      email_confirm: false,
       user_metadata: {
         client_id: clientId,
         full_name: fullName,
@@ -231,27 +231,31 @@ export async function POST(request: NextRequest) {
 
 
     // ========================================
-    // 6. Fazer login automático após registro
+    // 6. Enviar email de confirmação
     // ========================================
-    // Criar sessão para o usuário recém-criado
-    const { data: sessionData, error: sessionError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    const baseUrl = process.env.NEXT_PUBLIC_URL ?? 'https://uzzapp.uzzai.com.br'
 
-    if (sessionError) {
-      // Não é erro crítico - usuário pode fazer login manualmente
-    } else {
-    }
+    // Use anon client to trigger Supabase's built-in confirmation email
+    const { createClient: createAnonClient } = await import('@supabase/supabase-js')
+    const anonClient = createAnonClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+
+    await anonClient.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: `${baseUrl}/auth/confirm` },
+    })
 
     return NextResponse.json({
       success: true,
+      requiresConfirmation: true,
       user_id: authData.user.id,
       client_id: clientId,
       email,
       slug,
-      session: sessionData?.session || null,
-      message: 'Conta criada com sucesso! Configure suas credenciais em Configurações.',
+      message: 'Conta criada! Verifique seu email para ativar a conta.',
     })
   } catch (error) {
     return NextResponse.json(

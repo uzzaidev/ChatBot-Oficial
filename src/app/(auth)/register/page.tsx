@@ -77,25 +77,25 @@ export default function RegisterPage() {
         return
       }
 
+      // Handle email confirmation required
+      if (data.requiresConfirmation) {
+        router.push(`/check-email?email=${encodeURIComponent(data.email ?? formData.email)}`)
+        return
+      }
 
-      // Se recebeu sessão, fazer login automático
+      // Legacy: If received session (should not happen with new flow, but keep for safety)
       if (data.session) {
-
-        // Importar createBrowserClient dinamicamente
         const { createBrowserClient } = await import('@supabase/ssr')
         const supabase = createBrowserClient(
           process.env.NEXT_PUBLIC_SUPABASE_URL!,
           process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
         )
-
-        // Setar sessão no client
         await supabase.auth.setSession({
           access_token: data.session.access_token,
           refresh_token: data.session.refresh_token,
         })
       }
 
-      // Redirecionar para dashboard
       router.push('/dashboard')
       router.refresh()
     } catch (err) {

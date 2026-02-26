@@ -49,6 +49,8 @@ const PUBLIC_ROUTES = [
   '/api/auth/login',
   '/api/auth/register',
   '/api/auth/logout',
+  '/api/auth/resend-confirmation',
+  '/api/auth/accept-invite',
   '/api/webhook', // Webhook verification (has own validation)
   '/api/health',
 ]
@@ -116,7 +118,15 @@ export function withAuth(handler: AuthenticatedHandler) {
         )
       }
 
-      // 4. Call handler with authenticated context
+      // 4. Check approval status (for OAuth users in pending review)
+      if ((profile as any).approval_status === 'pending') {
+        return NextResponse.json(
+          { error: 'Forbidden: Account pending approval' },
+          { status: 403 }
+        )
+      }
+
+      // 5. Call handler with authenticated context
       return handler(
         request,
         {
