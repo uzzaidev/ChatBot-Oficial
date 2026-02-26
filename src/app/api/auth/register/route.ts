@@ -184,12 +184,35 @@ export async function POST(request: NextRequest) {
       });
 
     if (authError || !authData.user) {
-      // Rollback: deletar client criado
+      // Rollback: deletar client e secrets do Vault criados
       await (supabase as any).from("clients").delete().eq("id", clientId);
+      // Limpar secrets do Vault (best-effort)
+      for (const secretId of [
+        metaAccessTokenSecretData,
+        metaVerifyTokenSecretData,
+        openaiApiKeySecretData,
+        groqApiKeySecretData,
+      ]) {
+        if (secretId) {
+          await (supabase as any)
+            .rpc("delete_vault_secret", { p_id: secretId })
+            .catch(() => {});
+        }
+      }
 
-      if (authError?.message?.includes("User already registered")) {
+      const isEmailTaken =
+        authError?.message?.includes("User already registered") ||
+        authError?.message?.includes("Database error creating new user") ||
+        authError?.message?.includes("already been registered") ||
+        authError?.message?.toLowerCase().includes("duplicate") ||
+        authError?.message?.toLowerCase().includes("unique");
+
+      if (isEmailTaken) {
         return NextResponse.json(
-          { error: "Email já registrado" },
+          {
+            error:
+              "Este email já está cadastrado. Faça login ou use outro email.",
+          },
           { status: 409 },
         );
       }
@@ -206,18 +229,21 @@ export async function POST(request: NextRequest) {
     }
 
     // ========================================
-    // 5. Criar user_profile SEMPRE manualmente
+    // 5. Garantir user_profile (trigger já pode ter criado)
     // ========================================
-    // Não depender de trigger que pode falhar
-
+    // O trigger on_auth_user_created pode já ter criado o perfil.
+    // Usamos upsert para ser idempontente e garantir os dados corretos.
     const { error: manualProfileError } = await (supabase as any)
       .from("user_profiles")
-      .insert({
-        id: authData.user.id,
-        client_id: clientId,
-        email,
-        full_name: fullName,
-      });
+      .upsert(
+        {
+          id: authData.user.id,
+          client_id: clientId,
+          email,
+          full_name: fullName,
+        },
+        { onConflict: "id" },
+      );
 
     if (manualProfileError) {
       // Rollback: deletar usuário e client
