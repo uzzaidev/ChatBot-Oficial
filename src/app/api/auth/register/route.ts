@@ -219,12 +219,11 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      // Apenas tratar como email duplicado quando o Supabase confirma explicitamente
       const isEmailTaken =
         authError?.message?.includes("User already registered") ||
-        authError?.message?.includes("Database error creating new user") ||
         authError?.message?.includes("already been registered") ||
-        authError?.message?.toLowerCase().includes("duplicate") ||
-        authError?.message?.toLowerCase().includes("unique");
+        authError?.code === "email_exists";
 
       if (isEmailTaken) {
         return NextResponse.json(
@@ -241,7 +240,7 @@ export async function POST(request: NextRequest) {
         {
           error: `Erro ao criar usuário: ${
             authError?.message ?? "erro desconhecido"
-          }`,
+          } (code: ${authError?.code ?? "unknown"})`,
         },
         { status: 500 },
       );
