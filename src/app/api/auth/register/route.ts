@@ -56,13 +56,16 @@ export async function POST(request: NextRequest) {
       page: 1,
       perPage: 1000,
     });
-    const emailAlreadyExists = listData?.users?.some(
+    const userList = (listData?.users ?? []) as Array<{
+      email?: string | null;
+    }>;
+    const emailAlreadyExists = userList.some(
       (u) => u.email?.toLowerCase() === email.toLowerCase(),
     );
     console.log("[Register] email check:", {
       email,
       emailAlreadyExists,
-      total: listData?.users?.length,
+      total: userList.length,
     });
     if (emailAlreadyExists) {
       return NextResponse.json(
