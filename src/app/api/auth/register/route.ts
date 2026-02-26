@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createServiceRoleClient } from '@/lib/supabase'
+import { createServiceRoleClient } from "@/lib/supabase";
+import { NextRequest, NextResponse } from "next/server";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 /**
  * POST /api/auth/register
@@ -27,226 +27,237 @@ export const dynamic = 'force-dynamic'
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { fullName, email, phone, companyName, password } = body
+    const body = await request.json();
+    const { fullName, email, phone, companyName, password } = body;
 
     // Validação
     if (!fullName || !email || !password || !companyName) {
       return NextResponse.json(
-        { error: 'Campos obrigatórios faltando' },
-        { status: 400 }
-      )
+        { error: "Campos obrigatórios faltando" },
+        { status: 400 },
+      );
     }
 
     if (password.length < 8) {
       return NextResponse.json(
-        { error: 'Senha deve ter pelo menos 8 caracteres' },
-        { status: 400 }
-      )
+        { error: "Senha deve ter pelo menos 8 caracteres" },
+        { status: 400 },
+      );
     }
 
-
     // Usar Service Role Key para operações administrativas (criar usuários e vault secrets)
-    const supabase = createServiceRoleClient()
+    const supabase = createServiceRoleClient();
 
     // ========================================
     // 1. Gerar slug único para o cliente
     // ========================================
     const baseSlug = companyName
       .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '') // Remove acentos
-      .replace(/[^a-z0-9]+/g, '-') // Substitui caracteres especiais por -
-      .replace(/^-|-$/g, '') // Remove - do início e fim
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+      .replace(/[^a-z0-9]+/g, "-") // Substitui caracteres especiais por -
+      .replace(/^-|-$/g, ""); // Remove - do início e fim
 
-    let slug = baseSlug
-    let slugSuffix = 1
+    let slug = baseSlug;
+    let slugSuffix = 1;
 
     // Verificar se slug já existe (loop até encontrar um único)
     while (true) {
       const { data: existingClient } = await supabase
-        .from('clients')
-        .select('id')
-        .eq('slug', slug)
-        .single()
+        .from("clients")
+        .select("id")
+        .eq("slug", slug)
+        .single();
 
-      if (!existingClient) break
-      slug = `${baseSlug}-${slugSuffix++}`
+      if (!existingClient) break;
+      slug = `${baseSlug}-${slugSuffix++}`;
     }
-
 
     // ========================================
     // 2. Criar secrets vazios no Vault
     // ========================================
     // NOTA: Secrets são criados vazios e serão preenchidos nas configurações
-    const { data: metaAccessTokenSecretData, error: metaAccessError } =
-      await (supabase as any).rpc('create_client_secret', {
-        secret_value: 'CONFIGURE_IN_SETTINGS',
-        secret_name: `${slug}_meta_access_token`,
-        secret_description: `Meta Access Token for ${companyName}`,
-      })
+    // Usando create_vault_secret que trata duplicatas (retorna ID existente se já existir)
+    const [metaAccessResult, metaVerifyResult, openaiResult, groqResult] =
+      await Promise.all([
+        (supabase as any).rpc("create_vault_secret", {
+          p_secret: "CONFIGURE_IN_SETTINGS",
+          p_name: `${slug}_meta_access_token`,
+          p_description: `Meta Access Token for ${companyName}`,
+        }),
+        (supabase as any).rpc("create_vault_secret", {
+          p_secret: "CONFIGURE_IN_SETTINGS",
+          p_name: `${slug}_meta_verify_token`,
+          p_description: `Meta Verify Token for ${companyName}`,
+        }),
+        (supabase as any).rpc("create_vault_secret", {
+          p_secret: "CONFIGURE_IN_SETTINGS",
+          p_name: `${slug}_openai_api_key`,
+          p_description: `OpenAI API Key for ${companyName}`,
+        }),
+        (supabase as any).rpc("create_vault_secret", {
+          p_secret: "CONFIGURE_IN_SETTINGS",
+          p_name: `${slug}_groq_api_key`,
+          p_description: `Groq API Key for ${companyName}`,
+        }),
+      ]);
 
-    if (metaAccessError) {
+    const vaultResults = [
+      { name: "meta_access_token", result: metaAccessResult },
+      { name: "meta_verify_token", result: metaVerifyResult },
+      { name: "openai_api_key", result: openaiResult },
+      { name: "groq_api_key", result: groqResult },
+    ];
+    const vaultFailed = vaultResults.find((r) => r.result.error);
+    if (vaultFailed) {
+      const vaultError = vaultFailed.result.error;
+      console.error(
+        `[Register] Erro ao criar secret '${vaultFailed.name}' no Vault:`,
+        vaultError,
+      );
       return NextResponse.json(
-        { error: 'Erro ao criar secrets no Vault' },
-        { status: 500 }
-      )
+        {
+          error: `Erro ao configurar credencial '${vaultFailed.name}': ${
+            vaultError?.message ?? "erro desconhecido"
+          }`,
+        },
+        { status: 500 },
+      );
     }
 
-    const { data: metaVerifyTokenSecretData, error: metaVerifyError } =
-      await (supabase as any).rpc('create_client_secret', {
-        secret_value: 'CONFIGURE_IN_SETTINGS',
-        secret_name: `${slug}_meta_verify_token`,
-        secret_description: `Meta Verify Token for ${companyName}`,
-      })
-
-    if (metaVerifyError) {
-      return NextResponse.json(
-        { error: 'Erro ao criar secrets no Vault' },
-        { status: 500 }
-      )
-    }
-
-    const { data: openaiApiKeySecretData, error: openaiError } =
-      await (supabase as any).rpc('create_client_secret', {
-        secret_value: 'CONFIGURE_IN_SETTINGS',
-        secret_name: `${slug}_openai_api_key`,
-        secret_description: `OpenAI API Key for ${companyName}`,
-      })
-
-    if (openaiError) {
-      return NextResponse.json(
-        { error: 'Erro ao criar secrets no Vault' },
-        { status: 500 }
-      )
-    }
-
-    const { data: groqApiKeySecretData, error: groqError } =
-      await (supabase as any).rpc('create_client_secret', {
-        secret_value: 'CONFIGURE_IN_SETTINGS',
-        secret_name: `${slug}_groq_api_key`,
-        secret_description: `Groq API Key for ${companyName}`,
-      })
-
-    if (groqError) {
-      return NextResponse.json(
-        { error: 'Erro ao criar secrets no Vault' },
-        { status: 500 }
-      )
-    }
-
+    const metaAccessTokenSecretData = metaAccessResult.data;
+    const metaVerifyTokenSecretData = metaVerifyResult.data;
+    const openaiApiKeySecretData = openaiResult.data;
+    const groqApiKeySecretData = groqResult.data;
 
     // ========================================
     // 3. Criar client na tabela clients
     // ========================================
     const { data: newClient, error: clientError } = await (supabase as any)
-      .from('clients')
+      .from("clients")
       .insert({
         name: companyName,
         slug,
-        status: 'active',
-        plan: 'free',
+        status: "active",
+        plan: "free",
         meta_access_token_secret_id: metaAccessTokenSecretData,
         meta_verify_token_secret_id: metaVerifyTokenSecretData,
-        meta_phone_number_id: 'CONFIGURE_IN_SETTINGS',
+        meta_phone_number_id: "CONFIGURE_IN_SETTINGS",
         meta_display_phone: phone || null,
         openai_api_key_secret_id: openaiApiKeySecretData,
-        openai_model: 'gpt-4o',
+        openai_model: "gpt-4o",
         groq_api_key_secret_id: groqApiKeySecretData,
-        groq_model: 'llama-3.3-70b-versatile',
+        groq_model: "llama-3.3-70b-versatile",
         system_prompt: `Você é um assistente virtual para ${companyName}. Seja prestativo, educado e profissional.`,
         formatter_prompt: null,
         notification_email: email,
       })
-      .select('id')
-      .single()
+      .select("id")
+      .single();
 
     if (clientError || !newClient) {
+      console.error("[Register] Erro ao criar cliente:", clientError);
       return NextResponse.json(
-        { error: 'Erro ao criar registro de cliente' },
-        { status: 500 }
-      )
+        {
+          error: `Erro ao criar registro de cliente: ${
+            clientError?.message ?? "erro desconhecido"
+          }`,
+        },
+        { status: 500 },
+      );
     }
 
-    const clientId = newClient.id
-
+    const clientId = newClient.id;
 
     // ========================================
     // 4. Criar usuário no Supabase Auth
     // ========================================
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: false,
-      user_metadata: {
-        client_id: clientId,
-        full_name: fullName,
-      },
-    })
+    const { data: authData, error: authError } =
+      await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: false,
+        user_metadata: {
+          client_id: clientId,
+          full_name: fullName,
+        },
+      });
 
     if (authError || !authData.user) {
-
       // Rollback: deletar client criado
-      await (supabase as any).from('clients').delete().eq('id', clientId)
+      await (supabase as any).from("clients").delete().eq("id", clientId);
 
-      if (authError?.message?.includes('User already registered')) {
+      if (authError?.message?.includes("User already registered")) {
         return NextResponse.json(
-          { error: 'Email já registrado' },
-          { status: 409 }
-        )
+          { error: "Email já registrado" },
+          { status: 409 },
+        );
       }
 
+      console.error("[Register] Erro ao criar usuário:", authError);
       return NextResponse.json(
-        { error: 'Erro ao criar usuário' },
-        { status: 500 }
-      )
+        {
+          error: `Erro ao criar usuário: ${
+            authError?.message ?? "erro desconhecido"
+          }`,
+        },
+        { status: 500 },
+      );
     }
-
 
     // ========================================
     // 5. Criar user_profile SEMPRE manualmente
     // ========================================
     // Não depender de trigger que pode falhar
-    
+
     const { error: manualProfileError } = await (supabase as any)
-      .from('user_profiles')
+      .from("user_profiles")
       .insert({
         id: authData.user.id,
         client_id: clientId,
         email,
         full_name: fullName,
-      })
+      });
 
     if (manualProfileError) {
-      
       // Rollback: deletar usuário e client
-      await supabase.auth.admin.deleteUser(authData.user.id)
-      await (supabase as any).from('clients').delete().eq('id', clientId)
-      
-      return NextResponse.json(
-        { error: 'Erro ao criar perfil de usuário' },
-        { status: 500 }
-      )
-    }
+      await supabase.auth.admin.deleteUser(authData.user.id);
+      await (supabase as any).from("clients").delete().eq("id", clientId);
 
+      console.error(
+        "[Register] Erro ao criar user_profile:",
+        manualProfileError,
+      );
+      return NextResponse.json(
+        {
+          error: `Erro ao criar perfil de usuário: ${
+            manualProfileError?.message ?? "erro desconhecido"
+          }`,
+        },
+        { status: 500 },
+      );
+    }
 
     // ========================================
     // 6. Enviar email de confirmação
     // ========================================
-    const baseUrl = process.env.NEXT_PUBLIC_URL ?? 'https://uzzapp.uzzai.com.br'
+    const baseUrl =
+      process.env.NEXT_PUBLIC_URL ?? "https://uzzapp.uzzai.com.br";
 
     // Use anon client to trigger Supabase's built-in confirmation email
-    const { createClient: createAnonClient } = await import('@supabase/supabase-js')
+    const { createClient: createAnonClient } = await import(
+      "@supabase/supabase-js"
+    );
     const anonClient = createAnonClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    );
 
     await anonClient.auth.resend({
-      type: 'signup',
+      type: "signup",
       email,
       options: { emailRedirectTo: `${baseUrl}/auth/confirm` },
-    })
+    });
 
     return NextResponse.json({
       success: true,
@@ -255,12 +266,14 @@ export async function POST(request: NextRequest) {
       client_id: clientId,
       email,
       slug,
-      message: 'Conta criada! Verifique seu email para ativar a conta.',
-    })
+      message: "Conta criada! Verifique seu email para ativar a conta.",
+    });
   } catch (error) {
+    const msg = error instanceof Error ? error.message : "erro desconhecido";
+    console.error("[Register] Erro inesperado:", error);
     return NextResponse.json(
-      { error: 'Erro interno ao criar conta' },
-      { status: 500 }
-    )
+      { error: `Erro interno ao criar conta: ${msg}` },
+      { status: 500 },
+    );
   }
 }

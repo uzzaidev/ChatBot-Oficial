@@ -180,9 +180,11 @@ const WhatsAppConnectedStep = ({
 const AIConfigStep = ({
   clientId,
   onSuccess,
+  onSkip,
 }: {
   clientId: string
   onSuccess: () => void
+  onSkip: () => void
 }) => {
   const [formState, setFormState] = useState<AIConfigFormState>({
     openaiKey: '',
@@ -348,6 +350,15 @@ const AIConfigStep = ({
       >
         {isSubmitting ? 'Salvando...' : 'Salvar e Continuar'}
       </button>
+
+      <button
+        type="button"
+        onClick={onSkip}
+        disabled={isSubmitting}
+        className="w-full mt-3 text-sm text-gray-400 hover:text-gray-600 py-2 transition-colors"
+      >
+        Configurar depois
+      </button>
     </div>
   )
 }
@@ -355,9 +366,11 @@ const AIConfigStep = ({
 const BotConfigStep = ({
   clientId,
   onSuccess,
+  onSkip,
 }: {
   clientId: string
   onSuccess: () => void
+  onSkip: () => void
 }) => {
   const [formState, setFormState] = useState<BotConfigFormState>({
     systemPrompt: DEFAULT_SYSTEM_PROMPT,
@@ -424,6 +437,15 @@ const BotConfigStep = ({
         className="w-full mt-6 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
       >
         {isSubmitting ? 'Finalizando...' : 'Finalizar Configuracao'}
+      </button>
+
+      <button
+        type="button"
+        onClick={onSkip}
+        disabled={isSubmitting}
+        className="w-full mt-3 text-sm text-gray-400 hover:text-gray-600 py-2 transition-colors"
+      >
+        Pular e ir para o Dashboard
       </button>
     </div>
   )
@@ -502,6 +524,7 @@ function OnboardingContent() {
             <AIConfigStep
               clientId={clientId}
               onSuccess={() => navigateToStep('bot-config')}
+              onSkip={() => navigateToStep('bot-config')}
             />
           )}
 
@@ -509,6 +532,7 @@ function OnboardingContent() {
             <BotConfigStep
               clientId={clientId}
               onSuccess={() => navigateToStep('done')}
+              onSkip={() => router.push('/dashboard')}
             />
           )}
 
