@@ -49,6 +49,43 @@ export async function POST(request: NextRequest) {
     const supabase = createServiceRoleClient();
 
     // ========================================
+    // 0. Pré-checar se email já existe (evita criar vault/client sem necessidade)
+    // ========================================
+    const { data: existingProfile } = await (supabase as any)
+      .from("user_profiles")
+      .select("id")
+      .eq("email", email.toLowerCase().trim())
+      .maybeSingle();
+
+    if (existingProfile?.id) {
+      // Email encontrado na tabela user_profiles — verificar se o auth user está confirmado
+      const { data: existingAuthUser } = await supabase.auth.admin.getUserById(
+        existingProfile.id,
+      );
+      const isConfirmed = !!existingAuthUser?.user?.email_confirmed_at;
+
+      if (isConfirmed) {
+        return NextResponse.json(
+          {
+            error:
+              "Este email já está cadastrado. Faça login ou use outro email.",
+          },
+          { status: 409 },
+        );
+      } else {
+        return NextResponse.json(
+          {
+            error:
+              "Você já tentou criar uma conta com este email mas não confirmou. Reenvie o email de confirmação.",
+            unconfirmedExists: true,
+            email,
+          },
+          { status: 409 },
+        );
+      }
+    }
+
+    // ========================================
     // 1. Gerar slug único para o cliente
     // ========================================
     const baseSlug = companyName
@@ -257,6 +294,42 @@ export async function POST(request: NextRequest) {
         authError?.code === "email_exists";
 
       if (isEmailTaken) {
+        // Verificar se é usuário não-confirmado (conta incompleta) ou conta ativa
+        const { data: orphanCheck } = await (supabase as any)
+          .from("user_profiles")
+          .select("id")
+          .eq("email", email.toLowerCase().trim())
+          .maybeSingle();
+
+        if (orphanCheck?.id) {
+          const { data: orphanAuthUser } =
+            await supabase.auth.admin.getUserById(orphanCheck.id);
+          const isConfirmed = !!orphanAuthUser?.user?.email_confirmed_at;
+          if (!isConfirmed) {
+            return NextResponse.json(
+              {
+                error:
+                  "Você já tentou criar uma conta com este email mas não confirmou. Reenvie o email de confirmação.",
+                unconfirmedExists: true,
+                email,
+              },
+              { status: 409 },
+            );
+          }
+        } else {
+          // Auth user existe mas sem perfil (caso raro de rollback falho anterior)
+          // Trata como não-confirmado para o usuário conseguir tentar novamente
+          return NextResponse.json(
+            {
+              error:
+                "Você já tentou criar uma conta com este email mas não confirmou. Reenvie o email de confirmação.",
+              unconfirmedExists: true,
+              email,
+            },
+            { status: 409 },
+          );
+        }
+
         return NextResponse.json(
           {
             error:

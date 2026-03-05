@@ -1,65 +1,77 @@
-'use client'
+"use client";
 
-import { useState, FormEvent } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { apiFetch } from '@/lib/api'
+import { apiFetch } from "@/lib/api";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { FormEvent, useState } from "react";
 
-/**
- * Página de Registro - Supabase Auth
- *
- * Features:
- * - Cria novo usuário com email/senha
- * - Gera automaticamente um novo client_id
- * - Cria registro em clients e user_profiles
- * - Validação client-side
- * - Error handling
- * - Redirect para dashboard após registro
- *
- * IMPORTANTE: Cada novo usuário = novo cliente (tenant) isolado
- */
 export default function RegisterPage() {
-  const router = useRouter()
+  const router = useRouter();
   const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
-    companyName: '',
-    password: '',
-    confirmPassword: '',
-  })
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+    fullName: "",
+    email: "",
+    phone: "",
+    companyName: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [unconfirmedEmail, setUnconfirmedEmail] = useState<string | null>(null);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
+
+  const handleResend = async () => {
+    if (!unconfirmedEmail) return;
+    setResendLoading(true);
+    setResendSuccess(false);
+    try {
+      const res = await apiFetch("/api/auth/resend-confirmation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: unconfirmedEmail }),
+      });
+      if (res.ok) {
+        setResendSuccess(true);
+      } else {
+        setError("Erro ao reenviar email. Tente novamente.");
+      }
+    } catch {
+      setError("Erro ao reenviar email. Tente novamente.");
+    } finally {
+      setResendLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setError(null)
-    setLoading(true)
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
 
     try {
       // Validação básica
       if (!formData.fullName || !formData.email || !formData.password) {
-        setError('Por favor, preencha todos os campos obrigatórios')
-        setLoading(false)
-        return
+        setError("Por favor, preencha todos os campos obrigatórios");
+        setLoading(false);
+        return;
       }
 
       if (formData.password.length < 8) {
-        setError('A senha deve ter pelo menos 8 caracteres')
-        setLoading(false)
-        return
+        setError("A senha deve ter pelo menos 8 caracteres");
+        setLoading(false);
+        return;
       }
 
       if (formData.password !== formData.confirmPassword) {
-        setError('As senhas não coincidem')
-        setLoading(false)
-        return
+        setError("As senhas não coincidem");
+        setLoading(false);
+        return;
       }
 
       // Chamar API de registro
-      const response = await apiFetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await apiFetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           fullName: formData.fullName,
           email: formData.email,
@@ -67,42 +79,51 @@ export default function RegisterPage() {
           companyName: formData.companyName || formData.fullName,
           password: formData.password,
         }),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || 'Erro ao criar conta')
-        setLoading(false)
-        return
+        if (data.unconfirmedExists) {
+          setUnconfirmedEmail(data.email ?? formData.email);
+          setError(null);
+        } else {
+          setError(data.error || "Erro ao criar conta");
+        }
+        setLoading(false);
+        return;
       }
 
       // Handle email confirmation required
       if (data.requiresConfirmation) {
-        router.push(`/check-email?email=${encodeURIComponent(data.email ?? formData.email)}`)
-        return
+        router.push(
+          `/check-email?email=${encodeURIComponent(
+            data.email ?? formData.email,
+          )}`,
+        );
+        return;
       }
 
       // Legacy: If received session (should not happen with new flow, but keep for safety)
       if (data.session) {
-        const { createBrowserClient } = await import('@supabase/ssr')
+        const { createBrowserClient } = await import("@supabase/ssr");
         const supabase = createBrowserClient(
           process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        )
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        );
         await supabase.auth.setSession({
           access_token: data.session.access_token,
           refresh_token: data.session.refresh_token,
-        })
+        });
       }
 
-      router.push('/dashboard')
-      router.refresh()
+      router.push("/dashboard");
+      router.refresh();
     } catch (err) {
-      setError('Erro inesperado ao criar conta. Tente novamente.')
-      setLoading(false)
+      setError("Erro inesperado ao criar conta. Tente novamente.");
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-card to-background relative overflow-hidden py-8">
@@ -128,6 +149,47 @@ export default function RegisterPage() {
             Registre-se para começar a usar o portal
           </p>
         </div>
+
+        {/* Unconfirmed email — resend prompt */}
+        {unconfirmedEmail && !resendSuccess && (
+          <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg space-y-3">
+            <p className="text-sm text-yellow-400">
+              Você já tentou criar uma conta com{" "}
+              <strong>{unconfirmedEmail}</strong> mas não confirmou o email.
+            </p>
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={resendLoading}
+              className="w-full bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/40 text-yellow-300 font-medium py-2 px-4 rounded-lg text-sm transition-all disabled:opacity-50"
+            >
+              {resendLoading ? "Enviando..." : "Reenviar email de confirmação"}
+            </button>
+            <p className="text-xs text-muted-foreground text-center">
+              Ou{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  setUnconfirmedEmail(null);
+                  setFormData((f) => ({ ...f, email: "" }));
+                }}
+                className="text-primary hover:underline"
+              >
+                use outro email
+              </button>
+            </p>
+          </div>
+        )}
+
+        {/* Resend success */}
+        {resendSuccess && (
+          <div className="mb-6 p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+            <p className="text-sm text-green-400">
+              Email reenviado! Verifique sua caixa de entrada (e a pasta de
+              spam).
+            </p>
+          </div>
+        )}
 
         {/* Error Alert */}
         {error && (
@@ -247,7 +309,9 @@ export default function RegisterPage() {
               required
               minLength={8}
             />
-            <p className="text-xs text-muted-foreground/60 mt-1">Mínimo 8 caracteres</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">
+              Mínimo 8 caracteres
+            </p>
           </div>
 
           {/* Confirm Password */}
@@ -279,20 +343,23 @@ export default function RegisterPage() {
             disabled={loading}
             className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/80 hover:to-primary text-primary-foreground font-semibold py-3 px-4 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/30 hover:scale-[1.02] mt-6"
           >
-            {loading ? 'Criando conta...' : 'Criar Conta'}
+            {loading ? "Criando conta..." : "Criar Conta"}
           </button>
         </form>
 
         {/* Footer */}
         <div className="mt-6 text-center text-sm text-muted-foreground">
           <p>
-            Já tem uma conta?{' '}
-            <Link href="/login" className="text-primary hover:text-primary/80 font-medium hover:underline transition-colors">
+            Já tem uma conta?{" "}
+            <Link
+              href="/login"
+              className="text-primary hover:text-primary/80 font-medium hover:underline transition-colors"
+            >
               Faça login
             </Link>
           </p>
         </div>
       </div>
     </div>
-  )
+  );
 }
