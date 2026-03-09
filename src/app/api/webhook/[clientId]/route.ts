@@ -18,6 +18,7 @@ import { processChatbotMessage } from "@/flows/chatbotFlow";
 import { getClientConfig } from "@/lib/config";
 import { checkDuplicateMessage, markMessageAsProcessed } from "@/lib/dedup";
 import { createExecutionLogger } from "@/lib/logger";
+import { sendIncomingMessagePushWithTimeout } from "@/lib/push-dispatch";
 import { addWebhookMessage } from "@/lib/webhookCache";
 import { parseInteractiveMessage } from "@/lib/whatsapp/interactiveMessages";
 import { updateMessageReaction } from "@/nodes/updateMessageReaction";
@@ -26,6 +27,31 @@ import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
+
+const extractIncomingPreview = (message: any): string => {
+  if (!message) return "Você recebeu uma nova mensagem";
+
+  if (typeof message.text?.body === "string" && message.text.body.trim()) {
+    return message.text.body;
+  }
+  if (typeof message.image?.caption === "string" && message.image.caption.trim()) {
+    return message.image.caption;
+  }
+  if (typeof message.document?.caption === "string" && message.document.caption.trim()) {
+    return message.document.caption;
+  }
+
+  const byType: Record<string, string> = {
+    audio: "🎤 Áudio recebido",
+    image: "🖼️ Imagem recebida",
+    document: "📎 Documento recebido",
+    video: "🎥 Vídeo recebido",
+    sticker: "🙂 Sticker recebido",
+    interactive: "🧩 Resposta interativa recebida",
+  };
+
+  return byType[message.type] || "Você recebeu uma nova mensagem";
+};
 
 /**
  * GET - Webhook verification (Meta)
@@ -458,12 +484,36 @@ export async function POST(
       }
     }
 
-    // 5. Processar mensagem com config do cliente
+    // 5. Preparar payload de push (independente do sucesso do flow)
+    const value = body?.entry?.[0]?.changes?.[0]?.value;
+    const incomingMessage = value?.messages?.[0];
+    const incomingPhone = incomingMessage?.from;
+    const incomingName =
+      value?.contacts?.[0]?.profile?.name || value?.contacts?.[0]?.wa_id || null;
+    const pushPayload =
+      incomingMessage && incomingPhone
+        ? {
+            clientId,
+            phone: incomingPhone,
+            customerName: incomingName,
+            messagePreview: extractIncomingPreview(incomingMessage),
+          }
+        : null;
 
+    // 6. Processar mensagem com config do cliente
     try {
-      const result = await processChatbotMessage(body, config);
+      await processChatbotMessage(body, config);
     } catch (flowError) {
       // Flow error - continue and return 200 (Meta requires this)
+    }
+
+    // 7. Disparar push sem comprometer o webhook principal
+    if (pushPayload) {
+      try {
+        await sendIncomingMessagePushWithTimeout(pushPayload, 1800);
+      } catch (pushError) {
+        console.warn("[webhook] push dispatch failed", pushError);
+      }
     }
 
     return new NextResponse("EVENT_RECEIVED", { status: 200 });

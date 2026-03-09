@@ -1,4 +1,5 @@
 apply plugin: 'com.android.application'
+import groovy.json.JsonSlurper
 
 // ============================================================================
 // Configuração de Signing (Keystore) para Release
@@ -12,14 +13,14 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace "com.chatbot.app"
+    namespace "com.uzzai.uzzapp"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.chatbot.app"
+        applicationId "com.uzzai.uzzapp"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode 6
+        versionName "2.0.0-internal.6"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -86,8 +87,21 @@ apply from: 'capacitor.build.gradle'
 
 try {
     def servicesJSON = file('google-services.json')
-    if (servicesJSON.text) {
-        apply plugin: 'com.google.gms.google-services'
+    if (servicesJSON.exists() && servicesJSON.text) {
+        def targetAppId = android.defaultConfig.applicationId
+        def parsed = new JsonSlurper().parseText(servicesJSON.text)
+        def hasMatchingClient = parsed?.client?.any { client ->
+            client?.client_info?.android_client_info?.package_name == targetAppId
+        }
+
+        if (hasMatchingClient) {
+            apply plugin: 'com.google.gms.google-services'
+        } else {
+            logger.warn("google-services.json found, but no matching package_name for ${targetAppId}.")
+            logger.warn("Skipping google-services plugin. Push notifications may not work until Firebase is reconfigured.")
+        }
+    } else {
+        logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
     }
 } catch(Exception e) {
     logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")

@@ -6,6 +6,7 @@ import { DeepLinkingProvider } from '@/components/DeepLinkingProvider'
 import { PushNotificationsProvider } from '@/components/PushNotificationsProvider'
 import { NotificationManager } from '@/components/NotificationManager'
 import { ThemeProvider } from '@/components/ThemeProvider'
+import { MobileViewportProvider } from '@/components/MobileViewportProvider'
 
 // Fontes UZZ.AI
 const poppins = Poppins({
@@ -40,9 +41,9 @@ export const metadata: Metadata = {
   title: 'UzzApp - WhatsApp Dashboard',
   description: 'Dashboard para gerenciamento de conversas WhatsApp',
   icons: {
-    icon: '/favcon.ico',
-    shortcut: '/favcon.ico',
-    apple: '/favcon.ico',
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/favicon.ico',
   },
 }
 
@@ -63,8 +64,8 @@ export default function RootLayout({
     <html lang="pt-BR" suppressHydrationWarning className={`${poppins.variable} ${inter.variable} ${exo2.variable} ${firaCode.variable}`}>
       <head>
         {/* Fallback link for browsers that don't read metadata.icons */}
-        <link rel="icon" href="/favcon.ico" />
-        <link rel="shortcut icon" href="/favcon.ico" />
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="shortcut icon" href="/favicon.ico" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="application-name" content="UzzApp" />
         <meta name="apple-mobile-web-app-title" content="UzzApp" />
@@ -78,12 +79,14 @@ export default function RootLayout({
           themes={['dark', 'light']}
           storageKey="uzzapp-theme"
         >
-          <DeepLinkingProvider>
-            <PushNotificationsProvider>
-              <NotificationManager enabled={true} />
-              {children}
-            </PushNotificationsProvider>
-          </DeepLinkingProvider>
+          <MobileViewportProvider>
+            <DeepLinkingProvider>
+              <PushNotificationsProvider>
+                <NotificationManager enabled={true} />
+                {children}
+              </PushNotificationsProvider>
+            </DeepLinkingProvider>
+          </MobileViewportProvider>
           <Toaster />
         </ThemeProvider>
       </body>
