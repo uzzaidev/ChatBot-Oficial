@@ -9,7 +9,7 @@ interface MetaOAuthConfig {
   appId: string;
   appSecret: string;
   redirectUri: string;
-  configId: string; // Embedded Signup Configuration ID
+  configId: string | null;
 }
 
 interface WABADetails {
@@ -31,12 +31,17 @@ export const getMetaOAuthURL = (state: string): string => {
     client_id: config.appId,
     redirect_uri: config.redirectUri,
     state, // CSRF protection
-    config_id: config.configId, // Embedded Signup Configuration ID
+    scope:
+      "whatsapp_business_messaging,whatsapp_business_management,business_management",
     response_type: "code",
-    override_default_response_type: "true",
   });
 
-  // Embedded Signup OAuth URL
+  // Add config_id for Embedded Signup if available
+  if (config.configId) {
+    params.set("config_id", config.configId);
+    params.set("override_default_response_type", "true");
+  }
+
   return `https://www.facebook.com/v22.0/dialog/oauth?${params.toString()}`;
 };
 
@@ -161,16 +166,10 @@ const getOAuthConfig = (): MetaOAuthConfig => {
   const appId = process.env.META_PLATFORM_APP_ID;
   const appSecret = process.env.META_PLATFORM_APP_SECRET;
   const baseUrl = process.env.NEXT_PUBLIC_URL || "https://uzzapp.uzzai.com.br";
-  const configId = process.env.META_EMBEDDED_SIGNUP_CONFIG_ID;
+  const configId = process.env.META_EMBEDDED_SIGNUP_CONFIG_ID || null;
 
   if (!appId || !appSecret) {
     throw new Error("Missing META_PLATFORM_APP_ID or META_PLATFORM_APP_SECRET");
-  }
-
-  if (!configId) {
-    throw new Error(
-      "Missing META_EMBEDDED_SIGNUP_CONFIG_ID - required for Embedded Signup",
-    );
   }
 
   return {
