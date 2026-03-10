@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { PrintButton } from './PrintButton'
 
 export const metadata: Metadata = {
   title: 'Acordo de Processamento de Dados (DPA) — UZZ.AI',
@@ -213,13 +214,7 @@ export default function DpaPage() {
                 Versão 1.0 — Atualizado em 10 de março de 2026
               </p>
             </div>
-            <a
-              href="/docs/dpa"
-              className="shrink-0 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors print:hidden"
-              onClick={() => window.print()}
-            >
-              Imprimir / Salvar PDF
-            </a>
+            <PrintButton />
           </div>
         </div>
       </div>
