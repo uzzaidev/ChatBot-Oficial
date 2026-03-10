@@ -127,9 +127,7 @@ export const exchangeGoogleCodeForTokens = async (
       userInfoRes.status,
       userInfoError,
     );
-    throw new Error(
-      `Failed to fetch Google user info: ${userInfoRes.status}`,
-    );
+    throw new Error(`Failed to fetch Google user info: ${userInfoRes.status}`);
   }
 
   const userInfo = await userInfoRes.json();
