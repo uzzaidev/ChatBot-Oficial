@@ -49,9 +49,24 @@ export async function GET(request: NextRequest) {
     const cookieStore = await cookies();
     const storedState = cookieStore.get("google_calendar_oauth_state")?.value;
 
+    console.log(
+      "[Google Calendar Callback] Cookie present:",
+      !!storedState,
+      "| State param (first 20):",
+      state.substring(0, 20) + "...",
+    );
+    if (storedState) {
+      console.log(
+        "[Google Calendar Callback] Cookie (first 20):",
+        storedState.substring(0, 20) + "...",
+        "| Match:",
+        storedState === state,
+      );
+    }
+
     if (!storedState || storedState !== state) {
       console.error(
-        "[Google Calendar Callback] Invalid state (CSRF protection)",
+        "[Google Calendar Callback] CSRF failed — cookie missing or mismatch",
       );
       return NextResponse.redirect(
         `${BASE_URL}/dashboard/calendar?error=csrf_failed`,

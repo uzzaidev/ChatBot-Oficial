@@ -10,7 +10,6 @@ import {
   getGoogleCalendarOAuthURL,
 } from "@/lib/google-calendar-oauth";
 import { createRouteHandlerClient } from "@/lib/supabase-server";
-import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -45,9 +44,16 @@ export async function GET(request: NextRequest) {
     // 3. Generate CSRF state with embedded clientId
     const state = generateCalendarOAuthState(profile.client_id);
 
-    // 4. Store state in secure HTTP-only cookie
-    const cookieStore = await cookies();
-    cookieStore.set("google_calendar_oauth_state", state, {
+    // 4. Store state in secure HTTP-only cookie on the redirect response
+    const oauthURL = getGoogleCalendarOAuthURL(state);
+    console.log("[Google Calendar OAuth Init] Redirecting user:", user.email);
+    console.log(
+      "[Google Calendar OAuth Init] State (first 20):",
+      state.substring(0, 20) + "...",
+    );
+
+    const response = NextResponse.redirect(oauthURL);
+    response.cookies.set("google_calendar_oauth_state", state, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
@@ -55,11 +61,7 @@ export async function GET(request: NextRequest) {
       path: "/",
     });
 
-    // 5. Redirect to Google OAuth
-    const oauthURL = getGoogleCalendarOAuthURL(state);
-    console.log("[Google Calendar OAuth Init] Redirecting user:", user.email);
-
-    return NextResponse.redirect(oauthURL);
+    return response;
   } catch (error) {
     console.error("[Google Calendar OAuth Init] Error:", error);
     return NextResponse.json(

@@ -8,7 +8,6 @@
 import { generateCalendarOAuthState } from "@/lib/google-calendar-oauth";
 import { getMicrosoftCalendarOAuthURL } from "@/lib/microsoft-calendar-oauth";
 import { createRouteHandlerClient } from "@/lib/supabase-server";
-import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -43,9 +42,15 @@ export async function GET(request: NextRequest) {
     // 3. Generate CSRF state with embedded clientId
     const state = generateCalendarOAuthState(profile.client_id);
 
-    // 4. Store state in secure HTTP-only cookie
-    const cookieStore = await cookies();
-    cookieStore.set("microsoft_calendar_oauth_state", state, {
+    // 4. Store state in secure HTTP-only cookie on the redirect response
+    const oauthURL = getMicrosoftCalendarOAuthURL(state);
+    console.log(
+      "[Microsoft Calendar OAuth Init] Redirecting user:",
+      user.email,
+    );
+
+    const response = NextResponse.redirect(oauthURL);
+    response.cookies.set("microsoft_calendar_oauth_state", state, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
@@ -53,14 +58,7 @@ export async function GET(request: NextRequest) {
       path: "/",
     });
 
-    // 5. Redirect to Microsoft OAuth
-    const oauthURL = getMicrosoftCalendarOAuthURL(state);
-    console.log(
-      "[Microsoft Calendar OAuth Init] Redirecting user:",
-      user.email,
-    );
-
-    return NextResponse.redirect(oauthURL);
+    return response;
   } catch (error) {
     console.error("[Microsoft Calendar OAuth Init] Error:", error);
     return NextResponse.json(
