@@ -8,8 +8,8 @@
  * Use createServerClient() para ter acesso ao Vault.
  */
 
-import { createServerClient } from './supabase'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { createServerClient } from "./supabase";
 
 /**
  * Cria um secret no Vault e retorna o ID
@@ -22,32 +22,33 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 export const createSecret = async (
   secretValue: string,
   secretName: string,
-  description?: string
+  description?: string,
 ): Promise<string> => {
   try {
-    const supabase = await createServerClient()
+    const supabase = await createServerClient();
 
     // @ts-ignore - RPC custom function
-    const { data, error } = await supabase.rpc('create_client_secret', {
+    const { data, error } = await supabase.rpc("create_client_secret", {
       secret_value: secretValue,
       secret_name: secretName,
       secret_description: description || null,
-    })
+    });
 
     if (error) {
-      throw new Error(`Failed to create secret: ${error.message}`)
+      throw new Error(`Failed to create secret: ${error.message}`);
     }
 
     if (!data) {
-      throw new Error('No secret ID returned from Vault')
+      throw new Error("No secret ID returned from Vault");
     }
 
-    return data
+    return data;
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    throw new Error(`Failed to create secret in Vault: ${errorMessage}`)
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    throw new Error(`Failed to create secret in Vault: ${errorMessage}`);
   }
-}
+};
 
 /**
  * Lê um secret descriptografado do Vault
@@ -58,26 +59,27 @@ export const createSecret = async (
 export const getSecret = async (secretId: string): Promise<string | null> => {
   try {
     if (!secretId) {
-      return null
+      return null;
     }
 
-    const supabase = await createServerClient()
+    const supabase = await createServerClient();
 
     // @ts-ignore - RPC custom function
-    const { data, error } = await supabase.rpc('get_client_secret', {
+    const { data, error } = await supabase.rpc("get_client_secret", {
       secret_id: secretId,
-    })
+    });
 
     if (error) {
-      throw new Error(`Failed to read secret: ${error.message}`)
+      throw new Error(`Failed to read secret: ${error.message}`);
     }
 
-    return data
+    return data;
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    return null
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    return null;
   }
-}
+};
 
 /**
  * Atualiza um secret existente no Vault
@@ -88,27 +90,28 @@ export const getSecret = async (secretId: string): Promise<string | null> => {
  */
 export const updateSecret = async (
   secretId: string,
-  newValue: string
+  newValue: string,
 ): Promise<boolean> => {
   try {
-    const supabase = await createServerClient()
+    const supabase = await createServerClient();
 
     // @ts-ignore - RPC custom function
-    const { data, error} = await supabase.rpc('update_client_secret', {
+    const { data, error } = await supabase.rpc("update_client_secret", {
       secret_id: secretId,
       new_secret_value: newValue,
-    })
+    });
 
     if (error) {
-      throw new Error(`Failed to update secret: ${error.message}`)
+      throw new Error(`Failed to update secret: ${error.message}`);
     }
 
-    return data === true
+    return data === true;
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    throw new Error(`Failed to update secret in Vault: ${errorMessage}`)
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    throw new Error(`Failed to update secret in Vault: ${errorMessage}`);
   }
-}
+};
 
 /**
  * Lê múltiplos secrets em paralelo (otimizado)
@@ -117,26 +120,29 @@ export const updateSecret = async (
  * @returns Array de valores descriptografados (mesma ordem)
  */
 export const getSecretsParallel = async (
-  secretIds: (string | null)[]
+  secretIds: (string | null)[],
 ): Promise<(string | null)[]> => {
   try {
-    const promises = secretIds.map((id) => (id ? getSecret(id) : Promise.resolve(null)))
-    return await Promise.all(promises)
+    const promises = secretIds.map((id) =>
+      id ? getSecret(id) : Promise.resolve(null),
+    );
+    return await Promise.all(promises);
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    throw new Error(`Failed to read secrets in parallel: ${errorMessage}`)
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    throw new Error(`Failed to read secrets in parallel: ${errorMessage}`);
   }
-}
+};
 
 /**
  * Interface para secrets de um cliente
  */
 export interface ClientSecrets {
-  metaAccessToken: string
-  metaVerifyToken: string
-  metaAppSecret: string | null // SECURITY FIX (VULN-012): App Secret for HMAC validation
-  openaiApiKey: string | null
-  groqApiKey: string | null
+  metaAccessToken: string;
+  metaVerifyToken: string;
+  metaAppSecret: string | null; // SECURITY FIX (VULN-012): App Secret for HMAC validation
+  openaiApiKey: string | null;
+  groqApiKey: string | null;
 }
 
 /**
@@ -149,25 +155,31 @@ export interface ClientSecrets {
 export const getClientSecrets = async (
   supabase: SupabaseClient,
   client: {
-    meta_access_token_secret_id: string
-    meta_verify_token_secret_id: string
-    meta_app_secret_secret_id?: string | null
-    openai_api_key_secret_id?: string | null
-    groq_api_key_secret_id?: string | null
-  }
+    meta_access_token_secret_id: string;
+    meta_verify_token_secret_id: string;
+    meta_app_secret_secret_id?: string | null;
+    openai_api_key_secret_id?: string | null;
+    groq_api_key_secret_id?: string | null;
+  },
 ): Promise<ClientSecrets> => {
   try {
     // Buscar todos os secrets em paralelo para performance
-    const [metaAccessToken, metaVerifyToken, metaAppSecret, openaiApiKey, groqApiKey] = await getSecretsParallel([
+    const [
+      metaAccessToken,
+      metaVerifyToken,
+      metaAppSecret,
+      openaiApiKey,
+      groqApiKey,
+    ] = await getSecretsParallel([
       client.meta_access_token_secret_id,
       client.meta_verify_token_secret_id,
       client.meta_app_secret_secret_id || null,
       client.openai_api_key_secret_id || null,
       client.groq_api_key_secret_id || null,
-    ])
+    ]);
 
     if (!metaAccessToken || !metaVerifyToken) {
-      throw new Error('Missing required Meta secrets')
+      throw new Error("Missing required Meta secrets");
     }
 
     return {
@@ -176,12 +188,13 @@ export const getClientSecrets = async (
       metaAppSecret,
       openaiApiKey,
       groqApiKey,
-    }
+    };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    throw new Error(`Failed to get client secrets: ${errorMessage}`)
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    throw new Error(`Failed to get client secrets: ${errorMessage}`);
   }
-}
+};
 
 /**
  * Valida se um secret existe e é válido
@@ -191,12 +204,12 @@ export const getClientSecrets = async (
  */
 export const validateSecret = async (secretId: string): Promise<boolean> => {
   try {
-    const value = await getSecret(secretId)
-    return value !== null && value.length > 0
+    const value = await getSecret(secretId);
+    return value !== null && value.length > 0;
   } catch {
-    return false
+    return false;
   }
-}
+};
 
 /**
  * Gera um token seguro para verify_token
@@ -204,13 +217,14 @@ export const validateSecret = async (secretId: string): Promise<boolean> => {
  * @returns Token aleatório de 32 caracteres
  */
 export const generateSecureToken = (): string => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'
-  let token = ''
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+  let token = "";
   for (let i = 0; i < 32; i++) {
-    token += chars.charAt(Math.floor(Math.random() * chars.length))
+    token += chars.charAt(Math.floor(Math.random() * chars.length));
   }
-  return token
-}
+  return token;
+};
 
 // =====================================================
 // MULTI-TENANT CREDENTIAL ISOLATION
@@ -220,8 +234,8 @@ export const generateSecureToken = (): string => {
  * Interface para credenciais de API do cliente do Vault
  */
 export interface ClientAPICredentials {
-  openaiApiKey: string | null
-  groqApiKey: string | null
+  openaiApiKey: string | null;
+  groqApiKey: string | null;
 }
 
 /**
@@ -243,39 +257,40 @@ export interface ClientAPICredentials {
  * @throws Error se o cliente não existir
  */
 export const getClientVaultCredentials = async (
-  clientId: string
+  clientId: string,
 ): Promise<ClientAPICredentials> => {
   try {
-    const supabase = await createServerClient()
+    const supabase = await createServerClient();
 
     // Buscar IDs dos secrets do cliente
     const { data: client, error } = await supabase
-      .from('clients')
-      .select('openai_api_key_secret_id, groq_api_key_secret_id')
-      .eq('id', clientId)
-      .single()
+      .from("clients")
+      .select("openai_api_key_secret_id, groq_api_key_secret_id")
+      .eq("id", clientId)
+      .single();
 
     if (error || !client) {
-      throw new Error(`Client not found: ${clientId}`)
+      throw new Error(`Client not found: ${clientId}`);
     }
 
     // Descriptografar secrets em paralelo (performance)
     const [openaiApiKey, groqApiKey] = await getSecretsParallel([
       client.openai_api_key_secret_id || null,
       client.groq_api_key_secret_id || null,
-    ])
+    ]);
 
     // Vault credentials retrieved successfully
 
     return {
       openaiApiKey,
       groqApiKey,
-    }
+    };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    throw new Error(`Failed to get client Vault credentials: ${errorMessage}`)
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    throw new Error(`Failed to get client Vault credentials: ${errorMessage}`);
   }
-}
+};
 
 /**
  * 🔐 Busca chave OpenAI DIRETAMENTE do Vault do cliente
@@ -287,38 +302,43 @@ export const getClientVaultCredentials = async (
  * @throws Error se o cliente não existir
  */
 export const getClientOpenAIKey = async (
-  clientId: string
+  clientId: string,
 ): Promise<string | null> => {
   try {
-    const supabase = await createServerClient()
+    const supabase = await createServerClient();
 
     // Buscar ID do secret OpenAI do cliente
     const { data: client, error } = await supabase
-      .from('clients')
-      .select('openai_api_key_secret_id')
-      .eq('id', clientId)
-      .single()
+      .from("clients")
+      .select("openai_api_key_secret_id")
+      .eq("id", clientId)
+      .single();
 
     if (error || !client) {
-      throw new Error(`Client not found: ${clientId}`)
+      throw new Error(`Client not found: ${clientId}`);
     }
 
     if (!client.openai_api_key_secret_id) {
-      console.warn('[Vault] Client has no OpenAI API key configured', { clientId })
-      return null
+      console.warn("[Vault] Client has no OpenAI API key configured", {
+        clientId,
+      });
+      return null;
     }
 
     // Descriptografar secret
-    const openaiApiKey = await getSecret(client.openai_api_key_secret_id)
+    const openaiApiKey = await getSecret(client.openai_api_key_secret_id);
 
     // Vault OpenAI key retrieved successfully
 
-    return openaiApiKey
+    return openaiApiKey;
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    throw new Error(`Failed to get client OpenAI key from Vault: ${errorMessage}`)
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    throw new Error(
+      `Failed to get client OpenAI key from Vault: ${errorMessage}`,
+    );
   }
-}
+};
 
 /**
  * 🔐 Busca chave OpenAI ADMIN DIRETAMENTE do Vault do cliente
@@ -331,33 +351,114 @@ export const getClientOpenAIKey = async (
  * @throws Error se o cliente não existir
  */
 export const getClientOpenAIAdminKey = async (
-  clientId: string
+  clientId: string,
 ): Promise<string | null> => {
   try {
-    const supabase = await createServerClient()
+    const supabase = await createServerClient();
 
     // Buscar ID do secret OpenAI Admin do cliente
     const { data: client, error } = await supabase
-      .from('clients')
-      .select('openai_admin_key_secret_id')
-      .eq('id', clientId)
-      .single()
+      .from("clients")
+      .select("openai_admin_key_secret_id")
+      .eq("id", clientId)
+      .single();
 
     if (error || !client) {
-      throw new Error(`Client not found: ${clientId}`)
+      throw new Error(`Client not found: ${clientId}`);
     }
 
     if (!client.openai_admin_key_secret_id) {
-      console.warn('[Vault] Client has no OpenAI Admin key configured', { clientId })
-      return null
+      console.warn("[Vault] Client has no OpenAI Admin key configured", {
+        clientId,
+      });
+      return null;
     }
 
     // Descriptografar secret
-    const openaiAdminKey = await getSecret(client.openai_admin_key_secret_id)
+    const openaiAdminKey = await getSecret(client.openai_admin_key_secret_id);
 
-    return openaiAdminKey
+    return openaiAdminKey;
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    throw new Error(`Failed to get client OpenAI Admin key from Vault: ${errorMessage}`)
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    throw new Error(
+      `Failed to get client OpenAI Admin key from Vault: ${errorMessage}`,
+    );
   }
+};
+
+// =====================================================
+// CALENDAR OAUTH TOKEN MANAGEMENT
+// =====================================================
+
+export interface ClientCalendarTokens {
+  google: { accessToken: string | null; refreshToken: string | null } | null;
+  microsoft: { accessToken: string | null; refreshToken: string | null } | null;
 }
+
+/**
+ * 📅 Busca tokens de calendário do cliente do Vault
+ *
+ * @param clientId - UUID do cliente
+ * @returns Tokens descriptografados para Google e/ou Microsoft Calendar
+ */
+export const getClientCalendarTokens = async (
+  clientId: string,
+): Promise<ClientCalendarTokens> => {
+  try {
+    const supabase = await createServerClient();
+
+    const { data: client, error } = await supabase
+      .from("clients")
+      .select(
+        "google_calendar_enabled, google_calendar_token_secret_id, google_calendar_refresh_token_secret_id, microsoft_calendar_enabled, microsoft_calendar_token_secret_id, microsoft_calendar_refresh_token_secret_id",
+      )
+      .eq("id", clientId)
+      .single();
+
+    if (error || !client) {
+      throw new Error(`Client not found: ${clientId}`);
+    }
+
+    const secretIds: (string | null)[] = [
+      client.google_calendar_token_secret_id || null,
+      client.google_calendar_refresh_token_secret_id || null,
+      client.microsoft_calendar_token_secret_id || null,
+      client.microsoft_calendar_refresh_token_secret_id || null,
+    ];
+
+    const [googleAccess, googleRefresh, msAccess, msRefresh] =
+      await getSecretsParallel(secretIds);
+
+    return {
+      google: client.google_calendar_enabled
+        ? { accessToken: googleAccess, refreshToken: googleRefresh }
+        : null,
+      microsoft: client.microsoft_calendar_enabled
+        ? { accessToken: msAccess, refreshToken: msRefresh }
+        : null,
+    };
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    throw new Error(
+      `Failed to get client calendar tokens from Vault: ${errorMessage}`,
+    );
+  }
+};
+
+/**
+ * 📅 Atualiza um token de calendário no Vault
+ *
+ * Usado para auto-refresh de access tokens expirados.
+ *
+ * @param secretId - UUID do secret no Vault
+ * @param newToken - Novo token (será criptografado)
+ * @returns true se atualizado com sucesso
+ */
+export const updateCalendarToken = async (
+  secretId: string,
+  newToken: string,
+): Promise<boolean> => {
+  return updateSecret(secretId, newToken);
+};

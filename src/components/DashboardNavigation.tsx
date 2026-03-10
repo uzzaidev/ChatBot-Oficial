@@ -14,6 +14,7 @@ import {
   BarChart3,
   BookOpen,
   Bot,
+  Calendar,
   CheckCircle,
   ChevronLeft,
   ChevronRight,
@@ -245,6 +246,16 @@ export function DashboardNavigation({
           isCollapsed={isCollapsed}
           onClick={onLinkClick}
           tooltip="Criar fluxos de conversa personalizados"
+        />
+
+        <NavItem
+          href="/dashboard/calendar"
+          icon={<Calendar className="h-5 w-5 flex-shrink-0" />}
+          label="Calendário"
+          isCollapsed={isCollapsed}
+          onClick={onLinkClick}
+          badge="new"
+          tooltip="Conecte Google Calendar ou Microsoft Outlook para o agente gerenciar sua agenda"
         />
 
         {/* SEÇÃO: ANÁLISE */}

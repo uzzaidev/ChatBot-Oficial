@@ -327,6 +327,18 @@ export const getClientConfig = async (
       settings: finalSettings,
       notificationEmail: client.notification_email || undefined,
 
+      // 📅 Calendar Integration
+      calendar: {
+        google: {
+          enabled: client.google_calendar_enabled || false,
+          userEmail: client.google_calendar_user_email || undefined,
+        },
+        microsoft: {
+          enabled: client.microsoft_calendar_enabled || false,
+          userEmail: client.microsoft_calendar_user_email || undefined,
+        },
+      },
+
       // 🤖 Include active agent info for reference
       activeAgent: activeAgent || undefined,
     };
