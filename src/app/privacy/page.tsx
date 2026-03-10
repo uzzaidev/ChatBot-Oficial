@@ -714,10 +714,19 @@ export default function PrivacyPage() {
               é responsável por garantir revisão humana em decisões que possam impactar significativamente
               os usuários finais.
             </p>
+            <p className="text-erie-black-700 leading-relaxed mb-3">
+              13.3 A UZZ.AI <strong>não utiliza</strong> dados de conversas dos CLIENTEs para treinar
+              modelos de IA proprietários ou de terceiros.
+            </p>
             <p className="text-erie-black-700 leading-relaxed">
-              13.3 A UZZ.AI não utiliza conversas dos CLIENTEs para treinar modelos proprietários.
-              Por padrão, os dados enviados via API OpenAI/Groq não são utilizados para treinamento
-              de modelos por esses provedores.
+              13.4 Em relação aos provedores externos: por padrão, dados transmitidos via API para
+              OpenAI e Groq <strong>não são utilizados por esses provedores para treinamento de modelos
+              públicos</strong>, conforme suas políticas de uso de API vigentes. A UZZ.AI monitora
+              eventuais alterações nestas políticas e notificará os CLIENTEs caso ocorram mudanças
+              relevantes. O CLIENTE pode consultar as políticas atuais diretamente em{' '}
+              <a href="https://openai.com/policies/api-data-usage-policies" target="_blank" rel="noopener noreferrer" className="text-mint-600 hover:underline">openai.com/policies</a>
+              {' '}e{' '}
+              <a href="https://groq.com/privacy-policy/" target="_blank" rel="noopener noreferrer" className="text-mint-600 hover:underline">groq.com/privacy-policy</a>.
             </p>
           </section>
 

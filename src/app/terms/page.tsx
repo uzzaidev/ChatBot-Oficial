@@ -398,15 +398,17 @@ export default function TermsPage() {
               10. Disponibilidade e Suporte
             </h2>
             <p className="text-erie-black-700 leading-relaxed mb-3">
-              10.1 A UZZ.AI compromete-se com disponibilidade mínima de 99% mensal (SLA), excluídas
-              manutenções programadas.
+              10.1 A UZZ.AI envidará melhores esforços para manter a Plataforma disponível e operacional,
+              condicionada à disponibilidade tecnológica dos sistemas, provedores de infraestrutura e
+              serviços de terceiros utilizados no momento da prestação.
             </p>
             <p className="text-erie-black-700 leading-relaxed mb-3">
-              10.2 Manutenções serão comunicadas com antecedência mínima de 48 horas.
+              10.2 Manutenções programadas serão comunicadas com antecedência mínima de 48 horas.
             </p>
             <p className="text-erie-black-700 leading-relaxed mb-3">
-              10.3 Excluem-se do SLA as indisponibilidades decorrentes de: (a) manutenções notificadas;
-              (b) falhas de serviços de terceiros; (c) uso inadequado pelo CLIENTE; (d) eventos de força maior.
+              10.3 A UZZ.AI não responde por indisponibilidades decorrentes de: (a) manutenções previamente
+              notificadas; (b) falhas em serviços de terceiros (Meta, OpenAI, Groq, provedores de nuvem);
+              (c) uso inadequado pelo CLIENTE; (d) eventos de força maior.
             </p>
             <p className="text-erie-black-700 leading-relaxed">
               10.4 Suporte técnico disponível via{' '}

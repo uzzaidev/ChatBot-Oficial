@@ -223,15 +223,15 @@ Se o CLIENTE não concordar com qualquer disposição destes Termos, deverá abs
 
 ## 10. DISPONIBILIDADE E SUPORTE
 
-**10.1. SLA (Service Level Agreement).** A UZZ.AI envidará esforços comercialmente razoáveis para manter a Plataforma disponível **99% do tempo em cada mês calendário** (excluídas janelas de manutenção programada).
+**10.1. Disponibilidade.** A UZZ.AI envidará melhores esforços para manter a Plataforma disponível e operacional, condicionada à disponibilidade tecnológica dos sistemas, provedores de infraestrutura e serviços de terceiros utilizados no momento da prestação, sem garantia de percentual mínimo de uptime.
 
 **10.2. Manutenção Programada.** A UZZ.AI notificará o CLIENTE com antecedência mínima de **48 (quarenta e oito) horas** sobre manutenções programadas que causem indisponibilidade, preferencialmente realizadas em horários de baixo uso.
 
-**10.3. Exclusões de SLA.** Não são computadas como indisponibilidade:
+**10.3. Exclusões de Responsabilidade por Indisponibilidade.** A UZZ.AI não responde por indisponibilidades decorrentes de:
 
-- (a) Janelas de manutenção programada previamente notificadas;
-- (b) Indisponibilidades causadas por terceiros (Meta, provedores de IA, infraestrutura de nuvem);
-- (c) Falhas decorrentes de uso inadequado ou configurações incorretas pelo CLIENTE;
+- (a) Manutenções previamente notificadas;
+- (b) Falhas em serviços de terceiros (Meta, provedores de IA, infraestrutura de nuvem);
+- (c) Uso inadequado ou configurações incorretas pelo CLIENTE;
 - (d) Casos de força maior ou caso fortuito.
 
 **10.4. Suporte Técnico.** O CLIENTE terá acesso ao suporte técnico nos níveis e canais definidos pelo plano contratado. O contato de suporte é: suporte@uzzai.com.br.
