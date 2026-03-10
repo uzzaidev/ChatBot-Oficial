@@ -25,7 +25,10 @@ interface GoogleRefreshResponse {
   expiresIn: number;
 }
 
-const GOOGLE_SCOPES = ["https://www.googleapis.com/auth/calendar"];
+const GOOGLE_SCOPES = [
+  "https://www.googleapis.com/auth/calendar",
+  "https://www.googleapis.com/auth/userinfo.email",
+];
 
 const getGoogleOAuthConfig = (): GoogleCalendarOAuthConfig => {
   const clientId = process.env.GOOGLE_CALENDAR_CLIENT_ID;
@@ -118,7 +121,15 @@ export const exchangeGoogleCodeForTokens = async (
   );
 
   if (!userInfoRes.ok) {
-    throw new Error("Failed to fetch Google user info");
+    const userInfoError = await userInfoRes.text();
+    console.error(
+      "[Google Calendar OAuth] Userinfo failed:",
+      userInfoRes.status,
+      userInfoError,
+    );
+    throw new Error(
+      `Failed to fetch Google user info: ${userInfoRes.status}`,
+    );
   }
 
   const userInfo = await userInfoRes.json();
