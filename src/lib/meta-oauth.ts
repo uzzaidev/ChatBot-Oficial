@@ -34,6 +34,7 @@ export const getMetaOAuthURL = (state: string): string => {
     scope:
       "whatsapp_business_messaging,whatsapp_business_management,business_management",
     response_type: "code",
+    auth_type: "rerequest", // Force re-granting all permissions
   });
 
   // NOTE: config_id for Embedded Signup disabled — config 1247304987342255 is
@@ -73,58 +74,165 @@ export const exchangeCodeForToken = async (code: string): Promise<string> => {
 };
 
 /**
+ * Check which permissions were actually granted for a token
+ */
+export const checkTokenPermissions = async (
+  accessToken: string,
+): Promise<string[]> => {
+  const res = await fetch(
+    `https://graph.facebook.com/v22.0/me/permissions?access_token=${accessToken}`,
+  );
+
+  if (!res.ok) {
+    console.error("[Meta OAuth] Failed to check permissions");
+    return [];
+  }
+
+  const { data } = await res.json();
+  const granted = (data || [])
+    .filter((p: { status: string }) => p.status === "granted")
+    .map((p: { permission: string }) => p.permission);
+  const declined = (data || [])
+    .filter((p: { status: string }) => p.status === "declined")
+    .map((p: { permission: string }) => p.permission);
+
+  console.log("[Meta OAuth] Granted permissions:", granted);
+  if (declined.length > 0) {
+    console.warn("[Meta OAuth] Declined permissions:", declined);
+  }
+
+  return granted;
+};
+
+/**
  * Fetch WhatsApp Business Account details from Meta Graph API
  *
- * OAuth Flow:
- * 1. Get user's business accounts
- * 2. Get WhatsApp Business Accounts (WABAs) from business
- * 3. Get phone numbers from WABA
+ * Strategy:
+ * 1. Check permissions granted
+ * 2. If business_management: /me/businesses → /{biz}/owned_whatsapp_business_accounts
+ * 3. Fallback: /me/whatsapp_business_accounts (whatsapp_business_management only)
+ * 4. Get phone numbers from WABA
  */
 export const fetchWABADetails = async (
   accessToken: string,
 ): Promise<WABADetails> => {
   try {
-    // 1. Get user's business accounts
-    const businessRes = await fetch(
-      `https://graph.facebook.com/v22.0/me/businesses?access_token=${accessToken}`,
-    );
+    // 0. Check actual permissions
+    const permissions = await checkTokenPermissions(accessToken);
+    const hasBusinessManagement = permissions.includes("business_management");
 
-    if (!businessRes.ok) {
-      const error = await businessRes.json();
-      throw new Error(`Failed to fetch businesses: ${error.error?.message}`);
-    }
+    let businessId = "";
+    let wabaId = "";
 
-    const { data: businesses } = await businessRes.json();
+    if (hasBusinessManagement) {
+      // Strategy A: via /me/businesses (requires business_management)
+      console.log("[Meta OAuth] Using business_management strategy");
 
-    if (!businesses || businesses.length === 0) {
-      throw new Error(
-        "No business account found. User must have a Meta Business Manager account.",
+      const businessRes = await fetch(
+        `https://graph.facebook.com/v22.0/me/businesses?access_token=${accessToken}`,
       );
-    }
 
-    const businessId = businesses[0].id;
+      if (!businessRes.ok) {
+        const error = await businessRes.json();
+        console.error("[Meta OAuth] /me/businesses failed:", error);
+        throw new Error(`Failed to fetch businesses: ${error.error?.message}`);
+      }
 
-    // 2. Get WhatsApp Business Accounts
-    const wabaRes = await fetch(
-      `https://graph.facebook.com/v22.0/${businessId}/owned_whatsapp_business_accounts?access_token=${accessToken}`,
-    );
+      const { data: businesses } = await businessRes.json();
 
-    if (!wabaRes.ok) {
-      const error = await wabaRes.json();
-      throw new Error(`Failed to fetch WABAs: ${error.error?.message}`);
-    }
+      if (!businesses || businesses.length === 0) {
+        throw new Error("No business account found.");
+      }
 
-    const { data: wabas } = await wabaRes.json();
+      businessId = businesses[0].id;
+      console.log("[Meta OAuth] Business ID:", businessId);
 
-    if (!wabas || wabas.length === 0) {
-      throw new Error(
-        "No WhatsApp Business Account found. User must have a WABA.",
+      const wabaRes = await fetch(
+        `https://graph.facebook.com/v22.0/${businessId}/owned_whatsapp_business_accounts?access_token=${accessToken}`,
       );
+
+      if (!wabaRes.ok) {
+        const error = await wabaRes.json();
+        console.error(
+          "[Meta OAuth] owned_whatsapp_business_accounts failed:",
+          error,
+        );
+        throw new Error(`Failed to fetch WABAs: ${error.error?.message}`);
+      }
+
+      const { data: wabas } = await wabaRes.json();
+
+      if (!wabas || wabas.length === 0) {
+        throw new Error("No WhatsApp Business Account found.");
+      }
+
+      wabaId = wabas[0].id;
+    } else {
+      // Strategy B: Fallback without business_management
+      // Try getting WABA via shared_whatsapp_business_accounts or direct endpoints
+      console.log(
+        "[Meta OAuth] business_management NOT granted, trying fallback strategy",
+      );
+
+      // Try /me/businesses with limited scope (sometimes works with whatsapp_business_management)
+      const businessRes = await fetch(
+        `https://graph.facebook.com/v22.0/me/businesses?access_token=${accessToken}`,
+      );
+
+      if (businessRes.ok) {
+        const { data: businesses } = await businessRes.json();
+        if (businesses && businesses.length > 0) {
+          businessId = businesses[0].id;
+          console.log("[Meta OAuth] Fallback: Got business ID:", businessId);
+
+          // Try client_whatsapp_business_accounts (shared access)
+          const sharedWabaRes = await fetch(
+            `https://graph.facebook.com/v22.0/${businessId}/client_whatsapp_business_accounts?access_token=${accessToken}`,
+          );
+
+          if (sharedWabaRes.ok) {
+            const { data: wabas } = await sharedWabaRes.json();
+            if (wabas && wabas.length > 0) {
+              wabaId = wabas[0].id;
+              console.log(
+                "[Meta OAuth] Fallback: Got WABA from client_whatsapp_business_accounts:",
+                wabaId,
+              );
+            }
+          }
+
+          // If not found, try owned_whatsapp_business_accounts anyway
+          if (!wabaId) {
+            const ownedRes = await fetch(
+              `https://graph.facebook.com/v22.0/${businessId}/owned_whatsapp_business_accounts?access_token=${accessToken}`,
+            );
+            if (ownedRes.ok) {
+              const { data: wabas } = await ownedRes.json();
+              if (wabas && wabas.length > 0) {
+                wabaId = wabas[0].id;
+                console.log(
+                  "[Meta OAuth] Fallback: Got WABA from owned_whatsapp_business_accounts:",
+                  wabaId,
+                );
+              }
+            }
+          }
+        }
+      }
+
+      if (!wabaId) {
+        throw new Error(
+          `Missing business_management permission. Granted permissions: ${permissions.join(
+            ", ",
+          )}. ` +
+            "Please revoke app access at https://www.facebook.com/settings?tab=business_tools and retry.",
+        );
+      }
     }
 
-    const wabaId = wabas[0].id;
+    console.log("[Meta OAuth] WABA ID:", wabaId);
 
-    // 3. Get phone numbers
+    // 3. Get phone numbers from WABA
     const phoneRes = await fetch(
       `https://graph.facebook.com/v22.0/${wabaId}/phone_numbers?access_token=${accessToken}`,
     );
@@ -148,7 +256,7 @@ export const fetchWABADetails = async (
       wabaId,
       phoneNumberId: phone.id,
       displayPhone: phone.display_phone_number,
-      accessToken, // Long-lived token (60 days by default)
+      accessToken,
       businessId,
     };
   } catch (error) {
