@@ -5,11 +5,11 @@
  * Clears enabled flag, user email, and Vault secret IDs.
  */
 
-import { NextRequest, NextResponse } from "next/server";
 import {
   createRouteHandlerClient,
   createServerClient,
 } from "@/lib/supabase-server";
+import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
@@ -51,9 +51,34 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // 4. Update client record (clear calendar fields) using service role
+    // 4. Fetch existing secret IDs so we can delete them from Vault
     const serviceSupabase = await createServerClient();
 
+    const tokenField =
+      provider === "google"
+        ? "google_calendar_token_secret_id"
+        : "microsoft_calendar_token_secret_id";
+    const refreshField =
+      provider === "google"
+        ? "google_calendar_refresh_token_secret_id"
+        : "microsoft_calendar_refresh_token_secret_id";
+
+    const { data: clientData } = await serviceSupabase
+      .from("clients")
+      .select(`${tokenField}, ${refreshField}`)
+      .eq("id", profile.client_id)
+      .single();
+
+    // Delete vault secrets if they exist
+    if (clientData) {
+      const { deleteSecret } = await import("@/lib/vault");
+      const tokenId = (clientData as any)[tokenField];
+      const refreshId = (clientData as any)[refreshField];
+      if (tokenId) await deleteSecret(tokenId);
+      if (refreshId) await deleteSecret(refreshId);
+    }
+
+    // 5. Update client record (clear calendar fields)
     const updateData =
       provider === "google"
         ? {

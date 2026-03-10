@@ -12,7 +12,7 @@ import {
   extractClientIdFromState,
 } from "@/lib/google-calendar-oauth";
 import { createServerClient } from "@/lib/supabase-server";
-import { createSecret } from "@/lib/vault";
+import { createOrUpdateSecret } from "@/lib/vault";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -98,14 +98,14 @@ export async function GET(request: NextRequest) {
 
     console.log("[Google Calendar Callback] Tokens received for:", userEmail);
 
-    // 7. Store tokens in Vault
-    const tokenSecretId = await createSecret(
+    // 7. Store tokens in Vault (upsert to handle reconnection)
+    const tokenSecretId = await createOrUpdateSecret(
       accessToken,
       `google_calendar_token_${clientId}`,
       `Google Calendar access token for client ${clientId} (${userEmail})`,
     );
 
-    const refreshTokenSecretId = await createSecret(
+    const refreshTokenSecretId = await createOrUpdateSecret(
       refreshToken,
       `google_calendar_refresh_${clientId}`,
       `Google Calendar refresh token for client ${clientId} (${userEmail})`,

@@ -10,7 +10,7 @@
 import { extractClientIdFromState } from "@/lib/google-calendar-oauth";
 import { exchangeMicrosoftCodeForTokens } from "@/lib/microsoft-calendar-oauth";
 import { createServerClient } from "@/lib/supabase-server";
-import { createSecret } from "@/lib/vault";
+import { createOrUpdateSecret } from "@/lib/vault";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -91,14 +91,14 @@ export async function GET(request: NextRequest) {
       userEmail,
     );
 
-    // 7. Store tokens in Vault
-    const tokenSecretId = await createSecret(
+    // 7. Store tokens in Vault (upsert to handle reconnection)
+    const tokenSecretId = await createOrUpdateSecret(
       accessToken,
       `microsoft_calendar_token_${clientId}`,
       `Microsoft Calendar access token for client ${clientId} (${userEmail})`,
     );
 
-    const refreshTokenSecretId = await createSecret(
+    const refreshTokenSecretId = await createOrUpdateSecret(
       refreshToken,
       `microsoft_calendar_refresh_${clientId}`,
       `Microsoft Calendar refresh token for client ${clientId} (${userEmail})`,

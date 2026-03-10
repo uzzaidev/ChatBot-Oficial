@@ -51,6 +51,66 @@ export const createSecret = async (
 };
 
 /**
+ * Deleta um secret do Vault
+ */
+export const deleteSecret = async (secretId: string): Promise<boolean> => {
+  try {
+    if (!secretId) return false;
+    const supabase = await createServerClient();
+    // @ts-ignore - RPC custom function
+    const { data, error } = await supabase.rpc("delete_client_secret", {
+      secret_id: secretId,
+    });
+    if (error) {
+      console.error(`[Vault] Failed to delete secret: ${error.message}`);
+      return false;
+    }
+    return data === true;
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Creates a secret or updates it if one with the same name already exists.
+ * Handles the "duplicate key" scenario when reconnecting a calendar.
+ */
+export const createOrUpdateSecret = async (
+  secretValue: string,
+  secretName: string,
+  description?: string,
+): Promise<string> => {
+  try {
+    return await createSecret(secretValue, secretName, description);
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : "";
+    if (!msg.includes("duplicate key")) throw error;
+
+    // Secret with this name already exists — find it and update
+    const supabase = await createServerClient();
+    const { data: existing } = await supabase
+      .from("vault.decrypted_secrets" as any)
+      .select("id")
+      .eq("name", secretName)
+      .single();
+
+    if (!existing?.id) {
+      // Fallback: try raw SQL via RPC if the view query doesn't work
+      const { data: rows } = await supabase.rpc("find_secret_by_name" as any, {
+        secret_name: secretName,
+      });
+      const id = Array.isArray(rows) ? rows[0]?.id : rows?.id;
+      if (!id) throw error; // Re-throw original if we truly can't find it
+      await updateSecret(id, secretValue);
+      return id;
+    }
+
+    await updateSecret(existing.id, secretValue);
+    return existing.id;
+  }
+};
+
+/**
  * Lê um secret descriptografado do Vault
  *
  * @param secretId - UUID do secret
