@@ -36,11 +36,9 @@ export const getMetaOAuthURL = (state: string): string => {
     response_type: "code",
   });
 
-  // Add config_id for Embedded Signup if available
-  if (config.configId) {
-    params.set("config_id", config.configId);
-    params.set("override_default_response_type", "true");
-  }
+  // NOTE: config_id for Embedded Signup disabled — config 1247304987342255 is
+  // broken on Meta's side. Re-enable when a new config is created in the
+  // Facebook Developer Console → WhatsApp → Embedded Signup.
 
   return `https://www.facebook.com/v22.0/dialog/oauth?${params.toString()}`;
 };
