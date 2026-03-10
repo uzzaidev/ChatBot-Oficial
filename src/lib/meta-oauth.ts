@@ -6,18 +6,18 @@
  */
 
 interface MetaOAuthConfig {
-  appId: string
-  appSecret: string
-  redirectUri: string
-  configId: string // Embedded Signup Configuration ID
+  appId: string;
+  appSecret: string;
+  redirectUri: string;
+  configId: string; // Embedded Signup Configuration ID
 }
 
 interface WABADetails {
-  wabaId: string
-  phoneNumberId: string
-  displayPhone: string
-  accessToken: string
-  businessId: string
+  wabaId: string;
+  phoneNumberId: string;
+  displayPhone: string;
+  accessToken: string;
+  businessId: string;
 }
 
 /**
@@ -25,47 +25,49 @@ interface WABADetails {
  * User clicks "Conectar WhatsApp" → redirects here
  */
 export const getMetaOAuthURL = (state: string): string => {
-  const config = getOAuthConfig()
+  const config = getOAuthConfig();
 
   const params = new URLSearchParams({
     client_id: config.appId,
     redirect_uri: config.redirectUri,
     state, // CSRF protection
     config_id: config.configId, // Embedded Signup Configuration ID
-    response_type: 'code',
-    override_default_response_type: 'true',
-  })
+    response_type: "code",
+    override_default_response_type: "true",
+  });
 
   // Embedded Signup OAuth URL
-  return `https://www.facebook.com/v18.0/dialog/oauth?${params.toString()}`
-}
+  return `https://www.facebook.com/v22.0/dialog/oauth?${params.toString()}`;
+};
 
 /**
  * Exchange authorization code for access token
  */
 export const exchangeCodeForToken = async (code: string): Promise<string> => {
-  const config = getOAuthConfig()
+  const config = getOAuthConfig();
 
   const params = new URLSearchParams({
     client_id: config.appId,
     client_secret: config.appSecret,
     redirect_uri: config.redirectUri,
     code,
-  })
+  });
 
   const response = await fetch(
-    `https://graph.facebook.com/v18.0/oauth/access_token?${params.toString()}`
-  )
+    `https://graph.facebook.com/v22.0/oauth/access_token?${params.toString()}`,
+  );
 
   if (!response.ok) {
-    const error = await response.json()
-    console.error('[Meta OAuth] Token exchange failed:', error)
-    throw new Error(`Token exchange failed: ${error.error?.message || 'Unknown error'}`)
+    const error = await response.json();
+    console.error("[Meta OAuth] Token exchange failed:", error);
+    throw new Error(
+      `Token exchange failed: ${error.error?.message || "Unknown error"}`,
+    );
   }
 
-  const data = await response.json()
-  return data.access_token
-}
+  const data = await response.json();
+  return data.access_token;
+};
 
 /**
  * Fetch WhatsApp Business Account details from Meta Graph API
@@ -75,61 +77,69 @@ export const exchangeCodeForToken = async (code: string): Promise<string> => {
  * 2. Get WhatsApp Business Accounts (WABAs) from business
  * 3. Get phone numbers from WABA
  */
-export const fetchWABADetails = async (accessToken: string): Promise<WABADetails> => {
+export const fetchWABADetails = async (
+  accessToken: string,
+): Promise<WABADetails> => {
   try {
     // 1. Get user's business accounts
     const businessRes = await fetch(
-      `https://graph.facebook.com/v18.0/me/businesses?access_token=${accessToken}`
-    )
+      `https://graph.facebook.com/v22.0/me/businesses?access_token=${accessToken}`,
+    );
 
     if (!businessRes.ok) {
-      const error = await businessRes.json()
-      throw new Error(`Failed to fetch businesses: ${error.error?.message}`)
+      const error = await businessRes.json();
+      throw new Error(`Failed to fetch businesses: ${error.error?.message}`);
     }
 
-    const { data: businesses } = await businessRes.json()
+    const { data: businesses } = await businessRes.json();
 
     if (!businesses || businesses.length === 0) {
-      throw new Error('No business account found. User must have a Meta Business Manager account.')
+      throw new Error(
+        "No business account found. User must have a Meta Business Manager account.",
+      );
     }
 
-    const businessId = businesses[0].id
+    const businessId = businesses[0].id;
 
     // 2. Get WhatsApp Business Accounts
     const wabaRes = await fetch(
-      `https://graph.facebook.com/v18.0/${businessId}/owned_whatsapp_business_accounts?access_token=${accessToken}`
-    )
+      `https://graph.facebook.com/v22.0/${businessId}/owned_whatsapp_business_accounts?access_token=${accessToken}`,
+    );
 
     if (!wabaRes.ok) {
-      const error = await wabaRes.json()
-      throw new Error(`Failed to fetch WABAs: ${error.error?.message}`)
+      const error = await wabaRes.json();
+      throw new Error(`Failed to fetch WABAs: ${error.error?.message}`);
     }
 
-    const { data: wabas } = await wabaRes.json()
+    const { data: wabas } = await wabaRes.json();
 
     if (!wabas || wabas.length === 0) {
-      throw new Error('No WhatsApp Business Account found. User must have a WABA.')
+      throw new Error(
+        "No WhatsApp Business Account found. User must have a WABA.",
+      );
     }
 
-    const wabaId = wabas[0].id
+    const wabaId = wabas[0].id;
 
     // 3. Get phone numbers
     const phoneRes = await fetch(
-      `https://graph.facebook.com/v18.0/${wabaId}/phone_numbers?access_token=${accessToken}`
-    )
+      `https://graph.facebook.com/v22.0/${wabaId}/phone_numbers?access_token=${accessToken}`,
+    );
 
     if (!phoneRes.ok) {
-      const error = await phoneRes.json()
-      throw new Error(`Failed to fetch phone numbers: ${error.error?.message}`)
+      const error = await phoneRes.json();
+      throw new Error(`Failed to fetch phone numbers: ${error.error?.message}`);
     }
 
-    const { data: phones } = await phoneRes.json()
+    const { data: phones } = await phoneRes.json();
 
     if (!phones || phones.length === 0) {
-      throw new Error('No phone number found in WABA. User must add a phone number first.')
+      throw new Error(
+        "No phone number found in WABA. User must add a phone number first.",
+      );
     }
 
-    const phone = phones[0]
+    const phone = phones[0];
 
     return {
       wabaId,
@@ -137,28 +147,30 @@ export const fetchWABADetails = async (accessToken: string): Promise<WABADetails
       displayPhone: phone.display_phone_number,
       accessToken, // Long-lived token (60 days by default)
       businessId,
-    }
+    };
   } catch (error) {
-    console.error('[Meta OAuth] Failed to fetch WABA details:', error)
-    throw error
+    console.error("[Meta OAuth] Failed to fetch WABA details:", error);
+    throw error;
   }
-}
+};
 
 /**
  * Get OAuth configuration from environment variables
  */
 const getOAuthConfig = (): MetaOAuthConfig => {
-  const appId = process.env.META_PLATFORM_APP_ID
-  const appSecret = process.env.META_PLATFORM_APP_SECRET
-  const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://uzzapp.uzzai.com.br'
-  const configId = process.env.META_EMBEDDED_SIGNUP_CONFIG_ID
+  const appId = process.env.META_PLATFORM_APP_ID;
+  const appSecret = process.env.META_PLATFORM_APP_SECRET;
+  const baseUrl = process.env.NEXT_PUBLIC_URL || "https://uzzapp.uzzai.com.br";
+  const configId = process.env.META_EMBEDDED_SIGNUP_CONFIG_ID;
 
   if (!appId || !appSecret) {
-    throw new Error('Missing META_PLATFORM_APP_ID or META_PLATFORM_APP_SECRET')
+    throw new Error("Missing META_PLATFORM_APP_ID or META_PLATFORM_APP_SECRET");
   }
 
   if (!configId) {
-    throw new Error('Missing META_EMBEDDED_SIGNUP_CONFIG_ID - required for Embedded Signup')
+    throw new Error(
+      "Missing META_EMBEDDED_SIGNUP_CONFIG_ID - required for Embedded Signup",
+    );
   }
 
   return {
@@ -166,8 +178,8 @@ const getOAuthConfig = (): MetaOAuthConfig => {
     appSecret,
     redirectUri: `${baseUrl}/api/auth/meta/callback`,
     configId,
-  }
-}
+  };
+};
 
 /**
  * Validate OAuth state parameter (CSRF protection)
@@ -175,6 +187,6 @@ const getOAuthConfig = (): MetaOAuthConfig => {
 export const generateOAuthState = (): string => {
   // Generate cryptographically secure random string
   return Array.from(crypto.getRandomValues(new Uint8Array(32)))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('')
-}
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+};

@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
 
         // Send the message via WhatsApp API
         const response = await fetch(
-          `https://graph.facebook.com/v18.0/${client.whatsapp_phone_id}/messages`,
+          `https://graph.facebook.com/v22.0/${client.whatsapp_phone_id}/messages`,
           {
             method: "POST",
             headers: {

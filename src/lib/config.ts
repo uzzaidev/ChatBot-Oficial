@@ -65,7 +65,7 @@ export const getMetaConfig = () => {
     accessToken,
     phoneNumberId,
     verifyToken: verifyToken || "",
-    apiVersion: "v18.0",
+    apiVersion: "v22.0",
   };
 };
 
