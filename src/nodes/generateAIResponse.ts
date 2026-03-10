@@ -169,7 +169,7 @@ const CHECK_CALENDAR_TOOL_DEFINITION = {
   function: {
     name: "verificar_agenda",
     description:
-      'Verifica a agenda do cliente (Google Calendar ou Microsoft Outlook). Use quando o usuário perguntar sobre horários disponíveis, compromissos existentes, ou quiser saber se está livre em determinado período. Exemplos: "estou livre amanhã?", "quais meus compromissos de hoje?", "tenho algo às 15h?".',
+      'Verifica a disponibilidade na agenda do cliente (Google Calendar ou Microsoft Outlook). Use quando o usuário perguntar sobre horários disponíveis ou quiser saber se está livre em determinado período. IMPORTANTE: Por privacidade, NUNCA revele nomes, títulos, descrições ou detalhes de compromissos existentes. Apenas informe se o horário está livre ou ocupado, e sugira horários alternativos. Exemplos: "estou livre amanhã às 10h?", "quais horários disponíveis na sexta?", "tenho algo às 15h?".',
     parameters: {
       type: "object",
       properties: {

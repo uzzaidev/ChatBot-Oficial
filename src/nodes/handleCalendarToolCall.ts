@@ -60,10 +60,37 @@ const handleVerificarAgenda = async (
       )} está livre na agenda.`;
     }
 
-    // Get events to show what's blocking
-    const events = await client.listEvents(start, end);
-    const eventList = formatEventList(events);
-    return `❌ O período NÃO está livre. Existem ${events.length} compromisso(s):\n\n${eventList}`;
+    // Period is busy — find nearby free slots to suggest
+    const searchStart = new Date(start);
+    searchStart.setHours(8, 0, 0, 0);
+    const searchEnd = new Date(start);
+    searchEnd.setHours(18, 0, 0, 0);
+    const durationMs = end.getTime() - start.getTime();
+    const freeSlots = await findFreeSlots(
+      client,
+      searchStart,
+      searchEnd,
+      durationMs,
+    );
+
+    let response = `❌ Esse horário já está ocupado.`;
+
+    if (freeSlots.length > 0) {
+      const suggestions = freeSlots
+        .slice(0, 3)
+        .map(
+          (slot) =>
+            `   • ${formatDateTime(slot.start)} até ${formatDateTime(
+              slot.end,
+            )}`,
+        )
+        .join("\n");
+      response += `\n\n📋 Horários livres mais próximos nesse dia:\n${suggestions}`;
+    } else {
+      response += `\n\nNão há horários disponíveis nesse dia no horário comercial (08h-18h).`;
+    }
+
+    return response;
   }
 
   if (tipo === "eventos_existentes") {
@@ -72,11 +99,25 @@ const handleVerificarAgenda = async (
     if (events.length === 0) {
       return `📅 Nenhum compromisso encontrado entre ${formatDateTime(
         start,
-      )} e ${formatDateTime(end)}.`;
+      )} e ${formatDateTime(end)}. A agenda está livre nesse período!`;
     }
 
-    const eventList = formatEventList(events);
-    return `📅 ${events.length} compromisso(s) encontrado(s):\n\n${eventList}`;
+    // Show only busy/free blocks, never event names or details
+    const busyBlocks = formatBusyBlocks(events);
+    const freeBlocks = findFreeBlocksInRange(events, start, end);
+    let response = `📅 Existem ${
+      events.length
+    } compromisso(s) entre ${formatDateTime(start)} e ${formatDateTime(end)}.`;
+    response += `\n\n🔴 Horários ocupados:\n${busyBlocks}`;
+    if (freeBlocks.length > 0) {
+      const freeList = freeBlocks
+        .map(
+          (b) => `   • ${formatDateTime(b.start)} até ${formatDateTime(b.end)}`,
+        )
+        .join("\n");
+      response += `\n\n🟢 Horários livres:\n${freeList}`;
+    }
+    return response;
   }
 
   return 'Tipo de verificação inválido. Use "horarios_livres" ou "eventos_existentes".';
@@ -140,16 +181,74 @@ const formatDateTime = (date: Date): string => {
   });
 };
 
-const formatEventList = (events: CalendarEvent[]): string => {
+/**
+ * Show only busy time blocks — never reveal event titles, descriptions, or locations
+ */
+const formatBusyBlocks = (events: CalendarEvent[]): string => {
   return events
     .map((event, idx) => {
       const start = formatDateTime(new Date(event.startDateTime));
       const end = formatDateTime(new Date(event.endDateTime));
-      let line = `${idx + 1}. *${event.title}*\n   📅 ${start} - ${end}`;
-      if (event.location) {
-        line += `\n   📍 ${event.location}`;
-      }
-      return line;
+      return `   ${idx + 1}. 🔴 Ocupado: ${start} - ${end}`;
     })
-    .join("\n\n");
+    .join("\n");
+};
+
+/**
+ * Find free blocks between events within a given range
+ */
+const findFreeBlocksInRange = (
+  events: CalendarEvent[],
+  rangeStart: Date,
+  rangeEnd: Date,
+): Array<{ start: Date; end: Date }> => {
+  const sorted = [...events].sort(
+    (a, b) =>
+      new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime(),
+  );
+
+  const freeBlocks: Array<{ start: Date; end: Date }> = [];
+  let cursor = rangeStart;
+
+  for (const event of sorted) {
+    const evStart = new Date(event.startDateTime);
+    const evEnd = new Date(event.endDateTime);
+    if (evStart > cursor) {
+      freeBlocks.push({ start: new Date(cursor), end: new Date(evStart) });
+    }
+    if (evEnd > cursor) {
+      cursor = evEnd;
+    }
+  }
+
+  if (cursor < rangeEnd) {
+    freeBlocks.push({ start: new Date(cursor), end: new Date(rangeEnd) });
+  }
+
+  return freeBlocks;
+};
+
+/**
+ * Find free slots of a specific duration within a time range
+ */
+const findFreeSlots = async (
+  client: Awaited<ReturnType<typeof getCalendarClient>> & {},
+  searchStart: Date,
+  searchEnd: Date,
+  durationMs: number,
+): Promise<Array<{ start: Date; end: Date }>> => {
+  const events = await client.listEvents(searchStart, searchEnd);
+  const freeBlocks = findFreeBlocksInRange(events, searchStart, searchEnd);
+
+  const slots: Array<{ start: Date; end: Date }> = [];
+  for (const block of freeBlocks) {
+    const blockDuration = block.end.getTime() - block.start.getTime();
+    if (blockDuration >= durationMs) {
+      slots.push({
+        start: block.start,
+        end: new Date(block.start.getTime() + durationMs),
+      });
+    }
+  }
+  return slots;
 };
