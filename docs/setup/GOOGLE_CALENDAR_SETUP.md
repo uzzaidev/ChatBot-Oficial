@@ -85,14 +85,89 @@ GOOGLE_CALENDAR_CLIENT_SECRET=GOCSPX-sua-secret
 
 ---
 
-## Produção
+## Produção — Verificação do App Google
 
-Para uso em produção com qualquer conta Google (não apenas usuários de teste):
+Para uso em produção com qualquer conta Google (não apenas usuários de teste), é necessário passar pela **verificação do Google**.
 
-1. Vá na **Tela de consentimento OAuth**
+### 1. Publicar o App
+
+1. Vá em **APIs e Serviços** → **Tela de consentimento OAuth**
 2. Clique em **Publicar app**
-3. Google pode solicitar verificação (pode levar alguns dias)
-4. Enquanto aguarda, o app funciona para usuários de teste
+3. O Google solicitará verificação por usar escopo **confidencial**
+
+### 2. Escopo Confidencial: `auth/calendar`
+
+O escopo `https://www.googleapis.com/auth/calendar` é classificado como **confidencial** pelo Google. Isso significa que o Google exige:
+
+- **Justificativa por escrito** de como o escopo será usado
+- **Vídeo de demonstração** no YouTube mostrando o uso do escopo
+
+### 3. Justificativa — "Como os escopos serão usados?"
+
+Cole o texto abaixo no campo de justificativa na tela de consentimento OAuth:
+
+> **Justificativa (copiar e colar):**
+>
+> O UzzApp é uma plataforma SaaS B2B de atendimento automatizado via WhatsApp Business API. Nossos clientes (empresas) conectam suas contas Google Calendar para que o agente de IA integrado possa:
+>
+> 1. **Consultar eventos futuros** — quando um contato pergunta pelo WhatsApp sobre disponibilidade de horários ou compromissos agendados, o agente IA consulta o Google Calendar do cliente (empresa) para fornecer uma resposta precisa e em tempo real.
+>
+> 2. **Criar novos eventos** — quando um contato solicita agendar uma reunião, consulta ou atendimento via WhatsApp, o agente IA cria o evento diretamente no Google Calendar do cliente (empresa), com título, data/hora, descrição e participantes.
+>
+> O acesso é feito exclusivamente via OAuth 2.0 com consentimento explícito do proprietário da conta Google. Cada empresa conecta seu próprio calendário uma única vez no painel de administração. Os tokens de acesso são armazenados de forma criptografada (AES-256) no Supabase Vault. O usuário final (contato no WhatsApp) nunca tem acesso direto ao calendário — todas as operações são intermediadas pelo agente IA e limitadas a leitura de eventos e criação de novos eventos. O proprietário da conta pode revogar o acesso a qualquer momento pelo painel do UzzApp ou diretamente em myaccount.google.com.
+
+### 4. Vídeo de Demonstração (YouTube)
+
+O Google exige um vídeo no YouTube mostrando como o escopo é usado. O vídeo deve demonstrar o fluxo completo do ponto de vista do usuário.
+
+#### Roteiro do Vídeo (3-5 minutos)
+
+**Cena 1 — Introdução (30s)**
+
+- Mostrar a tela inicial do UzzApp (`uzzapp.uzzai.com.br`)
+- Explicar brevemente: "O UzzApp é uma plataforma de atendimento via WhatsApp com IA. Vamos demonstrar a integração com Google Calendar."
+
+**Cena 2 — Conexão OAuth (1 min)**
+
+- Fazer login no dashboard
+- Navegar até **Calendário** (`/dashboard/calendar`)
+- Clicar em **"Conectar com Google"**
+- Mostrar a tela de consentimento do Google (escopos sendo solicitados)
+- Autorizar o acesso
+- Mostrar a mensagem de sucesso e o email conectado no dashboard
+
+**Cena 3 — Consulta de Agenda via WhatsApp (1 min)**
+
+- Abrir o WhatsApp e enviar uma mensagem para o número do bot: _"Quais meus compromissos de amanhã?"_
+- Mostrar a resposta do agente IA com os eventos do Google Calendar
+- Destacar que os dados vêm do calendário real conectado
+
+**Cena 4 — Criação de Evento via WhatsApp (1 min)**
+
+- Enviar: _"Marca uma reunião sexta às 14h com o título Alinhamento de Projeto"_
+- Mostrar a confirmação do agente IA
+- Abrir o Google Calendar e mostrar o evento criado
+
+**Cena 5 — Desconexão e Segurança (30s)**
+
+- Voltar ao dashboard → Calendário
+- Clicar em **"Desconectar"**
+- Mostrar que o status muda para desconectado
+- Mencionar: "O usuário pode revogar o acesso a qualquer momento pelo painel ou em myaccount.google.com"
+
+#### Dicas para o Vídeo
+
+- Grave com OBS Studio ou Loom (screencast com narração)
+- Resolução mínima: 720p
+- Faça upload como **Não listado** no YouTube (não precisa ser público)
+- Cole o link do YouTube no campo **"Vídeo de demonstração"** na tela de consentimento OAuth
+
+### 5. Após Envio
+
+- Google revisa em **3 a 5 dias úteis**
+- Pode pedir ajustes (responda pelo email indicado)
+- Após aprovação, qualquer conta Google poderá autorizar o app
+- Enquanto aguarda, o app funciona normalmente para **usuários de teste**
 
 ---
 

@@ -254,7 +254,6 @@ export function DashboardNavigation({
           label="Calendário"
           isCollapsed={isCollapsed}
           onClick={onLinkClick}
-          badge="new"
           tooltip="Conecte Google Calendar ou Microsoft Outlook para o agente gerenciar sua agenda"
         />
 
