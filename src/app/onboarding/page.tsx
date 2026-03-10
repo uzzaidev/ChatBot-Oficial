@@ -1,55 +1,65 @@
-'use client'
+"use client";
 
-import { useSearchParams, useRouter } from 'next/navigation'
-import { useState, useEffect, Suspense } from 'react'
-import { apiFetch } from '@/lib/api'
+import { apiFetch } from "@/lib/api";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 
-type OnboardingStep = 'whatsapp-connected' | 'ai-config' | 'bot-config' | 'done'
+type OnboardingStep =
+  | "connect-whatsapp"
+  | "whatsapp-connected"
+  | "ai-config"
+  | "bot-config"
+  | "done";
 
 interface ClientInfo {
-  id: string
-  name: string
-  meta_display_phone: string | null
-  status: string
+  id: string;
+  name: string;
+  meta_display_phone: string | null;
+  status: string;
 }
 
 interface AIConfigFormState {
-  openaiKey: string
-  groqKey: string
-  provider: string
-  openaiModel: string
-  groqModel: string
+  openaiKey: string;
+  groqKey: string;
+  provider: string;
+  openaiModel: string;
+  groqModel: string;
 }
 
 interface BotConfigFormState {
-  systemPrompt: string
+  systemPrompt: string;
 }
 
-const OPENAI_MODELS = ['gpt-4o-mini', 'gpt-4o'] as const
-const GROQ_MODELS = ['llama-3.3-70b-versatile'] as const
+const OPENAI_MODELS = ["gpt-4o-mini", "gpt-4o"] as const;
+const GROQ_MODELS = ["llama-3.3-70b-versatile"] as const;
 
 const DEFAULT_SYSTEM_PROMPT =
-  'Você é um assistente virtual de atendimento ao cliente. Seja sempre cordial, objetivo e prestativo. Responda em português brasileiro. Caso não saiba a resposta, informe que irá verificar e transferir para um atendente humano.'
+  "Você é um assistente virtual de atendimento ao cliente. Seja sempre cordial, objetivo e prestativo. Responda em português brasileiro. Caso não saiba a resposta, informe que irá verificar e transferir para um atendente humano.";
 
 const stepIndexMap: Record<OnboardingStep, number> = {
-  'whatsapp-connected': 0,
-  'ai-config': 1,
-  'bot-config': 2,
+  "connect-whatsapp": 0,
+  "whatsapp-connected": 0,
+  "ai-config": 1,
+  "bot-config": 2,
   done: 3,
-}
+};
 
 const buildErrorMessage = (errorCode: string | null): string | null => {
   const errorMessages: Record<string, string> = {
-    oauth_failed: 'Falha na autenticação Meta. Tente novamente.',
-    csrf_failed: 'Sessão expirada. Tente novamente.',
-    waba_not_found: 'WABA não encontrado. Entre em contato com suporte.',
-  }
-  return errorCode ? (errorMessages[errorCode] ?? null) : null
-}
+    oauth_failed: "Falha na autenticação Meta. Tente novamente.",
+    csrf_failed: "Sessão expirada. Tente novamente.",
+    waba_not_found: "WABA não encontrado. Entre em contato com suporte.",
+    waba_already_connected:
+      "Este WhatsApp Business já está conectado a outra conta.",
+    invalid_callback: "Resposta inválida do Meta. Tente novamente.",
+    oauth_processing_failed: "Erro ao processar conexão. Tente novamente.",
+  };
+  return errorCode ? errorMessages[errorCode] ?? null : null;
+};
 
 const StepIndicator = ({ currentStep }: { currentStep: OnboardingStep }) => {
-  const currentIndex = stepIndexMap[currentStep]
-  const stepLabels = ['WhatsApp', 'IA', 'Bot', 'Pronto']
+  const currentIndex = stepIndexMap[currentStep];
+  const stepLabels = ["WhatsApp", "IA", "Bot", "Pronto"];
 
   return (
     <div className="flex items-center justify-center gap-2 mb-8">
@@ -59,17 +69,19 @@ const StepIndicator = ({ currentStep }: { currentStep: OnboardingStep }) => {
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
                 index < currentIndex
-                  ? 'bg-green-500 text-white'
+                  ? "bg-green-500 text-white"
                   : index === currentIndex
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-200 text-gray-400'
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-200 text-gray-400"
               }`}
             >
-              {index < currentIndex ? '✓' : index + 1}
+              {index < currentIndex ? "✓" : index + 1}
             </div>
             <span
               className={`text-xs mt-1 ${
-                index === currentIndex ? 'text-blue-600 font-semibold' : 'text-gray-400'
+                index === currentIndex
+                  ? "text-blue-600 font-semibold"
+                  : "text-gray-400"
               }`}
             >
               {label}
@@ -78,15 +90,65 @@ const StepIndicator = ({ currentStep }: { currentStep: OnboardingStep }) => {
           {index < stepLabels.length - 1 && (
             <div
               className={`w-8 h-0.5 mx-1 mb-5 transition-colors ${
-                index < currentIndex ? 'bg-green-500' : 'bg-gray-200'
+                index < currentIndex ? "bg-green-500" : "bg-gray-200"
               }`}
             />
           )}
         </div>
       ))}
     </div>
-  )
-}
+  );
+};
+
+const ConnectWhatsAppStep = () => {
+  const [isRedirecting, setIsRedirecting] = useState(false);
+
+  const handleConnect = () => {
+    setIsRedirecting(true);
+    window.location.href = "/api/auth/meta/init";
+  };
+
+  return (
+    <div className="text-center">
+      <div className="text-5xl mb-4">📱</div>
+      <h2 className="text-2xl font-bold text-gray-900 mb-2">
+        Conectar WhatsApp Business
+      </h2>
+      <p className="text-gray-600 mb-6 text-sm">
+        Para começar, conecte sua conta do WhatsApp Business. Você será
+        redirecionado para o Meta para autorizar o acesso.
+      </p>
+
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-left">
+        <h3 className="text-sm font-semibold text-blue-800 mb-2">
+          O que acontece:
+        </h3>
+        <ul className="text-sm text-blue-700 space-y-1">
+          <li>1. Você autoriza o acesso via Meta Business</li>
+          <li>2. Seu número WhatsApp é conectado à plataforma</li>
+          <li>3. Você configura a IA e o bot</li>
+        </ul>
+      </div>
+
+      <button
+        onClick={handleConnect}
+        disabled={isRedirecting}
+        className="w-full bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
+      >
+        {isRedirecting ? (
+          "Redirecionando..."
+        ) : (
+          <>
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+            </svg>
+            Conectar WhatsApp Business
+          </>
+        )}
+      </button>
+    </div>
+  );
+};
 
 const UzzAppLogo = () => (
   <div className="text-center mb-6">
@@ -95,51 +157,57 @@ const UzzAppLogo = () => (
     </h1>
     <p className="text-gray-400 text-sm mt-1">Configure seu chatbot WhatsApp</p>
   </div>
-)
+);
 
 const ErrorAlert = ({ message }: { message: string }) => (
   <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
     <p className="text-red-700 text-sm font-medium">{message}</p>
   </div>
-)
+);
 
 const WhatsAppConnectedStep = ({
   clientId,
   onContinue,
 }: {
-  clientId: string
-  onContinue: () => void
+  clientId: string;
+  onContinue: () => void;
 }) => {
-  const [clientInfo, setClientInfo] = useState<ClientInfo | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [fetchError, setFetchError] = useState<string | null>(null)
+  const [clientInfo, setClientInfo] = useState<ClientInfo | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchClientInfo = async () => {
       try {
-        const response = await fetch(`/api/onboarding/get-client?client_id=${clientId}`)
+        const response = await fetch(
+          `/api/onboarding/get-client?client_id=${clientId}`,
+        );
 
         if (!response.ok) {
-          setFetchError('Não foi possível carregar as informações do cliente.')
-          return
+          setFetchError("Não foi possível carregar as informações do cliente.");
+          return;
         }
 
-        const data: ClientInfo = await response.json()
-        setClientInfo(data)
+        const data: ClientInfo = await response.json();
+        setClientInfo(data);
       } catch {
-        setFetchError('Erro de conexão. Verifique sua internet e tente novamente.')
+        setFetchError(
+          "Erro de conexão. Verifique sua internet e tente novamente.",
+        );
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    fetchClientInfo()
-  }, [clientId])
+    fetchClientInfo();
+  }, [clientId]);
 
   return (
     <div className="text-center">
       <div className="text-5xl mb-4">✅</div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-2">WhatsApp Conectado!</h2>
+      <h2 className="text-2xl font-bold text-gray-900 mb-2">
+        WhatsApp Conectado!
+      </h2>
 
       {isLoading && (
         <p className="text-gray-500 mb-4">Carregando informações...</p>
@@ -157,14 +225,15 @@ const WhatsAppConnectedStep = ({
             <span className="font-semibold">Empresa:</span> {clientInfo.name}
           </p>
           <p className="text-gray-700 text-sm">
-            <span className="font-semibold">Numero WhatsApp:</span>{' '}
-            {clientInfo.meta_display_phone ?? 'Configurando...'}
+            <span className="font-semibold">Numero WhatsApp:</span>{" "}
+            {clientInfo.meta_display_phone ?? "Configurando..."}
           </p>
         </div>
       )}
 
       <p className="text-gray-600 mb-6">
-        Seu numero WhatsApp Business foi conectado com sucesso. Agora vamos configurar a inteligencia artificial do seu bot.
+        Seu numero WhatsApp Business foi conectado com sucesso. Agora vamos
+        configurar a inteligencia artificial do seu bot.
       </p>
 
       <button
@@ -174,49 +243,53 @@ const WhatsAppConnectedStep = ({
         Continuar
       </button>
     </div>
-  )
-}
+  );
+};
 
 const AIConfigStep = ({
   clientId,
   onSuccess,
   onSkip,
 }: {
-  clientId: string
-  onSuccess: () => void
-  onSkip: () => void
+  clientId: string;
+  onSuccess: () => void;
+  onSkip: () => void;
 }) => {
   const [formState, setFormState] = useState<AIConfigFormState>({
-    openaiKey: '',
-    groqKey: '',
-    provider: 'openai',
-    openaiModel: 'gpt-4o-mini',
-    groqModel: 'llama-3.3-70b-versatile',
-  })
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitError, setSubmitError] = useState<string | null>(null)
+    openaiKey: "",
+    groqKey: "",
+    provider: "openai",
+    openaiModel: "gpt-4o-mini",
+    groqModel: "llama-3.3-70b-versatile",
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const updateFormField = (field: keyof AIConfigFormState) => (value: string) =>
-    setFormState((prev) => ({ ...prev, [field]: value }))
+    setFormState((prev) => ({ ...prev, [field]: value }));
 
   const handleSubmit = async () => {
     if (!formState.openaiKey.trim() && !formState.groqKey.trim()) {
-      setSubmitError('Informe ao menos uma chave de API (OpenAI ou Groq).')
-      return
+      setSubmitError("Informe ao menos uma chave de API (OpenAI ou Groq).");
+      return;
     }
 
-    if (formState.provider === 'openai' && !formState.openaiKey.trim()) {
-      setSubmitError('A chave OpenAI e obrigatoria quando o provider selecionado e OpenAI.')
-      return
+    if (formState.provider === "openai" && !formState.openaiKey.trim()) {
+      setSubmitError(
+        "A chave OpenAI e obrigatoria quando o provider selecionado e OpenAI.",
+      );
+      return;
     }
 
-    if (formState.provider === 'groq' && !formState.groqKey.trim()) {
-      setSubmitError('A chave Groq e obrigatoria quando o provider selecionado e Groq.')
-      return
+    if (formState.provider === "groq" && !formState.groqKey.trim()) {
+      setSubmitError(
+        "A chave Groq e obrigatoria quando o provider selecionado e Groq.",
+      );
+      return;
     }
 
-    setIsSubmitting(true)
-    setSubmitError(null)
+    setIsSubmitting(true);
+    setSubmitError(null);
 
     try {
       const payload: Record<string, string> = {
@@ -224,41 +297,50 @@ const AIConfigStep = ({
         provider: formState.provider,
         openai_model: formState.openaiModel,
         groq_model: formState.groqModel,
-      }
+      };
 
       if (formState.openaiKey.trim()) {
-        payload.openai_key = formState.openaiKey.trim()
+        payload.openai_key = formState.openaiKey.trim();
       }
 
       if (formState.groqKey.trim()) {
-        payload.groq_key = formState.groqKey.trim()
+        payload.groq_key = formState.groqKey.trim();
       }
 
-      const response = await apiFetch('/api/onboarding/configure-ai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await apiFetch("/api/onboarding/configure-ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-      })
+      });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Erro desconhecido' }))
-        setSubmitError(errorData.error ?? 'Falha ao salvar configuracoes. Tente novamente.')
-        return
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: "Erro desconhecido" }));
+        setSubmitError(
+          errorData.error ?? "Falha ao salvar configuracoes. Tente novamente.",
+        );
+        return;
       }
 
-      onSuccess()
+      onSuccess();
     } catch {
-      setSubmitError('Erro de conexao. Verifique sua internet e tente novamente.')
+      setSubmitError(
+        "Erro de conexao. Verifique sua internet e tente novamente.",
+      );
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-2">Configurar Inteligencia Artificial</h2>
+      <h2 className="text-2xl font-bold text-gray-900 mb-2">
+        Configurar Inteligencia Artificial
+      </h2>
       <p className="text-gray-600 mb-6 text-sm">
-        Configure as chaves de API para o seu assistente de IA. Suas chaves sao armazenadas com criptografia.
+        Configure as chaves de API para o seu assistente de IA. Suas chaves sao
+        armazenadas com criptografia.
       </p>
 
       {submitError && <ErrorAlert message={submitError} />}
@@ -266,26 +348,28 @@ const AIConfigStep = ({
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Chave OpenAI <span className="text-gray-400">(opcional se usar Groq)</span>
+            Chave OpenAI{" "}
+            <span className="text-gray-400">(opcional se usar Groq)</span>
           </label>
           <input
             type="password"
             placeholder="sk-..."
             value={formState.openaiKey}
-            onChange={(e) => updateFormField('openaiKey')(e.target.value)}
+            onChange={(e) => updateFormField("openaiKey")(e.target.value)}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Chave Groq <span className="text-gray-400">(opcional se usar OpenAI)</span>
+            Chave Groq{" "}
+            <span className="text-gray-400">(opcional se usar OpenAI)</span>
           </label>
           <input
             type="password"
             placeholder="gsk_..."
             value={formState.groqKey}
-            onChange={(e) => updateFormField('groqKey')(e.target.value)}
+            onChange={(e) => updateFormField("groqKey")(e.target.value)}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -296,7 +380,7 @@ const AIConfigStep = ({
           </label>
           <select
             value={formState.provider}
-            onChange={(e) => updateFormField('provider')(e.target.value)}
+            onChange={(e) => updateFormField("provider")(e.target.value)}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="openai">OpenAI</option>
@@ -304,14 +388,14 @@ const AIConfigStep = ({
           </select>
         </div>
 
-        {formState.provider === 'openai' && (
+        {formState.provider === "openai" && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Modelo OpenAI
             </label>
             <select
               value={formState.openaiModel}
-              onChange={(e) => updateFormField('openaiModel')(e.target.value)}
+              onChange={(e) => updateFormField("openaiModel")(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {OPENAI_MODELS.map((model) => (
@@ -323,14 +407,14 @@ const AIConfigStep = ({
           </div>
         )}
 
-        {formState.provider === 'groq' && (
+        {formState.provider === "groq" && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Modelo Groq
             </label>
             <select
               value={formState.groqModel}
-              onChange={(e) => updateFormField('groqModel')(e.target.value)}
+              onChange={(e) => updateFormField("groqModel")(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {GROQ_MODELS.map((model) => (
@@ -348,7 +432,7 @@ const AIConfigStep = ({
         disabled={isSubmitting}
         className="w-full mt-6 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
       >
-        {isSubmitting ? 'Salvando...' : 'Salvar e Continuar'}
+        {isSubmitting ? "Salvando..." : "Salvar e Continuar"}
       </button>
 
       <button
@@ -360,57 +444,66 @@ const AIConfigStep = ({
         Configurar depois
       </button>
     </div>
-  )
-}
+  );
+};
 
 const BotConfigStep = ({
   clientId,
   onSuccess,
   onSkip,
 }: {
-  clientId: string
-  onSuccess: () => void
-  onSkip: () => void
+  clientId: string;
+  onSuccess: () => void;
+  onSkip: () => void;
 }) => {
   const [formState, setFormState] = useState<BotConfigFormState>({
     systemPrompt: DEFAULT_SYSTEM_PROMPT,
-  })
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitError, setSubmitError] = useState<string | null>(null)
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
-    setIsSubmitting(true)
-    setSubmitError(null)
+    setIsSubmitting(true);
+    setSubmitError(null);
 
     try {
-      const response = await apiFetch('/api/onboarding/configure-ai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await apiFetch("/api/onboarding/configure-ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           client_id: clientId,
           system_prompt: formState.systemPrompt,
         }),
-      })
+      });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Erro desconhecido' }))
-        setSubmitError(errorData.error ?? 'Falha ao salvar configuracoes. Tente novamente.')
-        return
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: "Erro desconhecido" }));
+        setSubmitError(
+          errorData.error ?? "Falha ao salvar configuracoes. Tente novamente.",
+        );
+        return;
       }
 
-      onSuccess()
+      onSuccess();
     } catch {
-      setSubmitError('Erro de conexao. Verifique sua internet e tente novamente.')
+      setSubmitError(
+        "Erro de conexao. Verifique sua internet e tente novamente.",
+      );
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-2">Configurar Personalidade do Bot</h2>
+      <h2 className="text-2xl font-bold text-gray-900 mb-2">
+        Configurar Personalidade do Bot
+      </h2>
       <p className="text-gray-600 mb-6 text-sm">
-        Defina como seu assistente vai se comportar nas conversas. Seja especifico sobre o tom, o contexto do negocio e as limitacoes.
+        Defina como seu assistente vai se comportar nas conversas. Seja
+        especifico sobre o tom, o contexto do negocio e as limitacoes.
       </p>
 
       {submitError && <ErrorAlert message={submitError} />}
@@ -427,7 +520,8 @@ const BotConfigStep = ({
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
         />
         <p className="text-xs text-gray-400 mt-1">
-          Instrucoes que definem o comportamento e personalidade do seu assistente de IA.
+          Instrucoes que definem o comportamento e personalidade do seu
+          assistente de IA.
         </p>
       </div>
 
@@ -436,7 +530,7 @@ const BotConfigStep = ({
         disabled={isSubmitting}
         className="w-full mt-6 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
       >
-        {isSubmitting ? 'Finalizando...' : 'Finalizar Configuracao'}
+        {isSubmitting ? "Finalizando..." : "Finalizar Configuracao"}
       </button>
 
       <button
@@ -448,60 +542,68 @@ const BotConfigStep = ({
         Pular e ir para o Dashboard
       </button>
     </div>
-  )
-}
+  );
+};
 
 const DoneStep = () => {
-  const router = useRouter()
+  const router = useRouter();
 
   return (
     <div className="text-center">
       <div className="text-5xl mb-4">🎉</div>
       <h2 className="text-2xl font-bold text-gray-900 mb-2">Tudo Pronto!</h2>
       <p className="text-gray-600 mb-8">
-        Seu chatbot WhatsApp esta configurado e pronto para atender seus clientes. Acesse o dashboard para gerenciar conversas, visualizar metricas e personalizar ainda mais seu bot.
+        Seu chatbot WhatsApp esta configurado e pronto para atender seus
+        clientes. Acesse o dashboard para gerenciar conversas, visualizar
+        metricas e personalizar ainda mais seu bot.
       </p>
 
       <div className="space-y-3">
         <button
-          onClick={() => router.push('/dashboard')}
+          onClick={() => router.push("/dashboard")}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
         >
           Ir para o Dashboard
         </button>
         <button
-          onClick={() => router.push('/login')}
+          onClick={() => router.push("/login")}
           className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-lg transition-colors"
         >
           Fazer Login
         </button>
       </div>
     </div>
-  )
-}
+  );
+};
 
 const resolveCurrentStep = (stepParam: string | null): OnboardingStep => {
-  const validSteps: OnboardingStep[] = ['whatsapp-connected', 'ai-config', 'bot-config', 'done']
-  const step = stepParam as OnboardingStep
-  return validSteps.includes(step) ? step : 'ai-config'
-}
+  const validSteps: OnboardingStep[] = [
+    "connect-whatsapp",
+    "whatsapp-connected",
+    "ai-config",
+    "bot-config",
+    "done",
+  ];
+  const step = stepParam as OnboardingStep;
+  return validSteps.includes(step) ? step : "connect-whatsapp";
+};
 
 function OnboardingContent() {
-  const searchParams = useSearchParams()
-  const router = useRouter()
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
-  const stepParam = searchParams.get('step')
-  const clientId = searchParams.get('client_id') ?? ''
-  const errorCode = searchParams.get('error')
+  const stepParam = searchParams.get("step");
+  const clientId = searchParams.get("client_id") ?? "";
+  const errorCode = searchParams.get("error");
 
-  const currentStep = resolveCurrentStep(stepParam)
-  const urlErrorMessage = buildErrorMessage(errorCode)
+  const currentStep = resolveCurrentStep(stepParam);
+  const urlErrorMessage = buildErrorMessage(errorCode);
 
   const navigateToStep = (step: OnboardingStep) => {
-    const params = new URLSearchParams({ step })
-    if (clientId) params.set('client_id', clientId)
-    router.push(`/onboarding?${params.toString()}`)
-  }
+    const params = new URLSearchParams({ step });
+    if (clientId) params.set("client_id", clientId);
+    router.push(`/onboarding?${params.toString()}`);
+  };
 
   return (
     <div className="bg-gradient-to-br from-gray-950 to-gray-900 min-h-screen flex items-center justify-center px-4 py-12">
@@ -513,34 +615,36 @@ function OnboardingContent() {
 
           {urlErrorMessage && <ErrorAlert message={urlErrorMessage} />}
 
-          {currentStep === 'whatsapp-connected' && (
+          {currentStep === "connect-whatsapp" && <ConnectWhatsAppStep />}
+
+          {currentStep === "whatsapp-connected" && (
             <WhatsAppConnectedStep
               clientId={clientId}
-              onContinue={() => navigateToStep('ai-config')}
+              onContinue={() => navigateToStep("ai-config")}
             />
           )}
 
-          {currentStep === 'ai-config' && (
+          {currentStep === "ai-config" && (
             <AIConfigStep
               clientId={clientId}
-              onSuccess={() => navigateToStep('bot-config')}
-              onSkip={() => navigateToStep('bot-config')}
+              onSuccess={() => navigateToStep("bot-config")}
+              onSkip={() => navigateToStep("bot-config")}
             />
           )}
 
-          {currentStep === 'bot-config' && (
+          {currentStep === "bot-config" && (
             <BotConfigStep
               clientId={clientId}
-              onSuccess={() => navigateToStep('done')}
-              onSkip={() => router.push('/dashboard')}
+              onSuccess={() => navigateToStep("done")}
+              onSkip={() => router.push("/dashboard")}
             />
           )}
 
-          {currentStep === 'done' && <DoneStep />}
+          {currentStep === "done" && <DoneStep />}
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 export default function OnboardingPage() {
@@ -554,7 +658,7 @@ export default function OnboardingPage() {
     >
       <OnboardingContent />
     </Suspense>
-  )
+  );
 }
 
 // inline-review: ok - no secrets in state, client_id passed to API not logged, all fetches have error handling, no let/var
