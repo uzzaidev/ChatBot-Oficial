@@ -12,7 +12,7 @@ const features = [
   'Histórico completo de conversas',
   'Multi-usuários com controle de acesso (RBAC)',
   'Suporte técnico por e-mail e WhatsApp',
-  '99% de uptime (SLA)',
+  'Alta disponibilidade com infraestrutura em nuvem redundante',
   'Sem limite de mensagens processadas',
 ]
 
