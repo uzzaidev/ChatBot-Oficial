@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
 import { createRouteHandlerClient } from "@/lib/supabase-server";
+import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
@@ -30,9 +30,12 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (profileError || !profile) {
-      return NextResponse.json({ error: "Perfil não encontrado" }, {
-        status: 404,
-      });
+      return NextResponse.json(
+        { error: "Perfil não encontrado" },
+        {
+          status: 404,
+        },
+      );
     }
 
     const clientId = profile.client_id;
@@ -41,15 +44,18 @@ export async function GET(request: NextRequest) {
     const { data: client, error: clientError } = await supabase
       .from("clients")
       .select(
-        "system_prompt, formatter_prompt, openai_model, groq_model, primary_model_provider, settings, whatsapp_business_account_id, ai_keys_mode",
+        "system_prompt, formatter_prompt, openai_model, groq_model, primary_model_provider, settings, whatsapp_business_account_id, ai_keys_mode, google_calendar_enabled, google_calendar_user_email, microsoft_calendar_enabled, microsoft_calendar_user_email",
       )
       .eq("id", clientId)
       .single();
 
     if (clientError || !client) {
-      return NextResponse.json({ error: "Cliente não encontrado" }, {
-        status: 404,
-      });
+      return NextResponse.json(
+        { error: "Cliente não encontrado" },
+        {
+          status: 404,
+        },
+      );
     }
 
     return NextResponse.json({
@@ -73,6 +79,11 @@ export async function GET(request: NextRequest) {
         },
       },
       whatsapp_business_account_id: client.whatsapp_business_account_id || null,
+      google_calendar_enabled: client.google_calendar_enabled || false,
+      google_calendar_user_email: client.google_calendar_user_email || null,
+      microsoft_calendar_enabled: client.microsoft_calendar_enabled || false,
+      microsoft_calendar_user_email:
+        client.microsoft_calendar_user_email || null,
     });
   } catch (error) {
     return NextResponse.json(
@@ -128,9 +139,12 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (profileError || !profile) {
-      return NextResponse.json({ error: "Perfil não encontrado" }, {
-        status: 404,
-      });
+      return NextResponse.json(
+        { error: "Perfil não encontrado" },
+        {
+          status: 404,
+        },
+      );
     }
 
     const clientId = profile.client_id;
