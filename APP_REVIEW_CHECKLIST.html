@@ -1,0 +1,985 @@
+<!DOCTYPE html><html><head>
+      <title>APP_REVIEW_CHECKLIST</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="file:///c:\Users\Luisf\.vscode\extensions\shd101wyy.markdown-preview-enhanced-0.8.20\crossnote\dependencies\katex\katex.min.css">
+      
+      
+      
+      
+      
+      <style>
+      code[class*=language-],pre[class*=language-]{color:#333;background:0 0;font-family:Consolas,"Liberation Mono",Menlo,Courier,monospace;text-align:left;white-space:pre;word-spacing:normal;word-break:normal;word-wrap:normal;line-height:1.4;-moz-tab-size:8;-o-tab-size:8;tab-size:8;-webkit-hyphens:none;-moz-hyphens:none;-ms-hyphens:none;hyphens:none}pre[class*=language-]{padding:.8em;overflow:auto;border-radius:3px;background:#f5f5f5}:not(pre)>code[class*=language-]{padding:.1em;border-radius:.3em;white-space:normal;background:#f5f5f5}.token.blockquote,.token.comment{color:#969896}.token.cdata{color:#183691}.token.doctype,.token.macro.property,.token.punctuation,.token.variable{color:#333}.token.builtin,.token.important,.token.keyword,.token.operator,.token.rule{color:#a71d5d}.token.attr-value,.token.regex,.token.string,.token.url{color:#183691}.token.atrule,.token.boolean,.token.code,.token.command,.token.constant,.token.entity,.token.number,.token.property,.token.symbol{color:#0086b3}.token.prolog,.token.selector,.token.tag{color:#63a35c}.token.attr-name,.token.class,.token.class-name,.token.function,.token.id,.token.namespace,.token.pseudo-class,.token.pseudo-element,.token.url-reference .token.variable{color:#795da3}.token.entity{cursor:help}.token.title,.token.title .token.punctuation{font-weight:700;color:#1d3e81}.token.list{color:#ed6a43}.token.inserted{background-color:#eaffea;color:#55a532}.token.deleted{background-color:#ffecec;color:#bd2c00}.token.bold{font-weight:700}.token.italic{font-style:italic}.language-json .token.property{color:#183691}.language-markup .token.tag .token.punctuation{color:#333}.language-css .token.function,code.language-css{color:#0086b3}.language-yaml .token.atrule{color:#63a35c}code.language-yaml{color:#183691}.language-ruby .token.function{color:#333}.language-markdown .token.url{color:#795da3}.language-makefile .token.symbol{color:#795da3}.language-makefile .token.variable{color:#183691}.language-makefile .token.builtin{color:#0086b3}.language-bash .token.keyword{color:#0086b3}pre[data-line]{position:relative;padding:1em 0 1em 3em}pre[data-line] .line-highlight-wrapper{position:absolute;top:0;left:0;background-color:transparent;display:block;width:100%}pre[data-line] .line-highlight{position:absolute;left:0;right:0;padding:inherit 0;margin-top:1em;background:hsla(24,20%,50%,.08);background:linear-gradient(to right,hsla(24,20%,50%,.1) 70%,hsla(24,20%,50%,0));pointer-events:none;line-height:inherit;white-space:pre}pre[data-line] .line-highlight:before,pre[data-line] .line-highlight[data-end]:after{content:attr(data-start);position:absolute;top:.4em;left:.6em;min-width:1em;padding:0 .5em;background-color:hsla(24,20%,50%,.4);color:#f4f1ef;font:bold 65%/1.5 sans-serif;text-align:center;vertical-align:.3em;border-radius:999px;text-shadow:none;box-shadow:0 1px #fff}pre[data-line] .line-highlight[data-end]:after{content:attr(data-end);top:auto;bottom:.4em}html body{font-family:'Helvetica Neue',Helvetica,'Segoe UI',Arial,freesans,sans-serif;font-size:16px;line-height:1.6;color:#333;background-color:#fff;overflow:initial;box-sizing:border-box;word-wrap:break-word}html body>:first-child{margin-top:0}html body h1,html body h2,html body h3,html body h4,html body h5,html body h6{line-height:1.2;margin-top:1em;margin-bottom:16px;color:#000}html body h1{font-size:2.25em;font-weight:300;padding-bottom:.3em}html body h2{font-size:1.75em;font-weight:400;padding-bottom:.3em}html body h3{font-size:1.5em;font-weight:500}html body h4{font-size:1.25em;font-weight:600}html body h5{font-size:1.1em;font-weight:600}html body h6{font-size:1em;font-weight:600}html body h1,html body h2,html body h3,html body h4,html body h5{font-weight:600}html body h5{font-size:1em}html body h6{color:#5c5c5c}html body strong{color:#000}html body del{color:#5c5c5c}html body a:not([href]){color:inherit;text-decoration:none}html body a{color:#08c;text-decoration:none}html body a:hover{color:#00a3f5;text-decoration:none}html body img{max-width:100%}html body>p{margin-top:0;margin-bottom:16px;word-wrap:break-word}html body>ol,html body>ul{margin-bottom:16px}html body ol,html body ul{padding-left:2em}html body ol.no-list,html body ul.no-list{padding:0;list-style-type:none}html body ol ol,html body ol ul,html body ul ol,html body ul ul{margin-top:0;margin-bottom:0}html body li{margin-bottom:0}html body li.task-list-item{list-style:none}html body li>p{margin-top:0;margin-bottom:0}html body .task-list-item-checkbox{margin:0 .2em .25em -1.8em;vertical-align:middle}html body .task-list-item-checkbox:hover{cursor:pointer}html body blockquote{margin:16px 0;font-size:inherit;padding:0 15px;color:#5c5c5c;background-color:#f0f0f0;border-left:4px solid #d6d6d6}html body blockquote>:first-child{margin-top:0}html body blockquote>:last-child{margin-bottom:0}html body hr{height:4px;margin:32px 0;background-color:#d6d6d6;border:0 none}html body table{margin:10px 0 15px 0;border-collapse:collapse;border-spacing:0;display:block;width:100%;overflow:auto;word-break:normal;word-break:keep-all}html body table th{font-weight:700;color:#000}html body table td,html body table th{border:1px solid #d6d6d6;padding:6px 13px}html body dl{padding:0}html body dl dt{padding:0;margin-top:16px;font-size:1em;font-style:italic;font-weight:700}html body dl dd{padding:0 16px;margin-bottom:16px}html body code{font-family:Menlo,Monaco,Consolas,'Courier New',monospace;font-size:.85em;color:#000;background-color:#f0f0f0;border-radius:3px;padding:.2em 0}html body code::after,html body code::before{letter-spacing:-.2em;content:'\00a0'}html body pre>code{padding:0;margin:0;word-break:normal;white-space:pre;background:0 0;border:0}html body .highlight{margin-bottom:16px}html body .highlight pre,html body pre{padding:1em;overflow:auto;line-height:1.45;border:#d6d6d6;border-radius:3px}html body .highlight pre{margin-bottom:0;word-break:normal}html body pre code,html body pre tt{display:inline;max-width:initial;padding:0;margin:0;overflow:initial;line-height:inherit;word-wrap:normal;background-color:transparent;border:0}html body pre code:after,html body pre code:before,html body pre tt:after,html body pre tt:before{content:normal}html body blockquote,html body dl,html body ol,html body p,html body pre,html body ul{margin-top:0;margin-bottom:16px}html body kbd{color:#000;border:1px solid #d6d6d6;border-bottom:2px solid #c7c7c7;padding:2px 4px;background-color:#f0f0f0;border-radius:3px}@media print{html body{background-color:#fff}html body h1,html body h2,html body h3,html body h4,html body h5,html body h6{color:#000;page-break-after:avoid}html body blockquote{color:#5c5c5c}html body pre{page-break-inside:avoid}html body table{display:table}html body img{display:block;max-width:100%;max-height:100%}html body code,html body pre{word-wrap:break-word;white-space:pre}}.markdown-preview{width:100%;height:100%;box-sizing:border-box}.markdown-preview ul{list-style:disc}.markdown-preview ul ul{list-style:circle}.markdown-preview ul ul ul{list-style:square}.markdown-preview ol{list-style:decimal}.markdown-preview ol ol,.markdown-preview ul ol{list-style-type:lower-roman}.markdown-preview ol ol ol,.markdown-preview ol ul ol,.markdown-preview ul ol ol,.markdown-preview ul ul ol{list-style-type:lower-alpha}.markdown-preview .newpage,.markdown-preview .pagebreak{page-break-before:always}.markdown-preview pre.line-numbers{position:relative;padding-left:3.8em;counter-reset:linenumber}.markdown-preview pre.line-numbers>code{position:relative}.markdown-preview pre.line-numbers .line-numbers-rows{position:absolute;pointer-events:none;top:1em;font-size:100%;left:0;width:3em;letter-spacing:-1px;border-right:1px solid #999;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}.markdown-preview pre.line-numbers .line-numbers-rows>span{pointer-events:none;display:block;counter-increment:linenumber}.markdown-preview pre.line-numbers .line-numbers-rows>span:before{content:counter(linenumber);color:#999;display:block;padding-right:.8em;text-align:right}.markdown-preview .mathjax-exps .MathJax_Display{text-align:center!important}.markdown-preview:not([data-for=preview]) .code-chunk .code-chunk-btn-group{display:none}.markdown-preview:not([data-for=preview]) .code-chunk .status{display:none}.markdown-preview:not([data-for=preview]) .code-chunk .output-div{margin-bottom:16px}.markdown-preview .md-toc{padding:0}.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link{display:inline;padding:.25rem 0}.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link div,.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link p{display:inline}.markdown-preview .md-toc .md-toc-link-wrapper.highlighted .md-toc-link{font-weight:800}.scrollbar-style::-webkit-scrollbar{width:8px}.scrollbar-style::-webkit-scrollbar-track{border-radius:10px;background-color:transparent}.scrollbar-style::-webkit-scrollbar-thumb{border-radius:5px;background-color:rgba(150,150,150,.66);border:4px solid rgba(150,150,150,.66);background-clip:content-box}html body[for=html-export]:not([data-presentation-mode]){position:relative;width:100%;height:100%;top:0;left:0;margin:0;padding:0;overflow:auto}html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{position:relative;top:0;min-height:100vh}@media screen and (min-width:914px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{padding:2em calc(50% - 457px + 2em)}}@media screen and (max-width:914px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{padding:2em}}@media screen and (max-width:450px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{font-size:14px!important;padding:1em}}@media print{html body[for=html-export]:not([data-presentation-mode]) #sidebar-toc-btn{display:none}}html body[for=html-export]:not([data-presentation-mode]) #sidebar-toc-btn{position:fixed;bottom:8px;left:8px;font-size:28px;cursor:pointer;color:inherit;z-index:99;width:32px;text-align:center;opacity:.4}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] #sidebar-toc-btn{opacity:1}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc{position:fixed;top:0;left:0;width:300px;height:100%;padding:32px 0 48px 0;font-size:14px;box-shadow:0 0 4px rgba(150,150,150,.33);box-sizing:border-box;overflow:auto;background-color:inherit}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar{width:8px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar-track{border-radius:10px;background-color:transparent}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar-thumb{border-radius:5px;background-color:rgba(150,150,150,.66);border:4px solid rgba(150,150,150,.66);background-clip:content-box}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc a{text-decoration:none}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc{padding:0 16px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link{display:inline;padding:.25rem 0}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link div,html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link p{display:inline}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper.highlighted .md-toc-link{font-weight:800}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{left:300px;width:calc(100% - 300px);padding:2em calc(50% - 457px - 300px / 2);margin:0;box-sizing:border-box}@media screen and (max-width:1274px){html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{padding:2em}}@media screen and (max-width:450px){html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{width:100%}}html body[for=html-export]:not([data-presentation-mode]):not([html-show-sidebar-toc]) .markdown-preview{left:50%;transform:translateX(-50%)}html body[for=html-export]:not([data-presentation-mode]):not([html-show-sidebar-toc]) .md-sidebar-toc{display:none}
+/* Please visit the URL below for more information: */
+/*   https://shd101wyy.github.io/markdown-preview-enhanced/#/customize-css */
+
+      </style>
+      <!-- The content below will be included at the end of the <head> element. --><script type="text/javascript">
+  document.addEventListener("DOMContentLoaded", function () {
+    // your code here
+  });
+</script></head><body for="html-export">
+    
+    
+      <div class="crossnote markdown-preview  ">
+      <div>
+<h1 id="app-review-checklist---material-necessário">App Review Checklist - Material Necessário </h1>
+<p><strong>Status:</strong> Preparando submissão<br>
+<strong>Data:</strong> 13 de fevereiro de 2026 (atualizado com auditoria real do código + diretrizes Meta oficiais)<br>
+<strong>Versão:</strong> 2.0 (com guia completo de screencasts)</p>
+<hr>
+<h2 id="-novo-guia-completo-de-screencasts">🎬 NOVO: Guia Completo de Screencasts</h2>
+<p><strong>Documentos criados:</strong></p>
+<ul>
+<li>📄 <code>docs/APP_REVIEW_CHECKLIST_COMPLETE.md</code> — Checklist completo com roteiros detalhados</li>
+<li>📄 <code>docs/SCREENCAST_GUIDE.md</code> — Guia passo a passo de gravação</li>
+</ul>
+<p><strong>Principais adições:</strong></p>
+<ul>
+<li>✅ Diretrizes oficiais Meta sobre screencasts</li>
+<li>✅ Roteiros detalhados para cada permissão</li>
+<li>✅ Checklist de qualidade (resolução, anotações, zoom)</li>
+<li>✅ Exemplos visuais baseados nas imagens fornecidas</li>
+<li>✅ Template de roteiro reutilizável</li>
+</p>
+<hr>
+<h2 id="-resumo-executivo">🎯 RESUMO EXECUTIVO </h2>
+<h3 id="-solicitar-agora-temos-código--screenshots-possíveis">✅ SOLICITAR AGORA (temos código + screenshots possíveis) </h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Permissão</th>
+<th>Tipo</th>
+<th>Screenshots?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>whatsapp_business_messaging</code></td>
+<td>Standard</td>
+<td>✅ Dashboard conversas, chat detail, ConnectWhatsAppButton, webhook</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>whatsapp_business_management</code></td>
+<td>Standard</td>
+<td>✅ Templates (list/sync/submit/delete), Settings</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>whatsapp_business_manage_events</code></td>
+<td>Standard</td>
+<td>✅ CAPI implementada (419 linhas), tab CAPI Events no Meta Ads</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>ads_read</code></td>
+<td>Standard</td>
+<td>✅ Meta Ads dashboard 7 tabs (read/analytics)</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>pages_show_list</code></td>
+<td>Standard</td>
+<td>✅ OAuth flow implementado</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>pages_read_engagement</code></td>
+<td>Standard</td>
+<td>✅ OAuth flow implementado</td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>business_management</code></td>
+<td>Standard</td>
+<td>✅ OAuth callback (196 linhas)</td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>email</code></td>
+<td>Standard</td>
+<td>✅ Login/Register pages</td>
+</tr>
+<tr>
+<td>9</td>
+<td><code>public_profile</code></td>
+<td>Standard</td>
+<td>✅ Login/Register pages</td>
+</tr>
+<tr>
+<td>10</td>
+<td><code>manage_app_solution</code></td>
+<td>Standard</td>
+<td>✅ OAuth flow</td>
+</tr>
+</tbody>
+</table>
+<h3 id="-não-solicitar-agora-sem-códigoscreenshots">⛔ NÃO SOLICITAR AGORA (sem código/screenshots) </h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Permissão</th>
+<th>Tipo</th>
+<th>Motivo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>11</td>
+<td><code>ads_management</code></td>
+<td><strong>Advanced</strong> ⚠️</td>
+<td>Não temos wizard "Criar Campanha CTWA" — dashboard é read/analytics only. Screencast exigido pelo review não pode ser gravado</td>
+</tr>
+<tr>
+<td>12</td>
+<td><code>pages_manage_ads</code></td>
+<td>Standard</td>
+<td>Depende de ads_management funcional</td>
+</tr>
+<tr>
+<td>13</td>
+<td><code>catalog_management</code></td>
+<td>Standard</td>
+<td>Zero código implementado</td>
+</tr>
+<tr>
+<td>14</td>
+<td><code>instagram_basic</code></td>
+<td>Standard</td>
+<td>Zero código Instagram no projeto</td>
+</tr>
+<tr>
+<td>15</td>
+<td><code>instagram_manage_messages</code></td>
+<td>Standard</td>
+<td>Zero código Instagram no projeto</td>
+</tr>
+<tr>
+<td>16</td>
+<td><code>instagram_manage_comments</code></td>
+<td>Standard</td>
+<td>Zero código Instagram no projeto</td>
+</tr>
+<tr>
+<td>17-26</td>
+<td>Threads (10 permissões)</td>
+<td>Standard</td>
+<td>Zero código Threads no projeto</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="-detalhamento-por-permissão">📋 Detalhamento por Permissão </h2>
+<h3 id="1️⃣-whatsapp-business-platform">1️⃣ WhatsApp Business Platform </h3>
+<h4 id="-whatsapp_business_messaging-standard---não-requer-review--solicitar">✅ <strong>whatsapp_business_messaging</strong> (Standard - Não requer review) — SOLICITAR </h4>
+<p><strong>Screenshots Possíveis (temos UI pronta):</strong></p>
+<ul>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" checked=""> ✅ Dashboard mostrando conversas WhatsApp (<code>/dashboard/conversations</code> — <code>ConversationsIndexClient</code>)</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" checked=""> ✅ Chat detail com message bubbles (<code>/dashboard/chat?phone=...</code> — <code>ConversationPageClient</code>)</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" checked=""> ✅ Botão "Conectar WhatsApp" (<code>ConnectWhatsAppButton.tsx</code>)</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" checked=""> ✅ Página test-oauth com fluxo Embedded Signup (<code>/test-oauth</code>)</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" checked=""> ✅ Pipeline de processamento backend (<code>src/flows/chatbotFlow.ts</code> — 1646 linhas, 14 nodes)</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" checked=""> ✅ Webhook funcionando (<code>/api/webhook/[clientId]/route.ts</code> — 474 linhas, HMAC validation)</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> ⏳ Bot respondendo no WhatsApp (precisa OAuth funcionar para demo real)</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> ⏳ Página de onboarding final (callback redireciona para <code>/onboarding</code> mas <strong>página NÃO EXISTE</strong>)</li>
+</ul>
+<p><strong>📹 Screencast Roteiro Completo (2-3 min):</strong></p>
+<blockquote>
+<p><strong>⚠️ IMPORTANTE:</strong> Ver roteiro detalhado em <code>docs/APP_REVIEW_CHECKLIST_COMPLETE.md</code> seção "whatsapp_business_messaging"</p>
+</blockquote>
+<p><strong>Estrutura do Vídeo:</strong></p>
+<ul>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" checked=""> ✅ <strong>PARTE 1: FLUXO DE LOGIN</strong> (0:00-0:30)
+<ul>
+<li>Logout completo (sair de todas as contas)</li>
+<li>Acessar /login</li>
+<li>Preencher email + senha → Clicar "Entrar"</li>
+<li>Dashboard carregado</li>
+</ul>
+</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> ⏳ <strong>PARTE 2: CONECTAR WHATSAPP</strong> (0:30-1:30)
+<ul>
+<li>Dashboard → Clicar "Conectar WhatsApp Business"</li>
+<li>[ANOTAÇÃO: "Button to initiate OAuth flow"]</li>
+<li>Redirecionamento para Meta OAuth</li>
+<li>Tela Meta: "Continue as [Nome]?"</li>
+<li>Tela Meta: Seleção de Página → Selecionar</li>
+<li>Tela Meta: Permissões → [ANOTAÇÃO: "whatsapp_business_messaging highlighted"]</li>
+<li>Clicar "Continuar" → Autorizar</li>
+<li>Callback retornando → Dashboard: "WhatsApp conectado ✅"</li>
+</ul>
+</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" checked=""> ✅ <strong>PARTE 3: CONFIGURAR CHATBOT</strong> (1:30-2:00)
+<ul>
+<li>Dashboard → Settings → Bot Configuration</li>
+<li>Configurar system prompt, modelo (GPT-4o Mini)</li>
+</ul>
+</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> ⏳ <strong>PARTE 4: USO DA PERMISSÃO</strong> (2:00-3:00)
+<ul>
+<li>[CORTE PARA SMARTPHONE] Abrir WhatsApp</li>
+<li>Enviar mensagem: "Olá, preciso de ajuda"</li>
+<li>[VOLTAR PARA DASHBOARD] Mensagem aparece</li>
+<li>[ANOTAÇÃO: "Message received via whatsapp_business_messaging webhook"]</li>
+<li>Bot processando → Responde automaticamente</li>
+<li>[ANOTAÇÃO: "Response sent via WhatsApp Business API"]</li>
+<li>[CORTE PARA SMARTPHONE] Resposta aparece</li>
+<li>[VOLTAR PARA DASHBOARD] Conversa completa no histórico</li>
+</ul>
+</li>
+</ul>
+<p><strong>Anotações Necessárias:</strong></p>
+<ul>
+<li>[ ] Anotação no botão "Conectar WhatsApp"</li>
+<li>[ ] Anotação destacando permissão na tela OAuth</li>
+<li>[ ] Anotação quando webhook recebe mensagem</li>
+<li>[ ] Anotação quando bot envia resposta</li>
+</ul>
+<p><strong>Requisitos Técnicos:</strong></p>
+<ul>
+<li>Resolução: 1080p mínimo</li>
+<li>Duração: 2-3 minutos</li>
+<li>Áudio: DESATIVADO</li>
+<li>Idioma: Inglês ou com legendas</li>
+<li>Formato: MP4 (H.264)</li>
+</ul>
+<p><strong>Arquivo:</strong> <code>docs/videos/whatsapp-business-messaging.mp4</strong></p>
+<p><strong>Status:</strong> ✅ <strong>CÓDIGO 100% IMPLEMENTADO</strong> — Screenshots da UI possíveis agora, demo end-to-end aguarda OAuth</p>
+<p><strong>Código implementado:</strong></p>
+<ul>
+<li>✅ OAuth completo: <code>/api/auth/meta/init</code>, <code>/callback</code>, <code>/deauth</code> (3 routes)</li>
+<li>✅ <code>meta-oauth.ts</code> (181 linhas): <code>getMetaOAuthURL()</code>, <code>exchangeCodeForToken()</code>, <code>fetchWABADetails()</code></li>
+<li>✅ <code>ConnectWhatsAppButton.tsx</code>: Componente funcional</li>
+<li>✅ Webhook per-client: <code>/api/webhook/[clientId]/route.ts</code> (474 linhas) — HMAC, dedup, multi-tenant</li>
+<li>✅ <code>chatbotFlow.ts</code> (1646 linhas): Pipeline completo de 14 nodes</li>
+<li>✅ 38 processing nodes em <code>src/nodes/</code> (transcription, image analysis, RAG, TTS, etc.)</li>
+<li>✅ Dashboard: conversations list + chat detail com realtime</li>
+<li>✅ Contacts page: <code>/dashboard/contacts</code></li>
+</ul>
+<p><strong>O que falta (bloqueado):</strong></p>
+<ul>
+<li>⏳ OAuth funcionando (erro genérico da Meta — aguardando resolução)</li>
+<li>❌ Página <code>/onboarding</code> (referenciada no callback mas <strong>NÃO implementada</strong>)</li>
+<li>⏳ Screenshots de demo end-to-end (após OAuth funcionar)</li>
+<li>⏳ Vídeo demonstrativo (após OAuth funcionar)</li>
+</ul>
+<hr>
+<h4 id="-whatsapp_business_management-standard---não-requer-review--solicitar">✅ <strong>whatsapp_business_management</strong> (Standard - Não requer review) — SOLICITAR </h4>
+<p><strong>Screenshots Possíveis:</strong></p>
+<ul>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" checked=""> ✅ Templates de mensagem — list, sync, submit, delete (<code>/dashboard/templates</code> — 193 linhas)</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" checked=""> ✅ Configurações de cliente — OpenAI keys, modelo, system prompt (<code>/dashboard/settings</code> — 1442 linhas)</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" checked=""> ✅ Vault de credenciais no Settings</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> ⏳ Dashboard mostrando WABAs conectados (após OAuth funcionar)</li>
+</ul>
+<p><strong>Status:</strong> ✅ <strong>IMPLEMENTADO</strong> — Templates + Settings prontos para screenshot</p>
+<p><strong>Código implementado:</strong></p>
+<ul>
+<li>✅ Templates page: list, sync da Meta API, submit para aprovação, delete</li>
+<li>✅ Settings page: profile, vault secrets, bot config, TTS</li>
+<li>✅ Webhook configuração automática no OAuth callback</li>
+</ul>
+<p><strong>O que falta:</strong></p>
+<ul>
+<li>⏳ Interface para gerenciar múltiplos phone numbers (melhoraria review)</li>
+<li>⏳ Dashboard mostrando health status/quality rating do WABA</li>
+</ul>
+<hr>
+<h4 id="-whatsapp_business_manage_events-standard---não-requer-review--solicitar">✅ <strong>whatsapp_business_manage_events</strong> (Standard - Não requer review) — SOLICITAR </h4>
+<p><strong>Screenshots Possíveis:</strong></p>
+<ul>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" checked=""> ✅ Tab "CAPI Events" no Meta Ads dashboard mostrando eventos enviados</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" checked=""> ✅ Configuração de Dataset ID na tab "Config" do Meta Ads</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" checked=""> ✅ CRM Kanban board onde mover card dispara evento de conversão (<code>/dashboard/crm</code> — 523 linhas)</li>
+</ul>
+<p><strong>Status:</strong> ✅ <strong>IMPLEMENTADO</strong> (corrigido — antes marcado incorretamente como "0%")</p>
+<p><strong>Código implementado:</strong></p>
+<ul>
+<li>✅ <code>src/nodes/sendConversionEvent.ts</code> (419 linhas) — Implementação COMPLETA:
+<ul>
+<li>Envia eventos <code>Lead</code>, <code>QualifiedLead</code>, <code>Purchase</code> para Meta Conversions API</li>
+<li>Usa <code>ctwa_clid</code> para atribuição de anúncio Click-to-WhatsApp</li>
+<li>Envia <code>custom_data</code> (value, currency) para ROI tracking</li>
+<li>Loga eventos na tabela <code>conversion_events_log</code></li>
+<li>Suporta deduplicação de eventos</li>
+</ul>
+</li>
+<li>✅ <code>src/nodes/captureLeadSource.ts</code> — Captura <code>ctwa_clid</code> do webhook</li>
+<li>✅ <code>src/nodes/updateCRMCardStatus.ts</code> — Auto-atualiza CRM e dispara CAPI</li>
+<li>✅ Tab "CAPI Events" no Meta Ads dashboard — tabela com histórico de eventos</li>
+<li>✅ Tab "Config" com campo para Dataset ID</li>
+</ul>
+<p><strong>O que falta:</strong></p>
+<ul>
+<li>⏳ Demo real de evento sendo enviado (precisa campanha CTWA ativa)</li>
+</ul>
+<hr>
+<h3 id="2️⃣-meta-ads--marketing-api">2️⃣ Meta Ads / Marketing API </h3>
+<h4 id="-ads_management-advanced---️-requer-review--não-solicitar-agora">⛔ <strong>ads_management</strong> (Advanced - ⚠️ REQUER REVIEW) — NÃO SOLICITAR AGORA </h4>
+<blockquote>
+<p><strong>⚠️ MOTIVO:</strong> Esta é a única permissão <strong>Advanced</strong> que exige review formal com screencast obrigatório. O screencast deve mostrar <strong>criação de campanha CTWA end-to-end</strong>. Nosso dashboard Meta Ads é <strong>read/analytics only</strong> — não temos wizard "Criar Campanha". Sem isso, o review será <strong>rejeitado</strong>.</p>
+</blockquote>
+<p><strong>O que temos:</strong></p>
+<ul>
+<li>✅ Dashboard Meta Ads completo (<code>/dashboard/meta-ads</code> — 1032 linhas, 7 tabs)</li>
+<li>✅ Leitura de campanhas existentes (insights, spend, impressions, clicks)</li>
+<li>✅ Tab "CAPI Events" com histórico de conversões</li>
+<li>✅ Tab "Lead Ads" para formulários capturados</li>
+<li>✅ Tab "Audiences" para sync de audiências customizadas</li>
+<li>✅ Tab "Alerts" para monitoramento de budget</li>
+<li>✅ Tab "Config" para configuração de Ad Account, Access Token, Dataset ID</li>
+<li>✅ Componentes: <code>MetaAdsTrendCharts</code>, <code>MetaAdsBreakdownTable</code>, <code>MetaAdsBudgetAlerts</code>, <code>MetaAdsAudienceSync</code>, <code>MetaAdsLeadAds</code></li>
+</ul>
+<p><strong>O que falta para solicitar:</strong></p>
+<ul>
+<li>❌ <strong>CRÍTICO:</strong> Wizard "Criar Campanha CTWA" (formulário: objetivo, orçamento, público, creative, CTA)</li>
+<li>❌ <strong>CRÍTICO:</strong> Pausar/retomar campanha via API no dashboard</li>
+<li>❌ <strong>CRÍTICO:</strong> Screencast end-to-end de criação de campanha</li>
+</ul>
+<p><strong>Quando solicitar:</strong> Após implementar wizard de criação de campanha (~8-12 horas de dev)</p>
+<hr>
+<h4 id="-ads_read-standard---não-requer-review--solicitar">✅ <strong>ads_read</strong> (Standard - Não requer review) — SOLICITAR </h4>
+<p><strong>Screenshots Possíveis:</strong></p>
+<ul>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" checked=""> ✅ Dashboard Meta Ads — tab "Overview" com métricas (spend, impressions, clicks, CTR)</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" checked=""> ✅ Tab "Campaigns" com lista de campanhas e insights</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" checked=""> ✅ Gráficos de tendência (<code>MetaAdsTrendCharts</code>)</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" checked=""> ✅ Breakdown table (<code>MetaAdsBreakdownTable</code>)</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" checked=""> ✅ Analytics de custos</li>
+</ul>
+<p><strong>Status:</strong> ✅ <strong>IMPLEMENTADO</strong> — Dashboard rico, read-only, 7 tabs funcionais</p>
+<hr>
+<h4 id="-pages_manage_ads-standard--não-solicitar-agora">⛔ <strong>pages_manage_ads</strong> (Standard) — NÃO SOLICITAR AGORA </h4>
+<blockquote>
+<p><strong>⚠️ MOTIVO:</strong> Depende de <code>ads_management</code> funcional (criação de ads associados a Pages). Sem o wizard de campanha, não conseguimos demonstrar esta permissão.</p>
+</blockquote>
+<hr>
+<h4 id="-pages_show_list-standard--solicitar">✅ <strong>pages_show_list</strong> (Standard) — SOLICITAR </h4>
+<p><strong>Screenshots:</strong> OAuth flow que lista Pages do usuário durante Embedded Signup.<br>
+<strong>Código:</strong> <code>meta-oauth.ts</code> → <code>getMetaOAuthURL()</code> solicita <code>pages_show_list</code> no scope.</p>
+<hr>
+<h4 id="-pages_read_engagement-standard--solicitar">✅ <strong>pages_read_engagement</strong> (Standard) — SOLICITAR </h4>
+<p><strong>Screenshots:</strong> OAuth flow + referências no Meta Ads dashboard.<br>
+<strong>Código:</strong> Implementado como dependência de <code>ads_read</code>.</p>
+<hr>
+<h4 id="-catalog_management-standard--não-solicitar-agora">⛔ <strong>catalog_management</strong> (Standard) — NÃO SOLICITAR AGORA </h4>
+<blockquote>
+<p><strong>⚠️ MOTIVO:</strong> Zero código implementado. Não existe:</p>
+<ul>
+<li>Nenhuma página <code>/dashboard/product-catalog</code></li>
+<li>Nenhum componente de upload de produtos</li>
+<li>Nenhuma integração com Product Catalog API</li>
+<li>Nenhum envio de product messages no chat</li>
+</ul>
+</blockquote>
+<p><strong>Quando solicitar:</strong> Após implementar funcionalidade de catálogo (~12-16 horas de dev)</p>
+<hr>
+<h3 id="3️⃣-instagram-graph-api">3️⃣ Instagram Graph API </h3>
+<h4 id="-instagram_basic-instagram_manage_messages-instagram_manage_comments--não-solicitar-agora">⛔ <strong>instagram_basic</strong>, <strong>instagram_manage_messages</strong>, <strong>instagram_manage_comments</strong> — NÃO SOLICITAR AGORA </h4>
+<blockquote>
+<p><strong>⚠️ MOTIVO:</strong> Zero código Instagram em todo o projeto. Não existe:</p>
+<ul>
+<li>Nenhuma página Instagram no dashboard</li>
+<li>Nenhum webhook handler para Instagram</li>
+<li>Nenhum parser de mensagens Instagram</li>
+<li>Nenhum componente de DM ou comentários</li>
+<li>A única menção é um texto descritivo "Facebook/Instagram" no <code>MetaAdsLeadAds.tsx</code></li>
+</ul>
+</blockquote>
+<p><strong>O que seria necessário implementar:</strong></p>
+<ul>
+<li>Webhook handler para Instagram Messaging API</li>
+<li>Parser de mensagens Instagram → formato unificado</li>
+<li>Componentes de DM no dashboard de conversas (multi-canal)</li>
+<li>Bot respondendo DMs e comentários</li>
+<li><strong>Estimativa:</strong> 12-16 horas de dev</li>
+</ul>
+<p><strong>Quando solicitar:</strong> Após implementar integração Instagram completa</p>
+<hr>
+<h3 id="4️⃣-threads-api-10-permissões">4️⃣ Threads API (10 permissões) </h3>
+<h4 id="-threads_basic-threads_content_publish-threads_manage_replies-etc--não-solicitar-agora">⛔ <strong>threads_basic</strong>, <strong>threads_content_publish</strong>, <strong>threads_manage_replies</strong>, etc. — NÃO SOLICITAR AGORA </h4>
+<blockquote>
+<p><strong>⚠️ MOTIVO:</strong> Zero código Threads em todo o projeto. Nenhuma referência a Threads em <code>src/</code>.</p>
+</blockquote>
+<p><strong>Quando solicitar:</strong> Após implementar integração Threads completa (~8-12 horas de dev)</p>
+<hr>
+<h3 id="5️⃣-permissões-compartilhadas">5️⃣ Permissões Compartilhadas </h3>
+<h4 id="-business_management-standard--solicitar">✅ <strong>business_management</strong> (Standard) — SOLICITAR </h4>
+<p><strong>Screenshots:</strong> OAuth callback que acessa Business Manager para listar WABAs.<br>
+<strong>Código:</strong> <code>src/app/api/auth/meta/callback/route.ts</code> (196 linhas) — exchanges code, fetches WABA details, creates client.</p>
+<hr>
+<h4 id="-email-standard--solicitar">✅ <strong>email</strong> (Standard) — SOLICITAR </h4>
+<p><strong>Screenshots:</strong> Login page (<code>/login</code> — 319 linhas), Register page (<code>/register</code> — 298 linhas).<br>
+<strong>Código:</strong> Supabase Auth com email/password.</p>
+<hr>
+<h4 id="-public_profile-standard--solicitar">✅ <strong>public_profile</strong> (Standard) — SOLICITAR </h4>
+<p><strong>Screenshots:</strong> Header do dashboard com nome do usuário.<br>
+<strong>Código:</strong> OAuth flow obtém nome + foto do perfil.</p>
+<hr>
+<h4 id="-manage_app_solution-standard--solicitar">✅ <strong>manage_app_solution</strong> (Standard) — SOLICITAR </h4>
+<p><strong>Screenshots:</strong> OAuth flow durante setup.<br>
+<strong>Código:</strong> Referenciado nas permissões do OAuth scope.</p>
+<hr>
+<h2 id="-diretrizes-de-screencasts-meta-oficial">🎬 Diretrizes de Screencasts (Meta Oficial) </h2>
+<h3 id="-3-requisitos-obrigatórios">✅ 3 Requisitos Obrigatórios</h3>
+<ol>
+<li>
+<p><strong>Mostrar Fluxo de Login Completo</strong></p>
+<ul>
+<li>Sair de todas as contas de teste antes de começar</li>
+<li>Capturar TODO o fluxo: logout → login → dashboard</li>
+<li>Se usuários podem criar conta sem Login do Facebook → capturar também</li>
+<li>Fornecer credenciais de teste se necessário</li>
+</ul>
+</li>
+<li>
+<p><strong>Mostrar Concessão de Permissão</strong></p>
+<ul>
+<li>Botão de login/connect no app</li>
+<li>Redirecionamento para Meta OAuth</li>
+<li>Tela de autorização mostrando permissões</li>
+<li>Usuário concedendo permissões</li>
+<li>Callback retornando para o app</li>
+<li>App usando a permissão concedida</li>
+</ul>
+</li>
+<li>
+<p><strong>Mostrar Uso de Dados (Funcionalidade)</strong></p>
+<ul>
+<li>Usuário acessando funcionalidade que requer a permissão</li>
+<li>App usando os dados obtidos com a permissão</li>
+<li>Resultado visível da funcionalidade</li>
+</ul>
+</li>
+</ol>
+<h3 id="-diretrizes-técnicas">🎨 Diretrizes Técnicas</h3>
+<table>
+<thead>
+<tr>
+<th>Requisito</th>
+<th>Especificação</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Resolução</strong></td>
+<td>1080p (1920x1080) mínimo</td>
+</tr>
+<tr>
+<td><strong>Largura máxima</strong></td>
+<td>1440px (ajustar monitor antes)</td>
+</tr>
+<tr>
+<td><strong>Formato</strong></td>
+<td>MP4 (H.264)</td>
+</tr>
+<tr>
+<td><strong>Duração</strong></td>
+<td>30 segundos a 2 minutos</td>
+</tr>
+<tr>
+<td><strong>Áudio</strong></td>
+<td>DESATIVADO</td>
+</tr>
+<tr>
+<td><strong>Software</strong></td>
+<td>Camtasia (recomendado) ou OBS/QuickTime</td>
+</tr>
+<tr>
+<td><strong>Navegação</strong></td>
+<td>Usar mouse (não teclado)</td>
+</tr>
+<tr>
+<td><strong>Scroll</strong></td>
+<td>Rolar devagar (revisores precisam ler)</td>
+</tr>
+<tr>
+<td><strong>Anotações</strong></td>
+<td>Destacar quando app usa permissão específica</td>
+</tr>
+<tr>
+<td><strong>Zoom</strong></td>
+<td>Aplicar em seções importantes</td>
+</tr>
+<tr>
+<td><strong>Idioma</strong></td>
+<td>Inglês (ou com legendas)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>📖 Guia Completo:</strong> Ver <code>docs/SCREENCAST_GUIDE.md</code> para roteiros detalhados de cada permissão</p>
+<hr>
+<h2 id="-screenshots-que-podemos-fazer-agora">📸 Screenshots que PODEMOS Fazer Agora </h2>
+<h3 id="-prontos-para-screenshot-20-telas">✅ Prontos para Screenshot (20+ telas) </h3>
+<ol>
+<li>
+<p><strong>Landing Page &amp; Auth</strong></p>
+<ul>
+<li><code>/</code> — Landing page com Hero, Highlights, Plans, Security, CTA ✅</li>
+<li><code>/login</code> — Login com email/password + auth biométrica (319 linhas) ✅</li>
+<li><code>/register</code> — Registro com auto-provisioning de client (298 linhas) ✅</li>
+</ul>
+</li>
+<li>
+<p><strong>Dashboard Principal</strong></p>
+<ul>
+<li><code>/dashboard</code> — Tela inicial com metric cards (<code>DashboardClient</code>) ✅</li>
+<li><code>/dashboard/conversations</code> — Lista de conversas com busca (<code>ConversationsIndexClient</code>) ✅</li>
+<li><code>/dashboard/chat?phone=...</code> — Chat detail com message bubbles e realtime ✅</li>
+<li><code>/dashboard/contacts</code> — Gerenciamento de contatos ✅</li>
+</ul>
+</li>
+<li>
+<p><strong>CRM Kanban</strong></p>
+<ul>
+<li><code>/dashboard/crm</code> — Board completo com drag-drop (523 linhas + 17 componentes) ✅</li>
+<li>Cards, colunas customizáveis, tags, timeline, notas ✅</li>
+<li>Analytics do pipeline ✅</li>
+</ul>
+</li>
+<li>
+<p><strong>Meta Ads Dashboard</strong></p>
+<ul>
+<li><code>/dashboard/meta-ads</code> — 7 tabs (1032 linhas) ✅</li>
+<li>Overview: spend, impressions, clicks, leads, conversions, ROI ✅</li>
+<li>Campaigns: lista com insights ✅</li>
+<li>CAPI Events: histórico de eventos de conversão ✅</li>
+<li>Lead Ads: formulários capturados ✅</li>
+<li>Audiences: sync com Custom Audiences ✅</li>
+<li>Alerts: monitoramento de budget ✅</li>
+<li>Config: Ad Account ID, Access Token, Dataset ID ✅</li>
+</ul>
+</li>
+<li>
+<p><strong>Knowledge Base (RAG)</strong></p>
+<ul>
+<li><code>/dashboard/knowledge</code> — Upload de documentos (drag-drop PDF/TXT/MD) ✅</li>
+<li>Lista de documentos + chunks viewer ✅</li>
+</ul>
+</li>
+<li>
+<p><strong>Agents</strong></p>
+<ul>
+<li><code>/dashboard/agents</code> — Multi-agent setup, A/B test, scheduler (495 linhas) ✅</li>
+</ul>
+</li>
+<li>
+<p><strong>Flows</strong></p>
+<ul>
+<li><code>/dashboard/flows</code> — Lista, criar, editar, deletar flows (239 linhas) ✅</li>
+</ul>
+</li>
+<li>
+<p><strong>Templates WhatsApp</strong></p>
+<ul>
+<li><code>/dashboard/templates</code> — List, sync, submit, delete (193 linhas) ✅</li>
+</ul>
+</li>
+<li>
+<p><strong>Analytics (3 páginas)</strong></p>
+<ul>
+<li><code>/dashboard/analytics</code> — Unified analytics ✅</li>
+<li><code>/dashboard/analytics-comparison</code> — OpenAI usage + cost charts (919 linhas) ✅</li>
+<li><code>/dashboard/openai-analytics</code> — Recharts bar/line/pie (456 linhas) ✅</li>
+</ul>
+</li>
+<li>
+<p><strong>Settings</strong></p>
+<ul>
+<li><code>/dashboard/settings</code> — Profile, vault secrets, bot config (1442 linhas) ✅</li>
+<li><code>/dashboard/settings/tts</code> — Text-to-speech config (527 linhas) ✅</li>
+</ul>
+</li>
+<li>
+<p><strong>AI Gateway</strong></p>
+<ul>
+<li><code>/dashboard/ai-gateway</code> — Hub com 6 sub-seções ✅</li>
+<li>Setup, cache, models, analytics, budget, test, validation ✅</li>
+</ul>
+</li>
+<li>
+<p><strong>Admin</strong></p>
+<ul>
+<li><code>/dashboard/admin/budget-plans</code> — Budget limits per client (474 linhas) ✅</li>
+</ul>
+</li>
+<li>
+<p><strong>Conectar WhatsApp</strong></p>
+<ul>
+<li><code>/test-oauth</code> — ConnectWhatsAppButton com explicação step-by-step ✅</li>
+</ul>
+</li>
+<li>
+<p><strong>Páginas Legais</strong></p>
+<ul>
+<li><code>/privacy</code> — Privacy Policy completa, branded <a href="http://Uzz.AI">Uzz.AI</a> (273 linhas) ✅</li>
+<li><code>/terms</code> — Terms of Service completo (266 linhas) ✅</li>
+</ul>
+</li>
+<li>
+<p><strong>Outros</strong></p>
+<ul>
+<li><code>/dashboard/flow-architecture</code> — ReactFlow visual editor ✅</li>
+<li><code>/dashboard/backend</code> — Terminal-style execution log (707 linhas) ✅</li>
+<li><code>/dashboard/test-interactive</code> — Test WhatsApp buttons/lists (297 linhas) ✅</li>
+</ul>
+</li>
+</ol>
+<h3 id="-precisam-ser-criadosmelhorados">⏳ Precisam ser criados/melhorados </h3>
+<ol>
+<li><strong>Página <code>/onboarding</code></strong> — Callback OAuth redireciona para ela, mas <strong>NÃO EXISTE</strong></li>
+<li><strong>Página <code>/dpa</code></strong> — Referenciada no META_APP_REVIEW.md mas <strong>NÃO EXISTE</strong></li>
+</ol>
+<h3 id="-não-podemos-fazer-bloqueados-ou-sem-código">❌ Não Podemos Fazer (bloqueados ou sem código) </h3>
+<ol>
+<li><strong>OAuth Flow Completo no WhatsApp real</strong> — ⏳ Bloqueado pelo erro genérico da Meta</li>
+<li><strong>Demo de bot respondendo em tempo real</strong> — ⏳ Precisa OAuth funcionar</li>
+<li><strong>Criação de campanha CTWA</strong> — ❌ Wizard não implementado</li>
+<li><strong>Instagram (DMs, comentários, dashboard)</strong> — ❌ Zero código</li>
+<li><strong>Threads (publicação, menções, analytics)</strong> — ❌ Zero código</li>
+<li><strong>Product Catalog</strong> — ❌ Zero código</li>
+<li><strong>Pasta <code>docs/screenshots/</code></strong> — ❌ Não existe (precisa criar e popular)</li>
+<li><strong>Pasta <code>docs/videos/</code></strong> — ❌ Não existe (precisa criar e gravar)</li>
+</ol>
+<hr>
+<h2 id="-prioridade-de-desenvolvimento-para-app-review">🎯 Prioridade de Desenvolvimento para App Review </h2>
+<h3 id="-crítico-bloqueia-submissão">🔴 CRÍTICO (bloqueia submissão) </h3>
+<ol>
+<li>
+<p><strong>Resolver OAuth com Meta</strong> ⭐⭐⭐</p>
+<ul>
+<li>Sem isso, nenhum screenshot de flow funcional end-to-end</li>
+<li><strong>Status:</strong> Aguardando Meta resolver erro genérico</li>
+<li><strong>Ação:</strong> Continuar follow-up com suporte Meta</li>
+</ul>
+</li>
+<li>
+<p><strong>Criar pastas e estruturar materiais</strong> ⭐⭐⭐</p>
+<ul>
+<li>Criar <code>docs/screenshots/</code> (8 screenshots obrigatórios)</li>
+<li>Criar <code>docs/videos/</code> (4 screencasts obrigatórios)</li>
+<li><strong>Tempo estimado:</strong> 1 hora (criação de pastas + estrutura)</li>
+</ul>
+</li>
+<li>
+<p><strong>Tirar screenshots das 20+ telas prontas</strong> ⭐⭐⭐</p>
+<ul>
+<li>20+ telas prontas para screenshot (ver lista acima)</li>
+<li><strong>Tempo estimado:</strong> 2-3 horas</li>
+<li><strong>Ação:</strong> Navegar cada tela, tirar print, nomear conforme checklist</li>
+</ul>
+</li>
+<li>
+<p><strong>Gravar screencasts básicos (sem OAuth)</strong> ⭐⭐⭐</p>
+<ul>
+<li>Login/Register (email, public_profile) — ✅ Pode gravar agora</li>
+<li>Templates (whatsapp_business_management) — ✅ Pode gravar agora</li>
+<li>Meta Ads Dashboard (ads_read) — ✅ Pode gravar agora</li>
+<li><strong>Tempo estimado:</strong> 4-6 horas (gravação + edição)</li>
+<li><strong>Ver roteiros:</strong> <code>docs/APP_REVIEW_CHECKLIST_COMPLETE.md</code></li>
+</ul>
+</li>
+</ol>
+<h3 id="-importante-melhora-chances-de-aprovação">🟡 IMPORTANTE (melhora chances de aprovação) </h3>
+<ol start="3">
+<li>
+<p><strong>Criar página <code>/onboarding</code></strong> ⭐⭐</p>
+<ul>
+<li>OAuth callback redireciona para <code>/onboarding?step=ai-config&amp;client_id=...</code></li>
+<li>Página não existe — precisa criar multi-step wizard</li>
+<li><strong>Tempo estimado:</strong> 4-6 horas</li>
+</ul>
+</li>
+<li>
+<p><strong>Criar página <code>/dpa</code></strong> ⭐</p>
+<ul>
+<li>Data Processing Agreement referenciado no META_APP_REVIEW.md</li>
+<li><strong>Tempo estimado:</strong> 2-3 horas</li>
+</ul>
+</li>
+<li>
+<p><strong>Gravar screencasts completos (após OAuth)</strong> ⭐⭐</p>
+<ul>
+<li>WhatsApp completo (whatsapp_business_messaging)</li>
+<li>Conversions API (whatsapp_business_manage_events)</li>
+<li>OAuth flows (pages_show_list, business_management)</li>
+<li><strong>Tempo estimado:</strong> 3-4 horas (gravação + edição)</li>
+<li><strong>Ver roteiros detalhados:</strong> <code>docs/SCREENCAST_GUIDE.md</code></li>
+</ul>
+</li>
+<li>
+<p><strong>Editar e validar screencasts</strong> ⭐⭐</p>
+<ul>
+<li>Adicionar anotações destacando permissões</li>
+<li>Aplicar zoom em seções importantes</li>
+<li>Adicionar legendas (se necessário)</li>
+<li>Validar qualidade (resolução, duração, legibilidade)</li>
+<li><strong>Tempo estimado:</strong> 2-3 horas</li>
+</ul>
+</li>
+</ol>
+<h3 id="-futuro-para-solicitar-permissões-adicionais">🟢 FUTURO (para solicitar permissões adicionais) </h3>
+<ol start="6">
+<li><strong>Wizard "Criar Campanha CTWA"</strong> — Para solicitar <code>ads_management</code> (8-12h)</li>
+<li><strong>Integração Instagram</strong> — Para solicitar instagram_* (12-16h)</li>
+<li><strong>Integração Threads</strong> — Para solicitar threads_* (8-12h)</li>
+<li><strong>Product Catalog</strong> — Para solicitar <code>catalog_management</code> (12-16h)</li>
+</ol>
+<hr>
+<h2 id="-status-geral-corrigido">📊 Status Geral (Corrigido) </h2>
+<table>
+<thead>
+<tr>
+<th>Categoria</th>
+<th>Status</th>
+<th>Pronto p/ Review?</th>
+<th>Recomendação</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WhatsApp Messaging</td>
+<td>✅ 90%</td>
+<td>⏳ Aguardando OAuth</td>
+<td>✅ SOLICITAR</td>
+</tr>
+<tr>
+<td>WhatsApp Management</td>
+<td>✅ 80%</td>
+<td>✅ Templates + Settings prontos</td>
+<td>✅ SOLICITAR</td>
+</tr>
+<tr>
+<td>WhatsApp Events (CAPI)</td>
+<td>✅ 90%</td>
+<td>✅ Implementado (419 linhas)</td>
+<td>✅ SOLICITAR</td>
+</tr>
+<tr>
+<td>Meta Ads Dashboard (read)</td>
+<td>✅ 95%</td>
+<td>✅ 7 tabs completas</td>
+<td>✅ SOLICITAR (<code>ads_read</code>)</td>
+</tr>
+<tr>
+<td>Meta Ads Creation (write)</td>
+<td>🔴 10%</td>
+<td>❌ Sem wizard de campanha</td>
+<td>⛔ NÃO SOLICITAR (<code>ads_management</code>)</td>
+</tr>
+<tr>
+<td>Pages (show/read)</td>
+<td>✅ 80%</td>
+<td>✅ OAuth flow</td>
+<td>✅ SOLICITAR</td>
+</tr>
+<tr>
+<td>Pages (manage ads)</td>
+<td>🔴 10%</td>
+<td>❌ Depende de ads_management</td>
+<td>⛔ NÃO SOLICITAR</td>
+</tr>
+<tr>
+<td>Business Management</td>
+<td>✅ 80%</td>
+<td>✅ OAuth callback</td>
+<td>✅ SOLICITAR</td>
+</tr>
+<tr>
+<td>Email / Public Profile</td>
+<td>✅ 100%</td>
+<td>✅ Login/Register</td>
+<td>✅ SOLICITAR</td>
+</tr>
+<tr>
+<td>Catalog Management</td>
+<td>🔴 0%</td>
+<td>❌ Zero código</td>
+<td>⛔ NÃO SOLICITAR</td>
+</tr>
+<tr>
+<td>Instagram (3 permissões)</td>
+<td>🔴 0%</td>
+<td>❌ Zero código</td>
+<td>⛔ NÃO SOLICITAR</td>
+</tr>
+<tr>
+<td>Threads (10 permissões)</td>
+<td>🔴 0%</td>
+<td>❌ Zero código</td>
+<td>⛔ NÃO SOLICITAR</td>
+</tr>
+<tr>
+<td>Privacy Policy</td>
+<td>✅ 100%</td>
+<td>✅ <code>/privacy</code> (273 linhas)</td>
+<td>✅ PRONTO</td>
+</tr>
+<tr>
+<td>Terms of Service</td>
+<td>✅ 100%</td>
+<td>✅ <code>/terms</code> (266 linhas)</td>
+<td>✅ PRONTO</td>
+</tr>
+<tr>
+<td>DPA</td>
+<td>🔴 0%</td>
+<td>❌ Página não existe</td>
+<td>🟡 CRIAR</td>
+</tr>
+<tr>
+<td>CRM</td>
+<td>✅ 95%</td>
+<td>✅ Kanban completo</td>
+<td>✅ PRONTO (suporta CAPI)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Conclusão:</strong></p>
+<ul>
+<li>✅ <strong>Pode solicitar 10 permissões Standard AGORA</strong> (WhatsApp 3, ads_read, pages 2, business, email, public_profile, manage_app_solution)</li>
+<li>⛔ <strong>NÃO solicitar 16 permissões</strong> até implementar features (ads_management, pages_manage_ads, catalog, Instagram 3, Threads 10)</li>
+<li>⏳ <strong>OAuth precisa funcionar</strong> para screenshots end-to-end do WhatsApp</li>
+</ul>
+<hr>
+<h2 id="-próximos-passos-ordem-de-prioridade">🎬 Próximos Passos (Ordem de Prioridade) </h2>
+<h3 id="-esta-semana">📅 ESTA SEMANA</h3>
+<ol>
+<li>
+<p><strong>HOJE (Dia 1):</strong></p>
+<ul>
+<li>[ ] Criar pastas <code>docs/screenshots/</code> e <code>docs/videos/</code></li>
+<li>[ ] Configurar software de gravação (OBS/Camtasia)</li>
+<li>[ ] Testar gravação (5 segundos de teste)</li>
+<li>[ ] Tirar screenshots das 8 telas principais</li>
+<li>[ ] Gravar screencast de Login/Register (email, public_profile)</li>
+</ul>
+</li>
+<li>
+<p><strong>AMANHÃ (Dia 2):</strong></p>
+<ul>
+<li>[ ] Gravar screencast de Templates (whatsapp_business_management)</li>
+<li>[ ] Gravar screencast de Meta Ads Dashboard (ads_read)</li>
+<li>[ ] Editar vídeos: adicionar anotações, zoom, legendas</li>
+<li>[ ] Exportar em MP4 (H.264), 1080p</li>
+</ul>
+</li>
+<li>
+<p><strong>DEPOIS (Dia 3-4):</strong></p>
+<ul>
+<li>[ ] Criar página <code>/onboarding</code> (4-6 horas)</li>
+<li>[ ] Criar página <code>/dpa</code> (2-3 horas)</li>
+<li>[ ] Validar qualidade de todos os screencasts</li>
+</ul>
+</li>
+</ol>
+<h3 id="-após-oauth-funcionar">⏳ APÓS OAuth FUNCIONAR</h3>
+<ol start="4">
+<li>
+<p><strong>Gravar screencasts completos:</strong></p>
+<ul>
+<li>[ ] WhatsApp completo (whatsapp_business_messaging) — 2-3min</li>
+<li>[ ] Conversions API (whatsapp_business_manage_events) — 2min</li>
+<li>[ ] OAuth flows (pages_show_list, business_management) — 1min cada</li>
+</ul>
+</li>
+<li>
+<p><strong>Revisar e submeter:</strong></p>
+<ul>
+<li>[ ] Revisar todos os screencasts (qualidade, anotações, fluxo)</li>
+<li>[ ] Revisar todos os screenshots (8 obrigatórios)</li>
+<li>[ ] Preencher questionários de permissões no Meta Developer Console</li>
+<li>[ ] Upload de screenshots e vídeos</li>
+<li>[ ] Submeter App Review (10 permissões Standard)</li>
+</ul>
+</li>
+</ol>
+<h3 id="-futuro">🟢 FUTURO</h3>
+<ol start="6">
+<li><strong>Implementar wizard de campanha CTWA</strong> (para ads_management)</li>
+<li><strong>Implementar Instagram/Threads</strong> (para futuras permissões)</li>
+</ol>
+<p><strong>📖 Documentação Completa:</strong></p>
+<ul>
+<li><code>docs/APP_REVIEW_CHECKLIST_COMPLETE.md</code> — Checklist completo com roteiros</li>
+<li><code>docs/SCREENCAST_GUIDE.md</code> — Guia passo a passo de gravação</li>
+</ul>
+<hr>
+<h2 id="️-correções-vs-versão-anterior">⚠️ Correções vs. Versão Anterior </h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Antes (incorreto)</th>
+<th>Agora (correto)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Conversions API</td>
+<td>"🔴 0% NÃO IMPLEMENTADO"</td>
+<td>✅ 90% — <code>sendConversionEvent.ts</code> (419 linhas)</td>
+</tr>
+<tr>
+<td>Privacy/Terms</td>
+<td>"🔴 0%"</td>
+<td>✅ 100% — <code>/privacy</code> (273 linhas) + <code>/terms</code> (266 linhas)</td>
+</tr>
+<tr>
+<td>WhatsApp Messaging</td>
+<td>"⚠️ CÓDIGO PRONTO MAS NÃO TESTÁVEL"</td>
+<td>✅ 90% — UI completa, pipeline 14 nodes, 38 processing nodes</td>
+</tr>
+<tr>
+<td>whatsapp_business_management</td>
+<td>"❌ Sem templates"</td>
+<td>✅ Templates page implementada (list/sync/submit/delete)</td>
+</tr>
+<tr>
+<td>CRM</td>
+<td>Não mencionado</td>
+<td>✅ 95% — Kanban board com 17 componentes, 523 linhas</td>
+</tr>
+<tr>
+<td>Meta Ads Dashboard</td>
+<td>"40% parcial"</td>
+<td>✅ 95% — 1032 linhas, 7 tabs, 5 componentes dedicados</td>
+</tr>
+<tr>
+<td>Onboarding page</td>
+<td>"existe /test-oauth"</td>
+<td>⚠️ <code>/onboarding</code> NÃO EXISTE (callback redireciona mas página não foi criada)</td>
+</tr>
+<tr>
+<td>DPA page</td>
+<td>Não mencionado</td>
+<td>❌ Não existe (referenciada no META_APP_REVIEW.md)</td>
+</tr>
+<tr>
+<td>Instagram/Threads</td>
+<td>"Arquitetura multi-canal suporta"</td>
+<td>❌ Zero código — nenhuma linha em todo o <code>src/</code></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<p><strong>Última Atualização:</strong> 13 de fevereiro de 2026<br>
+<strong>Status OAuth:</strong> ⏳ Aguardando Meta resolver erro genérico<br>
+<strong>Auditoria:</strong> Baseada em análise completa do código-fonte (grep + file reads)</p>
+</div>
+      </div>
+      
+      
+    
+    
+    
+    
+    
+    
+  
+    </body></html>

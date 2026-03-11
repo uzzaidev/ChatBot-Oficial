@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATA – Reunião de Fundação e Estruturação (v1.0)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .card {
+            @apply bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden p-6 md:p-8 mb-8;
+        }
+        .section-title {
+            @apply text-2xl font-bold text-gray-900 mb-6 pb-2 border-b-2 border-blue-600;
+        }
+        .subsection-title {
+            @apply text-lg font-semibold text-gray-800 mb-3 mt-6;
+        }
+        .phase-timeline {
+            @apply relative border-l border-gray-200 ml-4;
+        }
+        .phase-item {
+            @apply relative mb-6;
+        }
+        .phase-dot {
+            @apply absolute w-3 h-3 bg-blue-600 rounded-full mt-1.5 -left-1.5 border-2 border-white;
+        }
+        .phase-content {
+            @apply ml-6;
+        }
+        .styled-table {
+            @apply w-full text-sm text-left text-gray-500;
+        }
+        .styled-table thead {
+            @apply text-xs text-gray-700 uppercase bg-gray-50;
+        }
+        .styled-table th, .styled-table td {
+            @apply px-6 py-3 border border-gray-200;
+        }
+        .styled-table tbody tr {
+            @apply bg-white;
+        }
+        .page-break-before {
+            page-break-before: always !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto p-4 sm:p-6 md:p-8 max-w-7xl relative">
+        <div class="absolute left-0 top-0 w-1 h-full bg-gradient-to-b from-blue-600 to-blue-800 hidden md:block"></div>
+
+        <header class="mb-12 text-center">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-blue-700">ATA – Reunião de Fundação e Estruturação (v1.0)</h1>
+            <p class="text-xl text-gray-600 mt-2">Projeto/Empresa: MultiSócios (nome provisório)</p>
+        </header>
+
+        <section class="card bg-gradient-to-r from-blue-50 to-indigo-50">
+            <h2 class="section-title text-3xl font-extrabold text-blue-800 mb-8">Abertura e Dados da Reunião</h2>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="font-bold text-lg mb-2">Abertura da Sessão</h3>
+                    <p class="text-gray-700 mb-4">
+                        Às :, constatado o quórum de instalação, o(a) presidente declara iniciada a sessão, com a pauta aprovada conforme abaixo.
+                    </p>
+                    <div class="bg-blue-100 p-4 rounded-lg border border-blue-200">
+                        <p class="font-semibold text-blue-800">Nota de contexto:</p>
+                        <p class="text-sm text-blue-700">Breve exposição do modelo “empresa‑mãe + áreas‑irmãs/núcleos” e da diretriz de reinvestimento.</p>
+                        <p class="font-semibold text-blue-800 mt-2">Referência de conteúdo:</p>
+                        <p class="text-sm text-blue-700">Empresa‑mãe concentra marca/ativos; núcleos setoriais operam com autonomia coordenada.</p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg">
+                    <h3 class="font-bold text-lg mb-4 text-center">Dados Gerais</h3>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between"><span class="font-medium">Tipo:</span><span>Reunião de Sócios (Kickoff)</span></div>
+                        <div class="flex justify-between"><span class="font-medium">Data:</span><span>//_____</span></div>
+                        <div class="flex justify-between"><span class="font-medium">Horário:</span><span>:–: (America/Sao_Paulo)</span></div>
+                        <div class="flex justify-between"><span class="font-medium">Local/Plataforma:</span><span>__________</span></div>
+                        <div class="flex justify-between"><span class="font-medium">Secretário(a):</span><span>__________</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 📋 PAUTA DA REUNIÃO -->
+        <section class="card">
+            <h2 class="section-title">Pauta da Reunião</h2>
+            <div class="grid md:grid-cols-1 gap-6">
+                <!-- Timeline Visual da Pauta -->
+                <div class="relative">
+                    <div class="absolute left-8 top-0 bottom-0 w-0.5 bg-blue-200"></div>
+                    
+                    <div class="relative flex items-start mb-6">
+                        <div class="flex-shrink-0 w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-xl mr-6">1</div>
+                        <div class="flex-1 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                            <h3 class="font-bold text-blue-800">Alinhamento Estratégico</h3>
+                            <p class="text-sm text-blue-600 mb-2">⏱️ 45 minutos</p>
+                            <p class="text-sm text-gray-700">Definir Missão, Visão, Valores e propósito da MultiSócios</p>
+                            <div class="mt-2 text-xs text-blue-600">📋 Saída: Manifesto + Lista de Valores</div>
+                        </div>
+                    </div>
+                    
+                    <div class="relative flex items-start mb-6">
+                        <div class="flex-shrink-0 w-16 h-16 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-xl mr-6">2</div>
+                        <div class="flex-1 bg-green-50 p-4 rounded-lg border border-green-200">
+                            <h3 class="font-bold text-green-800">Estrutura & Governança</h3>
+                            <p class="text-sm text-green-600 mb-2">⏱️ 75 minutos</p>
+                            <p class="text-sm text-gray-700">Modelo empresa-mãe + núcleos, governança, receitas e questões jurídicas</p>
+                            <div class="mt-2 text-xs text-green-600">📋 Saída: Decisões jurídicas + Políticas financeiras</div>
+                        </div>
+                    </div>
+                    
+                    <div class="relative flex items-start mb-6">
+                        <div class="flex-shrink-0 w-16 h-16 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xl mr-6">3</div>
+                        <div class="flex-1 bg-purple-50 p-4 rounded-lg border border-purple-200">
+                            <h3 class="font-bold text-purple-800">Operação & Próximos Passos</h3>
+                            <p class="text-sm text-purple-600 mb-2">⏱️ 60 minutos</p>
+                            <p class="text-sm text-gray-700">Definir pilotos, papéis iniciais e cronograma de 30-60-90 dias</p>
+                            <div class="mt-2 text-xs text-purple-600">📋 Saída: Backlog de pilotos + Cronograma</div>
+                        </div>
+                    </div>
+                    
+                    <div class="relative flex items-start">
+                        <div class="flex-shrink-0 w-16 h-16 bg-gray-500 rounded-full flex items-center justify-center text-white font-bold text-xl mr-6">4</div>
+                        <div class="flex-1 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                            <h3 class="font-bold text-gray-800">Encerramento</h3>
+                            <p class="text-sm text-gray-600 mb-2">⏱️ 15 minutos</p>
+                            <p class="text-sm text-gray-700">Resumo de decisões, aprovação da ata e próximos passos</p>
+                            <div class="mt-2 text-xs text-gray-600">📋 Saída: Log de decisões + Data próxima reunião</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Observações de Base -->
+            <div class="mt-8 bg-yellow-50 p-6 rounded-lg border border-yellow-200">
+                <h3 class="font-bold text-yellow-800 mb-4">📝 Observações de Base</h3>
+                <div class="grid md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                        <div class="font-semibold text-yellow-700">🏢 Estrutura</div>
+                        <div class="text-yellow-600">Empresa-mãe + núcleos setoriais autônomos</div>
+                    </div>
+                    <div>
+                        <div class="font-semibold text-yellow-700">💰 Receitas</div>
+                        <div class="text-yellow-600">Regra 70/30 + rateio por pesos</div>
+                    </div>
+                    <div>
+                        <div class="font-semibold text-yellow-700">🚀 Capital</div>
+                        <div class="text-yellow-600">~R$ 52k inicial + pró-labore após MRR</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 📝 DELIBERAÇÕES E DECISÕES -->
+        <section class="card page-break-before">
+            <h2 class="section-title text-blue-800">📝 Deliberações por Bloco</h2>
+            <div class="bg-blue-50 p-4 rounded-lg mb-6 border border-blue-200">
+                <p class="text-sm text-blue-700"><strong>📋 Formato padrão:</strong> Cada tópico apresenta → Resumo da Discussão → Decisão Tomada → Ações Definidas (com IDs)</p>
+            </div>
+            
+            <div class="space-y-8">
+                <!-- BLOCO 1: ALINHAMENTO ESTRATÉGICO -->
+                <div class="border-l-4 border-blue-500 pl-6 bg-blue-50 p-6 rounded-r-lg">
+                    <div class="flex items-center mb-6">
+                        <div class="w-12 h-12 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-lg mr-4">1</div>
+                        <h3 class="text-xl font-bold text-blue-800">🎯 Alinhamento Estratégico</h3>
+                        <span class="ml-auto text-sm text-blue-600 bg-blue-100 px-3 py-1 rounded-full">≈45 min</span>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <div class="bg-white p-4 rounded-lg border border-blue-200">
+                            <h4 class="font-semibold text-blue-800 mb-3">1.1 🎨 Missão, Visão e Propósito</h4>
+                            <div class="space-y-2 text-sm">
+                                <p><strong class="text-gray-800">💬 Resumo:</strong> <span class="text-gray-600">Validação da mensagem-guia: "Plataforma cooperativa que usa IA para resolver dores reais de diferentes setores, validada por especialistas, criando produtos e serviços escaláveis."</span></p>
+                                <p><strong class="text-gray-800">⚖️ Decisão D-001:</strong> <span class="action-badge action-pending">PENDENTE</span> Aprovar o Manifesto de propósito comum</p>
+                                <p><strong class="text-gray-800">🔧 Ação A-001:</strong> <span class="text-gray-600">Redigir e publicar o Manifesto no handbook | 👤 Driver: CEO | ✅ Approver: Conselho | 📅 Prazo: _____</span></p>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white p-4 rounded-lg border border-blue-200">
+                            <h4 class="font-semibold text-blue-800 mb-3">1.2 💎 Valores e Princípios</h4>
+                            <div class="space-y-2 text-sm">
+                                <p><strong class="text-gray-800">💬 Resumo:</strong> <span class="text-gray-600">Brainstorming e consolidação de 3–5 valores inegociáveis (sugestões: Inovação, Colaboração, Excelência Técnica, Ética, Sustentabilidade)</span></p>
+                                <p><strong class="text-gray-800">⚖️ Decisão D-002:</strong> <span class="action-badge action-pending">PENDENTE</span> Aprovar lista final de valores</p>
+                                <p><strong class="text-gray-800">🔧 Ação A-002:</strong> <span class="text-gray-600">Publicar valores e exemplos práticos de comportamento | 👤 Driver: PMO/Secretaria | ✅ Approver: Diretoria | 📅 Prazo: _____</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BLOCO 2: ESTRUTURA & GOVERNANÇA -->
+                <div class="border-l-4 border-green-500 pl-6 bg-green-50 p-6 rounded-r-lg">
+                    <div class="flex items-center mb-6">
+                        <div class="w-12 h-12 bg-green-500 text-white rounded-full flex items-center justify-center font-bold text-lg mr-4">2</div>
+                        <h3 class="text-xl font-bold text-green-800">🏗️ Estrutura & Governança</h3>
+                        <span class="ml-auto text-sm text-green-600 bg-green-100 px-3 py-1 rounded-full">≈75 min</span>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <div class="bg-white p-4 rounded-lg border border-green-200">
+                            <h4 class="font-semibold text-green-800 mb-3">2.1 🏢 Modelo de Negócio</h4>
+                            <div class="space-y-2 text-sm">
+                                <p><strong class="text-gray-800">💬 Resumo:</strong> <span class="text-gray-600">Definição da estrutura empresa-mãe + núcleos setoriais, autonomia operacional e coordenação estratégica</span></p>
+                                <p><strong class="text-gray-800">⚖️ Decisão D-003:</strong> <span class="action-badge action-pending">PENDENTE</span> Aprovar modelo organizacional</p>
+                                <p><strong class="text-gray-800">🔧 Ação A-003:</strong> <span class="text-gray-600">Criar organograma macro da estrutura | 👤 Driver: CEO | ✅ Approver: Conselho | 📅 Prazo: _____</span></p>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white p-4 rounded-lg border border-green-200">
+                            <h4 class="font-semibold text-green-800 mb-3">2.2 💰 Política Financeira</h4>
+                            <div class="space-y-2 text-sm">
+                                <p><strong class="text-gray-800">💬 Resumo:</strong> <span class="text-gray-600">Discussão da regra 70/30 (núcleo/empresa-mãe), rateio por pesos e gatilhos de pró-labore</span></p>
+                                <p><strong class="text-gray-800">⚖️ Decisão D-004:</strong> <span class="action-badge action-pending">PENDENTE</span> Aprovar política de receitas</p>
+                                <p><strong class="text-gray-800">🔧 Ação A-008:</strong> <span class="text-gray-600">Formalizar política 70/30 | 👤 Driver: CFO | ✅ Approver: Conselho | 📅 Prazo: _____</span></p>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white p-4 rounded-lg border border-green-200">
+                            <h4 class="font-semibold text-green-800 mb-3">2.3 ⚖️ Aspectos Jurídicos</h4>
+                            <div class="space-y-2 text-sm">
+                                <p><strong class="text-gray-800">💬 Resumo:</strong> <span class="text-gray-600">Definição de LTDA inicial, Acordo de Sócios e questões de LGPD</span></p>
+                                <p><strong class="text-gray-800">⚖️ Decisão D-005:</strong> <span class="action-badge action-pending">PENDENTE</span> Aprovar cronograma jurídico</p>
+                                <p><strong class="text-gray-800">🔧 Ação A-004:</strong> <span class="text-gray-600">Formar Comitê Jurídico para minuta LTDA | 👤 Driver: Jurídico | ✅ Approver: Conselho | 📅 Prazo: _____</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BLOCO 3: OPERAÇÃO & PRÓXIMOS PASSOS -->
+                <div class="border-l-4 border-purple-500 pl-6 bg-purple-50 p-6 rounded-r-lg">
+                    <div class="flex items-center mb-6">
+                        <div class="w-12 h-12 bg-purple-500 text-white rounded-full flex items-center justify-center font-bold text-lg mr-4">3</div>
+                        <h3 class="text-xl font-bold text-purple-800">⚙️ Operação & Próximos Passos</h3>
+                        <span class="ml-auto text-sm text-purple-600 bg-purple-100 px-3 py-1 rounded-full">≈60 min</span>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <div class="bg-white p-4 rounded-lg border border-purple-200">
+                            <h4 class="font-semibold text-purple-800 mb-3">3.1 🚀 Pilotos e Projetos Iniciais</h4>
+                            <div class="space-y-2 text-sm">
+                                <p><strong class="text-gray-800">💬 Resumo:</strong> <span class="text-gray-600">Processo de seleção de pilotos, critérios de priorização e métricas de sucesso</span></p>
+                                <p><strong class="text-gray-800">⚖️ Decisão D-006:</strong> <span class="action-badge action-pending">PENDENTE</span> Aprovar 3-5 pilotos iniciais</p>
+                                <p><strong class="text-gray-800">🔧 Ação A-012:</strong> <span class="text-gray-600">Abrir chamada de ideias de pilotos | 👤 Driver: PMO | ✅ Approver: CEO | 📅 Prazo: _____</span></p>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white p-4 rounded-lg border border-purple-200">
+                            <h4 class="font-semibold text-purple-800 mb-3">3.2 👥 Papéis e Responsabilidades</h4>
+                            <div class="space-y-2 text-sm">
+                                <p><strong class="text-gray-800">💬 Resumo:</strong> <span class="text-gray-600">Definição de papéis iniciais, responsabilidades e matriz DACI</span></p>
+                                <p><strong class="text-gray-800">⚖️ Decisão D-007:</strong> <span class="action-badge action-pending">PENDENTE</span> Aprovar estrutura de papéis</p>
+                                <p><strong class="text-gray-800">🔧 Ação A-005:</strong> <span class="text-gray-600">Criar matriz DACI detalhada | 👤 Driver: PMO | ✅ Approver: Diretoria | 📅 Prazo: _____</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BLOCO 4: ENCERRAMENTO -->
+                <div class="border-l-4 border-gray-500 pl-6 bg-gray-50 p-6 rounded-r-lg">
+                    <div class="flex items-center mb-6">
+                        <div class="w-12 h-12 bg-gray-500 text-white rounded-full flex items-center justify-center font-bold text-lg mr-4">4</div>
+                        <h3 class="text-xl font-bold text-gray-800">🏁 Encerramento</h3>
+                        <span class="ml-auto text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">≈15 min</span>
+                    </div>
+                    
+                    <div class="bg-white p-4 rounded-lg border border-gray-200">
+                        <div class="space-y-2 text-sm">
+                            <p><strong class="text-gray-800">💬 Resumo:</strong> <span class="text-gray-600">Leitura do resumo executivo, validação das decisões tomadas e aprovação da ata</span></p>
+                            <p><strong class="text-gray-800">⚖️ Decisão D-008:</strong> <span class="action-badge action-pending">PENDENTE</span> Aprovar ata e próximos passos</p>
+                            <p><strong class="text-gray-800">🔧 Próxima reunião:</strong> <span class="text-gray-600">📅 Data: _____ | ⏰ Horário: _____ | 📍 Local: _____</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card page-break-before">
+            <h2 class="section-title text-3xl font-extrabold text-blue-800 mb-8">Encaminhamentos (Plano de Ação Consolidado)</h2>
+            <div class="phase-timeline">
+                <div class="phase-item"><div class="phase-dot"></div><div class="phase-content"><h3 class="font-bold text-lg text-blue-800">A-001: Manifesto (Missão/Visão/Valores)</h3><p class="text-sm">Driver: CEO, Approver: Conselho</p></div></div>
+                <div class="phase-item"><div class="phase-dot"></div><div class="phase-content"><h3 class="font-bold text-lg text-blue-800">A-002: Publicar valores com exemplos</h3><p class="text-sm">Driver: PMO, Approver: Diretoria</p></div></div>
+                <div class="phase-item"><div class="phase-dot"></div><div class="phase-content"><h3 class="font-bold text-lg text-blue-800">A-003: Organograma macro</h3><p class="text-sm">Driver: CEO, Approver: Conselho</p></div></div>
+                <div class="phase-item"><div class="phase-dot"></div><div class="phase-content"><h3 class="font-bold text-lg text-blue-800">A-004: Comitê Jurídico p/ minuta LTDA</h3><p class="text-sm">Driver: Jurídico, Approver: Conselho</p></div></div>
+                <div class="phase-item"><div class="phase-dot"></div><div class="phase-content"><h3 class="font-bold text-lg text-blue-800">A-005: Matriz DACI</h3><p class="text-sm">Driver: PMO, Approver: Diretoria</p></div></div>
+                <div class="phase-item"><div class="phase-dot"></div><div class="phase-content"><h3 class="font-bold text-lg text-blue-800">A-006: Plano de aporte/capital</h3><p class="text-sm">Driver: CFO, Approver: Conselho</p></div></div>
+                <div class="phase-item"><div class="phase-dot"></div><div class="phase-content"><h3 class="font-bold text-lg text-blue-800">A-007: Gatilho de pró-labore</h3><p class="text-sm">Driver: Conselho, Approver: CFO</p></div></div>
+                <div class="phase-item"><div class="phase-dot"></div><div class="phase-content"><h3 class="font-bold text-lg text-blue-800">A-008: Política 70/30</h3><p class="text-sm">Driver: CFO, Approver: Conselho</p></div></div>
+                <div class="phase-item"><div class="phase-dot"></div><div class="phase-content"><h3 class="font-bold text-lg text-blue-800">A-009: Fórmula de pesos (wᵢ) + planilha</h3><p class="text-sm">Driver: CFO/PMO, Approver: Diretoria</p></div></div>
+                <div class="phase-item"><div class="phase-dot"></div><div class="phase-content"><h3 class="font-bold text-lg text-blue-800">A-010: Minutas-base (v0.1)</h3><p class="text-sm">Driver: Jurídico, Approver: Conselho</p></div></div>
+                <div class="phase-item"><div class="phase-dot"></div><div class="phase-content"><h3 class="font-bold text-lg text-blue-800">A-011: Revisão LGPD</h3><p class="text-sm">Driver: DPO, Approver: Jurídico</p></div></div>
+                <div class="phase-item"><div class="phase-dot"></div><div class="phase-content"><h3 class="font-bold text-lg text-blue-800">A-012: Chamada de ideias de pilotos</h3><p class="text-sm">Driver: PMO, Approver: CEO</p></div></div>
+                <div class="phase-item"><div class="phase-dot"></div><div class="phase-content"><h3 class="font-bold text-lg text-blue-800">A-013: Priorização com Matriz</h3><p class="text-sm">Driver: Dir. Produto/IA, Approver: CEO</p></div></div>
+                <div class="phase-item"><div class="phase-dot"></div><div class="phase-content"><h3 class="font-bold text-lg text-blue-800">A-014: Nomear donos e metas (pilotos)</h3><p class="text-sm">Driver: CEO, Approver: Diretoria</p></div></div>
+                <div class="phase-item"><div class="phase-dot"></div><div class="phase-content"><h3 class="font-bold text-lg text-blue-800">A-016: Plano 30-60-90 (OKRs/KPIs)</h3><p class="text-sm">Driver: Dir. Executiva, Approver: Conselho</p></div></div>
+            </div>
+        </section>
+
+        <!-- 🚨 TABELAS DE APOIO E RISCOS -->
+        <section class="card page-break-before">
+            <h2 class="section-title">🚨 Tabelas de Apoio, Riscos e Seção Legal</h2>
+            
+            <!-- RISCOS E MITIGAÇÕES -->
+            <div class="mb-8">
+                <h3 class="subsection-title text-red-700">⚠️ Riscos e Mitigações (Consolidados)</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-lg border border-red-200">
+                        <thead class="bg-gradient-to-r from-red-500 to-red-600 text-white">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider border-b border-red-400">ID</th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider border-b border-red-400">Risco</th>
+                                <th class="px-6 py-4 text-center text-sm font-semibold uppercase tracking-wider border-b border-red-400">Prob.</th>
+                                <th class="px-6 py-4 text-center text-sm font-semibold uppercase tracking-wider border-b border-red-400">Impacto</th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider border-b border-red-400">Mitigação (Ação Relacionada)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-red-100">
+                            <tr class="hover:bg-red-50 transition-colors duration-200">
+                                <td class="px-6 py-4 text-sm font-mono font-bold text-red-600 bg-red-50">R-001</td>
+                                <td class="px-6 py-4 text-sm text-gray-800">Atraso na constituição formal</td>
+                                <td class="px-6 py-4 text-center"><span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">M</span></td>
+                                <td class="px-6 py-4 text-center"><span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">A</span></td>
+                                <td class="px-6 py-4 text-sm text-gray-700">
+                                    <div class="flex flex-wrap gap-2">
+                                        <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">A-004 (Comitê Jurídico)</span>
+                                        <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">A-010</span>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-red-50 transition-colors duration-200">
+                                <td class="px-6 py-4 text-sm font-mono font-bold text-red-600 bg-red-50">R-002</td>
+                                <td class="px-6 py-4 text-sm text-gray-800">Conflitos por partilha/vida real</td>
+                                <td class="px-6 py-4 text-center"><span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">M</span></td>
+                                <td class="px-6 py-4 text-center"><span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">A</span></td>
+                                <td class="px-6 py-4 text-sm text-gray-700">
+                                    <div class="flex flex-wrap gap-2">
+                                        <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">A-008/A-009 (70/30 + pesos)</span>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-red-50 transition-colors duration-200">
+                                <td class="px-6 py-4 text-sm font-mono font-bold text-red-600 bg-red-50">R-003</td>
+                                <td class="px-6 py-4 text-sm text-gray-800">Riscos LGPD em pilotos</td>
+                                <td class="px-6 py-4 text-center"><span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">M</span></td>
+                                <td class="px-6 py-4 text-center"><span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">A</span></td>
+                                <td class="px-6 py-4 text-sm text-gray-700">
+                                    <div class="flex flex-wrap gap-2">
+                                        <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">A-011 (LGPD)</span>
+                                        <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">NDA/DPA</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-4 text-xs text-gray-500">
+                    <strong>Legenda:</strong> Prob. (Probabilidade): B=Baixa, M=Média, A=Alta | Impacto: B=Baixo, M=Médio, A=Alto
+                </div>
+            </div>
+
+            <!-- GOVERNANÇA -->
+            <div class="mb-8">
+                <h3 class="subsection-title text-blue-700">🏛️ Governança: Quem Decide o Quê (Exemplos)</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-lg border border-blue-200">
+                        <thead class="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider border-b border-blue-400">Tema</th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider border-b border-blue-400">Regra Proposta de Decisão</th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider border-b border-blue-400">Notas</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-blue-100">
+                            <tr class="hover:bg-blue-50 transition-colors duration-200">
+                                <td class="px-6 py-4 text-sm text-gray-800 font-medium">
+                                    <div class="flex items-center">
+                                        <span class="w-2 h-2 bg-blue-500 rounded-full mr-3"></span>
+                                        Estrutura societária, novos sócios, emissão de cotas
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-700">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        Conselho (quórum qualificado ≥ 2/3)
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-600">
+                                    <span class="inline-flex items-center px-2 py-1 rounded-md text-xs bg-green-100 text-green-800">
+                                        Protege direitos políticos/patrimoniais
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-blue-50 transition-colors duration-200">
+                                <td class="px-6 py-4 text-sm text-gray-800 font-medium">
+                                    <div class="flex items-center">
+                                        <span class="w-2 h-2 bg-blue-500 rounded-full mr-3"></span>
+                                        Política de receita (70/30) e rateio por pesos
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-700">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        Conselho (maioria simples/qualificada)
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-600">
+                                    <span class="inline-flex items-center px-2 py-1 rounded-md text-xs bg-green-100 text-green-800">
+                                        Publicar fórmula e exemplos
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-blue-50 transition-colors duration-200">
+                                <td class="px-6 py-4 text-sm text-gray-800 font-medium">
+                                    <div class="flex items-center">
+                                        <span class="w-2 h-2 bg-blue-500 rounded-full mr-3"></span>
+                                        Aquisição de ativos (GPU/servidor) c/ orçamento aprovado
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-700">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        CEO (reporta ao Conselho)
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-600">
+                                    <span class="inline-flex items-center px-2 py-1 rounded-md text-xs bg-green-100 text-green-800">
+                                        Execução tática; ROI acompanhado
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-blue-50 transition-colors duration-200">
+                                <td class="px-6 py-4 text-sm text-gray-800 font-medium">
+                                    <div class="flex items-center">
+                                        <span class="w-2 h-2 bg-blue-500 rounded-full mr-3"></span>
+                                        Política de IP & Dados (LGPD/GDPR)
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-700">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        CEO redige → revisão coletiva
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-600">
+                                    <span class="inline-flex items-center px-2 py-1 rounded-md text-xs bg-green-100 text-green-800">
+                                        Conformidade atinge todos; DPO valida
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <h3 class="subsection-title">Seção Legal (Síntese de Impacto e Encaminhamentos)</h3>
+            <p class="text-sm text-gray-600"><strong>Contratos/cláusulas impactadas:</strong> Contrato Social LTDA; Acordo de Sócios (tag/drag, deadlock, non-compete, NDA, vesting/cliff, etc); NDAs; Cessão de IP; Política de Privacidade/LGPD; minutas comerciais.</p>
+            <p class="text-sm text-gray-600"><strong>Riscos legais:</strong> Atraso de formalização; conflitos societários; LGPD nos pilotos. <strong>Mitigações:</strong> Cronograma jurídico; acordo de sócios; NDA + DPA + minimização.</p>
+        </section>
+
+        <!-- 📋 ANEXOS -->
+        <section class="card page-break-before">
+            <h2 class="section-title text-blue-800">📋 Anexos</h2>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- ANEXO A: FORMULÁRIO DE IDEIAS DE PILOTO -->
+                <div class="bg-gradient-to-br from-purple-50 to-indigo-50 p-6 rounded-xl border border-purple-200">
+                    <h3 class="subsection-title text-purple-700 !mt-0 mb-6">🚀 Anexo A — Formulário de Ideias de Piloto</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-lg border border-purple-200">
+                            <thead class="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-b border-purple-400">Campo</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-b border-purple-400">O que preencher</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-purple-100">
+                                <tr class="hover:bg-purple-50 transition-colors duration-200">
+                                    <td class="px-4 py-3 text-sm font-medium text-purple-800 bg-purple-50">📝 Título do piloto</td>
+                                    <td class="px-4 py-3 text-sm text-gray-700">Nome curto e claro</td>
+                                </tr>
+                                <tr class="hover:bg-purple-50 transition-colors duration-200">
+                                    <td class="px-4 py-3 text-sm font-medium text-purple-800 bg-purple-50">🎯 Problema setorial</td>
+                                    <td class="px-4 py-3 text-sm text-gray-700">Dor real do cliente (exemplo concreto)</td>
+                                </tr>
+                                <tr class="hover:bg-purple-50 transition-colors duration-200">
+                                    <td class="px-4 py-3 text-sm font-medium text-purple-800 bg-purple-50">👥 Público-alvo</td>
+                                    <td class="px-4 py-3 text-sm text-gray-700">Ex.: clínicas, escritórios de engenharia, ...</td>
+                                </tr>
+                                <tr class="hover:bg-purple-50 transition-colors duration-200">
+                                    <td class="px-4 py-3 text-sm font-medium text-purple-800 bg-purple-50">💡 Proposta de solução</td>
+                                    <td class="px-4 py-3 text-sm text-gray-700">Protótipo/serviço/automação</td>
+                                </tr>
+                                <tr class="hover:bg-purple-50 transition-colors duration-200">
+                                    <td class="px-4 py-3 text-sm font-medium text-purple-800 bg-purple-50">🤖 Ativos de IA reaproveitados</td>
+                                    <td class="px-4 py-3 text-sm text-gray-700">Modelos, prompts, bases, conectores</td>
+                                </tr>
+                                <tr class="hover:bg-purple-50 transition-colors duration-200">
+                                    <td class="px-4 py-3 text-sm font-medium text-purple-800 bg-purple-50">⏱️ Esforço (pessoas/semana)</td>
+                                    <td class="px-4 py-3 text-sm text-gray-700">Estimativa do time</td>
+                                </tr>
+                                <tr class="hover:bg-purple-50 transition-colors duration-200">
+                                    <td class="px-4 py-3 text-sm font-medium text-purple-800 bg-purple-50">⚠️ Riscos (LGPD/Reg.)</td>
+                                    <td class="px-4 py-3 text-sm text-gray-700">Dados pessoais? Sensíveis? Mitigações</td>
+                                </tr>
+                                <tr class="hover:bg-purple-50 transition-colors duration-200">
+                                    <td class="px-4 py-3 text-sm font-medium text-purple-800 bg-purple-50">📊 Métrica de sucesso (1º mês)</td>
+                                    <td class="px-4 py-3 text-sm text-gray-700">Ex.: 5 clientes-teste / R$ 5k / +20% produtividade</td>
+                                </tr>
+                                <tr class="hover:bg-purple-50 transition-colors duration-200">
+                                    <td class="px-4 py-3 text-sm font-medium text-purple-800 bg-purple-50">💰 Precificação inicial</td>
+                                    <td class="px-4 py-3 text-sm text-gray-700">Ticket, setup, recorrência</td>
+                                </tr>
+                                <tr class="hover:bg-purple-50 transition-colors duration-200">
+                                    <td class="px-4 py-3 text-sm font-medium text-purple-800 bg-purple-50">👤 Dono do piloto</td>
+                                    <td class="px-4 py-3 text-sm text-gray-700">Nome + área</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-4 p-3 bg-purple-100 rounded-lg border border-purple-300">
+                        <p class="text-xs text-purple-700">
+                            <strong>💡 Dica:</strong> Preencha este formulário para cada ideia de piloto. Quanto mais detalhado, melhor será a avaliação e priorização.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- ANEXO B: MATRIZ DE PRIORIZAÇÃO -->
+                <div class="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200">
+                    <h3 class="subsection-title text-green-700 !mt-0 mb-6">⚖️ Anexo B — Matriz de Priorização (0-5)</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-lg border border-green-200">
+                            <thead class="bg-gradient-to-r from-green-500 to-green-600 text-white">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider border-b border-green-400">Critério</th>
+                                    <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider border-b border-green-400">Peso</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-green-100">
+                                <tr class="hover:bg-green-50 transition-colors duration-200">
+                                    <td class="px-4 py-3 text-sm text-gray-800">
+                                        <div class="flex items-center">
+                                            <span class="w-3 h-3 bg-red-500 rounded-full mr-3"></span>
+                                            Impacto (receita/dor)
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3 text-center">
+                                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-red-100 text-red-800 text-sm font-bold">4</span>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-green-50 transition-colors duration-200">
+                                    <td class="px-4 py-3 text-sm text-gray-800">
+                                        <div class="flex items-center">
+                                            <span class="w-3 h-3 bg-orange-500 rounded-full mr-3"></span>
+                                            Alinhamento com ativos de IA da empresa-mãe
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3 text-center">
+                                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 text-orange-800 text-sm font-bold">3</span>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-green-50 transition-colors duration-200">
+                                    <td class="px-4 py-3 text-sm text-gray-800">
+                                        <div class="flex items-center">
+                                            <span class="w-3 h-3 bg-orange-500 rounded-full mr-3"></span>
+                                            Clareza do problema (acesso a validador)
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3 text-center">
+                                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 text-orange-800 text-sm font-bold">3</span>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-green-50 transition-colors duration-200">
+                                    <td class="px-4 py-3 text-sm text-gray-800">
+                                        <div class="flex items-center">
+                                            <span class="w-3 h-3 bg-yellow-500 rounded-full mr-3"></span>
+                                            Esforço técnico (menor = maior nota)
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3 text-center">
+                                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-yellow-100 text-yellow-800 text-sm font-bold">2</span>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-green-50 transition-colors duration-200">
+                                    <td class="px-4 py-3 text-sm text-gray-800">
+                                        <div class="flex items-center">
+                                            <span class="w-3 h-3 bg-yellow-500 rounded-full mr-3"></span>
+                                            Tempo de payback (rápido = maior nota)
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3 text-center">
+                                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-yellow-100 text-yellow-800 text-sm font-bold">2</span>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-green-50 transition-colors duration-200">
+                                    <td class="px-4 py-3 text-sm text-gray-800">
+                                        <div class="flex items-center">
+                                            <span class="w-3 h-3 bg-yellow-500 rounded-full mr-3"></span>
+                                            Risco LGPD/regulatório (menor = maior nota)
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3 text-center">
+                                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-yellow-100 text-yellow-800 text-sm font-bold">2</span>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-green-50 transition-colors duration-200">
+                                    <td class="px-4 py-3 text-sm text-gray-800">
+                                        <div class="flex items-center">
+                                            <span class="w-3 h-3 bg-orange-500 rounded-full mr-3"></span>
+                                            Recorrência (potencial de assinatura)
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3 text-center">
+                                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 text-orange-800 text-sm font-bold">3</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="mt-6 space-y-4">
+                        <div class="bg-white p-4 rounded-lg border border-green-300">
+                            <h4 class="font-semibold text-green-800 mb-2">📊 Fórmula de Cálculo</h4>
+                            <div class="text-sm text-gray-700">
+                                <p class="mb-2"><strong>Score = Σ(Nota × Peso)</strong></p>
+                                <p class="text-xs text-gray-600">Exemplo: Se um piloto receber nota 4 em "Impacto" (peso 4), o score será 4 × 4 = 16 pontos</p>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gradient-to-r from-green-100 to-emerald-100 p-4 rounded-lg border border-green-300">
+                            <h4 class="font-semibold text-green-800 mb-2">🎯 Objetivo</h4>
+                            <p class="text-sm text-green-700">Selecionar 3–5 pilotos com maior pontuação para execução prioritária.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 📚 NOTAS DE BASE E CHECKLIST -->
+        <section class="card">
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- NOTAS DE BASE -->
+                <div class="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-xl border border-amber-200">
+                    <h3 class="subsection-title text-amber-700 !mt-0 mb-4">📚 Notas de Base (Registro Histórico)</h3>
+                    <div class="space-y-4">
+                        <div class="bg-white p-4 rounded-lg border border-amber-300">
+                            <div class="flex items-start">
+                                <span class="text-amber-600 text-lg mr-3">🏢</span>
+                                <div>
+                                    <h4 class="font-semibold text-amber-800 text-sm">Estrutura</h4>
+                                    <p class="text-xs text-amber-700">Empresa-mãe (marca, IA, TI, governança) + núcleos setoriais autônomos.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white p-4 rounded-lg border border-amber-300">
+                            <div class="flex items-start">
+                                <span class="text-amber-600 text-lg mr-3">💰</span>
+                                <div>
+                                    <h4 class="font-semibold text-amber-800 text-sm">Receitas</h4>
+                                    <p class="text-xs text-amber-700">Referência 70/30 (núcleo/mãe); rateio por pesos (wᵢ) nos projetos.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white p-4 rounded-lg border border-amber-300">
+                            <div class="flex items-start">
+                                <span class="text-amber-600 text-lg mr-3">🚀</span>
+                                <div>
+                                    <h4 class="font-semibold text-amber-800 text-sm">Capitalização</h4>
+                                    <p class="text-xs text-amber-700">~R$ 52k totais (~R$ 15k para GPU/servidor); pró-labore após MRR.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white p-4 rounded-lg border border-amber-300">
+                            <div class="flex items-start">
+                                <span class="text-amber-600 text-lg mr-3">⚖️</span>
+                                <div>
+                                    <h4 class="font-semibold text-amber-800 text-sm">Societário</h4>
+                                    <p class="text-xs text-amber-700">LTDA inicial com Acordo de Sócios (tag/drag, deadlock, etc), com evolução possível.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- CHECKLIST DE QUALIDADE -->
+                <div class="bg-gradient-to-br from-cyan-50 to-blue-50 p-6 rounded-xl border border-cyan-200">
+                    <h3 class="subsection-title text-cyan-700 !mt-0 mb-4">✅ Checklist de Qualidade da Ata</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center bg-white p-3 rounded-lg border border-cyan-300">
+                            <input type="checkbox" class="w-4 h-4 text-cyan-600 bg-gray-100 border-cyan-300 rounded focus:ring-cyan-500">
+                            <span class="ml-3 text-sm text-cyan-800">Todos os tópicos com Resumo, Decisão e Ações</span>
+                        </div>
+                        
+                        <div class="flex items-center bg-white p-3 rounded-lg border border-cyan-300">
+                            <input type="checkbox" class="w-4 h-4 text-cyan-600 bg-gray-100 border-cyan-300 rounded focus:ring-cyan-500">
+                            <span class="ml-3 text-sm text-cyan-800">Datas/horas em formato padrão</span>
+                        </div>
+                        
+                        <div class="flex items-center bg-white p-3 rounded-lg border border-cyan-300">
+                            <input type="checkbox" class="w-4 h-4 text-cyan-600 bg-gray-100 border-cyan-300 rounded focus:ring-cyan-500">
+                            <span class="ml-3 text-sm text-cyan-800">Ações com ID, Responsável, Prazo</span>
+                        </div>
+                        
+                        <div class="flex items-center bg-white p-3 rounded-lg border border-cyan-300">
+                            <input type="checkbox" class="w-4 h-4 text-cyan-600 bg-gray-100 border-cyan-300 rounded focus:ring-cyan-500">
+                            <span class="ml-3 text-sm text-cyan-800">Riscos e Seção Legal preenchidos</span>
+                        </div>
+                        
+                        <div class="flex items-center bg-white p-3 rounded-lg border border-cyan-300">
+                            <input type="checkbox" class="w-4 h-4 text-cyan-600 bg-gray-100 border-cyan-300 rounded focus:ring-cyan-500">
+                            <span class="ml-3 text-sm text-cyan-800">Ortografia e formalidade revisadas</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 p-3 bg-cyan-100 rounded-lg border border-cyan-300">
+                        <div class="flex items-center text-cyan-700">
+                            <span class="text-lg mr-2">📊</span>
+                            <div class="text-xs">
+                                <p><strong>Progresso:</strong> <span id="checklist-progress">0/5</span> itens concluídos</p>
+                                <div class="w-full bg-cyan-200 rounded-full h-2 mt-1">
+                                    <div class="bg-cyan-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 📝 ASSUNTOS EXTRA-PAUTA -->
+        <section class="card">
+            <h2 class="section-title">📝 Assuntos Extra-Pauta</h2>
+            <div class="bg-yellow-50 p-6 rounded-lg border border-yellow-200">
+                <p class="text-sm text-yellow-700 mb-4"><strong>💡 Espaço para temas emergentes:</strong> Assuntos que surgiram durante a reunião e não estavam na pauta original.</p>
+                
+                <div class="space-y-4">
+                    <div class="bg-white p-4 rounded-lg border border-yellow-300">
+                        <h4 class="font-semibold text-yellow-800 mb-2">🆕 Assunto Extra 1</h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="participant-field" contenteditable="true" placeholder="Descrição do assunto discutido..."></div>
+                            <div class="grid md:grid-cols-2 gap-4">
+                                <div class="participant-field" contenteditable="true" placeholder="Decisão tomada ou encaminhamento..."></div>
+                                <div class="participant-field" contenteditable="true" placeholder="Responsável e prazo..."></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-4 rounded-lg border border-yellow-300">
+                        <h4 class="font-semibold text-yellow-800 mb-2">🆕 Assunto Extra 2</h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="participant-field" contenteditable="true" placeholder="Descrição do assunto discutido..."></div>
+                            <div class="grid md:grid-cols-2 gap-4">
+                                <div class="participant-field" contenteditable="true" placeholder="Decisão tomada ou encaminhamento..."></div>
+                                <div class="participant-field" contenteditable="true" placeholder="Responsável e prazo..."></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button class="text-yellow-600 text-sm hover:text-yellow-800 bg-yellow-100 px-4 py-2 rounded-lg">+ Adicionar assunto extra</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ✍️ ASSINATURAS E ENCERRAMENTO -->
+        <section class="card">
+            <h2 class="section-title">✍️ Encerramento e Validações</h2>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="bg-blue-50 p-6 rounded-lg border border-blue-200">
+                    <h3 class="font-bold text-blue-800 mb-4">📋 Resumo da Sessão</h3>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between">
+                            <span class="font-medium">⏰ Início:</span>
+                            <span class="participant-field w-20" contenteditable="true">__:__</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="font-medium">⏰ Encerramento:</span>
+                            <span class="participant-field w-20" contenteditable="true">__:__</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="font-medium">⏱️ Duração Total:</span>
+                            <span class="text-blue-600 font-semibold">___ min</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="font-medium">✅ Decisões:</span>
+                            <span class="text-green-600 font-semibold">___ aprovadas</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="font-medium">🔧 Ações:</span>
+                            <span class="text-purple-600 font-semibold">___ definidas</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 p-4 bg-white rounded-lg border border-blue-300">
+                        <p class="text-sm text-blue-700">
+                            <strong>📌 Declaração de encerramento:</strong><br>
+                            Nada mais havendo a tratar, a sessão foi encerrada com aprovação unânime desta ata, que será assinada digitalmente e arquivada no repositório corporativo da MultiSócios.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="bg-green-50 p-6 rounded-lg border border-green-200">
+                    <h3 class="font-bold text-green-800 mb-4">✍️ Assinaturas Digitais</h3>
+                    <div class="space-y-6">
+                        <div class="bg-white p-4 rounded-lg border border-green-300">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="font-semibold text-green-700">👑 Presidência:</span>
+                                <span class="text-xs text-green-600">Assinatura obrigatória</span>
+                            </div>
+                            <div class="participant-field" contenteditable="true" placeholder="Nome completo do(a) presidente"></div>
+                            <div class="text-xs text-gray-500 mt-1">Data/hora: _____ | IP: _____</div>
+                        </div>
+                        
+                        <div class="bg-white p-4 rounded-lg border border-green-300">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="font-semibold text-green-700">📝 Secretário(a):</span>
+                                <span class="text-xs text-green-600">Assinatura obrigatória</span>
+                            </div>
+                            <div class="participant-field" contenteditable="true" placeholder="Nome completo do(a) secretário(a)"></div>
+                            <div class="text-xs text-gray-500 mt-1">Data/hora: _____ | IP: _____</div>
+                        </div>
+                        
+                        <div class="bg-white p-4 rounded-lg border border-green-300">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="font-semibold text-green-700">👥 Demais participantes:</span>
+                                <span class="text-xs text-green-600">Conforme necessário</span>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="participant-field" contenteditable="true" placeholder="Nome completo - Cargo"></div>
+                                <div class="participant-field" contenteditable="true" placeholder="Nome completo - Cargo"></div>
+                                <button class="text-green-600 text-sm hover:text-green-800">+ Adicionar assinatura</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 p-3 bg-green-100 rounded-lg border border-green-300">
+                        <p class="text-xs text-green-700">
+                            <strong>🔒 Autenticidade:</strong> Esta ata possui validade jurídica através de assinaturas digitais certificadas e timestamp blockchain para garantia de integridade.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 📅 PRÓXIMA REUNIÃO -->
+            <div class="mt-8 bg-gradient-to-r from-indigo-50 to-purple-50 p-6 rounded-lg border border-indigo-200">
+                <h3 class="font-bold text-indigo-800 mb-4">📅 Próxima Reunião Agendada</h3>
+                <div class="grid md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                        <label class="block font-medium text-indigo-700 mb-1">📅 Data:</label>
+                        <div class="participant-field" contenteditable="true" placeholder="DD/MM/AAAA"></div>
+                    </div>
+                    <div>
+                        <label class="block font-medium text-indigo-700 mb-1">⏰ Horário:</label>
+                        <div class="participant-field" contenteditable="true" placeholder="HH:MM"></div>
+                    </div>
+                    <div>
+                        <label class="block font-medium text-indigo-700 mb-1">📍 Local:</label>
+                        <div class="participant-field" contenteditable="true" placeholder="Local/Plataforma"></div>
+                    </div>
+                    <div>
+                        <label class="block font-medium text-indigo-700 mb-1">📋 Pauta:</label>
+                        <div class="participant-field" contenteditable="true" placeholder="Foco principal"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 🏁 FOOTER INSTITUCIONAL -->
+        <footer class="text-center mt-12 py-8 border-t-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <div class="max-w-4xl mx-auto">
+                <h3 class="text-lg font-bold text-blue-800 mb-2">📄 ATA OFICIAL MULTISÓCIOS</h3>
+                <p class="text-sm text-gray-600 mb-4">Registro formal da Reunião de Fundação e Estruturação - Versão 2.0 Otimizada</p>
+                
+                <div class="grid md:grid-cols-3 gap-6 mb-6">
+                    <div class="bg-white p-4 rounded-lg border border-blue-200">
+                        <h4 class="font-semibold text-blue-700 mb-2">🔍 Status do Documento</h4>
+                        <div class="text-sm space-y-1">
+                            <div class="flex justify-between"><span>Versão:</span><span class="font-semibold">2.0</span></div>
+                            <div class="flex justify-between"><span>Status:</span><span class="text-yellow-600 font-semibold">RASCUNHO</span></div>
+                            <div class="flex justify-between"><span>Válido até:</span><span>Assinatura digital</span></div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-4 rounded-lg border border-blue-200">
+                        <h4 class="font-semibold text-blue-700 mb-2">📊 Métricas da Reunião</h4>
+                        <div class="text-sm space-y-1">
+                            <div class="flex justify-between"><span>Duração:</span><span class="font-semibold">3h15min</span></div>
+                            <div class="flex justify-between"><span>Blocos:</span><span class="font-semibold">4 principais</span></div>
+                            <div class="flex justify-between"><span>Ações:</span><span class="font-semibold">16+ definidas</span></div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-4 rounded-lg border border-blue-200">
+                        <h4 class="font-semibold text-blue-700 mb-2">🔄 Formatos Disponíveis</h4>
+                        <div class="text-xs space-y-1">
+                            <div>📄 HTML (atual)</div>
+                            <div>📝 Markdown (.md)</div>
+                            <div>📋 Word (.docx)</div>
+                            <div>📊 CSV (ações)</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-blue-100 p-4 rounded-lg border border-blue-300">
+                    <p class="text-sm text-blue-800">
+                        <strong>🔒 Confidencialidade:</strong> Este documento contém informações confidenciais da MultiSócios. 
+                        Distribuição restrita aos participantes autorizados. Arquivo protegido por direitos autorais e acordos de confidencialidade.
+                    </p>
+                </div>
+                
+                <div class="mt-6 text-xs text-gray-500">
+                    <p>Documento gerado automaticamente • Última atualização: <span id="timestamp"></span></p>
+                    <p>MultiSócios © 2024 • Todos os direitos reservados</p>
+                </div>
+            </div>
+        </footer>
+        
+        <script>
+            // Atualizar timestamp automaticamente
+            document.getElementById('timestamp').textContent = new Date().toLocaleString('pt-BR');
+            
+            // Função para adicionar novos campos dinamicamente
+            function addParticipant(type) {
+                const container = document.querySelector(`.${type}-container`);
+                const newField = document.createElement('div');
+                newField.className = 'participant-field';
+                newField.contentEditable = true;
+                newField.placeholder = type === 'presente' ? 'Nome – Cargo – Modalidade' : 'Nome – Motivo';
+                container.appendChild(newField);
+            }
+            
+            // Sistema de checklist interativo
+            function initChecklist() {
+                const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+                const progressText = document.getElementById('checklist-progress');
+                const progressBar = document.querySelector('.bg-cyan-600');
+                
+                checkboxes.forEach(checkbox => {
+                    checkbox.addEventListener('change', function() {
+                        updateChecklistProgress();
+                    });
+                });
+                
+                function updateChecklistProgress() {
+                    const checked = document.querySelectorAll('input[type="checkbox"]:checked').length;
+                    const total = checkboxes.length;
+                    const percentage = (checked / total) * 100;
+                    
+                    progressText.textContent = `${checked}/${total}`;
+                    progressBar.style.width = `${percentage}%`;
+                    
+                    // Salvar estado no localStorage
+                    const checklistState = {};
+                    checkboxes.forEach((checkbox, index) => {
+                        checklistState[index] = checkbox.checked;
+                    });
+                    localStorage.setItem('ata_checklist', JSON.stringify(checklistState));
+                }
+                
+                // Carregar estado salvo
+                const savedChecklist = localStorage.getItem('ata_checklist');
+                if (savedChecklist) {
+                    const state = JSON.parse(savedChecklist);
+                    checkboxes.forEach((checkbox, index) => {
+                        if (state[index]) {
+                            checkbox.checked = true;
+                        }
+                    });
+                    updateChecklistProgress();
+                }
+            }
+            
+            // Efeitos visuais para tabelas
+            function initTableEffects() {
+                const tableRows = document.querySelectorAll('tbody tr');
+                
+                tableRows.forEach(row => {
+                    row.addEventListener('mouseenter', function() {
+                        this.style.transform = 'scale(1.01)';
+                        this.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+                    });
+                    
+                    row.addEventListener('mouseleave', function() {
+                        this.style.transform = 'scale(1)';
+                        this.style.boxShadow = 'none';
+                    });
+                });
+            }
+            
+            // Sistema de busca nas tabelas
+            function initTableSearch() {
+                const tables = document.querySelectorAll('table');
+                
+                tables.forEach(table => {
+                    const searchBox = document.createElement('div');
+                    searchBox.className = 'mb-4 p-3 bg-gray-100 rounded-lg';
+                    searchBox.innerHTML = `
+                        <input type="text" placeholder="🔍 Buscar na tabela..." 
+                               class="w-full p-2 border border-gray-300 rounded-md text-sm">
+                    `;
+                    
+                    table.parentNode.insertBefore(searchBox, table);
+                    
+                    const searchInput = searchBox.querySelector('input');
+                    searchInput.addEventListener('input', function() {
+                        const searchTerm = this.value.toLowerCase();
+                        const rows = table.querySelectorAll('tbody tr');
+                        
+                        rows.forEach(row => {
+                            const text = row.textContent.toLowerCase();
+                            if (text.includes(searchTerm)) {
+                                row.style.display = '';
+                                row.style.opacity = '1';
+                            } else {
+                                row.style.opacity = '0.3';
+                            }
+                        });
+                    });
+                });
+            }
+            
+            // Salvar progresso no localStorage
+            function saveProgress() {
+                const editableElements = document.querySelectorAll('[contenteditable]');
+                const data = {};
+                editableElements.forEach((element, index) => {
+                    data[`element_${index}`] = element.textContent;
+                });
+                localStorage.setItem('ata_progress', JSON.stringify(data));
+            }
+            
+            // Carregar progresso do localStorage
+            function loadProgress() {
+                const saved = localStorage.getItem('ata_progress');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    const editableElements = document.querySelectorAll('[contenteditable]');
+                    editableElements.forEach((element, index) => {
+                        if (data[`element_${index}`]) {
+                            element.textContent = data[`element_${index}`];
+                        }
+                    });
+                }
+            }
+            
+            // Exportar dados das tabelas
+            function exportTableData() {
+                const tables = document.querySelectorAll('table');
+                let csvContent = '';
+                
+                tables.forEach((table, tableIndex) => {
+                    const title = table.closest('section').querySelector('h2, h3')?.textContent || `Tabela ${tableIndex + 1}`;
+                    csvContent += `\n${title}\n`;
+                    
+                    const rows = table.querySelectorAll('tr');
+                    rows.forEach(row => {
+                        const cells = row.querySelectorAll('th, td');
+                        const rowData = Array.from(cells).map(cell => {
+                            return `"${cell.textContent.trim()}"`;
+                        });
+                        csvContent += rowData.join(',') + '\n';
+                    });
+                    csvContent += '\n';
+                });
+                
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'ata_multisocios_dados.csv';
+                link.click();
+            }
+            
+            // Auto-save a cada 30 segundos
+            setInterval(saveProgress, 30000);
+            
+            // Inicializar todas as funcionalidades
+            window.addEventListener('load', function() {
+                loadProgress();
+                initChecklist();
+                initTableEffects();
+                initTableSearch();
+                
+                // Adicionar botão de exportação
+                const footer = document.querySelector('footer');
+                const exportButton = document.createElement('button');
+                exportButton.className = 'mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors duration-200';
+                exportButton.textContent = '📊 Exportar Dados CSV';
+                exportButton.onclick = exportTableData;
+                footer.querySelector('.max-w-4xl').appendChild(exportButton);
+            });
+        </script>
+
+    </div>
+
+</body>
+</html>

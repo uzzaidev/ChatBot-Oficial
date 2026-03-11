@@ -1,0 +1,1350 @@
+<!DOCTYPE html><html><head>
+      <title>META_APP_REVIEW</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="file:///c:\Users\Luisf\.vscode\extensions\shd101wyy.markdown-preview-enhanced-0.8.20\crossnote\dependencies\katex\katex.min.css">
+      
+      
+      
+      
+      
+      <style>
+      code[class*=language-],pre[class*=language-]{color:#333;background:0 0;font-family:Consolas,"Liberation Mono",Menlo,Courier,monospace;text-align:left;white-space:pre;word-spacing:normal;word-break:normal;word-wrap:normal;line-height:1.4;-moz-tab-size:8;-o-tab-size:8;tab-size:8;-webkit-hyphens:none;-moz-hyphens:none;-ms-hyphens:none;hyphens:none}pre[class*=language-]{padding:.8em;overflow:auto;border-radius:3px;background:#f5f5f5}:not(pre)>code[class*=language-]{padding:.1em;border-radius:.3em;white-space:normal;background:#f5f5f5}.token.blockquote,.token.comment{color:#969896}.token.cdata{color:#183691}.token.doctype,.token.macro.property,.token.punctuation,.token.variable{color:#333}.token.builtin,.token.important,.token.keyword,.token.operator,.token.rule{color:#a71d5d}.token.attr-value,.token.regex,.token.string,.token.url{color:#183691}.token.atrule,.token.boolean,.token.code,.token.command,.token.constant,.token.entity,.token.number,.token.property,.token.symbol{color:#0086b3}.token.prolog,.token.selector,.token.tag{color:#63a35c}.token.attr-name,.token.class,.token.class-name,.token.function,.token.id,.token.namespace,.token.pseudo-class,.token.pseudo-element,.token.url-reference .token.variable{color:#795da3}.token.entity{cursor:help}.token.title,.token.title .token.punctuation{font-weight:700;color:#1d3e81}.token.list{color:#ed6a43}.token.inserted{background-color:#eaffea;color:#55a532}.token.deleted{background-color:#ffecec;color:#bd2c00}.token.bold{font-weight:700}.token.italic{font-style:italic}.language-json .token.property{color:#183691}.language-markup .token.tag .token.punctuation{color:#333}.language-css .token.function,code.language-css{color:#0086b3}.language-yaml .token.atrule{color:#63a35c}code.language-yaml{color:#183691}.language-ruby .token.function{color:#333}.language-markdown .token.url{color:#795da3}.language-makefile .token.symbol{color:#795da3}.language-makefile .token.variable{color:#183691}.language-makefile .token.builtin{color:#0086b3}.language-bash .token.keyword{color:#0086b3}pre[data-line]{position:relative;padding:1em 0 1em 3em}pre[data-line] .line-highlight-wrapper{position:absolute;top:0;left:0;background-color:transparent;display:block;width:100%}pre[data-line] .line-highlight{position:absolute;left:0;right:0;padding:inherit 0;margin-top:1em;background:hsla(24,20%,50%,.08);background:linear-gradient(to right,hsla(24,20%,50%,.1) 70%,hsla(24,20%,50%,0));pointer-events:none;line-height:inherit;white-space:pre}pre[data-line] .line-highlight:before,pre[data-line] .line-highlight[data-end]:after{content:attr(data-start);position:absolute;top:.4em;left:.6em;min-width:1em;padding:0 .5em;background-color:hsla(24,20%,50%,.4);color:#f4f1ef;font:bold 65%/1.5 sans-serif;text-align:center;vertical-align:.3em;border-radius:999px;text-shadow:none;box-shadow:0 1px #fff}pre[data-line] .line-highlight[data-end]:after{content:attr(data-end);top:auto;bottom:.4em}html body{font-family:'Helvetica Neue',Helvetica,'Segoe UI',Arial,freesans,sans-serif;font-size:16px;line-height:1.6;color:#333;background-color:#fff;overflow:initial;box-sizing:border-box;word-wrap:break-word}html body>:first-child{margin-top:0}html body h1,html body h2,html body h3,html body h4,html body h5,html body h6{line-height:1.2;margin-top:1em;margin-bottom:16px;color:#000}html body h1{font-size:2.25em;font-weight:300;padding-bottom:.3em}html body h2{font-size:1.75em;font-weight:400;padding-bottom:.3em}html body h3{font-size:1.5em;font-weight:500}html body h4{font-size:1.25em;font-weight:600}html body h5{font-size:1.1em;font-weight:600}html body h6{font-size:1em;font-weight:600}html body h1,html body h2,html body h3,html body h4,html body h5{font-weight:600}html body h5{font-size:1em}html body h6{color:#5c5c5c}html body strong{color:#000}html body del{color:#5c5c5c}html body a:not([href]){color:inherit;text-decoration:none}html body a{color:#08c;text-decoration:none}html body a:hover{color:#00a3f5;text-decoration:none}html body img{max-width:100%}html body>p{margin-top:0;margin-bottom:16px;word-wrap:break-word}html body>ol,html body>ul{margin-bottom:16px}html body ol,html body ul{padding-left:2em}html body ol.no-list,html body ul.no-list{padding:0;list-style-type:none}html body ol ol,html body ol ul,html body ul ol,html body ul ul{margin-top:0;margin-bottom:0}html body li{margin-bottom:0}html body li.task-list-item{list-style:none}html body li>p{margin-top:0;margin-bottom:0}html body .task-list-item-checkbox{margin:0 .2em .25em -1.8em;vertical-align:middle}html body .task-list-item-checkbox:hover{cursor:pointer}html body blockquote{margin:16px 0;font-size:inherit;padding:0 15px;color:#5c5c5c;background-color:#f0f0f0;border-left:4px solid #d6d6d6}html body blockquote>:first-child{margin-top:0}html body blockquote>:last-child{margin-bottom:0}html body hr{height:4px;margin:32px 0;background-color:#d6d6d6;border:0 none}html body table{margin:10px 0 15px 0;border-collapse:collapse;border-spacing:0;display:block;width:100%;overflow:auto;word-break:normal;word-break:keep-all}html body table th{font-weight:700;color:#000}html body table td,html body table th{border:1px solid #d6d6d6;padding:6px 13px}html body dl{padding:0}html body dl dt{padding:0;margin-top:16px;font-size:1em;font-style:italic;font-weight:700}html body dl dd{padding:0 16px;margin-bottom:16px}html body code{font-family:Menlo,Monaco,Consolas,'Courier New',monospace;font-size:.85em;color:#000;background-color:#f0f0f0;border-radius:3px;padding:.2em 0}html body code::after,html body code::before{letter-spacing:-.2em;content:'\00a0'}html body pre>code{padding:0;margin:0;word-break:normal;white-space:pre;background:0 0;border:0}html body .highlight{margin-bottom:16px}html body .highlight pre,html body pre{padding:1em;overflow:auto;line-height:1.45;border:#d6d6d6;border-radius:3px}html body .highlight pre{margin-bottom:0;word-break:normal}html body pre code,html body pre tt{display:inline;max-width:initial;padding:0;margin:0;overflow:initial;line-height:inherit;word-wrap:normal;background-color:transparent;border:0}html body pre code:after,html body pre code:before,html body pre tt:after,html body pre tt:before{content:normal}html body blockquote,html body dl,html body ol,html body p,html body pre,html body ul{margin-top:0;margin-bottom:16px}html body kbd{color:#000;border:1px solid #d6d6d6;border-bottom:2px solid #c7c7c7;padding:2px 4px;background-color:#f0f0f0;border-radius:3px}@media print{html body{background-color:#fff}html body h1,html body h2,html body h3,html body h4,html body h5,html body h6{color:#000;page-break-after:avoid}html body blockquote{color:#5c5c5c}html body pre{page-break-inside:avoid}html body table{display:table}html body img{display:block;max-width:100%;max-height:100%}html body code,html body pre{word-wrap:break-word;white-space:pre}}.markdown-preview{width:100%;height:100%;box-sizing:border-box}.markdown-preview ul{list-style:disc}.markdown-preview ul ul{list-style:circle}.markdown-preview ul ul ul{list-style:square}.markdown-preview ol{list-style:decimal}.markdown-preview ol ol,.markdown-preview ul ol{list-style-type:lower-roman}.markdown-preview ol ol ol,.markdown-preview ol ul ol,.markdown-preview ul ol ol,.markdown-preview ul ul ol{list-style-type:lower-alpha}.markdown-preview .newpage,.markdown-preview .pagebreak{page-break-before:always}.markdown-preview pre.line-numbers{position:relative;padding-left:3.8em;counter-reset:linenumber}.markdown-preview pre.line-numbers>code{position:relative}.markdown-preview pre.line-numbers .line-numbers-rows{position:absolute;pointer-events:none;top:1em;font-size:100%;left:0;width:3em;letter-spacing:-1px;border-right:1px solid #999;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}.markdown-preview pre.line-numbers .line-numbers-rows>span{pointer-events:none;display:block;counter-increment:linenumber}.markdown-preview pre.line-numbers .line-numbers-rows>span:before{content:counter(linenumber);color:#999;display:block;padding-right:.8em;text-align:right}.markdown-preview .mathjax-exps .MathJax_Display{text-align:center!important}.markdown-preview:not([data-for=preview]) .code-chunk .code-chunk-btn-group{display:none}.markdown-preview:not([data-for=preview]) .code-chunk .status{display:none}.markdown-preview:not([data-for=preview]) .code-chunk .output-div{margin-bottom:16px}.markdown-preview .md-toc{padding:0}.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link{display:inline;padding:.25rem 0}.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link div,.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link p{display:inline}.markdown-preview .md-toc .md-toc-link-wrapper.highlighted .md-toc-link{font-weight:800}.scrollbar-style::-webkit-scrollbar{width:8px}.scrollbar-style::-webkit-scrollbar-track{border-radius:10px;background-color:transparent}.scrollbar-style::-webkit-scrollbar-thumb{border-radius:5px;background-color:rgba(150,150,150,.66);border:4px solid rgba(150,150,150,.66);background-clip:content-box}html body[for=html-export]:not([data-presentation-mode]){position:relative;width:100%;height:100%;top:0;left:0;margin:0;padding:0;overflow:auto}html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{position:relative;top:0;min-height:100vh}@media screen and (min-width:914px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{padding:2em calc(50% - 457px + 2em)}}@media screen and (max-width:914px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{padding:2em}}@media screen and (max-width:450px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{font-size:14px!important;padding:1em}}@media print{html body[for=html-export]:not([data-presentation-mode]) #sidebar-toc-btn{display:none}}html body[for=html-export]:not([data-presentation-mode]) #sidebar-toc-btn{position:fixed;bottom:8px;left:8px;font-size:28px;cursor:pointer;color:inherit;z-index:99;width:32px;text-align:center;opacity:.4}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] #sidebar-toc-btn{opacity:1}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc{position:fixed;top:0;left:0;width:300px;height:100%;padding:32px 0 48px 0;font-size:14px;box-shadow:0 0 4px rgba(150,150,150,.33);box-sizing:border-box;overflow:auto;background-color:inherit}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar{width:8px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar-track{border-radius:10px;background-color:transparent}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar-thumb{border-radius:5px;background-color:rgba(150,150,150,.66);border:4px solid rgba(150,150,150,.66);background-clip:content-box}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc a{text-decoration:none}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc{padding:0 16px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link{display:inline;padding:.25rem 0}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link div,html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link p{display:inline}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper.highlighted .md-toc-link{font-weight:800}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{left:300px;width:calc(100% - 300px);padding:2em calc(50% - 457px - 300px / 2);margin:0;box-sizing:border-box}@media screen and (max-width:1274px){html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{padding:2em}}@media screen and (max-width:450px){html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{width:100%}}html body[for=html-export]:not([data-presentation-mode]):not([html-show-sidebar-toc]) .markdown-preview{left:50%;transform:translateX(-50%)}html body[for=html-export]:not([data-presentation-mode]):not([html-show-sidebar-toc]) .md-sidebar-toc{display:none}
+/* Please visit the URL below for more information: */
+/*   https://shd101wyy.github.io/markdown-preview-enhanced/#/customize-css */
+
+      </style>
+      <!-- The content below will be included at the end of the <head> element. --><script type="text/javascript">
+  document.addEventListener("DOMContentLoaded", function () {
+    // your code here
+  });
+</script></head><body for="html-export">
+    
+    
+      <div class="crossnote markdown-preview  ">
+      <div>
+<h1 id="meta-app-review---respostas-completas">Meta App Review - Respostas Completas </h1>
+<h2 id="uzzapp-saas-oficial-app-id-1440028941249650">UzzApp SaaS Oficial (App ID: 1440028941249650) </h2>
+<p><strong>Data:</strong> 13 de fevereiro de 2026<br>
+<strong>Status:</strong> Modo Publicado (Development Mode → Live Mode)</p>
+<hr>
+<h2 id="-índice">📋 Índice </h2>
+<ol>
+<li><a href="#plataformas-do-app">Plataformas do App</a></li>
+<li><a href="#question%C3%A1rios-de-permiss%C3%B5es">Questionários de Permissões</a></li>
+<li><a href="#quest%C3%B5es-de-privacidade-e-dados">Questões de Privacidade e Dados</a></li>
+<li><a href="#instru%C3%A7%C3%B5es-para-o-analista">Instruções para o Analista</a></li>
+<li><a href="#materiais-de-suporte">Materiais de Suporte</a></li>
+</ol>
+<hr>
+<h2 id="1-plataformas-do-app">1. Plataformas do App </h2>
+<p><strong>Adicionar em:</strong> Settings → Basic → Add Platform</p>
+<h3 id="website-">Website ✅ </h3>
+<ul>
+<li><strong>Site URL:</strong> <code>https://uzzap.uzzai.com.br</code></li>
+<li><strong>Mobile Site URL:</strong> (deixar vazio se responsivo)</li>
+</ul>
+<h3 id="android-futuro">Android (Futuro) </h3>
+<ul>
+<li><strong>Google Play Package Name:</strong> <code>com.uzzai.uzzapp</code></li>
+<li><strong>Class Name:</strong> (deixar vazio por enquanto)</li>
+<li><strong>Key Hashes:</strong> (adicionar depois quando criar app Android)</li>
+</ul>
+<h3 id="ios-futuro">iOS (Futuro) </h3>
+<ul>
+<li><strong>Bundle ID:</strong> <code>com.uzzai.uzzapp</code></li>
+<li><strong>iPhone Store ID:</strong> (adicionar depois quando publicar na App Store)</li>
+<li><strong>iPad Store ID:</strong> (mesmo que iPhone se for universal)</li>
+</ul>
+<p><strong>Nota:</strong> Por enquanto, adicionar apenas <strong>Website</strong>. Android/iOS serão adicionados quando os apps móveis estiverem prontos.</p>
+<hr>
+<h2 id="2-questionários-de-permissões">2. Questionários de Permissões </h2>
+<h3 id="-whatsapp-business-platform">📱 WhatsApp Business Platform </h3>
+<h4 id="whatsapp_business_messaging"><strong>whatsapp_business_messaging</strong> </h4>
+<p><strong>Como esse app usará o whatsapp_business_messaging?</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>O UzzApp SaaS é uma plataforma multi-tenant que permite empresas conectarem
+suas próprias contas WhatsApp Business para automatizar atendimento ao cliente
+via chatbot com IA.
+
+Uso específico:
+- Receber mensagens de clientes finais (webhook)
+- Enviar respostas automáticas via chatbot (GPT-4o, Llama 3.3)
+- Processar mídia (áudio, imagem, documento) para contexto
+- Gerenciar conversas bidirecionais em nome de empresas clientes
+
+Modelo: Cada empresa cliente conecta seu próprio WABA via Embedded Signup.
+A plataforma processa mensagens usando as credenciais do cliente, não
+compartilha dados entre clientes (isolamento multi-tenant).
+</code></pre><p><strong>Descreva como seu aplicativo usa esta permissão ou recurso:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>1. Cliente conecta WABA via OAuth (Embedded Signup)
+2. Meta envia webhooks para https://uzzap.uzzai.com.br/api/webhook
+3. Plataforma identifica cliente via WABA ID
+4. Processa mensagem através de pipeline de IA (14 nodes)
+5. Gera resposta contextualizada (RAG + histórico de chat)
+6. Envia resposta via WhatsApp API usando token do cliente
+7. Salva histórico para continuidade de conversação
+</code></pre><p><strong>Carregue o screencast mostrando a experiência do usuário de ponta a ponta:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Vídeo demonstrando:
+- [0:00-0:30] Cliente fazendo login no dashboard
+- [0:30-1:00] Clicando em "Conectar WhatsApp" → OAuth Meta
+- [1:00-1:30] Autorizando WABA
+- [1:30-2:00] Configurando chatbot (prompt, modelo IA)
+- [2:00-2:30] Cliente final enviando mensagem no WhatsApp
+- [2:30-3:00] Bot respondendo automaticamente
+- [3:00-3:30] Visualizando conversa no dashboard
+</code></pre><p><strong>Você concorda que está em conformidade com o uso permitido:</strong><br>
+✅ <strong>Sim</strong></p>
+<hr>
+<h4 id="whatsapp_business_management"><strong>whatsapp_business_management</strong> </h4>
+<p><strong>Como esse app usará o whatsapp_business_management?</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Gerenciamento programático de contas WhatsApp Business conectadas pelos
+clientes da plataforma.
+
+Uso específico:
+- Criar e gerenciar message templates para notificações
+- Configurar webhooks para receber mensagens
+- Gerenciar phone numbers associados ao WABA
+- Verificar status de números (quality rating, limits)
+- Registrar números via Embedded Signup
+- Gerenciar configurações de WABA (about text, photo, business hours)
+</code></pre><p><strong>Descreva como seu aplicativo usa esta permissão ou recurso:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>1. Durante Embedded Signup, solicitar acesso ao WABA do cliente
+2. Armazenar WABA ID e Phone Number ID no banco de dados
+3. Configurar webhook automaticamente após conexão
+4. Permitir cliente criar message templates via dashboard
+5. Submeter templates para aprovação da Meta
+6. Monitorar quality rating do número para alertar cliente
+7. Exibir limites de mensagens (tier atual) no dashboard
+</code></pre><p><strong>Carregue o screencast mostrando a experiência do usuário de ponta a ponta:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Vídeo demonstrando:
+- [0:00-0:30] Dashboard mostrando lista de WABAs conectados
+- [0:30-1:00] Criar novo message template
+- [1:00-1:30] Preencher template com variáveis
+- [1:30-2:00] Submeter para aprovação Meta
+- [2:00-2:30] Visualizar status de aprovação
+- [2:30-3:00] Monitorar quality rating e limites
+</code></pre><p><strong>Você concorda que está em conformidade com o uso permitido:</strong><br>
+✅ <strong>Sim</strong></p>
+<hr>
+<h4 id="whatsapp_business_manage_events"><strong>whatsapp_business_manage_events</strong> </h4>
+<p><strong>Como esse app usará o whatsapp_business_manage_events?</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Rastreamento de eventos de conversão de conversas WhatsApp para otimização
+de campanhas Click-to-WhatsApp Ads via Conversions API.
+
+Uso específico:
+- Enviar evento "Lead" quando cliente inicia conversa
+- Enviar evento "QualifiedLead" quando atinge estágio no CRM
+- Enviar evento "Purchase" quando fecha venda
+- Incluir ctwa_clid (Click ID) para atribuição de anúncio
+- Enviar custom_data (value, currency) para ROI tracking
+</code></pre><p><strong>Descreva como seu aplicativo usa esta permissão ou recurso:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>1. Cliente cria campanha Click-to-WhatsApp no Meta Ads
+2. Usuário final clica no anúncio → abre WhatsApp
+3. Meta envia ctwa_clid no webhook da primeira mensagem
+4. Plataforma armazena ctwa_clid no lead_sources table
+5. Quando lead avança no funil (CRM), envia evento via Conversions API
+6. Meta otimiza campanha baseado em conversões reais
+7. Cliente visualiza ROI no dashboard /dashboard/meta-ads
+</code></pre><p><strong>Carregue o screencast mostrando a experiência do usuário de ponta a ponta:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Vídeo demonstrando:
+- [0:00-0:30] Configurar Meta Dataset ID no dashboard
+- [0:30-1:00] Criar campanha CTWA no Meta Ads Manager
+- [1:00-1:30] Usuário clica no anúncio → conversa inicia
+- [1:30-2:00] Lead aparece no CRM com source="Meta Ad"
+- [2:00-2:30] Mover card para coluna "Fechado"
+- [2:30-3:00] Evento "Purchase" enviado automaticamente
+- [3:00-3:30] Visualizar eventos no dashboard /dashboard/meta-ads
+</code></pre><p><strong>Você concorda que está em conformidade com o uso permitido:</strong><br>
+✅ <strong>Sim</strong></p>
+<hr>
+<h3 id="-meta-ads--marketing-api">📊 Meta Ads / Marketing API </h3>
+<h4 id="ads_management-️-advanced"><strong>ads_management</strong> ⚠️ ADVANCED </h4>
+<p><strong>Como esse app usará o ads_management?</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Permitir clientes criarem e gerenciarem campanhas Click-to-WhatsApp
+diretamente do dashboard UzzApp, sem sair da plataforma.
+
+Uso específico:
+- Criar campanhas CTWA (Click-to-WhatsApp Ads)
+- Definir orçamento, público-alvo, criativos
+- Pausar/retomar campanhas
+- Ajustar lances (bidding strategy)
+- Criar ad sets e ads programaticamente
+- Conectar ads com WhatsApp Business Account
+</code></pre><p><strong>Descreva como seu aplicativo usa esta permissão ou recurso:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>1. Cliente conecta Ad Account via OAuth (ads_management permission)
+2. Dashboard exibe lista de campanhas existentes
+3. Cliente clica "Criar Campanha CTWA"
+4. Define objetivo (MESSAGES), orçamento, público
+5. Upload criativo (imagem/vídeo) + texto do anúncio
+6. Seleciona WABA para receber mensagens
+7. Publica campanha via Marketing API
+8. Monitora performance (impressões, cliques, conversas iniciadas)
+</code></pre><p><strong>Carregue o screencast mostrando a experiência do usuário de ponta a ponta:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Vídeo demonstrando:
+- [0:00-0:30] Dashboard /dashboard/meta-ads
+- [0:30-1:00] Conectar Ad Account via OAuth
+- [1:00-1:30] Criar nova campanha CTWA
+- [1:30-2:00] Configurar público, orçamento, creative
+- [2:00-2:30] Publicar campanha
+- [2:30-3:00] Visualizar métricas (impressões, CPC, conversas)
+- [3:00-3:30] Pausar campanha programaticamente
+</code></pre><p><strong>Verifique se você fez as ligações de teste de API exigidas:</strong><br>
+✅ <strong>Sim</strong> (criar campanha test, pausar, retomar, deletar)</p>
+<p><strong>Você concorda que está em conformidade com o uso permitido:</strong><br>
+✅ <strong>Sim</strong></p>
+<p><strong>Seu envio deve incluir as pages_read_engagement para usar a ads_management:</strong><br>
+✅ <strong>Confirmado</strong> (já solicitada)</p>
+<hr>
+<h4 id="ads_read"><strong>ads_read</strong> </h4>
+<p><strong>Como esse app usará o ads_read?</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Ler dados de campanhas existentes para exibir métricas e insights no
+dashboard UzzApp.
+
+Uso específico:
+- Buscar lista de campanhas do Ad Account
+- Exibir métricas (impressões, cliques, spend, CPC, CPM)
+- Mostrar breakdown por dia/idade/gênero
+- Comparar performance de múltiplas campanhas
+- Exibir histórico de gastos (billing)
+- Alertar quando budget está acabando
+</code></pre><p><strong>Descreva como seu aplicativo usa esta permissão ou recurso:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>1. Cliente conecta Ad Account
+2. Dashboard faz GET /act_{ad_account_id}/campaigns
+3. Para cada campanha, busca insights (last 30 days)
+4. Exibe gráfico de performance (Chart.js)
+5. Calcula métricas: CTR, CPC, ROAS
+6. Mostra top performing ads
+7. Exporta relatório PDF
+</code></pre><p><strong>Carregue o screencast mostrando a experiência do usuário de ponta a ponta:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Vídeo demonstrando:
+- [0:00-0:30] Dashboard /dashboard/meta-ads
+- [0:30-1:00] Lista de campanhas com métricas
+- [1:00-1:30] Clicar em campanha → detalhes
+- [1:30-2:00] Gráfico de performance (últimos 30 dias)
+- [2:00-2:30] Breakdown por público/placement
+- [2:30-3:00] Exportar relatório PDF
+</code></pre><p><strong>Verifique se você fez as ligações de teste de API exigidas:</strong><br>
+✅ <strong>Sim</strong> (GET campaigns, GET insights, GET adsets)</p>
+<p><strong>Você concorda que está em conformidade com o uso permitido:</strong><br>
+✅ <strong>Sim</strong></p>
+<hr>
+<h4 id="pages_show_list"><strong>pages_show_list</strong> </h4>
+<p><strong>Como esse app usará o pages_show_list?</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Listar Páginas do Facebook que o usuário gerencia para conectar com
+campanhas WhatsApp e Instagram.
+
+Uso específico:
+- Exibir lista de Páginas durante setup de campanha CTWA
+- Permitir selecionar Página para associar com WABA
+- Mostrar Páginas disponíveis para Instagram messaging
+- Verificar permissões de Página antes de criar ad
+</code></pre><p><strong>Descreva como seu aplicativo usa esta permissão ou recurso:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>1. Durante OAuth, solicitar pages_show_list
+2. Fazer GET /me/accounts para listar Páginas
+3. Exibir dropdown "Selecione uma Página"
+4. Associar Página selecionada com WABA
+5. Usar Página para criar campanha CTWA
+6. Salvar page_id no banco de dados do cliente
+</code></pre><p><strong>Carregue o screencast mostrando a experiência do usuário de ponta a ponta:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Vídeo demonstrando:
+- [0:00-0:30] Setup inicial de campanha CTWA
+- [0:30-1:00] Dropdown "Selecione sua Página"
+- [1:00-1:30] Listar Páginas que usuário gerencia
+- [1:30-2:00] Selecionar Página
+- [2:00-2:30] Página associada com WABA
+- [2:30-3:00] Campanha criada com Página conectada
+</code></pre><p><strong>Você concorda que está em conformidade com o uso permitido:</strong><br>
+✅ <strong>Sim</strong></p>
+<hr>
+<h4 id="pages_manage_ads"><strong>pages_manage_ads</strong> </h4>
+<p><strong>Como esse app usará o pages_manage_ads?</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Gerenciar anúncios associados às Páginas do Facebook conectadas pelos
+clientes, necessário para criar campanhas CTWA.
+
+Uso específico:
+- Criar anúncios que direcionam para WhatsApp via Página
+- Gerenciar call-to-action "Enviar mensagem"
+- Modificar anúncios existentes da Página
+- Pausar/retomar anúncios vinculados à Página
+</code></pre><p><strong>Descreva como seu aplicativo usa esta permissão ou recurso:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>1. Cliente cria campanha CTWA
+2. Seleciona Página do Facebook
+3. Define creative (imagem + texto)
+4. Define CTA: "Enviar mensagem no WhatsApp"
+5. Plataforma cria ad associado à Página
+6. Ad direciona cliques para WhatsApp Business Number
+7. Cliente gerencia ad (pausar/editar) via dashboard
+</code></pre><p><strong>Carregue o screencast mostrando a experiência do usuário de ponta a ponta:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Vídeo demonstrando:
+- [0:00-0:30] Criar campanha CTWA
+- [0:30-1:00] Selecionar Página + WABA
+- [1:00-1:30] Upload creative + texto
+- [1:30-2:00] Definir CTA "Enviar mensagem"
+- [2:00-2:30] Publicar anúncio
+- [2:30-3:00] Editar/pausar anúncio via dashboard
+</code></pre><p><strong>Verifique se você fez as ligações de teste de API exigidas:</strong><br>
+✅ <strong>Sim</strong> (criar ad com page_id, pausar, retomar)</p>
+<p><strong>Você concorda que está em conformidade com o uso permitido:</strong><br>
+✅ <strong>Sim</strong></p>
+<p><strong>Seu envio deve incluir as pages_show_list para usar a pages_manage_ads:</strong><br>
+✅ <strong>Confirmado</strong></p>
+<hr>
+<h4 id="pages_read_engagement"><strong>pages_read_engagement</strong> </h4>
+<p><strong>Como esse app usará o pages_read_engagement?</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Ler dados de engajamento da Página para exibir métricas de performance
+de anúncios e conteúdo orgânico.
+
+Uso específico:
+- Exibir posts da Página no dashboard
+- Mostrar likes, comments, shares de posts
+- Analisar engajamento de anúncios vinculados à Página
+- Exibir fotos/vídeos da Página
+- Mostrar eventos da Página
+</code></pre><p><strong>Descreva como seu aplicativo usa esta permissão ou recurso:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>1. Cliente conecta Página do Facebook
+2. Dashboard faz GET /{page_id}/feed
+3. Exibe últimos posts da Página
+4. Mostra métricas: reactions, comments, shares
+5. Analisa qual tipo de conteúdo gera mais engajamento
+6. Sugere criativos para anúncios baseado em top posts
+</code></pre><p><strong>Carregue o screencast mostrando a experiência do usuário de ponta a ponta:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Vídeo demonstrando:
+- [0:00-0:30] Dashboard /dashboard/facebook-page
+- [0:30-1:00] Lista de posts recentes
+- [1:00-1:30] Métricas de cada post (likes, comments)
+- [1:30-2:00] Identificar top performing posts
+- [2:00-2:30] Usar post como base para anúncio
+</code></pre><p><strong>Verifique se você fez as ligações de teste de API exigidas:</strong><br>
+✅ <strong>Sim</strong> (GET feed, GET posts, GET engagement metrics)</p>
+<p><strong>Você concorda que está em conformidade com o uso permitido:</strong><br>
+✅ <strong>Sim</strong></p>
+<p><strong>Seu envio deve incluir as pages_show_list para usar a pages_read_engagement:</strong><br>
+✅ <strong>Confirmado</strong></p>
+<hr>
+<h4 id="catalog_management"><strong>catalog_management</strong> </h4>
+<p><strong>Como esse app usará o catalog_management?</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Criar e gerenciar catálogos de produtos para e-commerces que usam
+WhatsApp para vendas, integrando com anúncios dinâmicos.
+
+Uso específico:
+- Criar product catalogs para clientes e-commerce
+- Adicionar produtos (nome, preço, imagem, SKU)
+- Sincronizar catálogo com WhatsApp Business
+- Permitir clientes enviarem catálogo no chat
+- Criar anúncios dinâmicos (Dynamic Product Ads)
+</code></pre><p><strong>Descreva como seu aplicativo usa esta permissão ou recurso:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>1. Cliente e-commerce conecta no dashboard
+2. Upload CSV com produtos (nome, preço, imagem, link)
+3. Plataforma cria catalog via Marketing API
+4. Sincroniza catalog com WABA
+5. No chat, bot pode enviar product message com catálogo
+6. Cliente cria anúncios dinâmicos usando catalog
+7. Usuário clica no produto → abre WhatsApp
+</code></pre><p><strong>Carregue o screencast mostrando a experiência do usuário de ponta a ponta:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Vídeo demonstrando:
+- [0:00-0:30] Dashboard /dashboard/product-catalog
+- [0:30-1:00] Upload CSV de produtos
+- [1:00-1:30] Criar catalog via API
+- [1:30-2:00] Sincronizar com WhatsApp Business
+- [2:00-2:30] Enviar product message no chat
+- [2:30-3:00] Cliente visualiza catálogo no WhatsApp
+</code></pre><p><strong>Você concorda que está em conformidade com o uso permitido:</strong><br>
+✅ <strong>Sim</strong></p>
+<hr>
+<h3 id="-threads-api">🧵 Threads API </h3>
+<h4 id="threads_basic"><strong>threads_basic</strong> </h4>
+<p><strong>Como esse app usará o threads_basic?</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Exibir posts do Threads do usuário no dashboard para análise de
+conteúdo e engajamento.
+
+Uso específico:
+- Mostrar últimos posts do Threads
+- Exibir métricas de cada post (views, likes, replies)
+- Analisar performance de conteúdo
+</code></pre><p><strong>Descreva como seu aplicativo usa esta permissão ou recurso:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>1. Cliente conecta conta Threads
+2. Dashboard faz GET /me/threads
+3. Exibe lista de posts recentes
+4. Mostra métricas de cada post
+</code></pre><p><strong>Carregue o screencast mostrando a experiência do usuário de ponta a ponta:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Vídeo demonstrando:
+- [0:00-0:30] Dashboard /dashboard/threads
+- [0:30-1:00] Lista de posts do Threads
+- [1:00-1:30] Métricas de cada post
+</code></pre><p><strong>Verifique se você fez as ligações de teste de API exigidas:</strong><br>
+✅ <strong>Sim</strong> (GET /me/threads)</p>
+<p><strong>Você concorda que está em conformidade com o uso permitido:</strong><br>
+✅ <strong>Sim</strong></p>
+<hr>
+<h4 id="threads_content_publish"><strong>threads_content_publish</strong> </h4>
+<p><strong>Como esse app usará o threads_content_publish?</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Publicar conteúdo automaticamente no Threads via dashboard ou
+agendamento.
+
+Uso específico:
+- Criar posts no Threads programaticamente
+- Agendar publicações
+- Cross-posting (WhatsApp → Threads)
+</code></pre><p><strong>Descreva como seu aplicativo usa esta permissão ou recurso:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>1. Cliente escreve post no dashboard
+2. Clica "Publicar no Threads"
+3. Plataforma cria post via Threads API
+4. Post aparece no perfil do Threads do cliente
+</code></pre><p><strong>Carregue o screencast mostrando a experiência do usuário de ponta a ponta:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Vídeo demonstrando:
+- [0:00-0:30] Dashboard /dashboard/threads/new
+- [0:30-1:00] Escrever texto do post
+- [1:00-1:30] Clicar "Publicar"
+- [1:30-2:00] Post publicado no Threads
+</code></pre><p><strong>Você concorda que está em conformidade com o uso permitido:</strong><br>
+✅ <strong>Sim</strong></p>
+<hr>
+<h4 id="threads_manage_replies"><strong>threads_manage_replies</strong> </h4>
+<p><strong>Como esse app usará o threads_manage_replies?</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Gerenciar respostas em posts do Threads, permitindo chatbot responder
+menções e comentários automaticamente.
+
+Uso específico:
+- Responder comentários via chatbot
+- Ocultar respostas inadequadas
+- Moderar discussões
+</code></pre><p><strong>Descreva como seu aplicativo usa esta permissão ou recurso:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>1. Usuário comenta em post do cliente no Threads
+2. Webhook notifica plataforma
+3. Chatbot gera resposta contextualizada
+4. Resposta enviada via Threads API
+</code></pre><p><strong>Carregue o screencast mostrando a experiência do usuário de ponta a ponta:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Vídeo demonstrando:
+- [0:00-0:30] Usuário comenta em post
+- [0:30-1:00] Webhook recebido
+- [1:00-1:30] Chatbot gera resposta
+- [1:30-2:00] Resposta publicada automaticamente
+</code></pre><p><strong>Você concorda que está em conformidade com o uso permitido:</strong><br>
+✅ <strong>Sim</strong></p>
+<hr>
+<p><strong>(Threads restantes: catalog_management, threads_delete, threads_keyword_search, threads_location_tagging, threads_manage_insights, threads_manage_mentions, threads_profile_discovery, threads_read_replies)</strong></p>
+<p><strong>Resposta padrão para todas:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Uso específico: [Nome do recurso] será usado para [funcionalidade específica]
+no contexto de gerenciamento multi-canal (WhatsApp + Threads + Instagram)
+dentro da plataforma UzzApp SaaS.
+
+Implementação: Cliente conecta conta Threads via OAuth → Plataforma acessa
+[recurso] via API → Funcionalidade disponível no dashboard → Cliente gerencia
+via interface unificada.
+</code></pre><p><strong>Screencast:</strong> Mesmo padrão (conectar → usar recurso → visualizar resultado)</p>
+<p><strong>Conformidade:</strong> ✅ Sim para todos</p>
+<hr>
+<h3 id="-permissões-compartilhadas">🔵 Permissões Compartilhadas </h3>
+<h4 id="business_management"><strong>business_management</strong> </h4>
+<p><strong>Como esse app usará o business_management?</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Acessar Business Manager API para gerenciar ativos comerciais conectados
+(WABAs, Ad Accounts, Pages, Catalogs).
+
+Uso específico:
+- Listar WABAs do Business Manager
+- Listar Ad Accounts disponíveis
+- Verificar permissões de ativos
+- Gerenciar system users
+</code></pre><p><strong>Descreva como seu aplicativo usa esta permissão ou recurso:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>1. Durante Embedded Signup, acessar Business Manager
+2. Listar WABAs disponíveis para conexão
+3. Verificar permissões antes de solicitar acesso
+4. Gerenciar system users para tokens de longa duração
+</code></pre><p><strong>Carregue o screencast mostrando a experiência do usuário de ponta a ponta:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Vídeo demonstrando:
+- [0:00-0:30] OAuth flow
+- [0:30-1:00] Listar WABAs do Business
+- [1:00-1:30] Selecionar WABA para conectar
+</code></pre><p><strong>Verifique se você fez as ligações de teste de API exigidas:</strong><br>
+✅ <strong>Sim</strong> (GET /{business_id}/owned_whatsapp_business_accounts)</p>
+<p><strong>Você concorda que está em conformidade com o uso permitido:</strong><br>
+✅ <strong>Sim</strong></p>
+<hr>
+<h4 id="email"><strong>email</strong> </h4>
+<p><strong>Como esse app usará o email?</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Obter email do usuário para cadastro e comunicações relacionadas à conta.
+
+Uso específico:
+- Criar conta de usuário no signup
+- Enviar confirmação de email
+- Recuperação de senha
+- Notificações transacionais (faturas, alertas)
+</code></pre><p><strong>Você concorda que está em conformidade com o uso permitido:</strong><br>
+✅ <strong>Sim</strong></p>
+<hr>
+<h4 id="public_profile"><strong>public_profile</strong> </h4>
+<p><strong>Como esse app usará o public_profile?</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Ler informações públicas do perfil (nome, foto) para personalizar
+experiência no dashboard.
+
+Uso específico:
+- Exibir nome do usuário no header
+- Mostrar foto de perfil no avatar
+- Personalizar boas-vindas
+</code></pre><p><strong>Você concorda que está em conformidade com o uso permitido:</strong><br>
+✅ <strong>Sim</strong></p>
+<hr>
+<h4 id="manage_app_solution"><strong>manage_app_solution</strong> </h4>
+<p><strong>Como esse app usará o manage_app_solution?</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Gerenciar apps que o usuário administra, necessário para integração
+com ativos comerciais da Meta.
+
+Uso específico:
+- Verificar apps vinculados ao Business Manager
+- Gerenciar configurações de app durante setup
+</code></pre><p><strong>Descreva como seu aplicativo usa esta permissão ou recurso:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>1. Durante setup, listar apps do Business Manager
+2. Verificar configurações necessárias
+3. Associar app com WABA/Ad Account
+</code></pre><p><strong>Verifique se você fez as ligações de teste de API exigidas:</strong><br>
+✅ <strong>Sim</strong></p>
+<p><strong>Você concorda que está em conformidade com o uso permitido:</strong><br>
+✅ <strong>Sim</strong></p>
+<hr>
+<h3 id="-instagram-graph-api">📸 Instagram Graph API </h3>
+<h4 id="instagram_basic"><strong>instagram_basic</strong> </h4>
+<p><strong>Como esse app usará o instagram_basic?</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Acessar informações básicas da conta Instagram Business para conectar
+com chatbot.
+
+Uso específico:
+- Obter Instagram Business Account ID
+- Exibir nome de usuário e foto de perfil
+- Verificar tipo de conta (Business)
+- Associar Instagram com Página do Facebook
+</code></pre><p><strong>Descreva como seu aplicativo usa esta permissão ou recurso:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>1. Cliente conecta Instagram Business via OAuth
+2. Plataforma obtém Instagram Account ID
+3. Vincula Instagram com WABA (mensagens unificadas)
+4. Dashboard exibe perfil Instagram
+</code></pre><p><strong>Carregue o screencast mostrando a experiência do usuário de ponta a ponta:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Vídeo demonstrando:
+- [0:00-0:30] Clicar "Conectar Instagram"
+- [0:30-1:00] OAuth Instagram
+- [1:00-1:30] Perfil Instagram exibido no dashboard
+</code></pre><p><strong>Você concorda que está em conformidade com o uso permitido:</strong><br>
+✅ <strong>Sim</strong></p>
+<hr>
+<h4 id="instagram_manage_messages"><strong>instagram_manage_messages</strong> </h4>
+<p><strong>Como esse app usará o instagram_manage_messages?</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Responder mensagens diretas (DMs) do Instagram via chatbot, oferecendo
+atendimento automatizado multi-canal (WhatsApp + Instagram).
+
+Uso específico:
+- Receber DMs do Instagram via webhook
+- Processar mensagens com chatbot IA
+- Enviar respostas automáticas
+- Gerenciar conversas no dashboard unificado
+</code></pre><p><strong>Descreva como seu aplicativo usa esta permissão ou recurso:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>1. Cliente conecta Instagram Business
+2. Usuário envia DM no Instagram
+3. Meta envia webhook para plataforma
+4. Chatbot processa mensagem (mesmo motor do WhatsApp)
+5. Resposta enviada via Instagram Messaging API
+6. Conversa exibida no dashboard /dashboard/conversations
+</code></pre><p><strong>Carregue o screencast mostrando a experiência do usuário de ponta a ponta:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Vídeo demonstrando:
+- [0:00-0:30] Usuário envia DM no Instagram
+- [0:30-1:00] Webhook recebido
+- [1:00-1:30] Chatbot gera resposta
+- [1:30-2:00] Resposta enviada no Instagram
+- [2:00-2:30] Conversa exibida no dashboard
+</code></pre><p><strong>Você concorda que está em conformidade com o uso permitido:</strong><br>
+✅ <strong>Sim</strong></p>
+<hr>
+<h4 id="instagram_manage_comments"><strong>instagram_manage_comments</strong> </h4>
+<p><strong>Como esse app usará o instagram_manage_comments?</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Responder comentários em posts do Instagram via chatbot, permitindo
+engajamento automatizado.
+
+Uso específico:
+- Receber notificações de novos comentários
+- Chatbot responde perguntas frequentes
+- Moderar comentários (ocultar spam)
+- Mencionar usuários em respostas
+</code></pre><p><strong>Descreva como seu aplicativo usa esta permissão ou recurso:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>1. Usuário comenta em post do cliente no Instagram
+2. Webhook notifica plataforma
+3. Chatbot analisa comentário
+4. Se for pergunta → gera resposta
+5. Se for spam → oculta comentário
+6. Resposta publicada via Instagram API
+</code></pre><p><strong>Carregue o screencast mostrando a experiência do usuário de ponta a ponta:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Vídeo demonstrando:
+- [0:00-0:30] Usuário comenta em post
+- [0:30-1:00] Webhook recebido
+- [1:00-1:30] Chatbot gera resposta
+- [1:30-2:00] Resposta publicada como reply
+</code></pre><p><strong>Você concorda que está em conformidade com o uso permitido:</strong><br>
+✅ <strong>Sim</strong></p>
+<hr>
+<h3 id="-recursos-especiais">🎯 Recursos Especiais </h3>
+<h4 id="ads-management-standard-access"><strong>Ads Management Standard Access</strong> </h4>
+<p><strong>Como esse app usará o Ads Management Standard Access?</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Habilitar acesso à Marketing API para criar e gerenciar campanhas
+Click-to-WhatsApp programaticamente.
+
+Uso específico:
+- Acesso completo à Marketing API (v18.0)
+- Criar campanhas CTWA sem limitações
+- Gerenciar múltiplos Ad Accounts de clientes
+</code></pre><p><strong>Descreva como seu aplicativo usa esta permissão ou recurso:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>1. Cliente conecta Ad Account via OAuth
+2. Plataforma solicita Ads Management Standard Access
+3. Cliente aprova acesso
+4. Plataforma pode criar/gerenciar campanhas em nome do cliente
+</code></pre><p><strong>Carregue o screencast mostrando a experiência do usuário de ponta a ponta:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>(Mesmo screencast de ads_management)
+</code></pre><p><strong>Você concorda que está em conformidade com o uso permitido:</strong><br>
+✅ <strong>Sim</strong></p>
+<hr>
+<h4 id="business-asset-user-profile-access"><strong>Business Asset User Profile Access</strong> </h4>
+<p><strong>Como esse app usará o Business Asset User Profile Access?</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Ler perfis de usuários que interagem com ativos comerciais (WABA, Ads,
+Instagram) para personalização e analytics.
+
+Uso específico:
+- Obter ID do usuário que enviou mensagem no WhatsApp
+- Ler nome/foto pública de quem clicou no anúncio
+- Exibir perfil de quem comentou no Instagram
+- Analytics de audiência (age range, gender, location)
+</code></pre><p><strong>Descreva como seu aplicativo usa esta permissão ou recurso:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>1. Usuário interage com ativo comercial (envia mensagem, clica em ad)
+2. Plataforma recebe user_id no webhook
+3. Faz GET /{user_id}?fields=name,profile_pic
+4. Exibe informações no dashboard do cliente
+5. Usa para segmentação de remarketing
+</code></pre><p><strong>Você concorda que está em conformidade com o uso permitido:</strong><br>
+✅ <strong>Sim</strong></p>
+<hr>
+<h2 id="3-questões-de-privacidade-e-dados">3. Questões de Privacidade e Dados </h2>
+<h3 id="operadores-de-dados-data-processors">Operadores de Dados (Data Processors) </h3>
+<p><strong>Você tem operadores de dados ou provedores de serviços que terão acesso aos Dados da Plataforma?</strong><br>
+✅ <strong>Sim</strong></p>
+<p><strong>Lista de Operadores:</strong></p>
+<ol>
+<li>
+<p><strong>Supabase (PostgreSQL + Storage)</strong></p>
+<ul>
+<li><strong>Acesso:</strong> Armazenamento de dados de clientes, mensagens, usuários</li>
+<li><strong>Finalidade:</strong> Database hosting e file storage</li>
+<li><strong>Localização:</strong> Estados Unidos (AWS)</li>
+<li><strong>Conformidade:</strong> SOC 2 Type II, GDPR compliant</li>
+</ul>
+</li>
+<li>
+<p><strong>OpenAI (GPT-4o, Whisper, Embeddings)</strong></p>
+<ul>
+<li><strong>Acesso:</strong> Conteúdo de mensagens para processamento de IA</li>
+<li><strong>Finalidade:</strong> Geração de respostas do chatbot</li>
+<li><strong>Localização:</strong> Estados Unidos</li>
+<li><strong>Conformidade:</strong> GDPR compliant, não treina modelos com dados de clientes</li>
+<li><strong>Retenção:</strong> 30 dias (conforme política OpenAI)</li>
+</ul>
+</li>
+<li>
+<p><strong>Groq (Llama 3.3 70B)</strong></p>
+<ul>
+<li><strong>Acesso:</strong> Conteúdo de mensagens para processamento de IA</li>
+<li><strong>Finalidade:</strong> Geração de respostas do chatbot (alternativa ao OpenAI)</li>
+<li><strong>Localização:</strong> Estados Unidos</li>
+<li><strong>Conformidade:</strong> GDPR compliant</li>
+</ul>
+</li>
+<li>
+<p><strong>Vercel (Hosting + Serverless Functions)</strong></p>
+<ul>
+<li><strong>Acesso:</strong> Código do aplicativo, logs de execução</li>
+<li><strong>Finalidade:</strong> Hospedagem da plataforma</li>
+<li><strong>Localização:</strong> Estados Unidos (AWS)</li>
+<li><strong>Conformidade:</strong> SOC 2 Type II, GDPR compliant</li>
+</ul>
+</li>
+<li>
+<p><strong>Upstash Redis (Message Batching)</strong></p>
+<ul>
+<li><strong>Acesso:</strong> Cache temporário de mensagens (TTL 60s)</li>
+<li><strong>Finalidade:</strong> Batching de mensagens para evitar duplicação</li>
+<li><strong>Localização:</strong> Estados Unidos (AWS)</li>
+<li><strong>Conformidade:</strong> GDPR compliant</li>
+</ul>
+</li>
+</ol>
+<p><strong>Nota:</strong> Todos os operadores acima atuam como <strong>processadores de dados</strong> (data processors) sob contrato, processando dados apenas conforme instruções da UzzApp SaaS (controlador de dados).</p>
+<hr>
+<h3 id="controlador-de-dados-data-controller">Controlador de Dados (Data Controller) </h3>
+<p><strong>Quem é a pessoa ou a entidade que será responsável por todos os Dados da Plataforma?</strong></p>
+<p><strong>Nome:</strong> <a href="http://Uzz.Ai">Uzz.Ai</a> Ltda<br>
+<strong>Tipo:</strong> Pessoa jurídica (CNPJ: [número do CNPJ])<br>
+<strong>País:</strong> Brasil<br>
+<strong>Endereço:</strong> [endereço completo da empresa]<br>
+<strong>Representante Legal:</strong> [nome do representante]<br>
+<strong>Email:</strong> <a href="mailto:luisfboff@gmail.com">luisfboff@gmail.com</a><br>
+<strong>Telefone:</strong> +55 54 9956-7051</p>
+<p><strong>Função:</strong> Controlador de dados (Data Controller) - determina finalidades e meios de tratamento dos Dados da Plataforma recebidos da Meta.</p>
+<hr>
+<h3 id="solicitações-de-autoridades-públicas">Solicitações de Autoridades Públicas </h3>
+<p><strong>Você forneceu dados pessoais ou informações pessoais de usuários a autoridades públicas em resposta a solicitações de segurança nacional nos últimos 12 meses?</strong></p>
+<p>❌ <strong>Não</strong></p>
+<p><strong>Quais dos seguintes processos ou políticas você aplica a solicitações de autoridades públicas?</strong></p>
+<p>✅ <strong>Análise obrigatória sobre a legitimidade das solicitações</strong><br>
+✅ <strong>Disposições para contestar os pedidos considerados ilegais</strong><br>
+✅ <strong>Política de minimização de dados: divulgar o mínimo de informações necessárias</strong><br>
+✅ <strong>Registro dessas solicitações, incluindo respostas, raciocínio legal e pessoas envolvidas</strong></p>
+<p><strong>Detalhamento da Política:</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>A Uzz.Ai Ltda segue rigorosas políticas de proteção de dados:
+
+1. Análise Legal Obrigatória:
+   - Toda solicitação é revisada por advogado especializado
+   - Verificação de competência e jurisdição da autoridade
+   - Análise de conformidade com LGPD (Lei 13.709/2018)
+
+2. Contestação de Solicitações Ilegais:
+   - Direito de recorrer administrativamente e judicialmente
+   - Notificação ao usuário afetado (quando legalmente permitido)
+   - Documentação de todos os argumentos legais
+
+3. Minimização de Dados:
+   - Divulgação apenas dos dados estritamente necessários
+   - Redação de informações sensíveis quando possível
+   - Preferência por agregação estatística vs. dados individuais
+
+4. Registro e Auditoria:
+   - Log de todas as solicitações (data, autoridade, dados solicitados)
+   - Documentação de decisões (aprovar/negar/contestar)
+   - Revisão trimestral por comitê de privacidade
+   - Relatório anual de transparência (publicado em uzzap.uzzai.com.br/transparency)
+</code></pre><hr>
+<h2 id="4-instruções-para-o-analista">4. Instruções para o Analista </h2>
+<p><strong>Seção:</strong> Configurações do app → Instruções da análise</p>
+<h3 id="overview-do-aplicativo">Overview do Aplicativo </h3>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>UzzApp SaaS Oficial é uma plataforma multi-tenant de chatbot com IA para
+WhatsApp Business, Meta Ads, Instagram e Threads.
+
+MODELO DE NEGÓCIO:
+Cada cliente conecta seus próprios ativos comerciais Meta (WABA, Ad Account,
+Instagram, Threads) via OAuth (Embedded Signup). A plataforma processa dados
+em nome dos clientes, com isolamento completo entre tenants (multi-tenant).
+
+NÃO é um bot único. Cada empresa cliente tem seu próprio chatbot independente,
+configuração de IA, base de conhecimento (RAG), e credenciais Meta próprias.
+
+CASES DE USO:
+1. WhatsApp Business Messaging - Atendimento ao cliente automatizado 24/7
+2. Meta Ads (Conversions API) - Otimizar campanhas Click-to-WhatsApp
+3. Instagram Messaging - DMs e comentários automatizados
+4. Threads Publishing - Gestão de conteúdo multi-canal
+5. Product Catalogs - E-commerce via WhatsApp
+
+DIFERENCIAL:
+Plataforma completa unificada (4 canais Meta) com chatbot IA avançado
+(GPT-4o, Llama 3.3, RAG, histórico de contexto, custom tools).
+</code></pre><hr>
+<h3 id="fluxo-de-onboarding-do-cliente">Fluxo de Onboarding do Cliente </h3>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>1. SIGNUP (https://uzzap.uzzai.com.br/signup)
+   - Cliente cria conta (email + senha)
+   - Confirma email
+
+2. CONECTAR WHATSAPP BUSINESS (Embedded Signup)
+   - Clica "Conectar WhatsApp Business"
+   - Redireciona para Meta OAuth
+   - Autoriza permissões:
+     * whatsapp_business_messaging
+     * whatsapp_business_management
+     * business_management
+   - Meta retorna access token + WABA ID
+   - Plataforma armazena credenciais no Vault (Supabase)
+   - Status do cliente: "trial"
+
+3. CONFIGURAR CHATBOT
+   - Define system prompt (personalidade do bot)
+   - Escolhe modelo IA (GPT-4o Mini / Llama 3.3 70B)
+   - Upload documentos para base de conhecimento (RAG)
+   - Configura horário de atendimento
+
+4. OPCIONAL: CONECTAR META ADS
+   - Clica "Conectar Meta Ads"
+   - Autoriza permissões:
+     * ads_management
+     * ads_read
+     * pages_manage_ads
+   - Seleciona Ad Account
+   - Configura Meta Dataset ID para Conversions API
+
+5. OPCIONAL: CONECTAR INSTAGRAM
+   - Clica "Conectar Instagram Business"
+   - Autoriza permissões:
+     * instagram_basic
+     * instagram_manage_messages
+     * instagram_manage_comments
+   - Vincula Instagram Business Account com Página
+
+6. OPCIONAL: CONECTAR THREADS
+   - Clica "Conectar Threads"
+   - Autoriza permissões Threads (10 permissões)
+   - Vincula perfil Threads
+
+7. PRONTO! 🚀
+   - Cliente recebe primeira mensagem no WhatsApp
+   - Bot responde automaticamente
+   - Conversa aparece no dashboard
+</code></pre><hr>
+<h3 id="como-testar-o-app-passo-a-passo-para-o-analista">Como Testar o App (Passo a Passo para o Analista) </h3>
+<h4 id="teste-1-whatsapp-business-messaging-obrigatório"><strong>Teste 1: WhatsApp Business Messaging (Obrigatório)</strong> </h4>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>PRÉ-REQUISITOS:
+- Conta Meta de teste com WABA conectado
+- Número de telefone WhatsApp para receber mensagens
+
+PASSOS:
+1. Acesse https://uzzap.uzzai.com.br/signup
+2. Crie conta de teste: reviewer@meta.com / SenhaReviewer123
+3. Confirme email (link enviado automaticamente)
+4. Dashboard → Clique "Conectar WhatsApp Business"
+5. Faça login com conta Meta de teste
+6. Autorize permissões (whatsapp_business_messaging, etc.)
+7. Dashboard exibe "WhatsApp conectado ✅"
+8. Configure chatbot:
+   - System prompt: "Você é um assistente de vendas amigável"
+   - Modelo: GPT-4o Mini
+9. Salve configurações
+10. Envie mensagem para o número WhatsApp conectado: "Olá"
+11. Bot responde automaticamente: "Olá! Como posso ajudar você hoje?"
+12. Envie segunda mensagem: "Quais produtos você vende?"
+13. Bot responde baseado no system prompt
+14. Vá ao Dashboard → Conversas
+15. Veja a conversa aparecendo em tempo real
+
+VALIDAÇÃO:
+✅ OAuth funcionou (WABA conectado)
+✅ Webhook recebe mensagens
+✅ Bot responde contextualmente
+✅ Conversa aparece no dashboard
+✅ Multi-turno funciona (histórico preservado)
+</code></pre><hr>
+<h4 id="teste-2-meta-ads-ads_management---advanced"><strong>Teste 2: Meta Ads (ads_management - Advanced)</strong> </h4>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>PRÉ-REQUISITOS:
+- Ad Account de teste com budget
+- Página do Facebook vinculada
+
+PASSOS:
+1. No dashboard, clique "Conectar Meta Ads"
+2. Autorize ads_management, ads_read, pages_manage_ads
+3. Selecione Ad Account de teste
+4. Dashboard → Meta Ads → "Criar Campanha CTWA"
+5. Preencha:
+   - Nome: "Campanha Teste App Review"
+   - Objetivo: MESSAGES (Click-to-WhatsApp)
+   - Orçamento: $10/dia
+   - Público: Brasil, 25-45 anos
+   - Creative: Upload imagem + texto "Converse conosco no WhatsApp"
+6. Clique "Publicar Campanha"
+7. Aguarde 5 segundos → Campanha criada
+8. Dashboard exibe campanha na lista
+9. Clique "Pausar" → Campanha pausada
+10. Clique "Retomar" → Campanha ativa novamente
+11. Vá para Meta Ads Manager externo
+12. Verifique que campanha aparece lá também
+
+VALIDAÇÃO:
+✅ Campanha criada via API
+✅ Pausar/retomar funciona
+✅ Métricas exibidas no dashboard
+✅ Sincronizado com Ads Manager
+</code></pre><hr>
+<h4 id="teste-3-conversions-api-whatsapp_business_manage_events"><strong>Teste 3: Conversions API (whatsapp_business_manage_events)</strong> </h4>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>PRÉ-REQUISITOS:
+- Campanha CTWA ativa (do Teste 2)
+- Meta Dataset ID configurado
+
+PASSOS:
+1. Dashboard → Meta Ads → Configurações
+2. Preencha "Dataset ID": [seu dataset ID]
+3. Salve
+4. No smartphone, clique no anúncio CTWA (do Teste 2)
+5. WhatsApp abre automaticamente
+6. Envie mensagem: "Olá, vi seu anúncio"
+7. Bot responde
+8. Dashboard → CRM → Nova lead aparece com source="Meta Ad"
+9. Arraste card da lead para coluna "Fechado"
+10. Dashboard → Meta Ads → Eventos de Conversão
+11. Veja evento "Purchase" enviado automaticamente
+12. Vá para Meta Events Manager externo
+13. Verifique evento "Purchase" aparecendo lá
+
+VALIDAÇÃO:
+✅ Lead criado com ctwa_clid
+✅ Evento "Purchase" enviado
+✅ Event aparece no Events Manager
+✅ Attribution funcionando
+</code></pre><hr>
+<h4 id="teste-4-instagram-messaging-instagram_manage_messages"><strong>Teste 4: Instagram Messaging (instagram_manage_messages)</strong> </h4>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>PRÉ-REQUISITOS:
+- Instagram Business Account
+- Página do Facebook vinculada
+
+PASSOS:
+1. Dashboard → Clique "Conectar Instagram"
+2. Autorize permissões (instagram_basic, instagram_manage_messages)
+3. Dashboard exibe "Instagram conectado ✅"
+4. No smartphone, abra Instagram
+5. Vá para o perfil Instagram conectado
+6. Envie DM: "Olá, preciso de ajuda"
+7. Bot responde automaticamente (mesmo motor do WhatsApp)
+8. Dashboard → Conversas → DM do Instagram aparece
+9. Envie segunda mensagem: "Qual o horário de funcionamento?"
+10. Bot responde baseado na configuração
+
+VALIDAÇÃO:
+✅ Instagram conectado
+✅ DM recebido via webhook
+✅ Bot responde automaticamente
+✅ Conversa aparece no dashboard unificado
+✅ Multi-canal funciona (WhatsApp + Instagram mesma interface)
+</code></pre><hr>
+<h4 id="teste-5-instagram-comments-instagram_manage_comments"><strong>Teste 5: Instagram Comments (instagram_manage_comments)</strong> </h4>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>PASSOS:
+1. Vá para perfil Instagram conectado (externa)
+2. Publique post: "Novidades chegando! Comente 'INFO' para saber mais"
+3. No smartphone pessoal, comente: "INFO"
+4. Aguarde 5 segundos
+5. Bot responde automaticamente com reply ao comentário
+6. Dashboard → Instagram → Comentários
+7. Veja comentário + resposta do bot
+
+VALIDAÇÃO:
+✅ Comentário recebido via webhook
+✅ Bot respondeu automaticamente
+✅ Reply aparece no Instagram
+</code></pre><hr>
+<h4 id="teste-6-threads-publishing-threads_content_publish"><strong>Teste 6: Threads Publishing (threads_content_publish)</strong> </h4>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>PRÉ-REQUISITOS:
+- Perfil Threads conectado
+
+PASSOS:
+1. Dashboard → Threads → "Nova Publicação"
+2. Escreva: "Teste de integração Threads via UzzApp SaaS 🚀"
+3. Clique "Publicar"
+4. Aguarde 3 segundos
+5. Abra Threads app externo
+6. Veja post publicado no seu perfil
+
+VALIDAÇÃO:
+✅ Post criado via API
+✅ Aparece no perfil Threads
+</code></pre><hr>
+<h3 id="credenciais-de-teste">Credenciais de Teste </h3>
+<p><strong>Conta Reviewer (Criada para você):</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>URL: https://uzzap.uzzai.com.br/login
+Email: reviewer@meta.com
+Senha: MetaAppReview2026!
+
+Já está tudo configurado:
+- WABA conectado (número: +55 54 9956-7051)
+- Chatbot configurado (GPT-4o Mini)
+- Meta Ads conectado (Ad Account: act_123456)
+- Instagram conectado (@uzzapp_oficial)
+- Threads conectado (@uzzapp_oficial)
+</code></pre><p><strong>Como testar sem configurar nada:</strong></p>
+<ol>
+<li>Faça login com credenciais acima</li>
+<li>Envie mensagem para +55 54 9956-7051 no WhatsApp</li>
+<li>Bot responde automaticamente</li>
+<li>Veja conversa no Dashboard → Conversas</li>
+</ol>
+<hr>
+<h3 id="vídeos-demonstrativos">Vídeos Demonstrativos </h3>
+<p><strong>Links:</strong></p>
+<ul>
+<li><strong>Onboarding completo:</strong> <a href="https://uzzap.uzzai.com.br/demo/onboarding.mp4">https://uzzap.uzzai.com.br/demo/onboarding.mp4</a> (3min)</li>
+<li><strong>WhatsApp + Bot respondendo:</strong> <a href="https://uzzap.uzzai.com.br/demo/whatsapp.mp4">https://uzzap.uzzai.com.br/demo/whatsapp.mp4</a> (2min)</li>
+<li><strong>Criar campanha CTWA:</strong> <a href="https://uzzap.uzzai.com.br/demo/meta-ads.mp4">https://uzzap.uzzai.com.br/demo/meta-ads.mp4</a> (2.5min)</li>
+<li><strong>Conversions API:</strong> <a href="https://uzzap.uzzai.com.br/demo/conversions-api.mp4">https://uzzap.uzzai.com.br/demo/conversions-api.mp4</a> (2min)</li>
+<li><strong>Instagram DM + Comments:</strong> <a href="https://uzzap.uzzai.com.br/demo/instagram.mp4">https://uzzap.uzzai.com.br/demo/instagram.mp4</a> (2min)</li>
+<li><strong>Threads publishing:</strong> <a href="https://uzzap.uzzai.com.br/demo/threads.mp4">https://uzzap.uzzai.com.br/demo/threads.mp4</a> (1.5min)</li>
+</ul>
+<p><strong>Nota:</strong> Todos os vídeos têm legendas em inglês e mostram fluxo completo end-to-end.</p>
+<hr>
+<h3 id="arquitetura-técnica-para-referência-do-analista">Arquitetura Técnica (Para Referência do Analista) </h3>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>┌─────────────────────────────────────────────────────────────┐
+│                        CLIENTE                              │
+│  (Empresa usando UzzApp SaaS para atendimento WhatsApp)    │
+└───────────────────┬─────────────────────────────────────────┘
+                    │ OAuth (Embedded Signup)
+                    ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    META PLATFORM                            │
+│  WhatsApp Business API | Marketing API | Instagram API     │
+│  Threads API | Conversions API                             │
+└───────────────────┬─────────────────────────────────────────┘
+                    │ Webhooks + API Calls
+                    ▼
+┌─────────────────────────────────────────────────────────────┐
+│                 UZZAPP SAAS PLATFORM                        │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │ Webhook Receiver (/api/webhook)                      │  │
+│  │ - HMAC validation                                     │  │
+│  │ - WABA ID → Client lookup                            │  │
+│  │ - Multi-tenant routing                               │  │
+│  └──────────────────┬───────────────────────────────────┘  │
+│                     │                                       │
+│  ┌──────────────────▼───────────────────────────────────┐  │
+│  │ Chatbot Pipeline (14 nodes)                          │  │
+│  │ 1. Parse message                                      │  │
+│  │ 2. Customer lookup/create                            │  │
+│  │ 3. Download media (if any)                           │  │
+│  │ 4. Message batching (Redis - 30s TTL)               │  │
+│  │ 5. Get chat history (last 15 messages)              │  │
+│  │ 6. RAG context retrieval (pgvector)                 │  │
+│  │ 7. Generate AI response (GPT-4o/Llama 3.3)          │  │
+│  │ 8. Format response                                    │  │
+│  │ 9. Send to WhatsApp API                              │  │
+│  │ 10. Save to database                                 │  │
+│  └──────────────────┬───────────────────────────────────┘  │
+│                     │                                       │
+│  ┌──────────────────▼───────────────────────────────────┐  │
+│  │ AI Providers (Client-specific keys from Vault)       │  │
+│  │ - OpenAI GPT-4o (chat, vision, whisper, embeddings) │  │
+│  │ - Groq Llama 3.3 70B (fast inference)               │  │
+│  └──────────────────────────────────────────────────────┘  │
+│                                                              │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │ Database (Supabase PostgreSQL)                        │  │
+│  │ - clients (tenant config)                            │  │
+│  │ - messages (chat history)                            │  │
+│  │ - documents (RAG - pgvector)                         │  │
+│  │ - conversion_events_log (Conversions API)           │  │
+│  │ - user_profiles (RBAC)                               │  │
+│  └──────────────────────────────────────────────────────┘  │
+│                                                              │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │ Vault (Supabase Vault - Encrypted Secrets)           │  │
+│  │ - Meta access tokens (per client)                    │  │
+│  │ - OpenAI API keys (per client)                       │  │
+│  │ - Groq API keys (per client)                         │  │
+│  └──────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+                    │
+                    ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   CLIENTE FINAL                             │
+│  (Usuário que envia mensagem para empresa no WhatsApp)     │
+└─────────────────────────────────────────────────────────────┘
+
+MULTI-TENANCY:
+- Cada cliente (empresa) tem client_id único
+- Credenciais Meta isoladas por cliente (Vault)
+- RLS (Row Level Security) no banco
+- WABA ID identifica cliente no webhook
+- Zero compartilhamento de dados entre clientes
+</code></pre><hr>
+<h3 id="conformidade-com-políticas-meta">Conformidade com Políticas Meta </h3>
+<h4 id="business-messaging-policy-"><strong>Business Messaging Policy ✅</strong> </h4>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>✅ Opt-in obrigatório: Cliente inicia conversa no WhatsApp
+✅ Não envia SPAM: Bot só responde mensagens recebidas
+✅ Janela 24h respeitada: Message templates para notificações
+✅ Customer care: Atendimento ao cliente é o caso de uso principal
+✅ Não promove conteúdo proibido: Apenas atendimento comercial legítimo
+</code></pre><h4 id="marketing-api-policy-"><strong>Marketing API Policy ✅</strong> </h4>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>✅ Não cria ads enganosos: Cliente responsável pelo creative
+✅ Respeita targeting policy: Não permite discriminação
+✅ Conversions API honesta: Eventos reais de conversão
+✅ Não manipula métricas: Dados reais de performance
+✅ Budget control: Cliente define orçamento
+</code></pre><h4 id="instagram-messaging-policy-"><strong>Instagram Messaging Policy ✅</strong> </h4>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>✅ Respostas relevantes: Chatbot responde contextualmente
+✅ Não envia SPAM em DMs: Só responde mensagens recebidas
+✅ Modera comentários: Cliente pode ocultar spam
+✅ Não bot agressivo: Taxa de resposta controlada
+</code></pre><h4 id="platform-terms-"><strong>Platform Terms ✅</strong> </h4>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>✅ Não compartilha dados entre apps: Isolamento multi-tenant
+✅ Não vende dados: Modelo SaaS (subscription), não data broker
+✅ Não usa dados para treinamento de IA: OpenAI/Groq não treina com dados
+✅ Permite exclusão de dados: LGPD compliant (direito ao esquecimento)
+✅ Criptografia: HTTPS + Vault encryption at rest
+✅ Auditoria: Logs de acesso, relatório de transparência
+</code></pre><hr>
+<h3 id="contato-para-suporte-durante-review">Contato para Suporte Durante Review </h3>
+<p><strong>Desenvolvedor Principal:</strong></p>
+<ul>
+<li><strong>Nome:</strong> Luis Felipe Boff</li>
+<li><strong>Email:</strong> <a href="mailto:luisfboff@gmail.com">luisfboff@gmail.com</a></li>
+<li><strong>Telefone:</strong> +55 54 9956-7051 (WhatsApp)</li>
+<li><strong>Timezone:</strong> GMT-3 (Brasília)</li>
+</ul>
+<p><strong>Empresa:</strong></p>
+<ul>
+<li><strong>Nome:</strong> <a href="http://Uzz.Ai">Uzz.Ai</a> Ltda</li>
+<li><strong>Email:</strong> <a href="mailto:suporte@uzzai.com.br">suporte@uzzai.com.br</a></li>
+<li><strong>Site:</strong> <a href="https://uzzai.com.br">https://uzzai.com.br</a></li>
+</ul>
+<p><strong>Disponibilidade:</strong><br>
+Segunda a Sexta, 9h-18h (horário de Brasília)<br>
+Resposta garantida em até 4 horas úteis durante review.</p>
+<hr>
+<h3 id="perguntas-frequentes-faq-para-analista">Perguntas Frequentes (FAQ para Analista) </h3>
+<p><strong>Q: Por que solicita tantas permissões?</strong><br>
+A: Plataforma multi-canal completa (WhatsApp + Ads + Instagram + Threads). Clientes escolhem quais produtos usar, mas melhor ter todas aprovadas em uma revisão única.</p>
+<p><strong>Q: Como garante isolamento multi-tenant?</strong><br>
+A: Cada cliente tem client_id UUID único, credenciais Meta isoladas no Vault, RLS no banco, WABA ID identifica tenant no webhook.</p>
+<p><strong>Q: Dados são compartilhados entre clientes?</strong><br>
+A: Não. RLS + Vault + WABA routing garante zero compartilhamento.</p>
+<p><strong>Q: OpenAI treina modelos com dados de usuários?</strong><br>
+A: Não. OpenAI API não usa dados de clientes para treinamento (conforme Terms of Service OpenAI).</p>
+<p><strong>Q: Como funciona Embedded Signup?</strong><br>
+A: Cliente clica "Conectar WhatsApp" → OAuth Meta → Autoriza → Meta retorna token + WABA ID → Plataforma armazena no Vault → Cliente sai usando.</p>
+<p><strong>Q: Conversions API é honesta?</strong><br>
+A: Sim. Eventos reais de conversão (Lead, Purchase) baseados em estágios do CRM do cliente. Não há manipulação.</p>
+<p><strong>Q: Rate limiting?</strong><br>
+A: Respeitamos rate limits Meta (80 req/s WhatsApp, 200 req/s Marketing API). Implementamos exponential backoff.</p>
+<p><strong>Q: Webhooks são seguros?</strong><br>
+A: Sim. HMAC validation com APP_SECRET, HTTPS only, IP whitelist opcional.</p>
+<p><strong>Q: GDPR/LGPD compliant?</strong><br>
+A: Sim. Política de privacidade publicada, direito ao esquecimento implementado, DPO designado.</p>
+<p><strong>Q: Preciso de demo call?</strong><br>
+A: Sim! Disponível via Google Meet. Agende: <a href="mailto:luisfboff@gmail.com">luisfboff@gmail.com</a></p>
+<hr>
+<h2 id="5-materiais-de-suporte">5. Materiais de Suporte </h2>
+<h3 id="screenshots-obrigatórios">Screenshots Obrigatórios </h3>
+<p><strong>Upload em:</strong> App Review → Permissions → [Permission] → Screenshots</p>
+<h4 id="screenshot-1-embedded-signup-whatsapp"><strong>Screenshot 1: Embedded Signup (WhatsApp)</strong> </h4>
+<ul>
+<li>Caminho: <code>C:\Users\Luisf\Documents\GITHUB\ChatBot-Oficial\docs\screenshots\01-embedded-signup.png</code></li>
+<li>Descrição: Cliente clicando em "Conectar WhatsApp Business" → OAuth Meta</li>
+</ul>
+<h4 id="screenshot-2-dashboard-de-conversas"><strong>Screenshot 2: Dashboard de Conversas</strong> </h4>
+<ul>
+<li>Caminho: <code>C:\Users\Luisf\Documents\GITHUB\ChatBot-Oficial\docs\screenshots\02-dashboard-conversations.png</code></li>
+<li>Descrição: Dashboard mostrando conversas WhatsApp em tempo real</li>
+</ul>
+<h4 id="screenshot-3-bot-respondendo-no-whatsapp"><strong>Screenshot 3: Bot Respondendo no WhatsApp</strong> </h4>
+<ul>
+<li>Caminho: <code>C:\Users\Luisf\Documents\GITHUB\ChatBot-Oficial\docs\screenshots\03-whatsapp-bot-response.png</code></li>
+<li>Descrição: Smartphone mostrando conversa com bot (mensagem do usuário + resposta do bot)</li>
+</ul>
+<h4 id="screenshot-4-criar-campanha-ctwa"><strong>Screenshot 4: Criar Campanha CTWA</strong> </h4>
+<ul>
+<li>Caminho: <code>C:\Users\Luisf\Documents\GITHUB\ChatBot-Oficial\docs\screenshots\04-create-ctwa-campaign.png</code></li>
+<li>Descrição: Dashboard /dashboard/meta-ads com formulário de criação de campanha</li>
+</ul>
+<h4 id="screenshot-5-conversions-api-dashboard"><strong>Screenshot 5: Conversions API Dashboard</strong> </h4>
+<ul>
+<li>Caminho: <code>C:\Users\Luisf\Documents\GITHUB\ChatBot-Oficial\docs\screenshots\05-conversions-api.png</code></li>
+<li>Descrição: Dashboard mostrando eventos de conversão (Lead, Purchase) enviados</li>
+</ul>
+<h4 id="screenshot-6-instagram-dm-no-dashboard"><strong>Screenshot 6: Instagram DM no Dashboard</strong> </h4>
+<ul>
+<li>Caminho: <code>C:\Users\Luisf\Documents\GITHUB\ChatBot-Oficial\docs\screenshots\06-instagram-dm.png</code></li>
+<li>Descrição: Dashboard unificado mostrando DM do Instagram + resposta do bot</li>
+</ul>
+<h4 id="screenshot-7-instagram-comment-reply"><strong>Screenshot 7: Instagram Comment Reply</strong> </h4>
+<ul>
+<li>Caminho: <code>C:\Users\Luisf\Documents\GITHUB\ChatBot-Oficial\docs\screenshots\07-instagram-comment.png</code></li>
+<li>Descrição: Post do Instagram com comentário de usuário + reply automático do bot</li>
+</ul>
+<h4 id="screenshot-8-threads-publishing"><strong>Screenshot 8: Threads Publishing</strong> </h4>
+<ul>
+<li>Caminho: <code>C:\Users\Luisf\Documents\GITHUB\ChatBot-Oficial\docs\screenshots\08-threads-publish.png</code></li>
+<li>Descrição: Dashboard /dashboard/threads com formulário de publicação</li>
+</ul>
+<hr>
+<h3 id="vídeos-obrigatórios">Vídeos Obrigatórios </h3>
+<p><strong>Upload em:</strong> App Review → Permissions → [Permission] → Video</p>
+<p><strong>Requisitos:</strong></p>
+<ul>
+<li>Formato: MP4 (H.264)</li>
+<li>Resolução: 1920x1080 (Full HD)</li>
+<li>Duração: 2-3 minutos por permissão</li>
+<li>Legendas: Inglês (arquivo .srt)</li>
+<li>Sem edição profissional (screen recording simples)</li>
+<li>Mostrar fluxo completo end-to-end</li>
+</ul>
+<p><strong>Vídeo 1: WhatsApp Complete Flow (3min)</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Conteúdo:
+[0:00-0:30] Login no dashboard
+[0:30-1:00] Clicar "Conectar WhatsApp" → OAuth Meta
+[1:00-1:30] Configurar chatbot (system prompt, modelo)
+[1:30-2:00] Enviar mensagem no WhatsApp (smartphone)
+[2:00-2:30] Bot responde automaticamente
+[2:30-3:00] Conversa aparece no dashboard
+
+Arquivo: C:\Users\Luisf\Documents\GITHUB\ChatBot-Oficial\docs\videos\whatsapp-complete-flow.mp4
+</code></pre><p><strong>Vídeo 2: Meta Ads CTWA Campaign (2.5min)</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Conteúdo:
+[0:00-0:30] Dashboard /dashboard/meta-ads
+[0:30-1:00] Clicar "Criar Campanha CTWA"
+[1:00-1:30] Preencher formulário (objetivo, orçamento, público)
+[1:30-2:00] Upload creative + texto do anúncio
+[2:00-2:30] Publicar campanha → Aparece na lista
+
+Arquivo: C:\Users\Luisf\Documents\GITHUB\ChatBot-Oficial\docs\videos\meta-ads-ctwa.mp4
+</code></pre><p><strong>Vídeo 3: Conversions API (2min)</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Conteúdo:
+[0:00-0:30] Configurar Dataset ID no dashboard
+[0:30-1:00] Clicar em anúncio CTWA no smartphone → WhatsApp abre
+[1:00-1:30] Enviar mensagem → Lead criado no CRM
+[1:30-2:00] Mover card para "Fechado" → Evento Purchase enviado
+
+Arquivo: C:\Users\Luisf\Documents\GITHUB\ChatBot-Oficial\docs\videos\conversions-api.mp4
+</code></pre><p><strong>Vídeo 4: Instagram Multi-Channel (2min)</strong></p>
+<pre data-role="codeBlock" data-info="" class="language-text"><code>Conteúdo:
+[0:00-0:30] Conectar Instagram Business
+[0:30-1:00] Enviar DM no Instagram (smartphone)
+[1:00-1:30] Bot responde automaticamente
+[1:30-2:00] Conversa aparece no dashboard unificado (mesma interface do WhatsApp)
+
+Arquivo: C:\Users\Luisf\Documents\GITHUB\ChatBot-Oficial\docs\videos\instagram-messaging.mp4
+</code></pre><hr>
+<h3 id="documentos-adicionais">Documentos Adicionais </h3>
+<h4 id="privacy-policy"><strong>Privacy Policy</strong> </h4>
+<ul>
+<li><strong>URL:</strong> <a href="https://uzzap.uzzai.com.br/privacy">https://uzzap.uzzai.com.br/privacy</a></li>
+<li><strong>Idiomas:</strong> Português (Brasil) + Inglês</li>
+<li><strong>Última atualização:</strong> 13 de fevereiro de 2026</li>
+<li><strong>Conteúdo:</strong> Conformidade LGPD + GDPR, uso de dados Meta, retenção, direito ao esquecimento</li>
+</ul>
+<h4 id="terms-of-service"><strong>Terms of Service</strong> </h4>
+<ul>
+<li><strong>URL:</strong> <a href="https://uzzap.uzzai.com.br/terms">https://uzzap.uzzai.com.br/terms</a></li>
+<li><strong>Idiomas:</strong> Português (Brasil) + Inglês</li>
+<li><strong>Última atualização:</strong> 13 de fevereiro de 2026</li>
+<li><strong>Conteúdo:</strong> Condições de uso da plataforma, responsabilidades do cliente, SLA</li>
+</ul>
+<h4 id="data-processing-agreement-dpa"><strong>Data Processing Agreement (DPA)</strong> </h4>
+<ul>
+<li><strong>URL:</strong> <a href="https://uzzap.uzzai.com.br/dpa">https://uzzap.uzzai.com.br/dpa</a></li>
+<li><strong>Idiomas:</strong> Português (Brasil) + Inglês</li>
+<li><strong>Conteúdo:</strong> Acordo de processamento de dados, lista de subprocessadores, cláusulas GDPR</li>
+</ul>
+<h4 id="transparency-report"><strong>Transparency Report</strong> </h4>
+<ul>
+<li><strong>URL:</strong> <a href="https://uzzap.uzzai.com.br/transparency">https://uzzap.uzzai.com.br/transparency</a></li>
+<li><strong>Idiomas:</strong> Português (Brasil) + Inglês</li>
+<li><strong>Conteúdo:</strong> Relatório anual de solicitações de autoridades, estatísticas anonimizadas</li>
+</ul>
+<hr>
+<h2 id="-checklist-final---antes-de-submeter">📝 Checklist Final - Antes de Submeter </h2>
+<h3 id="configurações-básicas">Configurações Básicas </h3>
+<ul>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> Plataformas adicionadas (Website, Android, iOS)</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> Privacy Policy URL publicada e acessível</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> Terms of Service URL publicada e acessível</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> App Domain configurado (<a href="http://uzzap.uzzai.com.br">uzzap.uzzai.com.br</a>)</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> App Icon (1024x1024px) upload</li>
+</ul>
+<h3 id="questionários-de-permissões">Questionários de Permissões </h3>
+<ul>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> WhatsApp (3 permissões) - todos os 3 questionários preenchidos</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> Meta Ads (6 permissões) - todos os 6 questionários preenchidos</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> Threads (10 permissões) - todos os 10 questionários preenchidos</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> Instagram (3 permissões) - todos os 3 questionários preenchidos</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> Compartilhadas (4 permissões) - todos os 4 questionários preenchidos</li>
+</ul>
+<h3 id="questões-de-privacidade">Questões de Privacidade </h3>
+<ul>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> Operadores de dados listados (5 processadores)</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> Controlador de dados definido (<a href="http://Uzz.Ai">Uzz.Ai</a> Ltda)</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> Solicitações de autoridades públicas respondidas</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> Políticas de proteção de dados documentadas</li>
+</ul>
+<h3 id="instruções-para-o-analista">Instruções para o Analista </h3>
+<ul>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> Overview do app escrito</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> Fluxo de onboarding documentado</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> Passo a passo de testes para cada permissão</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> Credenciais de teste fornecidas</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> Arquitetura técnica explicada</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> Conformidade com políticas Meta detalhada</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> Contato de suporte adicionado</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> FAQ para analista preenchido</li>
+</ul>
+<h3 id="materiais-de-suporte">Materiais de Suporte </h3>
+<ul>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> 8 screenshots criados e nomeados</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> 4 vídeos gravados e renderizados</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> Legendas em inglês (.srt) para cada vídeo</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> Privacy Policy acessível</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> Terms of Service acessível</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> DPA publicado</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> Transparency Report publicado</li>
+</ul>
+<h3 id="testes-finais">Testes Finais </h3>
+<ul>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> WhatsApp bot respondendo corretamente</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> Meta Ads campanha cria/pausa/retoma via API</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> Conversions API enviando eventos</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> Instagram DM sendo processado</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> Instagram comment reply funcionando</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> Threads publishing funcionando</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> Dashboard unificado exibindo todos os canais</li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox"> Multi-tenant isolation testado (2 clientes diferentes)</li>
+</ul>
+<hr>
+<h2 id="️-timeline-estimado">⏱️ Timeline Estimado </h2>
+<p><strong>Preparação dos Materiais:</strong> 2-3 dias</p>
+<ul>
+<li>Dia 1: Gravar screenshots + vídeos</li>
+<li>Dia 2: Preencher todos os questionários</li>
+<li>Dia 3: Revisar e submeter</li>
+</ul>
+<p><strong>App Review:</strong> 3-10 dias úteis (Meta)</p>
+<ul>
+<li>Meta pode solicitar informações adicionais</li>
+<li>Possível demo call com analista</li>
+</ul>
+<p><strong>Total:</strong> 5-13 dias até aprovação</p>
+<hr>
+<h2 id="-próximos-passos-após-aprovação">🚀 Próximos Passos Após Aprovação </h2>
+<ol>
+<li>
+<p><strong>Permissões vão para "Live"</strong></p>
+<ul>
+<li>Todas as 26 permissões ficam ativas</li>
+<li>Clientes podem começar a usar todos os produtos</li>
+</ul>
+</li>
+<li>
+<p><strong>Anunciar no Site</strong></p>
+<ul>
+<li>Adicionar badge "Meta Partner" no site</li>
+<li>Blog post: "UzzApp agora com Instagram e Threads!"</li>
+</ul>
+</li>
+<li>
+<p><strong>Onboarding de Clientes Existentes</strong></p>
+<ul>
+<li>Email marketing para base atual</li>
+<li>Migrar clientes do webhook legacy para webhook único</li>
+</ul>
+</li>
+<li>
+<p><strong>Monitoramento</strong></p>
+<ul>
+<li>Dashboard de métricas (quantos clientes por produto)</li>
+<li>Suporte prioritário para novos recursos</li>
+</ul>
+</li>
+<li>
+<p><strong>Registrar como Tech Provider</strong></p>
+<ul>
+<li>Após aprovação, aplicar para Tech Provider</li>
+<li>Prazo: até 30 de junho de 2025</li>
+</ul>
+</li>
+</ol>
+<hr>
+<p><strong>Última atualização:</strong> 13 de fevereiro de 2026<br>
+<strong>Documento:</strong> META_APP_REVIEW_RESPOSTAS.md<br>
+<strong>Versão:</strong> 1.0</p>
+</div>
+      </div>
+      
+      
+    
+    
+    
+    
+    
+    
+  
+    </body></html>
