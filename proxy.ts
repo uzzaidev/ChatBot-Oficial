@@ -74,66 +74,73 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  let profile: { client_id: string | null; role: string | null; is_active: boolean | null } | null = null
+
   // Protected routes: /dashboard/*
   if (request.nextUrl.pathname.startsWith('/dashboard')) {
     if (!user) {
-      // Usuário não autenticado - redirecionar para login
       const loginUrl = new URL('/login', request.url)
       return NextResponse.redirect(loginUrl)
     }
 
-    // Buscar user_profile para obter client_id
-    const { data: profile, error: profileError } = await supabase
+    const { data: loadedProfile, error: profileError } = await supabase
       .from('user_profiles')
-      .select('client_id, role')
+      .select('client_id, role, is_active')
       .eq('id', user.id)
       .single()
 
-    // Se profile não existe ou está inválido - redirecionar para login
-    if (profileError || !profile || !profile.client_id) {
-      console.error('[proxy] Profile não encontrado ou inválido:', user.id)
-      console.error('  Error:', profileError?.message || 'Profile sem client_id')
-      console.error('  → Redirecionando para /login')
+    profile = loadedProfile as any
 
-      // Fazer logout (limpar cookies) antes de redirecionar
+    if (profileError || !profile || !profile.is_active) {
       await supabase.auth.signOut()
-
       const loginUrl = new URL('/login', request.url)
       return NextResponse.redirect(loginUrl)
     }
 
-    // Injetar client_id no header para API routes poderem acessar
-    response.headers.set('x-user-client-id', profile.client_id)
-    response.headers.set('x-user-role', profile.role || 'user')
+    // Apenas admins podem operar sem client_id.
+    if (!profile.client_id && profile.role !== 'admin') {
+      await supabase.auth.signOut()
+      const loginUrl = new URL('/login', request.url)
+      return NextResponse.redirect(loginUrl)
+    }
 
+    response.headers.set('x-user-role', profile.role || 'user')
+    response.headers.set('x-user-client-id', profile.client_id || '')
+    response.headers.set('x-user-is-active', String(profile.is_active))
   }
 
-  // Admin-only routes: /admin/*
+  // /dashboard/admin => somente admin
+  if (request.nextUrl.pathname.startsWith('/dashboard/admin')) {
+    if (!profile?.role || profile.role !== 'admin') {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+  }
+
+  // /dashboard/payments => admin ou client_admin
+  if (request.nextUrl.pathname.startsWith('/dashboard/payments')) {
+    if (!profile?.role || !['admin', 'client_admin'].includes(profile.role)) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+  }
+
+  // Legacy /admin route guard (caso exista rota antiga fora de /dashboard)
   if (request.nextUrl.pathname.startsWith('/admin')) {
     if (!user) {
-      const loginUrl = new URL('/login', request.url)
-      return NextResponse.redirect(loginUrl)
+      return NextResponse.redirect(new URL('/login', request.url))
     }
 
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('role, is_active, client_id')
-      .eq('id', user.id)
-      .single()
-
-    // Verificar se tem role de admin e está ativo
-
-    if (!profile || !['admin', 'client_admin'].includes(profile.role as string) || !profile.is_active) {
-      // Não é admin ou está desativado - redirecionar para dashboard
-      const dashboardUrl = new URL('/dashboard', request.url)
-      return NextResponse.redirect(dashboardUrl)
+    if (!profile) {
+      const { data: fallbackProfile } = await supabase
+        .from('user_profiles')
+        .select('role, is_active, client_id')
+        .eq('id', user.id)
+        .single()
+      profile = fallbackProfile as any
     }
 
-    // Injetar role e client_id nos headers para uso nas páginas admin
-    response.headers.set('x-user-role', profile.role)
-    response.headers.set('x-user-client-id', profile.client_id)
-    response.headers.set('x-user-is-active', String(profile.is_active))
-
+    if (!profile || profile.role !== 'admin' || !profile.is_active) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
   }
 
   return response

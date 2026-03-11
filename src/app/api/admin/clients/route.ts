@@ -1,131 +1,151 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@/lib/supabase-server";
+import { requireAdmin } from "@/lib/auth-helpers";
+import { query } from "@/lib/postgres";
+import { normalizePlanStatus } from "@/lib/admin-helpers";
 
 export const dynamic = "force-dynamic";
 
-/**
- * GET /api/admin/clients
- * Lista todos os clientes/tenants (apenas para super admin)
- *
- * Query params:
- * - status: filtrar por status (opcional)
- */
+interface AdminClientRow {
+  id: string;
+  name: string;
+  slug: string;
+  status: string;
+  created_at: string;
+  plan_name: string | null;
+  plan_status: string | null;
+  trial_ends_at: string | null;
+  owner_email: string | null;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  last_payment_at: string | null;
+  last_payment_amount: number | null;
+  sub_status: string | null;
+  sub_plan_name: string | null;
+}
+
 export async function GET(request: NextRequest) {
+  const adminGuard = await requireAdmin(request);
+  if (adminGuard.ok === false) {
+    return adminGuard.response;
+  }
+
   try {
-    const supabase = await createServerClient();
-
-    console.log("[Admin Clients] Starting request...");
-
-    // Verificar autenticação
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    console.log(
-      "[Admin Clients] User:",
-      user?.id,
-      "Auth Error:",
-      authError?.message,
-    );
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: "Não autenticado" },
-        { status: 401 },
-      );
-    }
-
-    // Buscar perfil do usuário autenticado
-    const { data: currentUserProfile, error: profileError } = await supabase
-      .from("user_profiles")
-      .select("role, is_active, client_id")
-      .eq("id", user.id)
-      .single();
-
-    console.log(
-      "[Admin Clients] User Profile:",
-      currentUserProfile,
-      "Profile Error:",
-      profileError?.message,
-    );
-
-    if (profileError || !currentUserProfile) {
-      return NextResponse.json(
-        { error: "Perfil de usuário não encontrado" },
-        { status: 404 },
-      );
-    }
-
-    if (!currentUserProfile.is_active) {
-      return NextResponse.json(
-        { error: "Usuário inativo" },
-        { status: 403 },
-      );
-    }
-
-    // Apenas super admin pode listar todos os clients
-    // Client admin pode ver apenas o próprio client
     const { searchParams } = new URL(request.url);
-    const statusFilter = searchParams.get("status");
+    const page = Math.max(1, Number(searchParams.get("page") ?? 1));
+    const limit = Math.min(100, Math.max(1, Number(searchParams.get("limit") ?? 20)));
+    const offset = (page - 1) * limit;
 
-    console.log("[Admin Clients] User role:", currentUserProfile.role);
-    console.log(
-      "[Admin Clients] User client_id:",
-      currentUserProfile.client_id,
-    );
+    const q = searchParams.get("q")?.trim() ?? "";
+    const status = searchParams.get("status")?.trim() ?? "";
 
-    let query = (supabase.from("clients") as any)
-      .select("id, name, slug, status, created_at")
-      .order("name", { ascending: true });
+    const hasSearch = q.length > 0;
+    const hasStatus = status.length > 0 && status !== "all";
 
-    if (currentUserProfile.role === "admin") {
-      console.log("[Admin Clients] Fetching ALL clients (admin mode)");
-    } else if (currentUserProfile.role === "client_admin") {
-      console.log(
-        "[Admin Clients] Filtering by client_id (client_admin mode):",
-        currentUserProfile.client_id,
-      );
-      query = query.eq("id", currentUserProfile.client_id);
-    } else {
-      return NextResponse.json(
-        { error: "Acesso negado" },
-        { status: 403 },
-      );
+    const params: Array<string | number | null> = [];
+    let index = 1;
+
+    let whereClause = "WHERE 1=1";
+
+    if (hasSearch) {
+      params.push(`%${q}%`);
+      whereClause += ` AND (c.name ILIKE $${index} OR COALESCE(owner.owner_email,'') ILIKE $${index})`;
+      index += 1;
     }
 
-    // Aplicar filtro de status se fornecido
-    if (statusFilter) {
-      console.log("[Admin Clients] Filtering by status:", statusFilter);
-      query = query.eq("status", statusFilter);
+    if (hasStatus) {
+      params.push(status);
+      whereClause += ` AND LOWER(COALESCE(ps.status, c.plan_status, 'trial')) = LOWER($${index})`;
+      index += 1;
     }
 
-    const { data: clients, error: clientsError } = await query;
+    const baseFrom = `
+      FROM public.clients c
+      LEFT JOIN public.platform_client_subscriptions ps
+        ON ps.client_id = c.id
+      LEFT JOIN LATERAL (
+        SELECT up.email AS owner_email
+        FROM public.user_profiles up
+        WHERE up.client_id = c.id
+          AND up.role = 'client_admin'
+        ORDER BY up.created_at ASC
+        LIMIT 1
+      ) owner ON TRUE
+    `;
 
-    console.log(
-      "[Admin Clients] Query result - Clients:",
-      clients?.length || 0,
-      "Error:",
-      clientsError?.message,
-    );
+    const listSql = `
+      SELECT
+        c.id,
+        c.name,
+        c.slug,
+        c.status,
+        c.created_at,
+        c.plan_name,
+        c.plan_status,
+        c.trial_ends_at,
+        owner.owner_email,
+        ps.stripe_customer_id,
+        ps.stripe_subscription_id,
+        ps.last_payment_at,
+        ps.last_payment_amount,
+        ps.status AS sub_status,
+        ps.plan_name AS sub_plan_name
+      ${baseFrom}
+      ${whereClause}
+      ORDER BY COALESCE(ps.last_payment_at, c.created_at) DESC
+      LIMIT $${index} OFFSET $${index + 1}
+    `;
 
-    if (clientsError) {
-      return NextResponse.json(
-        { error: "Erro ao buscar clientes", details: clientsError.message },
-        { status: 500 },
+    const countSql = `
+      SELECT COUNT(*)::int AS total
+      ${baseFrom}
+      ${whereClause}
+    `;
+
+    const listParams = [...params, limit, offset];
+
+    const [clientsResult, countResult] = await Promise.all([
+      query<AdminClientRow>(listSql, listParams),
+      query<{ total: number }>(countSql, params),
+    ]);
+
+    const clients = clientsResult.rows.map((row) => {
+      const resolvedStatus = normalizePlanStatus(
+        row.sub_status ?? row.plan_status ?? "trial"
       );
-    }
 
-    console.log(
-      "[Admin Clients] Returning clients:",
-      clients?.map((c) => ({ id: c.id, name: c.name })),
-    );
+      return {
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        status: row.status,
+        created_at: row.created_at,
+        email: row.owner_email,
+        plan_name: row.sub_plan_name ?? row.plan_name ?? "trial",
+        plan_status: resolvedStatus,
+        trial_ends_at: row.trial_ends_at,
+        stripe_customer_id: row.stripe_customer_id,
+        stripe_subscription_id: row.stripe_subscription_id,
+        last_payment_at: row.last_payment_at,
+        last_payment_amount: row.last_payment_amount ?? 0,
+        activated: Boolean(row.stripe_customer_id),
+      };
+    });
 
     return NextResponse.json({
-      clients: clients || [],
-      total: clients?.length || 0,
+      clients,
+      pagination: {
+        page,
+        limit,
+        total: countResult.rows[0]?.total ?? 0,
+      },
     });
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json(
-      { error: "Erro interno do servidor" },
-      { status: 500 },
+      {
+        error: "Erro ao buscar clientes admin",
+        details: error?.message ?? "unknown_error",
+      },
+      { status: 500 }
     );
   }
 }

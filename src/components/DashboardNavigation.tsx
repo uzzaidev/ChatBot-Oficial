@@ -18,6 +18,7 @@ import {
   CheckCircle,
   ChevronLeft,
   ChevronRight,
+  CreditCard,
   FileText,
   Kanban,
   LayoutDashboard,
@@ -276,6 +277,14 @@ export function DashboardNavigation({
           onClick={onLinkClick}
           tooltip="Performance de campanhas, ROI e conversões CAPI"
         />
+        <NavItem
+          href="/dashboard/payments"
+          icon={<CreditCard className="h-5 w-5 flex-shrink-0" />}
+          label="Pagamentos"
+          isCollapsed={isCollapsed}
+          onClick={onLinkClick}
+          tooltip="Stripe Connect - produtos, checkout e assinaturas"
+        />
 
         {/* SEÇÃO: CONFIGURAÇÃO */}
         <NavSection title="Configuração" isCollapsed={isCollapsed} />
@@ -351,3 +360,4 @@ export function DashboardNavigation({
     </div>
   );
 }
+
