@@ -1,5 +1,5 @@
-import { AIResponse, ChatMessage, ClientConfig } from "@/lib/types";
 import { callDirectAI } from "@/lib/direct-ai-client";
+import { AIResponse, ChatMessage, ClientConfig } from "@/lib/types";
 import { checkBudgetAvailable } from "@/lib/unified-tracking";
 import type { CoreMessage } from "ai";
 import { z } from "zod";
@@ -145,8 +145,7 @@ const TTS_AUDIO_TOOL_DEFINITION = {
   type: "function",
   function: {
     name: "enviar_resposta_em_audio",
-    description:
-      `Converte sua resposta em mensagem de voz (áudio) ao invés de enviar como texto.
+    description: `Converte sua resposta em mensagem de voz (áudio) ao invés de enviar como texto.
 
 IMPORTANTE: Passe o texto que deseja converter como argumento 'texto_para_audio'.
 
@@ -161,6 +160,75 @@ A decisão de quando usar esta tool deve ser configurada no prompt do sistema pe
         },
       },
       required: ["texto_para_audio"],
+    },
+  },
+};
+
+const CHECK_CALENDAR_TOOL_DEFINITION = {
+  type: "function",
+  function: {
+    name: "verificar_agenda",
+    description:
+      'Verifica a disponibilidade na agenda do cliente (Google Calendar ou Microsoft Outlook). Use quando o usuário perguntar sobre horários disponíveis ou quiser saber se está livre em determinado período. IMPORTANTE: Por privacidade, NUNCA revele nomes, títulos, descrições ou detalhes de compromissos existentes. Apenas informe se o horário está livre ou ocupado, e sugira horários alternativos. Exemplos: "estou livre amanhã às 10h?", "quais horários disponíveis na sexta?", "tenho algo às 15h?".',
+    parameters: {
+      type: "object",
+      properties: {
+        tipo: {
+          type: "string",
+          description:
+            "Tipo de verificação: 'horarios_livres' para checar disponibilidade ou 'eventos_existentes' para listar compromissos",
+          enum: ["horarios_livres", "eventos_existentes"],
+        },
+        data_inicio: {
+          type: "string",
+          description:
+            "Data/hora de início do período a verificar (formato ISO 8601, ex: 2025-03-10T09:00:00-03:00)",
+        },
+        data_fim: {
+          type: "string",
+          description:
+            "Data/hora de fim do período a verificar (formato ISO 8601, ex: 2025-03-10T18:00:00-03:00)",
+        },
+      },
+      required: ["tipo", "data_inicio", "data_fim"],
+    },
+  },
+};
+
+const CREATE_CALENDAR_EVENT_TOOL_DEFINITION = {
+  type: "function",
+  function: {
+    name: "criar_evento_agenda",
+    description:
+      'Cria um novo evento na agenda do cliente. Use quando o usuário solicitar marcar um compromisso, reunião ou evento. Exemplos: "marca uma reunião amanhã às 10h", "agenda um compromisso sexta às 14h", "cria um evento para a consulta".',
+    parameters: {
+      type: "object",
+      properties: {
+        titulo: {
+          type: "string",
+          description:
+            "Título do evento (ex: 'Reunião com equipe', 'Consulta médica')",
+        },
+        data_hora_inicio: {
+          type: "string",
+          description:
+            "Data/hora de início do evento (formato ISO 8601, ex: 2025-03-10T10:00:00-03:00)",
+        },
+        data_hora_fim: {
+          type: "string",
+          description:
+            "Data/hora de fim do evento (formato ISO 8601, ex: 2025-03-10T11:00:00-03:00)",
+        },
+        descricao: {
+          type: "string",
+          description: "Descrição opcional do evento",
+        },
+        email_participante: {
+          type: "string",
+          description: "Email de um participante a convidar (opcional)",
+        },
+      },
+      required: ["titulo", "data_hora_inicio", "data_hora_fim"],
     },
   },
 };
@@ -214,8 +282,9 @@ export const generateAIResponse = async (
     if (includeDateTimeInfo) {
       // Data e hora atual (para contexto da IA)
       const now = new Date();
-      const dateTimeInfo = `Data e hora atual: ${
-        now.toLocaleDateString("pt-BR", {
+      const dateTimeInfo = `Data e hora atual: ${now.toLocaleDateString(
+        "pt-BR",
+        {
           weekday: "long",
           year: "numeric",
           month: "long",
@@ -223,8 +292,8 @@ export const generateAIResponse = async (
           hour: "2-digit",
           minute: "2-digit",
           timeZone: "America/Sao_Paulo",
-        })
-      } (horário de Brasília)`;
+        },
+      )} (horário de Brasília)`;
 
       messages.push({
         role: "system",
@@ -250,7 +319,8 @@ export const generateAIResponse = async (
     // Valida e adiciona chatHistory - VALIDAÇÃO EXTRA
     if (Array.isArray(chatHistory) && chatHistory.length > 0) {
       const validHistory = chatHistory.filter((msg) => {
-        const isValid = msg &&
+        const isValid =
+          msg &&
           typeof msg === "object" &&
           (msg.role === "user" || msg.role === "assistant") &&
           typeof msg.content === "string" &&
@@ -267,7 +337,9 @@ export const generateAIResponse = async (
 
     // Adiciona mensagem atual - VALIDAÇÃO
     if (
-      !message || typeof message !== "string" || message.trim().length === 0
+      !message ||
+      typeof message !== "string" ||
+      message.trim().length === 0
     ) {
       throw new Error("Message must be a non-empty string");
     }
@@ -292,7 +364,7 @@ export const generateAIResponse = async (
     const budgetAvailable = await checkBudgetAvailable(config.id);
     if (!budgetAvailable) {
       throw new Error(
-        "❌ Limite de budget atingido. Entre em contato com o suporte para aumentar seu limite."
+        "❌ Limite de budget atingido. Entre em contato com o suporte para aumentar seu limite.",
       );
     }
 
@@ -306,71 +378,134 @@ export const generateAIResponse = async (
 
     // Call AI - Direct SDK with Vault credentials
     const result = await callDirectAI({
-        clientId: config.id,
-        clientConfig: {
-          id: config.id,
-          name: config.name,
-          primaryModelProvider: config.primaryProvider,
-          openaiModel: config.models.openaiModel,
-          groqModel: config.models.groqModel,
-        },
-        messages: coreMessages,
-        tools: enableTools && config.settings.enableTools
+      clientId: config.id,
+      clientConfig: {
+        id: config.id,
+        name: config.name,
+        primaryModelProvider: config.primaryProvider,
+        openaiModel: config.models.openaiModel,
+        groqModel: config.models.groqModel,
+      },
+      messages: coreMessages,
+      tools:
+        enableTools && config.settings.enableTools
           ? {
-            transferir_atendimento: {
-              description: HUMAN_HANDOFF_TOOL_DEFINITION.function.description,
-              inputSchema: z.object({
-                motivo: z
-                  .string()
-                  .describe(
-                    "Motivo da transferência solicitada pelo usuário",
-                  ),
-              }),
-            },
-            buscar_documento: {
-              description: SEARCH_DOCUMENT_TOOL_DEFINITION.function.description,
-              inputSchema: z.object({
-                query: z
-                  .string()
-                  .describe(
-                    "Termo de busca extraído da solicitação do usuário (nome do arquivo, tipo de documento ou assunto relacionado)",
-                  ),
-                document_type: z
-                  .enum(["any", "catalog", "manual", "faq", "image"])
-                  .default("any")
-                  .describe(
-                    "Tipo de documento a buscar. Use 'any' para buscar em todos os tipos.",
-                  ),
-              }),
-            },
-            enviar_resposta_em_audio: {
-              description: TTS_AUDIO_TOOL_DEFINITION.function.description,
-              inputSchema: z.object({
-                texto_para_audio: z
-                  .string()
-                  .describe(
-                    "Texto que será convertido em áudio (sua resposta completa para o cliente)",
-                  ),
-              }),
-            },
-          }
+              transferir_atendimento: {
+                description: HUMAN_HANDOFF_TOOL_DEFINITION.function.description,
+                inputSchema: z.object({
+                  motivo: z
+                    .string()
+                    .describe(
+                      "Motivo da transferência solicitada pelo usuário",
+                    ),
+                }),
+              },
+              buscar_documento: {
+                description:
+                  SEARCH_DOCUMENT_TOOL_DEFINITION.function.description,
+                inputSchema: z.object({
+                  query: z
+                    .string()
+                    .describe(
+                      "Termo de busca extraído da solicitação do usuário (nome do arquivo, tipo de documento ou assunto relacionado)",
+                    ),
+                  document_type: z
+                    .enum(["any", "catalog", "manual", "faq", "image"])
+                    .default("any")
+                    .describe(
+                      "Tipo de documento a buscar. Use 'any' para buscar em todos os tipos.",
+                    ),
+                }),
+              },
+              enviar_resposta_em_audio: {
+                description: TTS_AUDIO_TOOL_DEFINITION.function.description,
+                inputSchema: z.object({
+                  texto_para_audio: z
+                    .string()
+                    .describe(
+                      "Texto que será convertido em áudio (sua resposta completa para o cliente)",
+                    ),
+                }),
+              },
+              ...(config.calendar?.google?.enabled ||
+              config.calendar?.microsoft?.enabled
+                ? {
+                    verificar_agenda: {
+                      description:
+                        CHECK_CALENDAR_TOOL_DEFINITION.function.description,
+                      inputSchema: z.object({
+                        tipo: z
+                          .enum(["horarios_livres", "eventos_existentes"])
+                          .describe(
+                            "Tipo de verificação: 'horarios_livres' para checar disponibilidade ou 'eventos_existentes' para listar compromissos",
+                          ),
+                        data_inicio: z
+                          .string()
+                          .describe(
+                            "Data/hora de início do período a verificar (formato ISO 8601)",
+                          ),
+                        data_fim: z
+                          .string()
+                          .describe(
+                            "Data/hora de fim do período a verificar (formato ISO 8601)",
+                          ),
+                      }),
+                    },
+                    criar_evento_agenda: {
+                      description:
+                        CREATE_CALENDAR_EVENT_TOOL_DEFINITION.function
+                          .description,
+                      inputSchema: z.object({
+                        titulo: z.string().describe("Título do evento"),
+                        data_hora_inicio: z
+                          .string()
+                          .describe(
+                            "Data/hora de início do evento (formato ISO 8601)",
+                          ),
+                        data_hora_fim: z
+                          .string()
+                          .describe(
+                            "Data/hora de fim do evento (formato ISO 8601)",
+                          ),
+                        descricao: z
+                          .string()
+                          .optional()
+                          .describe("Descrição opcional do evento"),
+                        email_participante: z
+                          .string()
+                          .optional()
+                          .describe(
+                            "Email de um participante a convidar (opcional)",
+                          ),
+                      }),
+                    },
+                  }
+                : {}),
+            }
           : undefined,
-        settings: {
-          temperature: config.settings.temperature,
-          maxTokens: config.settings.maxTokens,
-        },
-      });
+      settings: {
+        temperature: config.settings.temperature,
+        maxTokens: config.settings.maxTokens,
+      },
+    });
 
-      // 🔍 Log response summary
-      const toolCallNames = result.toolCalls?.map((tc: any) => tc.function.name).join(",") || "";
-      console.log(`🤖 [AI] ${config.name}: model=${result.model}, ${result.latencyMs}ms, content=${result.text?.length || 0}chars${toolCallNames ? `, tools=[${toolCallNames}]` : ""}`);
+    // 🔍 Log response summary
+    const toolCallNames =
+      result.toolCalls?.map((tc: any) => tc.function.name).join(",") || "";
+    console.log(
+      `🤖 [AI] ${config.name}: model=${result.model}, ${
+        result.latencyMs
+      }ms, content=${result.text?.length || 0}chars${
+        toolCallNames ? `, tools=[${toolCallNames}]` : ""
+      }`,
+    );
 
     // Convert back to AIResponse format
     return {
       content: result.text,
       toolCalls: result.toolCalls,
-      finished: result.finishReason === "stop" ||
-        result.finishReason === "end_turn",
+      finished:
+        result.finishReason === "stop" || result.finishReason === "end_turn",
       model: result.model,
       provider: result.provider as any,
       requestId: undefined, // No request ID for direct calls
@@ -389,9 +524,8 @@ export const generateAIResponse = async (
       },
     };
   } catch (error) {
-    const errorMessage = error instanceof Error
-      ? error.message
-      : "Unknown error";
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
     throw new Error(`Failed to generate AI response: ${errorMessage}`);
   }
 };

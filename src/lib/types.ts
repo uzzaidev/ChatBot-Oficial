@@ -442,6 +442,12 @@ export interface ClientConfig {
   // Notificações
   notificationEmail?: string;
 
+  // 📅 Calendar Integration (Google/Microsoft OAuth)
+  calendar?: {
+    google: { enabled: boolean; userEmail?: string };
+    microsoft: { enabled: boolean; userEmail?: string };
+  };
+
   // Active Agent (NEW - Multi-Agent System)
   activeAgentId?: string | null;
   activeAgent?: Agent; // Full agent object when loaded via getClientConfig

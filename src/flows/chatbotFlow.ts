@@ -1493,6 +1493,60 @@ export const processChatbotMessage = async (
             warning: "Audio failed, continuing with normal text flow",
           });
         }
+
+        // Tool 4: verificar_agenda (Calendar check)
+        if (toolCall.function.name === "verificar_agenda") {
+          logger.logNodeStart("15.8. Handle Calendar Check", {
+            phone: parsedMessage.phone,
+            toolCallId: toolCall.id,
+          });
+
+          const { handleCalendarToolCall } = await import(
+            "@/nodes/handleCalendarToolCall"
+          );
+
+          const args = JSON.parse(toolCall.function.arguments || "{}");
+          const calendarResult = await handleCalendarToolCall(
+            "verificar_agenda",
+            args,
+            config.id,
+          );
+
+          logger.logNodeSuccess("15.8. Handle Calendar Check", {
+            resultLength: calendarResult.length,
+          });
+
+          // Use the calendar result as the AI response content
+          aiResponse.content = calendarResult;
+          aiResponse.toolCalls = undefined;
+        }
+
+        // Tool 5: criar_evento_agenda (Calendar create)
+        if (toolCall.function.name === "criar_evento_agenda") {
+          logger.logNodeStart("15.9. Handle Calendar Create Event", {
+            phone: parsedMessage.phone,
+            toolCallId: toolCall.id,
+          });
+
+          const { handleCalendarToolCall } = await import(
+            "@/nodes/handleCalendarToolCall"
+          );
+
+          const args = JSON.parse(toolCall.function.arguments || "{}");
+          const calendarResult = await handleCalendarToolCall(
+            "criar_evento_agenda",
+            args,
+            config.id,
+          );
+
+          logger.logNodeSuccess("15.9. Handle Calendar Create Event", {
+            resultLength: calendarResult.length,
+          });
+
+          // Use the calendar result as the AI response content
+          aiResponse.content = calendarResult;
+          aiResponse.toolCalls = undefined;
+        }
       }
     }
 

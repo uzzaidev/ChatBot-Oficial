@@ -22,7 +22,7 @@ export const uploadAudioToWhatsApp = async (
   formData.append("messaging_product", "whatsapp");
 
   const response = await fetch(
-    `https://graph.facebook.com/v18.0/${phoneNumberId}/media`,
+    `https://graph.facebook.com/v22.0/${phoneNumberId}/media`,
     {
       method: "POST",
       headers: {
