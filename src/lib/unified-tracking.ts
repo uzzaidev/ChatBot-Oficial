@@ -15,6 +15,8 @@
 
 import { createServerClient } from "@/lib/supabase-server";
 import { convertUSDtoBRL, getExchangeRate } from "@/lib/currency";
+import { createServiceRoleClient } from "@/lib/supabase";
+import { sendBudgetAlertNotification } from "@/lib/push-dispatch";
 
 // =====================================================
 // TYPES
@@ -66,6 +68,16 @@ export interface UnifiedTrackingParams {
   // Optional: Pre-calculated cost (if already known)
   costUSD?: number;
 }
+
+type BudgetSnapshot = {
+  client_id: string;
+  usage_percentage: number | null;
+  brl_limit: number | null;
+  last_reset_at: string | null;
+};
+
+const BUDGET_ALERT_COOLDOWN_MS = 5 * 60 * 1000;
+const budgetAlertCooldownCache = new Map<string, number>();
 
 // =====================================================
 // MAIN FUNCTION: Track API Usage
@@ -277,6 +289,9 @@ export const trackUnifiedUsage = async (
       // TODO: Send alert email/webhook
     }
 
+    // Send push alerts at 80%+ and 100% thresholds (deduplicated by period)
+    await maybeSendBudgetPushAlert(clientId);
+
     // =====================================================
     // 8. BACKWARD COMPATIBILITY: Insert to usage_logs
     // =====================================================
@@ -306,6 +321,93 @@ export const trackUnifiedUsage = async (
   } catch (error: any) {
     console.error("[Unified Tracking] Error:", error);
     // Don't throw - tracking failure shouldn't break API calls
+  }
+};
+
+const maybeSendBudgetPushAlert = async (clientId: string): Promise<void> => {
+  try {
+    const supabase = createServiceRoleClient() as any;
+
+    const { data: budget, error: budgetError } = await supabase
+      .from("client_budgets")
+      .select("client_id, usage_percentage, brl_limit, last_reset_at")
+      .eq("client_id", clientId)
+      .maybeSingle();
+
+    if (budgetError || !budget) {
+      return;
+    }
+
+    const snapshot = budget as BudgetSnapshot;
+    const usagePercentage = Number(snapshot.usage_percentage || 0);
+
+    if (Number.isNaN(usagePercentage) || usagePercentage < 80) {
+      return;
+    }
+
+    const threshold = usagePercentage >= 100 ? 100 : 80;
+    const periodStart = snapshot.last_reset_at || "unknown";
+    const cooldownKey = `${clientId}:${threshold}:${periodStart}`;
+    const lastAttempt = budgetAlertCooldownCache.get(cooldownKey);
+
+    if (lastAttempt && Date.now() - lastAttempt < BUDGET_ALERT_COOLDOWN_MS) {
+      return;
+    }
+
+    const { data: users, error: usersError } = await supabase
+      .from("user_profiles")
+      .select("id")
+      .eq("client_id", clientId)
+      .eq("is_active", true);
+
+    if (usersError || !Array.isArray(users) || users.length === 0) {
+      budgetAlertCooldownCache.set(cooldownKey, Date.now());
+      return;
+    }
+
+    const userIds = users.map((user: { id: string }) => user.id);
+
+    const { data: existingLogs, error: logsError } = await supabase
+      .from("notification_logs")
+      .select("user_id")
+      .eq("client_id", clientId)
+      .eq("data->>type", "budget_alert")
+      .eq("data->>threshold", String(threshold))
+      .eq("data->>period_start", periodStart)
+      .in("user_id", userIds);
+
+    const alreadyNotified = !logsError && Array.isArray(existingLogs)
+      ? new Set(existingLogs.map((item: { user_id: string }) => item.user_id))
+      : new Set<string>();
+
+    const pendingUsers = userIds.filter((userId) => !alreadyNotified.has(userId));
+
+    if (pendingUsers.length === 0) {
+      budgetAlertCooldownCache.set(cooldownKey, Date.now());
+      return;
+    }
+
+    const limitBrl = Number(snapshot.brl_limit || 0);
+    const roundedUsage = Math.round(usagePercentage * 10) / 10;
+
+    await Promise.allSettled(
+      pendingUsers.map((userId) =>
+        sendBudgetAlertNotification(
+          userId,
+          roundedUsage,
+          limitBrl,
+          clientId,
+          {
+            threshold,
+            periodStart,
+          },
+        ),
+      ),
+    );
+
+    budgetAlertCooldownCache.set(cooldownKey, Date.now());
+  } catch (error) {
+    console.error("[Unified Tracking] Failed to send budget push alert:", error);
   }
 };
 

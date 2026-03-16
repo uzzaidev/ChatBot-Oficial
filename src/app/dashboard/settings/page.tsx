@@ -32,6 +32,7 @@ import {
   AlertTriangle,
   ArrowRight,
   BarChart3,
+  BellRing,
   Bot,
   Check,
   Clock,
@@ -1308,7 +1309,7 @@ export default function SettingsPage() {
         </Card>
 
         {/* Seção 4.5: Links Rápidos para Outras Configurações */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {/* Card TTS */}
           <Card className="bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border-blue-500/30 hover:border-blue-500/50 transition-colors">
             <CardContent className="pt-6">
@@ -1339,6 +1340,44 @@ export default function SettingsPage() {
                     variant="ghost"
                     size="icon"
                     className="text-blue-500 hover:text-blue-600 hover:bg-blue-500/10"
+                  >
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Card Notificações */}
+          <Card className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-amber-500/30 hover:border-amber-500/50 transition-colors">
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-amber-500/20">
+                    <BellRing className="w-5 h-5 text-amber-500" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground">
+                      Notificações Push
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Categorias, som, vibração e modo Não Perturbe
+                    </p>
+                    <div className="flex gap-2 mt-2">
+                      <span className="text-xs bg-amber-500/20 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded">
+                        5 categorias
+                      </span>
+                      <span className="text-xs bg-amber-500/20 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded">
+                        DND
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <Link href="/dashboard/settings/notifications">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-amber-500 hover:text-amber-600 hover:bg-amber-500/10"
                   >
                     <ArrowRight className="w-4 h-4" />
                   </Button>

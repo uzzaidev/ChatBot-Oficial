@@ -15,7 +15,9 @@ const getServiceAccountFromEnv = (): FirebaseServiceAccount | null => {
     return { projectId, clientEmail, privateKey };
   }
 
-  const rawJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  const rawJson =
+    process.env.FIREBASE_SERVICE_ACCOUNT_JSON ||
+    process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
   if (!rawJson) return null;
 
   try {
