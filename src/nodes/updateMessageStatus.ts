@@ -1,4 +1,6 @@
 import { query } from "@/lib/postgres";
+import { createServiceRoleClient } from "@/lib/supabase";
+import { sendBatchCategorizedPush } from "@/lib/push-dispatch";
 
 export interface UpdateMessageStatusInput {
   wamid: string; // WhatsApp Message ID
@@ -238,6 +240,38 @@ export const processStatusUpdate = async (
     // ✅ Return successfully - status updates are non-critical
     // Frontend will handle missing status gracefully
     return;
+  }
+
+  if (status === "read" && result.updatedRow?.session_id) {
+    try {
+      const supabase = createServiceRoleClient() as any;
+      const { data: users, error: usersError } = await supabase
+        .from("user_profiles")
+        .select("id")
+        .eq("client_id", clientId)
+        .eq("is_active", true);
+
+      if (!usersError && Array.isArray(users) && users.length > 0) {
+        const userIds = users.map((user: { id: string }) => user.id);
+        await sendBatchCategorizedPush(
+          userIds,
+          {
+            category: "low",
+            title: "Mensagem lida",
+            body: `Contato ${result.updatedRow.session_id} leu a mensagem`,
+            data: {
+              type: "message_read",
+              phone: result.updatedRow.session_id,
+              wamid,
+              action: "open_conversation",
+            },
+          },
+          { clientId },
+        );
+      }
+    } catch (notificationError) {
+      console.warn("⚠️ Failed to send read-status push notification", notificationError);
+    }
   }
 
   console.log(`✅ Status update processed successfully: wamid=${wamid}, status=${status}`);

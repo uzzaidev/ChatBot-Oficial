@@ -62,15 +62,59 @@ const setupListeners = () => {
 
   // Listener: Notificação recebida (app em foreground)
   PushNotifications.addListener("pushNotificationReceived", (notification) => {
+    // Mark as delivered for analytics (best effort)
+    void trackNotificationEvent("delivered", notification.data || {});
+
     // Aqui você pode mostrar uma notificação customizada ou atualizar UI
     // Por padrão, Android mostra automaticamente se app está em background
   });
 
   // Listener: Usuário clicou na notificação (app em background ou fechado)
   PushNotifications.addListener("pushNotificationActionPerformed", (action) => {
+    // Mark as opened for analytics (best effort)
+    const data = action?.notification?.data || {};
+    void trackNotificationEvent("opened", data);
+
     // Processar ação (ex: navegar para chat específico)
     handleNotificationAction(action);
   });
+};
+
+const trackNotificationEvent = async (
+  event: "delivered" | "opened",
+  data: Record<string, any>,
+) => {
+  try {
+    const supabase = createBrowserClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    if (session?.access_token) {
+      headers.Authorization = `Bearer ${session.access_token}`;
+    }
+
+    await fetch("/api/notifications/event", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        event,
+        notification_log_id: data?.notification_log_id,
+        category: data?.category,
+        type: data?.type,
+        phone: data?.phone || data?.conversation_phone || data?.chat_id,
+        wamid: data?.wamid,
+        threshold: data?.threshold,
+        period_start: data?.period_start,
+      }),
+    });
+  } catch {
+    // Best effort only
+  }
 };
 
 /**
@@ -124,6 +168,30 @@ const saveTokenToBackend = async (token: string) => {
     if (upsertError) {
       // Error saving token
     }
+
+    // 4. Garantir linha de preferências de notificação para o usuário
+    // (não quebra o fluxo se a migration ainda não foi aplicada)
+    try {
+      const { data: profile } = await supabase
+        .from("user_profiles")
+        .select("client_id")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profile?.client_id) {
+        await (supabase as any)
+          .from("notification_preferences")
+          .upsert(
+            {
+              user_id: user.id,
+              client_id: profile.client_id,
+            },
+            { onConflict: "user_id" },
+          );
+      }
+    } catch {
+      // Ignore (table may not exist yet)
+    }
   } catch (error) {
     // Error saving token
   }
@@ -139,7 +207,13 @@ const handleNotificationAction = (action: any) => {
 
     // Conversas usam query param (?phone=...) no app atual.
     const phone = data.phone || data.chat_id || data.conversation_phone;
-    if (phone) {
+    const explicitAction = data.action || data.type;
+
+    if (explicitAction === "open_billing") {
+      window.location.href = "/dashboard/billing";
+    } else if (phone && (explicitAction === "open_chat" || explicitAction === "open_conversation")) {
+      window.location.href = `/dashboard/chat?phone=${encodeURIComponent(phone)}`;
+    } else if (phone) {
       window.location.href = `/dashboard/chat?phone=${encodeURIComponent(phone)}`;
     } else if (data.type === "message") {
       // Navegar para lista de conversas

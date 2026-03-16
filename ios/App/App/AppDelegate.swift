@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import UserNotifications
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -7,8 +8,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        requestNotificationAuthorization()
         return true
+    }
+
+    private func requestNotificationAuthorization() {
+        let center = UNUserNotificationCenter.current()
+
+        if #available(iOS 12.0, *) {
+            center.requestAuthorization(options: [.alert, .sound, .badge, .criticalAlert]) { _, _ in }
+        } else {
+            center.requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
+        }
     }
 
     func applicationWillResignActive(_ application: UIApplication) {
