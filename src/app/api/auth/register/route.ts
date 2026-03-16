@@ -1,3 +1,4 @@
+import { sendConfirmationEmail } from "@/lib/resend";
 import { createServiceRoleClient } from "@/lib/supabase";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -400,11 +401,52 @@ export async function POST(request: NextRequest) {
     }
 
     // ========================================
-    // 6. Email de confirmação
+    // 6. Email de confirmação via Resend
     // ========================================
-    // O auth.admin.createUser com email_confirm: false já dispara
-    // o email de confirmação automaticamente pelo Supabase.
-    // Não é necessário chamar resend() — evita duplicação e rate limit.
+    const base = process.env.NEXT_PUBLIC_URL ?? "https://uzzapp.uzzai.com.br";
+
+    const { data: linkData, error: linkError } =
+      await supabase.auth.admin.generateLink({
+        type: "signup",
+        email,
+        password,
+        options: { redirectTo: `${base}/auth/confirm` },
+      });
+
+    if (linkError || !linkData?.properties?.hashed_token) {
+      console.error("[Register] Erro ao gerar link de confirmação:", linkError);
+      // Conta foi criada mas email falhou — retornar sucesso parcial
+      return NextResponse.json({
+        success: true,
+        requiresConfirmation: true,
+        user_id: authData.user.id,
+        client_id: clientId,
+        email,
+        slug,
+        message:
+          "Conta criada, mas houve erro ao enviar o email. Use 'Reenviar email' na tela de login.",
+        emailSent: false,
+      });
+    }
+
+    const confirmUrl = `${base}/auth/confirm?token_hash=${linkData.properties.hashed_token}&type=signup`;
+
+    try {
+      await sendConfirmationEmail(email, confirmUrl);
+    } catch (emailErr) {
+      console.error("[Register] Erro Resend:", emailErr);
+      return NextResponse.json({
+        success: true,
+        requiresConfirmation: true,
+        user_id: authData.user.id,
+        client_id: clientId,
+        email,
+        slug,
+        message:
+          "Conta criada, mas houve erro ao enviar o email. Use 'Reenviar email' na tela de login.",
+        emailSent: false,
+      });
+    }
 
     return NextResponse.json({
       success: true,
@@ -414,6 +456,7 @@ export async function POST(request: NextRequest) {
       email,
       slug,
       message: "Conta criada! Verifique seu email para ativar a conta.",
+      emailSent: true,
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : "erro desconhecido";
