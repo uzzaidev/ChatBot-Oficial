@@ -24,5 +24,6 @@
   },
   "[typescriptreact]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
-  }
+  },
+  "doppler.autocomplete.enable": true
 }

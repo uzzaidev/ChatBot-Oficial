@@ -41,6 +41,76 @@ export type MessageStatus =
   | "failed" // Failed to send (WhatsApp status tracking)
   | "queued"; // Queued for processing
 
+export type NotificationCategory =
+  | "critical"
+  | "important"
+  | "normal"
+  | "low"
+  | "marketing";
+
+export interface NotificationCategoryPreference {
+  enabled: boolean;
+  sound: boolean;
+  vibration: boolean;
+}
+
+export interface NotificationPreferences {
+  critical: NotificationCategoryPreference;
+  important: NotificationCategoryPreference;
+  normal: NotificationCategoryPreference;
+  low: NotificationCategoryPreference;
+  marketing: NotificationCategoryPreference;
+}
+
+export interface NotificationConfig {
+  category: NotificationCategory;
+  title: string;
+  body: string;
+  data?: Record<string, string>;
+  imageUrl?: string;
+  actionButtons?: Array<{
+    id: string;
+    title: string;
+    action: string;
+  }>;
+}
+
+export interface UserNotificationSettings {
+  id: string;
+  user_id: string;
+  client_id: string;
+  preferences: NotificationPreferences;
+  dnd_enabled: boolean;
+  dnd_start_time?: string | null;
+  dnd_end_time?: string | null;
+  dnd_days?: number[] | null;
+}
+
+export interface NotificationLog {
+  id: string;
+  user_id: string;
+  client_id: string;
+  category: NotificationCategory;
+  title: string;
+  body: string | null;
+  data: Record<string, any>;
+  status: "sent" | "delivered" | "opened" | "failed" | "skipped";
+  failure_reason: string | null;
+  sent_at: string;
+  delivered_at: string | null;
+  opened_at: string | null;
+  created_at: string;
+}
+
+export interface PushToken {
+  id: string;
+  user_id: string;
+  token: string;
+  platform: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export type UsageSource = "openai" | "meta" | "groq" | "whisper";
 
 export type ExecutionStatus = "running" | "success" | "error";
@@ -882,6 +952,71 @@ export interface Database {
           is_active?: boolean;
           phone?: string | null;
         };
+      };
+      notification_preferences: {
+        Row: UserNotificationSettings;
+        Insert: {
+          id?: string;
+          user_id: string;
+          client_id: string;
+          preferences?: NotificationPreferences;
+          dnd_enabled?: boolean;
+          dnd_start_time?: string | null;
+          dnd_end_time?: string | null;
+          dnd_days?: number[] | null;
+        };
+        Update: Partial<{
+          preferences: NotificationPreferences;
+          dnd_enabled: boolean;
+          dnd_start_time: string | null;
+          dnd_end_time: string | null;
+          dnd_days: number[] | null;
+        }>;
+      };
+      notification_logs: {
+        Row: NotificationLog;
+        Insert: {
+          id?: string;
+          user_id: string;
+          client_id: string;
+          category: NotificationCategory;
+          title: string;
+          body?: string | null;
+          data?: Record<string, any>;
+          status?: "sent" | "delivered" | "opened" | "failed" | "skipped";
+          failure_reason?: string | null;
+          sent_at?: string;
+          delivered_at?: string | null;
+          opened_at?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<{
+          category: NotificationCategory;
+          title: string;
+          body: string | null;
+          data: Record<string, any>;
+          status: "sent" | "delivered" | "opened" | "failed" | "skipped";
+          failure_reason: string | null;
+          sent_at: string;
+          delivered_at: string | null;
+          opened_at: string | null;
+        }>;
+      };
+      push_tokens: {
+        Row: PushToken;
+        Insert: {
+          id?: string;
+          user_id: string;
+          token: string;
+          platform: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<{
+          token: string;
+          platform: string;
+          updated_at: string;
+        }>;
       };
       user_invites: {
         Row: UserInvite;

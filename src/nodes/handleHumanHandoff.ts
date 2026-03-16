@@ -1,6 +1,8 @@
 import { query } from '@/lib/postgres'
 import { sendEmail } from '@/lib/gmail'
 import { ClientConfig } from '@/lib/types'
+import { createServiceRoleClient } from '@/lib/supabase'
+import { sendHumanHandoffNotification } from '@/lib/push-dispatch'
 
 export interface HandleHumanHandoffInput {
   phone: string
@@ -57,5 +59,29 @@ Por favor, entre em contato o mais breve possível.`
 
   } catch (emailError) {
     // NÃO lança erro - handoff deve continuar mesmo se email falhar
+  }
+
+  // Tentar enviar push crítico para usuários ativos do cliente
+  // (não pode quebrar o handoff se falhar)
+  try {
+    const supabase = createServiceRoleClient() as any
+
+    const { data: users, error: usersError } = await supabase
+      .from('user_profiles')
+      .select('id')
+      .eq('client_id', config.id)
+      .eq('is_active', true)
+
+    if (usersError) {
+      console.warn('[handoff-push] Failed to fetch active users', usersError)
+      return
+    }
+
+    if (users && users.length > 0) {
+      const userIds = users.map((user: { id: string }) => user.id)
+      await sendHumanHandoffNotification(userIds, phone, customerName, config.id)
+    }
+  } catch (pushError) {
+    console.warn('[handoff-push] Failed to send handoff push notification', pushError)
   }
 }
