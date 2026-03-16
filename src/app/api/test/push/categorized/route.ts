@@ -19,6 +19,10 @@ type Mode =
   | "budget"
   | "batch";
 
+type AuthSuccess = { ok: true };
+type AuthFailure = { ok: false; status: number; error: string };
+type AuthResult = AuthSuccess | AuthFailure;
+
 const isCategory = (value: unknown): value is NotificationCategory => {
   return (
     value === "critical" ||
@@ -31,7 +35,7 @@ const isCategory = (value: unknown): value is NotificationCategory => {
 
 const authorizeTestRoute = async (
   request: NextRequest,
-): Promise<{ ok: true } | { ok: false; status: number; error: string }> => {
+): Promise<AuthResult> => {
   const configuredSecret = process.env.PUSH_TEST_SECRET;
   const requestSecret = request.headers.get("x-push-test-secret");
 
@@ -89,6 +93,10 @@ const authorizeTestRoute = async (
   }
 };
 
+const isAuthFailure = (value: AuthResult): value is AuthFailure => {
+  return value.ok === false;
+};
+
 const resolveClientIdFromUser = async (
   userId: string,
 ): Promise<string | null> => {
@@ -128,7 +136,7 @@ const resolveClientIdFromUsers = async (
 
 export async function GET(request: NextRequest) {
   const auth = await authorizeTestRoute(request);
-  if (!auth.ok) {
+  if (isAuthFailure(auth)) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
@@ -259,7 +267,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const auth = await authorizeTestRoute(request);
-  if (!auth.ok) {
+  if (isAuthFailure(auth)) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
