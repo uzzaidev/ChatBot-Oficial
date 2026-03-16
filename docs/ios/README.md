@@ -296,7 +296,7 @@ Apple rejeita sem:
 - Texto claro sobre coleta de dados
 - Matching com App Privacy no App Store Connect
 
-**Ação:** Criar página https://uzzai.com.br/privacy-policy
+**Ação:** Usar página já disponível em `https://uzzapp.uzzai.com.br/privacy` e validar acesso público
 
 ### 5. Demo Account Funcional
 
@@ -305,7 +305,7 @@ Para review, Apple precisa:
 - Conta com dados de exemplo
 - Acesso a todas as features
 
-**Ação:** Criar `demo@uzzai.com.br` com dados fake
+**Ação:** Conta `demo@uzzai.com.br` já criada; validar login e fluxo principal antes do review
 
 ---
 

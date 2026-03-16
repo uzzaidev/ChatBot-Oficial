@@ -7,7 +7,56 @@
 
 ---
 
-## 📱 Pré-Requisitos
+## 🪟 FASE 0: Windows (Faça AGORA, sem Mac)
+
+> Tudo abaixo pode ser feito no Windows. Complete antes de ter acesso ao Mac.
+
+### Arquivos de Projeto (já editados ✅)
+
+- [x] `capacitor.config.ts` — adicionados blocos `ios`, `plugins` (scheme UzzApp, SplashScreen, PushNotifications, StatusBar)
+- [x] `ios/App/Podfile` — plataforma atualizada para `17.4`, post_install com Swift 5
+- [x] `ios/App/App/Info.plist` — CFBundleDisplayName: UzzApp, arm64, NSFaceIDUsageDescription, CFBundleURLTypes, NSAppTransportSecurity
+
+### Assets (fazer no Windows)
+
+- [x] Criar pasta `resources/` na raiz do projeto
+- [x] Adicionar `resources/icon.png` (1024x1024, sem transparência, fundo sólido)
+- [x] Adicionar `resources/splash.png` (2732x2732)
+- [ ] Ferramenta online: https://appicon.co (upload 1024x1024, baixar pacote iOS)
+
+### App Store Connect (fazer no Windows, via browser)
+
+- [ ] Criar conta Apple Developer (se não tiver): https://developer.apple.com
+- [ ] Criar app record: https://appstoreconnect.apple.com → My Apps → "+" → New App
+  - [ ] Name: UzzApp
+  - [ ] Bundle ID: `com.uzzai.uzzapp`
+  - [ ] SKU: `uzzapp-ios`
+  - [ ] Primary Language: Portuguese (Brazil)
+- [ ] Preencher metadados: descrição, keywords, category
+  - [x] Texto base pronto em `docs/ios/APP_STORE_CONNECT_COPY.md`
+- [ ] Privacy Policy URL: `https://uzzapp.uzzai.com.br/privacy` (rota já implementada no app)
+  - [x] URL pública validada (HTTP 200 em 2026-03-16)
+- [ ] Preencher App Privacy (questionário de dados coletados)
+
+### Conta Demo para Review
+
+- [x] Criar conta `demo@uzzai.com.br` no sistema com dados de exemplo
+- [ ] Verificar que o login funciona na URL `https://uzzapp.uzzai.com.br`
+
+### Compliance
+
+- [x] Verificar login social no app nativo: OAuth oculto por `!Capacitor.isNativePlatform()` em login/accept-invite (Sign in with Apple não aplicável no fluxo nativo atual)
+- [x] Preparar Privacy Policy com dados coletados (email, ID de usuário, uso)
+
+### UX Mobile (fazer no Windows)
+
+- [ ] Testar `https://uzzapp.uzzai.com.br` no Chrome com DevTools → modo mobile
+- [ ] Verificar safe-area (notch), touch targets, teclado virtual
+- [ ] Testar no Safari de um iPhone via rede local (se disponível)
+
+---
+
+## 📱 Pré-Requisitos (para as fases seguintes — precisam de Mac)
 
 - [ ] Mac com macOS 15.6+ (para Xcode 26)
 - [ ] 50GB+ de espaço livre em disco
@@ -33,38 +82,39 @@
 
 ### Arquivos de Configuração
 
-- [ ] Atualizar `capacitor.config.ts`:
-  - [ ] `ios.minVersion: '17.4'`
-  - [ ] `ios.scheme: 'UzzApp'`
-  - [ ] Configurar plugins
+- [x] Atualizar `capacitor.config.ts` ✅ (feito no Windows):
+  - [x] `ios.scheme: 'UzzApp'`
+  - [x] Plugins: SplashScreen, PushNotifications, StatusBar
+  - [ ] `ios.webContentsDebuggingEnabled: true` → descomentar em dev (no Mac)
 
-- [ ] Atualizar `ios/App/Podfile`:
-  - [ ] `platform :ios, '17.4'`
-  - [ ] Adicionar todos os 5 plugins
-  - [ ] Configurar `post_install` para Swift 5
+- [x] Atualizar `ios/App/Podfile` ✅ (feito no Windows):
+  - [x] `platform :ios, '17.4'`
+  - [x] 5 plugins já presentes (caminhos pnpm corretos)
+  - [x] `post_install` com Swift 5 e deployment target 17.4
 
-- [ ] Atualizar `ios/App/App/Info.plist`:
-  - [ ] `CFBundleDisplayName`: UzzApp
-  - [ ] `CFBundleShortVersionString`: 2.0.0
-  - [ ] `CFBundleVersion`: 8
-  - [ ] Adicionar `NSFaceIDUsageDescription`
-  - [ ] Configurar `CFBundleURLTypes` (deep links)
-  - [ ] Configurar `NSAppTransportSecurity`
-  - [ ] Adicionar `UIBackgroundModes` (push)
+- [x] Atualizar `ios/App/App/Info.plist` ✅ (feito no Windows):
+  - [x] `CFBundleDisplayName`: UzzApp
+  - [x] `UIRequiredDeviceCapabilities`: arm64
+  - [x] `NSFaceIDUsageDescription` adicionado
+  - [x] `CFBundleURLTypes` (deep links uzzapp://) adicionado
+  - [x] `NSAppTransportSecurity` adicionado
+  - [x] `UIBackgroundModes`: remote-notification (já existia)
+  - [ ] `CFBundleShortVersionString` e `CFBundleVersion` → confirmar em Xcode (General → Identity)
 
-### Sincronização
+### Sincronização (⚠️ Precisa de Mac)
 
 - [ ] Limpar instalações antigas:
   ```bash
   rm -rf ios/App/Pods ios/App/Podfile.lock
   ```
 
-- [ ] Sincronizar Capacitor:
+- [ ] Sincronizar Capacitor (copia assets + executa pod install):
   ```bash
   npx cap sync ios
   ```
+  > No modelo `server.url` (app carrega da web), o `cap sync` é necessário apenas para atualizar configs nativas — não é necessário para atualizar o conteúdo visual.
 
-- [ ] Instalar CocoaPods:
+- [ ] Instalar CocoaPods (se `cap sync` não fizer automaticamente):
   ```bash
   cd ios/App && pod install && cd ../..
   ```
@@ -114,10 +164,11 @@
 
 ### Opção A: Capacitor Assets (Recomendado)
 
-- [ ] Criar pasta: `mkdir -p resources`
-- [ ] Adicionar `resources/icon.png` (1024x1024, sem transparência)
-- [ ] Adicionar `resources/splash.png` (2732x2732)
+- [x] Criar pasta: `mkdir -p resources`
+- [x] Adicionar `resources/icon.png` (1024x1024, sem transparência)
+- [x] Adicionar `resources/splash.png` (2732x2732)
 - [ ] Gerar: `npx capacitor-assets generate --ios`
+  - [ ] Bloqueado no ambiente atual por `sharp` (Node 24); executar com Node LTS 20/22 no Mac
 
 ### Opção B: Manual no Xcode
 
@@ -181,8 +232,8 @@
 
 ### Privacy
 
-- [ ] Privacy Policy URL: `https://uzzai.com.br/privacy-policy`
-  - [ ] **Criar página se não existir!**
+- [ ] Privacy Policy URL: `https://uzzapp.uzzai.com.br/privacy`
+  - [x] Página já existe e está acessível publicamente
 
 - [ ] App Privacy: clicar "Get Started"
   - [ ] Responder questionário
@@ -287,8 +338,9 @@
 - [ ] Subtitle: (30 chars, opcional)
 - [ ] Description: (descrever app, features principais)
 - [ ] Keywords: `whatsapp, chatbot, atendimento, crm, automação, ia`
-- [ ] Support URL: `https://uzzai.com.br/support`
-- [ ] Marketing URL: `https://uzzai.com.br` (opcional)
+- [ ] Support URL: `https://uzzapp.uzzai.com.br/support`
+  - [ ] Validar HTTP 200 após deploy da rota
+- [ ] Marketing URL: `https://uzzapp.uzzai.com.br` (opcional)
 - [ ] Screenshots: upload das 5-8 imagens
 
 ### Review Information
@@ -433,7 +485,7 @@
 - [ ] App record criado
 - [ ] Screenshots (5-8)
 - [ ] Description preenchida
-- [ ] Privacy Policy URL funcional
+- [x] Privacy Policy URL funcional
 - [ ] App Privacy configurado
 - [ ] Demo account funcional
 - [ ] Build uploaded
@@ -441,7 +493,7 @@
 ### Compliance
 
 - [ ] Não é só wrapper (tem features nativas)
-- [ ] Sign in with Apple (se usa login social)
+- [x] Sign in with Apple (se usa login social) — não aplicável no app nativo atual (sem botões sociais)
 - [ ] Export Compliance configurado
 - [ ] Age Rating correto
 
