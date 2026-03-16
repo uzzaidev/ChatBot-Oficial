@@ -2,9 +2,44 @@
 
 > **Data:** 15/03/2026
 > **Projeto:** ChatBot-Oficial (UzzApp)
-> **Stack:** Next.js 16 + Capacitor 8.0.1 + iOS 17.4+
+> **Stack:** Next.js 14 + Capacitor CLI 8.0.1 / Core 7.4.4 + iOS 17.4+
 > **Deadline Crítico:** 28/04/2026 (Xcode 26 obrigatório)
-> **Status Atual:** Estrutura iOS básica criada, não configurada
+> **Status Atual:** Configuração iOS concluída no Windows — aguardando Mac para build
+
+---
+
+## 🪟 O Que Pode Ser Feito no Windows (Sem Mac)
+
+> Estas etapas foram concluídas. Não é necessário refazer no Mac.
+
+### Arquivos Editados no Windows ✅
+
+| Arquivo | O que foi alterado |
+|---------|-------------------|
+| `capacitor.config.ts` | Adicionados blocos `ios` (scheme) e `plugins` (SplashScreen, Push, StatusBar) |
+| `ios/App/Podfile` | `platform :ios, '14.0'` → `'17.4'`; post_install com Swift 5 |
+| `ios/App/App/Info.plist` | Display name UzzApp, arm64, NSFaceIDUsageDescription, CFBundleURLTypes, NSAppTransportSecurity |
+
+### O Que Ainda Falta Fazer no Windows
+
+- [x] Criar `resources/icon.png` (1024x1024, sem transparência)
+- [x] Criar `resources/splash.png` (2732x2732)
+- [x] Preparar texto de App Store em `docs/ios/APP_STORE_CONNECT_COPY.md`
+- [x] Criar Support URL em `https://uzzapp.uzzai.com.br/support` (rota adicionada no app; falta deploy para ficar pública)
+- [ ] Criar app record no App Store Connect (via browser)
+- [x] Criar Privacy Policy em `https://uzzapp.uzzai.com.br/privacy` (rota criada no app)
+- [x] Criar conta demo `demo@uzzai.com.br` com dados de exemplo
+- [ ] Testar UX mobile em `https://uzzapp.uzzai.com.br` (Chrome DevTools mobile)
+
+### O Que É Bloqueado (Precisa de Mac)
+
+- `npx cap sync ios` (executa `pod install` no final)
+- `pod install`
+- Abrir Xcode (`App.xcworkspace`)
+- Signing & Capabilities
+- Build no simulador / device
+- Archive e upload para App Store Connect
+- TestFlight e submissão
 
 ---
 
@@ -14,18 +49,18 @@
 
 ✅ **Android funcional:** versionCode 8, versionName 2.0.0-internal.8
 ✅ **Estrutura iOS criada:** `ios/App/` com Xcode project
-✅ **Capacitor configurado:** v8.0.1, appId `com.uzzai.uzzapp`
-✅ **Dependências instaladas:** 5 plugins Capacitor
+✅ **Capacitor configurado:** CLI 8.0.1, Core 7.4.4, appId `com.uzzai.uzzapp`
+✅ **5 plugins instalados** (caminhos pnpm no Podfile)
+✅ **capacitor.config.ts** com bloco `ios` e `plugins`
+✅ **Podfile** com plataforma 17.4 e Swift 5
+✅ **Info.plist** com NSFaceIDUsageDescription, CFBundleURLTypes, NSAppTransportSecurity
 
-### O Que Está Faltando (Bloqueante)
+### O Que Ainda Está Faltando (Bloqueante — Precisa de Mac)
 
-⚠️ **iOS deployment target:** 14.0 → precisa ser 17.4+ (Apple exigirá em abril/2026)
-⚠️ **Podfile desatualizado:** faltam 4 plugins
-⚠️ **Info.plist incompleto:** sem usage descriptions (rejeição garantida)
-⚠️ **Assets não configurados:** ícones, splash screens
-⚠️ **Bundle ID não configurado no Xcode**
+⚠️ **Assets iOS ainda exigem validação final no Mac/Xcode:** arquivos base já preparados no Windows
+⚠️ **Bundle ID não confirmado no Xcode** (precisa validar em General → Identity)
 ⚠️ **Signing & Provisioning:** não configurado
-⚠️ **App Store Connect:** app não criado
+⚠️ **App Store Connect:** app record não criado (pode ser feito no Windows via browser)
 
 ### Tempo Estimado até App Store
 
@@ -168,6 +203,8 @@ pod --version
 
 ### Passo 2.1: Atualizar capacitor.config.ts
 
+> ✅ **Já feito no Windows.** Estado atual do arquivo:
+
 **Arquivo:** `capacitor.config.ts`
 
 ```typescript
@@ -177,27 +214,18 @@ const config: CapacitorConfig = {
   appId: 'com.uzzai.uzzapp',
   appName: 'UzzApp',
   webDir: 'out',
-
-  // IMPORTANTE: Para dev local, comentar server.url
-  // Para produção, descomentar
-  // server: {
-  //   url: 'https://uzzapp.uzzai.com.br',
-  //   cleartext: false,
-  // },
-
-  ios: {
-    // iOS 17.4 mínimo (Apple exigência abril 2026)
-    minVersion: '17.4',
-
-    // Configurações recomendadas
-    contentInset: 'automatic',
-    scheme: 'UzzApp',
-
-    // Deep links / Universal Links
-    webContentsDebuggingEnabled: true, // Remover em produção
+  server: {
+    url: 'https://uzzapp.uzzai.com.br',
+    cleartext: false,
   },
 
-  // Plugins
+  ios: {
+    // Deployment target (17.4+) é configurado no Podfile e Xcode
+    scheme: 'UzzApp',
+    contentInset: 'automatic',
+    // webContentsDebuggingEnabled: true, // Descomentar apenas em dev
+  },
+
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
@@ -208,7 +236,7 @@ const config: CapacitorConfig = {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
     StatusBar: {
-      style: 'LIGHT', // ou 'DARK'
+      style: 'LIGHT',
       backgroundColor: '#000000',
     },
   },
@@ -217,44 +245,41 @@ const config: CapacitorConfig = {
 export default config;
 ```
 
+**Nota:** `minVersion` não existe no tipo `CapacitorConfig`. O deployment target iOS é definido no Podfile (`platform :ios, '17.4'`) e confirmado em Xcode (Build Settings → iOS Deployment Target).
+
 ### Passo 2.2: Atualizar Podfile
+
+> ✅ **Já feito no Windows.** Estado atual do arquivo:
 
 **Arquivo:** `ios/App/Podfile`
 
-```ruby
-require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
+> ⚠️ **Importante:** Este projeto usa **pnpm**. Os paths dos pods apontam para `node_modules/.pnpm/...` — **não alterar** para paths simples de npm, isso quebraria a resolução dos pacotes.
 
-# iOS 17.4 mínimo (Apple exigência abril 2026)
+```ruby
+require_relative '../../node_modules/.pnpm/@capacitor+ios@7.4.4_@capacitor+core@7.4.4/node_modules/@capacitor/ios/scripts/pods_helpers'
+
 platform :ios, '17.4'
 use_frameworks!
 
-# Workaround para cache do Xcode
 install! 'cocoapods', :disable_input_output_paths => true
 
 def capacitor_pods
-  # Core Capacitor
-  pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
-  pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
-
-  # Plugins oficiais
-  pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
-  pod 'CapacitorNetwork', :path => '../../node_modules/@capacitor/network'
-  pod 'CapacitorPushNotifications', :path => '../../node_modules/@capacitor/push-notifications'
-  pod 'CapacitorStatusBar', :path => '../../node_modules/@capacitor/status-bar'
-
-  # Plugin terceiro (biometria)
-  pod 'AparajitaCapacitorBiometricAuth', :path => '../../node_modules/@aparajita/capacitor-biometric-auth'
+  pod 'Capacitor', :path => '../../node_modules/.pnpm/@capacitor+ios@7.4.4_@capacitor+core@7.4.4/node_modules/@capacitor/ios'
+  pod 'CapacitorCordova', :path => '../../node_modules/.pnpm/@capacitor+ios@7.4.4_@capacitor+core@7.4.4/node_modules/@capacitor/ios'
+  pod 'AparajitaCapacitorBiometricAuth', :path => '../../node_modules/.pnpm/@aparajita+capacitor-biometric-auth@9.1.2/node_modules/@aparajita/capacitor-biometric-auth'
+  pod 'CapacitorApp', :path => '../../node_modules/.pnpm/@capacitor+app@7.1.0_@capacitor+core@7.4.4/node_modules/@capacitor/app'
+  pod 'CapacitorNetwork', :path => '../../node_modules/.pnpm/@capacitor+network@7.0.2_@capacitor+core@7.4.4/node_modules/@capacitor/network'
+  pod 'CapacitorPushNotifications', :path => '../../node_modules/.pnpm/@capacitor+push-notifications@7.0.3_@capacitor+core@7.4.4/node_modules/@capacitor/push-notifications'
+  pod 'CapacitorStatusBar', :path => '../../node_modules/.pnpm/@capacitor+status-bar@7.0.5_@capacitor+core@7.4.4/node_modules/@capacitor/status-bar'
 end
 
 target 'App' do
   capacitor_pods
-  # Adicionar outros pods aqui se necessário
 end
 
 post_install do |installer|
   assertDeploymentTarget(installer)
 
-  # Forçar Swift 5 para todos os pods
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
       config.build_settings['SWIFT_VERSION'] = '5.0'
@@ -266,9 +291,10 @@ end
 
 ### Passo 2.3: Atualizar Info.plist
 
-**Arquivo:** `ios/App/App/Info.plist`
+> ✅ **Já feito no Windows.** As chaves críticas foram adicionadas.
+> `CFBundleShortVersionString` e `CFBundleVersion` usam variáveis Xcode (`$(MARKETING_VERSION)` / `$(CURRENT_PROJECT_VERSION)`) — confirmar valores em **Xcode → General → Identity** quando tiver Mac.
 
-Substituir conteúdo completo por:
+**Arquivo:** `ios/App/App/Info.plist` — estado atual:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -291,9 +317,10 @@ Substituir conteúdo completo por:
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>2.0.0</string>
+	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
-	<string>8</string>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<!-- Versão e build são gerenciados pelo Xcode (General → Identity), não hardcoded aqui -->
 
 	<!-- iOS Requirements -->
 	<key>LSRequiresIPhoneOS</key>
@@ -547,6 +574,9 @@ mkdir -p resources
 npx capacitor-assets generate --iconBackgroundColor '#ffffff' --ios
 ```
 
+> Observacao: no ambiente atual Windows com Node 24, a geracao automatica falhou por dependencia nativa do `sharp`.
+> Se ocorrer novamente, execute com Node LTS 20/22 (preferencialmente no Mac do fluxo iOS) ou use a opcao manual no Xcode.
+
 **Onde encontrar os assets:**
 - Ícone Android: pode reaproveitar `android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png`
 - Redimensionar para 1024x1024 (Figma, Photoshop, online)
@@ -688,9 +718,9 @@ Precisa de backend configurado para enviar push. Se ainda não tiver:
 
 1. **Privacy Policy URL:**
    ```
-   https://uzzai.com.br/privacy-policy
+   https://uzzapp.uzzai.com.br/privacy
    ```
-   (criar página se não existir)
+   (já publicada e validada com HTTP 200 em 2026-03-16)
 
 2. **Data Collection:**
    - Clicar "Get Started"
@@ -889,6 +919,9 @@ npx cap sync ios
 
 #### Description
 
+Texto pronto para copiar/colar:
+- `docs/ios/APP_STORE_CONNECT_COPY.md`
+
 ```
 [Descrever app em português]
 
@@ -915,13 +948,13 @@ whatsapp, chatbot, atendimento, crm, automação, ia, business
 #### Support URL
 
 ```
-https://uzzai.com.br/support
+https://uzzapp.uzzai.com.br/support
 ```
 
 #### Marketing URL (opcional)
 
 ```
-https://uzzai.com.br
+https://uzzapp.uzzai.com.br
 ```
 
 #### Screenshots
@@ -1338,7 +1371,7 @@ Se você já configurou para iOS 17.4+ e está usando Xcode 26, está safe.
 - [ ] Screenshots (mínimo 3, recomendado 5-8)
 - [ ] Description preenchida
 - [ ] Keywords configuradas
-- [ ] Privacy Policy URL funcional
+- [x] Privacy Policy URL funcional
 - [ ] App Privacy preenchido
 - [ ] Support URL funcional
 - [ ] Demo account criada e funcional
@@ -1351,7 +1384,7 @@ Se você já configurou para iOS 17.4+ e está usando Xcode 26, está safe.
 - [ ] Age Rating adequado
 - [ ] Não viola guidelines Apple:
   - [ ] Não é só wrapper de site (tem features nativas)
-  - [ ] Tem Sign in with Apple (se usa login social)
+  - [x] Sign in with Apple (se usa login social) - não aplicável no app nativo atual (OAuth social oculto com `!Capacitor.isNativePlatform()`)
   - [ ] Privacy policy clara
   - [ ] Não coleta dados sem permissão
 
