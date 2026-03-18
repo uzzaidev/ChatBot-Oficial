@@ -943,8 +943,8 @@ export default function SettingsPage() {
                   <span className="font-medium">Registro do Telefone</span>
                 </div>
                 <p className="text-sm text-muted-foreground mb-3">
-                  Se o seu número aparece como &quot;Pendente&quot; no painel da Meta,
-                  clique abaixo para ativá-lo na API do WhatsApp Cloud.
+                  Se o seu número aparece como &quot;Pendente&quot; no painel da
+                  Meta, clique abaixo para ativá-lo na API do WhatsApp Cloud.
                 </p>
                 <Button
                   onClick={async () => {
@@ -963,7 +963,8 @@ export default function SettingsPage() {
                       }
                       setNotification({
                         type: "success",
-                        message: data.message || "Telefone registrado com sucesso!",
+                        message:
+                          data.message || "Telefone registrado com sucesso!",
                       });
                     } catch (err) {
                       setNotification({
