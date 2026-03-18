@@ -43,7 +43,10 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (profileError || !profile?.client_id) {
-      console.log("[Migration Prepare] Profile not found:", profileError?.message);
+      console.log(
+        "[Migration Prepare] Profile not found:",
+        profileError?.message,
+      );
       return NextResponse.json(
         { error: "Perfil não encontrado" },
         { status: 404 },
@@ -64,7 +67,10 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (clientError || !client) {
-      console.log("[Migration Prepare] Client not found:", clientError?.message);
+      console.log(
+        "[Migration Prepare] Client not found:",
+        clientError?.message,
+      );
       return NextResponse.json(
         { error: "Cliente não encontrado" },
         { status: 404 },
@@ -91,7 +97,9 @@ export async function POST(request: NextRequest) {
 
     // 5. Get old Meta token from Vault
     if (!client.meta_access_token_secret_id) {
-      console.log("[Migration Prepare] No token secret ID, skipping unsubscribe");
+      console.log(
+        "[Migration Prepare] No token secret ID, skipping unsubscribe",
+      );
       return NextResponse.json({
         success: true,
         message: "Sem token antigo, prosseguir com Embedded Signup",
@@ -102,7 +110,10 @@ export async function POST(request: NextRequest) {
     const oldToken = await getSecret(client.meta_access_token_secret_id);
 
     if (!oldToken) {
-      console.log("[Migration Prepare] Token not found in Vault for secret:", client.meta_access_token_secret_id);
+      console.log(
+        "[Migration Prepare] Token not found in Vault for secret:",
+        client.meta_access_token_secret_id,
+      );
       return NextResponse.json({
         success: true,
         message: "Token antigo não encontrado no Vault, prosseguir",
@@ -110,7 +121,12 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    console.log("[Migration Prepare] Got token from Vault, length:", oldToken.length, "prefix:", oldToken.substring(0, 10) + "...");
+    console.log(
+      "[Migration Prepare] Got token from Vault, length:",
+      oldToken.length,
+      "prefix:",
+      oldToken.substring(0, 10) + "...",
+    );
 
     // 6. Unsubscribe old app from WABA (if WABA ID exists)
     if (client.meta_waba_id) {
@@ -125,7 +141,11 @@ export async function POST(request: NextRequest) {
       });
 
       const unsubData = await unsubResponse.json();
-      console.log("[Migration Prepare] Unsubscribe response:", unsubResponse.status, JSON.stringify(unsubData));
+      console.log(
+        "[Migration Prepare] Unsubscribe response:",
+        unsubResponse.status,
+        JSON.stringify(unsubData),
+      );
 
       if (!unsubResponse.ok) {
         console.error("[Migration Prepare] Unsubscribe failed:", unsubData);
