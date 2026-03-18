@@ -996,7 +996,7 @@ export default function SettingsPage() {
               </div>
             )}
 
-            {/* Legacy clients: manual Meta credential fields */
+            {/* Legacy clients: manual Meta credential fields */}
             {!isAutoProvisioned && (
               <>
                 {/* Meta Access Token */}
