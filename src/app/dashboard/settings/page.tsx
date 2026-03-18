@@ -887,9 +887,12 @@ export default function SettingsPage() {
                     onClick={async () => {
                       setIsRollingBack(true);
                       try {
-                        const res = await fetch("/api/client/migrate/rollback", {
-                          method: "POST",
-                        });
+                        const res = await fetch(
+                          "/api/client/migrate/rollback",
+                          {
+                            method: "POST",
+                          },
+                        );
                         const data = await res.json();
                         if (!res.ok) {
                           throw new Error(data.error || "Erro ao reverter");

@@ -97,7 +97,9 @@ export async function POST(request: NextRequest) {
       console.error("[Migration Rollback] Re-subscribe failed:", subData);
       return NextResponse.json(
         {
-          error: `Falha ao reconectar: ${subData.error?.message || "erro desconhecido"}`,
+          error: `Falha ao reconectar: ${
+            subData.error?.message || "erro desconhecido"
+          }`,
         },
         { status: 502 },
       );
