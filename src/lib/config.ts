@@ -203,10 +203,12 @@ export const getClientConfig = async (
     const finalOpenaiKey = secrets.openaiApiKey;
     const finalGroqKey = secrets.groqApiKey;
 
+    // Warn but don't throw for missing AI keys - allows webhook to receive/save messages
+    // even if AI response will fail later in the pipeline
     if (!finalOpenaiKey) {
-      throw new Error(
-        `[getClientConfig] Missing OpenAI API key for client ${clientId}. ` +
-          `Configure in Vault via /dashboard/settings`,
+      console.warn(
+        `[getClientConfig] ⚠️ Missing OpenAI API key for client ${clientId}. ` +
+          `AI responses will fail. Configure in Settings: /dashboard/settings`,
       );
     }
 
@@ -214,9 +216,9 @@ export const getClientConfig = async (
       "groq") as ClientConfig["primaryProvider"];
 
     if (primaryProvider === "groq" && !finalGroqKey) {
-      throw new Error(
-        `[getClientConfig] Missing Groq API key for client ${clientId}. ` +
-          `Configure in Vault via /dashboard/settings or switch primary provider to OpenAI.`,
+      console.warn(
+        `[getClientConfig] ⚠️ Missing Groq API key for client ${clientId}. ` +
+          `AI responses will fail. Configure in Settings or switch provider to OpenAI.`,
       );
     }
 
