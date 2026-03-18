@@ -1,30 +1,23 @@
 /**
- * ⚠️ WEBHOOK ÚNICO MULTI-TENANT - EM TRANSIÇÃO
+ * WEBHOOK ÚNICO MULTI-TENANT (PRODUÇÃO)
  *
- * Status: EM DESENVOLVIMENTO
+ * Webhook principal para todos os clientes provisionados via Embedded Signup.
  *
- * Este webhook está sendo preparado para substituir o modelo atual de webhook por cliente.
- *
- * PRODUÇÃO ATUAL: /api/webhook/[clientId] (webhook por cliente)
- * FUTURO (este arquivo): /api/webhook (webhook único, identifica cliente via WABA ID)
- *
- * Mudanças principais:
  * - Um único webhook para todos os clientes (escalável)
  * - Identificação via WABA ID no payload do Meta (entry[0].id)
  * - HMAC validation com META_PLATFORM_APP_SECRET compartilhado
  * - Auto-provisioning de novos clientes via Embedded Signup
  *
- * IMPORTANTE: NÃO USE EM PRODUÇÃO ATÉ MIGRAÇÃO COMPLETA
- * Ver plano completo em: C:\Users\Luisf\.claude\plans\tranquil-zooming-stallman.md
+ * Clientes legados continuam usando /api/webhook/[clientId]
  */
 
-import { NextRequest, NextResponse } from 'next/server'
-import crypto from 'crypto'
-import { getClientByWABAId } from '@/lib/waba-lookup'
-import { handleUnknownWABA } from '@/lib/auto-provision'
-import { processChatbotMessage } from '@/flows/chatbotFlow'
+import { processChatbotMessage } from "@/flows/chatbotFlow";
+import { handleUnknownWABA } from "@/lib/auto-provision";
+import { getClientByWABAId } from "@/lib/waba-lookup";
+import crypto from "crypto";
+import { NextRequest, NextResponse } from "next/server";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 /**
  * GET - Webhook Verification (Meta validates webhook)
@@ -32,73 +25,92 @@ export const dynamic = 'force-dynamic'
  * We must return hub.challenge if token matches
  */
 export async function GET(request: NextRequest) {
-  const timestamp = new Date().toISOString()
+  const timestamp = new Date().toISOString();
 
   try {
-    const { searchParams } = new URL(request.url)
-    const mode = searchParams.get('hub.mode')
-    const token = searchParams.get('hub.verify_token')
-    const challenge = searchParams.get('hub.challenge')
+    const { searchParams } = new URL(request.url);
+    const mode = searchParams.get("hub.mode");
+    const token = searchParams.get("hub.verify_token");
+    const challenge = searchParams.get("hub.challenge");
 
     // Log detalhado (igual ao webhook legacy)
-    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log('🔔 [WEBHOOK VERIFY - MULTI-TENANT] Requisição recebida')
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log('📅 Timestamp:', timestamp)
-    console.log('🔗 URL completa:', request.url)
-    console.log('\n🔍 Query Parameters:')
-    console.log('  hub.mode:', mode)
-    console.log('  hub.verify_token:', token ? `${token.substring(0, 20)}... (${token.length} chars)` : 'NULL')
-    console.log('  hub.challenge:', challenge)
+    console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("🔔 [WEBHOOK VERIFY - MULTI-TENANT] Requisição recebida");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("📅 Timestamp:", timestamp);
+    console.log("🔗 URL completa:", request.url);
+    console.log("\n🔍 Query Parameters:");
+    console.log("  hub.mode:", mode);
+    console.log(
+      "  hub.verify_token:",
+      token ? `${token.substring(0, 20)}... (${token.length} chars)` : "NULL",
+    );
+    console.log("  hub.challenge:", challenge);
 
     // Validate token (shared platform token, not per-client)
-    const VERIFY_TOKEN = process.env.META_PLATFORM_VERIFY_TOKEN
+    const VERIFY_TOKEN = process.env.META_PLATFORM_VERIFY_TOKEN;
 
-    console.log('\n🔐 Validação do Verify Token:')
-    console.log('  Token recebido:', token ? `${token.substring(0, 20)}... (${token.length} chars)` : 'NULL')
-    console.log('  Token esperado:', VERIFY_TOKEN ? `${VERIFY_TOKEN.substring(0, 20)}... (${VERIFY_TOKEN.length} chars)` : 'NULL')
-    console.log('  Tokens iguais?', token === VERIFY_TOKEN)
+    console.log("\n🔐 Validação do Verify Token:");
+    console.log(
+      "  Token recebido:",
+      token ? `${token.substring(0, 20)}... (${token.length} chars)` : "NULL",
+    );
+    console.log(
+      "  Token esperado:",
+      VERIFY_TOKEN
+        ? `${VERIFY_TOKEN.substring(0, 20)}... (${VERIFY_TOKEN.length} chars)`
+        : "NULL",
+    );
+    console.log("  Tokens iguais?", token === VERIFY_TOKEN);
 
     if (!VERIFY_TOKEN) {
-      console.error('❌ [Webhook GET] META_PLATFORM_VERIFY_TOKEN not set in environment')
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n')
-      return new NextResponse('Server configuration error', { status: 500 })
+      console.error(
+        "❌ [Webhook GET] META_PLATFORM_VERIFY_TOKEN not set in environment",
+      );
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+      return new NextResponse("Server configuration error", { status: 500 });
     }
 
     // Comparação character-by-character se tokens não batem
     if (token !== VERIFY_TOKEN) {
       if (token && VERIFY_TOKEN) {
-        const minLen = Math.min(token.length, VERIFY_TOKEN.length)
-        console.log('\n⚠️  Tokens diferentes! Comparando char-by-char:')
-        console.log('  Tamanho recebido:', token.length)
-        console.log('  Tamanho esperado:', VERIFY_TOKEN.length)
+        const minLen = Math.min(token.length, VERIFY_TOKEN.length);
+        console.log("\n⚠️  Tokens diferentes! Comparando char-by-char:");
+        console.log("  Tamanho recebido:", token.length);
+        console.log("  Tamanho esperado:", VERIFY_TOKEN.length);
         for (let i = 0; i < minLen; i++) {
           if (token[i] !== VERIFY_TOKEN[i]) {
-            console.log(`  ❌ Diferença na posição ${i}:`)
-            console.log(`     Recebido: '${token[i]}' (code ${token.charCodeAt(i)})`)
-            console.log(`     Esperado: '${VERIFY_TOKEN[i]}' (code ${VERIFY_TOKEN.charCodeAt(i)})`)
-            break
+            console.log(`  ❌ Diferença na posição ${i}:`);
+            console.log(
+              `     Recebido: '${token[i]}' (code ${token.charCodeAt(i)})`,
+            );
+            console.log(
+              `     Esperado: '${
+                VERIFY_TOKEN[i]
+              }' (code ${VERIFY_TOKEN.charCodeAt(i)})`,
+            );
+            break;
           }
         }
       }
     }
 
-    if (mode === 'subscribe' && token === VERIFY_TOKEN) {
-      console.log('\n✅ [Webhook GET] Verification successful!')
-      console.log('   Retornando challenge:', challenge)
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n')
-      return new NextResponse(challenge, { status: 200 })
+    if (mode === "subscribe" && token === VERIFY_TOKEN) {
+      console.log("\n✅ [Webhook GET] Verification successful!");
+      console.log("   Retornando challenge:", challenge);
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+      return new NextResponse(challenge, { status: 200 });
     }
 
-    console.warn('\n❌ [Webhook GET] Verification failed!')
-    console.warn('   Modo:', mode, '(esperado: subscribe)')
-    console.warn('   Token match:', token === VERIFY_TOKEN)
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n')
-    return new NextResponse('Forbidden', { status: 403 })
+    console.warn("\n❌ [Webhook GET] Verification failed!");
+    console.warn("   Modo:", mode, "(esperado: subscribe)");
+    console.warn("   Token match:", token === VERIFY_TOKEN);
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+    return new NextResponse("Forbidden", { status: 403 });
   } catch (error) {
-    console.error('\n❌ [Webhook GET] Error:', error)
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n')
-    return new NextResponse('Internal error', { status: 500 })
+    console.error("\n❌ [Webhook GET] Error:", error);
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+    return new NextResponse("Internal error", { status: 500 });
   }
 }
 
@@ -116,65 +128,69 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // 1. Read raw body (needed for HMAC validation)
-    const rawBody = await request.text()
+    const rawBody = await request.text();
 
     // 2. Validate HMAC signature (shared platform secret, not per-client)
-    const signature = request.headers.get('x-hub-signature-256')
+    const signature = request.headers.get("x-hub-signature-256");
 
     if (!signature) {
-      console.warn('[Webhook POST] ❌ Missing signature header')
-      return NextResponse.json({ error: 'Missing signature' }, { status: 403 })
+      console.warn("[Webhook POST] ❌ Missing signature header");
+      return NextResponse.json({ error: "Missing signature" }, { status: 403 });
     }
 
-    const isValid = validateHMAC(rawBody, signature)
+    const isValid = validateHMAC(rawBody, signature);
 
     if (!isValid) {
-      console.warn('[Webhook POST] ❌ Invalid HMAC signature')
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 403 })
+      console.warn("[Webhook POST] ❌ Invalid HMAC signature");
+      return NextResponse.json({ error: "Invalid signature" }, { status: 403 });
     }
 
-    console.log('[Webhook POST] ✅ HMAC validation passed')
+    console.log("[Webhook POST] ✅ HMAC validation passed");
 
     // 3. Parse body
-    const body = JSON.parse(rawBody)
+    const body = JSON.parse(rawBody);
 
     // 4. Extract WABA ID (identifies which client this message belongs to)
-    const wabaId = extractWABAId(body)
+    const wabaId = extractWABAId(body);
 
     if (!wabaId) {
-      console.warn('[Webhook POST] ❌ Missing WABA ID in payload')
-      return NextResponse.json({ error: 'Missing WABA ID' }, { status: 400 })
+      console.warn("[Webhook POST] ❌ Missing WABA ID in payload");
+      return NextResponse.json({ error: "Missing WABA ID" }, { status: 400 });
     }
 
-    console.log('[Webhook POST] 📱 WABA ID:', wabaId)
+    console.log("[Webhook POST] 📱 WABA ID:", wabaId);
 
     // 5. Lookup client by WABA ID
-    const config = await getClientByWABAId(wabaId)
+    const config = await getClientByWABAId(wabaId);
 
     if (!config) {
       // Unknown WABA - log and acknowledge (don't error, Meta will retry)
-      await handleUnknownWABA(wabaId, body)
-      return NextResponse.json({ status: 'EVENT_RECEIVED' }, { status: 200 })
+      await handleUnknownWABA(wabaId, body);
+      return NextResponse.json({ status: "EVENT_RECEIVED" }, { status: 200 });
     }
 
-    console.log(`[Webhook POST] ✅ Client found: ${config.name} (${config.id})`)
+    console.log(
+      `[Webhook POST] ✅ Client found: ${config.name} (${config.id})`,
+    );
 
     // 6. Process message with existing chatbot flow
     try {
-      await processChatbotMessage(body, config)
+      await processChatbotMessage(body, config);
     } catch (flowError) {
       // Log but still return 200 (Meta will retry on non-200)
-      console.error('[Webhook POST] Flow error:', flowError)
+      console.error("[Webhook POST] Flow error:", flowError);
     }
 
-    return NextResponse.json({ status: 'EVENT_RECEIVED' }, { status: 200 })
-
+    return NextResponse.json({ status: "EVENT_RECEIVED" }, { status: 200 });
   } catch (error) {
-    console.error('[Webhook POST] Error:', error)
-    return NextResponse.json({
-      error: 'Internal error',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
+    console.error("[Webhook POST] Error:", error);
+    return NextResponse.json(
+      {
+        error: "Internal error",
+        message: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 },
+    );
   }
 }
 
@@ -187,37 +203,37 @@ export async function POST(request: NextRequest) {
  */
 function validateHMAC(rawBody: string, signature: string): boolean {
   try {
-    const APP_SECRET = process.env.META_PLATFORM_APP_SECRET
+    const APP_SECRET = process.env.META_PLATFORM_APP_SECRET;
 
     if (!APP_SECRET) {
-      console.error('[HMAC] META_PLATFORM_APP_SECRET not set')
-      return false
+      console.error("[HMAC] META_PLATFORM_APP_SECRET not set");
+      return false;
     }
 
     // Meta sends: "sha256=<hash>"
-    const signatureHash = signature.split('sha256=')[1]
+    const signatureHash = signature.split("sha256=")[1];
 
     if (!signatureHash) {
-      console.warn('[HMAC] Invalid signature format:', signature)
-      return false
+      console.warn("[HMAC] Invalid signature format:", signature);
+      return false;
     }
 
     // Calculate expected hash
     const expectedHash = crypto
-      .createHmac('sha256', APP_SECRET)
+      .createHmac("sha256", APP_SECRET)
       .update(rawBody)
-      .digest('hex')
+      .digest("hex");
 
     // Timing-safe comparison (prevents timing attacks)
     const isValid = crypto.timingSafeEqual(
       Buffer.from(signatureHash),
-      Buffer.from(expectedHash)
-    )
+      Buffer.from(expectedHash),
+    );
 
-    return isValid
+    return isValid;
   } catch (error) {
-    console.error('[HMAC] Validation error:', error)
-    return false
+    console.error("[HMAC] Validation error:", error);
+    return false;
   }
 }
 
@@ -231,8 +247,8 @@ function validateHMAC(rawBody: string, signature: string): boolean {
  */
 function extractWABAId(payload: any): string | null {
   try {
-    return payload?.entry?.[0]?.id || null
+    return payload?.entry?.[0]?.id || null;
   } catch {
-    return null
+    return null;
   }
 }
