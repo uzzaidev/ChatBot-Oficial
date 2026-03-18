@@ -170,7 +170,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "Telefone registrado com sucesso! Agora pode enviar e receber mensagens.",
+      message:
+        "Telefone registrado com sucesso! Agora pode enviar e receber mensagens.",
     });
   } catch (error) {
     console.error("[Register Phone] Exception:", error);
