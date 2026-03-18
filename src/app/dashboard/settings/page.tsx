@@ -53,7 +53,6 @@ import {
   User,
 } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 export default function SettingsPage() {
   // Estado do perfil
@@ -121,11 +120,11 @@ export default function SettingsPage() {
   const [copied, setCopied] = useState<string | null>(null);
 
   // Carregar perfil do usuário
-  const searchParams = useSearchParams();
 
   // Check for migration success redirect
   useEffect(() => {
-    if (searchParams.get("migration") === "success") {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("migration") === "success") {
       setNotification({
         type: "success",
         message:
@@ -133,10 +132,9 @@ export default function SettingsPage() {
       });
       setIsAutoProvisioned(true);
       setWebhookRoutingMode("waba");
-      // Clean URL without reload
       window.history.replaceState({}, "", "/dashboard/settings");
     }
-  }, [searchParams]);
+  }, []);
 
   useEffect(() => {
     const fetchProfile = async () => {
