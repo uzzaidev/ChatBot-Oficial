@@ -20,7 +20,7 @@ export async function GET(
     }
 
     const supabase = createServiceRoleClient();
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("clients")
       .select("status")
       .eq("id", clientId)
@@ -30,7 +30,7 @@ export async function GET(
       return NextResponse.json({ error: "Client not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ status: data.status });
+    return NextResponse.json({ status: (data as any).status });
   } catch {
     return NextResponse.json(
       { error: "Internal server error" },
