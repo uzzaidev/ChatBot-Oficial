@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
 
         if (client?.status === "pending_setup") {
           return NextResponse.redirect(
-            `${base}/onboarding?client_id=${profile.client_id}&step=ai-config`,
+            `${base}/onboarding?client_id=${profile.client_id}&step=connect-whatsapp`,
           );
         }
       }

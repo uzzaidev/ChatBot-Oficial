@@ -173,41 +173,58 @@ export const fetchWABADetails = async (
 
       wabaId = wabas[0].id;
     } else {
-      // Strategy B: Fallback without business_management
-      // Try getting WABA via shared_whatsapp_business_accounts or direct endpoints
+      // Strategy B: Embedded Signup flow (whatsapp_business_management only)
+      // Use debug_token to extract WABA IDs from granular_scopes
       console.log(
-        "[Meta OAuth] business_management NOT granted, trying fallback strategy",
+        "[Meta OAuth] business_management NOT granted, trying debug_token strategy",
       );
 
-      // Try /me/businesses with limited scope (sometimes works with whatsapp_business_management)
-      const businessRes = await fetch(
-        `https://graph.facebook.com/v22.0/me/businesses?access_token=${accessToken}`,
+      const config = getOAuthConfig();
+      const appToken = `${config.appId}|${config.appSecret}`;
+      const debugRes = await fetch(
+        `https://graph.facebook.com/v22.0/debug_token?input_token=${encodeURIComponent(
+          accessToken,
+        )}&access_token=${encodeURIComponent(appToken)}`,
       );
 
-      if (businessRes.ok) {
-        const { data: businesses } = await businessRes.json();
-        if (businesses && businesses.length > 0) {
-          businessId = businesses[0].id;
-          console.log("[Meta OAuth] Fallback: Got business ID:", businessId);
+      if (debugRes.ok) {
+        const debugData = await debugRes.json();
+        const granularScopes = debugData?.data?.granular_scopes ?? [];
+        console.log(
+          "[Meta OAuth] debug_token granular_scopes:",
+          JSON.stringify(granularScopes),
+        );
 
-          // Try client_whatsapp_business_accounts (shared access)
-          const sharedWabaRes = await fetch(
-            `https://graph.facebook.com/v22.0/${businessId}/client_whatsapp_business_accounts?access_token=${accessToken}`,
-          );
+        const wabaScope = granularScopes.find(
+          (s: { scope: string; target_ids?: string[] }) =>
+            s.scope === "whatsapp_business_management" &&
+            s.target_ids &&
+            s.target_ids.length > 0,
+        );
 
-          if (sharedWabaRes.ok) {
-            const { data: wabas } = await sharedWabaRes.json();
-            if (wabas && wabas.length > 0) {
-              wabaId = wabas[0].id;
-              console.log(
-                "[Meta OAuth] Fallback: Got WABA from client_whatsapp_business_accounts:",
-                wabaId,
-              );
-            }
-          }
+        if (wabaScope) {
+          wabaId = wabaScope.target_ids[0];
+          console.log("[Meta OAuth] Got WABA ID from debug_token:", wabaId);
+        }
+      } else {
+        console.error(
+          "[Meta OAuth] debug_token request failed:",
+          await debugRes.text(),
+        );
+      }
 
-          // If not found, try owned_whatsapp_business_accounts anyway
-          if (!wabaId) {
+      // Fallback: try /me/businesses if debug_token didn't work
+      if (!wabaId) {
+        const businessRes = await fetch(
+          `https://graph.facebook.com/v22.0/me/businesses?access_token=${accessToken}`,
+        );
+
+        if (businessRes.ok) {
+          const { data: businesses } = await businessRes.json();
+          if (businesses && businesses.length > 0) {
+            businessId = businesses[0].id;
+            console.log("[Meta OAuth] Fallback: Got business ID:", businessId);
+
             const ownedRes = await fetch(
               `https://graph.facebook.com/v22.0/${businessId}/owned_whatsapp_business_accounts?access_token=${accessToken}`,
             );
@@ -227,7 +244,7 @@ export const fetchWABADetails = async (
 
       if (!wabaId) {
         throw new Error(
-          `Missing business_management permission. Granted permissions: ${permissions.join(
+          `Could not find WABA ID. Granted permissions: ${permissions.join(
             ", ",
           )}. ` +
             "Please revoke app access at https://www.facebook.com/settings?tab=business_tools and retry.",
