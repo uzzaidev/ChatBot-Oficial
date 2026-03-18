@@ -126,15 +126,23 @@ export async function GET(request: NextRequest) {
  * 6. Atualizar webhook no Meta Dashboard
  */
 export async function POST(request: NextRequest) {
+  const timestamp = new Date().toISOString();
+  console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("📨 [Webhook POST - MULTI-TENANT] Requisição recebida");
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("📅 Timestamp:", timestamp);
+
   try {
     // 1. Read raw body (needed for HMAC validation)
     const rawBody = await request.text();
+    console.log("[Webhook POST] 📦 Body size:", rawBody.length, "bytes");
 
     // 2. Validate HMAC signature (shared platform secret, not per-client)
     const signature = request.headers.get("x-hub-signature-256");
 
     if (!signature) {
       console.warn("[Webhook POST] ❌ Missing signature header");
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
       return NextResponse.json({ error: "Missing signature" }, { status: 403 });
     }
 
@@ -142,6 +150,8 @@ export async function POST(request: NextRequest) {
 
     if (!isValid) {
       console.warn("[Webhook POST] ❌ Invalid HMAC signature");
+      console.warn("[Webhook POST] META_PLATFORM_APP_SECRET set?", !!process.env.META_PLATFORM_APP_SECRET);
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
       return NextResponse.json({ error: "Invalid signature" }, { status: 403 });
     }
 
@@ -150,11 +160,25 @@ export async function POST(request: NextRequest) {
     // 3. Parse body
     const body = JSON.parse(rawBody);
 
+    // Log payload summary
+    const entry = body?.entry?.[0];
+    const changes = entry?.changes?.[0];
+    const messageCount = changes?.value?.messages?.length ?? 0;
+    const statusCount = changes?.value?.statuses?.length ?? 0;
+    console.log("[Webhook POST] 📋 Payload summary:", {
+      entryId: entry?.id,
+      field: changes?.field,
+      messages: messageCount,
+      statuses: statusCount,
+    });
+
     // 4. Extract WABA ID (identifies which client this message belongs to)
     const wabaId = extractWABAId(body);
 
     if (!wabaId) {
       console.warn("[Webhook POST] ❌ Missing WABA ID in payload");
+      console.warn("[Webhook POST] Raw entry:", JSON.stringify(body?.entry?.[0])?.substring(0, 200));
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
       return NextResponse.json({ error: "Missing WABA ID" }, { status: 400 });
     }
 
@@ -165,7 +189,9 @@ export async function POST(request: NextRequest) {
 
     if (!config) {
       // Unknown WABA - log and acknowledge (don't error, Meta will retry)
+      console.warn(`[Webhook POST] ⚠️ No client found for WABA ${wabaId} — calling handleUnknownWABA`);
       await handleUnknownWABA(wabaId, body);
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
       return NextResponse.json({ status: "EVENT_RECEIVED" }, { status: 200 });
     }
 
@@ -176,14 +202,17 @@ export async function POST(request: NextRequest) {
     // 6. Process message with existing chatbot flow
     try {
       await processChatbotMessage(body, config);
+      console.log("[Webhook POST] ✅ Message processed successfully");
     } catch (flowError) {
       // Log but still return 200 (Meta will retry on non-200)
-      console.error("[Webhook POST] Flow error:", flowError);
+      console.error("[Webhook POST] ❌ Flow error:", flowError);
     }
 
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
     return NextResponse.json({ status: "EVENT_RECEIVED" }, { status: 200 });
   } catch (error) {
-    console.error("[Webhook POST] Error:", error);
+    console.error("[Webhook POST] ❌ Unhandled error:", error);
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
     return NextResponse.json(
       {
         error: "Internal error",
