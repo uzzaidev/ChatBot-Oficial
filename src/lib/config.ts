@@ -346,7 +346,11 @@ export const getClientConfig = async (
     };
 
     return config;
-  } catch {
+  } catch (error) {
+    console.error(
+      `[getClientConfig] ❌ Error loading config for client ${clientId}:`,
+      error instanceof Error ? error.message : error,
+    );
     return null;
   }
 };
