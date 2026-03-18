@@ -163,6 +163,8 @@ export async function POST(request: NextRequest) {
         slug,
         status: "pending_setup", // Requires WhatsApp connection via Embedded Signup
         plan: "free",
+        plan_name: "free",
+        plan_status: "free",
 
         // Meta fields — will be populated by Embedded Signup OAuth callback
         // meta_access_token_secret_id, meta_waba_id, etc. are set during OAuth flow

@@ -191,6 +191,8 @@ export async function GET(request: NextRequest) {
           slug: `wa-${wabaId.slice(-6)}-${Date.now()}`,
           status: "active",
           plan: "free",
+          plan_name: "free",
+          plan_status: "free",
           meta_waba_id: wabaId,
           meta_phone_number_id: phoneNumberId,
           meta_display_phone: displayPhone,
