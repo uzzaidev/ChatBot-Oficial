@@ -5,7 +5,13 @@
  * fetches WABA details → creates client → redirects to onboarding
  */
 
-import { exchangeCodeForToken, fetchWABADetails } from "@/lib/meta-oauth";
+import {
+  exchangeCodeForToken,
+  fetchMetaUserId,
+  fetchWABADetails,
+  registerPhoneNumber,
+  subscribeAppToWABA,
+} from "@/lib/meta-oauth";
 import { createServerClient } from "@/lib/supabase-server";
 import { createSecret } from "@/lib/vault";
 import { cookies } from "next/headers";
@@ -83,6 +89,10 @@ export async function GET(request: NextRequest) {
       "[Meta OAuth Callback] ✅ Token received, fetching WABA details",
     );
 
+    // 5b. Fetch Meta user ID (for deauth handler later)
+    const metaUserId = await fetchMetaUserId(accessToken);
+    console.log("[Meta OAuth Callback] Meta user ID:", metaUserId);
+
     // 6. Fetch WABA details
     const { wabaId, phoneNumberId, displayPhone, businessId } =
       await fetchWABADetails(accessToken);
@@ -138,7 +148,7 @@ export async function GET(request: NextRequest) {
       .insert({
         name: `WhatsApp (${displayPhone})`,
         slug: `wa-${wabaId.slice(-6)}-${Date.now()}`,
-        status: "pending_setup", // Not active until AI keys configured
+        status: "active", // WhatsApp connected, ready to use
         plan: "trial",
 
         // Meta WhatsApp configuration
@@ -156,6 +166,9 @@ export async function GET(request: NextRequest) {
         openai_model: "gpt-4o-mini",
         groq_model: "llama-3.3-70b-versatile",
         system_prompt: DEFAULT_SYSTEM_PROMPT,
+
+        // Meta user ID (for deauth handler)
+        meta_user_id: metaUserId,
 
         // Webhook routing
         webhook_routing_mode: "waba", // Use new single webhook
@@ -177,15 +190,42 @@ export async function GET(request: NextRequest) {
 
     console.log("[Meta OAuth Callback] ✅ Client created:", client.id);
 
-    // 11. TODO: Send admin notification email
-    // await sendAdminEmail({
-    //   subject: `🚀 New WABA Connected: ${displayPhone}`,
-    //   body: `Client ${client.id} auto-provisioned via OAuth`,
-    // })
+    // 11. Subscribe UzzApp to client's WABA (so we receive webhook events)
+    const subscribeResult = await subscribeAppToWABA(wabaId, accessToken);
+    if (!subscribeResult.success) {
+      console.error(
+        "[Meta OAuth Callback] ⚠️ WABA subscription failed (non-blocking):",
+        subscribeResult.error,
+      );
+    } else {
+      console.log("[Meta OAuth Callback] ✅ App subscribed to WABA:", wabaId);
+    }
 
-    // 12. TODO: Create user account and link to client
-    // For now, redirect to onboarding where user can configure AI keys
-    // In future: create auth account here
+    // 12. Register phone number with Cloud API
+    const registerResult = await registerPhoneNumber(
+      phoneNumberId,
+      accessToken,
+    );
+    if (!registerResult.success) {
+      console.error(
+        "[Meta OAuth Callback] ⚠️ Phone registration failed (non-blocking):",
+        registerResult.error,
+      );
+    } else {
+      console.log("[Meta OAuth Callback] ✅ Phone registered:", phoneNumberId);
+    }
+
+    // 12b. Update provisioning status
+    await supabase
+      .from("clients")
+      .update({
+        provisioning_status: {
+          waba_subscribed: subscribeResult.success,
+          phone_registered: registerResult.success,
+          provisioned_at: new Date().toISOString(),
+        },
+      })
+      .eq("id", client.id);
 
     // 13. Redirect to onboarding (WhatsApp connected confirmation step)
     return NextResponse.redirect(

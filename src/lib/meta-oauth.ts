@@ -37,9 +37,10 @@ export const getMetaOAuthURL = (state: string): string => {
     auth_type: "rerequest", // Force re-granting all permissions
   });
 
-  // NOTE: config_id for Embedded Signup disabled — config 1247304987342255 is
-  // broken on Meta's side. Re-enable when a new config is created in the
-  // Facebook Developer Console → WhatsApp → Embedded Signup.
+  // Embedded Signup config — enables inline WhatsApp setup in the OAuth flow
+  if (config.configId) {
+    params.set("config_id", config.configId);
+  }
 
   return `https://www.facebook.com/v22.0/dialog/oauth?${params.toString()}`;
 };
@@ -284,6 +285,128 @@ const getOAuthConfig = (): MetaOAuthConfig => {
     redirectUri: `${baseUrl}/api/auth/meta/callback`,
     configId,
   };
+};
+
+/**
+ * Subscribe UzzApp to a client's WABA so we receive webhook events
+ * Must be called after Embedded Signup to route messages to /api/webhook
+ *
+ * API: POST /{waba_id}/subscribed_apps
+ * Docs: https://developers.facebook.com/docs/whatsapp/embedded-signup/manage-accounts#subscribe-to-webhooks
+ */
+export const subscribeAppToWABA = async (
+  wabaId: string,
+  accessToken: string,
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const response = await fetch(
+      `https://graph.facebook.com/v22.0/${wabaId}/subscribed_apps`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error("[Meta OAuth] subscribeAppToWABA failed:", error);
+      return {
+        success: false,
+        error: error.error?.message || "Failed to subscribe app to WABA",
+      };
+    }
+
+    const data = await response.json();
+    console.log("[Meta OAuth] ✅ App subscribed to WABA:", wabaId, data);
+    return { success: true };
+  } catch (error) {
+    console.error("[Meta OAuth] subscribeAppToWABA exception:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+};
+
+/**
+ * Register a phone number with WhatsApp Cloud API
+ * Required to send/receive messages via the Cloud API
+ *
+ * API: POST /{phone_number_id}/register
+ * Docs: https://developers.facebook.com/docs/whatsapp/cloud-api/reference/registration
+ */
+export const registerPhoneNumber = async (
+  phoneNumberId: string,
+  accessToken: string,
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const response = await fetch(
+      `https://graph.facebook.com/v22.0/${phoneNumberId}/register`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          pin: "000000", // 2FA pin (required but can be simple for new registrations)
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      // Error 100 "already registered" is fine — means number was already on Cloud API
+      if (error.error?.code === 100) {
+        console.log(
+          "[Meta OAuth] Phone already registered (OK):",
+          phoneNumberId,
+        );
+        return { success: true };
+      }
+      console.error("[Meta OAuth] registerPhoneNumber failed:", error);
+      return {
+        success: false,
+        error: error.error?.message || "Failed to register phone number",
+      };
+    }
+
+    const data = await response.json();
+    console.log(
+      "[Meta OAuth] ✅ Phone number registered:",
+      phoneNumberId,
+      data,
+    );
+    return { success: true };
+  } catch (error) {
+    console.error("[Meta OAuth] registerPhoneNumber exception:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+};
+
+/**
+ * Fetch Meta user ID from access token (for deauth handler)
+ */
+export const fetchMetaUserId = async (
+  accessToken: string,
+): Promise<string | null> => {
+  try {
+    const response = await fetch(
+      `https://graph.facebook.com/v22.0/me?fields=id&access_token=${accessToken}`,
+    );
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.id || null;
+  } catch {
+    return null;
+  }
 };
 
 /**

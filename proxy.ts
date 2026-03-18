@@ -1,5 +1,5 @@
-import { createServerClient } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
+import { createServerClient } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
 
 /**
  * Proxy - Route Protection (Next.js 16)
@@ -21,7 +21,7 @@ export async function proxy(request: NextRequest) {
     request: {
       headers: request.headers,
     },
-  })
+  });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -29,121 +29,142 @@ export async function proxy(request: NextRequest) {
     {
       cookies: {
         get(name: string) {
-          return request.cookies.get(name)?.value
+          return request.cookies.get(name)?.value;
         },
         set(name: string, value: string, options) {
           request.cookies.set({
             name,
             value,
             ...options,
-          })
+          });
           response = NextResponse.next({
             request: {
               headers: request.headers,
             },
-          })
+          });
           response.cookies.set({
             name,
             value,
             ...options,
-          })
+          });
         },
         remove(name: string, options) {
           request.cookies.set({
             name,
-            value: '',
+            value: "",
             ...options,
-          })
+          });
           response = NextResponse.next({
             request: {
               headers: request.headers,
             },
-          })
+          });
           response.cookies.set({
             name,
-            value: '',
+            value: "",
             ...options,
-          })
+          });
         },
       },
-    }
-  )
+    },
+  );
 
   // Refresh session (importante para manter usuário logado)
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
-  let profile: { client_id: string | null; role: string | null; is_active: boolean | null } | null = null
+  let profile: {
+    client_id: string | null;
+    role: string | null;
+    is_active: boolean | null;
+  } | null = null;
 
   // Protected routes: /dashboard/*
-  if (request.nextUrl.pathname.startsWith('/dashboard')) {
+  if (request.nextUrl.pathname.startsWith("/dashboard")) {
     if (!user) {
-      const loginUrl = new URL('/login', request.url)
-      return NextResponse.redirect(loginUrl)
+      const loginUrl = new URL("/login", request.url);
+      return NextResponse.redirect(loginUrl);
     }
 
     const { data: loadedProfile, error: profileError } = await supabase
-      .from('user_profiles')
-      .select('client_id, role, is_active')
-      .eq('id', user.id)
-      .single()
+      .from("user_profiles")
+      .select("client_id, role, is_active")
+      .eq("id", user.id)
+      .single();
 
-    profile = loadedProfile as any
+    profile = loadedProfile as any;
 
     if (profileError || !profile || !profile.is_active) {
-      await supabase.auth.signOut()
-      const loginUrl = new URL('/login', request.url)
-      return NextResponse.redirect(loginUrl)
+      await supabase.auth.signOut();
+      const loginUrl = new URL("/login", request.url);
+      return NextResponse.redirect(loginUrl);
     }
 
     // Apenas admins podem operar sem client_id.
-    if (!profile.client_id && profile.role !== 'admin') {
-      await supabase.auth.signOut()
-      const loginUrl = new URL('/login', request.url)
-      return NextResponse.redirect(loginUrl)
+    if (!profile.client_id && profile.role !== "admin") {
+      await supabase.auth.signOut();
+      const loginUrl = new URL("/login", request.url);
+      return NextResponse.redirect(loginUrl);
     }
 
-    response.headers.set('x-user-role', profile.role || 'user')
-    response.headers.set('x-user-client-id', profile.client_id || '')
-    response.headers.set('x-user-is-active', String(profile.is_active))
+    response.headers.set("x-user-role", profile.role || "user");
+    response.headers.set("x-user-client-id", profile.client_id || "");
+    response.headers.set("x-user-is-active", String(profile.is_active));
+
+    // Check if client needs to complete onboarding (WhatsApp setup)
+    if (profile.client_id) {
+      const { data: clientData } = await supabase
+        .from("clients")
+        .select("status")
+        .eq("id", profile.client_id)
+        .single();
+
+      if (clientData?.status === "pending_setup") {
+        const onboardingUrl = new URL(
+          "/onboarding?step=connect-whatsapp",
+          request.url,
+        );
+        return NextResponse.redirect(onboardingUrl);
+      }
+    }
   }
 
   // /dashboard/admin => somente admin
-  if (request.nextUrl.pathname.startsWith('/dashboard/admin')) {
-    if (!profile?.role || profile.role !== 'admin') {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
+  if (request.nextUrl.pathname.startsWith("/dashboard/admin")) {
+    if (!profile?.role || profile.role !== "admin") {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }
 
   // /dashboard/payments => admin ou client_admin
-  if (request.nextUrl.pathname.startsWith('/dashboard/payments')) {
-    if (!profile?.role || !['admin', 'client_admin'].includes(profile.role)) {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
+  if (request.nextUrl.pathname.startsWith("/dashboard/payments")) {
+    if (!profile?.role || !["admin", "client_admin"].includes(profile.role)) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }
 
   // Legacy /admin route guard (caso exista rota antiga fora de /dashboard)
-  if (request.nextUrl.pathname.startsWith('/admin')) {
+  if (request.nextUrl.pathname.startsWith("/admin")) {
     if (!user) {
-      return NextResponse.redirect(new URL('/login', request.url))
+      return NextResponse.redirect(new URL("/login", request.url));
     }
 
     if (!profile) {
       const { data: fallbackProfile } = await supabase
-        .from('user_profiles')
-        .select('role, is_active, client_id')
-        .eq('id', user.id)
-        .single()
-      profile = fallbackProfile as any
+        .from("user_profiles")
+        .select("role, is_active, client_id")
+        .eq("id", user.id)
+        .single();
+      profile = fallbackProfile as any;
     }
 
-    if (!profile || profile.role !== 'admin' || !profile.is_active) {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
+    if (!profile || profile.role !== "admin" || !profile.is_active) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }
 
-  return response
+  return response;
 }
 
 export const config = {
@@ -158,6 +179,6 @@ export const config = {
      * - register (register page)
      * - components-showcase (components showcase page - pública)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|login|register|components-showcase).*)',
+    "/((?!api|_next/static|_next/image|favicon.ico|login|register|components-showcase).*)",
   ],
-}
+};

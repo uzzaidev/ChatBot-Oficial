@@ -112,37 +112,24 @@ export async function POST(request: NextRequest) {
     }
 
     // ========================================
-    // 2. Criar secrets vazios no Vault
+    // 2. Criar secrets no Vault (apenas IA — Meta vem via Embedded Signup)
     // ========================================
-    // NOTA: Secrets são criados vazios e serão preenchidos nas configurações
-    // Usando create_vault_secret que trata duplicatas (retorna ID existente se já existir)
-    const [metaAccessResult, metaVerifyResult, openaiResult, groqResult] =
-      await Promise.all([
-        (supabase as any).rpc("create_vault_secret", {
-          p_secret: "CONFIGURE_IN_SETTINGS",
-          p_name: `${slug}_meta_access_token`,
-          p_description: `Meta Access Token for ${companyName}`,
-        }),
-        (supabase as any).rpc("create_vault_secret", {
-          p_secret: "CONFIGURE_IN_SETTINGS",
-          p_name: `${slug}_meta_verify_token`,
-          p_description: `Meta Verify Token for ${companyName}`,
-        }),
-        (supabase as any).rpc("create_vault_secret", {
-          p_secret: "CONFIGURE_IN_SETTINGS",
-          p_name: `${slug}_openai_api_key`,
-          p_description: `OpenAI API Key for ${companyName}`,
-        }),
-        (supabase as any).rpc("create_vault_secret", {
-          p_secret: "CONFIGURE_IN_SETTINGS",
-          p_name: `${slug}_groq_api_key`,
-          p_description: `Groq API Key for ${companyName}`,
-        }),
-      ]);
+    // Meta credentials (access_token, verify_token) NÃO são mais criados aqui.
+    // Novos clientes se conectam via Embedded Signup que configura tudo automaticamente.
+    const [openaiResult, groqResult] = await Promise.all([
+      (supabase as any).rpc("create_vault_secret", {
+        p_secret: "CONFIGURE_IN_SETTINGS",
+        p_name: `${slug}_openai_api_key`,
+        p_description: `OpenAI API Key for ${companyName}`,
+      }),
+      (supabase as any).rpc("create_vault_secret", {
+        p_secret: "CONFIGURE_IN_SETTINGS",
+        p_name: `${slug}_groq_api_key`,
+        p_description: `Groq API Key for ${companyName}`,
+      }),
+    ]);
 
     const vaultResults = [
-      { name: "meta_access_token", result: metaAccessResult },
-      { name: "meta_verify_token", result: metaVerifyResult },
       { name: "openai_api_key", result: openaiResult },
       { name: "groq_api_key", result: groqResult },
     ];
@@ -163,8 +150,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const metaAccessTokenSecretData = metaAccessResult.data;
-    const metaVerifyTokenSecretData = metaVerifyResult.data;
     const openaiApiKeySecretData = openaiResult.data;
     const groqApiKeySecretData = groqResult.data;
 
@@ -176,12 +161,13 @@ export async function POST(request: NextRequest) {
       .insert({
         name: companyName,
         slug,
-        status: "active",
+        status: "pending_setup", // Requires WhatsApp connection via Embedded Signup
         plan: "free",
-        meta_access_token_secret_id: metaAccessTokenSecretData,
-        meta_verify_token_secret_id: metaVerifyTokenSecretData,
-        meta_phone_number_id: "CONFIGURE_IN_SETTINGS",
-        meta_display_phone: phone || null,
+
+        // Meta fields — will be populated by Embedded Signup OAuth callback
+        // meta_access_token_secret_id, meta_waba_id, etc. are set during OAuth flow
+
+        // AI provider secrets (placeholders until user configures)
         openai_api_key_secret_id: openaiApiKeySecretData,
         openai_model: "gpt-4o",
         groq_api_key_secret_id: groqApiKeySecretData,
@@ -195,12 +181,7 @@ export async function POST(request: NextRequest) {
 
     if (clientError || !newClient) {
       // Rollback: limpar secrets do Vault
-      for (const secretId of [
-        metaAccessTokenSecretData,
-        metaVerifyTokenSecretData,
-        openaiApiKeySecretData,
-        groqApiKeySecretData,
-      ]) {
+      for (const secretId of [openaiApiKeySecretData, groqApiKeySecretData]) {
         if (secretId) {
           try {
             await (supabase as any).rpc("delete_vault_secret", {
@@ -271,12 +252,7 @@ export async function POST(request: NextRequest) {
       // Rollback: deletar client e secrets do Vault criados
       await (supabase as any).from("clients").delete().eq("id", clientId);
       // Limpar secrets do Vault (best-effort)
-      for (const secretId of [
-        metaAccessTokenSecretData,
-        metaVerifyTokenSecretData,
-        openaiApiKeySecretData,
-        groqApiKeySecretData,
-      ]) {
+      for (const secretId of [openaiApiKeySecretData, groqApiKeySecretData]) {
         if (secretId) {
           try {
             await (supabase as any).rpc("delete_vault_secret", {
@@ -372,12 +348,7 @@ export async function POST(request: NextRequest) {
       // Rollback completo: auth user + client + secrets
       await supabase.auth.admin.deleteUser(authData.user.id);
       await (supabase as any).from("clients").delete().eq("id", clientId);
-      for (const secretId of [
-        metaAccessTokenSecretData,
-        metaVerifyTokenSecretData,
-        openaiApiKeySecretData,
-        groqApiKeySecretData,
-      ]) {
+      for (const secretId of [openaiApiKeySecretData, groqApiKeySecretData]) {
         if (secretId) {
           try {
             await (supabase as any).rpc("delete_vault_secret", {

@@ -35,6 +35,7 @@ import {
   BellRing,
   Bot,
   Check,
+  CheckCircle2,
   Clock,
   Copy,
   Eye,
@@ -92,6 +93,9 @@ export default function SettingsPage() {
   const [aiKeysMode, setAiKeysMode] = useState<
     "platform_only" | "byok_allowed"
   >("platform_only");
+
+  // Auto-provisioned clients (Embedded Signup) don't need manual Meta config
+  const [isAutoProvisioned, setIsAutoProvisioned] = useState(false);
 
   // Estado de visibilidade de senhas
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>(
@@ -165,6 +169,11 @@ export default function SettingsPage() {
             data.config.ai_keys_mode === "byok_allowed"
           ) {
             setAiKeysMode(data.config.ai_keys_mode);
+          }
+
+          // Check if client was auto-provisioned via Embedded Signup
+          if (data.config.auto_provisioned) {
+            setIsAutoProvisioned(true);
           }
 
           // Update WABA ID from client config if present
@@ -758,160 +767,191 @@ export default function SettingsPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4 pt-6">
-            {/* Meta Access Token */}
-            <div>
-              <Label htmlFor="meta_access_token" className="text-foreground">
-                Meta Access Token
-              </Label>
-              <div className="flex gap-2 mt-2">
-                <div className="relative flex-1">
-                  <Input
-                    id="meta_access_token"
-                    type={
-                      showPasswords["meta_access_token"] ? "text" : "password"
-                    }
-                    value={secrets.meta_access_token}
-                    onChange={(e) =>
-                      setSecrets({
-                        ...secrets,
-                        meta_access_token: e.target.value,
-                      })
-                    }
-                    disabled={!editingSecrets}
-                    className="bg-muted/50 border-border text-foreground font-mono text-sm"
-                    placeholder="EAABsbCS1iHgBO7ZC..."
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      togglePasswordVisibility("meta_access_token")
-                    }
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {showPasswords["meta_access_token"] ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
-                    )}
-                  </button>
+            {/* Auto-provisioned clients: show connected status instead of manual fields */}
+            {isAutoProvisioned && (
+              <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-4 mb-4">
+                <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                  <CheckCircle2 className="w-5 h-5" />
+                  <span className="font-medium">
+                    WhatsApp conectado via Embedded Signup
+                  </span>
                 </div>
-                {editingSecrets && (
-                  <Button
-                    onClick={() =>
-                      handleUpdateSecret(
-                        "meta_access_token",
-                        secrets.meta_access_token,
-                      )
-                    }
-                    disabled={loadingSecrets}
-                    className="bg-gradient-to-r from-uzz-mint to-uzz-blue text-foreground hover:from-uzz-blue hover:to-uzz-mint"
-                  >
-                    Salvar
-                  </Button>
-                )}
+                <p className="text-sm text-muted-foreground mt-1">
+                  Suas credenciais Meta são gerenciadas automaticamente pela
+                  plataforma UzzApp. Não é necessário configurar tokens
+                  manualmente.
+                </p>
               </div>
-            </div>
+            )}
 
-            {/* Meta Verify Token */}
-            <div>
-              <Label htmlFor="meta_verify_token">Meta Verify Token</Label>
-              <div className="flex gap-2 mt-2">
-                <div className="relative flex-1">
-                  <Input
-                    id="meta_verify_token"
-                    type={
-                      showPasswords["meta_verify_token"] ? "text" : "password"
-                    }
-                    value={secrets.meta_verify_token}
-                    onChange={(e) =>
-                      setSecrets({
-                        ...secrets,
-                        meta_verify_token: e.target.value,
-                      })
-                    }
-                    disabled={!editingSecrets}
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      togglePasswordVisibility("meta_verify_token")
-                    }
-                    className="absolute right-2 top-2"
+            {/* Legacy clients: manual Meta credential fields */}
+            {!isAutoProvisioned && (
+              <>
+                {/* Meta Access Token */}
+                <div>
+                  <Label
+                    htmlFor="meta_access_token"
+                    className="text-foreground"
                   >
-                    {showPasswords["meta_verify_token"] ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
+                    Meta Access Token
+                  </Label>
+                  <div className="flex gap-2 mt-2">
+                    <div className="relative flex-1">
+                      <Input
+                        id="meta_access_token"
+                        type={
+                          showPasswords["meta_access_token"]
+                            ? "text"
+                            : "password"
+                        }
+                        value={secrets.meta_access_token}
+                        onChange={(e) =>
+                          setSecrets({
+                            ...secrets,
+                            meta_access_token: e.target.value,
+                          })
+                        }
+                        disabled={!editingSecrets}
+                        className="bg-muted/50 border-border text-foreground font-mono text-sm"
+                        placeholder="EAABsbCS1iHgBO7ZC..."
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          togglePasswordVisibility("meta_access_token")
+                        }
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showPasswords["meta_access_token"] ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                    {editingSecrets && (
+                      <Button
+                        onClick={() =>
+                          handleUpdateSecret(
+                            "meta_access_token",
+                            secrets.meta_access_token,
+                          )
+                        }
+                        disabled={loadingSecrets}
+                        className="bg-gradient-to-r from-uzz-mint to-uzz-blue text-foreground hover:from-uzz-blue hover:to-uzz-mint"
+                      >
+                        Salvar
+                      </Button>
                     )}
-                  </button>
+                  </div>
                 </div>
-                {editingSecrets && (
-                  <Button
-                    onClick={() =>
-                      handleUpdateSecret(
-                        "meta_verify_token",
-                        secrets.meta_verify_token,
-                      )
-                    }
-                    disabled={loadingSecrets}
-                  >
-                    Salvar
-                  </Button>
-                )}
-              </div>
-            </div>
 
-            {/* Meta App Secret - SECURITY FIX (VULN-012) */}
-            <div>
-              <Label htmlFor="meta_app_secret">
-                Meta App Secret
-                <span className="text-xs text-muted-foreground ml-2">
-                  (HMAC validation - diferente do Verify Token)
-                </span>
-              </Label>
-              <div className="flex gap-2 mt-2">
-                <div className="relative flex-1">
-                  <Input
-                    id="meta_app_secret"
-                    type={
-                      showPasswords["meta_app_secret"] ? "text" : "password"
-                    }
-                    value={secrets.meta_app_secret}
-                    onChange={(e) =>
-                      setSecrets({
-                        ...secrets,
-                        meta_app_secret: e.target.value,
-                      })
-                    }
-                    disabled={!editingSecrets}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => togglePasswordVisibility("meta_app_secret")}
-                    className="absolute right-2 top-2"
-                  >
-                    {showPasswords["meta_app_secret"] ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
+                {/* Meta Verify Token */}
+                <div>
+                  <Label htmlFor="meta_verify_token">Meta Verify Token</Label>
+                  <div className="flex gap-2 mt-2">
+                    <div className="relative flex-1">
+                      <Input
+                        id="meta_verify_token"
+                        type={
+                          showPasswords["meta_verify_token"]
+                            ? "text"
+                            : "password"
+                        }
+                        value={secrets.meta_verify_token}
+                        onChange={(e) =>
+                          setSecrets({
+                            ...secrets,
+                            meta_verify_token: e.target.value,
+                          })
+                        }
+                        disabled={!editingSecrets}
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          togglePasswordVisibility("meta_verify_token")
+                        }
+                        className="absolute right-2 top-2"
+                      >
+                        {showPasswords["meta_verify_token"] ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                    {editingSecrets && (
+                      <Button
+                        onClick={() =>
+                          handleUpdateSecret(
+                            "meta_verify_token",
+                            secrets.meta_verify_token,
+                          )
+                        }
+                        disabled={loadingSecrets}
+                      >
+                        Salvar
+                      </Button>
                     )}
-                  </button>
+                  </div>
                 </div>
-                {editingSecrets && (
-                  <Button
-                    onClick={() =>
-                      handleUpdateSecret(
-                        "meta_app_secret",
-                        secrets.meta_app_secret,
-                      )
-                    }
-                    disabled={loadingSecrets}
-                  >
-                    Salvar
-                  </Button>
-                )}
-              </div>
-            </div>
+
+                {/* Meta App Secret - SECURITY FIX (VULN-012) */}
+                <div>
+                  <Label htmlFor="meta_app_secret">
+                    Meta App Secret
+                    <span className="text-xs text-muted-foreground ml-2">
+                      (HMAC validation - diferente do Verify Token)
+                    </span>
+                  </Label>
+                  <div className="flex gap-2 mt-2">
+                    <div className="relative flex-1">
+                      <Input
+                        id="meta_app_secret"
+                        type={
+                          showPasswords["meta_app_secret"] ? "text" : "password"
+                        }
+                        value={secrets.meta_app_secret}
+                        onChange={(e) =>
+                          setSecrets({
+                            ...secrets,
+                            meta_app_secret: e.target.value,
+                          })
+                        }
+                        disabled={!editingSecrets}
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          togglePasswordVisibility("meta_app_secret")
+                        }
+                        className="absolute right-2 top-2"
+                      >
+                        {showPasswords["meta_app_secret"] ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                    {editingSecrets && (
+                      <Button
+                        onClick={() =>
+                          handleUpdateSecret(
+                            "meta_app_secret",
+                            secrets.meta_app_secret,
+                          )
+                        }
+                        disabled={loadingSecrets}
+                      >
+                        Salvar
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* Meta Phone Number ID */}
             <div>
@@ -1184,7 +1224,9 @@ export default function SettingsPage() {
                     />
                     <button
                       type="button"
-                      onClick={() => togglePasswordVisibility("openai_admin_key")}
+                      onClick={() =>
+                        togglePasswordVisibility("openai_admin_key")
+                      }
                       className="absolute right-2 top-2"
                     >
                       {showPasswords["openai_admin_key"] ? (
@@ -1217,8 +1259,8 @@ export default function SettingsPage() {
                     className="text-blue-600 hover:underline"
                   >
                     platform.openai.com/api-keys
-                  </a>
-                  {" "}→ Permissions → Enable "api.usage.read"
+                  </a>{" "}
+                  → Permissions → Enable "api.usage.read"
                 </p>
               </div>
 

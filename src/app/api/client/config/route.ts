@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     const { data: client, error: clientError } = await supabase
       .from("clients")
       .select(
-        "system_prompt, formatter_prompt, openai_model, groq_model, primary_model_provider, settings, whatsapp_business_account_id, ai_keys_mode, google_calendar_enabled, google_calendar_user_email, microsoft_calendar_enabled, microsoft_calendar_user_email",
+        "system_prompt, formatter_prompt, openai_model, groq_model, primary_model_provider, settings, whatsapp_business_account_id, ai_keys_mode, google_calendar_enabled, google_calendar_user_email, microsoft_calendar_enabled, microsoft_calendar_user_email, auto_provisioned",
       )
       .eq("id", clientId)
       .single();
@@ -66,6 +66,7 @@ export async function GET(request: NextRequest) {
         groq_model: client.groq_model || "llama-3.3-70b-versatile",
         primary_model_provider: client.primary_model_provider || "groq", // NOVO
         ai_keys_mode: client.ai_keys_mode || "platform_only",
+        auto_provisioned: client.auto_provisioned || false,
         settings: client.settings || {
           enable_rag: false,
           max_tokens: 2000,
