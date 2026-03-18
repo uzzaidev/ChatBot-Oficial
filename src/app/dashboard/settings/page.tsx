@@ -47,6 +47,7 @@ import {
   LockKeyhole,
   MessageSquare,
   Mic,
+  Phone,
   Save,
   Settings,
   Sparkles,
@@ -106,6 +107,7 @@ export default function SettingsPage() {
     useState<string>("legacy");
   const [isMigrating, setIsMigrating] = useState(false);
   const [isRollingBack, setIsRollingBack] = useState(false);
+  const [isRegisteringPhone, setIsRegisteringPhone] = useState(false);
 
   // Estado de visibilidade de senhas
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>(
@@ -933,7 +935,68 @@ export default function SettingsPage() {
                 </div>
               )}
 
-            {/* Legacy clients: manual Meta credential fields */}
+            {/* Register phone button — appears when phone is configured but may be pending */}
+            {secrets.meta_phone_number_id && (
+              <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-4 mb-4">
+                <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 mb-2">
+                  <Phone className="w-5 h-5" />
+                  <span className="font-medium">Registro do Telefone</span>
+                </div>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Se o seu número aparece como &quot;Pendente&quot; no painel da Meta,
+                  clique abaixo para ativá-lo na API do WhatsApp Cloud.
+                </p>
+                <Button
+                  onClick={async () => {
+                    setIsRegisteringPhone(true);
+                    setNotification(null);
+                    try {
+                      const { apiFetch } = await import("@/lib/api");
+                      const res = await apiFetch("/api/client/register-phone", {
+                        method: "POST",
+                      });
+                      const data = await res.json();
+                      if (!res.ok) {
+                        throw new Error(
+                          data.error || "Erro ao registrar telefone",
+                        );
+                      }
+                      setNotification({
+                        type: "success",
+                        message: data.message || "Telefone registrado com sucesso!",
+                      });
+                    } catch (err) {
+                      setNotification({
+                        type: "error",
+                        message:
+                          err instanceof Error
+                            ? err.message
+                            : "Erro ao registrar telefone. Tente novamente.",
+                      });
+                    } finally {
+                      setIsRegisteringPhone(false);
+                    }
+                  }}
+                  disabled={isRegisteringPhone}
+                  variant="default"
+                  size="sm"
+                >
+                  {isRegisteringPhone ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Registrando telefone...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      Ativar / Registrar Telefone
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+
+            {/* Legacy clients: manual Meta credential fields */
             {!isAutoProvisioned && (
               <>
                 {/* Meta Access Token */}
