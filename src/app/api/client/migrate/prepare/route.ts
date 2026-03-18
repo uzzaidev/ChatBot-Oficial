@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     const { data: client, error: clientError } = await adminSupabase
       .from("clients")
       .select(
-        "id, meta_waba_id, meta_access_token_secret_id, webhook_routing_mode, auto_provisioned",
+        "id, meta_waba_id, meta_phone_number_id, meta_access_token_secret_id, webhook_routing_mode, auto_provisioned",
       )
       .eq("id", clientId)
       .single();
@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
 
     console.log("[Migration Prepare] Client details:", {
       waba_id: client.meta_waba_id,
+      phone_number_id: client.meta_phone_number_id,
       has_token_secret: !!client.meta_access_token_secret_id,
       token_secret_id: client.meta_access_token_secret_id,
       webhook_routing_mode: client.webhook_routing_mode,
@@ -128,9 +129,45 @@ export async function POST(request: NextRequest) {
       oldToken.substring(0, 10) + "...",
     );
 
-    // 6. Unsubscribe old app from WABA (if WABA ID exists)
-    if (client.meta_waba_id) {
-      const url = `https://graph.facebook.com/v22.0/${client.meta_waba_id}/subscribed_apps`;
+    // 6. Resolve WABA ID (from DB or auto-discover from phone number)
+    let wabaId = client.meta_waba_id;
+
+    if (!wabaId && client.meta_phone_number_id) {
+      console.log(
+        "[Migration Prepare] No WABA ID, discovering from phone number:",
+        client.meta_phone_number_id,
+      );
+
+      try {
+        const phoneRes = await fetch(
+          `https://graph.facebook.com/v22.0/${client.meta_phone_number_id}?fields=whatsapp_business_account&access_token=${oldToken}`,
+        );
+        const phoneData = await phoneRes.json();
+        console.log(
+          "[Migration Prepare] Phone lookup response:",
+          phoneRes.status,
+          JSON.stringify(phoneData),
+        );
+
+        if (phoneData.whatsapp_business_account?.id) {
+          wabaId = phoneData.whatsapp_business_account.id;
+          console.log("[Migration Prepare] Discovered WABA ID:", wabaId);
+
+          // Save discovered WABA ID to DB for future use
+          await adminSupabase
+            .from("clients")
+            .update({ meta_waba_id: wabaId })
+            .eq("id", clientId);
+          console.log("[Migration Prepare] Saved WABA ID to client record");
+        }
+      } catch (discoverErr) {
+        console.error("[Migration Prepare] WABA discovery failed:", discoverErr);
+      }
+    }
+
+    // 7. Unsubscribe old app from WABA
+    if (wabaId) {
+      const url = `https://graph.facebook.com/v22.0/${wabaId}/subscribed_apps`;
       console.log("[Migration Prepare] DELETE", url);
 
       const unsubResponse = await fetch(url, {
@@ -160,17 +197,22 @@ export async function POST(request: NextRequest) {
       }
 
       console.log(
-        `[Migration Prepare] ✅ Old app unsubscribed from WABA ${client.meta_waba_id}`,
+        `[Migration Prepare] ✅ Old app unsubscribed from WABA ${wabaId}`,
       );
     } else {
-      console.log("[Migration Prepare] No WABA ID, skipping unsubscribe");
+      console.log(
+        "[Migration Prepare] No WABA ID found (DB or discovery), skipping unsubscribe",
+      );
     }
 
     console.log("[Migration Prepare] === DONE ===");
     return NextResponse.json({
       success: true,
-      message: "App antigo desinscrito. Prossiga com o Embedded Signup.",
-      unsubscribed: !!client.meta_waba_id,
+      message: wabaId
+        ? "App antigo desinscrito. Prossiga com o Embedded Signup."
+        : "WABA não encontrado, prossiga com o Embedded Signup.",
+      unsubscribed: !!wabaId,
+      waba_id: wabaId,
       client_id: clientId,
     });
   } catch (error) {
