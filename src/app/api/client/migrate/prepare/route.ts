@@ -161,7 +161,10 @@ export async function POST(request: NextRequest) {
           console.log("[Migration Prepare] Saved WABA ID to client record");
         }
       } catch (discoverErr) {
-        console.error("[Migration Prepare] WABA discovery failed:", discoverErr);
+        console.error(
+          "[Migration Prepare] WABA discovery failed:",
+          discoverErr,
+        );
       }
     }
 
