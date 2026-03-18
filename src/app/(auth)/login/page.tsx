@@ -142,19 +142,24 @@ function LoginContent() {
         return;
       }
 
-      // Check if client needs onboarding (pending_setup)
-      const { data: client } = await supabase
-        .from("clients")
-        .select("status")
-        .eq("id", profile.client_id)
-        .single();
+      // Check if client needs onboarding (pending_setup) via API (bypasses RLS)
+      let clientStatus: string | null = null;
+      try {
+        const res = await fetch(`/api/clients/${profile.client_id}/status`);
+        if (res.ok) {
+          const json = await res.json();
+          clientStatus = json.status;
+        }
+      } catch {
+        // If check fails, proceed to dashboard
+      }
 
       if (biometricAvailable && Capacitor.isNativePlatform()) {
         saveBiometricEmail(email);
         setShowBiometricPrompt(true);
       }
 
-      if (client?.status === "pending_setup") {
+      if (clientStatus === "pending_setup") {
         router.push(
           `/onboarding?client_id=${profile.client_id}&step=connect-whatsapp`,
         );

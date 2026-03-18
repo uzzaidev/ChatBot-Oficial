@@ -1,3 +1,4 @@
+import { createServiceRoleClient } from "@/lib/supabase";
 import { createRouteHandlerClient } from "@/lib/supabase-server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
@@ -27,14 +28,15 @@ export async function GET(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
     if (user) {
-      const { data: profile } = await supabase
+      const serviceRole = createServiceRoleClient();
+      const { data: profile } = await (serviceRole as any)
         .from("user_profiles")
         .select("client_id")
         .eq("id", user.id)
         .single();
 
       if (profile?.client_id) {
-        const { data: client } = await supabase
+        const { data: client } = await (serviceRole as any)
           .from("clients")
           .select("status")
           .eq("id", profile.client_id)
