@@ -150,7 +150,10 @@ export async function POST(request: NextRequest) {
 
     if (!isValid) {
       console.warn("[Webhook POST] ❌ Invalid HMAC signature");
-      console.warn("[Webhook POST] META_PLATFORM_APP_SECRET set?", !!process.env.META_PLATFORM_APP_SECRET);
+      console.warn(
+        "[Webhook POST] META_PLATFORM_APP_SECRET set?",
+        !!process.env.META_PLATFORM_APP_SECRET,
+      );
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
       return NextResponse.json({ error: "Invalid signature" }, { status: 403 });
     }
@@ -177,7 +180,10 @@ export async function POST(request: NextRequest) {
 
     if (!wabaId) {
       console.warn("[Webhook POST] ❌ Missing WABA ID in payload");
-      console.warn("[Webhook POST] Raw entry:", JSON.stringify(body?.entry?.[0])?.substring(0, 200));
+      console.warn(
+        "[Webhook POST] Raw entry:",
+        JSON.stringify(body?.entry?.[0])?.substring(0, 200),
+      );
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
       return NextResponse.json({ error: "Missing WABA ID" }, { status: 400 });
     }
@@ -189,7 +195,9 @@ export async function POST(request: NextRequest) {
 
     if (!config) {
       // Unknown WABA - log and acknowledge (don't error, Meta will retry)
-      console.warn(`[Webhook POST] ⚠️ No client found for WABA ${wabaId} — calling handleUnknownWABA`);
+      console.warn(
+        `[Webhook POST] ⚠️ No client found for WABA ${wabaId} — calling handleUnknownWABA`,
+      );
       await handleUnknownWABA(wabaId, body);
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
       return NextResponse.json({ status: "EVENT_RECEIVED" }, { status: 200 });
