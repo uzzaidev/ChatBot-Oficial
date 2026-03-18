@@ -42,8 +42,10 @@ import {
   EyeOff,
   Key,
   Lightbulb,
+  Loader2,
   Lock,
   LockKeyhole,
+  MessageSquare,
   Mic,
   Save,
   Settings,
@@ -51,6 +53,7 @@ import {
   User,
 } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 export default function SettingsPage() {
   // Estado do perfil
@@ -97,6 +100,12 @@ export default function SettingsPage() {
   // Auto-provisioned clients (Embedded Signup) don't need manual Meta config
   const [isAutoProvisioned, setIsAutoProvisioned] = useState(false);
 
+  // Client info for migration
+  const [clientId, setClientId] = useState<string | null>(null);
+  const [webhookRoutingMode, setWebhookRoutingMode] =
+    useState<string>("legacy");
+  const [isMigrating, setIsMigrating] = useState(false);
+
   // Estado de visibilidade de senhas
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>(
     {},
@@ -112,6 +121,23 @@ export default function SettingsPage() {
   const [copied, setCopied] = useState<string | null>(null);
 
   // Carregar perfil do usuário
+  const searchParams = useSearchParams();
+
+  // Check for migration success redirect
+  useEffect(() => {
+    if (searchParams.get("migration") === "success") {
+      setNotification({
+        type: "success",
+        message:
+          "WhatsApp migrado com sucesso! Suas mensagens agora são recebidas pelo novo sistema.",
+      });
+      setIsAutoProvisioned(true);
+      setWebhookRoutingMode("waba");
+      // Clean URL without reload
+      window.history.replaceState({}, "", "/dashboard/settings");
+    }
+  }, [searchParams]);
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -174,6 +200,14 @@ export default function SettingsPage() {
           // Check if client was auto-provisioned via Embedded Signup
           if (data.config.auto_provisioned) {
             setIsAutoProvisioned(true);
+          }
+
+          // Store client ID and webhook routing mode for migration
+          if (data.client_id) {
+            setClientId(data.client_id);
+          }
+          if (data.config.webhook_routing_mode) {
+            setWebhookRoutingMode(data.config.webhook_routing_mode);
           }
 
           // Update WABA ID from client config if present
@@ -783,6 +817,45 @@ export default function SettingsPage() {
                 </p>
               </div>
             )}
+
+            {/* Legacy clients: migration banner */}
+            {!isAutoProvisioned &&
+              webhookRoutingMode !== "waba" &&
+              clientId && (
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 mb-4">
+                  <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 mb-2">
+                    <AlertTriangle className="w-5 h-5" />
+                    <span className="font-medium">Migração disponível</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Seu WhatsApp está conectado via configuração manual
+                    (legado). Migre para o Embedded Signup para ter
+                    gerenciamento automático de credenciais e maior
+                    estabilidade.
+                  </p>
+                  <Button
+                    onClick={() => {
+                      setIsMigrating(true);
+                      window.location.href = `/api/auth/meta/init?client_id=${clientId}&mode=migrate`;
+                    }}
+                    disabled={isMigrating}
+                    variant="default"
+                    size="sm"
+                  >
+                    {isMigrating ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Redirecionando...
+                      </>
+                    ) : (
+                      <>
+                        <MessageSquare className="mr-2 h-4 w-4" />
+                        Migrar WhatsApp para Embedded Signup
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
 
             {/* Legacy clients: manual Meta credential fields */}
             {!isAutoProvisioned && (

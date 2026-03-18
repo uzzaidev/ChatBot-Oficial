@@ -13,7 +13,7 @@ import {
   subscribeAppToWABA,
 } from "@/lib/meta-oauth";
 import { createServerClient } from "@/lib/supabase-server";
-import { createOrUpdateSecret } from "@/lib/vault";
+import { createOrUpdateSecret, generateSecureToken } from "@/lib/vault";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -75,10 +75,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 4. Clear state cookie and read client_id
+    // 4. Clear state cookie and read client_id + migration mode
     cookieStore.delete("meta_oauth_state");
     const existingClientId = cookieStore.get("meta_oauth_client_id")?.value;
     cookieStore.delete("meta_oauth_client_id");
+    const isMigration =
+      cookieStore.get("meta_oauth_migration")?.value === "true";
+    cookieStore.delete("meta_oauth_migration");
 
     console.log(
       "[Meta OAuth Callback] ✅ State validated, exchanging code for token",
@@ -134,13 +137,20 @@ export async function GET(request: NextRequest) {
       `Meta access token from OAuth (WABA: ${wabaId})`,
     );
 
+    // 8b. Create/update verify token in Vault (needed for getClientSecrets)
+    const verifyToken = generateSecureToken();
+    const verifyTokenSecretId = await createOrUpdateSecret(
+      verifyToken,
+      `meta_verify_${wabaId}`,
+      `Meta verify token (WABA: ${wabaId})`,
+    );
+
     let client: { id: string };
 
     if (existingClientId) {
-      // 9a. Update existing client (created during registration)
+      // 9a. Update existing client (created during registration or migration)
       console.log(
-        "[Meta OAuth Callback] Updating existing client:",
-        existingClientId,
+        `[Meta OAuth Callback] Updating existing client: ${existingClientId} (migration: ${isMigration})`,
       );
 
       const { data: updated, error: updateError } = await supabase
@@ -151,6 +161,7 @@ export async function GET(request: NextRequest) {
           meta_phone_number_id: phoneNumberId,
           meta_display_phone: displayPhone,
           meta_access_token_secret_id: metaTokenSecretId,
+          meta_verify_token_secret_id: verifyTokenSecretId,
           meta_user_id: metaUserId,
           webhook_routing_mode: "waba",
           auto_provisioned: true,
@@ -260,7 +271,15 @@ export async function GET(request: NextRequest) {
       })
       .eq("id", client.id);
 
-    // 13. Redirect to onboarding (WhatsApp connected confirmation step)
+    // 13. Redirect based on flow type
+    if (isMigration) {
+      // Migration: redirect back to dashboard settings with success message
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_URL}/dashboard/settings?migration=success&waba=${wabaId}`,
+      );
+    }
+
+    // Onboarding: redirect to WhatsApp connected confirmation step
     return NextResponse.redirect(
       `${process.env.NEXT_PUBLIC_URL}/onboarding?step=whatsapp-connected&client_id=${client.id}&success=true`,
     );
