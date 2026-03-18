@@ -50,6 +50,7 @@ import {
   Save,
   Settings,
   Sparkles,
+  Undo2,
   User,
 } from "lucide-react";
 import Link from "next/link";
@@ -104,6 +105,7 @@ export default function SettingsPage() {
   const [webhookRoutingMode, setWebhookRoutingMode] =
     useState<string>("legacy");
   const [isMigrating, setIsMigrating] = useState(false);
+  const [isRollingBack, setIsRollingBack] = useState(false);
 
   // Estado de visibilidade de senhas
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>(
@@ -832,9 +834,38 @@ export default function SettingsPage() {
                     estabilidade.
                   </p>
                   <Button
-                    onClick={() => {
+                    onClick={async () => {
                       setIsMigrating(true);
-                      window.location.href = `/api/auth/meta/init?client_id=${clientId}&mode=migrate`;
+                      try {
+                        const res = await fetch("/api/client/migrate/prepare", {
+                          method: "POST",
+                        });
+                        const data = await res.json();
+                        if (!res.ok) {
+                          throw new Error(
+                            data.error || "Erro ao preparar migração",
+                          );
+                        }
+                        if (data.already_migrated) {
+                          setIsMigrating(false);
+                          setNotification({
+                            type: "success",
+                            message: "Seu WhatsApp já está no Embedded Signup.",
+                          });
+                          return;
+                        }
+                        // Unsubscribe done (or skipped) — redirect to Embedded Signup
+                        window.location.href = `/api/auth/meta/init?client_id=${clientId}&mode=migrate`;
+                      } catch (err) {
+                        setIsMigrating(false);
+                        setNotification({
+                          type: "error",
+                          message:
+                            err instanceof Error
+                              ? err.message
+                              : "Erro na migração. Tente novamente.",
+                        });
+                      }
                     }}
                     disabled={isMigrating}
                     variant="default"
@@ -843,12 +874,56 @@ export default function SettingsPage() {
                     {isMigrating ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Redirecionando...
+                        Preparando migração...
                       </>
                     ) : (
                       <>
                         <MessageSquare className="mr-2 h-4 w-4" />
                         Migrar WhatsApp para Embedded Signup
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    onClick={async () => {
+                      setIsRollingBack(true);
+                      try {
+                        const res = await fetch("/api/client/migrate/rollback", {
+                          method: "POST",
+                        });
+                        const data = await res.json();
+                        if (!res.ok) {
+                          throw new Error(data.error || "Erro ao reverter");
+                        }
+                        setNotification({
+                          type: "success",
+                          message: "WhatsApp reconectado ao app anterior.",
+                        });
+                      } catch (err) {
+                        setNotification({
+                          type: "error",
+                          message:
+                            err instanceof Error
+                              ? err.message
+                              : "Erro ao reverter. Tente novamente.",
+                        });
+                      } finally {
+                        setIsRollingBack(false);
+                      }
+                    }}
+                    disabled={isRollingBack || isMigrating}
+                    variant="outline"
+                    size="sm"
+                    className="ml-2"
+                  >
+                    {isRollingBack ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Revertendo...
+                      </>
+                    ) : (
+                      <>
+                        <Undo2 className="mr-2 h-4 w-4" />
+                        Reverter (reconectar app antigo)
                       </>
                     )}
                   </Button>
