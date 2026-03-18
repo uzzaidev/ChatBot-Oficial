@@ -100,12 +100,13 @@ const StepIndicator = ({ currentStep }: { currentStep: OnboardingStep }) => {
   );
 };
 
-const ConnectWhatsAppStep = () => {
+const ConnectWhatsAppStep = ({ clientId }: { clientId: string }) => {
   const [isRedirecting, setIsRedirecting] = useState(false);
 
   const handleConnect = () => {
     setIsRedirecting(true);
-    window.location.href = "/api/auth/meta/init";
+    const params = clientId ? `?client_id=${clientId}` : "";
+    window.location.href = `/api/auth/meta/init${params}`;
   };
 
   return (
@@ -615,7 +616,9 @@ function OnboardingContent() {
 
           {urlErrorMessage && <ErrorAlert message={urlErrorMessage} />}
 
-          {currentStep === "connect-whatsapp" && <ConnectWhatsAppStep />}
+          {currentStep === "connect-whatsapp" && (
+            <ConnectWhatsAppStep clientId={clientId} />
+          )}
 
           {currentStep === "whatsapp-connected" && (
             <WhatsAppConnectedStep

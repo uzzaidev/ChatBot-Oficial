@@ -75,8 +75,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 4. Clear state cookie
+    // 4. Clear state cookie and read client_id
     cookieStore.delete("meta_oauth_state");
+    const existingClientId = cookieStore.get("meta_oauth_client_id")?.value;
+    cookieStore.delete("meta_oauth_client_id");
 
     console.log(
       "[Meta OAuth Callback] ✅ State validated, exchanging code for token",
@@ -104,23 +106,26 @@ export async function GET(request: NextRequest) {
       businessId,
     });
 
-    // 7. Check if WABA already exists
+    // 7. Check if WABA already exists (on a different client)
     const supabase = await createServerClient();
 
-    const { data: existingClient } = await supabase
+    const { data: wabaClient } = await supabase
       .from("clients")
       .select("id, name")
       .eq("meta_waba_id", wabaId)
       .single();
 
-    if (existingClient) {
-      console.warn("[Meta OAuth Callback] WABA already connected:", wabaId);
+    if (wabaClient && wabaClient.id !== existingClientId) {
+      console.warn(
+        "[Meta OAuth Callback] WABA already connected to another client:",
+        wabaId,
+      );
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_URL}/onboarding?error=waba_already_connected&client=${existingClient.name}`,
+        `${process.env.NEXT_PUBLIC_URL}/onboarding?error=waba_already_connected&client=${wabaClient.name}`,
       );
     }
 
-    console.log("[Meta OAuth Callback] ✅ WABA is new, creating client");
+    console.log("[Meta OAuth Callback] ✅ WABA is new, configuring client");
 
     // 8. Store Meta access token in Vault
     const metaTokenSecretId = await createSecret(
@@ -129,68 +134,94 @@ export async function GET(request: NextRequest) {
       `Meta access token from OAuth (WABA: ${wabaId})`,
     );
 
-    // 9. Create placeholder secrets for AI providers (user configures later)
-    const openaiKeySecretId = await createSecret(
-      "CONFIGURE_IN_SETTINGS",
-      `openai_${wabaId}`,
-      "Placeholder - configure in dashboard",
-    );
+    let client: { id: string };
 
-    const groqKeySecretId = await createSecret(
-      "CONFIGURE_IN_SETTINGS",
-      `groq_${wabaId}`,
-      "Placeholder - configure in dashboard",
-    );
-
-    // 10. Create client record
-    const { data: client, error: createError } = await supabase
-      .from("clients")
-      .insert({
-        name: `WhatsApp (${displayPhone})`,
-        slug: `wa-${wabaId.slice(-6)}-${Date.now()}`,
-        status: "active", // WhatsApp connected, ready to use
-        plan: "free",
-
-        // Meta WhatsApp configuration
-        meta_waba_id: wabaId,
-        meta_phone_number_id: phoneNumberId,
-        meta_display_phone: displayPhone,
-        meta_access_token_secret_id: metaTokenSecretId,
-
-        // AI provider secrets (placeholders)
-        openai_api_key_secret_id: openaiKeySecretId,
-        groq_api_key_secret_id: groqKeySecretId,
-
-        // Default AI configuration
-        primary_model_provider: "openai",
-        openai_model: "gpt-4o-mini",
-        groq_model: "llama-3.3-70b-versatile",
-        system_prompt: DEFAULT_SYSTEM_PROMPT,
-
-        // Meta user ID (for deauth handler)
-        meta_user_id: metaUserId,
-
-        // Webhook routing
-        webhook_routing_mode: "waba", // Use new single webhook
-
-        // Auto-provisioning metadata
-        auto_provisioned: true,
-        provisioned_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
-
-    if (createError) {
-      console.error(
-        "[Meta OAuth Callback] Failed to create client:",
-        createError,
+    if (existingClientId) {
+      // 9a. Update existing client (created during registration)
+      console.log(
+        "[Meta OAuth Callback] Updating existing client:",
+        existingClientId,
       );
-      throw createError;
+
+      const { data: updated, error: updateError } = await supabase
+        .from("clients")
+        .update({
+          status: "active",
+          meta_waba_id: wabaId,
+          meta_phone_number_id: phoneNumberId,
+          meta_display_phone: displayPhone,
+          meta_access_token_secret_id: metaTokenSecretId,
+          meta_user_id: metaUserId,
+          webhook_routing_mode: "waba",
+          auto_provisioned: true,
+          provisioned_at: new Date().toISOString(),
+        })
+        .eq("id", existingClientId)
+        .select("id")
+        .single();
+
+      if (updateError || !updated) {
+        console.error(
+          "[Meta OAuth Callback] Failed to update client:",
+          updateError,
+        );
+        throw updateError ?? new Error("Client not found");
+      }
+
+      client = updated;
+      console.log("[Meta OAuth Callback] ✅ Client updated:", client.id);
+    } else {
+      // 9b. Create new client (standalone OAuth flow without prior registration)
+      const openaiKeySecretId = await createSecret(
+        "CONFIGURE_IN_SETTINGS",
+        `openai_${wabaId}`,
+        "Placeholder - configure in dashboard",
+      );
+
+      const groqKeySecretId = await createSecret(
+        "CONFIGURE_IN_SETTINGS",
+        `groq_${wabaId}`,
+        "Placeholder - configure in dashboard",
+      );
+
+      const { data: created, error: createError } = await supabase
+        .from("clients")
+        .insert({
+          name: `WhatsApp (${displayPhone})`,
+          slug: `wa-${wabaId.slice(-6)}-${Date.now()}`,
+          status: "active",
+          plan: "free",
+          meta_waba_id: wabaId,
+          meta_phone_number_id: phoneNumberId,
+          meta_display_phone: displayPhone,
+          meta_access_token_secret_id: metaTokenSecretId,
+          openai_api_key_secret_id: openaiKeySecretId,
+          groq_api_key_secret_id: groqKeySecretId,
+          primary_model_provider: "openai",
+          openai_model: "gpt-4o-mini",
+          groq_model: "llama-3.3-70b-versatile",
+          system_prompt: DEFAULT_SYSTEM_PROMPT,
+          meta_user_id: metaUserId,
+          webhook_routing_mode: "waba",
+          auto_provisioned: true,
+          provisioned_at: new Date().toISOString(),
+        })
+        .select("id")
+        .single();
+
+      if (createError || !created) {
+        console.error(
+          "[Meta OAuth Callback] Failed to create client:",
+          createError,
+        );
+        throw createError ?? new Error("Failed to create client");
+      }
+
+      client = created;
+      console.log("[Meta OAuth Callback] ✅ Client created:", client.id);
     }
 
-    console.log("[Meta OAuth Callback] ✅ Client created:", client.id);
-
-    // 11. Subscribe UzzApp to client's WABA (so we receive webhook events)
+    // 10. Subscribe UzzApp to client's WABA (so we receive webhook events)
     const subscribeResult = await subscribeAppToWABA(wabaId, accessToken);
     if (!subscribeResult.success) {
       console.error(
