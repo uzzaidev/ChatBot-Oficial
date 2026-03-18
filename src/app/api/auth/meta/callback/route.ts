@@ -13,7 +13,7 @@ import {
   subscribeAppToWABA,
 } from "@/lib/meta-oauth";
 import { createServerClient } from "@/lib/supabase-server";
-import { createSecret } from "@/lib/vault";
+import { createOrUpdateSecret } from "@/lib/vault";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -127,8 +127,8 @@ export async function GET(request: NextRequest) {
 
     console.log("[Meta OAuth Callback] ✅ WABA is new, configuring client");
 
-    // 8. Store Meta access token in Vault
-    const metaTokenSecretId = await createSecret(
+    // 8. Store Meta access token in Vault (upsert to handle retries)
+    const metaTokenSecretId = await createOrUpdateSecret(
       accessToken,
       `meta_token_${wabaId}`,
       `Meta access token from OAuth (WABA: ${wabaId})`,
@@ -172,13 +172,13 @@ export async function GET(request: NextRequest) {
       console.log("[Meta OAuth Callback] ✅ Client updated:", client.id);
     } else {
       // 9b. Create new client (standalone OAuth flow without prior registration)
-      const openaiKeySecretId = await createSecret(
+      const openaiKeySecretId = await createOrUpdateSecret(
         "CONFIGURE_IN_SETTINGS",
         `openai_${wabaId}`,
         "Placeholder - configure in dashboard",
       );
 
-      const groqKeySecretId = await createSecret(
+      const groqKeySecretId = await createOrUpdateSecret(
         "CONFIGURE_IN_SETTINGS",
         `groq_${wabaId}`,
         "Placeholder - configure in dashboard",
