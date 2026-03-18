@@ -149,7 +149,7 @@ export async function GET(request: NextRequest) {
         name: `WhatsApp (${displayPhone})`,
         slug: `wa-${wabaId.slice(-6)}-${Date.now()}`,
         status: "active", // WhatsApp connected, ready to use
-        plan: "trial",
+        plan: "free",
 
         // Meta WhatsApp configuration
         meta_waba_id: wabaId,

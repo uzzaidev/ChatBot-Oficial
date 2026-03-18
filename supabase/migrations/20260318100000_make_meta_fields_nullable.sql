@@ -18,3 +18,9 @@ ALTER TABLE clients
 ALTER TABLE clients DROP CONSTRAINT IF EXISTS valid_status;
 ALTER TABLE clients ADD CONSTRAINT valid_status
   CHECK (status IN ('active', 'suspended', 'trial', 'cancelled', 'pending_setup'));
+
+-- Add 'trial' to valid_plan constraint
+-- New clients from OAuth callback start with plan 'trial'
+ALTER TABLE clients DROP CONSTRAINT IF EXISTS valid_plan;
+ALTER TABLE clients ADD CONSTRAINT valid_plan
+  CHECK (plan IN ('free', 'pro', 'enterprise'));
