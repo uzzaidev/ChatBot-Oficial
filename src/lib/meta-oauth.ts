@@ -31,15 +31,19 @@ export const getMetaOAuthURL = (state: string): string => {
     client_id: config.appId,
     redirect_uri: config.redirectUri,
     state, // CSRF protection
-    scope:
-      "whatsapp_business_messaging,whatsapp_business_management,business_management",
     response_type: "code",
-    auth_type: "rerequest", // Force re-granting all permissions
   });
 
-  // Embedded Signup config — enables inline WhatsApp setup in the OAuth flow
   if (config.configId) {
+    // Embedded Signup: config_id defines permissions, do NOT set scope or auth_type
     params.set("config_id", config.configId);
+  } else {
+    // Fallback: manual OAuth without Embedded Signup
+    params.set(
+      "scope",
+      "whatsapp_business_messaging,whatsapp_business_management,business_management",
+    );
+    params.set("auth_type", "rerequest");
   }
 
   return `https://www.facebook.com/v22.0/dialog/oauth?${params.toString()}`;
