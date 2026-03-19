@@ -98,11 +98,12 @@ export async function POST(request: NextRequest) {
     }
 
     // 5. Call Meta API to register phone number
-    console.log(
-      "[Register Phone] Calling POST /" +
-        client.meta_phone_number_id +
-        "/register",
-    );
+    console.log("[Register Phone] 🔧 Register details:", {
+      phoneNumberId: client.meta_phone_number_id,
+      tokenSecretId: client.meta_access_token_secret_id,
+      tokenPrefix: accessToken.substring(0, 12) + "...",
+      clientId,
+    });
 
     const response = await fetch(
       `https://graph.facebook.com/v22.0/${client.meta_phone_number_id}/register`,
@@ -142,6 +143,19 @@ export async function POST(request: NextRequest) {
           already_registered: true,
           message: "Telefone já estava registrado.",
         });
+      }
+
+      // Error 2388001 = 2FA enabled — user must disable it first
+      if (data.error?.code === 2388001) {
+        console.log("[Register Phone] 2FA is enabled, cannot register");
+        return NextResponse.json(
+          {
+            error:
+              "Autenticação de dois fatores está ativada. Desative a verificação em duas etapas no WhatsApp Business Manager antes de registrar o telefone.",
+            code: "2FA_ENABLED",
+          },
+          { status: 400 },
+        );
       }
 
       console.error("[Register Phone] Meta API error:", data);

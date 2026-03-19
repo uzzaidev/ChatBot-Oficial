@@ -235,6 +235,13 @@ export async function GET(request: NextRequest) {
     }
 
     // 10. Subscribe UzzApp to client's WABA (so we receive webhook events)
+    console.log("[Meta OAuth Callback] 🔧 Provisioning details:", {
+      wabaId,
+      phoneNumberId,
+      tokenPrefix: accessToken.substring(0, 12) + "...",
+      clientId: client.id,
+    });
+
     const subscribeResult = await subscribeAppToWABA(wabaId, accessToken);
     if (!subscribeResult.success) {
       console.error(
@@ -253,19 +260,29 @@ export async function GET(request: NextRequest) {
     if (!registerResult.success) {
       console.error(
         "[Meta OAuth Callback] ⚠️ Phone registration failed (non-blocking):",
-        registerResult.error,
+        {
+          error: registerResult.error,
+          phoneNumberId,
+          wabaId,
+          tokenPrefix: accessToken.substring(0, 12) + "...",
+        },
       );
     } else {
       console.log("[Meta OAuth Callback] ✅ Phone registered:", phoneNumberId);
     }
 
-    // 12b. Update provisioning status
+    // 12b. Update provisioning status (include failure reason if any)
     await supabase
       .from("clients")
       .update({
         provisioning_status: {
           waba_subscribed: subscribeResult.success,
           phone_registered: registerResult.success,
+          ...(registerResult.error === "2FA_ENABLED"
+            ? { phone_register_error: "2FA_ENABLED" }
+            : !registerResult.success && registerResult.error
+            ? { phone_register_error: registerResult.error }
+            : {}),
           provisioned_at: new Date().toISOString(),
         },
       })

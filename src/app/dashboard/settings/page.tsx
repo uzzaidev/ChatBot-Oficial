@@ -946,6 +946,11 @@ export default function SettingsPage() {
                   Se o seu número aparece como &quot;Pendente&quot; no painel da
                   Meta, clique abaixo para ativá-lo na API do WhatsApp Cloud.
                 </p>
+                <p className="text-xs text-amber-600 dark:text-amber-400 mb-3">
+                  ⚠️ A verificação em duas etapas (2FA) deve estar{" "}
+                  <strong>desativada</strong> no WhatsApp Business Manager antes
+                  de registrar.
+                </p>
                 <Button
                   onClick={async () => {
                     setIsRegisteringPhone(true);

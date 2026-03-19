@@ -320,6 +320,11 @@ export const subscribeAppToWABA = async (
   accessToken: string,
 ): Promise<{ success: boolean; error?: string }> => {
   try {
+    console.log("[Meta OAuth] subscribeAppToWABA:", {
+      wabaId,
+      tokenPrefix: accessToken.substring(0, 12) + "...",
+    });
+
     const response = await fetch(
       `https://graph.facebook.com/v22.0/${wabaId}/subscribed_apps`,
       {
@@ -364,6 +369,11 @@ export const registerPhoneNumber = async (
   accessToken: string,
 ): Promise<{ success: boolean; error?: string }> => {
   try {
+    console.log("[Meta OAuth] registerPhoneNumber:", {
+      phoneNumberId,
+      tokenPrefix: accessToken.substring(0, 12) + "...",
+    });
+
     const response = await fetch(
       `https://graph.facebook.com/v22.0/${phoneNumberId}/register`,
       {
@@ -388,6 +398,17 @@ export const registerPhoneNumber = async (
           phoneNumberId,
         );
         return { success: true };
+      }
+      // Error 2388001 = 2FA enabled — user must disable it first
+      if (error.error?.code === 2388001) {
+        console.warn(
+          "[Meta OAuth] 2FA is enabled, cannot register phone:",
+          phoneNumberId,
+        );
+        return {
+          success: false,
+          error: "2FA_ENABLED",
+        };
       }
       console.error("[Meta OAuth] registerPhoneNumber failed:", error);
       return {
