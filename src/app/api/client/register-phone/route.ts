@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
         },
         body: JSON.stringify({
           messaging_product: "whatsapp",
-          pin: "000000",
+          pin: "123456",
         }),
       },
     );

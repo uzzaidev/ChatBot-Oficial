@@ -374,7 +374,7 @@ export const registerPhoneNumber = async (
         },
         body: JSON.stringify({
           messaging_product: "whatsapp",
-          pin: "000000", // 2FA pin (required but can be simple for new registrations)
+          pin: "123456",
         }),
       },
     );
