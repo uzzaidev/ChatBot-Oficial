@@ -189,7 +189,7 @@ export const KanbanBoard = ({
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className="flex h-full min-h-0 flex-col">
+      <div className="flex h-full min-h-0 min-w-0 w-full flex-col">
         <div className="mb-3 flex items-center gap-3">
           <div className="crm-board-scroll flex-1 overflow-x-auto overflow-y-hidden">
             <div

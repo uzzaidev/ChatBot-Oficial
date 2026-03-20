@@ -512,7 +512,7 @@ export default function CRMPage() {
                       )}
                     </div>
 
-                    <div className="hidden md:flex h-full flex-1 min-h-0 pt-4">
+                    <div className="hidden md:flex h-full flex-1 min-h-0 min-w-0 overflow-hidden pt-4">
                       {visibleColumns.length === 0 ? (
                         <div className="crm-panel flex flex-1 items-center justify-center rounded-[28px] border-dashed p-10 text-center text-sm text-muted-foreground">
                           Nenhuma coluna encontrada. Adicione a primeira etapa
