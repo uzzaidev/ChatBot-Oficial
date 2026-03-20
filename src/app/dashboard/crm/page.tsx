@@ -212,8 +212,8 @@ export default function CRMPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-140px)] min-h-[720px] flex-col">
-      <div className="flex h-full min-h-0 flex-col">
+    <div className="flex h-[calc(100vh-140px)] min-h-[720px] flex-col overflow-hidden">
+      <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
         <div className="border-b border-border/60 px-4 py-4 md:px-6 md:py-5">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div className="space-y-4">

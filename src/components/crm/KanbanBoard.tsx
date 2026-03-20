@@ -157,19 +157,31 @@ export const KanbanBoard = ({
     );
   }, []);
 
+  const handleWheel = useCallback((e: WheelEvent) => {
+    const node = scrollContainerRef.current;
+    if (!node) return;
+    if (node.scrollWidth <= node.clientWidth) return;
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      e.preventDefault();
+      node.scrollLeft += e.deltaY;
+    }
+  }, []);
+
   useEffect(() => {
     updateScrollState();
     const node = scrollContainerRef.current;
     if (!node) return;
 
     node.addEventListener("scroll", updateScrollState, { passive: true });
+    node.addEventListener("wheel", handleWheel, { passive: false });
     window.addEventListener("resize", updateScrollState);
 
     return () => {
       node.removeEventListener("scroll", updateScrollState);
+      node.removeEventListener("wheel", handleWheel);
       window.removeEventListener("resize", updateScrollState);
     };
-  }, [columns.length, updateScrollState]);
+  }, [columns.length, updateScrollState, handleWheel]);
 
   const scrollByAmount = useCallback((direction: "left" | "right") => {
     const node = scrollContainerRef.current;
