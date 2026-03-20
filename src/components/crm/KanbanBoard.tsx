@@ -204,15 +204,7 @@ export const KanbanBoard = ({
       onDragCancel={handleDragCancel}
     >
       <div className="flex h-full min-h-0 min-w-0 w-full flex-col">
-        <div className="mb-3 flex items-center gap-3">
-          <div className="crm-board-scroll flex-1 overflow-x-auto overflow-y-hidden">
-            <div
-              className="h-2 rounded-full bg-background/30"
-              style={{ width: `${columns.length * 356}px` }}
-            >
-              <div className="h-full w-24 rounded-full bg-gradient-to-r from-primary/30 to-secondary/30" />
-            </div>
-          </div>
+        <div className="mb-3 flex items-center justify-end gap-3">
           <div className="flex items-center gap-1">
             <Button
               type="button"
