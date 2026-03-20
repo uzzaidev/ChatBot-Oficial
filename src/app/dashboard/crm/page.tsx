@@ -11,7 +11,6 @@ import { KanbanBoard } from "@/components/crm/KanbanBoard";
 import { KanbanCard } from "@/components/crm/KanbanCard";
 import { TagsManager } from "@/components/crm/TagsManager";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCRMCards } from "@/hooks/useCRMCards";
@@ -24,6 +23,7 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   BarChart3,
+  EyeOff,
   Kanban,
   LayoutGrid,
   List,
@@ -47,6 +47,7 @@ export default function CRMPage() {
   const [activeTab, setActiveTab] = useState<"pipeline" | "analytics">(
     "pipeline",
   );
+  const [hideEmptyColumns, setHideEmptyColumns] = useState(false);
   const [editingColumn, setEditingColumn] = useState<CRMColumn | null>(null);
   const [deletingColumn, setDeletingColumn] = useState<{
     column: CRMColumn;
@@ -177,6 +178,13 @@ export default function CRMPage() {
     );
   }, [columns, cards]);
 
+  const visibleColumns = useMemo(() => {
+    if (!hideEmptyColumns) return columns;
+    return columns.filter(
+      (column) => (cardsByColumn.get(column.id)?.length || 0) > 0,
+    );
+  }, [cardsByColumn, columns, hideEmptyColumns]);
+
   const pipelineSummary = useMemo(() => {
     const resolvedCards = cards.filter((card) => card.auto_status === "resolved");
     const hotCards = cards.filter(
@@ -202,9 +210,8 @@ export default function CRMPage() {
   }
 
   return (
-    <div className="crm-page-bg rounded-[32px] p-2 md:p-3 h-[calc(100vh-140px)] min-h-[720px]">
-      <div className="crm-shell h-full overflow-hidden">
-        <div className="flex flex-col h-full min-h-0">
+    <div className="flex h-[calc(100vh-140px)] min-h-[720px] flex-col">
+      <div className="flex h-full min-h-0 flex-col">
           <div className="border-b border-border/60 px-4 py-4 md:px-6 md:py-5">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
               <div className="space-y-4">
@@ -314,12 +321,8 @@ export default function CRMPage() {
           </div>
 
           {activeTab === "analytics" && clientId && (
-            <div className="flex-1 min-h-0 overflow-hidden p-4 md:p-6">
-              <ScrollArea className="h-full crm-board-scroll pr-4">
-                <div className="crm-panel rounded-[28px] p-4 md:p-6">
-                  <CRMAnalyticsDashboard clientId={clientId} />
-                </div>
-              </ScrollArea>
+            <div className="crm-board-scroll flex-1 min-h-0 overflow-auto px-4 py-4 md:px-6 md:py-6">
+              <CRMAnalyticsDashboard clientId={clientId} />
             </div>
           )}
 
@@ -332,7 +335,9 @@ export default function CRMPage() {
                       <div className="flex items-center gap-2">
                         <span className="crm-section-label">Pipeline</span>
                         <span className="crm-stat-chip">
-                          {pipelineSummary.columns} colunas
+                          {hideEmptyColumns
+                            ? `${visibleColumns.length}/${pipelineSummary.columns} colunas`
+                            : `${pipelineSummary.columns} colunas`}
                         </span>
                         <span className="crm-stat-chip">
                           {pipelineSummary.totalCards} cards
@@ -353,7 +358,23 @@ export default function CRMPage() {
                           onDeleteTag={deleteTag}
                           loading={tagsLoading}
                         />
-                        <div className="hidden items-center gap-1 rounded-full border border-border/80 bg-background/30 p-1 md:flex">
+                        <div className="flex items-center gap-1 rounded-full border border-border/80 bg-background/30 p-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={cn(
+                              "rounded-full px-3 text-xs",
+                              hideEmptyColumns &&
+                                "bg-primary/15 text-primary hover:bg-primary/15",
+                            )}
+                            onClick={() =>
+                              setHideEmptyColumns((current) => !current)
+                            }
+                            title="Ocultar colunas vazias"
+                          >
+                            <EyeOff className="h-4 w-4 mr-1.5" />
+                            Vazias
+                          </Button>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -405,7 +426,7 @@ export default function CRMPage() {
                       {[1, 2, 3, 4].map((i) => (
                         <div
                           key={i}
-                          className="crm-column-shell w-[300px] min-w-[300px] rounded-[24px] p-3"
+                          className="crm-column-shell w-[340px] min-w-[340px] rounded-[24px] p-3"
                         >
                           <Skeleton className="h-12 w-full rounded-2xl bg-white/5" />
                           <div className="mt-3 space-y-3">
@@ -420,14 +441,14 @@ export default function CRMPage() {
                 ) : (
                   <>
                     <div className="md:hidden flex-1 flex flex-col min-h-0 pt-4">
-                      {columns.length === 0 ? (
+                      {visibleColumns.length === 0 ? (
                         <div className="crm-panel flex flex-1 items-center justify-center rounded-[24px] border-dashed p-8 text-center text-sm text-muted-foreground">
                           Nenhuma coluna encontrada. Crie a primeira etapa do
                           pipeline para começar.
                         </div>
                       ) : (
                         <Tabs
-                          defaultValue={columns[0]?.id}
+                          defaultValue={visibleColumns[0]?.id}
                           className="h-full flex flex-col min-h-0"
                         >
                           <div
@@ -435,7 +456,7 @@ export default function CRMPage() {
                             style={{ WebkitOverflowScrolling: "touch" }}
                           >
                             <TabsList className="crm-tab-list h-auto w-max min-w-full justify-start gap-1 rounded-[20px] p-1">
-                              {columns.map((col) => (
+                              {visibleColumns.map((col) => (
                                 <TabsTrigger
                                   key={col.id}
                                   value={col.id}
@@ -450,7 +471,7 @@ export default function CRMPage() {
                             </TabsList>
                           </div>
 
-                          {columns.map((col) => {
+                          {visibleColumns.map((col) => {
                             const columnCards =
                               cardsByColumn.get(col.id)?.sort(
                                 (a, b) => a.position - b.position,
@@ -462,14 +483,14 @@ export default function CRMPage() {
                                 value={col.id}
                                 className="mt-4 flex-1 min-h-0"
                               >
-                                <ScrollArea className="h-full crm-board-scroll pr-2">
+                                <div className="crm-board-scroll h-full overflow-y-auto pr-1">
                                   <div className="space-y-3">
                                     {columnCards.map((card) => (
                                       <KanbanCard
                                         key={card.id}
                                         card={card}
                                         tags={tags}
-                                        columns={columns}
+                                        columns={visibleColumns}
                                         onClick={() => handleCardClick(card)}
                                         onMoveToColumn={(columnId) =>
                                           handleMoveCard(card.id, columnId)
@@ -483,7 +504,7 @@ export default function CRMPage() {
                                       </div>
                                     )}
                                   </div>
-                                </ScrollArea>
+                                </div>
                               </TabsContent>
                             );
                           })}
@@ -492,14 +513,14 @@ export default function CRMPage() {
                     </div>
 
                     <div className="hidden md:flex h-full flex-1 min-h-0 pt-4">
-                      {columns.length === 0 ? (
+                      {visibleColumns.length === 0 ? (
                         <div className="crm-panel flex flex-1 items-center justify-center rounded-[28px] border-dashed p-10 text-center text-sm text-muted-foreground">
                           Nenhuma coluna encontrada. Adicione a primeira etapa
                           do pipeline para começar.
                         </div>
                       ) : viewMode === "kanban" ? (
                         <KanbanBoard
-                          columns={columns}
+                          columns={visibleColumns}
                           cards={cards}
                           tags={tags}
                           onMoveCard={handleMoveCard}
@@ -508,7 +529,7 @@ export default function CRMPage() {
                           onDeleteColumn={handleDeleteColumn}
                         />
                       ) : (
-                        <ScrollArea className="flex-1 crm-board-scroll pr-4">
+                        <div className="crm-board-scroll flex-1 overflow-auto pr-4">
                           <div className="space-y-3">
                             {cards.length === 0 ? (
                               <div className="crm-panel rounded-[24px] border-dashed px-6 py-10 text-center text-sm text-muted-foreground">
@@ -611,7 +632,7 @@ export default function CRMPage() {
                                 })
                             )}
                           </div>
-                        </ScrollArea>
+                        </div>
                       )}
                     </div>
                   </>
@@ -619,33 +640,32 @@ export default function CRMPage() {
               </div>
             </>
           )}
-        </div>
-
-        <CardDetailPanel
-          card={selectedCard}
-          open={!!selectedCard}
-          onClose={handleCloseDetail}
-          onUpdate={handleUpdateCard}
-          tags={tags}
-          onAddTag={addTag}
-          onRemoveTag={removeTag}
-        />
-
-        <EditColumnDialog
-          column={editingColumn}
-          open={!!editingColumn}
-          onOpenChange={(open) => !open && setEditingColumn(null)}
-          onSave={handleSaveColumn}
-        />
-
-        <DeleteColumnDialog
-          open={!!deletingColumn}
-          onOpenChange={(open) => !open && setDeletingColumn(null)}
-          onConfirm={confirmDeleteColumn}
-          columnName={deletingColumn?.column.name || ""}
-          cardCount={deletingColumn?.cardCount || 0}
-        />
       </div>
+
+      <CardDetailPanel
+        card={selectedCard}
+        open={!!selectedCard}
+        onClose={handleCloseDetail}
+        onUpdate={handleUpdateCard}
+        tags={tags}
+        onAddTag={addTag}
+        onRemoveTag={removeTag}
+      />
+
+      <EditColumnDialog
+        column={editingColumn}
+        open={!!editingColumn}
+        onOpenChange={(open) => !open && setEditingColumn(null)}
+        onSave={handleSaveColumn}
+      />
+
+      <DeleteColumnDialog
+        open={!!deletingColumn}
+        onOpenChange={(open) => !open && setDeletingColumn(null)}
+        onConfirm={confirmDeleteColumn}
+        columnName={deletingColumn?.column.name || ""}
+        cardCount={deletingColumn?.cardCount || 0}
+      />
     </div>
   );
 }

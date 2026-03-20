@@ -8,7 +8,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import type { CRMCard, CRMColumn, CRMTag } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useDroppable } from "@dnd-kit/core";
@@ -16,7 +15,6 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { motion } from "framer-motion";
 import { MoreHorizontal, Settings, Trash2 } from "lucide-react";
 import { ColumnHeader } from "./ColumnHeader";
 import { KanbanCard } from "./KanbanCard";
@@ -57,14 +55,10 @@ export const KanbanColumn = ({
   const activeDrop = isOver || isDroppableOver;
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2, ease: "easeOut" }}
+    <div
       ref={setNodeRef}
       className={cn(
-        "crm-column-shell flex h-full w-[296px] min-w-[296px] max-w-[296px] shrink-0 flex-col overflow-hidden",
+        "crm-column-shell flex h-full w-[340px] min-w-[340px] max-w-[340px] shrink-0 flex-col overflow-hidden",
       )}
       data-over={activeDrop}
     >
@@ -129,9 +123,9 @@ export const KanbanColumn = ({
       </div>
 
       <div className="crm-column-body flex-1 min-h-0 p-3">
-        <ScrollArea className="h-full crm-board-scroll pr-2">
+        <div className="crm-board-scroll h-full overflow-y-auto pr-1">
           <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
-            <div className="space-y-3">
+            <div className="space-y-3 pb-3">
               {sortedCards.map((card) => (
                 <KanbanCard
                   key={card.id}
@@ -150,8 +144,8 @@ export const KanbanColumn = ({
               Arraste um card para esta etapa
             </div>
           )}
-        </ScrollArea>
+        </div>
       </div>
-    </motion.div>
+    </div>
   );
 };

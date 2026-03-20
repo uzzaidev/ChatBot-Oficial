@@ -14,7 +14,6 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { motion } from "framer-motion";
 import {
   ArrowUpRight,
   CalendarDays,
@@ -124,17 +123,12 @@ export const KanbanCard = ({
   }>;
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.18, ease: "easeOut" }}
-    >
+    <div>
       <div
         ref={disableDrag ? undefined : setNodeRef}
         style={disableDrag ? undefined : style}
         className={cn(
-          "crm-card-shell cursor-pointer px-3.5 py-3",
+          "crm-card-shell w-full cursor-pointer px-3.5 py-3",
           !disableDrag && "cursor-grab active:cursor-grabbing",
           isCurrentlyDragging && "opacity-80",
         )}
@@ -233,6 +227,6 @@ export const KanbanCard = ({
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 };

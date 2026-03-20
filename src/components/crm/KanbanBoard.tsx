@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import type { CRMCard, CRMColumn, CRMTag } from "@/lib/types";
 import {
   DndContext,
@@ -17,8 +18,8 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-import { motion } from "framer-motion";
-import { useCallback, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { KanbanCard } from "./KanbanCard";
 import { KanbanColumn } from "./KanbanColumn";
 
@@ -63,6 +64,9 @@ export const KanbanBoard = ({
 }: KanbanBoardProps) => {
   const [activeCard, setActiveCard] = useState<CRMCard | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
   const pointerSensor = useSensor(PointerSensor, {
     activationConstraint: {
@@ -143,6 +147,38 @@ export const KanbanBoard = ({
     return map;
   }, [columns, cards]);
 
+  const updateScrollState = useCallback(() => {
+    const node = scrollContainerRef.current;
+    if (!node) return;
+
+    setCanScrollLeft(node.scrollLeft > 8);
+    setCanScrollRight(node.scrollLeft + node.clientWidth < node.scrollWidth - 8);
+  }, []);
+
+  useEffect(() => {
+    updateScrollState();
+    const node = scrollContainerRef.current;
+    if (!node) return;
+
+    node.addEventListener("scroll", updateScrollState, { passive: true });
+    window.addEventListener("resize", updateScrollState);
+
+    return () => {
+      node.removeEventListener("scroll", updateScrollState);
+      window.removeEventListener("resize", updateScrollState);
+    };
+  }, [columns.length, updateScrollState]);
+
+  const scrollByAmount = useCallback((direction: "left" | "right") => {
+    const node = scrollContainerRef.current;
+    if (!node) return;
+
+    node.scrollBy({
+      left: direction === "left" ? -380 : 380,
+      behavior: "smooth",
+    });
+  }, []);
+
   return (
     <DndContext
       sensors={sensors}
@@ -154,32 +190,52 @@ export const KanbanBoard = ({
       onDragCancel={handleDragCancel}
     >
       <div className="flex h-full min-h-0 flex-col">
-        <div className="crm-board-scroll mb-3 overflow-x-auto overflow-y-hidden">
-          <div
-            className="h-2 rounded-full bg-background/30"
-            style={{ width: `${columns.length * 312}px` }}
-          >
-            <div className="h-full w-24 rounded-full bg-gradient-to-r from-primary/30 to-secondary/30" />
+        <div className="mb-3 flex items-center gap-3">
+          <div className="crm-board-scroll flex-1 overflow-x-auto overflow-y-hidden">
+            <div
+              className="h-2 rounded-full bg-background/30"
+              style={{ width: `${columns.length * 356}px` }}
+            >
+              <div className="h-full w-24 rounded-full bg-gradient-to-r from-primary/30 to-secondary/30" />
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 rounded-full border-border/80 bg-background/30"
+              disabled={!canScrollLeft}
+              onClick={() => scrollByAmount("left")}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 rounded-full border-border/80 bg-background/30"
+              disabled={!canScrollRight}
+              onClick={() => scrollByAmount("right")}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 
         <div
+          ref={scrollContainerRef}
           className="crm-board-scroll flex-1 overflow-x-auto overflow-y-hidden pb-3"
           style={{ WebkitOverflowScrolling: "touch" }}
         >
-          <motion.div
-            layout
-            className="flex h-full min-w-max gap-4 pr-4"
-            initial={false}
-          >
+          <div className="flex h-full min-w-max gap-4 pr-4">
             {columns.map((column, index) => {
               const columnCards = columnCardsMap.get(column.id) || [];
               return (
-                <motion.div
+                <div
                   key={column.id}
-                  initial={{ opacity: 0, y: 18 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2, delay: index * 0.03 }}
+                  className="animate-fade-in"
+                  style={{ animationDelay: `${index * 40}ms` }}
                 >
                   <KanbanColumn
                     column={column}
@@ -196,10 +252,10 @@ export const KanbanBoard = ({
                     }
                     isOver={overId === column.id}
                   />
-                </motion.div>
+                </div>
               );
             })}
-          </motion.div>
+          </div>
         </div>
       </div>
 
@@ -210,7 +266,7 @@ export const KanbanBoard = ({
         }}
       >
         {activeCard ? (
-          <div className="w-[296px] rotate-[1.5deg]">
+          <div className="w-[340px] rotate-[1deg]">
             <KanbanCard
               card={activeCard}
               tags={tags}
