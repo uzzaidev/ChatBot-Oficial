@@ -1,0 +1,69 @@
+# ============================================================================
+# AI Changelog on Push
+# ============================================================================
+# Gera changelog automaticamente via GitHub Models API a cada push no main.
+# Secret necessário: GH_MODELS_TOKEN (configurado via `gh auth token | gh secret set GH_MODELS_TOKEN`)
+# ============================================================================
+
+name: AI Changelog on Push
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "CHANGELOG.md"
+
+permissions:
+  contents: write
+
+jobs:
+  generate-changelog:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Collect push metadata
+        run: |
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.sha }}"
+
+          # Handle first push (before = 0000...)
+          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            echo "First push detected — using last 10 commits"
+            git log --reverse --pretty=format:'%H%x09%s' -10 > commits.txt
+            git show --stat HEAD > diff.txt
+          else
+            git log --reverse --pretty=format:'%H%x09%s' "$BEFORE".."$AFTER" > commits.txt
+            git diff --unified=2 "$BEFORE".."$AFTER" > diff.txt
+          fi
+
+          echo "BRANCH_NAME=${{ github.ref_name }}" >> "$GITHUB_ENV"
+
+          echo "=== Commits ==="
+          cat commits.txt
+          echo ""
+          echo "=== Diff size ==="
+          wc -c diff.txt
+
+      - name: Generate changelog entry with AI
+        env:
+          GH_MODELS_TOKEN: ${{ secrets.GH_MODELS_TOKEN }}
+        run: node .github/scripts/generate-changelog.mjs
+
+      - name: Commit updated changelog
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git diff --cached --quiet || git commit -m "docs: atualizar changelog [skip ci]"
+          git push
