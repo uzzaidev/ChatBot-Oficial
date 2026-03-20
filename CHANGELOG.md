@@ -4,6 +4,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-03-20
 
+### refactor
+- Atualizado o layout do componente KanbanBoard para melhorar o alinhamento e o comportamento de rolagem, ajustando a estrutura do div e a disposição dos elementos
+  - Arquivos: `src/components/crm/KanbanBoard.tsx`
+  - Confiança: alta
+
+## 2026-03-20
+
 ### feat
 - Adicionado suporte a rolagem horizontal no componente KanbanBoard e melhorias no layout na página CRMPage
   - Arquivos: `src/components/crm/KanbanBoard.tsx`, `src/app/dashboard/crm/page.tsx`
