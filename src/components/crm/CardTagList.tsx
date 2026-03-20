@@ -1,60 +1,116 @@
-'use client'
+"use client";
 
-import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
-import type { CRMTag } from '@/lib/types'
+import { cn } from "@/lib/utils";
+import type { CRMTag } from "@/lib/types";
 
 interface CardTagListProps {
-  tags: CRMTag[]
-  maxVisible?: number
-  size?: 'sm' | 'md'
+  tags: CRMTag[];
+  maxVisible?: number;
+  size?: "sm" | "md";
 }
 
-const TAG_COLORS: Record<string, string> = {
-  mint: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20',
-  blue: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20',
-  gold: 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20',
-  red: 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20',
-  purple: 'bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20',
-  green: 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20',
-  orange: 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20',
-  pink: 'bg-pink-500/10 text-pink-700 dark:text-pink-400 border-pink-500/20',
-  gray: 'bg-gray-500/10 text-gray-700 dark:text-gray-400 border-gray-500/20',
-  default: 'bg-secondary/20 text-secondary-foreground border-border',
-}
+const TAG_COLORS: Record<
+  string,
+  { background: string; border: string; color: string }
+> = {
+  mint: {
+    background: "rgba(16, 185, 129, 0.14)",
+    border: "rgba(16, 185, 129, 0.22)",
+    color: "#6ee7b7",
+  },
+  blue: {
+    background: "rgba(59, 130, 246, 0.14)",
+    border: "rgba(59, 130, 246, 0.22)",
+    color: "#93c5fd",
+  },
+  gold: {
+    background: "rgba(245, 158, 11, 0.14)",
+    border: "rgba(245, 158, 11, 0.22)",
+    color: "#fcd34d",
+  },
+  red: {
+    background: "rgba(239, 68, 68, 0.14)",
+    border: "rgba(239, 68, 68, 0.22)",
+    color: "#fca5a5",
+  },
+  purple: {
+    background: "rgba(168, 85, 247, 0.14)",
+    border: "rgba(168, 85, 247, 0.22)",
+    color: "#d8b4fe",
+  },
+  green: {
+    background: "rgba(34, 197, 94, 0.14)",
+    border: "rgba(34, 197, 94, 0.22)",
+    color: "#86efac",
+  },
+  orange: {
+    background: "rgba(249, 115, 22, 0.14)",
+    border: "rgba(249, 115, 22, 0.22)",
+    color: "#fdba74",
+  },
+  pink: {
+    background: "rgba(236, 72, 153, 0.14)",
+    border: "rgba(236, 72, 153, 0.22)",
+    color: "#f9a8d4",
+  },
+  cyan: {
+    background: "rgba(6, 182, 212, 0.14)",
+    border: "rgba(6, 182, 212, 0.22)",
+    color: "#67e8f9",
+  },
+  gray: {
+    background: "rgba(107, 114, 128, 0.16)",
+    border: "rgba(107, 114, 128, 0.24)",
+    color: "#d1d5db",
+  },
+  default: {
+    background: "rgba(148, 163, 184, 0.12)",
+    border: "rgba(148, 163, 184, 0.18)",
+    color: "#cbd5e1",
+  },
+};
 
-export const CardTagList = ({ tags, maxVisible = 3, size = 'sm' }: CardTagListProps) => {
-  const visibleTags = tags.slice(0, maxVisible)
-  const hiddenCount = tags.length - maxVisible
+export const CardTagList = ({
+  tags,
+  maxVisible = 3,
+  size = "sm",
+}: CardTagListProps) => {
+  const visibleTags = tags.slice(0, maxVisible);
+  const hiddenCount = tags.length - maxVisible;
 
   return (
-    <div className="flex flex-wrap gap-1">
-      {visibleTags.map((tag) => (
-        <Badge
-          key={tag.id}
-          variant="outline"
-          className={cn(
-            'font-normal',
-            TAG_COLORS[tag.color] || TAG_COLORS.default,
-            size === 'sm' && 'h-5 text-xs px-1.5',
-            size === 'md' && 'h-6 text-sm px-2'
-          )}
-        >
-          {tag.name}
-        </Badge>
-      ))}
+    <div className="flex flex-wrap gap-1.5">
+      {visibleTags.map((tag) => {
+        const style = TAG_COLORS[tag.color] || TAG_COLORS.default;
+        return (
+          <span
+            key={tag.id}
+            className={cn(
+              "crm-tag-badge inline-flex items-center border font-medium",
+              size === "sm" && "min-h-6",
+              size === "md" && "min-h-7 px-2.5 text-xs",
+            )}
+            style={{
+              backgroundColor: style.background,
+              borderColor: style.border,
+              color: style.color,
+            }}
+          >
+            {tag.name}
+          </span>
+        );
+      })}
       {hiddenCount > 0 && (
-        <Badge
-          variant="outline"
+        <span
           className={cn(
-            'font-normal bg-muted text-muted-foreground border-border',
-            size === 'sm' && 'h-5 text-xs px-1.5',
-            size === 'md' && 'h-6 text-sm px-2'
+            "crm-tag-badge inline-flex items-center border border-border/70 bg-background/35 text-muted-foreground",
+            size === "sm" && "min-h-6",
+            size === "md" && "min-h-7 px-2.5 text-xs",
           )}
         >
           +{hiddenCount}
-        </Badge>
+        </span>
       )}
     </div>
-  )
-}
+  );
+};

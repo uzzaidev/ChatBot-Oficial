@@ -3,7 +3,13 @@
 import { Badge } from "@/components/ui/badge";
 import type { AutoStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { AlertCircle, CheckCircle, CircleDashed, Clock } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  CircleDashed,
+  Clock3,
+  Dot,
+} from "lucide-react";
 
 interface CardStatusBadgeProps {
   status: AutoStatus;
@@ -21,30 +27,32 @@ const STATUS_CONFIG: Record<
   awaiting_attendant: {
     label: "Aguardando resposta",
     icon: AlertCircle,
-    className: "bg-destructive/10 text-destructive border-destructive/30",
+    className:
+      "border-red-500/25 bg-red-500/12 text-red-200 dark:text-red-300",
   },
   awaiting_client: {
     label: "Aguardando cliente",
-    icon: Clock,
+    icon: Clock3,
     className:
-      "bg-yellow-500/10 text-yellow-600 dark:text-yellow-500 border-yellow-500/30",
+      "border-yellow-500/25 bg-yellow-500/12 text-yellow-100 dark:text-yellow-300",
   },
   in_progress: {
     label: "Em andamento",
     icon: CircleDashed,
     className:
-      "bg-blue-500/10 text-blue-600 dark:text-blue-500 border-blue-500/30",
+      "border-blue-500/25 bg-blue-500/12 text-blue-100 dark:text-blue-300",
   },
   resolved: {
     label: "Resolvido",
-    icon: CheckCircle,
+    icon: CheckCircle2,
     className:
-      "bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border-emerald-500/30",
+      "border-emerald-500/25 bg-emerald-500/12 text-emerald-100 dark:text-emerald-300",
   },
   neutral: {
     label: "Neutro",
-    icon: CheckCircle,
-    className: "bg-muted text-muted-foreground border-border",
+    icon: Dot,
+    className:
+      "border-border/80 bg-background/35 text-muted-foreground dark:text-muted-foreground",
   },
 };
 
@@ -59,14 +67,14 @@ export const CardStatusBadge = ({
     <Badge
       variant="outline"
       className={cn(
-        "gap-1 font-normal",
+        "rounded-full font-medium backdrop-blur-sm",
         config.className,
-        size === "sm" && "h-5 text-xs px-1.5",
-        size === "md" && "h-6 text-sm px-2",
+        size === "sm" && "h-6 gap-1 px-2.5 text-[11px]",
+        size === "md" && "h-8 gap-1.5 px-3 text-xs",
       )}
     >
-      <Icon className={cn(size === "sm" ? "h-2.5 w-2.5" : "h-3 w-3")} />
-      <span className="hidden sm:inline">{config.label}</span>
+      <Icon className={cn(size === "sm" ? "h-3 w-3" : "h-3.5 w-3.5")} />
+      <span>{config.label}</span>
     </Badge>
   );
 };

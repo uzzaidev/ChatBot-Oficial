@@ -83,12 +83,16 @@ export const CreateColumnDialog = ({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="hidden md:flex" disabled={disabled}>
+        <Button
+          size="sm"
+          className="hidden rounded-full bg-gradient-uzz px-4 text-white shadow-glow hover:opacity-95 md:flex"
+          disabled={disabled}
+        >
           <Plus className="h-4 w-4 mr-1" />
           Nova Coluna
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="crm-sheet-surface sm:max-w-[425px] border-border/80">
         <DialogHeader>
           <DialogTitle>Nova Coluna</DialogTitle>
           <DialogDescription>
@@ -164,10 +168,18 @@ export const CreateColumnDialog = ({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
+          <Button
+            variant="outline"
+            className="rounded-xl border-border/80 bg-background/30"
+            onClick={() => setOpen(false)}
+          >
             Cancelar
           </Button>
-          <Button onClick={handleCreate} disabled={!name.trim() || loading}>
+          <Button
+            className="rounded-xl bg-gradient-uzz text-white hover:opacity-95"
+            onClick={handleCreate}
+            disabled={!name.trim() || loading}
+          >
             {loading ? "Criando..." : "Criar Coluna"}
           </Button>
         </DialogFooter>

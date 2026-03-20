@@ -16,6 +16,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { motion } from "framer-motion";
 import { MoreHorizontal, Settings, Trash2 } from "lucide-react";
 import { ColumnHeader } from "./ColumnHeader";
 import { KanbanCard } from "./KanbanCard";
@@ -31,19 +32,6 @@ interface KanbanColumnProps {
   onDeleteColumn?: () => void;
   isOver?: boolean;
 }
-
-const COLUMN_COLORS: Record<string, string> = {
-  mint: "border-t-emerald-500",
-  blue: "border-t-blue-500",
-  gold: "border-t-yellow-500",
-  amber: "border-t-amber-500",
-  red: "border-t-red-500",
-  purple: "border-t-purple-500",
-  green: "border-t-green-500",
-  gray: "border-t-gray-500",
-  zinc: "border-t-zinc-400",
-  default: "border-t-primary",
-};
 
 export const KanbanColumn = ({
   column,
@@ -66,26 +54,27 @@ export const KanbanColumn = ({
 
   const sortedCards = [...cards].sort((a, b) => a.position - b.position);
   const cardIds = sortedCards.map((c) => c.id);
+  const activeDrop = isOver || isDroppableOver;
 
   return (
-    <div
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
       ref={setNodeRef}
       className={cn(
-        "flex flex-col w-[280px] min-w-[280px] max-w-[280px] shrink-0",
-        "bg-card rounded-lg border border-border",
-        "border-t-4",
-        "transition-all duration-200 ease-in-out",
-        COLUMN_COLORS[column.color] || COLUMN_COLORS.default,
-        (isOver || isDroppableOver) &&
-          "ring-2 ring-primary ring-offset-2 ring-offset-background scale-[1.02] shadow-lg bg-primary/5",
+        "crm-column-shell flex h-full w-[296px] min-w-[296px] max-w-[296px] shrink-0 flex-col overflow-hidden",
       )}
+      data-over={activeDrop}
     >
-      {/* Column Header */}
-      <div className="flex items-center justify-between gap-2 p-3 border-b border-border">
+      <div className="crm-column-header flex items-center justify-between gap-3 px-4 py-3.5">
         <ColumnHeader
           name={column.name}
           count={cards.length}
           icon={column.icon}
+          color={column.color}
+          className="min-w-0 flex-1"
         />
 
         {(onEditColumn || onDeleteColumn) && (
@@ -94,14 +83,17 @@ export const KanbanColumn = ({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 flex-shrink-0 hover:bg-accent"
+                className="h-9 w-9 rounded-full border border-transparent text-muted-foreground hover:border-border/80 hover:bg-background/35 hover:text-foreground"
                 aria-label="Opções da coluna"
               >
-                <MoreHorizontal className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                <MoreHorizontal className="h-4 w-4" />
                 <span className="sr-only">Opções</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuContent
+              align="end"
+              className="w-48 rounded-2xl border-border/80 bg-popover/95 backdrop-blur"
+            >
               {onEditColumn && (
                 <DropdownMenuItem
                   onClick={(e) => {
@@ -110,7 +102,7 @@ export const KanbanColumn = ({
                     onEditColumn();
                   }}
                 >
-                  <Settings className="h-4 w-4 mr-2" />
+                  <Settings className="mr-2 h-4 w-4" />
                   Editar coluna
                 </DropdownMenuItem>
               )}
@@ -125,9 +117,9 @@ export const KanbanColumn = ({
                   className="text-destructive focus:text-destructive"
                   disabled={column.is_default}
                 >
-                  <Trash2 className="h-4 w-4 mr-2" />
+                  <Trash2 className="mr-2 h-4 w-4" />
                   {column.is_default
-                    ? "Não pode excluir (coluna padrão)"
+                    ? "Não pode excluir (padrão)"
                     : "Excluir coluna"}
                 </DropdownMenuItem>
               )}
@@ -136,29 +128,30 @@ export const KanbanColumn = ({
         )}
       </div>
 
-      {/* Cards */}
-      <ScrollArea className="flex-1 p-2">
-        <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
-          <div className="space-y-2">
-            {sortedCards.map((card) => (
-              <KanbanCard
-                key={card.id}
-                card={card}
-                tags={tags}
-                columns={allColumns}
-                onClick={() => onCardClick(card)}
-                onMoveToColumn={(columnId) => onCardMove(card.id, columnId)}
-              />
-            ))}
-          </div>
-        </SortableContext>
+      <div className="crm-column-body flex-1 min-h-0 p-3">
+        <ScrollArea className="h-full crm-board-scroll pr-2">
+          <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
+            <div className="space-y-3">
+              {sortedCards.map((card) => (
+                <KanbanCard
+                  key={card.id}
+                  card={card}
+                  tags={tags}
+                  columns={allColumns}
+                  onClick={() => onCardClick(card)}
+                  onMoveToColumn={(columnId) => onCardMove(card.id, columnId)}
+                />
+              ))}
+            </div>
+          </SortableContext>
 
-        {cards.length === 0 && (
-          <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
-            Nenhum card nesta coluna
-          </div>
-        )}
-      </ScrollArea>
-    </div>
+          {cards.length === 0 && (
+            <div className="crm-column-empty mt-1 flex h-32 items-center justify-center rounded-[20px] text-center text-sm text-muted-foreground">
+              Arraste um card para esta etapa
+            </div>
+          )}
+        </ScrollArea>
+      </div>
+    </motion.div>
   );
 };

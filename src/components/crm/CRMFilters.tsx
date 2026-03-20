@@ -19,7 +19,15 @@ import type { AutoStatus, CRMFilters, CRMTag } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, Search, X } from "lucide-react";
+import {
+  CalendarIcon,
+  Filter,
+  Search,
+  SlidersHorizontal,
+  Tag,
+  UserRound,
+  X,
+} from "lucide-react";
 
 interface User {
   id: string;
@@ -91,28 +99,57 @@ export const CRMFiltersComponent = ({
     filters.dateFrom ||
     filters.dateTo;
 
+  const activeCount = [
+    filters.search,
+    filters.autoStatus,
+    filters.tagIds?.length ? "tag" : undefined,
+    filters.assignedTo,
+    filters.dateFrom,
+    filters.dateTo,
+  ].filter(Boolean).length;
+
   return (
-    <div className="flex flex-col gap-2 p-4 border-b border-border">
-      {/* Row 1: Search and main filters */}
-      <div className="flex flex-col sm:flex-row gap-2">
-        {/* Search */}
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Buscar por nome ou telefone..."
+            placeholder="Buscar por nome, telefone ou contexto do lead..."
             value={filters.search || ""}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="pl-9"
+            className="h-11 rounded-2xl border-border/80 bg-background/35 pl-10 pr-4 text-sm shadow-none placeholder:text-muted-foreground/80"
           />
         </div>
 
-        {/* Auto Status Filter */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="crm-stat-chip">
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+            {hasActiveFilters ? `${activeCount} filtros ativos` : "Sem filtros"}
+          </div>
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleClearFilters}
+              className="rounded-full border border-border/80 bg-background/20 px-3 text-xs text-muted-foreground hover:bg-background/40 hover:text-foreground"
+            >
+              <X className="mr-1.5 h-3.5 w-3.5" />
+              Limpar
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-5">
         <Select
           value={filters.autoStatus || "all"}
           onValueChange={handleAutoStatusChange}
         >
-          <SelectTrigger className="w-full sm:w-[200px]">
-            <SelectValue placeholder="Status" />
+          <SelectTrigger className="h-11 rounded-2xl border-border/80 bg-background/30">
+            <div className="flex items-center gap-2 text-sm">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <SelectValue placeholder="Status" />
+            </div>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os status</SelectItem>
@@ -120,17 +157,21 @@ export const CRMFiltersComponent = ({
               Aguardando resposta
             </SelectItem>
             <SelectItem value="awaiting_client">Aguardando cliente</SelectItem>
-            <SelectItem value="neutral">Em andamento</SelectItem>
+            <SelectItem value="neutral">Neutro</SelectItem>
+            <SelectItem value="in_progress">Em andamento</SelectItem>
+            <SelectItem value="resolved">Resolvido</SelectItem>
           </SelectContent>
         </Select>
 
-        {/* Tag Filter */}
         <Select
           value={filters.tagIds?.[0] || "all"}
           onValueChange={handleTagChange}
         >
-          <SelectTrigger className="w-full sm:w-[200px]">
-            <SelectValue placeholder="Tag" />
+          <SelectTrigger className="h-11 rounded-2xl border-border/80 bg-background/30">
+            <div className="flex items-center gap-2 text-sm">
+              <Tag className="h-4 w-4 text-muted-foreground" />
+              <SelectValue placeholder="Tag" />
+            </div>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas as tags</SelectItem>
@@ -141,18 +182,17 @@ export const CRMFiltersComponent = ({
             ))}
           </SelectContent>
         </Select>
-      </div>
 
-      {/* Row 2: Advanced filters */}
-      <div className="flex flex-col sm:flex-row gap-2">
-        {/* Assigned To Filter */}
-        {users.length > 0 && (
+        {users.length > 0 ? (
           <Select
             value={filters.assignedTo || "all"}
             onValueChange={handleAssignedToChange}
           >
-            <SelectTrigger className="w-full sm:w-[200px]">
-              <SelectValue placeholder="Responsável" />
+            <SelectTrigger className="h-11 rounded-2xl border-border/80 bg-background/30">
+              <div className="flex items-center gap-2 text-sm">
+                <UserRound className="h-4 w-4 text-muted-foreground" />
+                <SelectValue placeholder="Responsável" />
+              </div>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os responsáveis</SelectItem>
@@ -163,15 +203,16 @@ export const CRMFiltersComponent = ({
               ))}
             </SelectContent>
           </Select>
+        ) : (
+          <div className="hidden xl:block" />
         )}
 
-        {/* Date From */}
         <Popover>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
               className={cn(
-                "w-full sm:w-[180px] justify-start text-left font-normal",
+                "h-11 justify-start rounded-2xl border-border/80 bg-background/30 px-3 text-left font-normal hover:bg-background/45",
                 !filters.dateFrom && "text-muted-foreground",
               )}
             >
@@ -185,7 +226,7 @@ export const CRMFiltersComponent = ({
               )}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
+          <PopoverContent className="w-auto rounded-2xl border-border/80 p-0" align="start">
             <Calendar
               mode="single"
               selected={
@@ -198,13 +239,12 @@ export const CRMFiltersComponent = ({
           </PopoverContent>
         </Popover>
 
-        {/* Date To */}
         <Popover>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
               className={cn(
-                "w-full sm:w-[180px] justify-start text-left font-normal",
+                "h-11 justify-start rounded-2xl border-border/80 bg-background/30 px-3 text-left font-normal hover:bg-background/45",
                 !filters.dateTo && "text-muted-foreground",
               )}
             >
@@ -216,7 +256,7 @@ export const CRMFiltersComponent = ({
               )}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
+          <PopoverContent className="w-auto rounded-2xl border-border/80 p-0" align="start">
             <Calendar
               mode="single"
               selected={filters.dateTo ? new Date(filters.dateTo) : undefined}
@@ -226,18 +266,6 @@ export const CRMFiltersComponent = ({
             />
           </PopoverContent>
         </Popover>
-
-        {/* Clear Filters */}
-        {hasActiveFilters && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleClearFilters}
-            className="shrink-0"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        )}
       </div>
     </div>
   );

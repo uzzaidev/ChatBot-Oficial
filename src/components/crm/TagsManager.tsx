@@ -91,12 +91,16 @@ export const TagsManager = ({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="rounded-full border-border/80 bg-background/20 px-3.5 hover:bg-background/40"
+        >
           <Tag className="h-4 w-4" />
           Gerenciar Tags
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="crm-sheet-surface sm:max-w-[500px] border-border/80">
         <DialogHeader>
           <DialogTitle>Gerenciar Tags</DialogTitle>
           <DialogDescription>
@@ -106,7 +110,7 @@ export const TagsManager = ({
 
         <div className="space-y-6 py-4">
           {/* Create New Tag */}
-          <div className="space-y-4 p-4 border border-border rounded-lg bg-muted/30">
+          <div className="space-y-4 rounded-2xl border border-border/80 bg-background/25 p-4">
             <h4 className="font-medium text-sm">Nova Tag</h4>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
@@ -160,7 +164,7 @@ export const TagsManager = ({
               onClick={handleCreateTag}
               disabled={!newTagName.trim() || creating}
               size="sm"
-              className="w-full"
+              className="w-full rounded-xl bg-gradient-uzz text-white hover:opacity-95"
             >
               {creating ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -188,7 +192,7 @@ export const TagsManager = ({
                   {tags.map((tag) => (
                     <div
                       key={tag.id}
-                      className="flex items-center justify-between p-3 border border-border rounded-lg bg-card hover:bg-muted/30 transition-colors"
+                      className="flex items-center justify-between rounded-2xl border border-border/80 bg-background/25 p-3 transition-colors hover:bg-background/40"
                     >
                       <div className="flex items-center gap-3">
                         <div

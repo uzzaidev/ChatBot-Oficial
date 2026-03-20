@@ -530,12 +530,19 @@ export function AutomationRulesPanel({
     <>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
-          <Button variant="outline" size="sm" className="gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-full border-border/80 bg-background/20 px-3.5 hover:bg-background/40"
+          >
             <Settings className="h-4 w-4" />
             <span className="hidden sm:inline">Automações</span>
           </Button>
         </SheetTrigger>
-        <SheetContent side="right" className="w-full sm:max-w-lg">
+        <SheetContent
+          side="right"
+          className="crm-sheet-surface w-full border-border/80 sm:max-w-lg"
+        >
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
               <Zap className="h-5 w-5 text-yellow-500" />
@@ -553,7 +560,7 @@ export function AutomationRulesPanel({
           ) : (
             <ScrollArea className="h-[calc(100vh-140px)] pr-4 mt-4">
               {/* Configurações Gerais */}
-              <Card className="mb-4">
+              <Card className="crm-analytics-card mb-4 border-border/80">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-purple-500" />
@@ -657,7 +664,7 @@ export function AutomationRulesPanel({
 
               <div className="space-y-2">
                 {rules.length === 0 ? (
-                  <Card className="p-6 text-center text-muted-foreground">
+                  <Card className="crm-analytics-card p-6 text-center text-muted-foreground">
                     <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
                     <p className="text-sm">Nenhuma regra configurada</p>
                     <p className="text-xs">
@@ -780,7 +787,7 @@ export function AutomationRulesPanel({
               </div>
 
               {/* Info sobre variáveis */}
-              <Card className="mt-4 bg-muted/50">
+              <Card className="crm-analytics-card mt-4 border-border/80 bg-muted/30">
                 <CardContent className="p-3">
                   <div className="flex items-start gap-2">
                     <Info className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
@@ -818,7 +825,7 @@ export function AutomationRulesPanel({
 
       {/* Edit/Create Rule Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="crm-sheet-surface max-w-md border-border/80">
           <DialogHeader>
             <DialogTitle>
               {editingRule ? "Editar Regra" : "Nova Regra de Automação"}
@@ -983,7 +990,7 @@ export function AutomationRulesPanel({
 
       {/* Delete Confirmation */}
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="crm-sheet-surface max-w-sm border-border/80">
           <DialogHeader>
             <DialogTitle>Excluir Regra?</DialogTitle>
             <DialogDescription>

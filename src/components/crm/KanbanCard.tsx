@@ -2,7 +2,6 @@
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,7 +14,16 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Clock, MoreHorizontal } from "lucide-react";
+import { motion } from "framer-motion";
+import {
+  ArrowUpRight,
+  CalendarDays,
+  Clock3,
+  DollarSign,
+  MoreHorizontal,
+  Phone,
+  UserRound,
+} from "lucide-react";
 import { CardStatusBadge } from "./CardStatusBadge";
 import { CardTagList } from "./CardTagList";
 
@@ -26,7 +34,6 @@ export interface KanbanCardProps {
   onMoveToColumn?: (columnId: string) => void;
   isDragging?: boolean;
   columns?: Array<{ id: string; name: string }>;
-  /** Disable drag-and-drop to allow touch scroll on mobile */
   disableDrag?: boolean;
 }
 
@@ -34,13 +41,14 @@ const getInitials = (name: string): string => {
   if (!name) return "?";
   const parts = name.trim().split(" ");
   if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
-  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+  return (
+    parts[0].charAt(0) + parts[parts.length - 1].charAt(0)
+  ).toUpperCase();
 };
 
 const formatPhone = (phone: string | number): string => {
   const phoneStr = String(phone);
   if (phoneStr.length === 13) {
-    // 5511999999999 -> +55 (11) 99999-9999
     return `+${phoneStr.slice(0, 2)} (${phoneStr.slice(2, 4)}) ${phoneStr.slice(
       4,
       9,
@@ -75,104 +83,156 @@ export const KanbanCard = ({
     transform: CSS.Transform.toString(transform),
     transition: transition || undefined,
     willChange: isCurrentlyDragging ? "transform" : undefined,
-    // Allow touch scroll when drag is disabled (mobile)
     touchAction: disableDrag ? "auto" : "none",
   } as React.CSSProperties;
 
-  // Only apply drag attributes/listeners when drag is enabled
   const dragProps = disableDrag ? {} : { ...attributes, ...listeners };
 
+  const lastMessageText = card.last_message_at
+    ? formatDistanceToNow(new Date(card.last_message_at), {
+        addSuffix: true,
+        locale: ptBR,
+      })
+    : "Sem mensagens";
+
+  const compactMeta = [
+    card.estimated_value
+      ? {
+          key: "value",
+          icon: DollarSign,
+          label: `R$ ${card.estimated_value.toLocaleString("pt-BR")}`,
+        }
+      : null,
+    card.expected_close_date
+      ? {
+          key: "close",
+          icon: CalendarDays,
+          label: new Date(card.expected_close_date).toLocaleDateString("pt-BR"),
+        }
+      : null,
+    card.assignedUser?.name
+      ? {
+          key: "assigned",
+          icon: UserRound,
+          label: card.assignedUser.name,
+        }
+      : null,
+  ].filter(Boolean) as Array<{
+    key: string;
+    icon: typeof DollarSign;
+    label: string;
+  }>;
+
   return (
-    <Card
-      ref={disableDrag ? undefined : setNodeRef}
-      style={disableDrag ? undefined : style}
-      className={cn(
-        "bg-card border-border",
-        !disableDrag && "cursor-grab active:cursor-grabbing",
-        "hover:border-primary/50 hover:shadow-md",
-        "transition-all duration-200",
-        isCurrentlyDragging &&
-          "opacity-60 shadow-2xl border-primary scale-105 rotate-2",
-        card.auto_status === "awaiting_attendant" &&
-          "border-l-4 border-l-destructive",
-        card.auto_status === "awaiting_client" &&
-          "border-l-4 border-l-yellow-500",
-        card.auto_status === "in_progress" && "border-l-4 border-l-blue-500",
-        card.auto_status === "resolved" && "border-l-4 border-l-emerald-500",
-      )}
-      onClick={onClick}
-      {...dragProps}
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.18, ease: "easeOut" }}
     >
-      <CardContent className="p-2.5 space-y-2">
-        {/* Header */}
-        <div className="flex items-start gap-2">
-          <Avatar className="h-8 w-8 flex-shrink-0">
-            <AvatarFallback className="bg-gradient-to-br from-secondary to-primary text-primary-foreground text-xs font-medium">
+      <div
+        ref={disableDrag ? undefined : setNodeRef}
+        style={disableDrag ? undefined : style}
+        className={cn(
+          "crm-card-shell cursor-pointer px-3.5 py-3",
+          !disableDrag && "cursor-grab active:cursor-grabbing",
+          isCurrentlyDragging && "opacity-80",
+        )}
+        data-status={card.auto_status}
+        data-dragging={isCurrentlyDragging}
+        onClick={onClick}
+        {...dragProps}
+      >
+        <div className="flex items-start gap-3">
+          <Avatar className="h-10 w-10 flex-shrink-0 border border-white/10">
+            <AvatarFallback className="bg-gradient-to-br from-primary/90 via-secondary/80 to-primary text-sm font-semibold text-white">
               {getInitials(contactName)}
             </AvatarFallback>
           </Avatar>
 
-          <div className="flex-1 min-w-0 overflow-hidden">
-            <p className="font-medium text-sm text-foreground truncate break-words">
-              {contactName}
-            </p>
-            <p className="text-[11px] text-muted-foreground truncate break-all">
-              {formatPhone(card.phone)}
-            </p>
-          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-foreground">
+                  {contactName}
+                </p>
+                <div className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <Phone className="h-3 w-3" />
+                  <span className="truncate">{formatPhone(card.phone)}</span>
+                </div>
+              </div>
 
-          {/* Quick Actions Menu */}
-          {columns.length > 0 && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 flex-shrink-0"
-                >
-                  <MoreHorizontal className="h-3.5 w-3.5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44">
-                {columns.map((col) => (
-                  <DropdownMenuItem
-                    key={col.id}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onMoveToColumn?.(col.id);
-                    }}
-                    className="text-xs"
+              {columns.length > 0 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 rounded-full border border-transparent text-muted-foreground hover:border-border/80 hover:bg-background/30 hover:text-foreground"
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
+                    className="w-52 rounded-2xl border-border/80 bg-popover/95 backdrop-blur"
                   >
-                    Mover para {col.name}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
+                    {columns.map((col) => (
+                      <DropdownMenuItem
+                        key={col.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onMoveToColumn?.(col.id);
+                        }}
+                        className="text-xs"
+                      >
+                        <ArrowUpRight className="mr-2 h-3.5 w-3.5" />
+                        Mover para {col.name}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
 
-        {/* Tags */}
-        {cardTags.length > 0 && <CardTagList tags={cardTags} maxVisible={2} />}
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <CardStatusBadge status={card.auto_status} size="sm" />
+              <span className="crm-stat-chip">
+                <Clock3 className="h-3 w-3" />
+                {lastMessageText}
+              </span>
+            </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between pt-1.5 border-t border-border/50">
-          <CardStatusBadge status={card.auto_status} size="sm" />
+            {cardTags.length > 0 && (
+              <div className="mt-3">
+                <CardTagList tags={cardTags} maxVisible={2} />
+              </div>
+            )}
 
-          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-            {card.last_message_at && (
-              <div className="flex items-center gap-0.5">
-                <Clock className="h-2.5 w-2.5" />
-                <span>
-                  {formatDistanceToNow(new Date(card.last_message_at), {
-                    addSuffix: false,
-                    locale: ptBR,
-                  })}
-                </span>
+            {card.last_message_preview && (
+              <div className="mt-3 rounded-2xl border border-white/5 bg-background/20 px-3 py-2.5">
+                <p className="line-clamp-2 text-[12px] leading-relaxed text-muted-foreground">
+                  {card.last_message_preview}
+                </p>
+              </div>
+            )}
+
+            {compactMeta.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {compactMeta.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <span key={item.key} className="crm-stat-chip">
+                      <Icon className="h-3 w-3" />
+                      <span className="max-w-[140px] truncate">{item.label}</span>
+                    </span>
+                  );
+                })}
               </div>
             )}
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </motion.div>
   );
 };
