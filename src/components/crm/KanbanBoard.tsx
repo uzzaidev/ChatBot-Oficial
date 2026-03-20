@@ -152,7 +152,9 @@ export const KanbanBoard = ({
     if (!node) return;
 
     setCanScrollLeft(node.scrollLeft > 8);
-    setCanScrollRight(node.scrollLeft + node.clientWidth < node.scrollWidth - 8);
+    setCanScrollRight(
+      node.scrollLeft + node.clientWidth < node.scrollWidth - 8,
+    );
   }, []);
 
   useEffect(() => {
@@ -248,7 +250,9 @@ export const KanbanBoard = ({
                       onEditColumn ? () => onEditColumn(column) : undefined
                     }
                     onDeleteColumn={
-                      onDeleteColumn ? () => onDeleteColumn(column.id) : undefined
+                      onDeleteColumn
+                        ? () => onDeleteColumn(column.id)
+                        : undefined
                     }
                     isOver={overId === column.id}
                   />
