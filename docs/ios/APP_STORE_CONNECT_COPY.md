@@ -60,10 +60,10 @@ Build para validacao interna e externa do app iOS do UzzApp. Esta versao inclui 
 
 - Sign-in required: `YES`
 - Demo account username: `demo@uzzai.com.br`
-- Demo account password: `[PREENCHER_SENHA_DE_TESTE]`
-- Contact email: `suporte@uzzai.com.br`
-- Contact phone: `[PREENCHER_TELEFONE]`
-- Contact name: `[PREENCHER_RESPONSAVEL]`
+- Demo account password: `Google1@`
+- Contact email: `pedro.pagliarin@uzzai.com.br`
+- Contact phone: `+5554991590379`
+- Contact name: `Pedro Pagliarin`
 
 ### Notes for Reviewer
 

@@ -7,7 +7,32 @@
 
 ---
 
+## Status Atual Importante
+
+O estado mais recente da recuperação do iOS está documentado em [IOS_XCODE_SETUP_LOG.md](./IOS_XCODE_SETUP_LOG.md).
+
+Há uma divergência de branding entre a raiz e o iOS:
+
+- raiz: `com.uzzai.uzzapp` / `UzzApp`
+- iOS atual: `com.chatbot.app` / `ChatBot`
+
+Antes de qualquer `cap sync`, leia também [IOS_SYNC_IDENTITY_GUARDRAILS.md](./IOS_SYNC_IDENTITY_GUARDRAILS.md). Esse é o complemento operacional para evitar que o sync sobrescreva o estado funcional do iOS.
+
+---
+
 ## 📚 Documentos Disponíveis
+
+### 0. [IOS_XCODE_SETUP_LOG.md](./IOS_XCODE_SETUP_LOG.md)
+**Tipo:** Registro técnico da recuperação real
+**Use quando:** precisar entender exatamente o que quebrou, o que foi corrigido e qual é o estado funcional atual do iOS
+
+---
+
+### 0.1. [IOS_SYNC_IDENTITY_GUARDRAILS.md](./IOS_SYNC_IDENTITY_GUARDRAILS.md)
+**Tipo:** Guia operacional complementar
+**Use quando:** for executar `cap sync`, mexer em branding, alterar plugins, ou validar se a raiz e o iOS estão coerentes
+
+---
 
 ### 1. [IOS_IMPLEMENTATION_GUIDE.md](./IOS_IMPLEMENTATION_GUIDE.md)
 **Tipo:** Guia Técnico Completo
