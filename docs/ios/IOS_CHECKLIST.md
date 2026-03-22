@@ -26,22 +26,23 @@
 
 ### App Store Connect (fazer no Windows, via browser)
 
-- [ ] Criar conta Apple Developer (se não tiver): https://developer.apple.com
-- [ ] Criar app record: https://appstoreconnect.apple.com → My Apps → "+" → New App
-  - [ ] Name: UzzApp
-  - [ ] Bundle ID: `com.uzzai.uzzapp`
-  - [ ] SKU: `uzzapp-ios`
-  - [ ] Primary Language: Portuguese (Brazil)
-- [ ] Preencher metadados: descrição, keywords, category
-  - [x] Texto base pronto em `docs/ios/APP_STORE_CONNECT_COPY.md`
+- [x] Roteiro rápido disponível: `docs/ios/ROTEIRO_PREENCHIMENTO_10_MINUTOS.md`
+- [x] Criar conta Apple Developer (se não tiver): https://developer.apple.com
+- [x] Criar app record: https://appstoreconnect.apple.com → My Apps → "+" → New App
+  - [x] Name: UzzApp
+  - [x] Bundle ID: `com.uzzai.uzzapp`
+  - [x] SKU: `uzzapp-ios`
+  - [x] Primary Language: Portuguese (Brazil)
+- [x] Preencher metadados: descrição, keywords, category
+  - [x] Texto base pronto em `docs/ios/APP_STORE_CONNECT_COPY.md` na seção `BLOCO COPIAR E COLAR (por campo)`
 - [ ] Privacy Policy URL: `https://uzzapp.uzzai.com.br/privacy` (rota já implementada no app)
   - [x] URL pública validada (HTTP 200 em 2026-03-16)
-- [ ] Preencher App Privacy (questionário de dados coletados)
+- [x] Preencher App Privacy (questionário de dados coletados)
 
 ### Conta Demo para Review
 
 - [x] Criar conta `demo@uzzai.com.br` no sistema com dados de exemplo
-- [ ] Verificar que o login funciona na URL `https://uzzapp.uzzai.com.br`
+- [x] Verificar que o login funciona na URL `https://uzzapp.uzzai.com.br`
 
 ### Compliance
 
@@ -50,9 +51,9 @@
 
 ### UX Mobile (fazer no Windows)
 
-- [ ] Testar `https://uzzapp.uzzai.com.br` no Chrome com DevTools → modo mobile
-- [ ] Verificar safe-area (notch), touch targets, teclado virtual
-- [ ] Testar no Safari de um iPhone via rede local (se disponível)
+- [x] Testar `https://uzzapp.uzzai.com.br` no Chrome com DevTools → modo mobile
+- [x] Verificar safe-area (notch), touch targets, teclado virtual
+- [x] Testar no Safari de um iPhone via rede local (se disponível)
 
 ---
 
@@ -60,10 +61,10 @@
 
 - [ ] Mac com macOS 15.6+ (para Xcode 26)
 - [ ] 50GB+ de espaço livre em disco
-- [ ] Apple Developer Program ativo ($99/ano)
-- [ ] Conta Apple logada
-- [ ] Internet estável (downloads pesados)
-- [ ] iPhone real para testes finais (opcional mas recomendado)
+- [x] Apple Developer Program ativo ($99/ano)
+- [x] Conta Apple logada
+- [x] Internet estável (downloads pesados)
+- [x] iPhone real para testes finais (opcional mas recomendado)
 
 ---
 
@@ -229,6 +230,7 @@
 - [ ] Category: Business (ou adequado)
 - [ ] Price: Free (ou selecionar tier)
 - [ ] Availability: All countries
+- [x] Referência de texto para preenchimento: `docs/ios/APP_STORE_CONNECT_COPY.md` → `BLOCO COPIAR E COLAR (por campo)`
 
 ### Privacy
 
@@ -244,8 +246,10 @@
 
 ### Screenshots
 
-- [ ] Gerar 5-8 screenshots (iPhone 6.7" - 1290x2796px)
-- [ ] Usar simulador iPhone 15 Pro Max (⌘S para screenshot)
+- [ ] Gerar 5-8 screenshots (iPhone 6.5" - 1284x2778px ou 1242x2688px)
+  - [x] Rascunho gerado via `pnpm run ios:screenshots:draft` em `docs/ios/screenshots/draft-6.5in`
+- [ ] Se iPad 13" estiver exigido no App Store: gerar `2064x2752` com `IOS_SCREENSHOT_PROFILE=ipad_13 pnpm run ios:screenshots:draft`
+- [ ] Usar simulador iPhone 14 Plus (⌘S para screenshot)
 - [ ] Ou device real + transfer via AirDrop
 - [ ] Upload no App Store Connect
 
@@ -292,6 +296,7 @@
 
 - [ ] TestFlight → selecionar build
 - [ ] What to Test: descrever novidades
+- [x] Texto pronto em `docs/ios/APP_STORE_CONNECT_COPY.md` → seção `BLOCO COPIAR E COLAR (por campo)`
 - [ ] Test Information:
   - [ ] Beta App Description
   - [ ] Feedback Email
@@ -338,9 +343,11 @@
 - [ ] Subtitle: (30 chars, opcional)
 - [ ] Description: (descrever app, features principais)
 - [ ] Keywords: `whatsapp, chatbot, atendimento, crm, automação, ia`
+- [x] Fonte de preenchimento: `docs/ios/APP_STORE_CONNECT_COPY.md` → seção `BLOCO COPIAR E COLAR (por campo)`
 - [ ] Support URL: `https://uzzapp.uzzai.com.br/support`
-  - [ ] Validar HTTP 200 após deploy da rota
+  - [x] Validado HTTP 200 após deploy (2026-03-16)
 - [ ] Marketing URL: `https://uzzapp.uzzai.com.br` (opcional)
+  - [x] Validado HTTP 200 (2026-03-16)
 - [ ] Screenshots: upload das 5-8 imagens
 
 ### Review Information
@@ -348,6 +355,7 @@
 - [ ] Age Rating: clicar Edit → responder questionário → provavelmente **4+**
 
 - [ ] App Review Information:
+  - [x] Notes e credenciais prontas em `docs/ios/APP_STORE_CONNECT_COPY.md` → `App Review Notes` e `App Review Credentials`
   - [ ] Sign-in required: **YES**
   - [ ] Demo Account:
     - [ ] Username: `demo@uzzai.com.br`
@@ -398,7 +406,7 @@
 - [ ] Ler email da Apple **cuidadosamente**
 - [ ] Identificar problema:
   - [ ] App é wrapper de site → adicionar features nativas
-  - [ ] Falta Sign in with Apple → implementar
+  - [ ] Falta Sign in with Apple (apenas se login social estiver habilitado no app nativo) → implementar
   - [ ] Privacy policy → verificar URL
   - [ ] Conta demo não funciona → corrigir
   - [ ] Crashes → corrigir bugs
@@ -486,6 +494,7 @@
 - [ ] Screenshots (5-8)
 - [ ] Description preenchida
 - [x] Privacy Policy URL funcional
+- [x] Support URL funcional
 - [ ] App Privacy configurado
 - [ ] Demo account funcional
 - [ ] Build uploaded
@@ -538,7 +547,7 @@
 ## 🚨 Red Flags (Rejeição Garantida)
 
 - [ ] ❌ App é só um site (sem features nativas)
-- [ ] ❌ Falta Sign in with Apple (se tem login social)
+- [ ] ❌ Falta Sign in with Apple (apenas se houver login social no app nativo)
 - [ ] ❌ Privacy Policy URL quebrada/vazia
 - [ ] ❌ Conta demo não funciona
 - [ ] ❌ App crasha ao abrir
@@ -627,3 +636,4 @@
 *Checklist criado: 15/03/2026*
 *Versão: 1.0*
 *Próxima revisão: após primeiro go-live*
+
