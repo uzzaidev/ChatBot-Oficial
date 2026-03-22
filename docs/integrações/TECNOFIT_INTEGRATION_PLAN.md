@@ -1,8 +1,26 @@
 # 🏋️ Plano de Integração Tecnofit - ChatBot WhatsApp
 
-**Data:** 2026-02-01  
-**Status:** 📋 Planejamento  
+**Data:** 2026-02-01
+**Status:** 📋 Planejamento
 **Versão:** 1.0
+
+---
+
+> ## ⚠️ ATENÇÃO — Leia antes de implementar
+>
+> Este plano contém **erros de schema** identificados em 2026-03-17 após inspeção real das migrations.
+>
+> **Leia primeiro:** [`TECNOFIT_SCHEMA_VALIDATION.md`](./TECNOFIT_SCHEMA_VALIDATION.md)
+>
+> **Erros críticos neste plano:**
+> - `crm_cards` não tem `title`, `description` nem `custom_fields` — essas colunas não existem
+> - Inserir diretamente em `crm_cards` falha — FK obrigatória via `clientes_whatsapp` + trigger
+> - `lead_sources.source_type = 'tecnofit'` viola CHECK constraint — precisa de migration
+> - `lead_sources.source_data` e `lead_sources.card_id` não existem
+> - Cache JWT com `Map<>` não persiste em serverless (Vercel) — usar Redis
+> - `X-Company-Id` header não é necessário — JWT já contém empresa
+>
+> O arquivo de validação contém o adapter corrigido e as migrations na ordem certa.
 
 ---
 

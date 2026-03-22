@@ -1,13 +1,38 @@
 # iOS Implementation Documentation
 
 **Projeto:** ChatBot-Oficial (UzzApp)
-**Stack:** Next.js 16 + Capacitor 8.0.1 + iOS 17.4+
+**Stack:** Next.js 16 + Capacitor CLI 8.0.1 / Core 7.4.4 + iOS 17.4+
 **Data:** 15/03/2026
-**Status:** 📱 Pronto para implementação
+**Status:** 📱 Execução avançada (Windows concluído, pendências no Mac/App Store Connect)
+
+---
+
+## Status Atual Importante
+
+O estado mais recente da recuperação do iOS está documentado em [IOS_XCODE_SETUP_LOG.md](./IOS_XCODE_SETUP_LOG.md).
+
+Há uma divergência de branding entre a raiz e o iOS:
+
+- raiz: `com.uzzai.uzzapp` / `UzzApp`
+- iOS atual: `com.chatbot.app` / `ChatBot`
+
+Antes de qualquer `cap sync`, leia também [IOS_SYNC_IDENTITY_GUARDRAILS.md](./IOS_SYNC_IDENTITY_GUARDRAILS.md). Esse é o complemento operacional para evitar que o sync sobrescreva o estado funcional do iOS.
 
 ---
 
 ## 📚 Documentos Disponíveis
+
+### 0. [IOS_XCODE_SETUP_LOG.md](./IOS_XCODE_SETUP_LOG.md)
+**Tipo:** Registro técnico da recuperação real
+**Use quando:** precisar entender exatamente o que quebrou, o que foi corrigido e qual é o estado funcional atual do iOS
+
+---
+
+### 0.1. [IOS_SYNC_IDENTITY_GUARDRAILS.md](./IOS_SYNC_IDENTITY_GUARDRAILS.md)
+**Tipo:** Guia operacional complementar
+**Use quando:** for executar `cap sync`, mexer em branding, alterar plugins, ou validar se a raiz e o iOS estão coerentes
+
+---
 
 ### 1. [IOS_IMPLEMENTATION_GUIDE.md](./IOS_IMPLEMENTATION_GUIDE.md)
 **Tipo:** Guia Técnico Completo
@@ -58,6 +83,37 @@
 
 ---
 
+### 3. [APP_STORE_CONNECT_COPY.md](./APP_STORE_CONNECT_COPY.md)
+**Tipo:** Pacote de textos para App Store/TestFlight
+**Tamanho:** curto e direto
+**Tempo de leitura:** 5 minutos
+
+**Para quem:**
+- Quem vai preencher App Store Connect
+- Quem vai preencher TestFlight (What to Test, Beta Description)
+- Quem precisa de texto pronto para App Review Information
+
+**Use quando:**
+- Quiser copiar/colar os campos sem montar texto do zero
+- Precisar de referência única para metadados e review notes
+
+---
+
+### 4. [ROTEIRO_PREENCHIMENTO_10_MINUTOS.md](./ROTEIRO_PREENCHIMENTO_10_MINUTOS.md)
+**Tipo:** Guia rápido operacional
+**Tamanho:** curto
+**Tempo de leitura:** 3-5 minutos
+
+**Para quem:**
+- Quem quer preencher App Store Connect/TestFlight com rapidez
+- Quem quer um passo a passo minuto a minuto
+
+**Use quando:**
+- Precisar fazer o preenchimento em uma única sessão curta
+- Quiser reduzir erro de campo faltando
+
+---
+
 ## 🎯 Quick Start (5 minutos)
 
 **Se você nunca implementou iOS:**
@@ -70,6 +126,45 @@
 1. Ler: `IOS_CHECKLIST.md` completo (15 min)
 2. Começar: Fase 2 (Atualizar Projeto iOS)
 3. Consultar: `IOS_IMPLEMENTATION_GUIDE.md` quando tiver dúvidas
+
+---
+
+## 🧰 Comandos Úteis (Windows)
+
+```bash
+# Validar URLs públicas exigidas para revisão
+pnpm run ios:validate-urls
+
+# Gerar screenshots rascunho 6.5" (1284x2778)
+pnpm run ios:screenshots:draft
+```
+
+Saída das screenshots:
+- `docs/ios/screenshots/draft-6.5in`
+
+Opcional (perfil 6.7"):
+```bash
+IOS_SCREENSHOT_PROFILE=6_7 pnpm run ios:screenshots:draft
+```
+
+Se precisar iPad 13":
+```bash
+IOS_SCREENSHOT_PROFILE=ipad_13 pnpm run ios:screenshots:draft
+```
+
+Capturas logadas (dentro do app), iPad 13":
+```bash
+IOS_SCREENSHOT_PROFILE=ipad_13 DEMO_EMAIL="demo@uzzai.com.br" DEMO_PASSWORD="SUA_SENHA" pnpm run ios:screenshots:auth
+```
+
+---
+
+## 📌 Bloco Oficial de Copiar/Colar
+
+Fonte única para preencher os campos de App Store Connect/TestFlight:
+- `docs/ios/APP_STORE_CONNECT_COPY.md`
+- Seção: `BLOCO COPIAR E COLAR (por campo)`
+- Execução rápida: `docs/ios/ROTEIRO_PREENCHIMENTO_10_MINUTOS.md`
 
 ---
 
@@ -92,43 +187,40 @@
 
 #### Bloqueante (sem isso, não funciona)
 
-1. **Atualizar Podfile**
-   - Adicionar 4 plugins que faltam
-   - Mudar deployment target 14.0 → 17.4
-
-2. **Atualizar Info.plist**
-   - Adicionar `NSFaceIDUsageDescription`
-   - Configurar deep links
-   - Configurar App Transport Security
-
-3. **Configurar Xcode**
-   - Bundle ID: com.uzzai.uzzapp
-   - Signing (Team, provisioning)
-   - Capabilities (Push Notifications)
-   - Build Settings (deployment target 17.4)
-
-4. **Gerar Assets**
-   - Ícones (1024x1024 + outros tamanhos)
-   - Splash screens
-
-5. **Sincronizar Capacitor**
+1. **Sincronizar iOS no Mac**
    ```bash
    npx cap sync ios
    cd ios/App && pod install
    ```
+   - Observação: no ambiente atual, `capacitor-assets` no Windows pode falhar por `sharp` com Node 24.
+   - Recomendação: usar Node LTS 20/22 no Mac para esse passo.
+
+2. **Configurar Xcode**
+   - Confirmar Bundle ID: `com.uzzai.uzzapp`
+   - Signing (Team, provisioning)
+   - Capabilities (Push Notifications, Associated Domains)
+   - Build Settings (deployment target 17.4)
+
+3. **Build e testes nativos**
+   - Rodar em simulador iOS
+   - Rodar em iPhone real
+   - Validar push e biometria
 
 #### Importante (para App Store)
 
-6. **Criar app record no App Store Connect**
-7. **Preparar screenshots** (5-8 imagens)
-8. **Criar Privacy Policy** (se não existir)
-9. **Configurar demo account** para review
+4. **Criar app record no App Store Connect**
+5. **Preencher metadados com o bloco pronto**
+   - Arquivo: `docs/ios/APP_STORE_CONNECT_COPY.md`
+   - Seção: `BLOCO COPIAR E COLAR (por campo)`
+6. **Preparar screenshots** (5-8 imagens)
+   - Já existe rascunho: `docs/ios/screenshots/draft-6.5in` (1284x2778)
+7. **Configurar App Privacy**
+8. **Validar conta demo** para review (`demo@uzzai.com.br`)
 
 #### Recomendado (qualidade)
 
-10. **Testar em iPhone real** (não só simulador)
-11. **TestFlight com beta testers** (mínimo 3 pessoas)
-12. **Iterar baseado em feedback**
+9. **TestFlight com beta testers** (mínimo 3 pessoas)
+10. **Iterar baseado em feedback**
 
 ---
 
@@ -285,9 +377,11 @@ Se seu app apenas abre um WebView do site, será rejeitado.
 
 **Guideline 4.8:** Se seu app usa login social (Google, Facebook), deve oferecer Sign in with Apple também.
 
-**Status atual:** Verificar se web app usa login social
-- Se SIM → implementar Sign in with Apple
-- Se NÃO (só email/senha) → OK
+**Status atual (2026-03-16):**
+- No app nativo iOS, os botões sociais estão ocultos (`!Capacitor.isNativePlatform()`).
+- Fluxo atual no iOS: email/senha + biometria.
+- Portanto, Sign in with Apple está marcado como não aplicável no estado atual.
+- Se login social for habilitado no app nativo no futuro, Sign in with Apple passa a ser obrigatório.
 
 ### 4. Privacy Policy Obrigatória
 

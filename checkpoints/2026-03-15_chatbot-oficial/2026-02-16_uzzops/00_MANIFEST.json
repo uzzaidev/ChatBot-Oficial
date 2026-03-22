@@ -1,0 +1,100 @@
+{
+  "checkpoint_metadata": {
+    "created_at": "2026-02-16T00:00:00-03:00",
+    "timezone": "America/Sao_Paulo",
+    "project_name": "ChatBot-Oficial (WhatsApp SaaS Multi-tenant)",
+    "repository": "C:\\Projetos Uzz.Ai\\10  - ChatBot-Oficial-main\\ChatBot-Oficial",
+    "git_commit": "65e6482dd1089c24bcc477681b8e3339a27e3afd",
+    "git_branch": "stripe",
+    "documentation_type": "REVERSE ENGINEERING CHECKPOINT",
+    "purpose": "Complete documentation from code + Supabase backups (16_02) for AI-assisted improvements"
+  },
+  "versions": {
+    "next": "^16",
+    "react": "^18.3.1",
+    "node": "Recomendado: 18.x+",
+    "typescript": "^5",
+    "supabase": "^2.78.0"
+  },
+  "repository_stats": {
+    "total_directories_src": 301,
+    "total_files_src": 564,
+    "total_typescript_files": 562,
+    "pages_count": 54,
+    "api_routes_count": "100+",
+    "components_count": "90+"
+  },
+  "tech_stack": {
+    "framework": "Next.js 16 (App Router)",
+    "language": "TypeScript",
+    "database": "Supabase (PostgreSQL + Vault + pgvector + Realtime)",
+    "ai_providers": ["Groq (Llama 3.3 70B)", "OpenAI (Whisper, GPT-4o Vision, Embeddings)", "Anthropic (Claude)", "Google (Gemini)"],
+    "whatsapp_api": "Meta WhatsApp Business API v18.0",
+    "payments": "Stripe Connect",
+    "mobile": "Capacitor 7 (iOS + Android)",
+    "styling": "Tailwind CSS + shadcn/ui",
+    "state_management": "Zustand",
+    "caching": "Redis (Upstash)",
+    "analytics": "Custom usage tracking"
+  },
+  "database_sources": {
+    "migrations_folder": "./supabase/migrations/",
+    "backup_folder": "./db/",
+    "migration_files_count": 20,
+    "last_migration": "Realtime broadcast triggers"
+  },
+  "generated_files": [
+    "00_MANIFEST.json",
+    "01_REPO_TREE.txt",
+    "02_BUILD_RUNBOOK.md",
+    "03_DEPENDENCIES.md",
+    "04_ARCHITECTURE_FROM_CODE.md",
+    "05_ROUTES_FROM_CODE.md",
+    "06_UI_COMPONENTS_CATALOG.md",
+    "07_DATA_ACCESS_MAP.md",
+    "08_SUPABASE_SCHEMA_FROM_MIGRATIONS_AND_BACKUP.md",
+    "09_RLS_POLICIES_FROM_BACKUP.md",
+    "10_TENANCY_ENFORCEMENT.md",
+    "11_WEBHOOKS_JOBS_INTEGRATIONS.md",
+    "12_ERRORS_EDGE_CASES.md",
+    "13_TESTS_COVERAGE_MAP.md",
+    "14_TECH_DEBT_FINDINGS.md",
+    "90_MODULE_DEPENDENCY_MAP.md",
+    "91_MAIN_FLOWS.md",
+    "99_AI_CONTEXT_PACK.md",
+    "modules/AGENTS.md",
+    "modules/AI_GATEWAY.md",
+    "modules/ANALYTICS.md",
+    "modules/AUTH.md",
+    "modules/CHATBOT_FLOW.md",
+    "modules/CONTACTS_CRM.md",
+    "modules/FLOWS.md",
+    "modules/KNOWLEDGE_RAG.md",
+    "modules/PAYMENTS_STRIPE.md",
+    "modules/TEMPLATES.md",
+    "modules/ADMIN_PANEL.md"
+  ],
+  "data_sources_used": [
+    "Repository code (all .ts, .tsx, .js files)",
+    "package.json (dependencies, scripts)",
+    "tsconfig.json (TypeScript config)",
+    "next.config.js (Next.js config)",
+    "Supabase migrations (./supabase/migrations/*.sql)",
+    "Database backups (./db/)"
+  ],
+  "documentation_standards": {
+    "evidence_based": "All claims must cite file paths + line numbers or code excerpts",
+    "no_speculation": "If not found in code/backup, marked as 'NÃO ENCONTRADO'",
+    "traceability": "Every statement traceable to source",
+    "diagrams": "Mermaid format for flows, architecture, dependencies",
+    "completeness": "100% coverage of pages, endpoints, Supabase calls, schema, RLS"
+  },
+  "critical_notes": [
+    "This is a REVERSE ENGINEERING checkpoint - documentation extracted from CODE + BACKUPS only",
+    "Any existing documentation may be OUTDATED - code is source of truth",
+    "Database schema extracted from migrations + Supabase backup (16_02)",
+    "Multi-tenant architecture with client isolation via RLS",
+    "Stripe Connect billing system (Platform + Connected Accounts)",
+    "Mobile build uses static export (NEXT_PUBLIC_* env vars only)"
+  ]
+}

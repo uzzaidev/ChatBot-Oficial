@@ -1,0 +1,113 @@
+{
+  "checkpoint_metadata": {
+    "project_name": "ChatBot-Oficial (UzzApp WhatsApp SaaS)",
+    "checkpoint_date": "2026-03-15T23:59:59-03:00",
+    "timezone": "America/Sao_Paulo",
+    "generated_by": "Claude Code - Automated Analysis",
+    "version": "1.0.0"
+  },
+  "repository_info": {
+    "git_commit": "65e6482dd1089c24bcc477681b8e3339a27e3afd",
+    "git_branch": "stripe",
+    "last_commit_author": "Pedro <luisfboff@hotmail.com>",
+    "last_commit_date": "2026-03-11T14:50:24-03:00",
+    "last_commit_message": "chore: alinhar pnpm-lock.yaml com dependências Stripe e eslint 9"
+  },
+  "technology_stack": {
+    "framework": "Next.js 16",
+    "react_version": "18.3.1",
+    "typescript": "5.x",
+    "node_runtime": "Node.js (via Vercel serverless)",
+    "database": "Supabase (PostgreSQL)",
+    "mobile_framework": "Capacitor 8.0.1",
+    "state_management": "Zustand 5.0.9",
+    "ui_library": "Radix UI + Tailwind CSS",
+    "form_validation": "Zod 4.1.13",
+    "ai_providers": ["OpenAI", "Groq", "Anthropic", "Google"],
+    "payment": "Stripe 20.4.1"
+  },
+  "statistics": {
+    "total_files": 738,
+    "total_migrations": 107,
+    "total_pages": 57,
+    "total_api_routes": 106,
+    "total_components": 100,
+    "total_hooks": 22,
+    "total_lib_files": 54,
+    "total_layouts": 4
+  },
+  "mobile_platforms": {
+    "android": {
+      "status": "implemented",
+      "version_code": 8,
+      "version_name": "2.0.0-internal.8"
+    },
+    "ios": {
+      "status": "ready_for_implementation",
+      "bundle_id": "com.uzzai.uzzapp",
+      "deployment_target": "17.4",
+      "docs": "docs/ios/"
+    }
+  },
+  "integrations": {
+    "stripe_connect": {
+      "status": "85% complete",
+      "pending": "env vars, webhooks, production setup",
+      "docs": "docs/stripe/"
+    },
+    "meta_whatsapp": {
+      "status": "production",
+      "version": "v18.0"
+    },
+    "supabase": {
+      "status": "production",
+      "features": ["Auth", "Database", "Storage", "Vault", "Realtime"]
+    },
+    "ai_gateway": {
+      "status": "production",
+      "mode": "direct_ai_client",
+      "providers": ["openai", "groq"]
+    }
+  },
+  "checkpoint_files": [
+    "00_MANIFEST.json",
+    "01_REPO_TREE.txt",
+    "02_BUILD_RUNBOOK.md",
+    "03_DEPENDENCIES.md",
+    "04_ARCHITECTURE_FROM_CODE.md",
+    "05_ROUTES_FROM_CODE.md",
+    "06_UI_COMPONENTS_CATALOG.md",
+    "07_DATA_ACCESS_MAP.md",
+    "08_SUPABASE_SCHEMA_FROM_MIGRATIONS.md",
+    "09_RLS_POLICIES.md",
+    "10_TENANCY_ENFORCEMENT.md",
+    "11_WEBHOOKS_JOBS_INTEGRATIONS.md",
+    "12_ERRORS_EDGE_CASES.md",
+    "13_TESTS_COVERAGE_MAP.md",
+    "14_TECH_DEBT_FINDINGS.md",
+    "90_MODULE_DEPENDENCY_MAP.md",
+    "91_MAIN_FLOWS.md",
+    "99_AI_CONTEXT_PACK.md"
+  ],
+  "module_files": [
+    "modules/CHATBOT_CORE.md",
+    "modules/AI_GATEWAY.md",
+    "modules/CRM.md",
+    "modules/FLOWS.md",
+    "modules/TEMPLATES.md",
+    "modules/ANALYTICS.md",
+    "modules/STRIPE_PAYMENTS.md",
+    "modules/ADMIN.md",
+    "modules/AUTH.md",
+    "modules/AGENTS.md",
+    "modules/META_ADS.md",
+    "modules/CALENDAR.md"
+  ],
+  "notes": [
+    "This checkpoint represents the state as of 2026-03-15",
+    "Branch 'stripe' contains Stripe Connect implementation (85% complete)",
+    "iOS implementation documentation ready, awaiting execution",
+    "Direct AI Client mode active (replaced AI Gateway abstraction)",
+    "Multi-tenant architecture with RLS policies enforced"
+  ]
+}

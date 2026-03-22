@@ -2,7 +2,7 @@
 
 > **Data:** 15/03/2026
 > **Projeto:** ChatBot-Oficial (UzzApp)
-> **Stack:** Next.js 14 + Capacitor CLI 8.0.1 / Core 7.4.4 + iOS 17.4+
+> **Stack:** Next.js 16 + Capacitor CLI 8.0.1 / Core 7.4.4 + iOS 17.4+
 > **Deadline Crítico:** 28/04/2026 (Xcode 26 obrigatório)
 > **Status Atual:** Configuração iOS concluída no Windows — aguardando Mac para build
 
@@ -24,8 +24,8 @@
 
 - [x] Criar `resources/icon.png` (1024x1024, sem transparência)
 - [x] Criar `resources/splash.png` (2732x2732)
-- [x] Preparar texto de App Store em `docs/ios/APP_STORE_CONNECT_COPY.md`
-- [x] Criar Support URL em `https://uzzapp.uzzai.com.br/support` (rota adicionada no app; falta deploy para ficar pública)
+- [x] Preparar texto de App Store em `docs/ios/APP_STORE_CONNECT_COPY.md` (secao `BLOCO COPIAR E COLAR (por campo)`)
+- [x] Criar Support URL em `https://uzzapp.uzzai.com.br/support` (rota adicionada e publicada)
 - [ ] Criar app record no App Store Connect (via browser)
 - [x] Criar Privacy Policy em `https://uzzapp.uzzai.com.br/privacy` (rota criada no app)
 - [x] Criar conta demo `demo@uzzai.com.br` com dados de exemplo
@@ -745,14 +745,14 @@ Tracking: No
 ### Passo 6.3: Preparar Screenshots
 
 **Tamanhos obrigatórios (iPhone):**
-- 6.7" (iPhone 15 Pro Max): 1290x2796 pixels
-- 6.5" (iPhone 14 Plus): 1284x2778 pixels
+- Slot 6.5": 1284x2778 ou 1242x2688 pixels
+- Slot 6.7"/6.9" (quando exibido): 1290x2796 pixels
 
 **Como gerar:**
 
 **Opção A: Simulador + Xcode**
 ```bash
-# 1. Rodar app no simulador iPhone 15 Pro Max
+# 1. Rodar app no simulador iPhone 14 Plus (para 1284x2778)
 # 2. Navegar para tela desejada
 # 3. ⌘S (salvar screenshot)
 # 4. Arquivos salvos em ~/Desktop
@@ -761,6 +761,18 @@ Tracking: No
 **Opção B: Device real**
 - Tirar screenshots no iPhone
 - Transferir para Mac via AirDrop
+
+**Opção C: Rascunho automático (Windows)**
+```bash
+pnpm run ios:screenshots:draft
+```
+- Saída padrão: `docs/ios/screenshots/draft-6.5in`
+- Gera 5 imagens em `1284x2778` (login, register, privacy, terms, support)
+- Opcional 6.7":
+  ```bash
+  IOS_SCREENSHOT_PROFILE=6_7 pnpm run ios:screenshots:draft
+  ```
+- Útil para preparação inicial; para submissão final, priorizar capturas do app rodando no simulador/device
 
 **Mínimo necessário:** 3 screenshots
 **Recomendado:** 5-8 screenshots mostrando features principais
@@ -862,6 +874,7 @@ npx cap sync ios
      - Privacy Policy URL
      - Sign-In Required: Yes/No
      - Demo Account (se sim): fornecer email/senha
+   - Fonte recomendada para colar os textos: `docs/ios/APP_STORE_CONNECT_COPY.md` (seção `BLOCO COPIAR E COLAR (por campo)`)
 
 4. **Export Compliance:**
    - Does your app use encryption? **YES** (HTTPS conta)
@@ -921,6 +934,10 @@ npx cap sync ios
 
 Texto pronto para copiar/colar:
 - `docs/ios/APP_STORE_CONNECT_COPY.md`
+- Secao de referencia principal: `BLOCO COPIAR E COLAR (por campo)`
+- Roteiro de execucao rapida: `docs/ios/ROTEIRO_PREENCHIMENTO_10_MINUTOS.md`
+
+Use preferencialmente o texto do bloco oficial. O modelo abaixo e apenas referencia historica.
 
 ```
 [Descrever app em português]
@@ -940,7 +957,7 @@ Principais funcionalidades:
 #### Keywords
 
 ```
-whatsapp, chatbot, atendimento, crm, automação, ia, business
+whatsapp,chatbot,atendimento,crm,automacao,ia,vendas,suporte
 ```
 
 (max 100 caracteres, separados por vírgula)
@@ -970,6 +987,10 @@ https://uzzapp.uzzai.com.br
 - Provavelmente: **4+** (sem conteúdo restrito)
 
 **App Review Information:**
+
+Fonte oficial para copiar/colar:
+- `docs/ios/APP_STORE_CONNECT_COPY.md`
+- Secoes: `App Review Notes` e `App Review Credentials`
 
 - **Sign-in required:** YES
 - **Demo Account:**
@@ -1058,8 +1079,12 @@ Observações:
 > Apps that use a third-party or social login service to set up or authenticate must also offer Sign in with Apple.
 
 **Como evitar:**
-- Se seu app tem login Google/Facebook/outro → adicionar Sign in with Apple
-- Se usa apenas email/senha → OK, não precisa
+- Se seu app tem login Google/Facebook/outro no app nativo → adicionar Sign in with Apple
+- Se usa apenas email/senha no app nativo → OK, não precisa
+
+**Status atual deste projeto (2026-03-16):**
+- Login social nao aparece no app nativo (botoes ocultos por `!Capacitor.isNativePlatform()`).
+- Fluxo atual no iOS: email/senha + biometria.
 
 **Implementação rápida:**
 ```bash
@@ -1373,7 +1398,7 @@ Se você já configurou para iOS 17.4+ e está usando Xcode 26, está safe.
 - [ ] Keywords configuradas
 - [x] Privacy Policy URL funcional
 - [ ] App Privacy preenchido
-- [ ] Support URL funcional
+- [x] Support URL funcional
 - [ ] Demo account criada e funcional
 - [ ] Contact information preenchida
 - [ ] Build uploaded e "Ready to Submit"
