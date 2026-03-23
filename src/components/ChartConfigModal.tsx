@@ -165,6 +165,33 @@ const COLOR_PRESETS = [
   { name: 'Vermelho', primary: '#ef4444', secondary: '#f87171' },
 ]
 
+const COMPOSED_METRICS = new Set<MetricType>([
+  'conversations_per_day',
+  'conversations_per_week',
+  'conversations_per_month',
+  'conversations_per_year',
+  'new_clients_per_day',
+  'new_clients_per_week',
+  'new_clients_per_month',
+  'new_clients_per_year',
+  'messages_per_day',
+  'messages_per_week',
+  'messages_per_month',
+  'messages_per_year',
+  'tokens_per_day',
+  'tokens_per_week',
+  'tokens_per_month',
+  'tokens_per_year',
+  'cost_per_day',
+  'cost_per_week',
+  'cost_per_month',
+  'cost_per_year',
+])
+
+function getPreferredChartType(metricType: MetricType): ChartType {
+  return COMPOSED_METRICS.has(metricType) ? 'composed' : 'line'
+}
+
 /**
  * ChartConfigModal Component
  *
@@ -183,7 +210,7 @@ export function ChartConfigModal({
   onSave,
 }: ChartConfigModalProps) {
   const [formData, setFormData] = useState<Partial<ChartConfig>>({
-    type: 'line',
+    type: 'composed',
     metricType: 'conversations_per_day',
     title: 'Novo Gráfico',
     description: '',
@@ -203,7 +230,7 @@ export function ChartConfigModal({
     } else {
       // Reset to defaults when creating new chart
       setFormData({
-        type: 'line',
+        type: 'composed',
         metricType: 'conversations_per_day',
         title: 'Novo Gráfico',
         description: '',
@@ -263,7 +290,11 @@ export function ChartConfigModal({
           <MetricSelector
             value={formData.metricType}
             onValueChange={(value) =>
-              setFormData({ ...formData, metricType: value as MetricType })
+              setFormData({
+                ...formData,
+                metricType: value as MetricType,
+                type: getPreferredChartType(value as MetricType),
+              })
             }
             label="Métrica"
           />

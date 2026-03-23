@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTheme } from 'next-themes'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Settings, X, Download, ZoomIn, ZoomOut } from 'lucide-react'
+import { AnalyticsShell } from '@/components/AnalyticsShell'
+import { Download, Settings, X, ZoomIn } from 'lucide-react'
 import {
   LineChart,
   Line,
@@ -21,7 +21,6 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import type { ChartConfig, MetricDataPoint } from '@/lib/types/dashboard-metrics'
-import { cn } from '@/lib/utils'
 
 interface CustomizableChartProps {
   config: ChartConfig
@@ -29,16 +28,83 @@ interface CustomizableChartProps {
   onEdit?: (id: string) => void
   onRemove?: (id: string) => void
   loading?: boolean
+  variant?: 'card' | 'bare'
+  mobileHeight?: number
+  desktopHeight?: number
+  hideLegendOnMobile?: boolean
+}
+
+const SERIES_COLOR_MAP: Record<string, { base: string; accent: string }> = {
+  total: { base: '#2563eb', accent: '#60a5fa' },
+  ativo: { base: '#14b8a6', accent: '#5eead4' },
+  active: { base: '#14b8a6', accent: '#5eead4' },
+  humano: { base: '#8b5cf6', accent: '#c4b5fd' },
+  human: { base: '#8b5cf6', accent: '#c4b5fd' },
+  transferido: { base: '#f59e0b', accent: '#fcd34d' },
+  transferred: { base: '#f59e0b', accent: '#fcd34d' },
+  enviadas: { base: '#10b981', accent: '#6ee7b7' },
+  outgoing: { base: '#10b981', accent: '#6ee7b7' },
+  recebidas: { base: '#06b6d4', accent: '#67e8f9' },
+  incoming: { base: '#06b6d4', accent: '#67e8f9' },
+  novos: { base: '#a855f7', accent: '#d8b4fe' },
+  new: { base: '#a855f7', accent: '#d8b4fe' },
+  openai: { base: '#10b981', accent: '#86efac' },
+  groq: { base: '#f97316', accent: '#fdba74' },
+}
+
+function formatMetricDateLabel(value: string) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return new Date(`${value}T00:00:00`).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'short',
+    })
+  }
+
+  if (/^\d{4}-\d{2}$/.test(value)) {
+    return new Date(`${value}-01T00:00:00`).toLocaleDateString('pt-BR', {
+      month: 'short',
+      year: '2-digit',
+    })
+  }
+
+  if (/^\d{4}-W\d{2}$/.test(value)) {
+    return value.replace(/^\d{4}-/, '')
+  }
+
+  return value
+}
+
+function getChartTypeLabel(type: ChartConfig['type']) {
+  switch (type) {
+    case 'line':
+      return 'Linha'
+    case 'bar':
+      return 'Barras'
+    case 'area':
+      return 'Área'
+    case 'composed':
+      return 'Composto'
+    default:
+      return 'Gráfico'
+  }
+}
+
+function sanitizeGradientId(value: string) {
+  return value.replace(/[^a-zA-Z0-9_-]/g, '-')
+}
+
+function normalizeSeriesKey(value: string) {
+  return value.toLowerCase().trim()
+}
+
+function isTotalSeriesKey(value: string) {
+  return normalizeSeriesKey(value) === 'total'
 }
 
 /**
  * CustomizableChart Component
  *
- * Componente de gráfico customizável que segue o padrão Byterover:
- * - Suporta múltiplos tipos (line, bar, area, composed)
- * - Cores customizáveis
- * - Grid e legenda opcionais
- * - Ações de editar/remover
+ * Componente de gráfico customizável com shell premium para analytics.
  */
 export function CustomizableChart({
   config,
@@ -46,25 +112,62 @@ export function CustomizableChart({
   onEdit,
   onRemove,
   loading = false,
+  variant = 'card',
+  mobileHeight,
+  desktopHeight,
+  hideLegendOnMobile = false,
 }: CustomizableChartProps) {
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
-  const chartHeight = config.height || 300
+  const [isMobile, setIsMobile] = useState(false)
   const [hiddenDataKeys, setHiddenDataKeys] = useState<Set<string>>(new Set())
   const chartContainerRef = useRef<HTMLDivElement>(null)
 
-  // Theme-aware chart colors
-  const axisStroke = isDark ? 'hsl(var(--muted-foreground) / 0.5)' : 'hsl(var(--muted-foreground) / 0.3)'
-  const tickFill = isDark ? 'hsl(var(--muted-foreground) / 0.7)' : 'hsl(var(--muted-foreground) / 0.6)'
-  const gridStroke = isDark ? 'hsl(var(--border) / 0.3)' : 'hsl(var(--border) / 0.2)'
-  const tooltipBg = isDark ? 'hsl(var(--popover))' : 'hsl(var(--background))'
-  const tooltipBorder = isDark ? 'hsl(var(--border))' : 'hsl(var(--border))'
-  const tooltipLabelColor = isDark ? 'hsl(var(--foreground))' : 'hsl(var(--foreground))'
-  const tooltipItemColor = isDark ? 'hsl(var(--muted-foreground))' : 'hsl(var(--muted-foreground))'
-  const legendColor = isDark ? 'hsl(var(--foreground))' : 'hsl(var(--foreground))'
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 767px)')
+    const syncMedia = () => setIsMobile(mediaQuery.matches)
 
-  // Toggle visibility of data series
-  const handleLegendClick = (dataKey: string | number | ((data: any, index: number) => string | number) | undefined) => {
+    syncMedia()
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', syncMedia)
+      return () => mediaQuery.removeEventListener('change', syncMedia)
+    }
+
+    mediaQuery.addListener(syncMedia)
+    return () => mediaQuery.removeListener(syncMedia)
+  }, [])
+
+  const baseHeight = config.height || 300
+  const chartHeight = isMobile
+    ? mobileHeight ?? Math.max(240, baseHeight - 36)
+    : desktopHeight ?? baseHeight
+  const shouldShowLegend = Boolean(config.showLegend) && !(hideLegendOnMobile && isMobile)
+  const xAxisInterval = isMobile
+    ? Math.max(0, Math.ceil(Math.max(data.length, 1) / 4) - 1)
+    : Math.max(0, Math.ceil(Math.max(data.length, 1) / 7) - 1)
+  const gradientIdBase = sanitizeGradientId(config.id)
+
+  const axisStroke = isDark
+    ? 'hsl(var(--muted-foreground) / 0.45)'
+    : 'hsl(var(--muted-foreground) / 0.35)'
+  const tickFill = isDark
+    ? 'hsl(var(--muted-foreground) / 0.72)'
+    : 'hsl(var(--muted-foreground) / 0.65)'
+  const gridStroke = isDark ? 'hsl(var(--border) / 0.28)' : 'hsl(var(--border) / 0.22)'
+  const tooltipBg = isDark ? 'hsl(var(--popover) / 0.96)' : 'hsl(var(--background) / 0.96)'
+  const tooltipBorder = 'hsl(var(--border))'
+  const tooltipLabelColor = 'hsl(var(--foreground))'
+  const tooltipItemColor = 'hsl(var(--muted-foreground))'
+  const legendColor = 'hsl(var(--foreground))'
+
+  const handleLegendClick = (
+    dataKey:
+      | string
+      | number
+      | ((data: unknown, index: number) => string | number)
+      | undefined,
+  ) => {
     if (!dataKey || typeof dataKey === 'function') return
     const key = String(dataKey)
     const newHidden = new Set(hiddenDataKeys)
@@ -76,12 +179,10 @@ export function CustomizableChart({
     setHiddenDataKeys(newHidden)
   }
 
-  // Export chart as PNG
   const handleExportPNG = async () => {
     if (!chartContainerRef.current) return
 
     try {
-      // Dynamic import of html2canvas to keep bundle size small
       const html2canvas = (await import('html2canvas')).default
       const canvas = await html2canvas(chartContainerRef.current, {
         backgroundColor: isDark ? 'hsl(var(--card))' : 'hsl(var(--background))',
@@ -98,7 +199,6 @@ export function CustomizableChart({
     }
   }
 
-  // Export chart as SVG
   const handleExportSVG = () => {
     const svgElement = chartContainerRef.current?.querySelector('svg')
     if (!svgElement) return
@@ -113,60 +213,302 @@ export function CustomizableChart({
     URL.revokeObjectURL(svgUrl)
   }
 
+  const getDataKeys = () => {
+    if (data.length === 0) return []
+    const firstItem = data[0]
+    const keys = Object.keys(firstItem).filter((key) => key !== 'date' && key !== 'label')
+
+    return keys.sort((a, b) => {
+      const aIsTotal = isTotalSeriesKey(a)
+      const bIsTotal = isTotalSeriesKey(b)
+
+      if (aIsTotal && !bIsTotal) return 1
+      if (!aIsTotal && bIsTotal) return -1
+      return a.localeCompare(b)
+    })
+  }
+
+  const getSeriesPalette = (key: string, index: number) => {
+    const semantic = SERIES_COLOR_MAP[normalizeSeriesKey(key)]
+    if (semantic) return semantic
+
+    if (index === 0) {
+      return {
+        base: config.colors.primary,
+        accent: config.colors.secondary || config.colors.primary,
+      }
+    }
+
+    if (index === 1 && config.colors.secondary) {
+      return {
+        base: config.colors.secondary,
+        accent: config.colors.primary,
+      }
+    }
+
+    return {
+      base: config.colors.primary,
+      accent: config.colors.secondary || config.colors.primary,
+    }
+  }
+
+  const getSeriesColor = (key: string, index: number) => getSeriesPalette(key, index).base
+
+  const getSeriesAccent = (key: string, index: number) => getSeriesPalette(key, index).accent
+
+  const renderGradientDefs = () => {
+    const dataKeys = getDataKeys()
+
+    return (
+      <defs>
+        {dataKeys.map((key, index) => {
+          const color = getSeriesColor(key, index)
+          const accent = getSeriesAccent(key, index)
+
+          return (
+            <linearGradient key={`${key}-line-gradient`} id={`${gradientIdBase}-line-${index}`} x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor={color} />
+              <stop offset="100%" stopColor={accent} />
+            </linearGradient>
+          )
+        })}
+
+        {dataKeys.map((key, index) => {
+          const color = getSeriesColor(key, index)
+          const accent = getSeriesAccent(key, index)
+
+          return (
+            <linearGradient key={`${key}-area-gradient`} id={`${gradientIdBase}-area-${index}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={accent} stopOpacity="0.34" />
+              <stop offset="55%" stopColor={color} stopOpacity="0.16" />
+              <stop offset="100%" stopColor={color} stopOpacity="0.02" />
+            </linearGradient>
+          )
+        })}
+
+        {dataKeys.map((key, index) => {
+          const color = getSeriesColor(key, index)
+          const accent = getSeriesAccent(key, index)
+
+          return (
+            <linearGradient key={`${key}-bar-gradient`} id={`${gradientIdBase}-bar-${index}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={accent} stopOpacity="0.98" />
+              <stop offset="38%" stopColor={color} stopOpacity="0.94" />
+              <stop offset="100%" stopColor={color} stopOpacity="0.62" />
+            </linearGradient>
+          )
+        })}
+      </defs>
+    )
+  }
+
+  const renderLines = () => {
+    const dataKeys = getDataKeys()
+    return dataKeys
+      .filter((key) => !hiddenDataKeys.has(key))
+      .map((key) => {
+        const index = dataKeys.indexOf(key)
+
+        return (
+          <Line
+            key={key}
+            type="monotone"
+            dataKey={key}
+            stroke={`url(#${gradientIdBase}-line-${index})`}
+            strokeWidth={2.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            dot={false}
+            activeDot={{
+              r: 5.5,
+              fill: getSeriesColor(key, index),
+              stroke: getSeriesAccent(key, index),
+              strokeWidth: 3,
+            }}
+            animationDuration={900 + index * 120}
+            animationEasing="ease-out"
+            hide={hiddenDataKeys.has(key)}
+          />
+        )
+      })
+  }
+
+  const renderBars = () => {
+    const dataKeys = getDataKeys()
+    return dataKeys
+      .filter((key) => !hiddenDataKeys.has(key))
+      .map((key) => {
+        const index = dataKeys.indexOf(key)
+
+        return (
+          <Bar
+            key={key}
+            dataKey={key}
+            fill={`url(#${gradientIdBase}-bar-${index})`}
+            stroke={getSeriesColor(key, index)}
+            strokeOpacity={0.12}
+            radius={[10, 10, 4, 4]}
+            maxBarSize={isMobile ? 18 : 28}
+            animationDuration={720 + index * 80}
+            animationEasing="ease-out"
+            hide={hiddenDataKeys.has(key)}
+          />
+        )
+      })
+  }
+
+  const renderAreas = () => {
+    const dataKeys = getDataKeys()
+    return dataKeys
+      .filter((key) => !hiddenDataKeys.has(key))
+      .map((key) => {
+        const index = dataKeys.indexOf(key)
+
+        return (
+          <Area
+            key={key}
+            type="monotone"
+            dataKey={key}
+            stroke={`url(#${gradientIdBase}-line-${index})`}
+            fill={`url(#${gradientIdBase}-area-${index})`}
+            strokeWidth={2.6}
+            strokeLinecap="round"
+            activeDot={{
+              r: 5,
+              fill: getSeriesColor(key, index),
+              stroke: getSeriesAccent(key, index),
+              strokeWidth: 3,
+            }}
+            animationDuration={980 + index * 120}
+            animationEasing="ease-out"
+            hide={hiddenDataKeys.has(key)}
+          />
+        )
+      })
+  }
+
+  const renderComposedElements = () => {
+    const dataKeys = getDataKeys()
+    const nonTotalKeys = dataKeys.filter((key) => !isTotalSeriesKey(key))
+    const totalKeys = dataKeys.filter((key) => isTotalSeriesKey(key))
+
+    return [
+      ...nonTotalKeys.map((key) => {
+        const index = dataKeys.indexOf(key)
+
+        return (
+          <Bar
+            key={key}
+            dataKey={key}
+            fill={`url(#${gradientIdBase}-bar-${index})`}
+            stroke={getSeriesColor(key, index)}
+            strokeOpacity={0.12}
+            radius={[10, 10, 4, 4]}
+            maxBarSize={isMobile ? 16 : 24}
+            animationBegin={80}
+            animationDuration={760 + index * 80}
+            animationEasing="ease-out"
+          />
+        )
+      }),
+      ...totalKeys.map((key) => {
+        const index = dataKeys.indexOf(key)
+
+        return (
+          <Line
+            key={key}
+            type="monotone"
+            dataKey={key}
+            stroke={`url(#${gradientIdBase}-line-${index})`}
+            strokeWidth={3}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            dot={false}
+            activeDot={{
+              r: 5.5,
+              fill: getSeriesColor(key, index),
+              stroke: getSeriesAccent(key, index),
+              strokeWidth: 3,
+            }}
+            animationDuration={1000}
+            animationEasing="ease-out"
+          />
+        )
+      }),
+    ]
+  }
+
   const renderChart = () => {
     const commonProps = {
       data,
-      margin: { top: 10, right: 30, left: 0, bottom: 5 },
+      margin: isMobile
+        ? { top: 8, right: 2, left: -22, bottom: 0 }
+        : { top: 12, right: 10, left: -8, bottom: 0 },
     }
-
-    const gridProps = config.showGrid
-      ? { strokeDasharray: '3 3', stroke: gridStroke }
-      : undefined
 
     const tooltipProps = {
       contentStyle: {
         backgroundColor: tooltipBg,
         border: `1px solid ${tooltipBorder}`,
-        borderRadius: '12px',
-        padding: '12px 16px',
-        boxShadow: isDark ? '0 8px 32px rgba(0, 0, 0, 0.4)' : '0 8px 32px rgba(0, 0, 0, 0.15)',
+        borderRadius: '14px',
+        padding: '10px 14px',
+        boxShadow: isDark ? '0 12px 32px rgba(0, 0, 0, 0.45)' : '0 12px 28px rgba(0, 0, 0, 0.12)',
       },
-      labelStyle: { color: tooltipLabelColor, fontWeight: 600, marginBottom: '4px' },
-      itemStyle: { color: tooltipItemColor, fontSize: '13px' },
-      cursor: { stroke: 'rgba(26, 188, 156, 0.3)', strokeWidth: 1 },
+      labelStyle: {
+        color: tooltipLabelColor,
+        fontWeight: 600,
+        marginBottom: '4px',
+      },
+      itemStyle: {
+        color: tooltipItemColor,
+        fontSize: '12px',
+      },
+      cursor: { stroke: 'hsl(var(--primary) / 0.22)', strokeWidth: 1 },
     }
 
+    const xAxisProps = {
+      dataKey: 'date',
+      stroke: axisStroke,
+      tickLine: false,
+      axisLine: false,
+      tick: { fill: tickFill, fontSize: isMobile ? 10 : 11 },
+      tickFormatter: formatMetricDateLabel,
+      minTickGap: isMobile ? 24 : 14,
+      tickMargin: isMobile ? 6 : 8,
+      interval: xAxisInterval,
+      padding: isMobile ? { left: 0, right: 0 } : { left: 6, right: 6 },
+    }
+
+    const yAxisProps = {
+      stroke: axisStroke,
+      tickLine: false,
+      axisLine: false,
+      hide: isMobile,
+      tick: { fill: tickFill, fontSize: isMobile ? 10 : 11 },
+      width: isMobile ? 0 : 46,
+      tickMargin: 8,
+    }
 
     switch (config.type) {
       case 'line':
         return (
           <LineChart {...commonProps}>
-            {config.showGrid && <CartesianGrid {...gridProps} />}
-            <XAxis
-              dataKey="date"
-              stroke={axisStroke}
-              fontSize={12}
-              tickLine={false}
-              tick={{ fill: tickFill }}
-            />
-            <YAxis
-              stroke={axisStroke}
-              fontSize={12}
-              tickLine={false}
-              tick={{ fill: tickFill }}
-            />
+            {renderGradientDefs()}
+            {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />}
+            <XAxis {...xAxisProps} />
+            <YAxis {...yAxisProps} />
             <Tooltip {...tooltipProps} />
-            {config.showLegend && (
-              <Legend
-                onClick={(e: any) => {
-                  if (e?.dataKey) {
-                    handleLegendClick(e.dataKey)
-                  }
-                }}
-                wrapperStyle={{ color: legendColor }}
-                iconType="line"
-              />
-            )}
+             {shouldShowLegend && (
+               <Legend
+                 onClick={(payload) => {
+                   if (typeof payload?.dataKey === 'string' || typeof payload?.dataKey === 'number') {
+                     handleLegendClick(String(payload.dataKey))
+                   }
+                 }}
+                 wrapperStyle={{ color: legendColor, fontSize: isMobile ? '11px' : '12px' }}
+                 iconType="line"
+               />
+             )}
             {renderLines()}
           </LineChart>
         )
@@ -174,31 +516,21 @@ export function CustomizableChart({
       case 'bar':
         return (
           <BarChart {...commonProps}>
-            {config.showGrid && <CartesianGrid {...gridProps} />}
-            <XAxis
-              dataKey="date"
-              stroke={axisStroke}
-              fontSize={12}
-              tickLine={false}
-              tick={{ fill: tickFill }}
-            />
-            <YAxis
-              stroke={axisStroke}
-              fontSize={12}
-              tickLine={false}
-              tick={{ fill: tickFill }}
-            />
+            {renderGradientDefs()}
+            {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />}
+            <XAxis {...xAxisProps} />
+            <YAxis {...yAxisProps} />
             <Tooltip {...tooltipProps} />
-            {config.showLegend && (
-              <Legend
-                onClick={(e: any) => {
-                  if (e?.dataKey) {
-                    handleLegendClick(e.dataKey)
-                  }
-                }}
-                wrapperStyle={{ color: legendColor }}
-              />
-            )}
+             {shouldShowLegend && (
+               <Legend
+                 onClick={(payload) => {
+                   if (typeof payload?.dataKey === 'string' || typeof payload?.dataKey === 'number') {
+                     handleLegendClick(String(payload.dataKey))
+                   }
+                 }}
+                 wrapperStyle={{ color: legendColor, fontSize: isMobile ? '11px' : '12px' }}
+               />
+             )}
             {renderBars()}
           </BarChart>
         )
@@ -206,32 +538,22 @@ export function CustomizableChart({
       case 'area':
         return (
           <AreaChart {...commonProps}>
-            {config.showGrid && <CartesianGrid {...gridProps} />}
-            <XAxis
-              dataKey="date"
-              stroke={axisStroke}
-              fontSize={12}
-              tickLine={false}
-              tick={{ fill: tickFill }}
-            />
-            <YAxis
-              stroke={axisStroke}
-              fontSize={12}
-              tickLine={false}
-              tick={{ fill: tickFill }}
-            />
+            {renderGradientDefs()}
+            {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />}
+            <XAxis {...xAxisProps} />
+            <YAxis {...yAxisProps} />
             <Tooltip {...tooltipProps} />
-            {config.showLegend && (
-              <Legend
-                onClick={(e: any) => {
-                  if (e?.dataKey) {
-                    handleLegendClick(e.dataKey)
-                  }
-                }}
-                wrapperStyle={{ color: legendColor }}
-                iconType="rect"
-              />
-            )}
+             {shouldShowLegend && (
+               <Legend
+                 onClick={(payload) => {
+                   if (typeof payload?.dataKey === 'string' || typeof payload?.dataKey === 'number') {
+                     handleLegendClick(String(payload.dataKey))
+                   }
+                 }}
+                 wrapperStyle={{ color: legendColor, fontSize: isMobile ? '11px' : '12px' }}
+                 iconType="rect"
+               />
+             )}
             {renderAreas()}
           </AreaChart>
         )
@@ -239,31 +561,21 @@ export function CustomizableChart({
       case 'composed':
         return (
           <ComposedChart {...commonProps}>
-            {config.showGrid && <CartesianGrid {...gridProps} />}
-            <XAxis
-              dataKey="date"
-              stroke={axisStroke}
-              fontSize={12}
-              tickLine={false}
-              tick={{ fill: tickFill }}
-            />
-            <YAxis
-              stroke={axisStroke}
-              fontSize={12}
-              tickLine={false}
-              tick={{ fill: tickFill }}
-            />
+            {renderGradientDefs()}
+            {config.showGrid && <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />}
+            <XAxis {...xAxisProps} />
+            <YAxis {...yAxisProps} />
             <Tooltip {...tooltipProps} />
-            {config.showLegend && (
-              <Legend
-                onClick={(e: any) => {
-                  if (e?.dataKey) {
-                    handleLegendClick(e.dataKey)
-                  }
-                }}
-                wrapperStyle={{ color: legendColor }}
-              />
-            )}
+             {shouldShowLegend && (
+               <Legend
+                 onClick={(payload) => {
+                   if (typeof payload?.dataKey === 'string' || typeof payload?.dataKey === 'number') {
+                     handleLegendClick(String(payload.dataKey))
+                   }
+                 }}
+                 wrapperStyle={{ color: legendColor, fontSize: isMobile ? '11px' : '12px' }}
+               />
+             )}
             {renderComposedElements()}
           </ComposedChart>
         )
@@ -273,202 +585,91 @@ export function CustomizableChart({
     }
   }
 
-  const renderLines = () => {
-    const dataKeys = getDataKeys()
-    return dataKeys
-      .filter((key) => !hiddenDataKeys.has(key))
-      .map((key, index) => (
-        <Line
-          key={key}
-          type="monotone"
-          dataKey={key}
-          stroke={index === 0 ? config.colors.primary : config.colors.secondary || config.colors.primary}
-          strokeWidth={2}
-          dot={false}
-          activeDot={{ r: 6, fill: index === 0 ? config.colors.primary : config.colors.secondary || config.colors.primary }}
-          hide={hiddenDataKeys.has(key)}
-        />
-      ))
-  }
+  const chartCanvas = (
+    <div ref={chartContainerRef} className="analytics-chart-frame w-full" style={{ height: chartHeight }}>
+      <ResponsiveContainer width="100%" height="100%">
+        {renderChart()}
+      </ResponsiveContainer>
+    </div>
+  )
 
-  const renderBars = () => {
-    const dataKeys = getDataKeys()
-    return dataKeys
-      .filter((key) => !hiddenDataKeys.has(key))
-      .map((key, index) => (
-        <Bar
-          key={key}
-          dataKey={key}
-          fill={index === 0 ? config.colors.primary : config.colors.secondary || config.colors.primary}
-          radius={[4, 4, 0, 0]}
-          hide={hiddenDataKeys.has(key)}
-        />
-      ))
-  }
+  const actionButtons = (
+    <>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={handleExportPNG}
+        className="h-8 w-8 rounded-full border border-border/60 bg-background/35 text-muted-foreground hover:bg-background/55 hover:text-foreground"
+        title="Exportar como PNG"
+      >
+        <Download className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={handleExportSVG}
+        className="h-8 w-8 rounded-full border border-border/60 bg-background/35 text-muted-foreground hover:bg-background/55 hover:text-foreground"
+        title="Exportar como SVG"
+      >
+        <ZoomIn className="h-4 w-4" />
+      </Button>
+      {onEdit && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => onEdit(config.id)}
+          className="h-8 w-8 rounded-full border border-border/60 bg-background/35 text-muted-foreground hover:bg-background/55 hover:text-foreground"
+          title="Editar grafico"
+        >
+          <Settings className="h-4 w-4" />
+        </Button>
+      )}
+      {onRemove && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => onRemove(config.id)}
+          className="h-8 w-8 rounded-full border border-border/60 bg-background/35 text-destructive hover:bg-destructive/10 hover:text-destructive"
+          title="Remover gráfico"
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      )}
+    </>
+  )
 
-  const renderAreas = () => {
-    const dataKeys = getDataKeys()
-    return dataKeys
-      .filter((key) => !hiddenDataKeys.has(key))
-      .map((key, index) => (
-        <Area
-          key={key}
-          type="monotone"
-          dataKey={key}
-          stroke={index === 0 ? config.colors.primary : config.colors.secondary || config.colors.primary}
-          fill={index === 0 ? config.colors.primary : config.colors.secondary || config.colors.primary}
-          fillOpacity={0.6}
-          hide={hiddenDataKeys.has(key)}
-        />
-      ))
-  }
+  const emptyState = (
+    <div className="analytics-empty-state" style={{ minHeight: chartHeight }}>
+      <p className="text-sm text-muted-foreground">
+        {loading ? 'Carregando visualizacao...' : 'Nenhum dado disponivel'}
+      </p>
+    </div>
+  )
 
-  const renderComposedElements = () => {
-    const dataKeys = getDataKeys()
-    return dataKeys.map((key, index) => {
-      if (index === 0) {
-        return (
-          <Line
-            key={key}
-            type="monotone"
-            dataKey={key}
-            stroke={config.colors.primary}
-            strokeWidth={2}
-            dot={false}
-          />
-        )
-      }
-      return (
-        <Bar
-          key={key}
-          dataKey={key}
-          fill={config.colors.secondary || config.colors.primary}
-          radius={[4, 4, 0, 0]}
-        />
-      )
-    })
-  }
+  if (variant === 'bare') {
+    if (loading || !data || data.length === 0) {
+      return emptyState
+    }
 
-  const getDataKeys = () => {
-    if (data.length === 0) return []
-    const firstItem = data[0]
-    return Object.keys(firstItem).filter((key) => key !== 'date' && key !== 'label')
-  }
-
-  if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>{config.title}</CardTitle>
-          {config.description && <CardDescription>{config.description}</CardDescription>}
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center" style={{ height: chartHeight }}>
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (!data || data.length === 0) {
-    return (
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>{config.title}</CardTitle>
-            {config.description && <CardDescription>{config.description}</CardDescription>}
-          </div>
-          <div className="flex gap-2">
-            {onEdit && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onEdit(config.id)}
-                className="h-8 w-8"
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
-            )}
-            {onRemove && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onRemove(config.id)}
-                className="h-8 w-8 text-destructive hover:text-destructive"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center" style={{ height: chartHeight }}>
-            <p className="text-sm text-muted-foreground">Nenhum dado disponível</p>
-          </div>
-        </CardContent>
-      </Card>
-    )
+    return chartCanvas
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle>{config.title}</CardTitle>
-          {config.description && <CardDescription>{config.description}</CardDescription>}
-        </div>
-        <div className="flex gap-2">
-          {/* Export buttons */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleExportPNG}
-            className="h-8 w-8"
-            title="Exportar como PNG"
-          >
-            <Download className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleExportSVG}
-            className="h-8 w-8"
-            title="Exportar como SVG"
-          >
-            <ZoomIn className="h-4 w-4" />
-          </Button>
-          {onEdit && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onEdit(config.id)}
-              className="h-8 w-8"
-              title="Editar gráfico"
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
-          )}
-          {onRemove && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onRemove(config.id)}
-              className="h-8 w-8 text-destructive hover:text-destructive"
-              title="Remover gráfico"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div ref={chartContainerRef} className="w-full">
-          <ResponsiveContainer width="100%" height={chartHeight}>
-            {renderChart()}
-          </ResponsiveContainer>
-        </div>
-      </CardContent>
-    </Card>
+    <AnalyticsShell
+      title={config.title}
+      description={config.description}
+      kicker="dashboard"
+      meta={
+        <>
+          <span className="analytics-inline-chip">{getChartTypeLabel(config.type)}</span>
+          <span className="analytics-inline-chip">{String(config.metricType).replace(/_/g, ' ')}</span>
+        </>
+      }
+      actions={actionButtons}
+      variant={config.position.w >= 7 ? 'hero' : 'default'}
+      plotClassName="pt-1"
+    >
+      {loading || !data || data.length === 0 ? emptyState : chartCanvas}
+    </AnalyticsShell>
   )
 }

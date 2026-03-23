@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { AnalyticsShell } from "@/components/AnalyticsShell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,8 +16,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { RefreshCw, Download, Filter, TrendingUp, DollarSign, Zap, Calendar } from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
+import { RefreshCw, Download } from "lucide-react";
 
 interface UsageRecord {
   aggregation_timestamp: number;
@@ -42,20 +57,46 @@ interface AnalyticsStats {
   date_range: { start: string; end: string };
 }
 
+function formatDateTick(value: string) {
+  return new Date(`${value}T00:00:00`).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+  });
+}
+
+function shortModelName(model: string) {
+  return model.replace(/^gpt-/, "").replace(/^o\d+-/, "o").split("-").slice(0, 2).join("-");
+}
+
 export default function OpenAIAnalyticsPage() {
   const [loading, setLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   const [data, setData] = useState<UsageRecord[]>([]);
   const [stats, setStats] = useState<AnalyticsStats | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Filters
   const [startDate, setStartDate] = useState(
-    new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
+    new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
   );
   const [endDate, setEndDate] = useState(new Date().toISOString().split("T")[0]);
   const [projectId, setProjectId] = useState("");
 
-  const fetchAnalytics = async () => {
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const syncMedia = () => setIsMobile(mediaQuery.matches);
+
+    syncMedia();
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener("change", syncMedia);
+      return () => mediaQuery.removeEventListener("change", syncMedia);
+    }
+
+    mediaQuery.addListener(syncMedia);
+    return () => mediaQuery.removeListener(syncMedia);
+  }, []);
+
+  const fetchAnalytics = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
@@ -80,38 +121,37 @@ export default function OpenAIAnalyticsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [endDate, projectId, startDate]);
 
   useEffect(() => {
     fetchAnalytics();
-  }, []);
+  }, [fetchAnalytics]);
 
   const exportToCSV = () => {
     const csv = [
       ["Date", "Model", "Operation", "Requests", "Input Tokens", "Output Tokens", "Total Tokens", "Cost (USD)"].join(","),
-      ...data.map((r) =>
+      ...data.map((record) =>
         [
-          r.date,
-          r.snapshot_id,
-          r.operation,
-          r.n_requests,
-          r.n_context_tokens_total,
-          r.n_generated_tokens_total,
-          r.total_tokens,
-          r.estimated_cost_usd.toFixed(4),
-        ].join(",")
+          record.date,
+          record.snapshot_id,
+          record.operation,
+          record.n_requests,
+          record.n_context_tokens_total,
+          record.n_generated_tokens_total,
+          record.total_tokens,
+          record.estimated_cost_usd.toFixed(4),
+        ].join(","),
       ),
     ].join("\n");
 
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `openai-analytics-${startDate}-to-${endDate}.csv`;
-    a.click();
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `openai-analytics-${startDate}-to-${endDate}.csv`;
+    anchor.click();
   };
 
-  // Prepare chart data
   const dailyUsageChart = data.reduce((acc, record) => {
     const existing = acc.find((item) => item.date === record.date);
     if (existing) {
@@ -144,11 +184,17 @@ export default function OpenAIAnalyticsPage() {
     return acc;
   }, [] as Array<{ model: string; requests: number; tokens: number }>);
 
-  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
+  const xAxisInterval = isMobile
+    ? Math.max(0, Math.ceil(Math.max(dailyUsageChart.length, 1) / 4) - 1)
+    : Math.max(0, Math.ceil(Math.max(dailyUsageChart.length, 1) / 7) - 1);
+  const commonMargin = isMobile
+    ? { top: 8, right: 8, left: -18, bottom: 0 }
+    : { top: 10, right: 12, left: -6, bottom: 0 };
+  const colors = ["#1ABC9C", "#2E86AB", "#F59E0B", "#EF4444", "#8B5CF6"];
 
   if (error) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto space-y-6 p-4 sm:p-6">
         <Card className="border-destructive">
           <CardHeader>
             <CardTitle className="text-destructive">Erro ao carregar analytics</CardTitle>
@@ -160,29 +206,28 @@ export default function OpenAIAnalyticsPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">OpenAI Analytics</h1>
-          <p className="text-muted-foreground">
-            Dados oficiais direto da API da OpenAI (sincronizado)
+    <div className="container mx-auto space-y-6 p-4 sm:p-6 lg:p-8">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="space-y-2">
+          <div className="analytics-shell-kicker">openai analytics</div>
+          <h1 className="text-3xl font-bold tracking-tight">OpenAI Analytics</h1>
+          <p className="max-w-2xl text-sm text-muted-foreground sm:text-[15px]">
+            Dashboard refeito para dar mais área útil aos gráficos e leitura rápida em mobile e desktop.
           </p>
         </div>
-        <Button onClick={fetchAnalytics} disabled={loading}>
+        <Button onClick={fetchAnalytics} disabled={loading} className="w-full sm:w-auto">
           <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           Atualizar
         </Button>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filtros
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <AnalyticsShell
+        title="Filtros"
+        description="Ajuste o período e o projeto antes de recalcular os gráficos."
+        kicker="controles"
+        plotClassName="p-4 sm:p-5"
+      >
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
           <div className="space-y-2">
             <Label htmlFor="start-date">Data Início</Label>
             <Input
@@ -216,15 +261,14 @@ export default function OpenAIAnalyticsPage() {
               Aplicar Filtros
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </AnalyticsShell>
 
-      {/* Stats Cards */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Card className="analytics-kpi-panel">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+              <CardTitle className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                 Total de Requests
               </CardTitle>
             </CardHeader>
@@ -233,46 +277,44 @@ export default function OpenAIAnalyticsPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="analytics-kpi-panel">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+              <CardTitle className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                 Total de Tokens
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.total_tokens.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="mt-2 text-xs text-muted-foreground">
                 Input: {stats.total_input_tokens.toLocaleString()} | Output: {stats.total_output_tokens.toLocaleString()}
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="analytics-kpi-panel">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+              <CardTitle className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                 Custo Estimado
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">${stats.estimated_total_cost.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Baseado em pricing público
-              </p>
+              <p className="mt-2 text-xs text-muted-foreground">Baseado em pricing público</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="analytics-kpi-panel">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+              <CardTitle className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                 Modelos Usados
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.models_used.length}</div>
-              <div className="flex flex-wrap gap-1 mt-2">
+              <div className="mt-2 flex flex-wrap gap-1">
                 {stats.models_used.slice(0, 3).map((model) => (
                   <Badge key={model} variant="secondary" className="text-xs">
-                    {model.split("-")[0]}
+                    {shortModelName(model)}
                   </Badge>
                 ))}
               </div>
@@ -281,175 +323,224 @@ export default function OpenAIAnalyticsPage() {
         </div>
       )}
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Daily Usage Line Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Uso Diário (Tokens)</CardTitle>
-            <CardDescription>Tokens consumidos por dia</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={dailyUsageChart}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="tokens" stroke="#8884d8" name="Tokens" />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+      <div className="analytics-grid-hero md:grid-cols-2">
+        <div className="xl:col-span-7">
+          <AnalyticsShell
+            title="Uso Diário (Tokens)"
+            description="Linha principal com consumo agregado por dia."
+            kicker="main chart"
+            variant="hero"
+          >
+            <div className="h-[280px] w-full sm:h-[340px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={dailyUsageChart} margin={commonMargin}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.3)" vertical={false} />
+                  <XAxis
+                    dataKey="date"
+                    tickFormatter={formatDateTick}
+                    tick={{ fontSize: isMobile ? 10 : 11, fill: "hsl(var(--muted-foreground))" }}
+                    tickLine={false}
+                    axisLine={false}
+                    minTickGap={isMobile ? 24 : 14}
+                    interval={xAxisInterval}
+                  />
+                  <YAxis
+                    tick={{ fontSize: isMobile ? 10 : 11, fill: "hsl(var(--muted-foreground))" }}
+                    tickLine={false}
+                    axisLine={false}
+                    width={isMobile ? 42 : 56}
+                  />
+                  <Tooltip />
+                  {!isMobile && <Legend />}
+                  <Line type="monotone" dataKey="tokens" stroke="#2E86AB" strokeWidth={2.5} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </AnalyticsShell>
+        </div>
 
-        {/* Model Usage Pie Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Distribuição por Modelo</CardTitle>
-            <CardDescription>Requests por modelo</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={modelUsageChart}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={(entry: any) => `${entry.payload.model.split("-")[0]}: ${(entry.percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="requests"
-                >
-                  {modelUsageChart.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        <div className="xl:col-span-5">
+          <AnalyticsShell
+            title="Distribuição por Modelo"
+            description="Requests por modelo com leitura simplificada no mobile."
+            kicker="breakdown"
+          >
+            <div className="h-[280px] w-full sm:h-[340px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={modelUsageChart}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={
+                      isMobile
+                        ? false
+                        : ({ payload, percent }: any) =>
+                            `${shortModelName(String(payload?.model || ""))} ${((percent || 0) * 100).toFixed(0)}%`
+                    }
+                    innerRadius={isMobile ? 42 : 54}
+                    outerRadius={isMobile ? 76 : 92}
+                    dataKey="requests"
+                  >
+                    {modelUsageChart.map((entry, index) => (
+                      <Cell key={`${entry.model}-${index}`} fill={colors[index % colors.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value: number, _name, item) => [
+                      value.toLocaleString(),
+                      shortModelName(String(item.payload.model)),
+                    ]}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </AnalyticsShell>
+        </div>
 
-        {/* Daily Cost Bar Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Custo Diário (USD)</CardTitle>
-            <CardDescription>Custo estimado por dia</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={dailyUsageChart}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="cost" fill="#82ca9d" name="Custo (USD)" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        <div className="xl:col-span-5">
+          <AnalyticsShell
+            title="Custo Diário (USD)"
+            description="Barras com custo estimado por dia."
+            kicker="finance"
+          >
+            <div className="h-[250px] w-full sm:h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={dailyUsageChart} margin={commonMargin}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.3)" vertical={false} />
+                  <XAxis
+                    dataKey="date"
+                    tickFormatter={formatDateTick}
+                    tick={{ fontSize: isMobile ? 10 : 11, fill: "hsl(var(--muted-foreground))" }}
+                    tickLine={false}
+                    axisLine={false}
+                    minTickGap={isMobile ? 24 : 14}
+                    interval={xAxisInterval}
+                  />
+                  <YAxis
+                    tick={{ fontSize: isMobile ? 10 : 11, fill: "hsl(var(--muted-foreground))" }}
+                    tickLine={false}
+                    axisLine={false}
+                    width={isMobile ? 42 : 56}
+                  />
+                  <Tooltip />
+                  {!isMobile && <Legend />}
+                  <Bar dataKey="cost" fill="#1ABC9C" name="Custo (USD)" radius={[8, 8, 3, 3]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </AnalyticsShell>
+        </div>
 
-        {/* Model Tokens Bar Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Tokens por Modelo</CardTitle>
-            <CardDescription>Consumo de tokens por modelo</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={modelUsageChart}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="model" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="tokens" fill="#8884d8" name="Tokens" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        <div className="xl:col-span-7">
+          <AnalyticsShell
+            title="Tokens por Modelo"
+            description="Comparação horizontal de volume por modelo."
+            kicker="volume"
+          >
+            <div className="h-[250px] w-full sm:h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={modelUsageChart} margin={commonMargin}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.3)" vertical={false} />
+                  <XAxis
+                    dataKey="model"
+                    tickFormatter={shortModelName}
+                    tick={{ fontSize: isMobile ? 10 : 11, fill: "hsl(var(--muted-foreground))" }}
+                    tickLine={false}
+                    axisLine={false}
+                    interval={0}
+                    angle={isMobile ? -18 : 0}
+                    textAnchor={isMobile ? "end" : "middle"}
+                    height={isMobile ? 44 : 30}
+                  />
+                  <YAxis
+                    tick={{ fontSize: isMobile ? 10 : 11, fill: "hsl(var(--muted-foreground))" }}
+                    tickLine={false}
+                    axisLine={false}
+                    width={isMobile ? 42 : 56}
+                  />
+                  <Tooltip />
+                  {!isMobile && <Legend />}
+                  <Bar dataKey="tokens" fill="#8B5CF6" name="Tokens" radius={[8, 8, 3, 3]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </AnalyticsShell>
+        </div>
       </div>
 
-      {/* Data Table */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Dados Detalhados</CardTitle>
-              <CardDescription>
-                Todos os campos da API oficial da OpenAI
-              </CardDescription>
-            </div>
-            <Button onClick={exportToCSV} variant="outline">
-              <Download className="mr-2 h-4 w-4" />
-              Exportar CSV
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border overflow-x-auto">
-            <Table>
-              <TableHeader>
+      <AnalyticsShell
+        title="Dados Detalhados"
+        description="Todos os campos da API oficial da OpenAI."
+        kicker="table"
+        actions={
+          <Button onClick={exportToCSV} variant="outline">
+            <Download className="mr-2 h-4 w-4" />
+            Exportar CSV
+          </Button>
+        }
+        plotClassName="p-0"
+      >
+        <div className="overflow-x-auto rounded-[20px] border border-border/70">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Data</TableHead>
+                <TableHead>Modelo</TableHead>
+                <TableHead>Operação</TableHead>
+                <TableHead className="text-right">Requests</TableHead>
+                <TableHead className="text-right">Input Tokens</TableHead>
+                <TableHead className="text-right">Output Tokens</TableHead>
+                <TableHead className="text-right">Total Tokens</TableHead>
+                <TableHead className="text-right">Custo (USD)</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                Array.from({ length: 5 }).map((_, rowIndex) => (
+                  <TableRow key={rowIndex}>
+                    {Array.from({ length: 8 }).map((_, cellIndex) => (
+                      <TableCell key={cellIndex}>
+                        <Skeleton className="h-4 w-full" />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : data.length === 0 ? (
                 <TableRow>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Modelo</TableHead>
-                  <TableHead>Operação</TableHead>
-                  <TableHead className="text-right">Requests</TableHead>
-                  <TableHead className="text-right">Input Tokens</TableHead>
-                  <TableHead className="text-right">Output Tokens</TableHead>
-                  <TableHead className="text-right">Total Tokens</TableHead>
-                  <TableHead className="text-right">Custo (USD)</TableHead>
+                  <TableCell colSpan={8} className="text-center text-muted-foreground">
+                    Nenhum dado encontrado para o período selecionado
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <TableRow key={i}>
-                      {Array.from({ length: 8 }).map((_, j) => (
-                        <TableCell key={j}>
-                          <Skeleton className="h-4 w-full" />
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : data.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center text-muted-foreground">
-                      Nenhum dado encontrado para o período selecionado
+              ) : (
+                data.map((record, index) => (
+                  <TableRow key={index}>
+                    <TableCell className="font-medium">{record.date}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{record.snapshot_id}</Badge>
+                    </TableCell>
+                    <TableCell>{record.operation}</TableCell>
+                    <TableCell className="text-right">{record.n_requests}</TableCell>
+                    <TableCell className="text-right">
+                      {record.n_context_tokens_total.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {record.n_generated_tokens_total.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      {record.total_tokens.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      ${record.estimated_cost_usd.toFixed(4)}
                     </TableCell>
                   </TableRow>
-                ) : (
-                  data.map((record, index) => (
-                    <TableRow key={index}>
-                      <TableCell className="font-medium">{record.date}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{record.snapshot_id}</Badge>
-                      </TableCell>
-                      <TableCell>{record.operation}</TableCell>
-                      <TableCell className="text-right">{record.n_requests}</TableCell>
-                      <TableCell className="text-right">
-                        {record.n_context_tokens_total.toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {record.n_generated_tokens_total.toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        {record.total_tokens.toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        ${record.estimated_cost_usd.toFixed(4)}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </AnalyticsShell>
     </div>
   );
 }

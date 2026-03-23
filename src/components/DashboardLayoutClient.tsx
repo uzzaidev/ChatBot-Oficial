@@ -170,7 +170,7 @@ export function DashboardLayoutClient({
         </div>
 
         {/* Page Content */}
-        <div className="flex-1 overflow-auto bg-background p-8">
+        <div className="flex-1 overflow-auto bg-background px-2 py-3 sm:px-3 sm:py-4 md:px-6 md:py-6 xl:px-8 xl:py-8">
           <div className="max-w-[1600px] mx-auto w-full">
             {children}
           </div>
