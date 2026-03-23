@@ -4,7 +4,7 @@
 Implementar um sistema completo de personalização visual da área de conversas, permitindo que cada usuário customize:
 1. **Cor das mensagens recebidas** (incoming)
 2. **Cor das mensagens enviadas** (outgoing)
-3. **Imagem de fundo** da área de conversass
+3. **Imagem de fundo** da área de conversasss
 
 **Características:**
 - ✅ Color picker livre (RGB) para mensagens
