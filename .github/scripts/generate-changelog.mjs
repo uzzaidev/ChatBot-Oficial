@@ -14,11 +14,62 @@
 //   .github/changelog-instructions.md — system prompt
 // ============================================================================
 
+import { execSync } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
 
 const MODELS_ENDPOINT = "https://models.github.ai/inference/chat/completions";
-const MODEL = "openai/gpt-4.1-nano";
-const MAX_DIFF_CHARS = 60_000;
+const MODEL_PRIMARY = "openai/gpt-4.1-mini";
+const MODEL_FALLBACK = "openai/gpt-4o-mini";
+const MAX_DIFF_CHARS = 120_000;
+
+function smartTruncateDiff(rawDiff) {
+  if (rawDiff.length <= MAX_DIFF_CHARS) return rawDiff;
+
+  // Extrair diffstat (resumo de arquivos alterados) via git
+  let diffstat = "";
+  try {
+    diffstat = execSync("git diff --stat HEAD~1 HEAD", { encoding: "utf8" });
+  } catch {
+    // fallback: extrair headers do diff
+    diffstat = rawDiff
+      .split("\n")
+      .filter(
+        (l) =>
+          l.startsWith("diff --git") ||
+          l.startsWith("+++") ||
+          l.startsWith("---"),
+      )
+      .join("\n");
+  }
+
+  // Pegar os primeiros MAX_DIFF_CHARS do diff real para contexto
+  const truncatedDiff = rawDiff.slice(0, MAX_DIFF_CHARS);
+
+  return [
+    "=== Resumo de arquivos alterados ===",
+    diffstat,
+    "",
+    "=== Diff parcial (truncado) ===",
+    truncatedDiff,
+    "",
+    `[... diff truncado: ${(rawDiff.length / 1000).toFixed(
+      0,
+    )}k chars total, mostrando ${(MAX_DIFF_CHARS / 1000).toFixed(0)}k ...]`,
+  ].join("\n");
+}
+
+async function callModel(token, model, messages) {
+  console.log(`Chamando GitHub Models API (${model})...`);
+  const response = await fetch(MODELS_ENDPOINT, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ model, messages, temperature: 0.3 }),
+  });
+  return response;
+}
 
 async function main() {
   const token = process.env.GH_MODELS_TOKEN;
@@ -43,12 +94,7 @@ async function main() {
     "utf8",
   );
 
-  // Truncar diff se necessário para não estourar context window
-  const diff =
-    rawDiff.length > MAX_DIFF_CHARS
-      ? rawDiff.slice(0, MAX_DIFF_CHARS) +
-        "\n\n[... diff truncado por tamanho ...]"
-      : rawDiff;
+  const diff = smartTruncateDiff(rawDiff);
 
   const today = new Date().toISOString().split("T")[0];
   const branch = process.env.BRANCH_NAME || "main";
@@ -65,26 +111,24 @@ async function main() {
     diff,
   ].join("\n");
 
-  console.log(`Chamando GitHub Models API (${MODEL})...`);
   console.log(
     `Tamanho do prompt: ~${(userPrompt.length / 1000).toFixed(1)}k chars`,
   );
 
-  const response = await fetch(MODELS_ENDPOINT, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      messages: [
-        { role: "system", content: instructions },
-        { role: "user", content: userPrompt },
-      ],
-      temperature: 0.3,
-    }),
-  });
+  const messages = [
+    { role: "system", content: instructions },
+    { role: "user", content: userPrompt },
+  ];
+
+  // Tentar modelo primário, fallback para nano se falhar
+  let response = await callModel(token, MODEL_PRIMARY, messages);
+
+  if (!response.ok && response.status === 413) {
+    console.warn(
+      `${MODEL_PRIMARY} retornou 413, tentando ${MODEL_FALLBACK}...`,
+    );
+    response = await callModel(token, MODEL_FALLBACK, messages);
+  }
 
   if (!response.ok) {
     const text = await response.text();
