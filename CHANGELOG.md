@@ -2,6 +2,15 @@
 
 Gerado automaticamente por IA a cada push no `main`.
 
+## 2026-03-23
+
+### feat
+- Melhorada a função de truncamento do diff para incluir resumo de arquivos alterados (diffstat) extraído via comando git, além de aumentar limite máximo de caracteres para 120k.
+- Implementado fallback automático para modelo alternativo (`openai/gpt-4o-mini`) caso o modelo primário (`openai/gpt-4.1-mini`) retorne erro 413 (payload muito grande).
+- Refatorado script de geração de changelog para modularizar chamadas à API e aprimorar logs.
+  - Arquivos: `.github/scripts/generate-changelog.mjs`
+  - Confiança: alta
+
 ## 2026-03-20
 
 ### refactor
