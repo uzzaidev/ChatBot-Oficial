@@ -39,7 +39,7 @@ export function Plans() {
               <h3 className="text-2xl font-bold text-foreground mb-6">UzzApp</h3>
               <div className="flex items-end justify-center gap-1 mb-1">
                 <span className="text-lg text-muted-foreground font-medium">R$</span>
-                <span className="text-6xl font-extrabold text-foreground leading-none">249</span>
+                <span className="text-6xl font-extrabold text-foreground leading-none">247</span>
                 <span className="text-3xl font-extrabold text-foreground leading-none">,90</span>
                 <span className="text-muted-foreground mb-1">/mês</span>
               </div>
