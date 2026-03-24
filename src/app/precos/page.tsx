@@ -77,7 +77,7 @@ export default function PrecosPage() {
 
               {/* Price */}
               <div className="text-center mb-2">
-                <span className="text-5xl font-extrabold text-erie-black-900">R$ 249,90</span>
+                <span className="text-5xl font-extrabold text-erie-black-900">R$ 247,90</span>
                 <span className="text-xl text-erie-black-500 ml-1">/mês</span>
               </div>
               <p className="text-center text-erie-black-500 mb-6">
