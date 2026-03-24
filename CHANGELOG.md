@@ -2,6 +2,13 @@
 
 Gerado automaticamente por IA a cada push no `main`.
 
+## 2026-03-24
+
+### chore
+- Atualizado valor do plano mensal de R$ 249,90 para R$ 247,90 nas páginas de preços e landing page
+  - Arquivos: `src/app/precos/page.tsx`, `src/components/landing/Plans.tsx`
+  - Confiança: alta
+
 ## 2026-03-23
 
 ### fix
