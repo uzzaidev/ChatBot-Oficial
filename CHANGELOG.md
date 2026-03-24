@@ -4,6 +4,16 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-03-24
 
+### refactor
+- Atualizadas URLs para refletir a nova marca UzzApp em documentação, configuração e código
+- Adicionada apresentação comercial em HTML detalhando funcionalidades e diferenciais da plataforma UzzApp
+- Incluído glossário técnico para facilitar entendimento dos termos usados no projeto
+- Ajustes em arquivos de configuração e rotas para alinhamento com a nova identidade visual e URLs
+  - Arquivos: `.gitignore`, `README.md`, `UzzApp_Apresentacao_Comercial.html`, `memory/glossary.md`, `src/app/api/vault/secrets/route.ts`, `src/app/api/webhook/[clientId]/route.ts`, `src/lib/config.ts`, `supabase/migrations/DYNAMIC_PROVIDER_SELECTION.md`, `supabase/migrations/MULTI_TENANT_MIGRATION.md`, `supabase/migrations/VERCEL_DEPLOYMENT.md`, `supabase/migrations/WEBHOOK_CONFIGURATION.md`
+  - Confiança: alta
+
+## 2026-03-24
+
 ### chore
 - Atualizado valor do plano mensal de R$ 249,90 para R$ 247,90 nas páginas de preços e landing page
   - Arquivos: `src/app/precos/page.tsx`, `src/components/landing/Plans.tsx`
