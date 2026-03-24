@@ -103,7 +103,7 @@ Depois de adicionar `DEFAULT_CLIENT_ID`:
 
 ### Modo 1: Webhook Único (Recomendado para Começar)
 
-**URL**: `https://chat.luisfboff.com/api/webhook`
+**URL**: `https://uzzapp.uzzai.com.br/api/webhook`
 
 **Como funciona**:
 1. Meta chama `/api/webhook` (sem clientId na URL)
@@ -122,7 +122,7 @@ Depois de adicionar `DEFAULT_CLIENT_ID`:
 
 **Configuração no Meta Dashboard**:
 ```
-Callback URL: https://chat.luisfboff.com/api/webhook
+Callback URL: https://uzzapp.uzzai.com.br/api/webhook
 Verify Token: <o token que você definiu no script 006>
 ```
 
@@ -130,7 +130,7 @@ Verify Token: <o token que você definiu no script 006>
 
 ### Modo 2: Webhook Dinâmico por Cliente (Multi-Tenant Completo)
 
-**URL**: `https://chat.luisfboff.com/api/webhook/b21b314f-c49a-467d-94b3-a21ed4412227`
+**URL**: `https://uzzapp.uzzai.com.br/api/webhook/b21b314f-c49a-467d-94b3-a21ed4412227`
 
 **Como funciona**:
 1. Meta chama `/api/webhook/[clientId]` (clientId na URL)
@@ -150,7 +150,7 @@ Verify Token: <o token que você definiu no script 006>
 
 **Configuração no Meta Dashboard**:
 ```
-Callback URL: https://chat.luisfboff.com/api/webhook/b21b314f-c49a-467d-94b3-a21ed4412227
+Callback URL: https://uzzapp.uzzai.com.br/api/webhook/b21b314f-c49a-467d-94b3-a21ed4412227
 Verify Token: <o token que você definiu no script 006>
 ```
 
@@ -160,11 +160,11 @@ Verify Token: <o token que você definiu no script 006>
 
 ### Teste 1: Verificar se DEFAULT_CLIENT_ID está funcionando
 
-**Endpoint**: `https://chat.luisfboff.com/api/test/vault-config`
+**Endpoint**: `https://uzzapp.uzzai.com.br/api/test/vault-config`
 
 **Sem DEFAULT_CLIENT_ID** (vai dar erro):
 ```bash
-curl https://chat.luisfboff.com/api/test/vault-config
+curl https://uzzapp.uzzai.com.br/api/test/vault-config
 ```
 
 **Resultado esperado ANTES de configurar**:
@@ -196,7 +196,7 @@ curl https://chat.luisfboff.com/api/test/vault-config
 ### Teste 2: Verificar webhook dinâmico (não depende de DEFAULT_CLIENT_ID)
 
 ```bash
-curl https://chat.luisfboff.com/api/test/vault-config?clientId=b21b314f-c49a-467d-94b3-a21ed4412227
+curl https://uzzapp.uzzai.com.br/api/test/vault-config?clientId=b21b314f-c49a-467d-94b3-a21ed4412227
 ```
 
 **Deve funcionar** mesmo sem `DEFAULT_CLIENT_ID` configurado.
@@ -205,7 +205,7 @@ curl https://chat.luisfboff.com/api/test/vault-config?clientId=b21b314f-c49a-467
 
 ```bash
 # Simular chamada GET da Meta (verificação)
-curl "https://chat.luisfboff.com/api/webhook?hub.mode=subscribe&hub.verify_token=SEU_VERIFY_TOKEN&hub.challenge=test123"
+curl "https://uzzapp.uzzai.com.br/api/webhook?hub.mode=subscribe&hub.verify_token=SEU_VERIFY_TOKEN&hub.challenge=test123"
 ```
 
 **Resultado esperado**: `test123` (retorna o challenge)
@@ -214,7 +214,7 @@ curl "https://chat.luisfboff.com/api/webhook?hub.mode=subscribe&hub.verify_token
 
 ```bash
 # Simular chamada GET da Meta (verificação)
-curl "https://chat.luisfboff.com/api/webhook/b21b314f-c49a-467d-94b3-a21ed4412227?hub.mode=subscribe&hub.verify_token=SEU_VERIFY_TOKEN&hub.challenge=test123"
+curl "https://uzzapp.uzzai.com.br/api/webhook/b21b314f-c49a-467d-94b3-a21ed4412227?hub.mode=subscribe&hub.verify_token=SEU_VERIFY_TOKEN&hub.challenge=test123"
 ```
 
 **Resultado esperado**: `test123` (retorna o challenge)
@@ -288,7 +288,7 @@ curl "https://chat.luisfboff.com/api/webhook/b21b314f-c49a-467d-94b3-a21ed441222
 **Solução**:
 1. Adicionar env var no Vercel (ver seção acima)
 2. Redeploy
-3. Testar: `curl https://chat.luisfboff.com/api/test/vault-config`
+3. Testar: `curl https://uzzapp.uzzai.com.br/api/test/vault-config`
 
 ---
 
@@ -343,7 +343,7 @@ WHERE client_id = 'b21b314f-c49a-467d-94b3-a21ed4412227';
 **Testar manualmente**:
 ```bash
 # Verificar se webhook responde
-curl https://chat.luisfboff.com/api/webhook
+curl https://uzzapp.uzzai.com.br/api/webhook
 # Resultado esperado: "Webhook is ready"
 ```
 

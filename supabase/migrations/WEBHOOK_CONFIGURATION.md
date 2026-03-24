@@ -15,7 +15,7 @@ Documentação completa para configurar webhooks no Meta WhatsApp Business API a
 
 ### Modo 1: Webhook Único (Atual - Compatibilidade Retroativa)
 
-**URL**: `https://chat.luisfboff.com/api/webhook`
+**URL**: `https://uzzapp.uzzai.com.br/api/webhook`
 
 **Funcionamento**:
 - Usa `DEFAULT_CLIENT_ID` do `.env.local`
@@ -30,7 +30,7 @@ Documentação completa para configurar webhooks no Meta WhatsApp Business API a
 
 **Configuração no Meta Dashboard**:
 ```
-Webhook URL: https://chat.luisfboff.com/api/webhook
+Webhook URL: https://uzzapp.uzzai.com.br/api/webhook
 Verify Token: <o valor que você configurou no 006_setup_default_client.sql>
 ```
 
@@ -38,7 +38,7 @@ Verify Token: <o valor que você configurou no 006_setup_default_client.sql>
 
 ### Modo 2: Webhook Dinâmico por Cliente (Multi-Tenant Completo)
 
-**URL**: `https://chat.luisfboff.com/api/webhook/[CLIENT_ID]`
+**URL**: `https://uzzapp.uzzai.com.br/api/webhook/[CLIENT_ID]`
 
 **Funcionamento**:
 - Cada cliente tem sua própria URL com UUID único
@@ -49,11 +49,11 @@ Verify Token: <o valor que você configurou no 006_setup_default_client.sql>
 **Exemplo**:
 ```
 Cliente A (Luis Boff):
-  URL: https://chat.luisfboff.com/api/webhook/b21b314f-c49a-467d-94b3-a21ed4412227
+  URL: https://uzzapp.uzzai.com.br/api/webhook/b21b314f-c49a-467d-94b3-a21ed4412227
   Verify Token: (do Vault do cliente A)
 
 Cliente B (Outra Empresa):
-  URL: https://chat.luisfboff.com/api/webhook/c32c425a-f3ab-5d28-b827-557766551338
+  URL: https://uzzapp.uzzai.com.br/api/webhook/c32c425a-f3ab-5d28-b827-557766551338
   Verify Token: (do Vault do cliente B)
 ```
 
@@ -93,7 +93,7 @@ Client ID: b21b314f-c49a-467d-94b3-a21ed4412227
 #### Opção A: Webhook Único (Modo Atual)
 
 ```
-Callback URL: https://chat.luisfboff.com/api/webhook
+Callback URL: https://uzzapp.uzzai.com.br/api/webhook
 Verify Token: <o token que você definiu no script 006>
 ```
 
@@ -102,7 +102,7 @@ Verify Token: <o token que você definiu no script 006>
 #### Opção B: Webhook Dinâmico (Multi-Tenant)
 
 ```
-Callback URL: https://chat.luisfboff.com/api/webhook/b21b314f-c49a-467d-94b3-a21ed4412227
+Callback URL: https://uzzapp.uzzai.com.br/api/webhook/b21b314f-c49a-467d-94b3-a21ed4412227
 Verify Token: <o token que você definiu no script 006>
 ```
 
@@ -127,7 +127,7 @@ Marque as seguintes opções:
 ### Teste 1: Verificar se Config Está Carregando
 
 ```bash
-curl https://chat.luisfboff.com/api/test/vault-config
+curl https://uzzapp.uzzai.com.br/api/test/vault-config
 ```
 
 **Resultado esperado**:
@@ -174,8 +174,8 @@ O webhook `/api/webhook` já foi atualizado para buscar config do Vault usando `
 
 1. **Adicione CLIENT_ID à URL no Meta Dashboard**:
    ```
-   Antes: https://chat.luisfboff.com/api/webhook
-   Depois: https://chat.luisfboff.com/api/webhook/b21b314f-c49a-467d-94b3-a21ed4412227
+   Antes: https://uzzapp.uzzai.com.br/api/webhook
+   Depois: https://uzzapp.uzzai.com.br/api/webhook/b21b314f-c49a-467d-94b3-a21ed4412227
    ```
 
 2. **Verify and Save** no Meta Dashboard
@@ -216,7 +216,7 @@ O webhook `/api/webhook` já foi atualizado para buscar config do Vault usando `
 
 **Solução**:
 1. Verifique se `DEFAULT_CLIENT_ID` está no `.env.local`
-2. Teste o endpoint: `curl https://chat.luisfboff.com/api/test/vault-config`
+2. Teste o endpoint: `curl https://uzzapp.uzzai.com.br/api/test/vault-config`
 3. Veja os logs do servidor para mais detalhes
 
 ### Webhook não está sendo chamado

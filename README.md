@@ -24,7 +24,7 @@ Sistema de chatbot de WhatsApp com IA, totalmente implementado em Next.js com ar
 
 ## 📌 Status do Projeto
 
-**✅ PRODUÇÃO ATIVA** - Sistema funcionando em https://chat.luisfboff.com
+**✅ PRODUÇÃO ATIVA** - Sistema funcionando em https://uzzapp.uzzai.com.br
 
 ### Estado Atual
 
@@ -275,7 +275,7 @@ supabase db push
 **NOVO em Phase 3/4**: API keys não vão mais em `.env.local`!
 
 **Configuração via Dashboard:**
-1. Acesse: `https://chat.luisfboff.com/dashboard/settings`
+1. Acesse: `https://uzzapp.uzzai.com.br/dashboard/settings`
 2. Configure para cada cliente:
    - Meta Access Token
    - Meta Verify Token
@@ -300,7 +300,7 @@ SUPABASE_SERVICE_ROLE_KEY=eyJ...  # Service role para server-side
 DATABASE_URL=postgresql://postgres.xxx:senha@aws-0-sa-east-1.pooler.supabase.com:5432/postgres
 
 # Webhook base URL (pode ser localhost em dev)
-WEBHOOK_BASE_URL=https://chat.luisfboff.com
+WEBHOOK_BASE_URL=https://uzzapp.uzzai.com.br
 ```
 
 **⚠️ IMPORTANTE**: API keys de terceiros (OpenAI, Groq, Meta, Redis) NÃO vão em `.env.local`. Use o dashboard `/settings`.
@@ -327,7 +327,7 @@ VALUES (
 );
 ```
 
-**Login**: Acesse `https://chat.luisfboff.com/login`
+**Login**: Acesse `https://uzzapp.uzzai.com.br/login`
 
 ### 6. Configurar Webhook da Meta (Multi-Tenant)
 
@@ -337,9 +337,9 @@ No Meta Developer Dashboard:
 
 1. Acesse: https://developers.facebook.com/apps
 2. WhatsApp → Configuration → Edit
-3. **Callback URL**: `https://chat.luisfboff.com/api/webhook/{CLIENT_ID}`
+3. **Callback URL**: `https://uzzapp.uzzai.com.br/api/webhook/{CLIENT_ID}`
    - Substitua `{CLIENT_ID}` pelo UUID do cliente em `clients` table
-   - Exemplo: `https://chat.luisfboff.com/api/webhook/550e8400-e29b-41d4-a716-446655440000`
+   - Exemplo: `https://uzzapp.uzzai.com.br/api/webhook/550e8400-e29b-41d4-a716-446655440000`
 4. **Verify Token**: Configure no Dashboard Settings (criptografado no Vault)
 5. **Subscribe to**: `messages`
 
@@ -629,10 +629,10 @@ curl http://localhost:3000/api/test/nodes/ai-response
 
 ```bash
 # Ver configuração
-curl https://chat.luisfboff.com/api/debug/config
+curl https://uzzapp.uzzai.com.br/api/debug/config
 
 # Ver logs
-curl https://chat.luisfboff.com/api/debug/logs
+curl https://uzzapp.uzzai.com.br/api/debug/logs
 ```
 
 ---

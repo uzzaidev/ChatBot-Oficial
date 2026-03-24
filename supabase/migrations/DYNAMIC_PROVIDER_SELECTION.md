@@ -564,7 +564,7 @@ setAgentConfig({
 #### 7.1 Teste Manual - Groq (Baseline)
 
 ```
-1. Login em https://chat.luisfboff.com/dashboard/settings
+1. Login em https://uzzapp.uzzai.com.br/dashboard/settings
 2. Verificar que "Groq" está selecionado como provider
 3. Enviar mensagem via WhatsApp
 4. Verificar logs: "[generateAIResponse] Using provider: groq"

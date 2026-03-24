@@ -153,7 +153,7 @@ export async function GET(request: NextRequest) {
     const webhookUrl = `${
       process.env.WEBHOOK_BASE_URL ||
       process.env.NEXT_PUBLIC_SITE_URL ||
-      "https://chat.luisfboff.com"
+      "https://uzzapp.uzzai.com.br"
     }/api/webhook/${client.id}`;
 
     // SECURITY FIX (VULN-009): Retornar secrets mascarados

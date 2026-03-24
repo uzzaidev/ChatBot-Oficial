@@ -294,8 +294,8 @@ Sistema com autenticação:
   - Troubleshooting completo
 
 **URLs de Webhook**:
-- Single-tenant: `https://chat.luisfboff.com/api/webhook`
-- Multi-tenant: `https://chat.luisfboff.com/api/webhook/b21b314f-c49a-467d-94b3-a21ed4412227`
+- Single-tenant: `https://uzzapp.uzzai.com.br/api/webhook`
+- Multi-tenant: `https://uzzapp.uzzai.com.br/api/webhook/b21b314f-c49a-467d-94b3-a21ed4412227`
 
 **Arquivos Criados/Modificados**:
 - `src/app/api/webhook/[clientId]/route.ts` (NOVO)

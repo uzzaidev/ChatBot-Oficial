@@ -4,8 +4,8 @@
  * Rota: /api/webhook/[clientId]
  *
  * Cada cliente tem sua própria URL de webhook configurada no Meta Dashboard:
- * - Cliente A: https://chat.luisfboff.com/api/webhook/550e8400-e29b-41d4-a716-446655440000
- * - Cliente B: https://chat.luisfboff.com/api/webhook/660e8400-e29b-41d4-a716-446655440001
+ * - Cliente A: https://uzzapp.uzzai.com.br/api/webhook/550e8400-e29b-41d4-a716-446655440000
+ * - Cliente B: https://uzzapp.uzzai.com.br/api/webhook/660e8400-e29b-41d4-a716-446655440001
  *
  * Fluxo:
  * 1. Meta chama webhook com clientId na URL

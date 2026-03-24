@@ -6,7 +6,7 @@
 /**
  * Retorna a URL base do webhook
  *
- * IMPORTANTE: Deve ser SEMPRE a URL de produção (ex: https://chat.luisfboff.com)
+ * IMPORTANTE: Deve ser SEMPRE a URL de produção (ex: https://uzzapp.uzzai.com.br)
  * Tanto em dev quanto em prod, usamos a mesma URL porque:
  * - Meta WhatsApp só consegue chamar URLs públicas
  * - Facilita testar o fluxo completo em desenvolvimento
@@ -26,7 +26,7 @@ export const getWebhookBaseUrl = (): string => {
 /**
  * Retorna URL completa do webhook da Meta
  *
- * @returns URL completa (ex: https://chat.luisfboff.com/api/webhook)
+ * @returns URL completa (ex: https://uzzapp.uzzai.com.br/api/webhook)
  */
 export const getWebhookUrl = (): string => {
   return `${getWebhookBaseUrl()}/api/webhook`;

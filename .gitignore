@@ -72,3 +72,7 @@ db/backup/
 # Firebase Admin local secrets
 uzzapp-firebase-adminsdk-*.json
 .secrets/
+
+
+export-pdf
+output
