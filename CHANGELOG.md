@@ -4,6 +4,16 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-03-25
 
+### fix
+- Corrigida condição de corrida na inicialização do SDK do Facebook, definindo `fbAsyncInit` antes do carregamento do script e usando a estratégia `afterInteractive` para garantir a ordem correta de carregamento.
+- Removida inicialização duplicada do SDK, unificando a lógica dentro do hook `useEffect`.
+- Adicionados logs para facilitar o debug do estado do SDK e das chamadas de login.
+- Arquivos: `src/components/EmbeddedSignupButton.tsx`
+- Evidência: alteração da ordem de definição de `fbAsyncInit` e mudança da estratégia de carregamento do script para `afterInteractive`.
+- Confiança: alta
+
+## 2026-03-25
+
 ### feat
 - Atualizado o SDK do Facebook para a versão v25.0 no componente EmbeddedSignupButton
   - Arquivos: `src/components/EmbeddedSignupButton.tsx`
