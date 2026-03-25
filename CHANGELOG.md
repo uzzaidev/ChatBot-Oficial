@@ -5,6 +5,14 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-03-25
 
 ### fix
+- Ajustado callback do `FB.login` para ser síncrono, evitando rejeição do SDK ao usar função assíncrona
+  - Arquivos: `src/components/EmbeddedSignupButton.tsx`
+  - Evidência: mudança de callback async para função síncrona que chama handler async internamente
+  - Confiança: alta
+
+## 2026-03-25
+
+### fix
 - Corrigida condição de corrida na inicialização do SDK do Facebook, definindo `fbAsyncInit` antes do carregamento do script e usando a estratégia `afterInteractive` para garantir a ordem correta de carregamento.
 - Removida inicialização duplicada do SDK, unificando a lógica dentro do hook `useEffect`.
 - Adicionados logs para facilitar o debug do estado do SDK e das chamadas de login.
