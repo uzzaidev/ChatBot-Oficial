@@ -4,6 +4,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-03-25
 
+### fix
+- Corrigido espaçamento na entrada do changelog relacionada às atualizações de branding UzzApp
+  - Arquivos: `README.md`
+  - Evidência: ajuste de espaço em linha do README
+  - Confiança: alta
+
+## 2026-03-25
+
 ### feat
 - Implementada funcionalidade de signup embutido via Facebook JS SDK com suporte a modo coexistência para WhatsApp Business App e Cloud API no mesmo número. Inclui endpoint API (`src/app/api/auth/meta/embedded-signup/route.ts`), componente React (`src/components/EmbeddedSignupButton.tsx`) e página de teste (`src/app/test-oauth/page.tsx`) com UI para escolher entre modo coexistência e OAuth tradicional.
 - Adicionada coluna `onboarding_type` na tabela `clients` para indicar o tipo de onboarding (`cloud_api` ou `coexistence`).
