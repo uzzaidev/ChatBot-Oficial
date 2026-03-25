@@ -4,6 +4,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-03-25
 
+### feat
+- Integrado componente `EmbeddedSignupButton` para migração do WhatsApp no painel de configurações, substituindo o botão com lógica manual de migração.
+- Arquivos: `src/app/dashboard/settings/page.tsx`
+- Confiança: alta
+
+## 2026-03-25
+
 ### fix
 - Corrigido espaçamento na entrada do changelog relacionada às atualizações de branding UzzApp
   - Arquivos: `README.md`
