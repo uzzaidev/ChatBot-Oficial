@@ -17,6 +17,7 @@
  * IMPORTANTE: Edição de variáveis requer revalidação de senha
  */
 
+import { EmbeddedSignupButton } from "@/components/EmbeddedSignupButton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,7 +46,6 @@ import {
   Loader2,
   Lock,
   LockKeyhole,
-  MessageSquare,
   Mic,
   Phone,
   Save,
@@ -56,7 +56,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { EmbeddedSignupButton } from "@/components/EmbeddedSignupButton";
 export default function SettingsPage() {
   // Estado do perfil
   const [profile, setProfile] = useState({
