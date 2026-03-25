@@ -5,6 +5,13 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-03-25
 
 ### feat
+- Adicionado importação do componente `EmbeddedSignupButton` na página de configurações
+  - Arquivos: `src/app/dashboard/settings/page.tsx`
+  - Confiança: alta
+
+## 2026-03-25
+
+### feat
 - Integrado componente `EmbeddedSignupButton` para migração do WhatsApp no painel de configurações, substituindo o botão com lógica manual de migração.
 - Arquivos: `src/app/dashboard/settings/page.tsx`
 - Confiança: alta
