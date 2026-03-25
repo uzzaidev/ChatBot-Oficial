@@ -1,6 +1,6 @@
 # WhatsApp AI Chatbot - Next.js Full-Stack Application
 
-Sistema de chatbot de WhatsApp com IA, totalmente implementado em Next.js com arquitetura serverless multi-tenant.
+Sistema de chatbot de WhatsApp com IA, totalmente implementado em Next.js com arquitetura serverless multi-tenant. V2
 
 ---
 
