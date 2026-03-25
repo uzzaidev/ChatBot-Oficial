@@ -270,15 +270,21 @@ export const EmbeddedSignupButton = ({
       META_CONFIG_ID,
     );
 
-    window.FB.login(handleFBLoginResponse, {
-      config_id: META_CONFIG_ID,
-      response_type: "code",
-      override_default_response_type: true,
-      extras: {
-        version: "v4",
-        featureType: "whatsapp_business_app_onboarding",
+    // FB.login requires a synchronous callback — wrap the async handler
+    window.FB.login(
+      (response: FBLoginResponse) => {
+        handleFBLoginResponse(response);
       },
-    });
+      {
+        config_id: META_CONFIG_ID,
+        response_type: "code",
+        override_default_response_type: true,
+        extras: {
+          version: "v4",
+          featureType: "whatsapp_business_app_onboarding",
+        },
+      },
+    );
   }, [sdkReady, handleFBLoginResponse]);
 
   return (
