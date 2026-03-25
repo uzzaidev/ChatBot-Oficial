@@ -155,7 +155,7 @@ export const EmbeddedSignupButton = ({
         appId: META_APP_ID,
         autoLogAppEvents: true,
         xfbml: true,
-        version: "v22.0",
+        version: "v25.0",
       });
       setSdkReady(true);
       console.log("[EmbeddedSignup] Facebook SDK initialized");
