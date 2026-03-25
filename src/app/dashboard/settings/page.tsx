@@ -56,6 +56,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { EmbeddedSignupButton } from "@/components/EmbeddedSignupButton";
 export default function SettingsPage() {
   // Estado do perfil
   const [profile, setProfile] = useState({
@@ -835,56 +836,25 @@ export default function SettingsPage() {
                     gerenciamento automático de credenciais e maior
                     estabilidade.
                   </p>
-                  <Button
-                    onClick={async () => {
-                      setIsMigrating(true);
-                      try {
-                        const res = await fetch("/api/client/migrate/prepare", {
-                          method: "POST",
-                        });
-                        const data = await res.json();
-                        if (!res.ok) {
-                          throw new Error(
-                            data.error || "Erro ao preparar migração",
-                          );
-                        }
-                        if (data.already_migrated) {
-                          setIsMigrating(false);
-                          setNotification({
-                            type: "success",
-                            message: "Seu WhatsApp já está no Embedded Signup.",
-                          });
-                          return;
-                        }
-                        // Unsubscribe done (or skipped) — redirect to Embedded Signup
-                        window.location.href = `/api/auth/meta/init?client_id=${clientId}&mode=migrate`;
-                      } catch (err) {
-                        setIsMigrating(false);
-                        setNotification({
-                          type: "error",
-                          message:
-                            err instanceof Error
-                              ? err.message
-                              : "Erro na migração. Tente novamente.",
-                        });
-                      }
-                    }}
-                    disabled={isMigrating}
+                  <EmbeddedSignupButton
+                    clientId={clientId || undefined}
                     variant="default"
                     size="sm"
+                    onSuccess={(data) => {
+                      setNotification({
+                        type: "success",
+                        message: `WhatsApp ${data.displayPhone} conectado com sucesso via Embedded Signup!`,
+                      });
+                    }}
+                    onError={(error) => {
+                      setNotification({
+                        type: "error",
+                        message: error,
+                      });
+                    }}
                   >
-                    {isMigrating ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Preparando migração...
-                      </>
-                    ) : (
-                      <>
-                        <MessageSquare className="mr-2 h-4 w-4" />
-                        Migrar WhatsApp para Embedded Signup
-                      </>
-                    )}
-                  </Button>
+                    Migrar WhatsApp para Embedded Signup
+                  </EmbeddedSignupButton>
                   <Button
                     onClick={async () => {
                       setIsRollingBack(true);
