@@ -3,11 +3,9 @@
 /**
  * Embedded Signup Button with Facebook JS SDK
  *
- * Uses FB.login() popup with coexistence support via extras.featureType
- * Replaces redirect-based OAuth for WhatsApp Business onboarding
- *
- * Key: extras.featureType = "whatsapp_business_app_onboarding" enables
- * coexistence (WhatsApp Business App + Cloud API on same number)
+ * Uses FB.login() popup for WhatsApp Business onboarding.
+ * The config_id determines the signup flow (standard or coexistence).
+ * Follows official Meta Embedded Signup documentation.
  */
 
 import { Button } from "@/components/ui/button";
@@ -31,10 +29,7 @@ declare global {
           config_id: string;
           response_type: string;
           override_default_response_type: boolean;
-          extras: {
-            version: string;
-            featureType: string;
-          };
+          extras: Record<string, unknown>;
         },
       ) => void;
     };
@@ -108,7 +103,7 @@ export const EmbeddedSignupButton = ({
         appId: META_APP_ID,
         autoLogAppEvents: true,
         xfbml: true,
-        version: "v22.0",
+        version: "v25.0",
       });
       setSdkReady(true);
       console.log("[EmbeddedSignup] Facebook SDK initialized via fbAsyncInit");
@@ -121,7 +116,7 @@ export const EmbeddedSignupButton = ({
         appId: META_APP_ID,
         autoLogAppEvents: true,
         xfbml: true,
-        version: "v22.0",
+        version: "v25.0",
       });
       setSdkReady(true);
     }
@@ -280,8 +275,7 @@ export const EmbeddedSignupButton = ({
         response_type: "code",
         override_default_response_type: true,
         extras: {
-          version: "v4",
-          featureType: "whatsapp_business_app_onboarding",
+          setup: {},
         },
       },
     );
