@@ -384,7 +384,7 @@ export const registerPhoneNumber = async (
         },
         body: JSON.stringify({
           messaging_product: "whatsapp",
-          pin: "123456",
+          pin: String(Math.floor(100000 + Math.random() * 900000)),
         }),
       },
     );
