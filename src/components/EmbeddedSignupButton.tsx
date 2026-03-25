@@ -91,10 +91,45 @@ export const EmbeddedSignupButton = ({
   const [error, setError] = useState<string | null>(null);
   const sessionInfoRef = useRef<SessionInfo>({});
 
+  // Setup fbAsyncInit BEFORE the SDK script loads (Meta requires this order)
+  useEffect(() => {
+    if (!META_APP_ID) {
+      console.error(
+        "[EmbeddedSignup] Missing NEXT_PUBLIC_META_PLATFORM_APP_ID",
+      );
+      setError("Configuração do Facebook SDK ausente");
+      return;
+    }
+
+    // Define fbAsyncInit — the SDK calls this automatically after loading
+    window.fbAsyncInit = () => {
+      console.log("[EmbeddedSignup] fbAsyncInit called by SDK");
+      window.FB.init({
+        appId: META_APP_ID,
+        autoLogAppEvents: true,
+        xfbml: true,
+        version: "v25.0",
+      });
+      setSdkReady(true);
+      console.log("[EmbeddedSignup] Facebook SDK initialized via fbAsyncInit");
+    };
+
+    // If FB was already loaded (hot reload / re-mount), init directly
+    if (window.FB) {
+      console.log("[EmbeddedSignup] FB already exists, calling init directly");
+      window.FB.init({
+        appId: META_APP_ID,
+        autoLogAppEvents: true,
+        xfbml: true,
+        version: "v25.0",
+      });
+      setSdkReady(true);
+    }
+  }, []);
+
   // Listen for session logging messages from the Embedded Signup popup
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      // Only accept messages from Facebook
       if (
         event.origin !== "https://www.facebook.com" &&
         event.origin !== "https://web.facebook.com"
@@ -107,7 +142,6 @@ export const EmbeddedSignupButton = ({
           typeof event.data === "string" ? JSON.parse(event.data) : event.data;
 
         if (data.type === "WA_EMBEDDED_SIGNUP") {
-          // Session logging data from the popup
           const { data: sessionData } = data;
 
           if (sessionData) {
@@ -124,7 +158,6 @@ export const EmbeddedSignupButton = ({
               phone_number_id: sessionData.phone_number_id,
             });
 
-            // Handle cancel event
             if (sessionData.event === "CANCEL") {
               setIsLoading(false);
               onCancel?.();
@@ -139,33 +172,6 @@ export const EmbeddedSignupButton = ({
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
   }, [onCancel]);
-
-  // Initialize Facebook SDK
-  const handleSdkLoad = useCallback(() => {
-    if (!META_APP_ID) {
-      console.error(
-        "[EmbeddedSignup] Missing NEXT_PUBLIC_META_PLATFORM_APP_ID",
-      );
-      setError("Configuração do Facebook SDK ausente");
-      return;
-    }
-
-    window.fbAsyncInit = () => {
-      window.FB.init({
-        appId: META_APP_ID,
-        autoLogAppEvents: true,
-        xfbml: true,
-        version: "v25.0",
-      });
-      setSdkReady(true);
-      console.log("[EmbeddedSignup] Facebook SDK initialized");
-    };
-
-    // If FB is already loaded (e.g., hot reload)
-    if (window.FB) {
-      setSdkReady(true);
-    }
-  }, []);
 
   // Handle the FB.login callback
   const handleFBLoginResponse = useCallback(
@@ -238,6 +244,13 @@ export const EmbeddedSignupButton = ({
 
   // Launch the Embedded Signup popup
   const handleClick = useCallback(() => {
+    console.log("[EmbeddedSignup] Button clicked", {
+      sdkReady,
+      hasFB: !!window.FB,
+      configId: META_CONFIG_ID ? "set" : "missing",
+      appId: META_APP_ID ? "set" : "missing",
+    });
+
     if (!sdkReady || !window.FB) {
       setError("Facebook SDK ainda não carregou. Tente novamente.");
       return;
@@ -252,6 +265,11 @@ export const EmbeddedSignupButton = ({
     setError(null);
     sessionInfoRef.current = {};
 
+    console.log(
+      "[EmbeddedSignup] Calling FB.login with config_id:",
+      META_CONFIG_ID,
+    );
+
     window.FB.login(handleFBLoginResponse, {
       config_id: META_CONFIG_ID,
       response_type: "code",
@@ -265,11 +283,10 @@ export const EmbeddedSignupButton = ({
 
   return (
     <div className="flex flex-col gap-2">
-      {/* Load Facebook SDK */}
+      {/* Load Facebook SDK — must use afterInteractive so fbAsyncInit is found */}
       <Script
         src="https://connect.facebook.net/en_US/sdk.js"
-        strategy="lazyOnload"
-        onLoad={handleSdkLoad}
+        strategy="afterInteractive"
         crossOrigin="anonymous"
       />
 
