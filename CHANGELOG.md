@@ -5,6 +5,14 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-03-25
 
 ### fix
+- Ajustado componente EmbeddedSignupButton para alinhar com a documentação oficial do Meta Embedded Signup, atualizando versão do SDK para v25.0 e modificando estrutura do objeto extras para {setup: {}} no fluxo de onboarding do WhatsApp Business.
+  - Arquivos: `src/components/EmbeddedSignupButton.tsx`
+  - Evidência: alteração explícita da versão do SDK e mudança na estrutura do parâmetro extras conforme commit e diff
+  - Confiança: alta
+
+## 2026-03-25
+
+### fix
 - Revertida versão do SDK do Facebook para v22.0 para compatibilidade com a versão da Graph API usada no código
   - Arquivos: `src/components/EmbeddedSignupButton.tsx`
   - Evidência: alteração explícita da versão do SDK de v25.0 para v22.0 no componente
