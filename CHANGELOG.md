@@ -5,6 +5,14 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-03-25
 
 ### fix
+- Revertida versão do SDK do Facebook para v22.0 para compatibilidade com a versão da Graph API usada no código
+  - Arquivos: `src/components/EmbeddedSignupButton.tsx`
+  - Evidência: alteração explícita da versão do SDK de v25.0 para v22.0 no componente
+  - Confiança: alta
+
+## 2026-03-25
+
+### fix
 - Ajustado callback do `FB.login` para ser síncrono, evitando rejeição do SDK ao usar função assíncrona
   - Arquivos: `src/components/EmbeddedSignupButton.tsx`
   - Evidência: mudança de callback async para função síncrona que chama handler async internamente
