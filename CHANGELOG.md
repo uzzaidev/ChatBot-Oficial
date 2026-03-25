@@ -16,7 +16,7 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-03-24
 
 ### refactor
-- Atualizadas URLs para refletir a nova marca UzzApp em documentação, configuração e código
+- Atualizadas URLs para refletir a nova marca UzzApp em  documentação, configuração e código
 - Adicionada apresentação comercial em HTML detalhando funcionalidades e diferenciais da plataforma UzzApp
 - Incluído glossário técnico para facilitar entendimento dos termos usados no projeto
 - Ajustes em arquivos de configuração e rotas para alinhamento com a nova identidade visual e URLs
