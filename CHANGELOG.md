@@ -5,6 +5,13 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-03-25
 
 ### feat
+- Atualizado o SDK do Facebook para a versão v25.0 no componente EmbeddedSignupButton
+  - Arquivos: `src/components/EmbeddedSignupButton.tsx`
+  - Confiança: alta
+
+## 2026-03-25
+
+### feat
 - Adicionado importação do componente `EmbeddedSignupButton` na página de configurações
   - Arquivos: `src/app/dashboard/settings/page.tsx`
   - Confiança: alta
