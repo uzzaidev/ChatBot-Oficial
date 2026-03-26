@@ -4,6 +4,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-03-26
 
+### feat
+- Implementado suporte para processar e salvar mensagens enviadas pelo WhatsApp Business App (SMB message echoes) no dashboard e no histórico de chat AI, permitindo visualização dessas mensagens como enviadas pelo app oficial.
+- Adicionado ícone indicativo nas mensagens do tipo SMB no componente `MessageBubble` para diferenciar visualmente essas mensagens no dashboard.
+  - Arquivos: `src/app/api/webhook/route.ts`, `src/components/MessageBubble.tsx`
+  - Confiança: alta
+
+## 2026-03-26
+
 ### fix
 - Ajustado fluxo de troca de código por token no OAuth do Meta para não enviar `redirect_uri` quando o código for obtido via JS SDK (FB.login), evitando erros na autenticação.
 - Incluído parâmetro `redirect_uri` apenas no fluxo de redirecionamento server-side.
