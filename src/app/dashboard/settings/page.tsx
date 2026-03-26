@@ -52,6 +52,7 @@ import {
   Settings,
   Sparkles,
   Undo2,
+  Unplug,
   User,
 } from "lucide-react";
 import Link from "next/link";
@@ -108,6 +109,7 @@ export default function SettingsPage() {
   const [isMigrating, setIsMigrating] = useState(false);
   const [isRollingBack, setIsRollingBack] = useState(false);
   const [isRegisteringPhone, setIsRegisteringPhone] = useState(false);
+  const [isDisconnectingWhatsApp, setIsDisconnectingWhatsApp] = useState(false);
 
   // Estado de visibilidade de senhas
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>(
@@ -806,11 +808,46 @@ export default function SettingsPage() {
             {/* Auto-provisioned clients: show connected status instead of manual fields */}
             {isAutoProvisioned && (
               <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-4 mb-4">
-                <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                  <CheckCircle2 className="w-5 h-5" />
-                  <span className="font-medium">
-                    WhatsApp conectado via Embedded Signup
-                  </span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                    <CheckCircle2 className="w-5 h-5" />
+                    <span className="font-medium">
+                      WhatsApp conectado via Embedded Signup
+                    </span>
+                  </div>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    disabled={isDisconnectingWhatsApp}
+                    onClick={async () => {
+                      if (!confirm("Tem certeza que deseja desconectar o WhatsApp? O bot parará de funcionar até reconectar.")) return;
+                      setIsDisconnectingWhatsApp(true);
+                      try {
+                        const { apiFetch } = await import("@/lib/api");
+                        const res = await apiFetch("/api/auth/meta/disconnect", { method: "DELETE" });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || "Erro ao desconectar");
+                        setIsAutoProvisioned(false);
+                        setNotification({
+                          type: "success",
+                          message: `WhatsApp ${data.disconnected?.phone || ""} desconectado com sucesso.`,
+                        });
+                      } catch (err) {
+                        setNotification({
+                          type: "error",
+                          message: err instanceof Error ? err.message : "Erro ao desconectar WhatsApp",
+                        });
+                      } finally {
+                        setIsDisconnectingWhatsApp(false);
+                      }
+                    }}
+                  >
+                    {isDisconnectingWhatsApp ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Desconectando...</>
+                    ) : (
+                      <><Unplug className="mr-2 h-4 w-4" />Desconectar WhatsApp</>
+                    )}
+                  </Button>
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
                   Suas credenciais Meta são gerenciadas automaticamente pela
