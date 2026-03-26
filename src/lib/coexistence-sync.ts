@@ -20,6 +20,10 @@ type ProvisioningStatus = Record<string, any> | null | undefined;
 
 const META_API_VERSION = "v22.0";
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+const META_SYNC_TYPE_MAP: Record<CoexistenceSyncType, string> = {
+  contacts: "SMB_APP_STATE_SYNC",
+  history: "HISTORY",
+};
 
 export const getSyncKey = (syncType: CoexistenceSyncType): string =>
   `${syncType}_sync`;
@@ -141,7 +145,7 @@ export async function requestCoexistenceSync(input: {
       },
       body: JSON.stringify({
         messaging_product: "whatsapp",
-        sync_type: syncType,
+        sync_type: META_SYNC_TYPE_MAP[syncType],
       }),
     },
   );
