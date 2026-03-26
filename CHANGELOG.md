@@ -5,6 +5,13 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-03-26
 
 ### feat
+- Adicionado importação de `createServiceRoleClient` para integração com Supabase no webhook
+  - Arquivos: `src/app/api/webhook/route.ts`
+  - Confiança: alta
+
+## 2026-03-26
+
+### feat
 - Integrado componente `EmbeddedSignupButton` no passo de conexão do WhatsApp para melhorar a experiência do usuário, substituindo o botão com redirecionamento por uma janela de autorização embutida.
 - Adicionado tratamento de erros e callbacks para sucesso, erro e cancelamento no fluxo de conexão.
 - Atualizado redirecionamento após conexão para navegar internamente no onboarding com parâmetros de query.
