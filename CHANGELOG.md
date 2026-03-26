@@ -2,6 +2,14 @@
 
 Gerado automaticamente por IA a cada push no `main`.
 
+## 2026-03-26
+
+### feat
+- Adicionado botão para desconectar WhatsApp no dashboard de configurações, que desregistra o número e limpa segredos no Vault via nova API DELETE `/api/auth/meta/disconnect`.
+- Implementada rota API para desconectar WhatsApp Business, removendo credenciais Meta, dados WABA e segredos Vault, com tentativa de desregistro do número na Cloud API.
+  - Arquivos: `src/app/api/auth/meta/disconnect/route.ts`, `src/app/dashboard/settings/page.tsx`
+  - Confiança: alta
+
 ## 2026-03-25
 
 ### fix
