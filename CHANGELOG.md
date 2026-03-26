@@ -5,6 +5,14 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-03-26
 
 ### fix
+- Atualizada mensagem de aviso sobre elegibilidade do cliente para sincronização em modo coexistência, removendo bloqueio e ajustando texto para indicar prosseguimento sem verificação local
+  - Arquivos: `src/app/api/client/whatsapp-sync/route.ts`
+  - Evidência: alteração da mensagem de console.warn e remoção do retorno de erro 400
+  - Confiança: alta
+
+## 2026-03-26
+
+### fix
 - Corrigida formatação de comentário no script de migração `add_onboarding_type_to_clients.sql`
   - Arquivos: `supabase/migrations/20260325180609_add_onboarding_type_to_clients.sql`
   - Evidência: ajuste em comentário para padronização
