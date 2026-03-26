@@ -78,19 +78,15 @@ export async function POST(request: NextRequest) {
     }
 
     if (!client.auto_provisioned || client.onboarding_type !== "coexistence") {
-      console.warn("[WhatsApp Sync] Client is not eligible for coexistence sync", {
-        clientId,
-        syncType,
-        autoProvisioned: client.auto_provisioned,
-        onboardingType: client.onboarding_type,
-        phoneNumberId: client.meta_phone_number_id,
-      });
-      return NextResponse.json(
+      console.warn(
+        "[WhatsApp Sync] Proceeding without local coexistence eligibility gate",
         {
-          error:
-            "Esse recurso está disponível apenas para números conectados em coexistence via Embedded Signup.",
+          clientId,
+          syncType,
+          autoProvisioned: client.auto_provisioned,
+          onboardingType: client.onboarding_type,
+          phoneNumberId: client.meta_phone_number_id,
         },
-        { status: 400 },
       );
     }
 
