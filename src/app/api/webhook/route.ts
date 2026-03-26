@@ -13,6 +13,7 @@
 
 import { processChatbotMessage } from "@/flows/chatbotFlow";
 import { handleUnknownWABA } from "@/lib/auto-provision";
+import { createServiceRoleClient } from "@/lib/supabase";
 import { getClientByWABAId } from "@/lib/waba-lookup";
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
