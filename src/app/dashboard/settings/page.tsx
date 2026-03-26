@@ -820,22 +820,36 @@ export default function SettingsPage() {
                     size="sm"
                     disabled={isDisconnectingWhatsApp}
                     onClick={async () => {
-                      if (!confirm("Tem certeza que deseja desconectar o WhatsApp? O bot parará de funcionar até reconectar.")) return;
+                      if (
+                        !confirm(
+                          "Tem certeza que deseja desconectar o WhatsApp? O bot parará de funcionar até reconectar.",
+                        )
+                      )
+                        return;
                       setIsDisconnectingWhatsApp(true);
                       try {
                         const { apiFetch } = await import("@/lib/api");
-                        const res = await apiFetch("/api/auth/meta/disconnect", { method: "DELETE" });
+                        const res = await apiFetch(
+                          "/api/auth/meta/disconnect",
+                          { method: "DELETE" },
+                        );
                         const data = await res.json();
-                        if (!res.ok) throw new Error(data.error || "Erro ao desconectar");
+                        if (!res.ok)
+                          throw new Error(data.error || "Erro ao desconectar");
                         setIsAutoProvisioned(false);
                         setNotification({
                           type: "success",
-                          message: `WhatsApp ${data.disconnected?.phone || ""} desconectado com sucesso.`,
+                          message: `WhatsApp ${
+                            data.disconnected?.phone || ""
+                          } desconectado com sucesso.`,
                         });
                       } catch (err) {
                         setNotification({
                           type: "error",
-                          message: err instanceof Error ? err.message : "Erro ao desconectar WhatsApp",
+                          message:
+                            err instanceof Error
+                              ? err.message
+                              : "Erro ao desconectar WhatsApp",
                         });
                       } finally {
                         setIsDisconnectingWhatsApp(false);
@@ -843,9 +857,15 @@ export default function SettingsPage() {
                     }}
                   >
                     {isDisconnectingWhatsApp ? (
-                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Desconectando...</>
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Desconectando...
+                      </>
                     ) : (
-                      <><Unplug className="mr-2 h-4 w-4" />Desconectar WhatsApp</>
+                      <>
+                        <Unplug className="mr-2 h-4 w-4" />
+                        Desconectar WhatsApp
+                      </>
                     )}
                   </Button>
                 </div>
