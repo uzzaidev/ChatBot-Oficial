@@ -5,6 +5,15 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-03-26
 
 ### fix
+- Ajustado fluxo de troca de código por token no OAuth do Meta para não enviar `redirect_uri` quando o código for obtido via JS SDK (FB.login), evitando erros na autenticação.
+- Incluído parâmetro `redirect_uri` apenas no fluxo de redirecionamento server-side.
+  - Arquivos: `src/app/api/auth/meta/callback/route.ts`, `src/lib/meta-oauth.ts`
+  - Evidência: remoção condicional do parâmetro `redirect_uri` na requisição de token, conforme comentário no código.
+  - Confiança: alta
+
+## 2026-03-26
+
+### fix
 - Melhorada a confirmação e o tratamento de erros ao desconectar o WhatsApp na página de configurações do dashboard. Ajustes na exibição de mensagens e no estado de carregamento durante a desconexão.
   - Arquivos: `src/app/dashboard/settings/page.tsx`
   - Evidência: aprimoramento do fluxo assíncrono, mensagens de erro e feedback visual no botão de desconexão
