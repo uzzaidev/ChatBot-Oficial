@@ -1,5 +1,5 @@
 import { createClientBrowser } from "@/lib/supabase";
-import type { Message } from "@/lib/types";
+import type { Message, MessageType } from "@/lib/types";
 import { cleanMessageContent } from "@/lib/utils";
 import { Capacitor } from "@capacitor/core";
 import type { RealtimeChannel } from "@supabase/supabase-js";
@@ -26,6 +26,29 @@ interface UseRealtimeMessagesOptions {
     reactions?: Array<{ emoji: string; reactedBy: string; reactedAt: string }>;
   }) => void;
 }
+
+const VALID_MESSAGE_TYPES = new Set<MessageType>([
+  "text",
+  "audio",
+  "image",
+  "document",
+  "video",
+  "interactive",
+  "sticker",
+  "reaction",
+]);
+
+const parseRealtimeJson = (value: unknown): any => {
+  if (!value) return null;
+  if (typeof value === "string") {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return null;
+    }
+  }
+  return value;
+};
 
 /**
  * Hook de Realtime usando Broadcast (FREE tier compatible)
@@ -143,24 +166,33 @@ export const useRealtimeMessages = ({
             }
 
             // Parse message JSON
-            let messageData: any;
-            if (typeof data.message === "string") {
-              try {
-                messageData = JSON.parse(data.message);
-              } catch {
-                messageData = { type: "ai", content: data.message };
-              }
-            } else {
-              messageData = data.message || {};
-            }
-
+            const messageData = parseRealtimeJson(data.message) || {
+              type: "ai",
+              content: data.message,
+            };
+            const mediaMetadata = parseRealtimeJson(data.media_metadata);
             const messageType = messageData.type || "ai";
-            const messageContent = messageData.content || "";
+            const source =
+              typeof messageData.additional_kwargs?.source === "string"
+                ? messageData.additional_kwargs.source
+                : null;
+            const messageContent =
+              source === "business_app" &&
+              typeof messageData.additional_kwargs?.dashboard_content ===
+                "string"
+                ? messageData.additional_kwargs.dashboard_content
+                : messageData.content || "";
             const cleanedContent = cleanMessageContent(messageContent);
 
             const metadata: Record<string, unknown> = {};
+            if (mediaMetadata) {
+              metadata.media = mediaMetadata;
+            }
             if (wamid) {
               metadata.wamid = wamid;
+            }
+            if (source) {
+              metadata.source = source;
             }
             if (data.error_details) {
               metadata.error_details = data.error_details;
@@ -169,6 +201,13 @@ export const useRealtimeMessages = ({
               metadata.status_updated_at = data.updated_at;
             }
 
+            const rawRealtimeType = mediaMetadata?.type || "text";
+            const realtimeType: MessageType = VALID_MESSAGE_TYPES.has(
+              rawRealtimeType as MessageType,
+            )
+              ? (rawRealtimeType as MessageType)
+              : "text";
+
             const newMessage: Message = {
               id: messageId,
               client_id: clientId,
@@ -176,11 +215,13 @@ export const useRealtimeMessages = ({
               phone: phone,
               name: messageType === "human" ? "Cliente" : "Bot",
               content: cleanedContent,
-              type: "text",
+              type: realtimeType,
               direction: messageType === "human" ? "incoming" : "outgoing",
               status: (data.status || "sent") as Message["status"],
               timestamp: data.created_at || new Date().toISOString(),
               metadata: Object.keys(metadata).length > 0 ? metadata : null,
+              transcription: data.transcription || null,
+              audio_duration_seconds: data.audio_duration_seconds || null,
             };
 
             if (onNewMessageRef.current) {

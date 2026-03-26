@@ -6,7 +6,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-// Valid message types
+const DEBUG_PREFIX = "[Messages API Debug]";
+
 const VALID_MESSAGE_TYPES = new Set<MessageType>([
   "text",
   "audio",
@@ -24,11 +25,82 @@ interface RouteParams {
   }>;
 }
 
+const asMetadataRecord = (
+  metadata: Message["metadata"],
+): Record<string, unknown> => {
+  return metadata && typeof metadata === "object"
+    ? (metadata as Record<string, unknown>)
+    : {};
+};
+
+const parseJsonColumn = (value: unknown): any => {
+  if (!value) return null;
+  if (typeof value === "string") {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return null;
+    }
+  }
+  return value;
+};
+
+const hasMediaMetadata = (msg: Message): boolean => {
+  const metadata = asMetadataRecord(msg.metadata);
+  return Boolean(metadata.media);
+};
+
+const isBusinessAppContextHeavy = (msg: Message): boolean => {
+  const metadata = asMetadataRecord(msg.metadata);
+  if (metadata.source !== "business_app") {
+    return false;
+  }
+
+  return (
+    msg.content.includes("[Imagem] Descricao:") ||
+    (msg.content.includes("[Documento:") && msg.content.includes("Conteudo:"))
+  );
+};
+
+const getMessageScore = (msg: Message): number => {
+  const metadata = asMetadataRecord(msg.metadata);
+  let score = 0;
+
+  if (msg.type === "interactive") score += 100;
+  if (hasMediaMetadata(msg)) score += 40;
+  if (msg.transcription) score += 20;
+  if (msg.audio_duration_seconds) score += 5;
+  if (metadata.error_details) score += 4;
+  if (metadata.reactions) score += 4;
+  if (metadata.wamid) score += 3;
+  if (metadata.source) score += 2;
+  if (msg.content.trim().length > 0) score += 1;
+  score += Object.keys(metadata).length;
+
+  if (isBusinessAppContextHeavy(msg)) {
+    score -= 10;
+  }
+
+  return score;
+};
+
+const summarizeMessage = (msg: Message) => {
+  const metadata = asMetadataRecord(msg.metadata);
+  return {
+    id: msg.id,
+    type: msg.type,
+    direction: msg.direction,
+    status: msg.status,
+    source: metadata.source,
+    hasMedia: Boolean(metadata.media),
+    hasTranscription: Boolean(msg.transcription),
+    contentPreview: msg.content.substring(0, 80),
+  };
+};
+
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { phone } = await params;
-
-    // 🔐 SECURITY: Get client_id from authenticated session, not query params
     const clientId = await getClientIdFromSession(request as any);
 
     if (!clientId) {
@@ -40,36 +112,22 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     if (!phone) {
       return NextResponse.json(
-        { error: "phone é obrigatório" },
+        { error: "phone e obrigatorio" },
         { status: 400 },
       );
     }
 
-    // Debug: Query direta via PostgreSQL para comparar
-    try {
-      const pgResult = await query<any>(
-        `SELECT COUNT(*) as count FROM n8n_chat_histories 
-         WHERE session_id = $1 
-         AND client_id = $2`,
-        [phone, clientId],
-      );
-    } catch (pgError) {}
-
-    // 🔐 SECURITY: Filter messages by authenticated user's client_id
-    // Buscar TODAS as mensagens via PostgreSQL direto (sem limite)
-    // Motivo: Supabase pode ter limites de paginação que não queremos
-
-    const [pgMessages, pgInteractiveMessages] = await Promise.all([
+    const [historiesResult, messagesResult] = await Promise.all([
       query<any>(
         `SELECT id, session_id, message, media_metadata, wamid, status, error_details, updated_at, created_at, transcription, audio_duration_seconds
          FROM n8n_chat_histories
          WHERE session_id = $1
          AND client_id = $2
-         ORDER BY created_at DESC`, // DESC: mais recentes primeiro
+         ORDER BY created_at DESC`,
         [phone, clientId],
       ),
       query<any>(
-        `SELECT id, client_id, phone, content, direction, status, metadata, "timestamp"
+        `SELECT id, client_id, conversation_id, phone, content, type, direction, status, metadata, "timestamp", transcription, audio_duration_seconds
          FROM messages
          WHERE phone = $1
          AND client_id = $2
@@ -78,58 +136,57 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       ),
     ]);
 
-    const data = pgMessages.rows;
-    const interactiveData = pgInteractiveMessages.rows;
+    const historyRows = (historiesResult.rows || []).reverse();
+    const messageRows = messagesResult.rows || [];
 
-    // Reverter ordem para exibir antigas primeiro (como esperado pela UI)
-    const dataReversed = (data || []).reverse();
+    const n8nMessages: Message[] = historyRows
+      .map((row: any, index: number) => {
+        const messageData = parseJsonColumn(row.message) || {
+          type: "ai",
+          content: row.message,
+        };
 
-    // Transformar dados do n8n_chat_histories para formato Message
-    const n8nMessages: Message[] = dataReversed
-      .map((item: any, index: number) => {
-        // O n8n_chat_histories salva message como JSON:
-        // { "type": "human" | "ai", "content": "...", "additional_kwargs": {}, "response_metadata": {} }
-
-        let messageData: any;
-
-        // Parse o JSON da coluna message
-        if (typeof item.message === "string") {
-          try {
-            messageData = JSON.parse(item.message);
-          } catch {
-            // Fallback se não for JSON válido (mensagens antigas)
-            messageData = { type: "ai", content: item.message };
-          }
-        } else {
-          messageData = item.message || {};
-        }
-
-        // 📎 Parse media_metadata if present
-        let mediaMetadata: any = null;
-        if (item.media_metadata) {
-          if (typeof item.media_metadata === "string") {
-            try {
-              mediaMetadata = JSON.parse(item.media_metadata);
-            } catch {
-              mediaMetadata = null;
-            }
-          } else {
-            mediaMetadata = item.media_metadata;
-          }
-        }
-
-        // Extrair type e content do JSON
-        const messageType = messageData.type || "ai"; // 'human' | 'ai' | 'system'
-        if (messageType === "system") {
-          // System-only context (ex: fluxo interativo) deve ficar invisível no frontend
+        if (messageData.type === "system") {
           return null;
         }
-        const messageContent = messageData.content || "";
 
-        // Limpar tags de function calls
-        const cleanedContent = cleanMessageContent(messageContent);
+        const mediaMetadata = parseJsonColumn(row.media_metadata);
+        const source =
+          typeof messageData.additional_kwargs?.source === "string"
+            ? messageData.additional_kwargs.source
+            : null;
+        const rawContent =
+          source === "business_app" &&
+          typeof messageData.additional_kwargs?.dashboard_content === "string"
+            ? messageData.additional_kwargs.dashboard_content
+            : messageData.content || "";
+        const cleanedContent = cleanMessageContent(rawContent);
+        const metadata: Record<string, unknown> = {};
 
-        // 📎 Determine message type based on media metadata with validation
+        if (mediaMetadata) {
+          metadata.media = mediaMetadata;
+          console.log(DEBUG_PREFIX, "n8n media row", {
+            rowId: row.id,
+            wamid: row.wamid,
+            media: mediaMetadata,
+          });
+        }
+        if (row.wamid) {
+          metadata.wamid = row.wamid;
+        }
+        if (source) {
+          metadata.source = source;
+        }
+        if (row.error_details) {
+          metadata.error_details = row.error_details;
+        }
+        if (row.updated_at) {
+          metadata.status_updated_at = row.updated_at;
+        }
+        if (messageData.metadata?.reactions) {
+          metadata.reactions = messageData.metadata.reactions;
+        }
+
         const rawMsgType = mediaMetadata?.type || "text";
         const msgType: MessageType = VALID_MESSAGE_TYPES.has(
           rawMsgType as MessageType,
@@ -137,84 +194,52 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           ? (rawMsgType as MessageType)
           : "text";
 
-        // 📱 Include wamid in metadata for reactions
-        const metadata: Record<string, unknown> = {};
-        if (mediaMetadata) {
-          metadata.media = mediaMetadata;
-        }
-        if (item.wamid) {
-          metadata.wamid = item.wamid;
-        }
-        if (item.error_details) {
-          metadata.error_details = item.error_details;
-        }
-        if (item.updated_at) {
-          metadata.status_updated_at = item.updated_at;
-        }
-        // 😊 Extract reactions from message JSON (stored by updateMessageReaction)
-        if (messageData.metadata?.reactions) {
-          metadata.reactions = messageData.metadata.reactions;
-        }
-
         return {
-          id: item.id?.toString() || `msg-${index}`,
+          id: row.id?.toString() || `msg-${index}`,
           client_id: clientId,
           conversation_id: String(phone),
           phone: String(phone),
-          name: messageType === "human" ? "Cliente" : "Bot",
+          name: messageData.type === "human" ? "Cliente" : "Bot",
           content: cleanedContent,
           type: msgType,
           direction:
-            messageType === "human"
+            messageData.type === "human"
               ? ("incoming" as const)
               : ("outgoing" as const),
-          status: (item.status || "sent") as Message["status"],
-          timestamp: item.created_at || new Date().toISOString(),
+          status: (row.status || "sent") as Message["status"],
+          timestamp: row.created_at || new Date().toISOString(),
           metadata: Object.keys(metadata).length > 0 ? metadata : null,
-          transcription: item.transcription || null,
-          audio_duration_seconds: item.audio_duration_seconds || null,
+          transcription: row.transcription || null,
+          audio_duration_seconds: row.audio_duration_seconds || null,
         };
       })
       .filter(Boolean) as Message[];
 
-    // Mensagens persistidas diretamente na tabela messages (ex: interativos)
-    const savedMessages: Message[] = (interactiveData || [])
-      .map((item: any, index: number) => {
-        const parsedMetadata = (() => {
-          if (!item.metadata) return null;
-          if (typeof item.metadata === "string") {
-            try {
-              return JSON.parse(item.metadata);
-            } catch {
-              return null;
-            }
-          }
-          return item.metadata;
-        })();
-
-        const metadata =
-          parsedMetadata && typeof parsedMetadata === "object"
-            ? (parsedMetadata as Record<string, unknown>)
+    const savedMessages: Message[] = messageRows
+      .map((row: any, index: number) => {
+        const metadata = parseJsonColumn(row.metadata);
+        const metadataRecord =
+          metadata && typeof metadata === "object"
+            ? (metadata as Record<string, unknown>)
             : null;
 
         const msgType: MessageType = (() => {
-          if (metadata && (metadata as any).interactive) return "interactive";
-          if (item.type && VALID_MESSAGE_TYPES.has(item.type as MessageType)) {
-            return item.type as MessageType;
+          if (metadataRecord?.interactive) {
+            return "interactive";
+          }
+          if (row.type && VALID_MESSAGE_TYPES.has(row.type as MessageType)) {
+            return row.type as MessageType;
           }
           return "text";
         })();
 
-        const direction =
-          item.direction === "incoming" ? "incoming" : "outgoing";
-
-        // Evitar duplicar mensagens de texto do usuário já salvas em n8n_chat_histories
+        const direction: Message["direction"] =
+          row.direction === "incoming" ? "incoming" : "outgoing";
         const isDuplicableIncomingText =
           direction === "incoming" &&
           msgType === "text" &&
           !(
-            (metadata as any)?.interactive_response_id ||
-            (metadata as any)?.interactive
+            metadataRecord?.interactive_response_id || metadataRecord?.interactive
           );
 
         if (isDuplicableIncomingText) {
@@ -222,51 +247,41 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         }
 
         return {
-          id: item.id?.toString() || `saved-${index}`,
-          client_id: item.client_id || clientId,
-          conversation_id: String(phone),
-          phone: String(item.phone || phone),
-          name: item.direction === "incoming" ? "Cliente" : "Bot",
-          content: cleanMessageContent(item.content || ""),
+          id: row.id?.toString() || `saved-${index}`,
+          client_id: row.client_id || clientId,
+          conversation_id: String(row.conversation_id || phone),
+          phone: String(row.phone || phone),
+          name: direction === "incoming" ? "Cliente" : "Bot",
+          content: cleanMessageContent(row.content || ""),
           type: msgType,
-          direction: direction as Message["direction"],
-          status: (item.status || "sent") as Message["status"],
-          timestamp: item.timestamp || new Date().toISOString(),
-          metadata,
-          transcription: item.transcription || null,
-          audio_duration_seconds: item.audio_duration_seconds || null,
+          direction,
+          status: (row.status || "sent") as Message["status"],
+          timestamp: row.timestamp || new Date().toISOString(),
+          metadata: metadataRecord,
+          transcription: row.transcription || null,
+          audio_duration_seconds: row.audio_duration_seconds || null,
         };
       })
       .filter(Boolean) as Message[];
 
-    // Combinar e ordenar por timestamp
     const combined = [...n8nMessages, ...savedMessages];
-
     const getWamid = (msg: Message): string | null => {
-      if (!msg.metadata || typeof msg.metadata !== "object") return null;
-      const raw = (msg.metadata as Record<string, unknown>).wamid;
+      const raw = asMetadataRecord(msg.metadata).wamid;
       return typeof raw === "string" && raw.length > 0 ? raw : null;
     };
 
-    const preferMessage = (current: Message, next: Message): Message => {
-      // Prefer interactive rendering if either is interactive
-      if (current.type !== "interactive" && next.type === "interactive") {
-        return next;
+    const preferMessage = (current: Message, incoming: Message): Message => {
+      if (current.type !== "interactive" && incoming.type === "interactive") {
+        return incoming;
       }
-      if (current.type === "interactive" && next.type !== "interactive") {
+      if (current.type === "interactive" && incoming.type !== "interactive") {
         return current;
       }
 
-      // Prefer richer metadata (wamid/error/media/etc)
-      const currentMetaSize =
-        current.metadata && typeof current.metadata === "object"
-          ? Object.keys(current.metadata as Record<string, unknown>).length
-          : 0;
-      const nextMetaSize =
-        next.metadata && typeof next.metadata === "object"
-          ? Object.keys(next.metadata as Record<string, unknown>).length
-          : 0;
-      if (nextMetaSize > currentMetaSize) return next;
+      const currentScore = getMessageScore(current);
+      const incomingScore = getMessageScore(incoming);
+      if (incomingScore > currentScore) return incoming;
+      if (currentScore > incomingScore) return current;
 
       return current;
     };
@@ -276,16 +291,39 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       const wamid = getWamid(msg);
       const key = wamid ? `wamid:${wamid}` : `id:${msg.id}`;
       const existing = byKey.get(key);
+
       if (!existing) {
         byKey.set(key, msg);
         continue;
       }
-      byKey.set(key, preferMessage(existing, msg));
+
+      const preferred = preferMessage(existing, msg);
+      console.log(DEBUG_PREFIX, "Dedup decision", {
+        key,
+        winner: preferred === existing ? "existing" : "incoming",
+        existing: summarizeMessage(existing),
+        incoming: summarizeMessage(msg),
+      });
+      byKey.set(key, preferred);
     }
 
     const messages = Array.from(byKey.values()).sort((a, b) => {
       return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
     });
+
+    console.log(
+      DEBUG_PREFIX,
+      "Final response media rows",
+      messages
+        .filter((msg) => hasMediaMetadata(msg))
+        .map((msg) => ({
+          id: msg.id,
+          wamid: getWamid(msg),
+          type: msg.type,
+          media: asMetadataRecord(msg.metadata).media,
+          transcription: msg.transcription,
+        })),
+    );
 
     return NextResponse.json(
       {
