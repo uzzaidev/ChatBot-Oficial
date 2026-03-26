@@ -4,6 +4,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-03-26
 
+### fix
+- Corrigida formatação de comentário no script de migração `add_onboarding_type_to_clients.sql`
+  - Arquivos: `supabase/migrations/20260325180609_add_onboarding_type_to_clients.sql`
+  - Evidência: ajuste em comentário para padronização
+  - Confiança: alta
+
+## 2026-03-26
+
 ### feat
 - Melhorado tratamento e logging de erros na sincronização com WhatsApp, incluindo avisos para requisições não autenticadas, tipos inválidos, cliente não encontrado, elegibilidade para sincronização coexistente e falhas na obtenção de token Meta.
 - Ajustada lógica e interface no dashboard de configurações para exibir o cartão de sincronização coexistente com base em nova condição, além de mensagens informativas sobre o tipo de onboarding do cliente.
