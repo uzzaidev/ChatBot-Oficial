@@ -48,6 +48,85 @@ const MESSAGE_TABLE_TYPES = new Set([
   "text",
   "video",
 ]);
+const SKIPPED_HISTORY_MESSAGE_TYPES = new Set(["errors"]);
+
+async function archiveMetaWebhook(input: {
+  clientId?: string | null;
+  wabaId?: string | null;
+  field?: string | null;
+  signature?: string | null;
+  rawBody: string;
+  payload: any;
+  metadata?: Record<string, unknown>;
+}): Promise<string | null> {
+  try {
+    const result = await query<{ id: string }>(
+      `INSERT INTO meta_webhook_events (
+         client_id,
+         waba_id,
+         webhook_field,
+         signature,
+         raw_body,
+         payload,
+         metadata
+       )
+       VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb)
+       RETURNING id`,
+      [
+        input.clientId || null,
+        input.wabaId || null,
+        input.field || null,
+        input.signature || null,
+        input.rawBody,
+        JSON.stringify(input.payload),
+        JSON.stringify(input.metadata || {}),
+      ],
+    );
+
+    return result.rows[0]?.id || null;
+  } catch (error) {
+    console.error("[Webhook Archive] Failed to persist raw Meta webhook", error);
+    return null;
+  }
+}
+
+async function updateArchivedMetaWebhook(
+  archiveId: string | null,
+  input: {
+    clientId?: string | null;
+    processingStatus: "processed" | "failed";
+    errorMessage?: string | null;
+    metadata?: Record<string, unknown>;
+  },
+): Promise<void> {
+  if (!archiveId) {
+    return;
+  }
+
+  try {
+    await query(
+      `UPDATE meta_webhook_events
+       SET client_id = COALESCE($2, client_id),
+           processing_status = $3,
+           error_message = $4,
+           metadata = COALESCE(metadata, '{}'::jsonb) || $5::jsonb,
+           processed_at = NOW()
+       WHERE id = $1`,
+      [
+        archiveId,
+        input.clientId || null,
+        input.processingStatus,
+        input.errorMessage || null,
+        JSON.stringify(input.metadata || {}),
+      ],
+    );
+  } catch (error) {
+    console.error("[Webhook Archive] Failed to update archived Meta webhook", {
+      archiveId,
+      error,
+    });
+  }
+}
 
 export async function GET(request: NextRequest) {
   const timestamp = new Date().toISOString();
@@ -95,6 +174,7 @@ export async function POST(request: NextRequest) {
   try {
     const rawBody = await request.text();
     const signature = request.headers.get("x-hub-signature-256");
+    let archiveId: string | null = null;
 
     if (!signature) {
       console.warn("[Webhook POST] Missing signature header");
@@ -128,12 +208,43 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing WABA ID" }, { status: 400 });
     }
 
+    archiveId = await archiveMetaWebhook({
+      wabaId,
+      field,
+      signature,
+      rawBody,
+      payload: body,
+      metadata: {
+        received_at: timestamp,
+      },
+    });
+
     const config = await getClientByWABAId(wabaId);
     if (!config) {
       console.warn("[Webhook POST] Unknown WABA, delegating to auto-provision", {
         wabaId,
       });
-      await handleUnknownWABA(wabaId, body);
+      try {
+        await handleUnknownWABA(wabaId, body);
+        await updateArchivedMetaWebhook(archiveId, {
+          processingStatus: "processed",
+          metadata: {
+            unknown_waba: true,
+          },
+        });
+      } catch (unknownWabaError) {
+        await updateArchivedMetaWebhook(archiveId, {
+          processingStatus: "failed",
+          errorMessage:
+            unknownWabaError instanceof Error
+              ? unknownWabaError.message
+              : "Unknown WABA handling failed",
+          metadata: {
+            unknown_waba: true,
+          },
+        });
+        throw unknownWabaError;
+      }
       return NextResponse.json({ status: "EVENT_RECEIVED" }, { status: 200 });
     }
 
@@ -147,8 +258,26 @@ export async function POST(request: NextRequest) {
       try {
         await processHistoryWebhook(body, config);
         console.log("[Webhook POST] History sync payload processed");
+        await updateArchivedMetaWebhook(archiveId, {
+          clientId: config.id,
+          processingStatus: "processed",
+          metadata: {
+            field,
+          },
+        });
       } catch (historyError) {
         console.error("[Webhook POST] History sync error", historyError);
+        await updateArchivedMetaWebhook(archiveId, {
+          clientId: config.id,
+          processingStatus: "failed",
+          errorMessage:
+            historyError instanceof Error
+              ? historyError.message
+              : "History sync processing failed",
+          metadata: {
+            field,
+          },
+        });
       }
       return NextResponse.json({ status: "EVENT_RECEIVED" }, { status: 200 });
     }
@@ -157,8 +286,26 @@ export async function POST(request: NextRequest) {
       try {
         await processStateSyncWebhook(body, config);
         console.log("[Webhook POST] Contact sync payload processed");
+        await updateArchivedMetaWebhook(archiveId, {
+          clientId: config.id,
+          processingStatus: "processed",
+          metadata: {
+            field,
+          },
+        });
       } catch (stateSyncError) {
         console.error("[Webhook POST] Contact sync error", stateSyncError);
+        await updateArchivedMetaWebhook(archiveId, {
+          clientId: config.id,
+          processingStatus: "failed",
+          errorMessage:
+            stateSyncError instanceof Error
+              ? stateSyncError.message
+              : "Contact sync processing failed",
+          metadata: {
+            field,
+          },
+        });
       }
       return NextResponse.json({ status: "EVENT_RECEIVED" }, { status: 200 });
     }
@@ -167,8 +314,26 @@ export async function POST(request: NextRequest) {
       try {
         await processSMBEcho(body, config);
         console.log("[Webhook POST] SMB echoes processed");
+        await updateArchivedMetaWebhook(archiveId, {
+          clientId: config.id,
+          processingStatus: "processed",
+          metadata: {
+            field,
+          },
+        });
       } catch (echoError) {
         console.error("[Webhook POST] SMB echo error", echoError);
+        await updateArchivedMetaWebhook(archiveId, {
+          clientId: config.id,
+          processingStatus: "failed",
+          errorMessage:
+            echoError instanceof Error
+              ? echoError.message
+              : "SMB echo processing failed",
+          metadata: {
+            field,
+          },
+        });
       }
       return NextResponse.json({ status: "EVENT_RECEIVED" }, { status: 200 });
     }
@@ -197,6 +362,14 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        await updateArchivedMetaWebhook(archiveId, {
+          clientId: config.id,
+          processingStatus: "processed",
+          metadata: {
+            field: "statuses",
+            count: statuses.length,
+          },
+        });
         return NextResponse.json(
           { status: "STATUS_UPDATE_PROCESSED" },
           { status: 200 },
@@ -228,6 +401,13 @@ export async function POST(request: NextRequest) {
           });
         }
 
+        await updateArchivedMetaWebhook(archiveId, {
+          clientId: config.id,
+          processingStatus: "processed",
+          metadata: {
+            field: "reaction",
+          },
+        });
         return NextResponse.json(
           { status: "REACTION_PROCESSED" },
           { status: 200 },
@@ -240,8 +420,24 @@ export async function POST(request: NextRequest) {
     try {
       await processChatbotMessage(body, config);
       console.log("[Webhook POST] Message processed successfully");
+      await updateArchivedMetaWebhook(archiveId, {
+        clientId: config.id,
+        processingStatus: "processed",
+        metadata: {
+          field: field || "messages",
+        },
+      });
     } catch (flowError) {
       console.error("[Webhook POST] Flow error", flowError);
+      await updateArchivedMetaWebhook(archiveId, {
+        clientId: config.id,
+        processingStatus: "failed",
+        errorMessage:
+          flowError instanceof Error ? flowError.message : "Flow processing failed",
+        metadata: {
+          field: field || "messages",
+        },
+      });
     }
 
     return NextResponse.json({ status: "EVENT_RECEIVED" }, { status: 200 });
@@ -402,7 +598,26 @@ function normalizePhone(value: unknown): string | null {
   return normalized.length > 0 ? normalized : null;
 }
 
-function mapHistoryStatus(
+function mapHistoryChatStatus(
+  rawStatus?: string | null,
+): "pending" | "sent" | "delivered" | "read" | "failed" {
+  switch ((rawStatus || "").toUpperCase()) {
+    case "PENDING":
+      return "pending";
+    case "DELIVERED":
+      return "delivered";
+    case "READ":
+    case "PLAYED":
+      return "read";
+    case "ERROR":
+      return "failed";
+    case "SENT":
+    default:
+      return "sent";
+  }
+}
+
+function mapHistoryMessageTableStatus(
   rawStatus?: string | null,
 ): "queued" | "sent" | "delivered" | "read" | "failed" {
   switch ((rawStatus || "").toUpperCase()) {
@@ -449,14 +664,30 @@ function getHistoryFallbackContent(
   );
 }
 
+function shouldSkipHistoryMessage(message: any): boolean {
+  const rawType =
+    typeof message?.type === "string" ? message.type.toLowerCase() : "";
+
+  if (!rawType) {
+    return true;
+  }
+
+  if (SKIPPED_HISTORY_MESSAGE_TYPES.has(rawType)) {
+    return true;
+  }
+
+  return false;
+}
+
 async function upsertSyncedContact(input: {
   clientId: string;
   phone: string;
   name?: string | null;
   timestamp?: string | null;
   remove?: boolean;
+  lastReadAt?: string | null;
 }): Promise<void> {
-  const { clientId, phone, name, timestamp, remove } = input;
+  const { clientId, phone, name, timestamp, remove, lastReadAt } = input;
   const normalizedPhone = normalizePhone(phone);
 
   if (!normalizedPhone) {
@@ -483,18 +714,24 @@ async function upsertSyncedContact(input: {
        telefone,
        nome,
        status,
+       last_read_at,
        created_at,
        updated_at
      )
-     VALUES ($1, $2, $3, 'bot', $4, $4)
+     VALUES ($1, $2, $3, 'bot', $4, $5, $5)
      ON CONFLICT (telefone, client_id)
      DO UPDATE SET
        nome = COALESCE(EXCLUDED.nome, clientes_whatsapp.nome),
+       last_read_at = CASE
+         WHEN EXCLUDED.last_read_at IS NULL THEN clientes_whatsapp.last_read_at
+         WHEN clientes_whatsapp.last_read_at IS NULL THEN EXCLUDED.last_read_at
+         ELSE GREATEST(clientes_whatsapp.last_read_at, EXCLUDED.last_read_at)
+       END,
        updated_at = GREATEST(
          COALESCE(clientes_whatsapp.updated_at, clientes_whatsapp.created_at, EXCLUDED.updated_at),
          EXCLUDED.updated_at
        )`,
-    [clientId, normalizedPhone, name || null, effectiveTimestamp],
+    [clientId, normalizedPhone, name || null, lastReadAt || null, effectiveTimestamp],
   );
 }
 
@@ -652,7 +889,11 @@ async function persistHistoryMessage(input: {
     input;
   const timestamp = parseWebhookTimestamp(message.timestamp);
   const wamid = typeof message.id === "string" ? message.id : null;
-  const resolvedStatus = mapHistoryStatus(status);
+  const importedAsRead = source === "history_sync";
+  const chatStatus = importedAsRead ? "read" : mapHistoryChatStatus(status);
+  const messageTableStatus = importedAsRead
+    ? "read"
+    : mapHistoryMessageTableStatus(status);
 
   const {
     dashboardContent,
@@ -688,17 +929,17 @@ async function persistHistoryMessage(input: {
          AND phone = $2
          AND metadata->>'wamid' = $3
        RETURNING id`,
-      [
-        config.id,
-        phone,
-        wamid,
-        dashboardContent,
-        getMessageTableType(message.type),
-        direction,
-        resolvedStatus,
-        timestamp,
-        JSON.stringify(messageMetadata),
-        transcription,
+        [
+          config.id,
+          phone,
+          wamid,
+          dashboardContent,
+          getMessageTableType(message.type),
+          direction,
+          messageTableStatus,
+          timestamp,
+          JSON.stringify(messageMetadata),
+          transcription,
         audioDurationSeconds,
       ],
     );
@@ -726,7 +967,7 @@ async function persistHistoryMessage(input: {
           dashboardContent,
           getMessageTableType(message.type),
           direction,
-          resolvedStatus,
+          messageTableStatus,
           timestamp,
           JSON.stringify(messageMetadata),
           transcription,
@@ -776,7 +1017,7 @@ async function persistHistoryMessage(input: {
         wamid,
         transcription,
         audioDurationSeconds,
-        resolvedStatus,
+        chatStatus,
         timestamp,
       ],
     );
@@ -814,7 +1055,7 @@ async function persistHistoryMessage(input: {
       mediaMetadata ? JSON.stringify(mediaMetadata) : null,
       transcription,
       audioDurationSeconds,
-      resolvedStatus,
+      chatStatus,
       timestamp,
     ],
   );
@@ -945,30 +1186,61 @@ async function processHistoryWebhook(
         clientId: config.id,
         phone,
         timestamp: lastThreadTimestamp,
+        lastReadAt: lastThreadTimestamp,
       });
 
       for (const message of threadMessages) {
+        if (shouldSkipHistoryMessage(message)) {
+          console.warn("[History Sync] Skipping unsupported history message", {
+            clientId: config.id,
+            phone,
+            wamid: message?.id,
+            type: message?.type,
+          });
+          continue;
+        }
+
         const fromPhone = normalizePhone(message?.from);
         const direction: "incoming" | "outgoing" =
           businessPhone && fromPhone === businessPhone ? "outgoing" : "incoming";
 
-        await persistHistoryMessage({
-          config,
-          phone,
-          message,
-          direction,
-          status: message?.history_context?.status,
-          source: "history_sync",
-          phase,
-          chunkOrder,
-          progress,
-        });
-        processedMessages += 1;
+        try {
+          await persistHistoryMessage({
+            config,
+            phone,
+            message,
+            direction,
+            status: message?.history_context?.status,
+            source: "history_sync",
+            phase,
+            chunkOrder,
+            progress,
+          });
+          processedMessages += 1;
+        } catch (messageError) {
+          console.error("[History Sync] Failed to persist thread message", {
+            clientId: config.id,
+            phone,
+            wamid: message?.id,
+            type: message?.type,
+            status: message?.history_context?.status,
+            error: messageError,
+          });
+        }
       }
     }
   }
 
   for (const message of historyMediaMessages) {
+    if (shouldSkipHistoryMessage(message)) {
+      console.warn("[History Sync] Skipping unsupported media payload", {
+        clientId: config.id,
+        wamid: message?.id,
+        type: message?.type,
+      });
+      continue;
+    }
+
     const fromPhone = normalizePhone(message?.from);
     const toPhone = normalizePhone(message?.to);
     let phone =
@@ -998,21 +1270,32 @@ async function processHistoryWebhook(
       clientId: config.id,
       phone,
       timestamp: parseWebhookTimestamp(message?.timestamp),
+      lastReadAt: parseWebhookTimestamp(message?.timestamp),
     });
 
-    await persistHistoryMessage({
-      config,
-      phone,
-      message,
-      direction:
-        businessPhone && fromPhone === businessPhone ? "outgoing" : "incoming",
-      status: message?.history_context?.status,
-      source: "history_sync",
-      phase: lastPhase,
-      chunkOrder: lastChunkOrder,
-      progress: lastProgress,
-    });
-    processedMessages += 1;
+    try {
+      await persistHistoryMessage({
+        config,
+        phone,
+        message,
+        direction:
+          businessPhone && fromPhone === businessPhone ? "outgoing" : "incoming",
+        status: message?.history_context?.status,
+        source: "history_sync",
+        phase: lastPhase,
+        chunkOrder: lastChunkOrder,
+        progress: lastProgress,
+      });
+      processedMessages += 1;
+    } catch (messageError) {
+      console.error("[History Sync] Failed to persist media payload", {
+        clientId: config.id,
+        phone,
+        wamid: message?.id,
+        type: message?.type,
+        error: messageError,
+      });
+    }
   }
 
   await updateClientProvisioningStatus(config.id, (current) => ({
