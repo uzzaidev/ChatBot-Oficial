@@ -525,8 +525,8 @@ export default function SettingsPage() {
     setShowPasswords((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const isCoexistenceClient =
-    isAutoProvisioned && onboardingType === "coexistence";
+  const canShowCoexistenceSyncCard =
+    isAutoProvisioned || Boolean(secrets.meta_phone_number_id);
 
   const isSyncLocked = (syncState: CoexistenceSyncState | null) => {
     if (!syncState) return false;
@@ -1007,7 +1007,7 @@ export default function SettingsPage() {
               </div>
             )}
 
-            {isCoexistenceClient && (
+            {canShowCoexistenceSyncCard && (
               <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 mb-4">
                 <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                   <div>
@@ -1022,6 +1022,19 @@ export default function SettingsPage() {
                       WhatsApp Business App. A Meta aceita cada solicitação uma
                       única vez por número.
                     </p>
+                    {onboardingType && onboardingType !== "coexistence" && (
+                      <p className="text-xs text-amber-700 dark:text-amber-300 mt-2">
+                        Cliente atual marcado como <strong>{onboardingType}</strong>.
+                        Se não for coexistence, o backend vai recusar a solicitação
+                        e mostrar o erro real.
+                      </p>
+                    )}
+                    {!onboardingType && (
+                      <p className="text-xs text-amber-700 dark:text-amber-300 mt-2">
+                        Tipo de onboarding não identificado no banco. Você ainda
+                        pode testar; se não for coexistence, o backend retorna o erro.
+                      </p>
+                    )}
                     {provisionedAt && (
                       <p className="text-xs text-muted-foreground mt-2">
                         Onboarding em {formatDateTime(provisionedAt)}. Janela
