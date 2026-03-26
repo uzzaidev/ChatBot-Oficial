@@ -5,6 +5,15 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-03-26
 
 ### feat
+- Integrado componente `EmbeddedSignupButton` no passo de conexão do WhatsApp para melhorar a experiência do usuário, substituindo o botão com redirecionamento por uma janela de autorização embutida.
+- Adicionado tratamento de erros e callbacks para sucesso, erro e cancelamento no fluxo de conexão.
+- Atualizado redirecionamento após conexão para navegar internamente no onboarding com parâmetros de query.
+  - Arquivos: `src/app/onboarding/page.tsx`
+  - Confiança: alta
+
+## 2026-03-26
+
+### feat
 - Implementado suporte para processar e salvar mensagens enviadas pelo WhatsApp Business App (SMB message echoes) no dashboard e no histórico de chat AI, permitindo visualização dessas mensagens como enviadas pelo app oficial.
 - Adicionado ícone indicativo nas mensagens do tipo SMB no componente `MessageBubble` para diferenciar visualmente essas mensagens no dashboard.
   - Arquivos: `src/app/api/webhook/route.ts`, `src/components/MessageBubble.tsx`
