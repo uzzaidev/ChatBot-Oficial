@@ -87,8 +87,9 @@ export async function GET(request: NextRequest) {
       "[Meta OAuth Callback] ✅ State validated, exchanging code for token",
     );
 
-    // 5. Exchange code for access token
-    const accessToken = await exchangeCodeForToken(code);
+    // 5. Exchange code for access token (server-side redirect flow needs redirect_uri)
+    const baseUrl = process.env.NEXT_PUBLIC_URL || "https://uzzapp.uzzai.com.br";
+    const accessToken = await exchangeCodeForToken(code, `${baseUrl}/api/auth/meta/callback`);
 
     console.log(
       "[Meta OAuth Callback] ✅ Token received, fetching WABA details",

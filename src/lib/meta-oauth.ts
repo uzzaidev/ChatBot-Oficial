@@ -52,15 +52,23 @@ export const getMetaOAuthURL = (state: string): string => {
 /**
  * Exchange authorization code for access token
  */
-export const exchangeCodeForToken = async (code: string): Promise<string> => {
+export const exchangeCodeForToken = async (
+  code: string,
+  redirectUri?: string,
+): Promise<string> => {
   const config = getOAuthConfig();
 
   const params = new URLSearchParams({
     client_id: config.appId,
     client_secret: config.appSecret,
-    redirect_uri: config.redirectUri,
     code,
   });
+
+  // Only include redirect_uri for server-side OAuth redirect flow.
+  // JS SDK (FB.login) codes must NOT include redirect_uri.
+  if (redirectUri) {
+    params.set("redirect_uri", redirectUri);
+  }
 
   const response = await fetch(
     `https://graph.facebook.com/v22.0/oauth/access_token?${params.toString()}`,
