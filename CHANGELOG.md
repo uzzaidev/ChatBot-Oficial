@@ -5,6 +5,14 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-03-26
 
 ### fix
+- Atualizado mapeamento do tipo de sincronização na função `requestCoexistenceSync` para usar valores corretos da API Meta
+  - Arquivos: `src/lib/coexistence-sync.ts`
+  - Evidência: substituição direta do valor `sync_type` pelo mapeamento `META_SYNC_TYPE_MAP` com chaves `contacts` e `history`
+  - Confiança: alta
+
+## 2026-03-26
+
+### fix
 - Atualizada mensagem de aviso sobre elegibilidade do cliente para sincronização em modo coexistência, removendo bloqueio e ajustando texto para indicar prosseguimento sem verificação local
   - Arquivos: `src/app/api/client/whatsapp-sync/route.ts`
   - Evidência: alteração da mensagem de console.warn e remoção do retorno de erro 400
