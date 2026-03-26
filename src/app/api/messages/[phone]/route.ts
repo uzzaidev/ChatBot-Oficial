@@ -52,7 +52,10 @@ const hasMediaMetadata = (msg: Message): boolean => {
 
 const isBusinessAppContextHeavy = (msg: Message): boolean => {
   const metadata = asMetadataRecord(msg.metadata);
-  if (metadata.source !== "business_app") {
+  if (
+    metadata.source !== "business_app" &&
+    metadata.source !== "history_sync"
+  ) {
     return false;
   }
 
@@ -156,7 +159,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             ? messageData.additional_kwargs.source
             : null;
         const rawContent =
-          source === "business_app" &&
           typeof messageData.additional_kwargs?.dashboard_content === "string"
             ? messageData.additional_kwargs.dashboard_content
             : messageData.content || "";

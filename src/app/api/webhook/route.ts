@@ -1,5 +1,6 @@
 import { processChatbotMessage } from "@/flows/chatbotFlow";
 import { handleUnknownWABA } from "@/lib/auto-provision";
+import { updateClientProvisioningStatus } from "@/lib/coexistence-sync";
 import { query } from "@/lib/postgres";
 import { uploadFileToStorage } from "@/lib/storage";
 import type { ClientConfig, StoredMediaMetadata } from "@/lib/types";
@@ -141,6 +142,26 @@ export async function POST(request: NextRequest) {
       name: config.name,
       field,
     });
+
+    if (field === "history") {
+      try {
+        await processHistoryWebhook(body, config);
+        console.log("[Webhook POST] History sync payload processed");
+      } catch (historyError) {
+        console.error("[Webhook POST] History sync error", historyError);
+      }
+      return NextResponse.json({ status: "EVENT_RECEIVED" }, { status: 200 });
+    }
+
+    if (field === "smb_app_state_sync") {
+      try {
+        await processStateSyncWebhook(body, config);
+        console.log("[Webhook POST] Contact sync payload processed");
+      } catch (stateSyncError) {
+        console.error("[Webhook POST] Contact sync error", stateSyncError);
+      }
+      return NextResponse.json({ status: "EVENT_RECEIVED" }, { status: 200 });
+    }
 
     if (field === "smb_message_echoes") {
       try {
@@ -370,6 +391,649 @@ function parseWebhookTimestamp(rawTimestamp?: string): string {
   const timestampMs =
     parsedTimestamp > 9_999_999_999 ? parsedTimestamp : parsedTimestamp * 1000;
   return new Date(timestampMs).toISOString();
+}
+
+function normalizePhone(value: unknown): string | null {
+  if (typeof value !== "string" && typeof value !== "number") {
+    return null;
+  }
+
+  const normalized = String(value).replace(/\D/g, "");
+  return normalized.length > 0 ? normalized : null;
+}
+
+function mapHistoryStatus(
+  rawStatus?: string | null,
+): "queued" | "sent" | "delivered" | "read" | "failed" {
+  switch ((rawStatus || "").toUpperCase()) {
+    case "PENDING":
+      return "queued";
+    case "DELIVERED":
+      return "delivered";
+    case "READ":
+    case "PLAYED":
+      return "read";
+    case "ERROR":
+      return "failed";
+    case "SENT":
+    default:
+      return "sent";
+  }
+}
+
+function getHistoryFallbackContent(
+  message: any,
+  direction: "incoming" | "outgoing",
+): string {
+  const suffix = direction === "outgoing" ? "enviada" : "recebida";
+  const filename = message.document?.filename || "Documento";
+
+  return (
+    message.text?.body ||
+    message.image?.caption ||
+    message.document?.caption ||
+    message.video?.caption ||
+    (message.type === "image"
+      ? `[Imagem ${suffix}]`
+      : message.type === "audio"
+        ? `[Audio ${suffix}]`
+        : message.type === "document"
+          ? `[Documento: ${filename}]`
+          : message.type === "video"
+            ? `[Video ${suffix}]`
+            : message.type === "sticker"
+              ? `[Sticker ${suffix}]`
+              : message.type === "media_placeholder"
+                ? `[Midia ${suffix}]`
+                : `[${message.type || "mensagem"} ${suffix}]`)
+  );
+}
+
+async function upsertSyncedContact(input: {
+  clientId: string;
+  phone: string;
+  name?: string | null;
+  timestamp?: string | null;
+  remove?: boolean;
+}): Promise<void> {
+  const { clientId, phone, name, timestamp, remove } = input;
+  const normalizedPhone = normalizePhone(phone);
+
+  if (!normalizedPhone) {
+    return;
+  }
+
+  if (remove) {
+    await query(
+      `UPDATE clientes_whatsapp
+       SET nome = NULL,
+           updated_at = $3
+       WHERE client_id = $1
+         AND telefone = $2`,
+      [clientId, normalizedPhone, timestamp || new Date().toISOString()],
+    );
+    return;
+  }
+
+  const effectiveTimestamp = timestamp || new Date().toISOString();
+
+  await query(
+    `INSERT INTO clientes_whatsapp (
+       client_id,
+       telefone,
+       nome,
+       status,
+       created_at,
+       updated_at
+     )
+     VALUES ($1, $2, $3, 'bot', $4, $4)
+     ON CONFLICT (telefone, client_id)
+     DO UPDATE SET
+       nome = COALESCE(EXCLUDED.nome, clientes_whatsapp.nome),
+       updated_at = GREATEST(
+         COALESCE(clientes_whatsapp.updated_at, clientes_whatsapp.created_at, EXCLUDED.updated_at),
+         EXCLUDED.updated_at
+       )`,
+    [clientId, normalizedPhone, name || null, effectiveTimestamp],
+  );
+}
+
+async function buildHistoryMediaPayload(input: {
+  config: ClientConfig;
+  message: any;
+  phone: string;
+  direction: "incoming" | "outgoing";
+}): Promise<{
+  dashboardContent: string;
+  historyContent: string;
+  mediaMetadata?: StoredMediaMetadata;
+  transcription: string | null;
+  audioDurationSeconds: number | null;
+}> {
+  const { config, message, phone, direction } = input;
+  const fallbackContent = getHistoryFallbackContent(message, direction);
+  const mediaDescriptor =
+    message?.type && typeof message.type === "string"
+      ? message[message.type]
+      : null;
+
+  if (!mediaDescriptor?.id) {
+    const textContent = message.text?.body || fallbackContent;
+    return {
+      dashboardContent: textContent,
+      historyContent: textContent,
+      transcription: null,
+      audioDurationSeconds: null,
+    };
+  }
+
+  let dashboardContent =
+    message.text?.body ||
+    message.image?.caption ||
+    message.document?.caption ||
+    message.video?.caption ||
+    "";
+  let historyContent = dashboardContent || fallbackContent;
+  let mediaMetadata: StoredMediaMetadata | undefined;
+  let transcription: string | null = null;
+  let audioDurationSeconds: number | null = null;
+
+  try {
+    const mimeType =
+      mediaDescriptor.mime_type ||
+      mediaDescriptor.mimeType ||
+      getDefaultMimeType(message.type);
+    const extension = getExtensionFromMimeType(
+      mimeType,
+      message.type === "sticker" ? "webp" : "bin",
+    );
+    const filename =
+      mediaDescriptor.filename ||
+      `${message.type || "media"}_${phone}_${Date.now()}.${extension}`;
+
+    const buffer = await downloadMetaMedia(
+      mediaDescriptor.id,
+      config.apiKeys.metaAccessToken,
+    );
+    const publicUrl = await uploadFileToStorage(
+      buffer,
+      filename,
+      mimeType,
+      config.id,
+    );
+
+    mediaMetadata = {
+      type: getStoredMediaType(message.type),
+      url: publicUrl,
+      mimeType,
+      filename,
+      size: buffer.length,
+    };
+
+    if (message.type === "audio") {
+      const transcriptionResult = await transcribeAudio(
+        buffer,
+        config.apiKeys.openaiApiKey,
+        config.id,
+        phone,
+      );
+      transcription = transcriptionResult.text;
+      audioDurationSeconds = transcriptionResult.durationSeconds || null;
+      dashboardContent = transcriptionResult.text || fallbackContent;
+      historyContent = transcriptionResult.text || fallbackContent;
+    } else if (message.type === "image") {
+      const imageAnalysis = await analyzeImage(
+        buffer,
+        mimeType,
+        config.apiKeys.openaiApiKey,
+        config.id,
+        phone,
+      );
+      const caption = message.image?.caption?.trim() || "";
+      dashboardContent = caption;
+      historyContent = caption
+        ? `[Imagem] Descricao: ${imageAnalysis.text}\nLegenda do usuario: ${caption}`
+        : `[Imagem] Descricao: ${imageAnalysis.text}`;
+    } else if (message.type === "document") {
+      const documentSummary = await analyzeDocument(
+        buffer,
+        mimeType,
+        filename,
+        config.apiKeys.openaiApiKey,
+        config.id,
+        phone,
+      );
+      const caption = message.document?.caption?.trim() || "";
+      dashboardContent = caption
+        ? `[Documento: ${filename}] ${caption}`
+        : `[Documento: ${filename}]`;
+      historyContent = caption
+        ? `[Documento: ${filename}] Conteudo: ${documentSummary.content}\nLegenda do usuario: ${caption}`
+        : `[Documento: ${filename}] Conteudo: ${documentSummary.content}`;
+    } else if (message.type === "video") {
+      dashboardContent = message.video?.caption?.trim() || "";
+      historyContent = dashboardContent || fallbackContent;
+    } else if (message.type === "sticker") {
+      dashboardContent = "";
+      historyContent = direction === "outgoing" ? "[Sticker enviado]" : "[Sticker recebido]";
+    }
+  } catch (mediaError) {
+    console.error("[History Sync] Media processing failed, using fallback", {
+      phone,
+      type: message.type,
+      wamid: message.id,
+      error: mediaError,
+    });
+    dashboardContent = fallbackContent;
+    historyContent = fallbackContent;
+  }
+
+  return {
+    dashboardContent,
+    historyContent,
+    mediaMetadata,
+    transcription,
+    audioDurationSeconds,
+  };
+}
+
+async function persistHistoryMessage(input: {
+  config: ClientConfig;
+  phone: string;
+  message: any;
+  direction: "incoming" | "outgoing";
+  status?: string | null;
+  source: "history_sync";
+  phase?: number | null;
+  chunkOrder?: number | null;
+  progress?: number | null;
+}): Promise<void> {
+  const { config, phone, message, direction, status, source, phase, chunkOrder, progress } =
+    input;
+  const timestamp = parseWebhookTimestamp(message.timestamp);
+  const wamid = typeof message.id === "string" ? message.id : null;
+  const resolvedStatus = mapHistoryStatus(status);
+
+  const {
+    dashboardContent,
+    historyContent,
+    mediaMetadata,
+    transcription,
+    audioDurationSeconds,
+  } = await buildHistoryMediaPayload({
+    config,
+    message,
+    phone,
+    direction,
+  });
+
+  const messageMetadata = {
+    source,
+    wamid,
+    ...(mediaMetadata ? { media: mediaMetadata } : {}),
+  };
+
+  if (wamid) {
+    const updated = await query(
+      `UPDATE messages
+       SET content = $4,
+           type = $5,
+           direction = $6,
+           status = $7,
+           "timestamp" = $8,
+           metadata = $9::jsonb,
+           transcription = $10,
+           audio_duration_seconds = $11
+       WHERE client_id = $1
+         AND phone = $2
+         AND metadata->>'wamid' = $3
+       RETURNING id`,
+      [
+        config.id,
+        phone,
+        wamid,
+        dashboardContent,
+        getMessageTableType(message.type),
+        direction,
+        resolvedStatus,
+        timestamp,
+        JSON.stringify(messageMetadata),
+        transcription,
+        audioDurationSeconds,
+      ],
+    );
+
+    if (updated.rows.length === 0) {
+      await query(
+        `INSERT INTO messages (
+           client_id,
+           conversation_id,
+           phone,
+           content,
+           type,
+           direction,
+           status,
+           "timestamp",
+           metadata,
+           transcription,
+           audio_duration_seconds
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, $11)`,
+        [
+          config.id,
+          null,
+          phone,
+          dashboardContent,
+          getMessageTableType(message.type),
+          direction,
+          resolvedStatus,
+          timestamp,
+          JSON.stringify(messageMetadata),
+          transcription,
+          audioDurationSeconds,
+        ],
+      );
+    }
+
+    await query(
+      `INSERT INTO n8n_chat_histories (
+         session_id,
+         message,
+         client_id,
+         media_metadata,
+         wamid,
+         transcription,
+         audio_duration_seconds,
+         status,
+         created_at,
+         updated_at
+       )
+       VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8, $9, $9)
+       ON CONFLICT (client_id, wamid)
+       DO UPDATE SET
+         session_id = EXCLUDED.session_id,
+         message = EXCLUDED.message,
+         media_metadata = COALESCE(EXCLUDED.media_metadata, n8n_chat_histories.media_metadata),
+         transcription = COALESCE(EXCLUDED.transcription, n8n_chat_histories.transcription),
+         audio_duration_seconds = COALESCE(EXCLUDED.audio_duration_seconds, n8n_chat_histories.audio_duration_seconds),
+         status = EXCLUDED.status,
+         updated_at = EXCLUDED.updated_at`,
+      [
+        phone,
+        JSON.stringify({
+          type: direction === "incoming" ? "human" : "ai",
+          content: historyContent,
+          additional_kwargs: {
+            source,
+            dashboard_content: dashboardContent,
+            history_phase: phase ?? null,
+            history_chunk_order: chunkOrder ?? null,
+            history_progress: progress ?? null,
+          },
+        }),
+        config.id,
+        mediaMetadata ? JSON.stringify(mediaMetadata) : null,
+        wamid,
+        transcription,
+        audioDurationSeconds,
+        resolvedStatus,
+        timestamp,
+      ],
+    );
+
+    return;
+  }
+
+  await query(
+    `INSERT INTO n8n_chat_histories (
+       session_id,
+       message,
+       client_id,
+       media_metadata,
+       transcription,
+       audio_duration_seconds,
+       status,
+       created_at,
+       updated_at
+     )
+     VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8, $8)`,
+    [
+      phone,
+      JSON.stringify({
+        type: direction === "incoming" ? "human" : "ai",
+        content: historyContent,
+        additional_kwargs: {
+          source,
+          dashboard_content: dashboardContent,
+          history_phase: phase ?? null,
+          history_chunk_order: chunkOrder ?? null,
+          history_progress: progress ?? null,
+        },
+      }),
+      config.id,
+      mediaMetadata ? JSON.stringify(mediaMetadata) : null,
+      transcription,
+      audioDurationSeconds,
+      resolvedStatus,
+      timestamp,
+    ],
+  );
+}
+
+async function processStateSyncWebhook(
+  body: any,
+  config: ClientConfig,
+): Promise<void> {
+  const value = body?.entry?.[0]?.changes?.[0]?.value;
+  const stateSync = Array.isArray(value?.state_sync) ? value.state_sync : [];
+
+  if (stateSync.length === 0) {
+    console.log("[State Sync] No contacts found in payload");
+    return;
+  }
+
+  let processedContacts = 0;
+
+  for (const item of stateSync) {
+    if (item?.type !== "contact") {
+      continue;
+    }
+
+    const phone = normalizePhone(item.contact?.phone_number);
+    if (!phone) {
+      continue;
+    }
+
+    await upsertSyncedContact({
+      clientId: config.id,
+      phone,
+      name: item.contact?.full_name || item.contact?.first_name || null,
+      timestamp: parseWebhookTimestamp(item.metadata?.timestamp),
+      remove: item.action === "remove",
+    });
+    processedContacts += 1;
+  }
+
+  await updateClientProvisioningStatus(config.id, (current) => ({
+    ...current,
+    contacts_sync: {
+      ...(current.contacts_sync || {}),
+      status: "completed",
+      completed_at:
+        current.contacts_sync?.completed_at || new Date().toISOString(),
+      last_webhook_at: new Date().toISOString(),
+      error_code: null,
+      error_message: null,
+      error_details: null,
+      processed_contacts: processedContacts,
+    },
+  }));
+}
+
+async function processHistoryWebhook(
+  body: any,
+  config: ClientConfig,
+): Promise<void> {
+  const value = body?.entry?.[0]?.changes?.[0]?.value;
+  const businessPhone = normalizePhone(value?.metadata?.display_phone_number);
+  const historyChunks = Array.isArray(value?.history) ? value.history : [];
+  const historyMediaMessages = Array.isArray(value?.messages)
+    ? value.messages
+    : [];
+
+  if (historyChunks.length === 0 && historyMediaMessages.length === 0) {
+    console.log("[History Sync] Empty payload");
+    return;
+  }
+
+  let lastProgress: number | null = null;
+  let lastPhase: number | null = null;
+  let lastChunkOrder: number | null = null;
+  let processedMessages = 0;
+
+  for (const chunk of historyChunks) {
+    if (Array.isArray(chunk?.errors) && chunk.errors.length > 0) {
+      const firstError = chunk.errors[0];
+      const declined = firstError?.code === 2593109;
+
+      await updateClientProvisioningStatus(config.id, (current) => ({
+        ...current,
+        history_sync: {
+          ...(current.history_sync || {}),
+          status: declined ? "declined" : "failed",
+          last_webhook_at: new Date().toISOString(),
+          error_code: firstError?.code ?? null,
+          error_message: firstError?.message || firstError?.title || null,
+          error_details: firstError?.error_data?.details || null,
+        },
+      }));
+
+      console.warn("[History Sync] Meta returned error chunk", {
+        clientId: config.id,
+        error: firstError,
+      });
+      continue;
+    }
+
+    const phase = Number.isFinite(chunk?.metadata?.phase)
+      ? Number(chunk.metadata.phase)
+      : null;
+    const chunkOrder = Number.isFinite(chunk?.metadata?.chunk_order)
+      ? Number(chunk.metadata.chunk_order)
+      : null;
+    const progress = Number.isFinite(chunk?.metadata?.progress)
+      ? Number(chunk.metadata.progress)
+      : null;
+    const threads = Array.isArray(chunk?.threads) ? chunk.threads : [];
+
+    lastPhase = phase;
+    lastChunkOrder = chunkOrder;
+    lastProgress = progress;
+
+    for (const thread of threads) {
+      const phone = normalizePhone(thread?.id);
+      const threadMessages = Array.isArray(thread?.messages) ? thread.messages : [];
+
+      if (!phone) {
+        continue;
+      }
+
+      const lastThreadTimestamp = threadMessages.length
+        ? parseWebhookTimestamp(threadMessages[threadMessages.length - 1]?.timestamp)
+        : new Date().toISOString();
+      await upsertSyncedContact({
+        clientId: config.id,
+        phone,
+        timestamp: lastThreadTimestamp,
+      });
+
+      for (const message of threadMessages) {
+        const fromPhone = normalizePhone(message?.from);
+        const direction: "incoming" | "outgoing" =
+          businessPhone && fromPhone === businessPhone ? "outgoing" : "incoming";
+
+        await persistHistoryMessage({
+          config,
+          phone,
+          message,
+          direction,
+          status: message?.history_context?.status,
+          source: "history_sync",
+          phase,
+          chunkOrder,
+          progress,
+        });
+        processedMessages += 1;
+      }
+    }
+  }
+
+  for (const message of historyMediaMessages) {
+    const fromPhone = normalizePhone(message?.from);
+    const toPhone = normalizePhone(message?.to);
+    let phone =
+      businessPhone && fromPhone !== businessPhone ? fromPhone : toPhone;
+
+    if (!phone && message?.id) {
+      const existing = await query<{ session_id: string }>(
+        `SELECT session_id
+         FROM n8n_chat_histories
+         WHERE client_id = $1
+           AND wamid = $2
+         LIMIT 1`,
+        [config.id, message.id],
+      );
+      phone = existing.rows[0]?.session_id || null;
+    }
+
+    if (!phone) {
+      console.warn("[History Sync] Could not resolve phone for media payload", {
+        clientId: config.id,
+        wamid: message?.id,
+      });
+      continue;
+    }
+
+    await upsertSyncedContact({
+      clientId: config.id,
+      phone,
+      timestamp: parseWebhookTimestamp(message?.timestamp),
+    });
+
+    await persistHistoryMessage({
+      config,
+      phone,
+      message,
+      direction:
+        businessPhone && fromPhone === businessPhone ? "outgoing" : "incoming",
+      status: message?.history_context?.status,
+      source: "history_sync",
+      phase: lastPhase,
+      chunkOrder: lastChunkOrder,
+      progress: lastProgress,
+    });
+    processedMessages += 1;
+  }
+
+  await updateClientProvisioningStatus(config.id, (current) => ({
+    ...current,
+    history_sync: {
+      ...(current.history_sync || {}),
+      status: lastProgress === 100 ? "completed" : "requested",
+      completed_at:
+        lastProgress === 100
+          ? current.history_sync?.completed_at || new Date().toISOString()
+          : current.history_sync?.completed_at || null,
+      last_webhook_at: new Date().toISOString(),
+      progress: lastProgress,
+      phase: lastPhase,
+      chunk_order: lastChunkOrder,
+      error_code: null,
+      error_message: null,
+      error_details: null,
+      processed_messages: processedMessages,
+    },
+  }));
 }
 
 async function buildSMBEchoPayload(input: {

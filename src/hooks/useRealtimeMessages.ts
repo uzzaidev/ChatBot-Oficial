@@ -177,7 +177,6 @@ export const useRealtimeMessages = ({
                 ? messageData.additional_kwargs.source
                 : null;
             const messageContent =
-              source === "business_app" &&
               typeof messageData.additional_kwargs?.dashboard_content ===
                 "string"
                 ? messageData.additional_kwargs.dashboard_content

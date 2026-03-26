@@ -57,6 +57,21 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+
+type CoexistenceSyncState = {
+  status?: "requested" | "completed" | "declined" | "failed";
+  request_id?: string | null;
+  requested_at?: string | null;
+  completed_at?: string | null;
+  last_webhook_at?: string | null;
+  progress?: number | null;
+  phase?: number | null;
+  chunk_order?: number | null;
+  error_code?: number | null;
+  error_message?: string | null;
+  error_details?: string | null;
+};
+
 export default function SettingsPage() {
   // Estado do perfil
   const [profile, setProfile] = useState({
@@ -110,6 +125,17 @@ export default function SettingsPage() {
   const [isRollingBack, setIsRollingBack] = useState(false);
   const [isRegisteringPhone, setIsRegisteringPhone] = useState(false);
   const [isDisconnectingWhatsApp, setIsDisconnectingWhatsApp] = useState(false);
+  const [onboardingType, setOnboardingType] = useState<string | null>(null);
+  const [provisionedAt, setProvisionedAt] = useState<string | null>(null);
+  const [coexistenceSync, setCoexistenceSync] = useState<{
+    contacts: CoexistenceSyncState | null;
+    history: CoexistenceSyncState | null;
+  }>({
+    contacts: null,
+    history: null,
+  });
+  const [isSyncingContacts, setIsSyncingContacts] = useState(false);
+  const [isSyncingHistory, setIsSyncingHistory] = useState(false);
 
   // Estado de visibilidade de senhas
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>(
@@ -212,6 +238,18 @@ export default function SettingsPage() {
           }
           if (data.config.webhook_routing_mode) {
             setWebhookRoutingMode(data.config.webhook_routing_mode);
+          }
+          if (data.onboarding_type) {
+            setOnboardingType(data.onboarding_type);
+          }
+          if (data.provisioned_at) {
+            setProvisionedAt(data.provisioned_at);
+          }
+          if (data.provisioning_status) {
+            setCoexistenceSync({
+              contacts: data.provisioning_status.contacts_sync || null,
+              history: data.provisioning_status.history_sync || null,
+            });
           }
 
           // Update WABA ID from client config if present
@@ -485,6 +523,98 @@ export default function SettingsPage() {
   // Toggle visibilidade de senha
   const togglePasswordVisibility = (key: string) => {
     setShowPasswords((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const isCoexistenceClient =
+    isAutoProvisioned && onboardingType === "coexistence";
+
+  const isSyncLocked = (syncState: CoexistenceSyncState | null) => {
+    if (!syncState) return false;
+    if (syncState.request_id) return true;
+
+    return (
+      syncState.status === "requested" ||
+      syncState.status === "completed" ||
+      syncState.status === "declined"
+    );
+  };
+
+  const formatSyncStatus = (syncState: CoexistenceSyncState | null) => {
+    switch (syncState?.status) {
+      case "completed":
+        return "Concluído";
+      case "declined":
+        return "Recusado pela empresa";
+      case "failed":
+        return "Falhou";
+      case "requested":
+        return "Solicitado";
+      default:
+        return "Não solicitado";
+    }
+  };
+
+  const formatDateTime = (value?: string | null) => {
+    if (!value) return null;
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return value;
+    return parsed.toLocaleString("pt-BR");
+  };
+
+  const handleRequestCoexistenceSync = async (
+    syncType: "contacts" | "history",
+  ) => {
+    const setLoading =
+      syncType === "contacts" ? setIsSyncingContacts : setIsSyncingHistory;
+
+    setLoading(true);
+    setNotification(null);
+
+    try {
+      const { apiFetch } = await import("@/lib/api");
+      const response = await apiFetch("/api/client/whatsapp-sync", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          sync_type: syncType,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Erro ao solicitar sincronização");
+      }
+
+      setCoexistenceSync((prev) => ({
+        ...prev,
+        [syncType]: data.sync_state || prev[syncType],
+      }));
+
+      setNotification({
+        type: "success",
+        message:
+          syncType === "contacts"
+            ? `Sincronização de contatos solicitada. Request ID: ${
+                data.request_id || "sem request_id"
+              }`
+            : `Sincronização de histórico solicitada. Request ID: ${
+                data.request_id || "sem request_id"
+              }`,
+      });
+    } catch (error) {
+      setNotification({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Erro ao solicitar sincronização",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -874,6 +1004,158 @@ export default function SettingsPage() {
                   plataforma UzzApp. Não é necessário configurar tokens
                   manualmente.
                 </p>
+              </div>
+            )}
+
+            {isCoexistenceClient && (
+              <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 mb-4">
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300 mb-2">
+                      <Clock className="w-5 h-5" />
+                      <span className="font-medium">
+                        Sincronização inicial do Coexistence
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Solicite manualmente o sync de contatos e histórico do
+                      WhatsApp Business App. A Meta aceita cada solicitação uma
+                      única vez por número.
+                    </p>
+                    {provisionedAt && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Onboarding em {formatDateTime(provisionedAt)}. Janela
+                        recomendada até{" "}
+                        {formatDateTime(
+                          new Date(
+                            new Date(provisionedAt).getTime() +
+                              24 * 60 * 60 * 1000,
+                          ).toISOString(),
+                        )}
+                        .
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={
+                        isSyncingContacts || isSyncLocked(coexistenceSync.contacts)
+                      }
+                      onClick={() => handleRequestCoexistenceSync("contacts")}
+                    >
+                      {isSyncingContacts ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Solicitando contatos...
+                        </>
+                      ) : (
+                        "Sincronizar contatos"
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      disabled={
+                        isSyncingHistory || isSyncLocked(coexistenceSync.history)
+                      }
+                      onClick={() => handleRequestCoexistenceSync("history")}
+                    >
+                      {isSyncingHistory ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Solicitando histórico...
+                        </>
+                      ) : (
+                        "Sincronizar histórico"
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2 mt-4">
+                  <div className="rounded-lg border border-border bg-background/70 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium text-foreground">
+                        Contatos
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatSyncStatus(coexistenceSync.contacts)}
+                      </span>
+                    </div>
+                    {coexistenceSync.contacts?.request_id && (
+                      <p className="text-xs text-muted-foreground mt-2 break-all">
+                        Request ID: {coexistenceSync.contacts.request_id}
+                      </p>
+                    )}
+                    {coexistenceSync.contacts?.requested_at && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Solicitado em{" "}
+                        {formatDateTime(coexistenceSync.contacts.requested_at)}
+                      </p>
+                    )}
+                    {coexistenceSync.contacts?.completed_at && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Concluído em{" "}
+                        {formatDateTime(coexistenceSync.contacts.completed_at)}
+                      </p>
+                    )}
+                    {coexistenceSync.contacts?.error_message && (
+                      <p className="text-xs text-red-600 dark:text-red-400 mt-2">
+                        {coexistenceSync.contacts.error_message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="rounded-lg border border-border bg-background/70 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium text-foreground">
+                        Histórico
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatSyncStatus(coexistenceSync.history)}
+                      </span>
+                    </div>
+                    {coexistenceSync.history?.request_id && (
+                      <p className="text-xs text-muted-foreground mt-2 break-all">
+                        Request ID: {coexistenceSync.history.request_id}
+                      </p>
+                    )}
+                    {coexistenceSync.history?.requested_at && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Solicitado em{" "}
+                        {formatDateTime(coexistenceSync.history.requested_at)}
+                      </p>
+                    )}
+                    {typeof coexistenceSync.history?.progress === "number" && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Progresso: {coexistenceSync.history.progress}%
+                      </p>
+                    )}
+                    {typeof coexistenceSync.history?.phase === "number" && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Fase atual: {coexistenceSync.history.phase}
+                      </p>
+                    )}
+                    {coexistenceSync.history?.completed_at && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Concluído em{" "}
+                        {formatDateTime(coexistenceSync.history.completed_at)}
+                      </p>
+                    )}
+                    {coexistenceSync.history?.error_message && (
+                      <p className="text-xs text-red-600 dark:text-red-400 mt-2">
+                        {coexistenceSync.history.error_message}
+                      </p>
+                    )}
+                    {coexistenceSync.history?.error_details && (
+                      <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                        {coexistenceSync.history.error_details}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 

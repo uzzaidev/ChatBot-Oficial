@@ -111,7 +111,11 @@ export async function GET(request: NextRequest) {
           const msgData = typeof row.last_message_json === "string"
             ? JSON.parse(row.last_message_json)
             : row.last_message_json;
-          contentFromHistory = msgData.data?.content || msgData.content || "";
+          contentFromHistory =
+            msgData?.additional_kwargs?.dashboard_content ||
+            msgData.data?.content ||
+            msgData.content ||
+            "";
         } catch (error) {
           contentFromHistory = "";
         }

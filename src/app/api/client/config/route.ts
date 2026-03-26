@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     const { data: client, error: clientError } = await supabase
       .from("clients")
       .select(
-        "id, system_prompt, formatter_prompt, openai_model, groq_model, primary_model_provider, settings, whatsapp_business_account_id, ai_keys_mode, google_calendar_enabled, google_calendar_user_email, microsoft_calendar_enabled, microsoft_calendar_user_email, auto_provisioned, webhook_routing_mode",
+        "id, system_prompt, formatter_prompt, openai_model, groq_model, primary_model_provider, settings, whatsapp_business_account_id, ai_keys_mode, google_calendar_enabled, google_calendar_user_email, microsoft_calendar_enabled, microsoft_calendar_user_email, auto_provisioned, webhook_routing_mode, onboarding_type, meta_phone_number_id, provisioned_at, provisioning_status",
       )
       .eq("id", clientId)
       .single();
@@ -82,6 +82,10 @@ export async function GET(request: NextRequest) {
         },
       },
       whatsapp_business_account_id: client.whatsapp_business_account_id || null,
+      meta_phone_number_id: client.meta_phone_number_id || null,
+      onboarding_type: client.onboarding_type || null,
+      provisioned_at: client.provisioned_at || null,
+      provisioning_status: client.provisioning_status || {},
       google_calendar_enabled: client.google_calendar_enabled || false,
       google_calendar_user_email: client.google_calendar_user_email || null,
       microsoft_calendar_enabled: client.microsoft_calendar_enabled || false,
