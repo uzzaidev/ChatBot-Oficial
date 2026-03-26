@@ -4,6 +4,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-03-26
 
+### fix
+- Melhorada a confirmação e o tratamento de erros ao desconectar o WhatsApp na página de configurações do dashboard. Ajustes na exibição de mensagens e no estado de carregamento durante a desconexão.
+  - Arquivos: `src/app/dashboard/settings/page.tsx`
+  - Evidência: aprimoramento do fluxo assíncrono, mensagens de erro e feedback visual no botão de desconexão
+  - Confiança: alta
+
+## 2026-03-26
+
 ### feat
 - Adicionado botão para desconectar WhatsApp no dashboard de configurações, que desregistra o número e limpa segredos no Vault via nova API DELETE `/api/auth/meta/disconnect`.
 - Implementada rota API para desconectar WhatsApp Business, removendo credenciais Meta, dados WABA e segredos Vault, com tentativa de desregistro do número na Cloud API.
