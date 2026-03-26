@@ -134,6 +134,11 @@ export const MessageBubble = ({
   const [imageError, setImageError] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const isBusinessApp =
+    message.metadata &&
+    typeof message.metadata === "object" &&
+    (message.metadata as Record<string, unknown>).source === "business_app";
+
   // 📎 Extract media metadata from message with type guard
   const rawMediaMetadata =
     message.metadata && typeof message.metadata === "object"
@@ -773,6 +778,9 @@ export const MessageBubble = ({
           }`}
           style={isStickerOnly ? undefined : textColorSubtleStyle}
         >
+          {isBusinessApp && (
+            <span title="Enviado pelo WhatsApp Business App">📱</span>
+          )}
           <span>
             {new Date(message.timestamp).toLocaleTimeString("pt-BR", {
               hour: "2-digit",

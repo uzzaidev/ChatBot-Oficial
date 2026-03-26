@@ -207,6 +207,19 @@ export async function POST(request: NextRequest) {
       `[Webhook POST] ✅ Client found: ${config.name} (${config.id})`,
     );
 
+    // 5.5 Handle SMB message echoes (messages sent from WhatsApp Business App)
+    const field = changes?.field;
+    if (field === "smb_message_echoes") {
+      try {
+        await processSMBEcho(body, config.id);
+        console.log("[Webhook POST] ✅ SMB echo processed and saved");
+      } catch (echoError) {
+        console.error("[Webhook POST] ❌ SMB echo error:", echoError);
+      }
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+      return NextResponse.json({ status: "EVENT_RECEIVED" }, { status: 200 });
+    }
+
     // 6. Process message with existing chatbot flow
     try {
       await processChatbotMessage(body, config);
@@ -287,5 +300,117 @@ function extractWABAId(payload: any): string | null {
     return payload?.entry?.[0]?.id || null;
   } catch {
     return null;
+  }
+}
+
+/**
+ * Process SMB Message Echoes (WhatsApp Business App → Cloud API echo)
+ *
+ * When the business owner sends a message from the WhatsApp Business App
+ * on their phone (coexistence mode), Meta sends a webhook with field
+ * "smb_message_echoes". We save these as outgoing messages so they appear
+ * in the dashboard.
+ */
+async function processSMBEcho(body: any, clientId: string): Promise<void> {
+  const entry = body?.entry?.[0];
+  const change = entry?.changes?.[0];
+  const value = change?.value;
+  const echoes = value?.message_echoes;
+
+  if (!echoes || echoes.length === 0) {
+    console.log("[SMB Echo] No message_echoes in payload, skipping");
+    return;
+  }
+
+  const supabase = createServiceRoleClient() as any;
+
+  for (const echo of echoes) {
+    const customerPhone =
+      echo.to || value?.contacts?.[0]?.wa_id || null;
+
+    if (!customerPhone) {
+      console.warn("[SMB Echo] Could not determine recipient phone, skipping");
+      continue;
+    }
+
+    const content =
+      echo.text?.body ||
+      echo.image?.caption ||
+      echo.document?.caption ||
+      echo.video?.caption ||
+      (echo.type === "image"
+        ? "[Imagem enviada pelo Business App]"
+        : echo.type === "audio"
+          ? "[Áudio enviado pelo Business App]"
+          : echo.type === "document"
+            ? "[Documento enviado pelo Business App]"
+            : echo.type === "video"
+              ? "[Vídeo enviado pelo Business App]"
+              : echo.type === "sticker"
+                ? "[Sticker enviado pelo Business App]"
+                : `[${echo.type || "mensagem"} enviada pelo Business App]`);
+
+    const wamid = echo.id || null;
+    const timestamp = echo.timestamp
+      ? new Date(parseInt(echo.timestamp) * 1000).toISOString()
+      : new Date().toISOString();
+
+    console.log("[SMB Echo] Saving echo:", {
+      to: customerPhone,
+      type: echo.type,
+      contentPreview: content.substring(0, 60),
+      wamid,
+    });
+
+    // Find existing conversation for this customer
+    const { data: conversation } = await supabase
+      .from("conversations")
+      .select("id")
+      .eq("client_id", clientId)
+      .eq("phone", customerPhone)
+      .maybeSingle();
+
+    // Save to messages table (dashboard rendering)
+    const { error: msgError } = await supabase.from("messages").insert({
+      client_id: clientId,
+      conversation_id: conversation?.id || null,
+      phone: customerPhone,
+      content,
+      type: echo.type || "text",
+      direction: "outgoing",
+      status: "delivered",
+      timestamp,
+      metadata: { source: "business_app", wamid },
+    });
+
+    if (msgError) {
+      console.error("[SMB Echo] Failed to save to messages:", msgError);
+    }
+
+    // Save to n8n_chat_histories (AI context)
+    const { error: histError } = await supabase
+      .from("n8n_chat_histories")
+      .insert({
+        session_id: customerPhone,
+        message: JSON.stringify({
+          type: "ai",
+          content,
+          additional_kwargs: { source: "business_app" },
+        }),
+        client_id: clientId,
+        wamid,
+        status: "sent",
+      });
+
+    if (histError) {
+      console.error(
+        "[SMB Echo] Failed to save to n8n_chat_histories:",
+        histError,
+      );
+    }
+
+    console.log(
+      `[SMB Echo] ✅ Saved business app message to ${customerPhone}`,
+    );
   }
 }
