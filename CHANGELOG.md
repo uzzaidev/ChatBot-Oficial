@@ -5,6 +5,16 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-03-31
 
 ### feat
+- Integrada opção de adicionar contatos importados como cards no CRM, com seleção de coluna e controle de criação/atualização automática dos cards e registro de atividades.
+- Adicionado switch e seleção de coluna no modal de importação de contatos para ativar a criação automática de cards no CRM.
+- Atualizada API de importação para suportar parâmetro de adição ao CRM e retornar contagem de cards criados e erros.
+- Ajustado hook `useContacts` para suportar opção de adicionar contatos ao CRM na importação.
+  - Arquivos: `src/app/api/contacts/import/route.ts`, `src/components/ContactsClient.tsx`, `src/hooks/useContacts.ts`, `src/lib/types.ts`
+  - Confiança: alta
+
+## 2026-03-31
+
+### feat
 - Adicionado mapeamento manual de colunas para importação CSV de contatos, com sugestões automáticas baseadas em aliases comuns para telefone, nome e status. Agora é possível selecionar quais colunas do CSV correspondem a cada campo no sistema, incluindo opção para não importar nome ou usar status padrão.
 - Implementada normalização e validação dos cabeçalhos CSV para melhorar robustez do importador.
 - Interface de importação atualizada para exibir seletores de coluna após o upload do arquivo, obrigando seleção da coluna de telefone para habilitar o botão de importação.
