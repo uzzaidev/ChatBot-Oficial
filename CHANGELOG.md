@@ -5,6 +5,15 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-03-31
 
 ### feat
+- Adicionada API para consulta de logs de execuções das automações CRM com filtros por status, trigger, regra, dias e limite. Implementada interface no painel de regras para visualização detalhada desses logs, incluindo dados mascarados para usuários não administradores.
+- Melhorada a lógica de disparo de eventos de automação no chatbot para considerar intents sem checagem rígida de confiança mínima.
+- Ajustada a avaliação de confiança mínima em triggers de automação para usar um valor padrão do threshold do trigger quando não especificado nas condições.
+  - Arquivos: `src/app/api/crm/automation-executions/route.ts`, `src/components/crm/AutomationRulesPanel.tsx`, `src/flows/chatbotFlow.ts`, `src/lib/crm-automation-engine.ts`
+  - Confiança: alta
+
+## 2026-03-31
+
+### feat
 - Atualizado snapshot do projeto ChatBot-Oficial com estado da arquitetura, runtime e fatos operacionais datados de 2026-03-31
 - Documentada decisão arquitetural de manter `callDirectAI()` como núcleo determinístico do runtime AI em tempo real, excluindo frameworks pesados para fluxo principal
 - Registrada regra operacional obrigatória para ByteRover: todas as operações devem usar `cwd='C:\Users\Luisf\Documents\GITHUB\ChatBot-Oficial'`
