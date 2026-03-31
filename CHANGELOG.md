@@ -4,6 +4,15 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-03-31
 
+### feat
+- Adicionado mapeamento manual de colunas para importação CSV de contatos, com sugestões automáticas baseadas em aliases comuns para telefone, nome e status. Agora é possível selecionar quais colunas do CSV correspondem a cada campo no sistema, incluindo opção para não importar nome ou usar status padrão.
+- Implementada normalização e validação dos cabeçalhos CSV para melhorar robustez do importador.
+- Interface de importação atualizada para exibir seletores de coluna após o upload do arquivo, obrigando seleção da coluna de telefone para habilitar o botão de importação.
+  - Arquivos: `src/components/ContactsClient.tsx`
+  - Confiança: alta
+
+## 2026-03-31
+
 ### fix
 - Tornado o endpoint de importação de contatos seguro para execução serverless, com validação aprimorada de telefones brasileiros, incluindo normalização, erros e avisos para números incompletos. Adicionada verificação e tratamento de status inválidos e prevenção de duplicatas via Supabase client.
 - Incluído suporte a avisos na resposta da importação e exibidos no frontend com contagem e detalhes, melhorando a visibilidade de contatos importados com possíveis problemas.
