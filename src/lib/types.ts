@@ -690,6 +690,11 @@ export interface ContactImportResult {
     phone: string;
     error: string;
   }>;
+  warnings?: Array<{
+    row: number;
+    phone: string;
+    warning: string;
+  }>;
 }
 
 /**

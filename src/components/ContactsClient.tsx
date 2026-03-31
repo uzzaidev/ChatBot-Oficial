@@ -49,6 +49,7 @@ import type { ContactImportResult, ConversationStatus } from "@/lib/types";
 import { formatDateTime, formatPhone, getInitials } from "@/lib/utils";
 import {
   AlertCircle,
+  AlertTriangle,
   ArrowRight,
   Bot,
   CheckCircle,
@@ -329,7 +330,7 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
         setImportResult(result);
         toast({
           title: "Importação concluída",
-          description: `${result.imported} contatos importados, ${result.skipped} ignorados, ${result.errors.length} erros`,
+          description: `${result.imported} contatos importados, ${result.skipped} ignorados, ${result.errors.length} erros, ${result.warnings?.length ?? 0} avisos`,
         });
       }
     } catch (error) {
@@ -558,6 +559,30 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                             {importResult.skipped}
                           </Badge>
                         </div>
+                        {(importResult.warnings?.length ?? 0) > 0 && (
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-sm">
+                              <span className="flex items-center gap-1">
+                                <AlertTriangle className="h-4 w-4 text-amber-500" />
+                                Avisos:
+                              </span>
+                              <Badge className="bg-amber-500 text-white">
+                                {importResult.warnings?.length}
+                              </Badge>
+                            </div>
+                            <div className="max-h-32 overflow-y-auto text-xs space-y-1">
+                              {importResult.warnings?.map((warning, idx) => (
+                                <div
+                                  key={idx}
+                                  className="text-amber-700 bg-amber-50 p-2 rounded"
+                                >
+                                  Linha {warning.row}: {warning.phone} -{" "}
+                                  {warning.warning}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                         {importResult.errors.length > 0 && (
                           <div className="space-y-2">
                             <div className="flex justify-between text-sm">
