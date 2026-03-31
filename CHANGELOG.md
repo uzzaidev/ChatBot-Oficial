@@ -5,6 +5,29 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-03-31
 
 ### feat
+- Implementada a versão 2 do motor de automação CRM com suporte a múltiplas fases (2, 3, 4 e 5 opcionais), incluindo:
+  - Novo sistema de regras de automação com validação JSONLogic para condições complexas.
+  - Suporte a múltiplas etapas de ação com políticas de erro (continuar, parar, compensar).
+  - Implementação de fila de mensagens mortas (DLQ) para ações externas com retry exponencial.
+  - Agendamento de ações com delay e processamento via cron jobs.
+  - Novos triggers: `keyword_detected`, `intent_detected` e `urgency_detected` com classificação LLM integrada.
+  - Novas ações: envio de mensagem WhatsApp com fallback para template, notificação push para usuários.
+  - Interface de usuário atualizada para gerenciar múltiplas etapas, histórico de execuções e ordenação das regras.
+  - Integração de eventos Stripe `payment_completed` para disparar automações.
+  - Máscara de dados sensíveis em logs e respostas API para usuários não administradores.
+  - Novas APIs REST para listar, simular, reordenar regras, gerenciar ações agendadas e limpar filas.
+  - Classificador de intenção CRM usando LLM com fallback determinístico e controle de orçamento diário.
+  - Atualização das configurações CRM para suportar templates de próximos passos e janela de silêncio para notificações.
+  - Migrações SQL para criar tabelas `crm_action_dlq` e `crm_scheduled_actions` e alterar `crm_settings`.
+  - Ajustes no fluxo chatbot para emitir eventos de automação baseados em palavras-chave e intenções detectadas.
+  - Cache em memória para regras de automação com TTL de 5 minutos e limpeza seletiva.
+  - Controle de concorrência via lock otimista por cartão para evitar execuções paralelas conflitantes.
+- Arquivos principais: `src/lib/crm-automation-engine.ts`, `src/components/crm/AutomationRulesPanel.tsx`, `src/lib/crm-intent-classifier.ts`, `src/app/api/crm/automation-rules/route.ts`, `src/app/api/crm/automation-rules/[id]/executions/route.ts`, `src/app/api/crm/automation-rules/reorder/route.ts`, `src/app/api/crm/automation-rules/simulate/route.ts`, `src/app/api/crm/scheduled-actions/route.ts`, `src/app/api/crm/scheduled-actions/[id]/route.ts`, `src/app/api/cron/crm-dlq-retry/route.ts`, `src/app/api/cron/crm-scheduled-actions/route.ts`, `src/app/api/stripe/webhooks/route.ts`, `src/lib/crm-automation-pii.ts`, `src/lib/crm-automation-constants.ts`, `src/flows/chatbotFlow.ts`, `supabase/migrations/20260331133000_crm_automation_engine_v2_phase2_operational.sql`
+- Confiança: alta
+
+## 2026-03-31
+
+### feat
 - Implementada a fase 1 da fundação do CRM Automation Engine v2 com suporte a regras avançadas, condições complexas e múltiplos passos de ação.
 - Adicionado novo schema e trigger no banco para versionamento automático das regras e controle de idempotência nas execuções.
 - Criada biblioteca `crm-automation-engine.ts` para processamento canônico das regras no backend, substituindo lógica legada.
