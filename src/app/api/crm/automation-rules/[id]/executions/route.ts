@@ -5,6 +5,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
+const isMissingColumnError = (error: unknown): boolean => {
+  if (!error || typeof error !== "object") return false;
+  return (error as { code?: string }).code === "42703";
+};
+
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> },
@@ -89,7 +94,48 @@ export async function GET(
        ORDER BY e.executed_at DESC
        LIMIT $4`,
       values,
-    );
+    ).catch(async (error) => {
+      if (!isMissingColumnError(error)) throw error;
+      return await query<{
+        id: string;
+        status: string;
+        event_type: string | null;
+        event_hash: string | null;
+        depth: number | null;
+        skip_reason: string | null;
+        error_message: string | null;
+        result: Record<string, unknown> | null;
+        trigger_data: Record<string, unknown> | null;
+        executed_at: string;
+        rule_version: number | null;
+        contact_name: string | null;
+        phone: string | null;
+      }>(
+        `SELECT
+           e.id,
+           e.status,
+           e.event_type,
+           e.event_hash,
+           e.depth,
+           e.skip_reason,
+           e.error_message,
+           e.result,
+           e.trigger_data,
+           e.executed_at,
+           e.rule_version,
+           NULL::text AS contact_name,
+           c.phone
+         FROM crm_rule_executions e
+         LEFT JOIN crm_cards c ON c.id = e.card_id
+         WHERE e.client_id = $1
+           AND e.rule_id = $2
+           AND e.executed_at >= NOW() - make_interval(days => $3::int)
+           ${statusSql}
+         ORDER BY e.executed_at DESC
+         LIMIT $4`,
+        values,
+      );
+    });
 
     const executions = result.rows.map((row) => ({
       ...row,

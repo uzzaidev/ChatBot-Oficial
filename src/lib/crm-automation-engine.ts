@@ -10,6 +10,7 @@ type JsonRecord = Record<string, unknown>;
 type OnErrorPolicy = "continue" | "stop" | "compensate";
 type ExecutionStatus = "success" | "failed" | "skipped";
 type NotifyCategory = "critical" | "important" | "normal" | "low" | "marketing";
+type ActivityLogBackend = "crm_activity_log" | "crm_card_activities" | null;
 
 export interface EmitAutomationEventInput {
   clientId: string;
@@ -83,7 +84,7 @@ const EXTERNAL_ACTION_RETRY_CONFIG: Record<
 const LEGACY_AUTO_STATUS_MAP: Record<string, string> = {
   awaiting_response: "awaiting_client",
   in_service: "awaiting_attendant",
-  resolved: "resolved",
+  resolved: "neutral",
 };
 
 const canonicalizeStatus = (status: unknown): string | null => {
@@ -505,12 +506,11 @@ const getCardContext = async (
 }> => {
   const cardResult = await db.query<{
     phone: string | number | null;
-    contact_name: string | null;
     assigned_to: string | null;
     last_message_at: string | null;
     last_message_direction: string | null;
   }>(
-    `SELECT phone, contact_name, assigned_to, last_message_at, last_message_direction
+    `SELECT phone, assigned_to, last_message_at, last_message_direction
      FROM crm_cards
      WHERE id = $1
      LIMIT 1`,
@@ -524,11 +524,73 @@ const getCardContext = async (
 
   return {
     phone: String(card.phone),
-    contactName: card.contact_name ?? null,
+    contactName: null,
     assignedTo: card.assigned_to ?? null,
     lastMessageAt: card.last_message_at ?? null,
     lastMessageDirection: card.last_message_direction ?? null,
   };
+};
+
+const resolveActivityLogBackend = async (
+  db: DBExecutor,
+): Promise<ActivityLogBackend> => {
+  const now = Date.now();
+  if (activityLogBackendCache && activityLogBackendCache.expiresAt > now) {
+    return activityLogBackendCache.backend;
+  }
+
+  const lookup = await db.query<{
+    has_activity_log: boolean;
+    has_card_activities: boolean;
+  }>(
+    `SELECT
+       EXISTS (
+         SELECT 1
+         FROM information_schema.tables
+         WHERE table_schema = 'public' AND table_name = 'crm_activity_log'
+       ) AS has_activity_log,
+       EXISTS (
+         SELECT 1
+         FROM information_schema.tables
+         WHERE table_schema = 'public' AND table_name = 'crm_card_activities'
+       ) AS has_card_activities`,
+  );
+
+  const row = lookup.rows[0];
+  const backend: ActivityLogBackend = row?.has_activity_log
+    ? "crm_activity_log"
+    : row?.has_card_activities
+      ? "crm_card_activities"
+      : null;
+
+  activityLogBackendCache = {
+    backend,
+    expiresAt: now + ACTIVITY_LOG_CACHE_TTL_MS,
+  };
+
+  return backend;
+};
+
+const normalizeActivityLogType = (value: unknown): string => {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return "status_change";
+  }
+
+  const normalized = value.trim().toLowerCase();
+  if (
+    normalized === "column_move" ||
+    normalized === "tag_add" ||
+    normalized === "tag_remove" ||
+    normalized === "note_add" ||
+    normalized === "assigned" ||
+    normalized === "status_change" ||
+    normalized === "value_change" ||
+    normalized === "created"
+  ) {
+    return normalized;
+  }
+
+  return "status_change";
 };
 
 const parseTemplateParams = (
@@ -562,6 +624,11 @@ const automationRuleCache = new Map<
   string,
   { expiresAt: number; rules: AutomationRuleRow[] }
 >();
+const ACTIVITY_LOG_CACHE_TTL_MS = 5 * 60 * 1000;
+let activityLogBackendCache: {
+  backend: ActivityLogBackend;
+  expiresAt: number;
+} | null = null;
 
 const getRuleCacheKey = (clientId: string, triggerType: string): string => {
   return `${clientId}:${triggerType}`;
@@ -1159,23 +1226,51 @@ const executeActionStep = async (
     }
 
     case "log_activity": {
-      const activityType =
+      const rawActivityType =
         typeof actionParams.activity_type === "string"
           ? actionParams.activity_type
-          : "system";
+          : "status_change";
       const contentRaw =
         typeof actionParams.content === "string" ? actionParams.content : "";
       if (!contentRaw) {
         throw new Error("log_activity requires action_params.content");
       }
       const content = interpolateTemplate(contentRaw, variables);
+      const backend = await resolveActivityLogBackend(db);
 
-      await db.query(
-        `INSERT INTO crm_card_activities (client_id, card_id, activity_type, content, metadata)
-         VALUES ($1, $2, $3, $4, $5::jsonb)`,
-        [clientId, cardId, activityType, content, JSON.stringify({ automation: true })],
-      );
-      return { result: { activity_type: activityType } };
+      if (backend === "crm_activity_log") {
+        const activityType = normalizeActivityLogType(rawActivityType);
+        await db.query(
+          `INSERT INTO crm_activity_log (
+             client_id, card_id, activity_type, description, new_value, is_automated
+           ) VALUES ($1, $2, $3, $4, $5::jsonb, true)`,
+          [
+            clientId,
+            cardId,
+            activityType,
+            content,
+            JSON.stringify({ automation: true, raw_activity_type: rawActivityType }),
+          ],
+        );
+        return { result: { activity_type: activityType, backend } };
+      }
+
+      if (backend === "crm_card_activities") {
+        await db.query(
+          `INSERT INTO crm_card_activities (client_id, card_id, activity_type, content, metadata)
+           VALUES ($1, $2, $3, $4, $5::jsonb)`,
+          [
+            clientId,
+            cardId,
+            rawActivityType,
+            content,
+            JSON.stringify({ automation: true }),
+          ],
+        );
+        return { result: { activity_type: rawActivityType, backend } };
+      }
+
+      throw new Error("No supported CRM activity log table found");
     }
 
     case "add_note": {

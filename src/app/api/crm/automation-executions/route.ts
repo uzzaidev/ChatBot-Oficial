@@ -5,6 +5,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
+const isMissingColumnError = (error: unknown): boolean => {
+  if (!error || typeof error !== "object") return false;
+  return (error as { code?: string }).code === "42703";
+};
+
 export async function GET(request: NextRequest) {
   try {
     const clientId = await getClientIdFromSession(request);
@@ -59,7 +64,7 @@ export async function GET(request: NextRequest) {
       predicates.push(`e.rule_id = $${values.length}`);
     }
 
-    const result = await query<{
+    let result = await query<{
       id: string;
       status: string;
       event_type: string | null;
@@ -101,7 +106,52 @@ export async function GET(request: NextRequest) {
        ORDER BY e.executed_at DESC
        LIMIT $3`,
       values,
-    );
+    ).catch(async (error) => {
+      if (!isMissingColumnError(error)) throw error;
+      return await query<{
+        id: string;
+        status: string;
+        event_type: string | null;
+        event_hash: string | null;
+        depth: number | null;
+        skip_reason: string | null;
+        error_message: string | null;
+        result: Record<string, unknown> | null;
+        trigger_data: Record<string, unknown> | null;
+        executed_at: string;
+        rule_id: string | null;
+        rule_name: string | null;
+        contact_name: string | null;
+        phone: string | null;
+        card_id: string;
+        rule_version: number | null;
+      }>(
+        `SELECT
+           e.id,
+           e.status,
+           e.event_type,
+           e.event_hash,
+           e.depth,
+           e.skip_reason,
+           e.error_message,
+           e.result,
+           e.trigger_data,
+           e.executed_at,
+           e.rule_id,
+           r.name AS rule_name,
+           NULL::text AS contact_name,
+           c.phone,
+           e.card_id,
+           e.rule_version
+         FROM crm_rule_executions e
+         LEFT JOIN crm_automation_rules r ON r.id = e.rule_id
+         LEFT JOIN crm_cards c ON c.id = e.card_id
+         WHERE ${predicates.join(" AND ")}
+         ORDER BY e.executed_at DESC
+         LIMIT $3`,
+        values,
+      );
+    });
 
     const executions = result.rows.map((row) => ({
       ...row,
