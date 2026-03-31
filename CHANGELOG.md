@@ -5,6 +5,14 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-03-31
 
 ### fix
+- Ajustado largura do painel de automações e padding do scroll para evitar conteúdo cortado na interface CRM
+  - Arquivos: `src/components/crm/AutomationRulesPanel.tsx`
+  - Evidência: alteração da classe CSS de largura de `sm:max-w-lg` para `sm:max-w-xl` e ajuste no padding do ScrollArea
+  - Confiança: alta
+
+## 2026-03-31
+
+### fix
 - Reforçado endpoints de engine e logs de automação CRM para compatibilidade com esquemas de banco e maior estabilidade em transações, incluindo fallback para consultas em tabelas legadas e tratamento de erro de coluna ausente
   - Arquivos: `src/app/api/crm/automation-executions/route.ts`, `src/app/api/crm/automation-rules/[id]/executions/route.ts`
   - Evidência: captura e tratamento do erro de código 42703 (coluna ausente) com queries alternativas
