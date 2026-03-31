@@ -5,6 +5,13 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-03-31
 
 ### feat
+- Adicionado toggle `crm_engine_v2` nas configurações do CRM e painel de automações para ativar o novo motor de automações por cliente. Incluído também opção para habilitar trigger de intenção/urgência assistida por IA com ajuste de limiar de confiança.
+  - Arquivos: `src/app/api/crm/settings/route.ts`, `src/components/crm/AutomationRulesPanel.tsx`
+  - Confiança: alta
+
+## 2026-03-31
+
+### feat
 - Implementada a versão 2 do motor de automação CRM com suporte a múltiplas fases (2, 3, 4 e 5 opcionais), incluindo:
   - Novo sistema de regras de automação com validação JSONLogic para condições complexas.
   - Suporte a múltiplas etapas de ação com políticas de erro (continuar, parar, compensar).
