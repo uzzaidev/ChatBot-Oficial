@@ -85,6 +85,7 @@ export default function CRMPage() {
     createColumn,
     updateColumn,
     deleteColumn,
+    reorderColumns,
     refetch: refetchColumns,
   } = useCRMColumns(clientId);
 
@@ -148,6 +149,29 @@ export default function CRMPage() {
 
     const cardCount = cards.filter((c) => c.column_id === columnId).length;
     setDeletingColumn({ column, cardCount });
+  };
+
+  const handleShiftColumn = async (
+    columnId: string,
+    direction: "left" | "right",
+  ) => {
+    const currentIndex = columns.findIndex((c) => c.id === columnId);
+    if (currentIndex === -1) return;
+
+    const targetIndex =
+      direction === "left" ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= columns.length) return;
+
+    const reordered = [...columns];
+    const [movedColumn] = reordered.splice(currentIndex, 1);
+    reordered.splice(targetIndex, 0, movedColumn);
+
+    await reorderColumns(
+      reordered.map((column, position) => ({
+        id: column.id,
+        position,
+      })),
+    );
   };
 
   const confirmDeleteColumn = async () => {
@@ -523,12 +547,19 @@ export default function CRMPage() {
                     ) : viewMode === "kanban" ? (
                       <KanbanBoard
                         columns={visibleColumns}
+                        orderedColumnIds={columns.map((c) => c.id)}
                         cards={cards}
                         tags={tags}
                         onMoveCard={handleMoveCard}
                         onCardClick={handleCardClick}
                         onEditColumn={handleEditColumn}
                         onDeleteColumn={handleDeleteColumn}
+                        onMoveColumnLeft={(columnId) =>
+                          handleShiftColumn(columnId, "left")
+                        }
+                        onMoveColumnRight={(columnId) =>
+                          handleShiftColumn(columnId, "right")
+                        }
                       />
                     ) : (
                       <div className="crm-board-scroll flex-1 overflow-auto pr-4">

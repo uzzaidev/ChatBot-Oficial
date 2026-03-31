@@ -15,7 +15,13 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { MoreHorizontal, Settings, Trash2 } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  MoreHorizontal,
+  Settings,
+  Trash2,
+} from "lucide-react";
 import { ColumnHeader } from "./ColumnHeader";
 import { KanbanCard } from "./KanbanCard";
 
@@ -28,6 +34,10 @@ interface KanbanColumnProps {
   onCardMove: (cardId: string, columnId: string) => void;
   onEditColumn?: () => void;
   onDeleteColumn?: () => void;
+  onMoveColumnLeft?: () => void;
+  onMoveColumnRight?: () => void;
+  canMoveLeft?: boolean;
+  canMoveRight?: boolean;
   isOver?: boolean;
 }
 
@@ -40,6 +50,10 @@ export const KanbanColumn = ({
   onCardMove,
   onEditColumn,
   onDeleteColumn,
+  onMoveColumnLeft,
+  onMoveColumnRight,
+  canMoveLeft = false,
+  canMoveRight = false,
   isOver = false,
 }: KanbanColumnProps) => {
   const { setNodeRef, isOver: isDroppableOver } = useDroppable({
@@ -71,54 +85,95 @@ export const KanbanColumn = ({
           className="min-w-0 flex-1"
         />
 
-        {(onEditColumn || onDeleteColumn) && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+        {(onMoveColumnLeft ||
+          onMoveColumnRight ||
+          onEditColumn ||
+          onDeleteColumn) && (
+          <div className="flex items-center gap-1">
+            {onMoveColumnLeft && (
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 rounded-full border border-transparent text-muted-foreground hover:border-border/80 hover:bg-background/35 hover:text-foreground"
-                aria-label="Opções da coluna"
+                className="h-8 w-8 rounded-full border border-transparent text-muted-foreground hover:border-border/80 hover:bg-background/35 hover:text-foreground"
+                aria-label="Mover coluna para esquerda"
+                disabled={!canMoveLeft}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onMoveColumnLeft();
+                }}
               >
-                <MoreHorizontal className="h-4 w-4" />
-                <span className="sr-only">Opções</span>
+                <ChevronLeft className="h-4 w-4" />
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="w-48 rounded-2xl border-border/80 bg-popover/95 backdrop-blur"
-            >
-              {onEditColumn && (
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onEditColumn();
-                  }}
+            )}
+
+            {onMoveColumnRight && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full border border-transparent text-muted-foreground hover:border-border/80 hover:bg-background/35 hover:text-foreground"
+                aria-label="Mover coluna para direita"
+                disabled={!canMoveRight}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onMoveColumnRight();
+                }}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            )}
+
+            {(onEditColumn || onDeleteColumn) && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 rounded-full border border-transparent text-muted-foreground hover:border-border/80 hover:bg-background/35 hover:text-foreground"
+                    aria-label="Opcoes da coluna"
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                    <span className="sr-only">Opcoes</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="w-48 rounded-2xl border-border/80 bg-popover/95 backdrop-blur"
                 >
-                  <Settings className="mr-2 h-4 w-4" />
-                  Editar coluna
-                </DropdownMenuItem>
-              )}
-              {onEditColumn && onDeleteColumn && <DropdownMenuSeparator />}
-              {onDeleteColumn && (
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onDeleteColumn();
-                  }}
-                  className="text-destructive focus:text-destructive"
-                  disabled={column.is_default}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  {column.is_default
-                    ? "Não pode excluir (padrão)"
-                    : "Excluir coluna"}
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                  {onEditColumn && (
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onEditColumn();
+                      }}
+                    >
+                      <Settings className="mr-2 h-4 w-4" />
+                      Editar coluna
+                    </DropdownMenuItem>
+                  )}
+                  {onEditColumn && onDeleteColumn && <DropdownMenuSeparator />}
+                  {onDeleteColumn && (
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onDeleteColumn();
+                      }}
+                      className="text-destructive focus:text-destructive"
+                      disabled={column.is_default}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      {column.is_default
+                        ? "Nao pode excluir (padrao)"
+                        : "Excluir coluna"}
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
         )}
       </div>
 

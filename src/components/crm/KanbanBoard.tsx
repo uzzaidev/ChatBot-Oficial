@@ -25,6 +25,7 @@ import { KanbanColumn } from "./KanbanColumn";
 
 interface KanbanBoardProps {
   columns: CRMColumn[];
+  orderedColumnIds?: string[];
   cards: CRMCard[];
   tags: CRMTag[];
   onMoveCard: (
@@ -35,6 +36,8 @@ interface KanbanBoardProps {
   onCardClick: (card: CRMCard) => void;
   onEditColumn?: (column: CRMColumn) => void;
   onDeleteColumn?: (columnId: string) => void;
+  onMoveColumnLeft?: (columnId: string) => void | Promise<void>;
+  onMoveColumnRight?: (columnId: string) => void | Promise<void>;
 }
 
 const measuringConfig = {
@@ -55,12 +58,15 @@ const customCollisionDetection = (
 
 export const KanbanBoard = ({
   columns,
+  orderedColumnIds,
   cards,
   tags,
   onMoveCard,
   onCardClick,
   onEditColumn,
   onDeleteColumn,
+  onMoveColumnLeft,
+  onMoveColumnRight,
 }: KanbanBoardProps) => {
   const [activeCard, setActiveCard] = useState<CRMCard | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
@@ -146,6 +152,11 @@ export const KanbanBoard = ({
     });
     return map;
   }, [columns, cards]);
+
+  const columnOrderIndex = useMemo(() => {
+    const ids = orderedColumnIds ?? columns.map((c) => c.id);
+    return new Map(ids.map((id, idx) => [id, idx]));
+  }, [orderedColumnIds, columns]);
 
   const updateScrollState = useCallback(() => {
     const node = scrollContainerRef.current;
@@ -237,6 +248,11 @@ export const KanbanBoard = ({
           <div className="flex h-full min-w-max gap-4 pr-4">
             {columns.map((column, index) => {
               const columnCards = columnCardsMap.get(column.id) || [];
+              const columnPosition = columnOrderIndex.get(column.id) ?? -1;
+              const canMoveLeft = columnPosition > 0;
+              const canMoveRight =
+                columnPosition !== -1 &&
+                columnPosition < columnOrderIndex.size - 1;
               return (
                 <div
                   key={column.id}
@@ -258,6 +274,18 @@ export const KanbanBoard = ({
                         ? () => onDeleteColumn(column.id)
                         : undefined
                     }
+                    onMoveColumnLeft={
+                      onMoveColumnLeft
+                        ? () => void onMoveColumnLeft(column.id)
+                        : undefined
+                    }
+                    onMoveColumnRight={
+                      onMoveColumnRight
+                        ? () => void onMoveColumnRight(column.id)
+                        : undefined
+                    }
+                    canMoveLeft={canMoveLeft}
+                    canMoveRight={canMoveRight}
                     isOver={overId === column.id}
                   />
                 </div>
