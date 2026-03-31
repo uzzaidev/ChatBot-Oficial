@@ -74,7 +74,7 @@ export default function RootLayout({
       <body className="font-inter">
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
+          defaultTheme="light"
           enableSystem={false}
           themes={['dark', 'light']}
           storageKey="uzzapp-theme"
