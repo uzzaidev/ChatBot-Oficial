@@ -695,6 +695,8 @@ export interface ContactImportResult {
     phone: string;
     warning: string;
   }>;
+  cardsCreated?: number;
+  cardErrors?: number;
 }
 
 /**

@@ -27,7 +27,10 @@ interface UseContactsResult {
   addContact: (phone: string, name?: string, status?: ConversationStatus) => Promise<Contact | null>;
   updateContact: (phone: string, updates: { name?: string; status?: ConversationStatus }) => Promise<Contact | null>;
   deleteContact: (phone: string) => Promise<boolean>;
-  importContacts: (contacts: Array<{ phone: string; name?: string; status?: string }>) => Promise<ContactImportResult | null>;
+  importContacts: (
+    contacts: Array<{ phone: string; name?: string; status?: string }>,
+    options?: { addToCrm?: boolean; columnId?: string }
+  ) => Promise<ContactImportResult | null>;
 }
 
 export const useContacts = ({
@@ -153,14 +156,21 @@ export const useContacts = ({
   );
 
   const importContacts = useCallback(
-    async (contactsList: Array<{ phone: string; name?: string; status?: string }>): Promise<ContactImportResult | null> => {
+    async (
+      contactsList: Array<{ phone: string; name?: string; status?: string }>,
+      options?: { addToCrm?: boolean; columnId?: string }
+    ): Promise<ContactImportResult | null> => {
       try {
         const response = await apiFetch("/api/contacts/import", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ contacts: contactsList }),
+          body: JSON.stringify({
+            contacts: contactsList,
+            addToCrm: options?.addToCrm,
+            columnId: options?.columnId,
+          }),
         });
 
         if (!response.ok) {

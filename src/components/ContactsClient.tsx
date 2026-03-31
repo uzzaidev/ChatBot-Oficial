@@ -42,10 +42,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Contact, useContacts } from "@/hooks/useContacts";
 import { apiFetch } from "@/lib/api";
-import type { ContactImportResult, ConversationStatus } from "@/lib/types";
+import type {
+  CRMColumn,
+  ContactImportResult,
+  ConversationStatus,
+} from "@/lib/types";
 import { formatDateTime, formatPhone, getInitials } from "@/lib/utils";
 import {
   AlertCircle,
@@ -69,7 +74,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface ContactsClientProps {
   clientId: string;
@@ -130,6 +135,10 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
     name: NONE_COLUMN_VALUE,
     status: NONE_COLUMN_VALUE,
   });
+  const [addToCrm, setAddToCrm] = useState(false);
+  const [selectedColumnId, setSelectedColumnId] = useState("");
+  const [crmColumns, setCrmColumns] = useState<CRMColumn[]>([]);
+  const [crmColumnsLoading, setCrmColumnsLoading] = useState(false);
   const [importResult, setImportResult] = useState<ContactImportResult | null>(
     null,
   );
@@ -155,6 +164,62 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
       contact.name.toLowerCase().includes(query)
     );
   });
+
+  useEffect(() => {
+    if (!isImportDialogOpen) return;
+
+    let isMounted = true;
+
+    const loadCrmColumns = async () => {
+      setCrmColumnsLoading(true);
+      try {
+        const response = await apiFetch("/api/crm/columns");
+        if (!response.ok) {
+          throw new Error("Falha ao carregar colunas do CRM");
+        }
+
+        const data = await response.json();
+        const columns: CRMColumn[] = Array.isArray(data.columns) ? data.columns : [];
+
+        if (!isMounted) return;
+
+        setCrmColumns(columns);
+
+        if (columns.length === 0) {
+          setAddToCrm(false);
+          setSelectedColumnId("");
+          return;
+        }
+
+        setSelectedColumnId((current) => {
+          if (current && columns.some((col) => col.id === current)) {
+            return current;
+          }
+          return columns[0].id;
+        });
+      } catch (error) {
+        if (!isMounted) return;
+        setCrmColumns([]);
+        setAddToCrm(false);
+        setSelectedColumnId("");
+        toast({
+          title: "Erro",
+          description: "Nao foi possivel carregar as colunas do CRM",
+          variant: "destructive",
+        });
+      } finally {
+        if (isMounted) {
+          setCrmColumnsLoading(false);
+        }
+      }
+    };
+
+    loadCrmColumns();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isImportDialogOpen, toast]);
 
   const handleAddContact = async () => {
     if (!newPhone.trim()) {
@@ -414,6 +479,15 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
       return;
     }
 
+    if (addToCrm && !selectedColumnId) {
+      toast({
+        title: "Erro",
+        description: "Selecione uma coluna do CRM para adicionar os contatos",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -430,12 +504,20 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
         return;
       }
 
-      const result = await importContacts(contactsList);
+      const result = await importContacts(
+        contactsList,
+        addToCrm
+          ? {
+              addToCrm: true,
+              columnId: selectedColumnId,
+            }
+          : undefined,
+      );
       if (result) {
         setImportResult(result);
         toast({
           title: "Importação concluída",
-          description: `${result.imported} contatos importados, ${result.skipped} ignorados, ${result.errors.length} erros, ${result.warnings?.length ?? 0} avisos`,
+          description: `${result.imported} contatos importados, ${result.skipped} ignorados, ${result.errors.length} erros, ${result.warnings?.length ?? 0} avisos${addToCrm ? `, ${result.cardsCreated ?? 0} cards CRM criados, ${result.cardErrors ?? 0} falhas CRM` : ""}`,
         });
       }
     } catch (error) {
@@ -458,6 +540,8 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
       name: NONE_COLUMN_VALUE,
       status: NONE_COLUMN_VALUE,
     });
+    setAddToCrm(false);
+    setSelectedColumnId("");
     setImportResult(null);
   };
 
@@ -642,6 +726,52 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                       nome, status)
                     </p>
                   </div>
+                  <div className="space-y-3 rounded-md border border-border/60 p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="space-y-1">
+                        <Label htmlFor="add-to-crm-switch">Adicionar ao CRM</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Cria card automaticamente para contatos importados
+                        </p>
+                      </div>
+                      <Switch
+                        id="add-to-crm-switch"
+                        checked={addToCrm}
+                        onCheckedChange={setAddToCrm}
+                        disabled={crmColumnsLoading || crmColumns.length === 0}
+                      />
+                    </div>
+                    {crmColumnsLoading && (
+                      <p className="text-xs text-muted-foreground">
+                        Carregando colunas do CRM...
+                      </p>
+                    )}
+                    {!crmColumnsLoading && crmColumns.length === 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Nenhuma coluna CRM disponivel. Crie uma coluna no CRM para usar esta opcao.
+                      </p>
+                    )}
+                    {addToCrm && crmColumns.length > 0 && (
+                      <div className="space-y-2">
+                        <Label>Coluna do CRM</Label>
+                        <Select
+                          value={selectedColumnId}
+                          onValueChange={setSelectedColumnId}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione uma coluna" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {crmColumns.map((column) => (
+                              <SelectItem key={column.id} value={column.id}>
+                                {column.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
                   {csvHeaders.length > 0 && (
                     <div className="space-y-3 rounded-md border border-border/60 p-3">
                       <p className="text-sm font-medium">Mapeamento de colunas</p>
@@ -744,6 +874,23 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                             {importResult.skipped}
                           </Badge>
                         </div>
+                        {typeof importResult.cardsCreated === "number" && (
+                          <div className="flex justify-between text-sm">
+                            <span>Cards criados no CRM:</span>
+                            <Badge className="bg-blue-600">
+                              {importResult.cardsCreated}
+                            </Badge>
+                          </div>
+                        )}
+                        {typeof importResult.cardErrors === "number" &&
+                          importResult.cardErrors > 0 && (
+                            <div className="flex justify-between text-sm">
+                              <span>Falhas ao criar cards no CRM:</span>
+                              <Badge variant="destructive">
+                                {importResult.cardErrors}
+                              </Badge>
+                            </div>
+                          )}
                         {(importResult.warnings?.length ?? 0) > 0 && (
                           <div className="space-y-2">
                             <div className="flex justify-between text-sm">
@@ -802,7 +949,12 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                   </Button>
                   <Button
                     onClick={handleImport}
-                    disabled={isSubmitting || !importFile || !columnMapping.phone}
+                    disabled={
+                      isSubmitting ||
+                      !importFile ||
+                      !columnMapping.phone ||
+                      (addToCrm && !selectedColumnId)
+                    }
                   >
                     {isSubmitting ? "Importando..." : "Importar"}
                   </Button>
