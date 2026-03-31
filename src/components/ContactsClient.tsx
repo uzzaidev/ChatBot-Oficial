@@ -517,7 +517,7 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
         setImportResult(result);
         toast({
           title: "Importação concluída",
-          description: `${result.imported} contatos importados, ${result.skipped} ignorados, ${result.errors.length} erros, ${result.warnings?.length ?? 0} avisos${addToCrm ? `, ${result.cardsCreated ?? 0} cards CRM criados, ${result.cardErrors ?? 0} falhas CRM` : ""}`,
+          description: `${result.imported} contatos importados, ${result.skipped} ignorados, ${result.errors.length} erros, ${result.warnings?.length ?? 0} avisos${addToCrm ? `, ${result.cardsCreated ?? 0} cards CRM criados, ${result.cardsMoved ?? 0} cards movidos, ${result.cardErrors ?? 0} falhas CRM` : ""}`,
         });
       }
     } catch (error) {
@@ -882,6 +882,15 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                             </Badge>
                           </div>
                         )}
+                        {typeof importResult.cardsMoved === "number" &&
+                          importResult.cardsMoved > 0 && (
+                            <div className="flex justify-between text-sm">
+                              <span>Cards movidos no CRM:</span>
+                              <Badge className="bg-sky-600">
+                                {importResult.cardsMoved}
+                              </Badge>
+                            </div>
+                          )}
                         {typeof importResult.cardErrors === "number" &&
                           importResult.cardErrors > 0 && (
                             <div className="flex justify-between text-sm">

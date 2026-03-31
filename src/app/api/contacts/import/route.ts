@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { query } from "@/lib/postgres";
+import { getClientIdFromSession } from "@/lib/supabase-server";
 import type { ContactImportResult } from "@/lib/types";
-import {
-  createRouteHandlerClient,
-  getClientIdFromSession,
-} from "@/lib/supabase-server";
 
 export const dynamic = "force-dynamic";
 
@@ -53,117 +51,90 @@ const classifyPhone = (
   };
 };
 
+type CrmCardAction = "created" | "moved" | "unchanged";
+
 const addContactCardToCrm = async ({
-  supabaseAny,
   clientId,
   columnId,
   phone,
 }: {
-  supabaseAny: any;
   clientId: string;
   columnId: string;
   phone: string;
-}): Promise<{ success: boolean; error?: string }> => {
+}): Promise<{ success: boolean; action?: CrmCardAction; error?: string }> => {
   try {
-    const { data: existingCard, error: existingCardError } = await supabaseAny
-      .from("crm_cards")
-      .select("id, column_id")
-      .eq("client_id", clientId)
-      .eq("phone", phone)
-      .maybeSingle();
+    const existingCardResult = await query<{ id: string; column_id: string }>(
+      `SELECT id, column_id
+       FROM crm_cards
+       WHERE client_id = $1 AND phone = $2
+       LIMIT 1`,
+      [clientId, phone],
+    );
+    const existingCard = existingCardResult.rows[0];
 
-    if (existingCardError) {
-      throw new Error(existingCardError.message);
-    }
-
-    const { data: lastCardInColumn, error: lastCardError } = await supabaseAny
-      .from("crm_cards")
-      .select("position")
-      .eq("client_id", clientId)
-      .eq("column_id", columnId)
-      .order("position", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (lastCardError) {
-      throw new Error(lastCardError.message);
-    }
-
-    const nextPosition = Number(lastCardInColumn?.position ?? -1) + 1;
+    const lastCardResult = await query<{ position: number }>(
+      `SELECT position
+       FROM crm_cards
+       WHERE client_id = $1 AND column_id = $2
+       ORDER BY position DESC
+       LIMIT 1`,
+      [clientId, columnId],
+    );
+    const nextPosition = Number(lastCardResult.rows[0]?.position ?? -1) + 1;
 
     if (existingCard) {
       if (existingCard.column_id === columnId) {
-        return { success: true };
+        return { success: true, action: "unchanged" };
       }
 
-      const { error: moveError } = await supabaseAny
-        .from("crm_cards")
-        .update({
-          column_id: columnId,
-          position: nextPosition,
-          moved_to_column_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", existingCard.id)
-        .eq("client_id", clientId);
+      await query(
+        `UPDATE crm_cards
+         SET column_id = $1,
+             position = $2,
+             moved_to_column_at = NOW(),
+             updated_at = NOW()
+         WHERE id = $3 AND client_id = $4`,
+        [columnId, nextPosition, existingCard.id, clientId],
+      );
 
-      if (moveError) {
-        throw new Error(moveError.message);
-      }
+      await query(
+        `INSERT INTO crm_activity_log (
+          client_id,
+          card_id,
+          activity_type,
+          old_value,
+          new_value,
+          is_automated
+        )
+        VALUES ($1, $2, 'column_move', $3::jsonb, $4::jsonb, true)`,
+        [
+          clientId,
+          existingCard.id,
+          JSON.stringify({ column_id: existingCard.column_id }),
+          JSON.stringify({ column_id: columnId }),
+        ],
+      );
 
-      const { error: moveLogError } = await supabaseAny
-        .from("crm_activity_log")
-        .insert({
-          client_id: clientId,
-          card_id: existingCard.id,
-          activity_type: "column_move",
-          old_value: { column_id: existingCard.column_id },
-          new_value: { column_id: columnId },
-          is_automated: true,
-        });
-
-      if (moveLogError) {
-        console.warn(
-          `[contacts/import] Failed to log CRM move activity for ${phone}: ${moveLogError.message}`,
-        );
-      }
-
-      return { success: true };
+      return { success: true, action: "moved" };
     }
 
-    const { data: createdCard, error: createCardError } = await supabaseAny
-      .from("crm_cards")
-      .insert({
-        client_id: clientId,
-        column_id: columnId,
-        phone,
-        position: nextPosition,
-      })
-      .select("id")
-      .single();
+    const createdCardResult = await query<{ id: string }>(
+      `INSERT INTO crm_cards (client_id, column_id, phone, position)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id`,
+      [clientId, columnId, phone, nextPosition],
+    );
 
-    if (createCardError) {
-      throw new Error(createCardError.message);
+    const createdCardId = createdCardResult.rows[0]?.id;
+    if (createdCardId) {
+      await query(
+        `INSERT INTO crm_activity_log (client_id, card_id, activity_type, is_automated)
+         VALUES ($1, $2, 'created', true)`,
+        [clientId, createdCardId],
+      );
     }
 
-    if (createdCard?.id) {
-      const { error: createdLogError } = await supabaseAny
-        .from("crm_activity_log")
-        .insert({
-          client_id: clientId,
-          card_id: createdCard.id,
-          activity_type: "created",
-          is_automated: true,
-        });
-
-      if (createdLogError) {
-        console.warn(
-          `[contacts/import] Failed to log CRM create activity for ${phone}: ${createdLogError.message}`,
-        );
-      }
-    }
-
-    return { success: true };
+    return { success: true, action: "created" };
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Erro ao criar card no CRM";
@@ -191,9 +162,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createRouteHandlerClient(request as any);
-    const supabaseAny = supabase as any;
-
     const body = await request.json();
     const { contacts, addToCrm = false, columnId } = body;
 
@@ -212,22 +180,17 @@ export async function POST(request: NextRequest) {
     }
 
     if (addToCrm && columnId) {
-      const { data: selectedColumn, error: selectedColumnError } = await supabaseAny
-        .from("crm_columns")
-        .select("id")
-        .eq("client_id", clientId)
-        .eq("id", columnId)
-        .eq("is_archived", false)
-        .maybeSingle();
+      const selectedColumnResult = await query<{ id: string }>(
+        `SELECT id
+         FROM crm_columns
+         WHERE client_id = $1
+           AND id = $2
+           AND is_archived = false
+         LIMIT 1`,
+        [clientId, columnId],
+      );
 
-      if (selectedColumnError) {
-        return NextResponse.json(
-          { error: selectedColumnError.message },
-          { status: 500 },
-        );
-      }
-
-      if (!selectedColumn) {
+      if (!selectedColumnResult.rows[0]) {
         return NextResponse.json(
           { error: "Coluna de CRM invalida para este cliente" },
           { status: 400 },
@@ -242,6 +205,7 @@ export async function POST(request: NextRequest) {
       errors: [],
       warnings: [],
       cardsCreated: addToCrm ? 0 : undefined,
+      cardsMoved: addToCrm ? 0 : undefined,
       cardErrors: addToCrm ? 0 : undefined,
     };
     const importedPhones: string[] = [];
@@ -290,39 +254,31 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        const { data: existingContact, error: existingError } = await supabaseAny
-          .from("clientes_whatsapp")
-          .select("telefone")
-          .eq("client_id", clientId)
-          .eq("telefone", normalizedPhone)
-          .maybeSingle();
+        const existingContactResult = await query<{ telefone: string }>(
+          `SELECT telefone
+           FROM clientes_whatsapp
+           WHERE client_id = $1 AND telefone = $2
+           LIMIT 1`,
+          [clientId, normalizedPhone],
+        );
 
-        if (existingError) {
-          throw new Error(existingError.message);
-        }
-
-        if (existingContact) {
+        if (existingContactResult.rows[0]) {
           result.skipped++;
           continue;
         }
 
-        const { error: insertError } = await supabaseAny
-          .from("clientes_whatsapp")
-          .insert({
-            client_id: clientId,
-            telefone: normalizedPhone,
-            nome: name,
+        await query(
+          `INSERT INTO clientes_whatsapp (
+            client_id,
+            telefone,
+            nome,
             status,
-          });
-
-        if (insertError) {
-          if (insertError.code === "23505") {
-            result.skipped++;
-            continue;
-          }
-
-          throw new Error(insertError.message);
-        }
+            created_at,
+            updated_at
+          )
+          VALUES ($1, $2, $3, $4, NOW(), NOW())`,
+          [clientId, normalizedPhone, name, status],
+        );
 
         result.imported++;
         importedPhones.push(normalizedPhone);
@@ -334,7 +290,12 @@ export async function POST(request: NextRequest) {
             warning: warningMessage,
           });
         }
-      } catch (error) {
+      } catch (error: any) {
+        if (error?.code === "23505") {
+          result.skipped++;
+          continue;
+        }
+
         const errorMessage =
           error instanceof Error ? error.message : "Erro desconhecido";
 
@@ -348,19 +309,25 @@ export async function POST(request: NextRequest) {
 
     if (addToCrm && columnId) {
       for (const phone of importedPhones) {
-        const cardCreation = await addContactCardToCrm({
-          supabaseAny,
+        const cardOperation = await addContactCardToCrm({
           clientId,
           columnId,
           phone,
         });
 
-        if (cardCreation.success) {
+        if (!cardOperation.success) {
+          result.cardErrors = (result.cardErrors ?? 0) + 1;
+          continue;
+        }
+
+        if (cardOperation.action === "created") {
           result.cardsCreated = (result.cardsCreated ?? 0) + 1;
           continue;
         }
 
-        result.cardErrors = (result.cardErrors ?? 0) + 1;
+        if (cardOperation.action === "moved") {
+          result.cardsMoved = (result.cardsMoved ?? 0) + 1;
+        }
       }
     }
 
@@ -370,6 +337,7 @@ export async function POST(request: NextRequest) {
 
     if (!addToCrm) {
       delete result.cardsCreated;
+      delete result.cardsMoved;
       delete result.cardErrors;
     }
 

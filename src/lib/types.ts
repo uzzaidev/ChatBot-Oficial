@@ -696,6 +696,7 @@ export interface ContactImportResult {
     warning: string;
   }>;
   cardsCreated?: number;
+  cardsMoved?: number;
   cardErrors?: number;
 }
 
