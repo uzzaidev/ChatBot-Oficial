@@ -4,6 +4,20 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-03-31
 
+### fix
+- Reforçado endpoints de engine e logs de automação CRM para compatibilidade com esquemas de banco e maior estabilidade em transações, incluindo fallback para consultas em tabelas legadas e tratamento de erro de coluna ausente
+  - Arquivos: `src/app/api/crm/automation-executions/route.ts`, `src/app/api/crm/automation-rules/[id]/executions/route.ts`
+  - Evidência: captura e tratamento do erro de código 42703 (coluna ausente) com queries alternativas
+  - Confiança: alta
+
+### refactor
+- Adaptado registro de atividades de automação para detectar dinamicamente backend disponível (`crm_activity_log` ou `crm_card_activities`) e normalizar tipos de atividade, garantindo compatibilidade com diferentes versões do banco
+- Removido campo `contact_name` da consulta de contexto do cartão, passando a retornar sempre null
+  - Arquivos: `src/lib/crm-automation-engine.ts`
+  - Confiança: alta
+
+## 2026-03-31
+
 ### feat
 - Adicionada API para consulta de logs de execuções das automações CRM com filtros por status, trigger, regra, dias e limite. Implementada interface no painel de regras para visualização detalhada desses logs, incluindo dados mascarados para usuários não administradores.
 - Melhorada a lógica de disparo de eventos de automação no chatbot para considerar intents sem checagem rígida de confiança mínima.
