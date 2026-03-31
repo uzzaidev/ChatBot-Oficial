@@ -18,3 +18,8 @@ You `MUST` always use this tool when:
 + Before making architectural decisions to understand existing patterns
 + When debugging issues to check for previous solutions
 + Working with unfamiliar parts of the codebase
+
+## Important usage note
++ In this Codex environment, the ByteRover MCP server runs in global mode rather than being automatically bound to this repository.
++ Always pass `cwd` with the repository root: `C:\Users\Luisf\Documents\GITHUB\ChatBot-Oficial`.
++ Apply that rule to both retrieve/query and store/curate calls. If `cwd` is omitted, the MCP may fail with a global-mode error or operate without project scoping.

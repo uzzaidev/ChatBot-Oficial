@@ -1,0 +1,73 @@
+{
+  "active_context": [
+    {
+      "order": 3,
+      "path": "_index.md",
+      "tokens": 1985,
+      "type": "summary"
+    },
+    {
+      "importance": 50,
+      "path": "architecture/ai_runtime/agent_framework_decision_for_realtime_flow.md",
+      "tokens": 1082,
+      "type": "context"
+    },
+    {
+      "importance": 50,
+      "path": "architecture/ai_runtime/byterover_global_mode_cwd_requirement.md",
+      "tokens": 733,
+      "type": "context"
+    },
+    {
+      "importance": 50,
+      "path": "architecture/ai_runtime/context.md",
+      "tokens": 113,
+      "type": "context"
+    },
+    {
+      "importance": 50,
+      "path": "architecture/context.md",
+      "tokens": 201,
+      "type": "context"
+    },
+    {
+      "importance": 50,
+      "path": "architecture/project_state/chatbot_oficial_snapshot_2026_03_31.md",
+      "tokens": 905,
+      "type": "context"
+    },
+    {
+      "importance": 50,
+      "path": "architecture/project_state/context.md",
+      "tokens": 110,
+      "type": "context"
+    },
+    {
+      "importance": 50,
+      "path": "facts/context.md",
+      "tokens": 159,
+      "type": "context"
+    },
+    {
+      "importance": 50,
+      "path": "facts/project/byterover_cwd_requirement_for_repository.md",
+      "tokens": 317,
+      "type": "context"
+    },
+    {
+      "importance": 50,
+      "path": "facts/project/context.md",
+      "tokens": 105,
+      "type": "context"
+    }
+  ],
+  "generated_at": "2026-03-31T12:39:42.317Z",
+  "lane_tokens": {
+    "contexts": 3725,
+    "stubs": 0,
+    "summaries": 1985
+  },
+  "source_fingerprint": "2a9909be534a33c52384cfc2e38f5ab77c24f21c86c467a67c9ca1db4324fbeb",
+  "total_tokens": 5710,
+  "version": 1
+}

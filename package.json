@@ -9,6 +9,7 @@
     "build:mobile:old": "doppler run --config dev -- cross-env CAPACITOR_BUILD=true next build",
     "build:mobile:stg": "doppler run --config stg -- cross-env CAPACITOR_BUILD=true next build",
     "build:mobile:prd": "doppler run --config prd -- cross-env CAPACITOR_BUILD=true next build",
+    "export:uzzapp-commercial-pdf": "node scripts/export-uzzapp-commercial-pdf.js",
     "start": "next start",
     "lint": "eslint .",
     "test": "jest",

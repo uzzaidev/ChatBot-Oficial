@@ -124,7 +124,7 @@ p { font-size: 17px; line-height: 1.55; color: var(--text-muted); }
 .glow-6::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 80% 50%, rgba(255,201,64,0.12), transparent 50%), radial-gradient(ellipse at 20% 20%, var(--green-glow), transparent 50%); pointer-events: none; z-index: 0; }
 .glow-7::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 50%, var(--green-glow), transparent 40%), radial-gradient(ellipse at 0% 100%, var(--blue-glow), transparent 50%); pointer-events: none; z-index: 0; }
 @media print {
-  @page { size: 1280px 720px; margin: 0; }
+  @page { size: 13.333in 7.5in; margin: 0; }
   html, body { background: #0a0f14 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .deck-shell { padding: 0 !important; }
   .deck { gap: 0 !important; }
@@ -144,10 +144,68 @@ p { font-size: 17px; line-height: 1.55; color: var(--text-muted); }
   .slide::before { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 }
 body.single-slide { background: transparent; }
-body.single-slide .deck-shell { padding: 0; }
-body.single-slide .deck { width: 1280px; height: 720px; }
-body.single-slide .slide { display: none; border-radius: 0; box-shadow: none; }
+body.single-slide .deck-shell { padding: 0; width: 1280px; height: 720px; overflow: hidden; }
+body.single-slide .deck { width: 1280px; height: 720px; overflow: hidden; }
+body.single-slide .slide { display: none; width: 1280px; height: 720px; overflow: hidden; border-radius: 0; box-shadow: none; }
 body.single-slide .slide.active { display: block; }
+
+/* PDF viewers on iOS can misrender transparency groups around the device mockups. */
+body.export-pdf .glow-1::before,
+body.export-pdf .glow-2::before,
+body.export-pdf .glow-3::before,
+body.export-pdf .glow-4::before,
+body.export-pdf .glow-5::before,
+body.export-pdf .glow-6::before,
+body.export-pdf .glow-7::before {
+  content: none;
+  display: none;
+}
+body.export-pdf .gradient-text {
+  background: none !important;
+  -webkit-background-clip: border-box !important;
+  background-clip: border-box !important;
+  -webkit-text-fill-color: var(--green) !important;
+  color: var(--green) !important;
+}
+body.export-pdf .cta-btn {
+  background: #27d3b2 !important;
+  color: #07131a !important;
+  box-shadow: none !important;
+}
+body.export-pdf .badge-green,
+body.export-pdf .badge-blue,
+body.export-pdf .badge-gold,
+body.export-pdf .stat-pill,
+body.export-pdf .feature-check .ck {
+  box-shadow: none !important;
+}
+body.export-pdf .browser-frame {
+  background: #101820 !important;
+  box-shadow: none !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+}
+body.export-pdf .browser-bar {
+  background: #1a2530 !important;
+}
+body.export-pdf .browser-url {
+  background: transparent !important;
+}
+body.export-pdf .device {
+  overflow: hidden;
+  background: transparent;
+  box-shadow: none;
+  border: 1px solid rgba(255,255,255,0.14);
+}
+body.export-pdf .device-notch,
+body.export-pdf .device-bar {
+  display: none;
+}
+body.export-pdf #slide-1 > div > div:last-child,
+body.export-pdf #slide-4 > div > div:last-child,
+body.export-pdf #slide-9 > div > div:last-child {
+  overflow: visible !important;
+  max-height: none !important;
+}
 </style>
 </head>
 <body>
@@ -186,7 +244,7 @@ body.single-slide .slide.active { display: block; }
 </section>
 
 <section class="slide glow-2" id="slide-2">
-<div style="display:flex;flex-direction:column;gap:28px;height:100%%;justify-content:center;">
+<div style="display:flex;flex-direction:column;gap:28px;height:100%;justify-content:center;">
   <span class="badge badge-blue">O Problema</span>
   <h2>Atendimento manual <span style="color:var(--red);">nao escala</span></h2>
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;margin-top:8px;">
@@ -271,10 +329,10 @@ body.single-slide .slide.active { display: block; }
 </section>
 
 <section class="slide glow-5" id="slide-5">
-<div style="display:flex;flex-direction:column;gap:24px;height:100%%;justify-content:center;align-items:center;text-align:center;">
+<div style="display:flex;flex-direction:column;gap:24px;height:100%;justify-content:center;align-items:center;text-align:center;">
   <span class="badge badge-green">Valor</span>
   <h2>Antes vs <span class="gradient-text">Depois</span></h2>
-  <div style="display:grid;grid-template-columns:1fr 56px 1fr;align-items:start;width:100%%;margin-top:8px;">
+  <div style="display:grid;grid-template-columns:1fr 56px 1fr;align-items:start;width:100%;margin-top:8px;">
     <div class="card" style="border:1px solid rgba(255,92,92,0.2);text-align:left;">
       <h3 style="font-size:17px;color:var(--red);margin-bottom:14px;">Sem UzzApp</h3>
       <div style="display:flex;flex-direction:column;gap:11px;">
@@ -285,7 +343,7 @@ body.single-slide .slide.active { display: block; }
         <div style="display:flex;align-items:flex-start;gap:10px;font-size:14px;color:var(--text-muted);"><span style="color:var(--red);font-weight:700;flex-shrink:0;">x</span><span>Perda de leads por demora</span></div>
       </div>
     </div>
-    <div style="display:flex;align-items:center;justify-content:center;height:100%%;font-size:26px;color:var(--green);">&rarr;</div>
+    <div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:26px;color:var(--green);">&rarr;</div>
     <div class="card" style="border:1px solid rgba(0,232,143,0.2);text-align:left;">
       <h3 style="font-size:17px;color:var(--green);margin-bottom:14px;">Com UzzApp</h3>
       <div style="display:flex;flex-direction:column;gap:11px;">
@@ -302,7 +360,7 @@ body.single-slide .slide.active { display: block; }
 </section>
 
 <section class="slide glow-6" id="slide-6">
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:48px;height:100%%;align-items:center;">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:48px;height:100%;align-items:center;">
   <div style="display:flex;flex-direction:column;gap:18px;">
     <span class="badge badge-gold">Destaque</span>
     <h2>IA multi-modelo com <span class="gradient-text">RAG</span></h2>
@@ -334,7 +392,7 @@ body.single-slide .slide.active { display: block; }
 </section>
 
 <section class="slide glow-7" id="slide-7">
-<div style="display:flex;flex-direction:column;gap:22px;height:100%%;justify-content:center;align-items:center;text-align:center;">
+<div style="display:flex;flex-direction:column;gap:22px;height:100%;justify-content:center;align-items:center;text-align:center;">
   <span class="badge badge-blue">Arquitetura</span>
   <h2>Multi-tenant com <span class="text-gold">isolamento total</span></h2>
   <p style="max-width:650px;">Cada cliente opera em ambiente isolado — dados, credenciais, configuracoes e orcamento de IA sao completamente independentes.</p>
@@ -367,11 +425,11 @@ body.single-slide .slide.active { display: block; }
 </section>
 
 <section class="slide glow-4" id="slide-8">
-<div style="display:flex;flex-direction:column;gap:22px;height:100%%;justify-content:center;align-items:center;text-align:center;">
+<div style="display:flex;flex-direction:column;gap:22px;height:100%;justify-content:center;align-items:center;text-align:center;">
   <span class="badge badge-blue">Tech Stack</span>
   <h2>Construido com tecnologias <span class="gradient-text">de ponta</span></h2>
   <p style="max-width:600px;">Stack moderna, serverless-first, escalavel e com custo otimizado.</p>
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:18px;width:100%%;margin-top:8px;">
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:18px;width:100%;margin-top:8px;">
     <div class="card" style="text-align:center;padding:18px;"><div style="font-size:14px;font-weight:800;color:var(--white);margin-bottom:8px;font-family:var(--font-display);">Next.js 14</div><p style="font-size:12px;">App Router + Serverless</p></div>
     <div class="card" style="text-align:center;padding:18px;"><div style="font-size:14px;font-weight:800;color:var(--white);margin-bottom:8px;font-family:var(--font-display);">Supabase</div><p style="font-size:12px;">PostgreSQL + Vault + pgvector</p></div>
     <div class="card" style="text-align:center;padding:18px;"><div style="font-size:14px;font-weight:800;color:var(--white);margin-bottom:8px;font-family:var(--font-display);">Redis</div><p style="font-size:12px;">Message batching (Upstash)</p></div>
@@ -416,7 +474,7 @@ body.single-slide .slide.active { display: block; }
 </section>
 
 <section class="slide glow-1" id="slide-10">
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:48px;height:100%%;align-items:center;">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:48px;height:100%;align-items:center;">
   <div style="display:flex;flex-direction:column;gap:18px;">
     <span class="badge badge-gold">Investimento</span>
     <h2>Tudo incluido. <span class="text-gold">Sem surpresas.</span></h2>
