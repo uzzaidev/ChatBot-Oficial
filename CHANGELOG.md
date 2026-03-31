@@ -4,6 +4,17 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-03-31
 
+### feat
+- Atualizado snapshot do projeto ChatBot-Oficial com estado da arquitetura, runtime e fatos operacionais datados de 2026-03-31
+- Documentada decisão arquitetural de manter `callDirectAI()` como núcleo determinístico do runtime AI em tempo real, excluindo frameworks pesados para fluxo principal
+- Registrada regra operacional obrigatória para ByteRover: todas as operações devem usar `cwd='C:\Users\Luisf\Documents\GITHUB\ChatBot-Oficial'`
+- Capturado padrão reutilizável para exportação móvel e PDF da apresentação comercial com slides fixos em 1280x720 e escala CSS, garantindo fidelidade e estabilidade na exportação Puppeteer
+- Alterada configuração global de tema padrão para fallback em modo claro (`defaultTheme='light'`) no `ThemeProvider` em `src/app/layout.tsx`, afetando usuários sem preferência salva
+  - Arquivos: `.brv/context-tree/architecture/_index.md`, `.brv/context-tree/architecture/project_state/_index.md`, `.brv/context-tree/facts/_index.md`, `.brv/context-tree/facts/project/_index.md`, `.brv/context-tree/architecture/project_state/theme_default_fallback_light_mode_2026_03_31.md`, `.brv/context-tree/facts/project/theme_fallback_default_light_2026_03_31.md`, `src/app/layout.tsx`, `docs/UzzApp_Apresentacao_Comercial_v2.html`, `docs/UzzApp_Apresentacao_Comercial_v2.pdf`, `scripts/export-uzzapp-commercial-pdf.js`
+  - Confiança: alta
+
+## 2026-03-31
+
 ### fix
 - Alterado o tema padrão da aplicação de escuro para claro no layout principal
   - Arquivos: `src/app/layout.tsx`
