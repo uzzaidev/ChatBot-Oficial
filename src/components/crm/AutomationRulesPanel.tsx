@@ -789,7 +789,7 @@ export function AutomationRulesPanel({
         </SheetTrigger>
         <SheetContent
           side="right"
-          className="crm-sheet-surface w-full border-border/80 sm:max-w-lg"
+          className="crm-sheet-surface w-full border-border/80 sm:max-w-xl"
         >
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
@@ -806,7 +806,8 @@ export function AutomationRulesPanel({
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <ScrollArea className="h-[calc(100vh-140px)] pr-4 mt-4">
+            <ScrollArea className="mt-4 h-[calc(100vh-140px)]">
+              <div className="pr-4 pb-4">
               {/* Configurações Gerais */}
               <Card className="crm-analytics-card mb-4 border-border/80">
                 <CardHeader className="pb-3">
@@ -1178,6 +1179,7 @@ export function AutomationRulesPanel({
                   </div>
                 </CardContent>
               </Card>
+              </div>
             </ScrollArea>
           )}
         </SheetContent>
