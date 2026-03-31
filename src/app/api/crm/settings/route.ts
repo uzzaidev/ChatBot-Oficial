@@ -1,36 +1,34 @@
-import { createServerClient } from "@/lib/supabase-server";
+import { createServerClient, getClientIdFromSession } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-// Helper to get supabase client with proper typing
 const getSupabase = async () => {
   const client = await createServerClient();
-  return client as any; // Type assertion for tables not in schema
+  return client as any;
 };
 
-// GET - Obter configurações do CRM
+const isMissingColumnError = (error: unknown): boolean => {
+  if (!error || typeof error !== "object") return false;
+  return (error as { code?: string }).code === "42703";
+};
+
+// GET - Obter configuracoes do CRM
 export async function GET(request: NextRequest) {
   try {
     const supabase = await getSupabase();
-    const { searchParams } = new URL(request.url);
-    const clientId = searchParams.get("clientId");
+    const clientId = await getClientIdFromSession(request);
 
     if (!clientId) {
-      return NextResponse.json(
-        { error: "clientId is required" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Buscar configurações existentes
-    let { data: settings, error } = await supabase
+    let { data: settings } = await supabase
       .from("crm_settings")
       .select("*")
       .eq("client_id", clientId)
       .single();
 
-    // Se não existir, criar configurações padrão
     if (!settings) {
       const { data: newSettings, error: createError } = await supabase
         .from("crm_settings")
@@ -49,7 +47,6 @@ export async function GET(request: NextRequest) {
       if (createError) throw createError;
       settings = newSettings;
 
-      // Criar regras padrão para este cliente
       await createDefaultRules(supabase, clientId);
     }
 
@@ -63,22 +60,19 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// PATCH - Atualizar configurações
+// PATCH - Atualizar configuracoes
 export async function PATCH(request: NextRequest) {
   try {
     const supabase = await getSupabase();
+    const clientId = await getClientIdFromSession(request);
     const body = await request.json();
 
-    const { clientId, ...updates } = body;
-
     if (!clientId) {
-      return NextResponse.json(
-        { error: "clientId is required" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Mapear campos para snake_case
+    const updates = body || {};
+
     const dbUpdates: Record<string, unknown> = {};
     if (updates.autoStatusEnabled !== undefined)
       dbUpdates.auto_status_enabled = updates.autoStatusEnabled;
@@ -114,70 +108,119 @@ export async function PATCH(request: NextRequest) {
   }
 }
 
-// Função auxiliar para criar regras padrão
 async function createDefaultRules(supabase: any, clientId: string) {
   const defaultRules = [
-    // Regra 1: Auto-tag quando vem de anúncio
     {
       client_id: clientId,
-      name: "Auto-tag Lead de Anúncio",
-      description: 'Adiciona tag "Anúncio" quando lead vem de Meta Ads',
+      name: "Auto-tag Lead de Anuncio",
+      description: 'Adiciona tag "Anuncio" quando lead vem de Meta Ads',
       trigger_type: "lead_source",
       trigger_conditions: { source_type: "meta_ads" },
       action_type: "add_tag",
-      action_params: { tag_name: "Anúncio", create_if_not_exists: true },
+      action_params: { tag_name: "Anuncio", create_if_not_exists: true },
+      action_steps: [
+        {
+          action_type: "add_tag",
+          action_params: { tag_name: "Anuncio", create_if_not_exists: true },
+          on_error: "stop",
+        },
+      ],
+      condition_tree: null,
       is_active: true,
       is_system: true,
       priority: 100,
     },
-    // Regra 2: Registrar atividade quando vem de anúncio
     {
       client_id: clientId,
-      name: "Log Lead de Anúncio",
-      description: "Registra atividade com detalhes do anúncio",
+      name: "Log Lead de Anuncio",
+      description: "Registra atividade com detalhes do anuncio",
       trigger_type: "lead_source",
       trigger_conditions: { source_type: "meta_ads" },
       action_type: "log_activity",
       action_params: {
         activity_type: "event",
-        content: "🎯 Lead veio do anúncio: {{campaign_name}} - {{ad_name}}",
+        content: "Lead veio do anuncio: {{campaign_name}} - {{ad_name}}",
       },
+      action_steps: [
+        {
+          action_type: "log_activity",
+          action_params: {
+            activity_type: "event",
+            content: "Lead veio do anuncio: {{campaign_name}} - {{ad_name}}",
+          },
+          on_error: "continue",
+        },
+      ],
+      condition_tree: null,
       is_active: true,
       is_system: true,
       priority: 99,
     },
-    // Regra 3: Mover para coluna de humano quando transferir
     {
       client_id: clientId,
       name: "Mover ao Transferir para Humano",
-      description: "Move o card para coluna de atendimento quando transferir",
+      description: "Atualiza auto-status quando lead pede atendimento humano",
       trigger_type: "transfer_human",
       trigger_conditions: {},
       action_type: "update_auto_status",
       action_params: { auto_status: "awaiting_attendant" },
+      action_steps: [
+        {
+          action_type: "update_auto_status",
+          action_params: { auto_status: "awaiting_attendant" },
+          on_error: "stop",
+        },
+      ],
+      condition_tree: null,
       is_active: true,
       is_system: false,
       priority: 80,
     },
-    // Regra 4: Alerta de inatividade (3 dias)
     {
       client_id: clientId,
       name: "Alerta de Inatividade",
-      description: "Adiciona tag de alerta após 3 dias sem resposta",
+      description: "Adiciona tag de alerta apos 3 dias sem resposta",
       trigger_type: "inactivity",
       trigger_conditions: { inactivity_days: 3 },
       action_type: "add_tag",
       action_params: { tag_name: "Sem resposta", create_if_not_exists: true },
-      is_active: false, // Desativado por padrão
+      action_steps: [
+        {
+          action_type: "add_tag",
+          action_params: {
+            tag_name: "Sem resposta",
+            create_if_not_exists: true,
+          },
+          on_error: "continue",
+        },
+      ],
+      condition_tree: null,
+      is_active: true,
       is_system: false,
       priority: 50,
     },
   ];
 
   try {
-    await (supabase.from("crm_automation_rules") as any).insert(defaultRules);
+    let insert = await (supabase.from("crm_automation_rules") as any).insert(
+      defaultRules,
+    );
+
+    if (insert?.error && isMissingColumnError(insert.error)) {
+      const fallbackRules = defaultRules.map((rule) => {
+        const { action_steps, condition_tree, ...legacy } = rule;
+        return legacy;
+      });
+
+      insert = await (supabase.from("crm_automation_rules") as any).insert(
+        fallbackRules,
+      );
+    }
+
+    if (insert?.error) {
+      throw insert.error;
+    }
   } catch (error) {
     console.error("Error creating default rules:", error);
-    // Não propagar erro - regras padrão são opcionais
   }
 }

@@ -1,3 +1,4 @@
+import { emitCrmAutomationEvent } from "@/lib/crm-automation-engine";
 import { query } from "@/lib/postgres";
 import { getClientIdFromSession } from "@/lib/supabase-server";
 import { sendConversionEventOnCardMove } from "@/nodes/sendConversionEvent";
@@ -17,7 +18,7 @@ export async function POST(
   try {
     const { id } = await params;
 
-    // 🔐 SECURITY: Get client_id from authenticated session
+    // SECURITY: Get client_id from authenticated session
     const clientId = await getClientIdFromSession(request);
 
     if (!clientId) {
@@ -38,8 +39,14 @@ export async function POST(
     }
 
     // Verify card belongs to client and get card data for conversion event
-    const cardCheck = await query(
-      `SELECT c.id, c.phone, c.estimated_value, col.slug as current_column_slug
+    const cardCheck = await query<{
+      id: string;
+      phone: string | null;
+      estimated_value: number | null;
+      current_column_slug: string | null;
+      current_column_id: string;
+    }>(
+      `SELECT c.id, c.phone, c.estimated_value, c.column_id as current_column_id, col.slug as current_column_slug
        FROM crm_cards c
        LEFT JOIN crm_columns col ON col.id = c.column_id
        WHERE c.id = $1 AND c.client_id = $2`,
@@ -53,7 +60,7 @@ export async function POST(
     const card = cardCheck.rows[0];
 
     // Get the new column slug for conversion event mapping
-    const newColumnResult = await query(
+    const newColumnResult = await query<{ slug: string | null }>(
       `SELECT slug FROM crm_columns WHERE id = $1 AND client_id = $2`,
       [column_id, clientId],
     );
@@ -70,18 +77,42 @@ export async function POST(
     // Fetch updated card
     const result = await query(`SELECT * FROM crm_cards WHERE id = $1`, [id]);
 
-    // 🎯 Send Meta Conversion Event if applicable (async, don't wait)
+    // Emit card_moved automation event (non-blocking for move operation)
+    try {
+      await emitCrmAutomationEvent({
+        clientId,
+        cardId: id,
+        triggerType: "card_moved",
+        dedupeKey: `card_moved:${id}:${card.current_column_id}->${column_id}:${position ?? "append"}`,
+        triggerData: {
+          from_column_id: card.current_column_id,
+          from_column_slug: card.current_column_slug,
+          to_column_id: column_id,
+          to_column_slug: newColumnSlug,
+          position: position ?? null,
+        },
+      });
+    } catch (automationError) {
+      console.error("[CRM Automation] card_moved emit failed:", automationError);
+    }
+
+    // Send Meta Conversion Event if applicable (async, do not wait)
     if (newColumnSlug && card.phone) {
+      const numericPhone = Number.parseInt(String(card.phone).replace(/\D/g, ""), 10);
+      if (!Number.isFinite(numericPhone)) {
+        console.warn("[CAPI] Invalid phone for conversion event:", card.phone);
+      } else {
       sendConversionEventOnCardMove(
         clientId,
         id,
         newColumnSlug,
-        card.phone,
+        numericPhone,
         card.estimated_value,
       ).catch((err) => {
-        // Log but don't fail the move operation
+        // Log but do not fail the move operation
         console.error("[CAPI] Error sending conversion event:", err);
       });
+      }
     }
 
     return NextResponse.json({ card: result.rows[0] });

@@ -136,6 +136,7 @@ const triggerIcons: Record<string, React.ReactNode> = {
   transfer_human: <Users className="h-4 w-4" />,
   card_created: <Plus className="h-4 w-4" />,
   tag_added: <Tag className="h-4 w-4" />,
+  card_moved: <ArrowRight className="h-4 w-4" />,
 };
 
 const actionIcons: Record<string, React.ReactNode> = {
@@ -407,6 +408,34 @@ export function AutomationRulesPanel({
             {tags.map((tag) => (
               <SelectItem key={tag.id} value={tag.id}>
                 {tag.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      );
+    }
+
+    if (condition.type === "column_select") {
+      return (
+        <Select
+          value={(value as string) || ""}
+          onValueChange={(v) =>
+            setFormData({
+              ...formData,
+              triggerConditions: {
+                ...formData.triggerConditions,
+                [condition.field]: v,
+              },
+            })
+          }
+        >
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder="Selecione coluna" />
+          </SelectTrigger>
+          <SelectContent>
+            {columns.map((col) => (
+              <SelectItem key={col.id} value={col.id}>
+                {col.name}
               </SelectItem>
             ))}
           </SelectContent>

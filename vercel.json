@@ -1,3 +1,13 @@
 {
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- . ':!CHANGELOG.md'"
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- . ':!CHANGELOG.md'",
+  "crons": [
+    {
+      "path": "/api/cron/inactivity-check",
+      "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/cron/crm-executions-cleanup",
+      "schedule": "0 3 * * *"
+    }
+  ]
 }

@@ -1,4 +1,4 @@
-// Tipos de triggers disponíveis para automações CRM
+// Tipos de triggers disponiveis para automacoes CRM
 export const AVAILABLE_TRIGGERS = [
   {
     id: "message_received",
@@ -9,13 +9,13 @@ export const AVAILABLE_TRIGGERS = [
   {
     id: "message_sent",
     name: "Mensagem Enviada",
-    description: "Quando uma mensagem é enviada para o cliente",
+    description: "Quando uma mensagem e enviada para o cliente",
     variables: ["message_type", "sent_by"],
   },
   {
     id: "inactivity",
     name: "Inatividade",
-    description: "Após X dias sem resposta do cliente",
+    description: "Apos X dias sem resposta do cliente",
     variables: ["inactive_days", "last_message_date"],
     conditions: [
       {
@@ -28,7 +28,7 @@ export const AVAILABLE_TRIGGERS = [
   },
   {
     id: "status_change",
-    name: "Mudança de Status",
+    name: "Mudanca de Status",
     description: "Quando o status da conversa muda",
     variables: ["from_status", "to_status"],
     conditions: [
@@ -49,8 +49,7 @@ export const AVAILABLE_TRIGGERS = [
   {
     id: "lead_source",
     name: "Origem do Lead",
-    description:
-      "Quando lead vem de uma fonte específica (anúncio, direto, etc)",
+    description: "Quando lead vem de uma fonte especifica (anuncio, direto, etc)",
     variables: ["source_type", "campaign_name", "ad_name", "ad_id"],
     conditions: [
       {
@@ -63,33 +62,56 @@ export const AVAILABLE_TRIGGERS = [
   },
   {
     id: "transfer_human",
-    name: "Transferência para Humano",
+    name: "Transferencia para Humano",
     description: "Quando o cliente solicita falar com um atendente",
     variables: ["request_text", "current_status"],
   },
   {
     id: "card_created",
     name: "Card Criado",
-    description: "Quando um novo card é criado no CRM",
+    description: "Quando um novo card e criado no CRM",
     variables: ["contact_name", "phone", "source_type"],
   },
   {
     id: "tag_added",
     name: "Tag Adicionada",
-    description: "Quando uma tag é adicionada ao card",
+    description: "Quando uma tag e adicionada ao card",
     variables: ["tag_name", "tag_id"],
     conditions: [
-      { field: "tag_id", type: "tag_select", label: "Tag específica" },
+      { field: "tag_id", type: "tag_select", label: "Tag especifica" },
+    ],
+  },
+  {
+    id: "card_moved",
+    name: "Card Movido",
+    description: "Quando um card e movido entre colunas no CRM",
+    variables: [
+      "from_column_id",
+      "from_column_slug",
+      "to_column_id",
+      "to_column_slug",
+    ],
+    conditions: [
+      {
+        field: "from_column_id",
+        type: "column_select",
+        label: "Coluna de origem",
+      },
+      {
+        field: "to_column_id",
+        type: "column_select",
+        label: "Coluna de destino",
+      },
     ],
   },
 ];
 
-// Tipos de ações disponíveis para automações CRM
+// Tipos de acoes disponiveis para automacoes CRM
 export const AVAILABLE_ACTIONS = [
   {
     id: "move_to_column",
     name: "Mover para Coluna",
-    description: "Move o card para uma coluna específica",
+    description: "Move o card para uma coluna especifica",
     params: [
       {
         field: "column_id",
@@ -117,13 +139,13 @@ export const AVAILABLE_ACTIONS = [
   },
   {
     id: "assign_to",
-    name: "Atribuir Responsável",
-    description: "Atribui o card a um usuário",
+    name: "Atribuir Responsavel",
+    description: "Atribui o card a um usuario",
     params: [
       {
         field: "user_id",
         type: "user_select",
-        label: "Responsável",
+        label: "Responsavel",
         required: true,
       },
     ],
@@ -131,17 +153,19 @@ export const AVAILABLE_ACTIONS = [
   {
     id: "update_auto_status",
     name: "Atualizar Auto-Status",
-    description: "Atualiza o status automático da conversa",
+    description: "Atualiza o status automatico da conversa",
     params: [
       {
         field: "auto_status",
         type: "select",
         label: "Novo status",
         options: [
-          "awaiting_response",
           "awaiting_attendant",
-          "in_service",
+          "awaiting_client",
+          "neutral",
           "resolved",
+          "awaiting_response",
+          "in_service",
         ],
         required: true,
       },
@@ -162,7 +186,7 @@ export const AVAILABLE_ACTIONS = [
       {
         field: "content",
         type: "text",
-        label: "Conteúdo (suporta {{variáveis}})",
+        label: "Conteudo (suporta {{variavel}})",
         required: true,
       },
     ],
@@ -170,12 +194,12 @@ export const AVAILABLE_ACTIONS = [
   {
     id: "add_note",
     name: "Adicionar Nota",
-    description: "Adiciona uma nota automática ao card",
+    description: "Adiciona uma nota automatica ao card",
     params: [
       {
         field: "note_content",
         type: "text",
-        label: "Conteúdo da nota (suporta {{variáveis}})",
+        label: "Conteudo da nota (suporta {{variavel}})",
         required: true,
       },
     ],
