@@ -4,6 +4,15 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-03-31
 
+### fix
+- Normalizada a intenção comercial (LLM intents) para garantir consistência no processamento das regras de automação CRM e persistência de execuções de regras puladas com motivo registrado.
+- Ajustado para registrar logs de regras puladas quando as condições ou triggers não são atendidas, melhorando rastreabilidade das execuções.
+  - Arquivos: `src/app/api/crm/automation-rules/route.ts`, `src/lib/crm-automation-engine.ts`, `src/lib/crm-intent-classifier.ts`, `src/lib/crm-intent-normalizer.ts`
+  - Evidência: inclusão de função `normalizeCommercialIntent` aplicada nas intenções e registro de execuções com status "skipped" e motivo.
+  - Confiança: alta
+
+## 2026-03-31
+
 ### feat
 - Adicionado toggle `crm_engine_v2` nas configurações do CRM e painel de automações para ativar o novo motor de automações por cliente. Incluído também opção para habilitar trigger de intenção/urgência assistida por IA com ajuste de limiar de confiança.
   - Arquivos: `src/app/api/crm/settings/route.ts`, `src/components/crm/AutomationRulesPanel.tsx`
