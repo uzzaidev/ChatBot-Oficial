@@ -124,6 +124,9 @@ interface CRMSettings {
   auto_create_cards: boolean;
   inactivity_warning_days: number;
   inactivity_critical_days: number;
+  crm_engine_v2?: boolean;
+  llm_intent_enabled?: boolean;
+  llm_intent_threshold?: number;
 }
 
 interface AutomationRulesPanelProps {
@@ -836,6 +839,79 @@ export function AutomationRulesPanel({
                       }
                     />
                   </div>
+
+                  <Separator />
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label className="text-sm">Motor CRM V2</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Ativa o novo motor de automacoes para este cliente
+                      </p>
+                    </div>
+                    <Switch
+                      checked={settings?.crm_engine_v2 ?? true}
+                      onCheckedChange={(checked) =>
+                        updateSettings({ crmEngineV2: checked } as Record<
+                          string,
+                          unknown
+                        >)
+                      }
+                    />
+                  </div>
+
+                  <Separator />
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label className="text-sm">LLM Assistido</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Habilita trigger de intencao/urgencia detectada por IA
+                      </p>
+                    </div>
+                    <Switch
+                      checked={settings?.llm_intent_enabled ?? false}
+                      onCheckedChange={(checked) =>
+                        updateSettings({ llmIntentEnabled: checked } as Record<
+                          string,
+                          unknown
+                        >)
+                      }
+                    />
+                  </div>
+
+                  {(settings?.llm_intent_enabled ?? false) && (
+                    <div className="space-y-2">
+                      <Label className="text-xs">Confianca minima (LLM)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="1"
+                        value={(settings?.llm_intent_threshold ?? 0.85).toString()}
+                        onChange={(e) => {
+                          const value = Number.parseFloat(e.target.value);
+                          if (!Number.isFinite(value)) return;
+                          const clamped = Math.max(0, Math.min(1, value));
+                          setSettings((prev) =>
+                            prev
+                              ? { ...prev, llm_intent_threshold: clamped }
+                              : prev,
+                          );
+                        }}
+                        onBlur={(e) => {
+                          const value = Number.parseFloat(e.target.value);
+                          const clamped = Number.isFinite(value)
+                            ? Math.max(0, Math.min(1, value))
+                            : 0.85;
+                          updateSettings({
+                            llmIntentThreshold: clamped,
+                          } as Record<string, unknown>);
+                        }}
+                        className="w-28"
+                      />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 

@@ -13,6 +13,21 @@ const isMissingColumnError = (error: unknown): boolean => {
   return (error as { code?: string }).code === "42703";
 };
 
+const getClientEngineFlag = async (supabase: any, clientId: string) => {
+  const result = await supabase
+    .from("clients")
+    .select("crm_engine_v2")
+    .eq("id", clientId)
+    .single();
+
+  if (result.error) {
+    if (isMissingColumnError(result.error)) return true;
+    throw result.error;
+  }
+
+  return result.data?.crm_engine_v2 ?? true;
+};
+
 // GET - Obter configuracoes do CRM
 export async function GET(request: NextRequest) {
   try {
@@ -50,7 +65,10 @@ export async function GET(request: NextRequest) {
       await createDefaultRules(supabase, clientId);
     }
 
-    return NextResponse.json({ settings });
+    const crmEngineV2 = await getClientEngineFlag(supabase, clientId);
+    return NextResponse.json({
+      settings: { ...settings, crm_engine_v2: crmEngineV2 },
+    });
   } catch (error) {
     console.error("Error fetching CRM settings:", error);
     return NextResponse.json(
@@ -101,12 +119,37 @@ export async function PATCH(request: NextRequest) {
     if (updates.clientTimezone !== undefined)
       dbUpdates.client_timezone = updates.clientTimezone;
 
-    let updateResult = await supabase
-      .from("crm_settings")
-      .update(dbUpdates)
-      .eq("client_id", clientId)
-      .select()
-      .single();
+    if (updates.crmEngineV2 !== undefined) {
+      const engineUpdateResult = await supabase
+        .from("clients")
+        .update({ crm_engine_v2: updates.crmEngineV2 })
+        .eq("id", clientId)
+        .select("crm_engine_v2")
+        .single();
+
+      if (engineUpdateResult.error && !isMissingColumnError(engineUpdateResult.error)) {
+        throw engineUpdateResult.error;
+      }
+    }
+
+    let updateResult:
+      | { data: any; error: any }
+      | null = null;
+
+    if (Object.keys(dbUpdates).length > 0) {
+      updateResult = await supabase
+        .from("crm_settings")
+        .update(dbUpdates)
+        .eq("client_id", clientId)
+        .select()
+        .single();
+    } else {
+      updateResult = await supabase
+        .from("crm_settings")
+        .select("*")
+        .eq("client_id", clientId)
+        .single();
+    }
 
     if (updateResult.error && isMissingColumnError(updateResult.error)) {
       const fallbackUpdates = { ...dbUpdates };
@@ -117,17 +160,28 @@ export async function PATCH(request: NextRequest) {
       delete fallbackUpdates.notif_silence_end;
       delete fallbackUpdates.client_timezone;
 
-      updateResult = await supabase
-        .from("crm_settings")
-        .update(fallbackUpdates)
-        .eq("client_id", clientId)
-        .select()
-        .single();
+      if (Object.keys(fallbackUpdates).length > 0) {
+        updateResult = await supabase
+          .from("crm_settings")
+          .update(fallbackUpdates)
+          .eq("client_id", clientId)
+          .select()
+          .single();
+      } else {
+        updateResult = await supabase
+          .from("crm_settings")
+          .select("*")
+          .eq("client_id", clientId)
+          .single();
+      }
     }
 
     if (updateResult.error) throw updateResult.error;
 
-    return NextResponse.json({ settings: updateResult.data });
+    const crmEngineV2 = await getClientEngineFlag(supabase, clientId);
+    return NextResponse.json({
+      settings: { ...updateResult.data, crm_engine_v2: crmEngineV2 },
+    });
   } catch (error) {
     console.error("Error updating CRM settings:", error);
     return NextResponse.json(
