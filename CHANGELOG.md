@@ -4,6 +4,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-03-31
 
+### chore
+- Atualizadas as credenciais do app Meta para o novo app ID 1444733643784802
+  - Arquivos: `docs/meta/UzzApp SaaS Oficial_Meta_App_Review_Submitted_On_2026-03-27.pdf`
+  - Confiança: alta
+
+## 2026-03-31
+
 ### fix
 - Ajustado largura do painel de automações e padding do scroll para evitar conteúdo cortado na interface CRM
   - Arquivos: `src/components/crm/AutomationRulesPanel.tsx`
