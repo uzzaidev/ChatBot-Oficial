@@ -75,6 +75,30 @@ interface ContactsClientProps {
   clientId: string;
 }
 
+const NONE_COLUMN_VALUE = "__none__";
+
+const PHONE_HEADER_ALIASES = [
+  "telefone",
+  "phone",
+  "whatsapp",
+  "celular",
+  "numero",
+  "telefone_whatsapp",
+  "numero_whatsapp",
+  "tolefone",
+];
+
+const NAME_HEADER_ALIASES = ["nome", "name", "cliente", "contato"];
+const STATUS_HEADER_ALIASES = ["status", "situacao", "estado"];
+
+const normalizeHeaderName = (value: string): string =>
+  value
+    .replace(/^\uFEFF/, "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
 export function ContactsClient({ clientId }: ContactsClientProps) {
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<"all" | ConversationStatus>(
@@ -96,6 +120,16 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
 
   // Import states
   const [importFile, setImportFile] = useState<File | null>(null);
+  const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
+  const [columnMapping, setColumnMapping] = useState<{
+    phone: string;
+    name: string;
+    status: string;
+  }>({
+    phone: "",
+    name: NONE_COLUMN_VALUE,
+    status: NONE_COLUMN_VALUE,
+  });
   const [importResult, setImportResult] = useState<ContactImportResult | null>(
     null,
   );
@@ -227,11 +261,63 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const findHeaderByAliases = (
+    headers: string[],
+    aliases: string[],
+  ): string | null => {
+    const aliasSet = new Set(aliases.map(normalizeHeaderName));
+    return (
+      headers.find((header) => aliasSet.has(normalizeHeaderName(header))) ??
+      null
+    );
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setImportFile(file);
       setImportResult(null);
+
+      try {
+        const content = await file.text();
+        const lines = content.split(/\r?\n/).filter((line) => line.trim());
+        const rawHeaders = lines[0] ? parseCSVLine(lines[0]) : [];
+        const headers = rawHeaders
+          .map((header) => header.replace(/^\uFEFF/, "").trim())
+          .filter((header) => header.length > 0);
+
+        setCsvHeaders(headers);
+
+        if (headers.length > 0) {
+          const suggestedPhone =
+            findHeaderByAliases(headers, PHONE_HEADER_ALIASES) || headers[0];
+          const suggestedName =
+            findHeaderByAliases(headers, NAME_HEADER_ALIASES) ||
+            NONE_COLUMN_VALUE;
+          const suggestedStatus =
+            findHeaderByAliases(headers, STATUS_HEADER_ALIASES) ||
+            NONE_COLUMN_VALUE;
+
+          setColumnMapping({
+            phone: suggestedPhone,
+            name: suggestedName,
+            status: suggestedStatus,
+          });
+        } else {
+          setColumnMapping({
+            phone: "",
+            name: NONE_COLUMN_VALUE,
+            status: NONE_COLUMN_VALUE,
+          });
+        }
+      } catch {
+        setCsvHeaders([]);
+        setColumnMapping({
+          phone: "",
+          name: NONE_COLUMN_VALUE,
+          status: NONE_COLUMN_VALUE,
+        });
+      }
     }
   };
 
@@ -271,17 +357,27 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
 
   const parseCSV = (
     content: string,
+    mapping: { phone: string; name: string; status: string },
   ): Array<{ phone: string; name?: string; status?: string }> => {
-    const lines = content.trim().split("\n");
+    const lines = content
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+
     if (lines.length < 2) return [];
 
     // Parse header using RFC 4180 parsing
-    const header = parseCSVLine(lines[0]).map((h) => h.toLowerCase());
-    const phoneIndex = header.findIndex(
-      (h) => h === "telefone" || h === "phone",
-    );
-    const nameIndex = header.findIndex((h) => h === "nome" || h === "name");
-    const statusIndex = header.findIndex((h) => h === "status");
+    const header = parseCSVLine(lines[0]).map(normalizeHeaderName);
+    const resolveColumnIndex = (selectedColumn: string): number => {
+      if (!selectedColumn || selectedColumn === NONE_COLUMN_VALUE) return -1;
+      return header.findIndex(
+        (h) => h === normalizeHeaderName(selectedColumn),
+      );
+    };
+
+    const phoneIndex = resolveColumnIndex(mapping.phone);
+    const nameIndex = resolveColumnIndex(mapping.name);
+    const statusIndex = resolveColumnIndex(mapping.status);
 
     if (phoneIndex === -1) return [];
 
@@ -309,11 +405,20 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
       return;
     }
 
+    if (!columnMapping.phone) {
+      toast({
+        title: "Erro",
+        description: "Selecione a coluna de telefone para importar",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       const content = await importFile.text();
-      const contactsList = parseCSV(content);
+      const contactsList = parseCSV(content, columnMapping);
 
       if (contactsList.length === 0) {
         toast({
@@ -347,6 +452,12 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
   const closeImportDialog = () => {
     setIsImportDialogOpen(false);
     setImportFile(null);
+    setCsvHeaders([]);
+    setColumnMapping({
+      phone: "",
+      name: NONE_COLUMN_VALUE,
+      status: NONE_COLUMN_VALUE,
+    });
     setImportResult(null);
   };
 
@@ -531,6 +642,80 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                       nome, status)
                     </p>
                   </div>
+                  {csvHeaders.length > 0 && (
+                    <div className="space-y-3 rounded-md border border-border/60 p-3">
+                      <p className="text-sm font-medium">Mapeamento de colunas</p>
+
+                      <div className="space-y-2">
+                        <Label>Coluna de Telefone *</Label>
+                        <Select
+                          value={columnMapping.phone}
+                          onValueChange={(value) =>
+                            setColumnMapping((prev) => ({ ...prev, phone: value }))
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a coluna de telefone" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {csvHeaders.map((header) => (
+                              <SelectItem key={`phone-${header}`} value={header}>
+                                {header}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Coluna de Nome (opcional)</Label>
+                        <Select
+                          value={columnMapping.name}
+                          onValueChange={(value) =>
+                            setColumnMapping((prev) => ({ ...prev, name: value }))
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Nao importar nome" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={NONE_COLUMN_VALUE}>
+                              Nao importar nome
+                            </SelectItem>
+                            {csvHeaders.map((header) => (
+                              <SelectItem key={`name-${header}`} value={header}>
+                                {header}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Coluna de Status (opcional)</Label>
+                        <Select
+                          value={columnMapping.status}
+                          onValueChange={(value) =>
+                            setColumnMapping((prev) => ({ ...prev, status: value }))
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Usar status padrao (bot)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={NONE_COLUMN_VALUE}>
+                              Usar status padrao (bot)
+                            </SelectItem>
+                            {csvHeaders.map((header) => (
+                              <SelectItem key={`status-${header}`} value={header}>
+                                {header}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
 
                   {importResult && (
                     <Card>
@@ -617,7 +802,7 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                   </Button>
                   <Button
                     onClick={handleImport}
-                    disabled={isSubmitting || !importFile}
+                    disabled={isSubmitting || !importFile || !columnMapping.phone}
                   >
                     {isSubmitting ? "Importando..." : "Importar"}
                   </Button>
