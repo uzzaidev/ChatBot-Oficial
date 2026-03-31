@@ -5,6 +5,37 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-03-31
 
 ### feat
+- Implementada a fase 1 da fundação do CRM Automation Engine v2 com suporte a regras avançadas, condições complexas e múltiplos passos de ação.
+- Adicionado novo schema e trigger no banco para versionamento automático das regras e controle de idempotência nas execuções.
+- Criada biblioteca `crm-automation-engine.ts` para processamento canônico das regras no backend, substituindo lógica legada.
+- Atualizados endpoints API CRM para usar autenticação via sessão, validar tipos de triggers e ações, e suportar novo formato de regras com múltiplos passos.
+- Adicionada emissão de eventos de automação em movimentação de cards, captura de origem de leads e atualização de status CRM, com deduplicação e controle de concorrência.
+- Criados jobs cron para limpeza de logs antigos de execuções e verificação periódica de inatividade de cards, emitindo eventos para engine.
+- Atualizado componente UI `AutomationRulesPanel` para suportar novo tipo de condição "column_select" para triggers de movimentação de cards.
+- Atualizadas constantes de triggers e ações CRM para refletir novos tipos e corrigir textos.
+- Ajustada lógica dos nodes `captureLeadSource` e `updateCRMCardStatus` para usar o novo engine canônico e remover lógica legada.
+- Atualizado método `ensureCRMCard` para emitir evento `card_created` via engine após criação.
+- Configurado feature flag global e por cliente para ativar/desativar o novo engine.
+- Adicionadas rotinas para criação automática de regras padrão CRM para novos clientes.
+- Atualizado `vercel.json` para incluir agendamento dos novos crons de inatividade e limpeza.
+
+- Arquivos principais:  
+  `src/lib/crm-automation-engine.ts`,  
+  `src/app/api/crm/automation-rules/route.ts`,  
+  `src/lib/jobs/inactivity-check.ts`,  
+  `src/app/api/cron/inactivity-check/route.ts`,  
+  `src/app/api/cron/crm-executions-cleanup/route.ts`,  
+  `src/nodes/captureLeadSource.ts`,  
+  `src/nodes/updateCRMCardStatus.ts`,  
+  `src/components/crm/AutomationRulesPanel.tsx`,  
+  `src/lib/crm-automation-constants.ts`,  
+  `supabase/migrations/20260331120000_crm_automation_engine_v2_phase1.sql`,  
+  `vercel.json`
+- Confiança: alta
+
+## 2026-03-31
+
+### feat
 - Adicionados controles para mover colunas do Kanban para esquerda e direita na tela CRM, permitindo reordenar colunas via botões de setas.
 - Implementada função de reordenação das colunas com atualização da posição no backend.
 - Atualizados componentes `KanbanBoard` e `KanbanColumn` para suportar os novos controles de movimentação lateral das colunas, incluindo desabilitação dos botões quando a coluna está na extremidade.
