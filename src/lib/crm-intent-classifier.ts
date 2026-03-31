@@ -1,4 +1,5 @@
 ﻿import { getClientConfig } from "@/lib/config";
+import { normalizeCommercialIntent } from "@/lib/crm-intent-normalizer";
 import { callDirectAI } from "@/lib/direct-ai-client";
 import { query } from "@/lib/postgres";
 import { z } from "zod";
@@ -197,7 +198,7 @@ export const classifyCRMIntent = async (params: {
       fallbackUsed: true,
       confidence: fallback.confidence,
       threshold: settings.threshold,
-      intent: fallback.intent,
+      intent: normalizeCommercialIntent(fallback.intent),
       urgencyLevel: fallback.urgencyLevel,
       reason: "llm_budget_exceeded",
     };
@@ -252,7 +253,7 @@ Regras:
       fallbackUsed: false,
       confidence: parsed.confidence,
       threshold: settings.threshold,
-      intent: parsed.intent,
+      intent: normalizeCommercialIntent(parsed.intent),
       urgencyLevel: parsed.urgency_level ?? null,
       reason: "llm_success",
     };
@@ -269,7 +270,7 @@ Regras:
       fallbackUsed: true,
       confidence: fallback.confidence,
       threshold: settings.threshold,
-      intent: fallback.intent,
+      intent: normalizeCommercialIntent(fallback.intent),
       urgencyLevel: fallback.urgencyLevel,
       reason,
     };

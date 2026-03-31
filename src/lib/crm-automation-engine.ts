@@ -1787,7 +1787,25 @@ export const emitCrmAutomationEvent = async (
 
     for (const rule of rules) {
       const matches = matchesTriggerConditions(rule, input.triggerType, triggerData);
-      if (!matches) continue;
+      if (!matches) {
+        skippedRules++;
+        await logRuleExecution({
+          clientId: input.clientId,
+          ruleId: rule.id,
+          ruleVersion: rule.version ?? 1,
+          cardId: input.cardId,
+          triggerType: input.triggerType,
+          triggerData,
+          status: "skipped",
+          skipReason: "condition_tree_or_trigger_conditions_false",
+          eventId,
+          eventHash,
+          dedupeKey,
+          traceId,
+          depth,
+        });
+        continue;
+      }
 
       matchedRules++;
 

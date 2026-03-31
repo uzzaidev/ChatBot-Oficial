@@ -3,6 +3,7 @@ import {
   AVAILABLE_TRIGGERS,
 } from "@/lib/crm-automation-constants";
 import { clearCrmAutomationRuleCache } from "@/lib/crm-automation-engine";
+import { normalizeCommercialIntent } from "@/lib/crm-intent-normalizer";
 import { createServerClient, getClientIdFromSession } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -98,6 +99,10 @@ const normalizeTriggerConditions = (
     } else if (next.confidence_min !== undefined) {
       next.confidence_min = 0;
     }
+  }
+
+  if (triggerType === "intent_detected" && typeof next.intent === "string") {
+    next.intent = normalizeCommercialIntent(next.intent);
   }
 
   return next;
