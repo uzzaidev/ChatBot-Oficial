@@ -1,57 +1,51 @@
 ---
-children_hash: 43dec348917accdd6e34359f28b1c2ec67ad493f079ff8c1637af32ac1301bac
-compression_ratio: 0.6510331256149557
+children_hash: f9f326f0af562c660f56ced8c828914dbd1cac97e7f604e5b00d2e0f0303d847
+compression_ratio: 0.7013690815744438
 condensation_order: 3
 covers: [architecture/_index.md, facts/_index.md]
-covers_token_total: 3049
+covers_token_total: 3506
 summary_level: d3
-token_count: 1985
+token_count: 2459
 type: summary
 ---
 # Structural Summary
 
-## Knowledge map
-This level combines two domains that describe the same repository from different angles:
+## Knowledge Surface
+The provided entries split into two complementary domains:
 
-- **`architecture/_index.md`**: system design, runtime decisions, and dated architecture state
-- **`facts/_index.md`**: durable repository facts, operational constraints, and artifact-level implementation facts
+- `architecture/_index.md` — system design, runtime decisions, and dated architectural state
+- `facts/_index.md` — durable operational facts, repository constraints, and compact state snapshots
 
-Together they describe **ChatBot-Oficial** as a **multi-tenant WhatsApp customer-service SaaS with AI**, with a strong emphasis on:
-- deterministic production runtime behavior
-- explicit repository/workflow constraints
-- date-stamped state capture on **2026-03-31**
-- reusable fixed-layout HTML-to-PDF export patterns
+Together they describe ChatBot-Oficial as a production-active, multi-tenant WhatsApp customer-service SaaS whose current implementation and operational workflow are anchored by a deterministic AI runtime and explicit repository-handling rules.
 
----
+## 1. Architecture Domain
 
-## 1) Core platform architecture
-Primary source: **`architecture/_index.md`**
+### Primary Topics
+- `ai_runtime/_index.md`
+- `project_state/_index.md`
 
-### Runtime shape
-The dominant architectural pattern is:
+### `ai_runtime`: deterministic realtime AI path
+Drill into:
+- `agent_framework_decision_for_realtime_flow.md`
+- `byterover_global_mode_cwd_requirement.md`
 
+Key decision:
+- Realtime customer-facing AI should run through a custom deterministic path centered on `callDirectAI()`, not a heavy agent framework.
+
+Core runtime flow:
 - `incoming webhook -> flow routing -> serverless node pipeline -> callDirectAI() -> explicit tool processing/handoff -> response`
 
-Key preserved decisions:
-- customer-facing realtime execution is centered on **`callDirectAI()`**
-- the platform uses a **13-node internal serverless pipeline**
-- production WhatsApp flows are designed to be:
-  - predictable
-  - latency-bounded
-  - fail-safe
+Preserved architectural facts:
+- platform context includes multi-tenant WhatsApp SaaS, Next.js application, and an internal 13-node serverless pipeline
+- `callDirectAI()` is the normalized runtime layer for:
+  - provider access
+  - Vault-based per-client credential resolution
+  - budget enforcement
+  - usage tracking
+  - tool-call normalization
+  - overrides via `getClientConfig()`
 
-### Why `callDirectAI()` is central
-From **`ai_runtime/_index.md`** and **`agent_framework_decision_for_realtime_flow.md`** drill-downs referenced by `architecture/_index.md`:
-
-`callDirectAI()` is the normalized runtime layer for:
-- provider access
-- Vault-based per-client credential resolution
-- budget enforcement
-- usage tracking
-- tool-call normalization
-- tenant/runtime overrides via **`getClientConfig()`**
-
-Supported hot-path overrides include:
+Runtime override dimensions:
 - `prompt`
 - `provider`
 - `model`
@@ -59,189 +53,209 @@ Supported hot-path overrides include:
 - `enableRAG`
 - `enableHumanHandoff`
 
-### Framework boundary decision
-A durable separation is explicitly preserved:
+Boundary decision:
+- heavy agent frameworks are not suitable as the core realtime runtime
+- they remain acceptable for async modules, internal automations, and backoffice copilots
+- LangChain is optional/secondary
+- ADR-006 supports continued reuse of `callDirectAI()`
 
-- **Realtime customer-facing path** → `callDirectAI()`
-- **Heavier agent frameworks / Deep Agents** → only for:
-  - asynchronous modules
-  - internal automations
-  - backoffice copilots
+Operational constraint captured in `byterover_global_mode_cwd_requirement.md`:
+- ByteRover MCP runs in global mode
+- all repository operations must pass:
+  - `cwd='C:\Users\Luisf\Documents\GITHUB\ChatBot-Oficial'`
+- rule was propagated into `AGENTS.md`, `CLAUDE.md`, and `.github/copilot-instructions.md`
 
-Related decision anchors preserved in `architecture/_index.md`:
-- **ADR-006** supports reuse of `callDirectAI()`
-- **LangChain** is optional and non-primary for the hot path
-- hot-path tools are explicit and bounded, including:
-  - `transferir_atendimento`
-  - `buscar_documento`
+### `project_state`: dated architecture and repository state
+Drill into:
+- `chatbot_oficial_snapshot_2026_03_31.md`
+- `theme_default_fallback_light_mode_2026_03_31.md`
+- `commercial_deck_mobile_pdf_export_pattern.md`
 
----
+#### `chatbot_oficial_snapshot_2026_03_31.md`
+Anchor snapshot as of `2026-03-31`:
+- app identity: production-active multi-tenant WhatsApp customer-service SaaS with AI
+- main stack: `Next.js 16`, `React 18`
+- referenced ecosystem: Supabase, Stripe, Redis, AI SDK/OpenAI/Groq, Capacitor, Jest
+- runtime still aligns with `ai_runtime`: webhook/serverless flow feeding `callDirectAI()`
 
-## 2) Repository and operational state
-Primary sources:
-- **`architecture/_index.md`**
-- **`facts/_index.md`**
-
-### Dated repository truth
-Both summaries converge on the same dated snapshot:
-
-- as of **2026-03-31**, ChatBot-Oficial is a production-active **multi-tenant SaaS for WhatsApp customer service with AI**
-
-Preserved stack signals:
-- **Next.js 16**
-- **React 18**
-- **Supabase**
-- **Stripe**
-- **Redis**
-- **AI SDK / OpenAI / Groq**
-- **Capacitor**
-- **Jest**
-
-### Recent implementation emphasis
-Current work was concentrated around Meta/WhatsApp integration:
-- contact/history sync or coexistence sync
+Engineering emphasis at snapshot time:
+- Meta/WhatsApp integration
+- coexistence contact/history sync
 - unified multi-tenant webhook
 - SMB echoes
 - Embedded Signup onboarding
 - dashboard/settings work
 - stronger logging and error handling
 
-### Validation and drift
-Preserved repository-state facts from **`chatbot_oficial_snapshot_2026_03_31.md`** and **`chatbot_oficial_state_facts_2026_03_31.md`**:
-- tests: **3 suites / 10 tests**
-- lint: **0 errors, 12 warnings**
-- production build was not fully revalidated outside sandbox
-- **EPERM spawn** was treated as an environment/sandbox limitation rather than confirmed application failure
+Validation and drift:
+- tests: `3 suites / 10 tests` passed
+- lint: `0 errors`, `12 warnings`
+- production build not fully revalidated due to later-stage sandbox/environmental `EPERM` spawn failure
+- modified files included:
+  - `AGENTS.md`
+  - `CLAUDE.md`
+  - `.github/copilot-instructions.md`
+  - `UzzApp_Apresentacao_Comercial.html`
+- documentation drift:
+  - `README.md` says `Next.js 14`
+  - `package.json` indicates `Next.js 16`
 
-Documentation drift is explicitly tracked:
-- **`README.md`** states **Next.js 14**
-- **`package.json`** reflects **Next.js 16**
+#### `theme_default_fallback_light_mode_2026_03_31.md`
+Concrete UI policy change in `src/app/layout.tsx`:
+- `ThemeProvider` fallback changed from `defaultTheme='dark'` to `defaultTheme='light'`
 
----
+Unchanged settings:
+- `enableSystem={false}`
+- `themes=['dark','light']`
+- `storageKey='uzzapp-theme'`
 
-## 3) ByteRover repository workflow constraints
-Primary source: **`facts/_index.md`**  
-Also echoed in architecture via **`byterover_global_mode_cwd_requirement.md`**
+Behavioral outcome:
+- users without a saved preference default to light mode
+- persisted `uzzapp-theme` still overrides fallback for returning users
 
-### Mandatory cwd rule
-A repository-specific operational fact is preserved across both domains:
+#### `commercial_deck_mobile_pdf_export_pattern.md`
+Reusable fixed-canvas export pattern for the commercial deck:
+- source: `docs/UzzApp_Apresentacao_Comercial_v2.html`
+- output: `docs/UzzApp_Apresentacao_Comercial_v2.pdf`
+- export script: `scripts/export-uzzapp-commercial-pdf.js`
 
-All ByteRover MCP operations for this repo must pass:
-- `cwd='C:\Users\Luisf\Documents\GITHUB\ChatBot-Oficial'`
+Design decision:
+- keep slide internals fixed at `1280x720`
+- scale the deck with CSS transform for mobile instead of reflowing absolutely positioned slide content
 
-Reason:
-- ByteRover MCP runs in **global mode**
-- explicit repository cwd is therefore required for query/retrieve and curate/store operations
+Export reliability depends on:
+- `@media print` overrides
+- `body.export-pdf`
+- deterministic Puppeteer export
 
-### Workflow baseline
-From **`initial_byterover_repository_sanity_check.md`** and related entries:
-- repository work should start with a **project-scoped ByteRover query**
-- significant work should end with **knowledge curation**
-- on **2026-03-31**, the initial project-scoped query found **no prior curated knowledge** for this cwd
+Recorded result:
+- generated `12-page PDF`
 
-Documentation enforcement mentioned in the architecture summary:
-- `AGENTS.md`
-- `CLAUDE.md`
-- `.github/copilot-instructions.md`
+Asset-path fixes touched:
+- `docs/Prints google`
+- `docs/ios/screenshots/auth-ipad-13in`
 
-This creates a practical pattern:
-- need ByteRover action → include explicit repo cwd → execute
+## 2. Facts Domain
 
----
+### Main Topic
+- `project/_index.md`
 
-## 4) Commercial deck export architecture
-Primary sources:
-- **`commercial_deck_mobile_pdf_export_pattern.md`**
-- **`commercial_deck_export_facts_2026_03_31.md`**
+Drill into:
+- `initial_byterover_repository_sanity_check.md`
+- `byterover_cwd_requirement_for_repository.md`
+- `chatbot_oficial_state_facts_2026_03_31.md`
+- `commercial_deck_export_facts_2026_03_31.md`
+- `theme_fallback_default_light_2026_03_31.md`
 
-### Artifact set
-The export pattern centers on:
+### `project`: operational fact layer
+This topic acts as a compact recall surface for repository-level facts, workflow requirements, and dated state observations, often mirroring deeper architecture entries.
+
+#### ByteRover repository workflow rules
+From `initial_byterover_repository_sanity_check.md` and `byterover_cwd_requirement_for_repository.md`:
+
+- on `2026-03-31`, the initial ByteRover repository check found no prior curated knowledge for this working directory
+- `AGENTS.md` defines workflow conventions:
+  - run a ByteRover query at task start
+  - curate knowledge on significant completion
+- all ByteRover MCP calls for this repository must use:
+  - `cwd='C:\Users\Luisf\Documents\GITHUB\ChatBot-Oficial'`
+- rationale: global-mode repository targeting requirement
+
+Relationship:
+- `initial_byterover_repository_sanity_check.md` explains when ByteRover should be used
+- `byterover_cwd_requirement_for_repository.md` explains how targeting must be done
+
+#### `chatbot_oficial_state_facts_2026_03_31.md`
+Compact factual counterpart of the architectural snapshot:
+- ChatBot-Oficial is a multi-tenant WhatsApp customer-service SaaS with AI
+- main stack: `Next.js 16`, `React 18`
+- notable dependencies: Supabase, Stripe, Redis, AI SDK/OpenAI/Groq, Capacitor, Jest
+- evidence source files: `README.md`, `package.json`
+
+Validation and drift:
+- tests: `3 suites`, `10 tests`
+- lint: no errors, `12 warnings`
+- build revalidation incomplete because sandbox `EPERM spawn` was treated as environmental
+- doc drift:
+  - `README.md` = `Next.js 14`
+  - `package.json` = `Next.js 16`
+
+Recent development emphasis mirrors `architecture/project_state/chatbot_oficial_snapshot_2026_03_31.md`.
+
+#### `commercial_deck_export_facts_2026_03_31.md`
+Fact-layer summary of the deck export pattern:
+
+Artifacts:
 - `docs/UzzApp_Apresentacao_Comercial_v2.html`
 - `scripts/export-uzzapp-commercial-pdf.js`
 - `docs/UzzApp_Apresentacao_Comercial_v2.pdf`
 
-### Design decision
-A stable architectural choice is preserved:
+Mechanical facts:
+- slide size fixed at `1280x720`
+- CSS variables include:
+  - `--slide-width`
+  - `--slide-height`
+  - `--deck-scale`
+- mobile scaling uses `transform: scale(var(--deck-scale))`
+- negative margin compensation avoids internal slide reflow
 
-- keep slides fixed at **1280x720**
-- do **not** reflow absolute-positioned slide internals for mobile
-- achieve responsiveness by scaling the whole deck/slide instead
+PDF-specific behavior:
+- `@media print` restates dimensions, overflow, positioning, `transform: none`, and page-break behavior
+- `body.export-pdf` disables effects that degrade PDF output
 
-Core layout variables and mechanism:
-- `--slide-width`
-- `--slide-height`
-- `--deck-scale`
-- `transform: scale(var(--deck-scale))`
-- negative margin compensation to preserve the original coordinate system
-
-### Print/PDF stabilization pattern
-For reliable export, print mode explicitly overrides:
-- width
-- height
-- min-height
-- max-height
-- overflow
-- position
-- `transform: none`
-- page-break behavior
-
-Export-safe mode uses:
-- `body.export-pdf`
-
-This disables PDF-hostile visual effects such as:
-- glow pseudo-elements
-- gradient text clipping
-- backdrop blur
-- device shadows/notches
-
-### Puppeteer export flow
-Preserved implementation details:
-- viewport: **1280x720**
+Puppeteer flow in `scripts/export-uzzapp-commercial-pdf.js`:
+- viewport `1280x720`
 - `emulateMediaType("print")`
 - wait for `document.fonts.ready`
-- export with `page.pdf({ preferCSSPageSize: true })`
+- add `body.export-pdf`
+- `page.pdf({ preferCSSPageSize: true })`
 
-Stable output facts:
-- deterministic **12-page PDF**
-- asset-path corrections under:
+Result:
+- generated PDF is `12 pages`
+- broken image paths corrected in:
   - `docs/Prints google`
   - `docs/ios/screenshots/auth-ipad-13in`
 
----
+#### `theme_fallback_default_light_2026_03_31.md`
+Fact-layer counterpart of the theme architecture note:
+- default fallback theme is `light`
+- applies when no saved preference exists
+- persistence key is `uzzapp-theme`
+- configured in `src/app/layout.tsx`
+- system theme detection is disabled
+- saved user preference still overrides fallback
 
-## 5) Cross-entry patterns and relationships
+## 3. Cross-Domain Relationships
 
-### Recurrent architectural stance
-Across **`architecture/_index.md`** and **`facts/_index.md`**, the same repository patterns recur:
+### Architecture vs Facts
+- `architecture/_index.md` captures why the system is structured the way it is
+- `facts/_index.md` captures the stable operational truths and dated checkpoints derived from that structure
 
-- **Deterministic core runtime over generalized agent orchestration**
-- **Strict hot-path boundaries** for latency-sensitive WhatsApp flows
-- **Date-stamped repository truth** to capture drift and validation state
-- **Environment-specific execution rules** treated as first-class operational knowledge
-- **Fixed-layout scaling + explicit print overrides** as the preferred HTML-to-PDF export pattern
+Direct pairings:
+- `architecture/project_state/chatbot_oficial_snapshot_2026_03_31.md`
+  ↔ `facts/project/chatbot_oficial_state_facts_2026_03_31.md`
+- `architecture/project_state/commercial_deck_mobile_pdf_export_pattern.md`
+  ↔ `facts/project/commercial_deck_export_facts_2026_03_31.md`
+- `architecture/project_state/theme_default_fallback_light_mode_2026_03_31.md`
+  ↔ `facts/project/theme_fallback_default_light_2026_03_31.md`
 
-### Drill-down map
-Use these child entries for details:
+### Stable repeated patterns
+Across both domains, the same high-value patterns recur:
 
-- Runtime model and hot-path boundaries:
-  - **`architecture/_index.md`**
-  - **`ai_runtime/_index.md`**
-  - **`agent_framework_decision_for_realtime_flow.md`**
-- Repository state and dated platform snapshot:
-  - **`project_state/_index.md`**
-  - **`chatbot_oficial_snapshot_2026_03_31.md`**
-  - **`chatbot_oficial_state_facts_2026_03_31.md`**
-- ByteRover execution constraints:
-  - **`byterover_global_mode_cwd_requirement.md`**
-  - **`byterover_cwd_requirement_for_repository.md`**
-  - **`initial_byterover_repository_sanity_check.md`**
-- Commercial deck export design and facts:
-  - **`commercial_deck_mobile_pdf_export_pattern.md`**
-  - **`commercial_deck_export_facts_2026_03_31.md`**
+- deterministic runtime over heavy orchestration for realtime AI
+- `callDirectAI()` as the central AI execution surface
+- explicit repository targeting through:
+  - `cwd='C:\Users\Luisf\Documents\GITHUB\ChatBot-Oficial'`
+- date-stamped snapshotting for project state (`2026-03-31`)
+- recognition of documentation drift and environmental validation limits
+- preference for deterministic rendering/export workflows in presentation assets
 
-## Bottom line
-At this level, the curated knowledge describes a repository whose defining characteristics are:
-- a **bounded realtime AI architecture** built around **`callDirectAI()`**
-- a **dated, evidence-based project snapshot** for **2026-03-31**
-- a **mandatory ByteRover cwd execution rule** for repository operations
-- a **reusable fixed-slide HTML/PDF export pattern** for commercial presentation artifacts
+## 4. Best Drill-Down Order
+1. `architecture/_index.md` — top-level architectural frame
+2. `ai_runtime/_index.md` — core runtime decision model
+3. `project_state/_index.md` — dated application/repository state
+4. `agent_framework_decision_for_realtime_flow.md` — `callDirectAI()` vs heavy agents
+5. `chatbot_oficial_snapshot_2026_03_31.md` — current-state evidence and drift
+6. `commercial_deck_mobile_pdf_export_pattern.md` — fixed-canvas mobile/PDF export strategy
+7. `theme_default_fallback_light_mode_2026_03_31.md` — UI fallback policy
+8. `facts/_index.md` and `project/_index.md` — compact recall layer for the same decisions and state

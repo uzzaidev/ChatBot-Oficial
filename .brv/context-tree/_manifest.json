@@ -1,9 +1,9 @@
 {
   "active_context": [
     {
-      "order": 3,
-      "path": "_index.md",
-      "tokens": 1985,
+      "order": 2,
+      "path": "architecture/_index.md",
+      "tokens": 1688,
       "type": "summary"
     },
     {
@@ -44,14 +44,14 @@
     },
     {
       "importance": 50,
-      "path": "facts/context.md",
-      "tokens": 159,
+      "path": "architecture/project_state/theme_default_fallback_light_mode_2026_03_31.md",
+      "tokens": 529,
       "type": "context"
     },
     {
       "importance": 50,
-      "path": "facts/project/byterover_cwd_requirement_for_repository.md",
-      "tokens": 317,
+      "path": "facts/context.md",
+      "tokens": 159,
       "type": "context"
     },
     {
@@ -61,13 +61,13 @@
       "type": "context"
     }
   ],
-  "generated_at": "2026-03-31T12:39:42.317Z",
+  "generated_at": "2026-03-31T12:57:27.435Z",
   "lane_tokens": {
-    "contexts": 3725,
+    "contexts": 3937,
     "stubs": 0,
-    "summaries": 1985
+    "summaries": 1688
   },
-  "source_fingerprint": "2a9909be534a33c52384cfc2e38f5ab77c24f21c86c467a67c9ca1db4324fbeb",
-  "total_tokens": 5710,
+  "source_fingerprint": "707b70c52ef3f721bd20a86908717f635193c45f5bb5e34ed858f5997bddede1",
+  "total_tokens": 5625,
   "version": 1
 }

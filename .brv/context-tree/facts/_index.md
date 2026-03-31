@@ -1,107 +1,164 @@
 ---
-children_hash: da7ac5d6900f5a5c0eb9200b4e72a3ded83d48c3617851d18d7dc417517bbcc0
-compression_ratio: 0.7786941580756014
+children_hash: 76577d6de27074c8ba06b558adfd08814883e34fa5ba98c34d77cc8c72763eb8
+compression_ratio: 0.7970602181128497
 condensation_order: 2
 covers: [context.md, project/_index.md]
-covers_token_total: 1455
+covers_token_total: 2109
 summary_level: d2
-token_count: 1133
+token_count: 1681
 type: summary
 ---
-# Domain: facts / Topic: project
+# Facts Domain Structural Summary
 
-## Structural overview
-This topic stores durable repository-level facts for ChatBot-Oficial, combining:
-1. **ByteRover execution requirements for this repository**
-2. **A dated application/project snapshot**
-3. **A specific commercial deck export implementation fact set**
+## Domain Purpose
+`facts` stores durable repository-level knowledge that is factual, operational, and broadly applicable across the project, rather than implementation-deep architecture. It is owned by repository maintainers and is intended for concise project metadata, environment constraints, and knowledge-state observations.
 
-The entries are complementary: workflow constraints define how repository work must be done, while dated fact entries capture what was true in the repo on **2026-03-31**.
+## Main Topic: `project`
+The `project` topic aggregates ChatBot-Oficial repository facts, workflow constraints, dated state snapshots, and point-in-time operational decisions. For details, drill into:
+- `initial_byterover_repository_sanity_check.md`
+- `byterover_cwd_requirement_for_repository.md`
+- `chatbot_oficial_state_facts_2026_03_31.md`
+- `commercial_deck_export_facts_2026_03_31.md`
+- `theme_fallback_default_light_2026_03_31.md`
 
-## Main clusters
+## Core Knowledge Clusters
 
-### 1) Repository workflow baseline
-From **`initial_byterover_repository_sanity_check.md`** and **`byterover_cwd_requirement_for_repository.md`**:
+### 1. ByteRover workflow requirements
+Two entries define repository interaction rules for ByteRover:
 
-- Repository work is expected to begin with a **project-scoped ByteRover query** and end with **knowledge curation after significant completion**.
-- On **2026-03-31**, the initial project-scoped query found **no prior curated knowledge** for this cwd.
-- All ByteRover MCP operations for this repo must use:
-  - `cwd='C:\Users\Luisf\Documents\GITHUB\ChatBot-Oficial'`
-- Reason:
-  - ByteRover MCP is running in **global mode**, so the repository cwd must be passed explicitly.
-- Operational pattern:
-  - need ByteRover action → include explicit repo cwd → execute
+- `initial_byterover_repository_sanity_check.md`
+  - On `2026-03-31`, the first repository-scoped ByteRover check found no prior curated knowledge for this working directory.
+  - `AGENTS.md` defines durable workflow conventions:
+    - run a ByteRover query at task start
+    - curate knowledge on significant completion
 
-### 2) Project/application state snapshot
-From **`chatbot_oficial_state_facts_2026_03_31.md`**:
+- `byterover_cwd_requirement_for_repository.md`
+  - All ByteRover MCP calls for this repository must use:
+    - `cwd='C:\Users\Luisf\Documents\GITHUB\ChatBot-Oficial'`
+  - Reason: ByteRover MCP runs in global mode here.
+  - Practical flow: target repository explicitly with `cwd` before any operation.
 
-- ChatBot-Oficial is described as a **multi-tenant SaaS for WhatsApp customer service with AI**.
-- Main frontend/app stack:
-  - **Next.js 16**
-  - **React 18**
-- Key ecosystem dependencies called out:
-  - **Supabase**
-  - **Stripe**
-  - **Redis**
-  - **AI SDK / OpenAI / Groq**
-  - **Capacitor**
-  - **Jest**
-- Validation status on the snapshot date:
-  - **3 test suites / 10 tests passed**
-  - **lint: 12 warnings, 0 errors**
-  - production build was **not fully revalidated outside sandbox**
-  - **EPERM spawn** issue was treated as an **environment limitation**, not confirmed app failure
-- Documentation/code drift:
-  - **`README.md`** says **Next.js 14**
-  - **`package.json`** reflects **Next.js 16**
-- Recent product focus areas included Meta/WhatsApp work:
-  - coexistence sync
-  - unified multi-tenant webhook
-  - SMB echoes
-  - Embedded Signup
-  - dashboard/settings improvements
-  - improved logging and error handling
+Relationship:
+- `initial_byterover_repository_sanity_check.md` explains when ByteRover should be used.
+- `byterover_cwd_requirement_for_repository.md` explains how repository targeting must be done correctly.
 
-### 3) Commercial deck export implementation facts
-From **`commercial_deck_export_facts_2026_03_31.md`**:
+### 2. Dated project state snapshot
+`chatbot_oficial_state_facts_2026_03_31.md` captures a compact factual snapshot of the app as of `2026-03-31`.
 
-- Primary artifact set:
-  - `docs/UzzApp_Apresentacao_Comercial_v2.html`
-  - `scripts/export-uzzapp-commercial-pdf.js`
-  - `docs/UzzApp_Apresentacao_Comercial_v2.pdf`
-- Architectural/export decision:
-  - preserve fixed slide layout for both mobile viewing and PDF generation rather than reflow slide internals
-- Key layout/export pattern:
-  - slides remain fixed at **1280x720**
-  - controlled via:
-    - `--slide-width`
-    - `--slide-height`
-    - `--deck-scale`
-  - narrow screens use `transform: scale(var(--deck-scale))` plus negative margin compensation
-  - `@media print` reasserts page/layout sizing and page-break behavior
-  - `body.export-pdf` disables heavy visual effects for deterministic PDF output
-- Export script behavior:
-  - implemented in **Puppeteer**
-  - viewport set to **1280x720**
-  - calls `emulateMediaType("print")`
-  - waits for `document.fonts.ready`
-  - adds `body.export-pdf`
-  - exports with `page.pdf({ preferCSSPageSize: true })`
-- Result:
-  - output PDF: `docs/UzzApp_Apresentacao_Comercial_v2.pdf`
-  - final length: **12 pages**
-- Asset-path correction captured:
+Key facts:
+- ChatBot-Oficial is a multi-tenant SaaS focused on WhatsApp customer service with AI.
+- Main stack:
+  - `Next.js 16`
+  - `React 18`
+- Notable dependencies:
+  - Supabase
+  - Stripe
+  - Redis
+  - AI SDK / OpenAI / Groq
+  - Capacitor
+  - Jest
+- Evidence sources:
+  - `README.md`
+  - `package.json`
+
+Validation/documentation status:
+- tests passed: `3 suites`, `10 tests`
+- lint: no errors, `12 warnings`
+- documentation drift exists:
+  - `README.md` says `Next.js 14`
+  - `package.json` shows `Next.js 16`
+- production build was not fully revalidated outside sandbox because sandbox `EPERM spawn` was treated as environmental, not app-defect evidence
+
+Recent development emphasis:
+- Meta/WhatsApp-heavy work including coexistence sync, unified multi-tenant webhook, SMB echoes, Embedded Signup, dashboard/settings, logging, and error handling.
+
+Relationship:
+- This is the fact-layer summary of `architecture/project_state/chatbot_oficial_snapshot_2026_03_31.md`.
+
+### 3. Commercial deck export facts
+`commercial_deck_export_facts_2026_03_31.md` records a deterministic HTML-to-PDF export flow for the commercial presentation deck.
+
+Primary artifacts:
+- `docs/UzzApp_Apresentacao_Comercial_v2.html`
+- `scripts/export-uzzapp-commercial-pdf.js`
+- `docs/UzzApp_Apresentacao_Comercial_v2.pdf`
+
+Structural/rendering facts:
+- slide size is fixed at `1280x720`
+- CSS variables include:
+  - `--slide-width`
+  - `--slide-height`
+  - `--deck-scale`
+- mobile behavior uses `transform: scale(var(--deck-scale))`
+- negative margin compensation prevents internal slide reflow on narrow screens
+
+PDF/export behavior:
+- `@media print` restates width, height, min/max height, overflow, positioning, `transform: none`, and page-break behavior
+- `body.export-pdf` disables PDF-problematic visual effects such as glow pseudo-elements, gradient text clipping, backdrop blur, shadows/notches, and transparency-heavy effects
+
+Export script behavior:
+- Puppeteer workflow in `scripts/export-uzzapp-commercial-pdf.js` includes:
+  - viewport `1280x720`
+  - `emulateMediaType("print")`
+  - wait for `document.fonts.ready`
+  - add `body.export-pdf`
+  - `page.pdf({ preferCSSPageSize: true })`
+
+Output corrections:
+- generated PDF is `12 pages`
+- broken image paths were fixed under:
   - `docs/Prints google`
   - `docs/ios/screenshots/auth-ipad-13in`
 
-## Relationships and usage pattern
-- **`initial_byterover_repository_sanity_check.md`** defines the repository’s first-run and workflow expectation.
-- **`byterover_cwd_requirement_for_repository.md`** adds the environment-specific requirement that makes those operations work correctly.
-- **`chatbot_oficial_state_facts_2026_03_31.md`** is the broad dated product/repo snapshot.
-- **`commercial_deck_export_facts_2026_03_31.md`** is a focused artifact-level fact record that fits under project facts because it captures stable file paths, export mechanics, and output characteristics.
+Relationship:
+- This entry is the fact-layer companion to `architecture/project_state/commercial_deck_mobile_pdf_export_pattern.md`.
 
-## Drill-down map
-- Workflow initialization and “no prior knowledge” state: **`initial_byterover_repository_sanity_check.md`**
-- Mandatory ByteRover cwd rule: **`byterover_cwd_requirement_for_repository.md`**
-- Product stack, validation state, and README/package drift: **`chatbot_oficial_state_facts_2026_03_31.md`**
-- PDF/mobile deck structure, Puppeteer export flow, and output facts: **`commercial_deck_export_facts_2026_03_31.md`**
+### 4. Theme fallback policy
+`theme_fallback_default_light_2026_03_31.md` captures the current default theme behavior.
+
+Key facts:
+- default fallback theme is `light`
+- applies when no saved preference exists
+- storage key is `uzzapp-theme`
+- system theme auto-detection is disabled
+- configured in `src/app/layout.tsx`
+
+Behavioral rule:
+- persisted user preference still overrides the fallback
+- impact is mainly on first-load and reset-state sessions
+
+Relationship:
+- This is the factual counterpart of `architecture/project_state/theme_default_fallback_light_mode_2026_03_31.md`.
+
+## Cross-Entry Patterns
+
+### Repository facts are operational and environment-specific
+The topic mixes project facts with execution constraints:
+- workflow trigger rules from `AGENTS.md`
+- repository targeting requirement via explicit `cwd`
+
+### Facts are date-stamped snapshots
+Several entries are intentionally point-in-time:
+- `chatbot_oficial_state_facts_2026_03_31.md`
+- `commercial_deck_export_facts_2026_03_31.md`
+- `theme_fallback_default_light_2026_03_31.md`
+
+### Facts frequently summarize deeper architecture entries
+The `facts/project` layer acts as a compact recall surface pointing to deeper architecture documentation in:
+- `architecture/project_state/chatbot_oficial_snapshot_2026_03_31.md`
+- `architecture/project_state/commercial_deck_mobile_pdf_export_pattern.md`
+- `architecture/project_state/theme_default_fallback_light_mode_2026_03_31.md`
+
+### Coverage spans workflow, code, and assets
+Referenced sources span:
+- workflow/config: `AGENTS.md`
+- app/runtime files: `src/app/layout.tsx`, `README.md`, `package.json`
+- content/export assets: `docs/UzzApp_Apresentacao_Comercial_v2.html`, `docs/UzzApp_Apresentacao_Comercial_v2.pdf`
+- automation script: `scripts/export-uzzapp-commercial-pdf.js`
+
+## Drill-Down Guide
+- `initial_byterover_repository_sanity_check.md` — initial knowledge-state and repository workflow conventions
+- `byterover_cwd_requirement_for_repository.md` — mandatory repository `cwd` targeting rule
+- `chatbot_oficial_state_facts_2026_03_31.md` — platform identity, stack, validation state, and doc drift
+- `commercial_deck_export_facts_2026_03_31.md` — deck dimensions, PDF export mechanics, Puppeteer flow, output fixes
+- `theme_fallback_default_light_2026_03_31.md` — theme fallback behavior and persistence rule
