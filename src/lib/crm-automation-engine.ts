@@ -335,10 +335,19 @@ const matchesTriggerConditions = (
         return false;
       }
 
+      const defaultMinConfidence = Number.parseFloat(
+        String(triggerData.threshold ?? "0"),
+      );
       const minConfidence =
         typeof conditions.confidence_min === "number"
           ? conditions.confidence_min
-          : Number.parseFloat(String(conditions.confidence_min ?? "0"));
+          : Number.parseFloat(
+              String(
+                conditions.confidence_min !== undefined
+                  ? conditions.confidence_min
+                  : defaultMinConfidence,
+              ),
+            );
       if (Number.isFinite(minConfidence)) {
         const gotConfidence = Number(triggerData.confidence ?? 0);
         if (gotConfidence < minConfidence) return false;
@@ -356,10 +365,19 @@ const matchesTriggerConditions = (
         return false;
       }
 
+      const defaultMinConfidence = Number.parseFloat(
+        String(triggerData.threshold ?? "0"),
+      );
       const minConfidence =
         typeof conditions.confidence_min === "number"
           ? conditions.confidence_min
-          : Number.parseFloat(String(conditions.confidence_min ?? "0"));
+          : Number.parseFloat(
+              String(
+                conditions.confidence_min !== undefined
+                  ? conditions.confidence_min
+                  : defaultMinConfidence,
+              ),
+            );
       if (Number.isFinite(minConfidence)) {
         const gotConfidence = Number(triggerData.confidence ?? 0);
         if (gotConfidence < minConfidence) return false;

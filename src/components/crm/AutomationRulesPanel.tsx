@@ -129,6 +129,24 @@ interface CRMSettings {
   llm_intent_threshold?: number;
 }
 
+interface AutomationExecutionRow {
+  id: string;
+  status: string;
+  event_type?: string | null;
+  executed_at: string;
+  rule_id?: string | null;
+  rule_name?: string | null;
+  card_id: string;
+  contact_name?: string | null;
+  phone?: string | null;
+  skip_reason?: string | null;
+  error_message?: string | null;
+  depth?: number | null;
+  trigger_data?: Record<string, unknown> | null;
+  result?: Record<string, unknown> | null;
+  rule_version?: number | null;
+}
+
 interface AutomationRulesPanelProps {
   clientId: string;
   columns: CRMColumn[];
@@ -194,6 +212,15 @@ export function AutomationRulesPanel({
       depth?: number | null;
     }>
   >([]);
+  const [logsDialogOpen, setLogsDialogOpen] = useState(false);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [logsRows, setLogsRows] = useState<AutomationExecutionRow[]>([]);
+  const [logsStatusFilter, setLogsStatusFilter] = useState("all");
+  const [logsTriggerFilter, setLogsTriggerFilter] = useState("all");
+  const [logsRuleFilter, setLogsRuleFilter] = useState("all");
+  const [logsDays, setLogsDays] = useState("7");
+  const [logsLimit, setLogsLimit] = useState("120");
+  const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
 
   // Form state for new/edit rule
   const [formData, setFormData] = useState({
@@ -438,6 +465,34 @@ export function AutomationRulesPanel({
       setHistoryLoading(false);
     }
   };
+
+  const fetchAutomationLogs = useCallback(async () => {
+    setLogsLoading(true);
+    try {
+      const params = new URLSearchParams();
+      params.set("status", logsStatusFilter);
+      params.set("triggerType", logsTriggerFilter);
+      params.set("ruleId", logsRuleFilter);
+      params.set("days", logsDays);
+      params.set("limit", logsLimit);
+
+      const res = await apiFetch(`/api/crm/automation-executions?${params.toString()}`);
+      if (!res.ok) return;
+
+      const data = await res.json();
+      setLogsRows(data.executions || []);
+    } catch (error) {
+      console.error("Error fetching automation logs:", error);
+    } finally {
+      setLogsLoading(false);
+    }
+  }, [logsDays, logsLimit, logsRuleFilter, logsStatusFilter, logsTriggerFilter]);
+
+  useEffect(() => {
+    if (logsDialogOpen) {
+      fetchAutomationLogs();
+    }
+  }, [fetchAutomationLogs, logsDialogOpen]);
 
   // Get trigger/action display info
   const getTriggerInfo = (type: string) => triggers.find((t) => t.id === type);
@@ -918,14 +973,27 @@ export function AutomationRulesPanel({
               {/* Lista de Regras */}
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-medium">Regras Ativas</h3>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => openEditDialog()}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Nova Regra
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setLogsDialogOpen(true);
+                      setExpandedLogId(null);
+                    }}
+                  >
+                    <Clock className="h-4 w-4 mr-1" />
+                    Logs
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => openEditDialog()}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Nova Regra
+                  </Button>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -1338,6 +1406,184 @@ export function AutomationRulesPanel({
               )}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Automation Logs */}
+      <Dialog open={logsDialogOpen} onOpenChange={setLogsDialogOpen}>
+        <DialogContent className="crm-sheet-surface max-w-4xl border-border/80">
+          <DialogHeader>
+            <DialogTitle>Logs de Automacao</DialogTitle>
+            <DialogDescription>
+              Visualize eventos, regras executadas, skips e erros para diagnostico fino.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+            <Select value={logsStatusFilter} onValueChange={setLogsStatusFilter}>
+              <SelectTrigger className="h-8">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos status</SelectItem>
+                <SelectItem value="success">Success</SelectItem>
+                <SelectItem value="skipped">Skipped</SelectItem>
+                <SelectItem value="failed">Failed</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={logsTriggerFilter} onValueChange={setLogsTriggerFilter}>
+              <SelectTrigger className="h-8">
+                <SelectValue placeholder="Trigger" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos triggers</SelectItem>
+                {triggers.map((trigger) => (
+                  <SelectItem key={trigger.id} value={trigger.id}>
+                    {trigger.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={logsRuleFilter} onValueChange={setLogsRuleFilter}>
+              <SelectTrigger className="h-8">
+                <SelectValue placeholder="Regra" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas regras</SelectItem>
+                {rules.map((rule) => (
+                  <SelectItem key={rule.id} value={rule.id}>
+                    {rule.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Input
+              type="number"
+              min="1"
+              max="365"
+              value={logsDays}
+              onChange={(e) => setLogsDays(e.target.value)}
+              className="h-8"
+              placeholder="Dias"
+            />
+
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                min="1"
+                max="500"
+                value={logsLimit}
+                onChange={(e) => setLogsLimit(e.target.value)}
+                className="h-8"
+                placeholder="Limite"
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-8 px-2"
+                onClick={() => fetchAutomationLogs()}
+                disabled={logsLoading}
+              >
+                <RefreshCw
+                  className={`h-3.5 w-3.5 ${logsLoading ? "animate-spin" : ""}`}
+                />
+              </Button>
+            </div>
+          </div>
+
+          <div className="max-h-[450px] overflow-auto space-y-2">
+            {logsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : logsRows.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-6 text-center">
+                Nenhum log encontrado para os filtros atuais.
+              </p>
+            ) : (
+              logsRows.map((row) => (
+                <div
+                  key={row.id}
+                  className="rounded-md border border-border/70 p-3 text-xs space-y-2"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="outline">{row.status}</Badge>
+                      <Badge variant="secondary">
+                        {row.event_type || "trigger_desconhecido"}
+                      </Badge>
+                      <span className="text-muted-foreground">
+                        {row.rule_name || "Regra removida"}
+                      </span>
+                    </div>
+                    <span className="text-muted-foreground">
+                      {new Date(row.executed_at).toLocaleString("pt-BR")}
+                    </span>
+                  </div>
+
+                  <div className="text-muted-foreground">
+                    card: <code>{row.card_id}</code>
+                    {row.contact_name ? ` | contato: ${row.contact_name}` : ""}
+                    {row.phone ? ` | tel: ${row.phone}` : ""}
+                  </div>
+
+                  {row.skip_reason && (
+                    <p className="text-muted-foreground">
+                      skip_reason: <code>{row.skip_reason}</code>
+                    </p>
+                  )}
+                  {row.error_message && (
+                    <p className="text-destructive">
+                      error: <code>{row.error_message}</code>
+                    </p>
+                  )}
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">
+                      depth: {typeof row.depth === "number" ? row.depth : 0}
+                      {typeof row.rule_version === "number"
+                        ? ` | rule_version: ${row.rule_version}`
+                        : ""}
+                    </span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2"
+                      onClick={() =>
+                        setExpandedLogId((prev) =>
+                          prev === row.id ? null : row.id,
+                        )
+                      }
+                    >
+                      {expandedLogId === row.id ? "Ocultar detalhes" : "Ver detalhes"}
+                    </Button>
+                  </div>
+
+                  {expandedLogId === row.id && (
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <div className="space-y-1">
+                        <p className="text-muted-foreground">trigger_data</p>
+                        <pre className="max-h-44 overflow-auto rounded bg-muted/30 p-2 text-[11px] leading-relaxed">
+                          {JSON.stringify(row.trigger_data || {}, null, 2)}
+                        </pre>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-muted-foreground">result</p>
+                        <pre className="max-h-44 overflow-auto rounded bg-muted/30 p-2 text-[11px] leading-relaxed">
+                          {JSON.stringify(row.result || {}, null, 2)}
+                        </pre>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 

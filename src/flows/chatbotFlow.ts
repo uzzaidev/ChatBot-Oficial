@@ -1336,11 +1336,7 @@ export const processChatbotMessage = async (
             classifier_reason: intentSignal.reason,
           };
 
-          if (
-            intentSignal.intent &&
-            intentSignal.intent !== "unknown" &&
-            intentSignal.confidence >= intentSignal.threshold
-          ) {
+          if (intentSignal.intent && intentSignal.intent !== "unknown") {
             await emitCrmAutomationEvent({
               clientId: config.id,
               cardId: crmCardId,
@@ -1354,8 +1350,7 @@ export const processChatbotMessage = async (
           }
 
           if (
-            intentSignal.urgencyLevel &&
-            intentSignal.confidence >= intentSignal.threshold
+            intentSignal.urgencyLevel
           ) {
             await emitCrmAutomationEvent({
               clientId: config.id,
