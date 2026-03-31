@@ -28,6 +28,8 @@ import { detectRepetition } from "@/nodes/detectRepetition";
 import { checkInteractiveFlow } from "@/nodes/checkInteractiveFlow";
 // 🎯 CRM Automation: Lead source capture and status updates
 import { createExecutionLogger } from "@/lib/logger";
+import { emitCrmAutomationEvent } from "@/lib/crm-automation-engine";
+import { classifyCRMIntent } from "@/lib/crm-intent-classifier";
 import { setWithExpiry } from "@/lib/redis";
 import { createServiceRoleClient } from "@/lib/supabase";
 import {
@@ -704,6 +706,27 @@ export const processChatbotMessage = async (
       content: normalizedMessage.content,
     });
 
+    // Node 5.1: Emit keyword_detected (deterministic, condition matching ocorre no engine)
+    if (crmCardId && normalizedMessage.content?.trim()) {
+      try {
+        await emitCrmAutomationEvent({
+          clientId: config.id,
+          cardId: crmCardId,
+          triggerType: "keyword_detected",
+          dedupeKey: `keyword_detected:${crmCardId}:${parsedMessage.messageId || normalizedMessage.content.slice(0, 80)}`,
+          triggerData: {
+            message_text: normalizedMessage.content,
+            message_text_lower: normalizedMessage.content.toLowerCase(),
+            message_type: parsedMessage.type,
+            is_first_message: isFirstMessage,
+            contact_name: parsedMessage.name ?? null,
+          },
+        });
+      } catch (automationError) {
+        console.warn("[chatbotFlow] keyword_detected emit failed:", automationError);
+      }
+    }
+
     // NODE 6: Check Human Handoff Status
     // 🔧 Moved AFTER media processing so that human attendants can see
     // audio transcriptions, image descriptions, and PDF summaries
@@ -1292,6 +1315,65 @@ export const processChatbotMessage = async (
     }
 
     // 🔧 Tool Calls Processing
+    // NODE 12.6: LLM-assisted CRM intent/urgency classification (optional, feature-flagged)
+    if (crmCardId && batchedContent && batchedContent.trim().length > 0) {
+      try {
+        const intentSignal = await classifyCRMIntent({
+          clientId: config.id,
+          message: batchedContent,
+          conversationId: conversation?.id,
+          phone: parsedMessage.phone,
+        });
+
+        if (intentSignal.enabled) {
+          const baseTriggerData = {
+            message_text: batchedContent,
+            message_type: parsedMessage.type,
+            confidence: intentSignal.confidence,
+            threshold: intentSignal.threshold,
+            source: intentSignal.llmUsed ? "llm" : "fallback",
+            fallback_used: intentSignal.fallbackUsed,
+            classifier_reason: intentSignal.reason,
+          };
+
+          if (
+            intentSignal.intent &&
+            intentSignal.intent !== "unknown" &&
+            intentSignal.confidence >= intentSignal.threshold
+          ) {
+            await emitCrmAutomationEvent({
+              clientId: config.id,
+              cardId: crmCardId,
+              triggerType: "intent_detected",
+              dedupeKey: `intent_detected:${crmCardId}:${parsedMessage.messageId || Date.now()}`,
+              triggerData: {
+                ...baseTriggerData,
+                intent: intentSignal.intent,
+              },
+            });
+          }
+
+          if (
+            intentSignal.urgencyLevel &&
+            intentSignal.confidence >= intentSignal.threshold
+          ) {
+            await emitCrmAutomationEvent({
+              clientId: config.id,
+              cardId: crmCardId,
+              triggerType: "urgency_detected",
+              dedupeKey: `urgency_detected:${crmCardId}:${parsedMessage.messageId || Date.now()}`,
+              triggerData: {
+                ...baseTriggerData,
+                urgency_level: intentSignal.urgencyLevel,
+              },
+            });
+          }
+        }
+      } catch (intentError) {
+        console.warn("[chatbotFlow] CRM intent classification error:", intentError);
+      }
+    }
+
     if (aiResponse.toolCalls && aiResponse.toolCalls.length > 0) {
       for (const toolCall of aiResponse.toolCalls) {
         // Tool 1: transferir_atendimento

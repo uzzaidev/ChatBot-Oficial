@@ -45,6 +45,7 @@ export interface DirectAICallConfig {
   // For tracking
   conversationId?: string;
   phone?: string;
+  metadata?: Record<string, any>;
   skipUsageLogging?: boolean;
 }
 
@@ -281,6 +282,7 @@ export const callDirectAI = async (
         inputTokens: promptTokens,
         outputTokens: completionTokens,
         latencyMs,
+        metadata: config.metadata,
       }).catch((err) => {
         console.error("[Direct AI] Failed to log usage:", err);
       });

@@ -13,6 +13,25 @@ export const AVAILABLE_TRIGGERS = [
     variables: ["message_type", "sent_by"],
   },
   {
+    id: "keyword_detected",
+    name: "Palavra-chave Detectada",
+    description: "Quando a mensagem contem palavra(s)-chave configuradas",
+    variables: ["message_text", "detected_keywords"],
+    conditions: [
+      {
+        field: "keywords",
+        type: "text",
+        label: "Palavras-chave (separadas por virgula)",
+      },
+      {
+        field: "match_mode",
+        type: "select",
+        label: "Modo de match",
+        options: ["any", "all"],
+      },
+    ],
+  },
+  {
     id: "inactivity",
     name: "Inatividade",
     description: "Apos X dias sem resposta do cliente",
@@ -101,6 +120,61 @@ export const AVAILABLE_TRIGGERS = [
         field: "to_column_id",
         type: "column_select",
         label: "Coluna de destino",
+      },
+    ],
+  },
+  {
+    id: "payment_completed",
+    name: "Pagamento Concluido",
+    description: "Quando um pagamento Stripe e confirmado",
+    variables: [
+      "amount",
+      "currency",
+      "stripe_session_id",
+      "stripe_payment_intent_id",
+      "customer_email",
+      "customer_phone",
+      "product_name",
+      "payment_date",
+    ],
+  },
+  {
+    id: "intent_detected",
+    name: "Intencao Detectada (LLM)",
+    description:
+      "Quando o classificador de intencao detecta sinal comercial com confianca suficiente",
+    variables: ["intent", "confidence", "message_text"],
+    conditions: [
+      {
+        field: "intent",
+        type: "text",
+        label: "Intencao esperada",
+      },
+      {
+        field: "confidence_min",
+        type: "number",
+        label: "Confianca minima",
+        default: 0.85,
+      },
+    ],
+  },
+  {
+    id: "urgency_detected",
+    name: "Urgencia Detectada (LLM)",
+    description: "Quando a mensagem indica urgencia de atendimento",
+    variables: ["urgency_level", "confidence", "message_text"],
+    conditions: [
+      {
+        field: "urgency_level",
+        type: "select",
+        label: "Nivel de urgencia",
+        options: ["high", "medium", "low"],
+      },
+      {
+        field: "confidence_min",
+        type: "number",
+        label: "Confianca minima",
+        default: 0.85,
       },
     ],
   },
@@ -201,6 +275,70 @@ export const AVAILABLE_ACTIONS = [
         type: "text",
         label: "Conteudo da nota (suporta {{variavel}})",
         required: true,
+      },
+    ],
+  },
+  {
+    id: "send_message",
+    name: "Enviar Mensagem",
+    description: "Envia mensagem automatica no WhatsApp (com politica de 24h)",
+    params: [
+      {
+        field: "message_type",
+        type: "select",
+        label: "Tipo de mensagem",
+        options: ["text", "template"],
+        required: true,
+      },
+      {
+        field: "content",
+        type: "text",
+        label: "Mensagem (suporta {{variavel}})",
+      },
+      {
+        field: "template_id",
+        type: "text",
+        label: "Template ID (quando tipo=template)",
+      },
+      {
+        field: "template_params",
+        type: "text",
+        label: "Template params JSON (ex: [\"{{contact_name}}\"])",
+      },
+      {
+        field: "fallback_template_id",
+        type: "text",
+        label: "Fallback template ID (quando janela 24h fechada)",
+      },
+    ],
+  },
+  {
+    id: "notify_user",
+    name: "Notificar Responsavel",
+    description: "Envia push para usuario responsavel ou equipe",
+    params: [
+      {
+        field: "target",
+        type: "select",
+        label: "Destino da notificacao",
+        options: ["assigned_to", "all_admins", "all_active"],
+        required: true,
+      },
+      {
+        field: "title",
+        type: "text",
+        label: "Titulo (suporta {{variavel}})",
+      },
+      {
+        field: "body",
+        type: "text",
+        label: "Mensagem (suporta {{variavel}})",
+      },
+      {
+        field: "category",
+        type: "select",
+        label: "Categoria",
+        options: ["critical", "important", "normal", "low"],
       },
     ],
   },

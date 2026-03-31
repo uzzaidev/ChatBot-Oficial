@@ -19,6 +19,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}));
     const productId = typeof body.productId === "string" ? body.productId : null;
     const clientSlug = typeof body.clientSlug === "string" ? body.clientSlug : null;
+    const cardId = typeof body.cardId === "string" ? body.cardId.trim() : "";
+    const contactPhone = typeof body.phone === "string" ? body.phone.trim() : "";
+    const customerEmail =
+      typeof body.customerEmail === "string" ? body.customerEmail.trim() : "";
 
     if (!productId || !clientSlug) {
       return NextResponse.json(
@@ -54,6 +58,11 @@ export async function POST(request: NextRequest) {
     }
 
     const appUrl = getRequiredAppBaseUrl();
+    const checkoutMetadata: Record<string, string> = {};
+    if (cardId) checkoutMetadata.card_id = cardId;
+    if (contactPhone) checkoutMetadata.phone = contactPhone;
+    if (customerEmail) checkoutMetadata.customer_email = customerEmail;
+
     const session = await createStorefrontCheckoutSession({
       stripeAccountId: product.stripe_account_id,
       stripePriceId: product.stripe_price_id,
@@ -62,6 +71,7 @@ export async function POST(request: NextRequest) {
       amount: product.amount,
       successUrl: `${appUrl}/store/${clientSlug}/success`,
       cancelUrl: `${appUrl}/store/${clientSlug}/cancel`,
+      metadata: checkoutMetadata,
     });
 
     return NextResponse.json({ url: session.url });

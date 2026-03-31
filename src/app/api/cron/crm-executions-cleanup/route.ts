@@ -40,10 +40,23 @@ export async function POST(request: NextRequest) {
       `,
     );
 
+    const dlqCleanup = await query<{ count: number }>(
+      `
+        WITH deleted AS (
+          DELETE FROM crm_action_dlq
+          WHERE exhausted_at IS NOT NULL
+            AND exhausted_at < NOW() - INTERVAL '30 days'
+          RETURNING 1
+        )
+        SELECT COUNT(*)::int AS count FROM deleted
+      `,
+    );
+
     return NextResponse.json({
       success: true,
       deleted_success_or_skipped: successCleanup.rows[0]?.count ?? 0,
       deleted_errors: errorCleanup.rows[0]?.count ?? 0,
+      deleted_dlq_exhausted: dlqCleanup.rows[0]?.count ?? 0,
     });
   } catch (error) {
     console.error("[cron/crm-executions-cleanup] error", error);

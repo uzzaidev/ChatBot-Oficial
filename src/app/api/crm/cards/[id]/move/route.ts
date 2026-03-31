@@ -66,6 +66,9 @@ export async function POST(
     );
 
     const newColumnSlug = newColumnResult.rows[0]?.slug;
+    const isNoOpMove =
+      card.current_column_id === column_id &&
+      (position === null || position === undefined);
 
     // Use atomic move function
     await query(`SELECT crm_move_card($1, $2, $3)`, [
@@ -78,22 +81,24 @@ export async function POST(
     const result = await query(`SELECT * FROM crm_cards WHERE id = $1`, [id]);
 
     // Emit card_moved automation event (non-blocking for move operation)
-    try {
-      await emitCrmAutomationEvent({
-        clientId,
-        cardId: id,
-        triggerType: "card_moved",
-        dedupeKey: `card_moved:${id}:${card.current_column_id}->${column_id}:${position ?? "append"}`,
-        triggerData: {
-          from_column_id: card.current_column_id,
-          from_column_slug: card.current_column_slug,
-          to_column_id: column_id,
-          to_column_slug: newColumnSlug,
-          position: position ?? null,
-        },
-      });
-    } catch (automationError) {
-      console.error("[CRM Automation] card_moved emit failed:", automationError);
+    if (!isNoOpMove) {
+      try {
+        await emitCrmAutomationEvent({
+          clientId,
+          cardId: id,
+          triggerType: "card_moved",
+          dedupeKey: `card_moved:${id}:${card.current_column_id}->${column_id}:${position ?? "append"}`,
+          triggerData: {
+            from_column_id: card.current_column_id,
+            from_column_slug: card.current_column_slug,
+            to_column_id: column_id,
+            to_column_slug: newColumnSlug,
+            position: position ?? null,
+          },
+        });
+      } catch (automationError) {
+        console.error("[CRM Automation] card_moved emit failed:", automationError);
+      }
     }
 
     // Send Meta Conversion Event if applicable (async, do not wait)

@@ -9,6 +9,7 @@
 
 import Stripe from "stripe";
 import { NextRequest, NextResponse } from "next/server";
+import { emitCrmAutomationEvent } from "@/lib/crm-automation-engine";
 import { createServiceClient } from "@/lib/supabase-server";
 import {
   constructWebhookEvent,
@@ -288,6 +289,65 @@ const handleCheckoutCompleted = async (
     );
     await upsertSubscription(subscription, eventAccount);
   }
+
+  const stripeAccountId =
+    eventAccount ?? ((session as any).customer_account as string | null) ?? null;
+  const clientId = await findClientByStripeAccount(stripeAccountId);
+  if (!clientId) {
+    logWarn("Skipping payment_completed automation: client not resolved", {
+      sessionId: session.id,
+      stripeAccountId,
+    });
+    return;
+  }
+
+  const cardId = await resolveCheckoutCardId(clientId, session);
+  if (!cardId) {
+    logWarn("Skipping payment_completed automation: card not resolved", {
+      sessionId: session.id,
+      clientId,
+      hasCardMetadata: Boolean(session.metadata?.card_id),
+      hasPhoneMetadata: Boolean(session.metadata?.phone || session.customer_details?.phone),
+    });
+    return;
+  }
+
+  let productName = "Produto";
+  if (typeof session.metadata?.local_product_id === "string") {
+    const supabase = getSupabase();
+    const { data: product } = await supabase
+      .from("stripe_products")
+      .select("name")
+      .eq("id", session.metadata.local_product_id)
+      .eq("client_id", clientId)
+      .maybeSingle();
+    if (product?.name) {
+      productName = product.name;
+    }
+  }
+
+  await emitCrmAutomationEvent({
+    clientId,
+    cardId,
+    triggerType: "payment_completed",
+    dedupeKey: `payment_completed:${session.id}:${String(session.payment_intent ?? "na")}`,
+    triggerData: {
+      amount: session.amount_total ?? 0,
+      amount_formatted: formatAmount(session.amount_total, session.currency),
+      currency: (session.currency || "BRL").toUpperCase(),
+      stripe_session_id: session.id,
+      stripe_payment_intent_id:
+        typeof session.payment_intent === "string"
+          ? session.payment_intent
+          : session.payment_intent?.id ?? null,
+      customer_email: session.customer_details?.email ?? null,
+      customer_phone:
+        normalizePhone(session.customer_details?.phone) ??
+        normalizePhone(session.metadata?.phone ?? null),
+      product_name: productName,
+      payment_date: new Date().toISOString(),
+    },
+  });
 };
 
 const handleSubscriptionUpdated = async (
@@ -346,6 +406,60 @@ const updateSubscriptionStatusFromInvoice = async (
     })
     .eq("client_id", clientId)
     .eq("stripe_subscription_id", subscriptionId);
+};
+
+const normalizePhone = (value: string | null | undefined): string | null => {
+  if (!value) return null;
+  const digits = value.replace(/\D/g, "");
+  return digits.length >= 8 ? digits : null;
+};
+
+const resolveCheckoutCardId = async (
+  clientId: string,
+  session: Stripe.Checkout.Session,
+): Promise<string | null> => {
+  if (typeof session.metadata?.card_id === "string" && session.metadata.card_id) {
+    return session.metadata.card_id;
+  }
+
+  const phonesToTry = [
+    normalizePhone(session.metadata?.phone ?? null),
+    normalizePhone(session.customer_details?.phone ?? null),
+  ].filter((item): item is string => Boolean(item));
+
+  if (phonesToTry.length === 0) {
+    return null;
+  }
+
+  const supabase = getSupabase();
+  for (const phone of phonesToTry) {
+    const { data } = await supabase
+      .from("crm_cards")
+      .select("id")
+      .eq("client_id", clientId)
+      .eq("phone", phone)
+      .limit(1)
+      .maybeSingle();
+
+    if (data?.id) {
+      return data.id;
+    }
+  }
+
+  return null;
+};
+
+const formatAmount = (amountCents: number | null, currency: string | null): string => {
+  const safeAmount = typeof amountCents === "number" ? amountCents : 0;
+  const safeCurrency = (currency || "BRL").toUpperCase();
+  try {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: safeCurrency,
+    }).format(safeAmount / 100);
+  } catch {
+    return `${(safeAmount / 100).toFixed(2)} ${safeCurrency}`;
+  }
 };
 
 const handleInvoicePaid = async (invoice: Stripe.Invoice) => {

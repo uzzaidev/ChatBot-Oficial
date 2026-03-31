@@ -2,6 +2,7 @@ import {
   AVAILABLE_ACTIONS,
   AVAILABLE_TRIGGERS,
 } from "@/lib/crm-automation-constants";
+import { clearCrmAutomationRuleCache } from "@/lib/crm-automation-engine";
 import { createServerClient, getClientIdFromSession } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -40,7 +41,12 @@ const toActionSteps = (payload: {
             stepObj.action_params && typeof stepObj.action_params === "object"
               ? stepObj.action_params
               : {},
-          on_error: stepObj.on_error === "continue" ? "continue" : "stop",
+          on_error:
+            stepObj.on_error === "continue"
+              ? "continue"
+              : stepObj.on_error === "compensate"
+                ? "compensate"
+                : "stop",
         };
       });
   }
@@ -59,6 +65,42 @@ const toActionSteps = (payload: {
   }
 
   return [];
+};
+
+const normalizeTriggerConditions = (
+  triggerType: string,
+  conditions: Record<string, unknown> | undefined,
+): Record<string, unknown> => {
+  const next: Record<string, unknown> = { ...(conditions || {}) };
+
+  if (triggerType === "keyword_detected") {
+    const rawKeywords = next.keywords;
+    if (Array.isArray(rawKeywords)) {
+      next.keywords = rawKeywords
+        .map((item) => String(item ?? "").trim())
+        .filter(Boolean);
+    } else if (typeof rawKeywords === "string") {
+      next.keywords = rawKeywords
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
+
+    if (next.match_mode !== "all" && next.match_mode !== "any") {
+      next.match_mode = "any";
+    }
+  }
+
+  if (triggerType === "intent_detected" || triggerType === "urgency_detected") {
+    const rawMin = Number(next.confidence_min);
+    if (Number.isFinite(rawMin)) {
+      next.confidence_min = Math.max(0, Math.min(1, rawMin));
+    } else if (next.confidence_min !== undefined) {
+      next.confidence_min = 0;
+    }
+  }
+
+  return next;
 };
 
 const normalizeRuleForInsert = (input: {
@@ -87,7 +129,10 @@ const normalizeRuleForInsert = (input: {
     name: input.name,
     description: input.description ?? null,
     trigger_type: input.triggerType,
-    trigger_conditions: input.triggerConditions ?? {},
+    trigger_conditions: normalizeTriggerConditions(
+      input.triggerType,
+      input.triggerConditions,
+    ),
     condition_tree: input.conditionTree ?? null,
     action_type:
       typeof firstStep?.action_type === "string" ? firstStep.action_type : null,
@@ -113,6 +158,91 @@ const validateActions = (steps: Array<Record<string, unknown>>): string | null =
   }
 
   return null;
+};
+
+const VALID_JSONLOGIC_OPERATORS = new Set([
+  "var",
+  "and",
+  "or",
+  "!",
+  "not",
+  "==",
+  "!=",
+  ">",
+  ">=",
+  "<",
+  "<=",
+  "in",
+]);
+
+const validateConditionTreeNode = (node: unknown, path = "$"): string | null => {
+  if (node === null || node === undefined) return null;
+  if (typeof node !== "object") return null;
+
+  if (Array.isArray(node)) {
+    for (let i = 0; i < node.length; i++) {
+      const error = validateConditionTreeNode(node[i], `${path}[${i}]`);
+      if (error) return error;
+    }
+    return null;
+  }
+
+  const entries = Object.entries(node as Record<string, unknown>);
+  if (entries.length !== 1) {
+    return `${path} must have exactly one JsonLogic operator`;
+  }
+
+  const [op, value] = entries[0];
+  if (!VALID_JSONLOGIC_OPERATORS.has(op)) {
+    return `${path}.${op} is not a supported operator`;
+  }
+
+  if (op === "var") {
+    if (typeof value === "string") return null;
+    if (
+      Array.isArray(value) &&
+      value.length >= 1 &&
+      typeof value[0] === "string"
+    ) {
+      return null;
+    }
+    return `${path}.var must be a string or [string, fallback]`;
+  }
+
+  if (op === "and" || op === "or") {
+    if (!Array.isArray(value) || value.length === 0) {
+      return `${path}.${op} must be a non-empty array`;
+    }
+    for (let i = 0; i < value.length; i++) {
+      const error = validateConditionTreeNode(value[i], `${path}.${op}[${i}]`);
+      if (error) return error;
+    }
+    return null;
+  }
+
+  if (op === "!" || op === "not") {
+    return validateConditionTreeNode(value, `${path}.${op}`);
+  }
+
+  if (!Array.isArray(value) || value.length < 2) {
+    return `${path}.${op} must be an array with two operands`;
+  }
+
+  for (let i = 0; i < value.length; i++) {
+    const error = validateConditionTreeNode(value[i], `${path}.${op}[${i}]`);
+    if (error) return error;
+  }
+
+  return null;
+};
+
+const validateConditionTree = (tree: unknown): string | null => {
+  if (tree === null || tree === undefined) return null;
+  if (typeof tree !== "object" || Array.isArray(tree)) {
+    return "condition_tree must be a JSON object";
+  }
+
+  return validateConditionTreeNode(tree, "$");
 };
 
 // GET - Listar regras
@@ -192,6 +322,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const conditionTreeError = validateConditionTree(conditionTree);
+    if (conditionTreeError) {
+      return NextResponse.json(
+        { error: `condition_tree invalido: ${conditionTreeError}` },
+        { status: 400 },
+      );
+    }
+
     const normalized = normalizeRuleForInsert({
       clientId,
       name,
@@ -248,6 +386,8 @@ export async function POST(request: NextRequest) {
       throw insertResult.error;
     }
 
+    clearCrmAutomationRuleCache(clientId, triggerType);
+
     return NextResponse.json({ rule: insertResult.data });
   } catch (error) {
     console.error("Error creating automation rule:", error);
@@ -275,11 +415,39 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Rule id is required" }, { status: 400 });
     }
 
+    const { data: existingRule, error: existingRuleError } = await supabase
+      .from("crm_automation_rules")
+      .select("id, trigger_type, is_system")
+      .eq("id", id)
+      .eq("client_id", clientId)
+      .single();
+
+    if (existingRuleError || !existingRule) {
+      return NextResponse.json({ error: "Regra nao encontrada" }, { status: 404 });
+    }
+
+    if (existingRule.is_system) {
+      return NextResponse.json(
+        { error: "Regra do sistema nao pode ser editada" },
+        { status: 403 },
+      );
+    }
+
     if (updates.triggerType && !VALID_TRIGGER_IDS.has(updates.triggerType)) {
       return NextResponse.json(
         { error: `Invalid trigger type: ${updates.triggerType}` },
         { status: 400 },
       );
+    }
+
+    if (updates.conditionTree !== undefined) {
+      const conditionTreeError = validateConditionTree(updates.conditionTree);
+      if (conditionTreeError) {
+        return NextResponse.json(
+          { error: `condition_tree invalido: ${conditionTreeError}` },
+          { status: 400 },
+        );
+      }
     }
 
     const dbUpdates: Record<string, unknown> = {};
@@ -288,7 +456,10 @@ export async function PATCH(request: NextRequest) {
     if (updates.description !== undefined) dbUpdates.description = updates.description;
     if (updates.triggerType !== undefined) dbUpdates.trigger_type = updates.triggerType;
     if (updates.triggerConditions !== undefined)
-      dbUpdates.trigger_conditions = updates.triggerConditions;
+      dbUpdates.trigger_conditions = normalizeTriggerConditions(
+        updates.triggerType ?? existingRule.trigger_type,
+        updates.triggerConditions,
+      );
     if (updates.conditionTree !== undefined)
       dbUpdates.condition_tree = updates.conditionTree;
     if (updates.isActive !== undefined) dbUpdates.is_active = updates.isActive;
@@ -324,7 +495,6 @@ export async function PATCH(request: NextRequest) {
       .update(dbUpdates)
       .eq("id", id)
       .eq("client_id", clientId)
-      .eq("is_system", false)
       .select()
       .single();
 
@@ -338,7 +508,6 @@ export async function PATCH(request: NextRequest) {
         .update(fallbackUpdates)
         .eq("id", id)
         .eq("client_id", clientId)
-        .eq("is_system", false)
         .select()
         .single();
     }
@@ -351,6 +520,8 @@ export async function PATCH(request: NextRequest) {
         { status: 404 },
       );
     }
+
+    clearCrmAutomationRuleCache(clientId);
 
     return NextResponse.json({ rule: updateResult.data });
   } catch (error) {
@@ -386,6 +557,8 @@ export async function DELETE(request: NextRequest) {
       .eq("is_system", false);
 
     if (error) throw error;
+
+    clearCrmAutomationRuleCache(clientId);
 
     return NextResponse.json({ success: true });
   } catch (error) {

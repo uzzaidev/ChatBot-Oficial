@@ -8,6 +8,14 @@
     {
       "path": "/api/cron/crm-executions-cleanup",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/crm-dlq-retry",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/crm-scheduled-actions",
+      "schedule": "*/2 * * * *"
     }
   ]
 }

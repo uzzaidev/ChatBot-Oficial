@@ -88,17 +88,46 @@ export async function PATCH(request: NextRequest) {
       dbUpdates.inactivity_warning_days = updates.inactivityWarningDays;
     if (updates.inactivityCriticalDays !== undefined)
       dbUpdates.inactivity_critical_days = updates.inactivityCriticalDays;
+    if (updates.llmIntentEnabled !== undefined)
+      dbUpdates.llm_intent_enabled = updates.llmIntentEnabled;
+    if (updates.llmIntentThreshold !== undefined)
+      dbUpdates.llm_intent_threshold = updates.llmIntentThreshold;
+    if (updates.nextStepsTemplate !== undefined)
+      dbUpdates.next_steps_template = updates.nextStepsTemplate;
+    if (updates.notifSilenceStart !== undefined)
+      dbUpdates.notif_silence_start = updates.notifSilenceStart;
+    if (updates.notifSilenceEnd !== undefined)
+      dbUpdates.notif_silence_end = updates.notifSilenceEnd;
+    if (updates.clientTimezone !== undefined)
+      dbUpdates.client_timezone = updates.clientTimezone;
 
-    const { data, error } = await supabase
+    let updateResult = await supabase
       .from("crm_settings")
       .update(dbUpdates)
       .eq("client_id", clientId)
       .select()
       .single();
 
-    if (error) throw error;
+    if (updateResult.error && isMissingColumnError(updateResult.error)) {
+      const fallbackUpdates = { ...dbUpdates };
+      delete fallbackUpdates.llm_intent_enabled;
+      delete fallbackUpdates.llm_intent_threshold;
+      delete fallbackUpdates.next_steps_template;
+      delete fallbackUpdates.notif_silence_start;
+      delete fallbackUpdates.notif_silence_end;
+      delete fallbackUpdates.client_timezone;
 
-    return NextResponse.json({ settings: data });
+      updateResult = await supabase
+        .from("crm_settings")
+        .update(fallbackUpdates)
+        .eq("client_id", clientId)
+        .select()
+        .single();
+    }
+
+    if (updateResult.error) throw updateResult.error;
+
+    return NextResponse.json({ settings: updateResult.data });
   } catch (error) {
     console.error("Error updating CRM settings:", error);
     return NextResponse.json(

@@ -512,6 +512,7 @@ export const createStorefrontCheckoutSession = async (params: {
   amount: number;
   successUrl: string;
   cancelUrl: string;
+  metadata?: Record<string, string>;
 }) => {
   const stripeClient = getStripeClient();
   const feePercent = getApplicationFeePercent();
@@ -524,6 +525,7 @@ export const createStorefrontCheckoutSession = async (params: {
       metadata: {
         stripe_price_id: params.stripePriceId,
         local_product_id: params.productId,
+        ...(params.metadata || {}),
       },
       payment_intent_data:
         params.productType === "one_time"

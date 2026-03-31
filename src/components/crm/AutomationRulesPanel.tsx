@@ -102,6 +102,11 @@ interface AutomationRule {
   trigger_conditions: Record<string, unknown>;
   action_type: string;
   action_params: Record<string, unknown>;
+  action_steps?: Array<{
+    action_type: string;
+    action_params: Record<string, unknown>;
+    on_error?: "continue" | "stop" | "compensate";
+  }>;
   is_active: boolean;
   is_system: boolean;
   priority: number;
@@ -130,6 +135,9 @@ interface AutomationRulesPanelProps {
 const triggerIcons: Record<string, React.ReactNode> = {
   message_received: <MessageSquare className="h-4 w-4" />,
   message_sent: <MessageSquare className="h-4 w-4" />,
+  keyword_detected: <Sparkles className="h-4 w-4" />,
+  intent_detected: <Sparkles className="h-4 w-4" />,
+  urgency_detected: <AlertCircle className="h-4 w-4" />,
   inactivity: <Clock className="h-4 w-4" />,
   status_change: <RefreshCw className="h-4 w-4" />,
   lead_source: <Target className="h-4 w-4" />,
@@ -137,6 +145,7 @@ const triggerIcons: Record<string, React.ReactNode> = {
   card_created: <Plus className="h-4 w-4" />,
   tag_added: <Tag className="h-4 w-4" />,
   card_moved: <ArrowRight className="h-4 w-4" />,
+  payment_completed: <CheckCircle2 className="h-4 w-4" />,
 };
 
 const actionIcons: Record<string, React.ReactNode> = {
@@ -147,6 +156,8 @@ const actionIcons: Record<string, React.ReactNode> = {
   update_auto_status: <RefreshCw className="h-4 w-4" />,
   log_activity: <MessageSquare className="h-4 w-4" />,
   add_note: <MessageSquare className="h-4 w-4" />,
+  send_message: <MessageSquare className="h-4 w-4" />,
+  notify_user: <Users className="h-4 w-4" />,
 };
 
 export function AutomationRulesPanel({
@@ -167,6 +178,19 @@ export function AutomationRulesPanel({
   const [editingRule, setEditingRule] = useState<AutomationRule | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [ruleToDelete, setRuleToDelete] = useState<string | null>(null);
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyRuleName, setHistoryRuleName] = useState("");
+  const [historyRows, setHistoryRows] = useState<
+    Array<{
+      id: string;
+      status: string;
+      executed_at: string;
+      skip_reason?: string | null;
+      error_message?: string | null;
+      depth?: number | null;
+    }>
+  >([]);
 
   // Form state for new/edit rule
   const [formData, setFormData] = useState({
@@ -176,6 +200,11 @@ export function AutomationRulesPanel({
     triggerConditions: {} as Record<string, unknown>,
     actionType: "",
     actionParams: {} as Record<string, unknown>,
+    actionSteps: [] as Array<{
+      action_type: string;
+      action_params: Record<string, unknown>;
+      on_error: "continue" | "stop" | "compensate";
+    }>,
     priority: 0,
   });
 
@@ -184,10 +213,8 @@ export function AutomationRulesPanel({
     setLoading(true);
     try {
       const [rulesRes, settingsRes] = await Promise.all([
-        fetch(
-          `/api/crm/automation-rules?clientId=${clientId}&includeMetadata=true`,
-        ),
-        fetch(`/api/crm/settings?clientId=${clientId}`),
+        fetch(`/api/crm/automation-rules?includeMetadata=true`),
+        fetch(`/api/crm/settings`),
       ]);
 
       if (rulesRes.ok) {
@@ -206,7 +233,7 @@ export function AutomationRulesPanel({
     } finally {
       setLoading(false);
     }
-  }, [clientId]);
+  }, []);
 
   useEffect(() => {
     if (open) {
@@ -243,7 +270,7 @@ export function AutomationRulesPanel({
       const res = await apiFetch("/api/crm/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clientId, ...updates }),
+        body: JSON.stringify(updates),
       });
 
       if (res.ok) {
@@ -258,6 +285,21 @@ export function AutomationRulesPanel({
   // Open edit dialog
   const openEditDialog = (rule?: AutomationRule) => {
     if (rule) {
+      const existingSteps =
+        Array.isArray(rule.action_steps) && rule.action_steps.length > 0
+          ? rule.action_steps.map((step) => ({
+              action_type: step.action_type,
+              action_params: step.action_params || {},
+              on_error: step.on_error || "stop",
+            }))
+          : [
+              {
+                action_type: rule.action_type,
+                action_params: rule.action_params || {},
+                on_error: "stop" as const,
+              },
+            ];
+
       setEditingRule(rule);
       setFormData({
         name: rule.name,
@@ -266,6 +308,7 @@ export function AutomationRulesPanel({
         triggerConditions: rule.trigger_conditions,
         actionType: rule.action_type,
         actionParams: rule.action_params,
+        actionSteps: existingSteps,
         priority: rule.priority,
       });
     } else {
@@ -277,6 +320,7 @@ export function AutomationRulesPanel({
         triggerConditions: {},
         actionType: "",
         actionParams: {},
+        actionSteps: [],
         priority: 0,
       });
     }
@@ -288,13 +332,15 @@ export function AutomationRulesPanel({
     setSaving(true);
     try {
       const payload = {
-        ...(editingRule ? { id: editingRule.id } : { clientId }),
+        ...(editingRule ? { id: editingRule.id } : {}),
         name: formData.name,
         description: formData.description || null,
         triggerType: formData.triggerType,
         triggerConditions: formData.triggerConditions,
         actionType: formData.actionType,
         actionParams: formData.actionParams,
+        actionSteps:
+          formData.actionSteps.length > 0 ? formData.actionSteps : undefined,
         priority: formData.priority,
         isActive: true,
       };
@@ -332,6 +378,64 @@ export function AutomationRulesPanel({
     }
   };
 
+  const reorderRules = async (nextRules: AutomationRule[]) => {
+    const payload = nextRules.map((rule, index) => ({
+      id: rule.id,
+      priority: nextRules.length - index,
+    }));
+
+    try {
+      const res = await apiFetch("/api/crm/automation-rules/reorder", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rules: payload }),
+      });
+
+      if (!res.ok) return;
+
+      setRules(
+        nextRules.map((rule, index) => ({
+          ...rule,
+          priority: nextRules.length - index,
+        })),
+      );
+    } catch (error) {
+      console.error("Error reordering rules:", error);
+    }
+  };
+
+  const moveRule = (ruleId: string, direction: "up" | "down") => {
+    const currentIndex = rules.findIndex((rule) => rule.id === ruleId);
+    if (currentIndex === -1) return;
+    const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= rules.length) return;
+
+    const nextRules = [...rules];
+    const [moved] = nextRules.splice(currentIndex, 1);
+    nextRules.splice(targetIndex, 0, moved);
+    reorderRules(nextRules);
+  };
+
+  const openHistoryDialog = async (rule: AutomationRule) => {
+    setHistoryDialogOpen(true);
+    setHistoryRuleName(rule.name);
+    setHistoryLoading(true);
+    setHistoryRows([]);
+
+    try {
+      const res = await apiFetch(
+        `/api/crm/automation-rules/${rule.id}/executions?limit=30`,
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      setHistoryRows(data.executions || []);
+    } catch (error) {
+      console.error("Error fetching rule history:", error);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
   // Get trigger/action display info
   const getTriggerInfo = (type: string) => triggers.find((t) => t.id === type);
   const getActionInfo = (type: string) => actions.find((a) => a.id === type);
@@ -344,13 +448,14 @@ export function AutomationRulesPanel({
       return (
         <Input
           type="number"
+          step="0.01"
           value={String((value as number) || condition.default || "")}
           onChange={(e) =>
             setFormData({
               ...formData,
               triggerConditions: {
                 ...formData.triggerConditions,
-                [condition.field]: parseInt(e.target.value) || 0,
+                [condition.field]: Number.parseFloat(e.target.value) || 0,
               },
             })
           }
@@ -440,6 +545,25 @@ export function AutomationRulesPanel({
             ))}
           </SelectContent>
         </Select>
+      );
+    }
+
+    if (condition.type === "text") {
+      return (
+        <Input
+          value={(value as string) || ""}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              triggerConditions: {
+                ...formData.triggerConditions,
+                [condition.field]: e.target.value,
+              },
+            })
+          }
+          placeholder={condition.label}
+          className="w-full"
+        />
       );
     }
 
@@ -553,6 +677,43 @@ export function AutomationRulesPanel({
     }
 
     return null;
+  };
+
+  const addCurrentActionAsStep = () => {
+    if (!formData.actionType) return;
+
+    setFormData({
+      ...formData,
+      actionSteps: [
+        ...formData.actionSteps,
+        {
+          action_type: formData.actionType,
+          action_params: { ...formData.actionParams },
+          on_error: "stop",
+        },
+      ],
+      actionType: "",
+      actionParams: {},
+    });
+  };
+
+  const removeStepAt = (index: number) => {
+    setFormData({
+      ...formData,
+      actionSteps: formData.actionSteps.filter((_, i) => i !== index),
+    });
+  };
+
+  const updateStepOnError = (
+    index: number,
+    value: "continue" | "stop" | "compensate",
+  ) => {
+    setFormData({
+      ...formData,
+      actionSteps: formData.actionSteps.map((step, i) =>
+        i === index ? { ...step, on_error: value } : step,
+      ),
+    });
   };
 
   return (
@@ -701,7 +862,7 @@ export function AutomationRulesPanel({
                     </p>
                   </Card>
                 ) : (
-                  rules.map((rule) => {
+                  rules.map((rule, index) => {
                     const triggerInfo = getTriggerInfo(rule.trigger_type);
                     const actionInfo = getActionInfo(rule.action_type);
 
@@ -785,6 +946,32 @@ export function AutomationRulesPanel({
 
                               {!rule.is_system && (
                                 <>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => openHistoryDialog(rule)}
+                                  >
+                                    <Clock className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => moveRule(rule.id, "up")}
+                                    disabled={index === 0}
+                                  >
+                                    <ChevronRight className="h-4 w-4 rotate-[-90deg]" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => moveRule(rule.id, "down")}
+                                    disabled={index === rules.length - 1}
+                                  >
+                                    <ChevronRight className="h-4 w-4 rotate-90" />
+                                  </Button>
                                   <Button
                                     variant="ghost"
                                     size="icon"
@@ -985,6 +1172,67 @@ export function AutomationRulesPanel({
                     ))}
                   </div>
                 )}
+
+              <div className="flex items-center gap-2 pt-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addCurrentActionAsStep}
+                  disabled={!formData.actionType}
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  Adicionar Etapa
+                </Button>
+                <span className="text-xs text-muted-foreground">
+                  {formData.actionSteps.length} etapa(s)
+                </span>
+              </div>
+
+              {formData.actionSteps.length > 0 && (
+                <div className="space-y-2 rounded-md border border-border/70 p-2">
+                  {formData.actionSteps.map((step, index) => (
+                    <div
+                      key={`${step.action_type}-${index}`}
+                      className="rounded-md border border-border/60 p-2"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-xs font-medium">
+                          Etapa {index + 1}:{" "}
+                          {getActionInfo(step.action_type)?.name || step.action_type}
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-destructive"
+                          onClick={() => removeStepAt(index)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                      <div className="mt-2 space-y-1">
+                        <Label className="text-[11px]">On error</Label>
+                        <Select
+                          value={step.on_error}
+                          onValueChange={(value: "continue" | "stop" | "compensate") =>
+                            updateStepOnError(index, value)
+                          }
+                        >
+                          <SelectTrigger className="h-8">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="stop">Parar cadeia</SelectItem>
+                            <SelectItem value="continue">Continuar</SelectItem>
+                            <SelectItem value="compensate">Compensar</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -998,7 +1246,7 @@ export function AutomationRulesPanel({
                 saving ||
                 !formData.name ||
                 !formData.triggerType ||
-                !formData.actionType
+                (!formData.actionType && formData.actionSteps.length === 0)
               }
             >
               {saving ? (
@@ -1014,6 +1262,55 @@ export function AutomationRulesPanel({
               )}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rule History */}
+      <Dialog open={historyDialogOpen} onOpenChange={setHistoryDialogOpen}>
+        <DialogContent className="crm-sheet-surface max-w-2xl border-border/80">
+          <DialogHeader>
+            <DialogTitle>Historico de Execucoes</DialogTitle>
+            <DialogDescription>{historyRuleName}</DialogDescription>
+          </DialogHeader>
+
+          <div className="max-h-[420px] overflow-auto space-y-2">
+            {historyLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : historyRows.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-6 text-center">
+                Nenhuma execucao encontrada.
+              </p>
+            ) : (
+              historyRows.map((row) => (
+                <div
+                  key={row.id}
+                  className="rounded-md border border-border/70 p-3 text-xs space-y-1"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <Badge variant="outline">{row.status}</Badge>
+                    <span className="text-muted-foreground">
+                      {new Date(row.executed_at).toLocaleString("pt-BR")}
+                    </span>
+                  </div>
+                  {row.skip_reason && (
+                    <p className="text-muted-foreground">
+                      skip_reason: <code>{row.skip_reason}</code>
+                    </p>
+                  )}
+                  {row.error_message && (
+                    <p className="text-destructive">
+                      error: <code>{row.error_message}</code>
+                    </p>
+                  )}
+                  {typeof row.depth === "number" && (
+                    <p className="text-muted-foreground">depth: {row.depth}</p>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 
