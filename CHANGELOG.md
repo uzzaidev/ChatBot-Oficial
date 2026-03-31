@@ -4,6 +4,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-03-31
 
+### fix
+- Alterado o tema padrão da aplicação de escuro para claro no layout principal
+  - Arquivos: `src/app/layout.tsx`
+  - Evidência: modificação da propriedade `defaultTheme` de "dark" para "light" no componente `ThemeProvider`
+  - Confiança: alta
+
+## 2026-03-31
+
 ### chore
 - Adicionada documentação arquitetural detalhada e fatos de projeto para ChatBot-Oficial, incluindo modelo de execução AI, decisões de framework, estado do repositório e padrões de exportação PDF
   - Arquivos: `.brv/context-tree/_index.md`, `.brv/context-tree/_manifest.json`, `.brv/context-tree/architecture/_index.md`, `.brv/context-tree/architecture/ai_runtime/_index.md`, `.brv/context-tree/architecture/ai_runtime/agent_framework_decision_for_realtime_flow.md`, `.brv/context-tree/architecture/ai_runtime/byterover_global_mode_cwd_requirement.md`, `.brv/context-tree/architecture/ai_runtime/context.md`, `.brv/context-tree/architecture/context.md`, `.brv/context-tree/architecture/project_state/_index.md`, `.brv/context-tree/architecture/project_state/chatbot_oficial_snapshot_2026_03_31.md`, `.brv/context-tree/architecture/project_state/commercial_deck_mobile_pdf_export_pattern.md`, `.brv/context-tree/architecture/project_state/context.md`, `.brv/context-tree/facts/_index.md`, `.brv/context-tree/facts/context.md`, `.brv/context-tree/facts/project/_index.md`, `.brv/context-tree/facts/project/byterover_cwd_requirement_for_repository.md`, `.brv/context-tree/facts/project/chatbot_oficial_state_facts_2026_03_31.md`, `.brv/context-tree/facts/project/commercial_deck_export_facts_2026_03_31.md`, `.brv/context-tree/facts/project/context.md`, `.brv/context-tree/facts/project/initial_byterover_repository_sanity_check.md`
