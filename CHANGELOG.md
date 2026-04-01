@@ -7,6 +7,21 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-01
 
 ### feat
+- Implementado sistema completo de gerenciamento de faturamento, incluindo APIs para planos, cupons, assinaturas, checkout e portal de faturamento.
+- Adicionado dashboard administrativo para visualização e controle de clientes, assinaturas, planos e cupons com funcionalidades de criação, cancelamento e geração de links de pagamento.
+- Criado componente de banner para exibir status de pagamento pendente ou conta suspensa no dashboard do cliente.
+- Implementado componente PaymentWall para bloquear acesso ao dashboard em caso de assinatura pendente, cancelada ou suspensa, com opção de checkout integrado.
+- Integrado lógica de ciclo de vida de assinaturas com Stripe via webhooks, incluindo tratamento de períodos de carência, suspensão automática e atualização de status no banco.
+- Adicionado endpoint cron para aplicação automática de suspensão em clientes com período de carência expirado.
+- Integrado fluxo de checkout na página de onboarding, com validação de status de assinatura e redirecionamento para pagamento.
+- Atualizado layout do dashboard para incluir navegação e banner de status de faturamento.
+- Adicionado rota e botão no dashboard admin para acesso ao painel de faturamento.
+  - Arquivos principais: `src/app/api/admin/billing/*`, `src/app/api/billing/*`, `src/app/api/cron/enforce-grace-period/route.ts`, `src/app/api/stripe/platform/webhooks/route.ts`, `src/app/dashboard/admin/billing/page.tsx`, `src/app/dashboard/billing/page.tsx`, `src/app/onboarding/page.tsx`, `src/components/BillingStatusBanner.tsx`, `src/components/PaymentWall.tsx`, `src/components/DashboardLayoutClient.tsx`, `src/components/DashboardNavigation.tsx`
+  - Confiança: alta
+
+## 2026-04-01
+
+### feat
 - Implementada paginação incremental ("load more") e busca no backend para contatos, com debounce na busca no frontend.
 - Atualizada API de contatos para suportar parâmetros de busca e paginação robusta com limites e offsets validados.
 - Ajustada interface de contatos para exibir botão "Carregar mais" ao final da lista, mostrando quantidade total e carregando mais itens sob demanda.
