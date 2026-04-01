@@ -7,6 +7,15 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-01
 
 ### feat
+- Adicionado controle de papéis de usuário no layout do dashboard para habilitar navegação condicional e exibir seções administrativas apenas para admins.
+- Atualizada navegação do dashboard para mostrar itens de "Pagamentos" e "Gestão de Clientes" somente para usuários com papel "admin", com badges indicativos.
+- Melhorada interface da página de pagamentos, removendo botões de checkout e billing portal e ajustando layout e textos para foco em onboarding e gerenciamento de produtos.
+  - Arquivos: `src/app/dashboard/layout.tsx`, `src/components/DashboardLayoutClient.tsx`, `src/components/DashboardNavigation.tsx`, `src/app/dashboard/payments/page.tsx`
+  - Confiança: alta
+
+## 2026-04-01
+
+### feat
 - Implementado sistema completo de gerenciamento de faturamento, incluindo APIs para planos, cupons, assinaturas, checkout e portal de faturamento.
 - Adicionado dashboard administrativo para visualização e controle de clientes, assinaturas, planos e cupons com funcionalidades de criação, cancelamento e geração de links de pagamento.
 - Criado componente de banner para exibir status de pagamento pendente ou conta suspensa no dashboard do cliente.
