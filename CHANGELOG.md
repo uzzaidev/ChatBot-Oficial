@@ -3,6 +3,17 @@
 Gerado automaticamente por IA a cada push no `main`.
 
 ```
+
+## 2026-04-01
+
+### feat
+- Implementada paginação incremental ("load more") e busca no backend para contatos, com debounce na busca no frontend.
+- Atualizada API de contatos para suportar parâmetros de busca e paginação robusta com limites e offsets validados.
+- Ajustada interface de contatos para exibir botão "Carregar mais" ao final da lista, mostrando quantidade total e carregando mais itens sob demanda.
+- Refatorado hook `useContacts` para gerenciar estados de carregamento, paginação incremental, busca e controle de mais resultados.
+  - Arquivos: `src/app/api/contacts/route.ts`, `src/components/ContactsClient.tsx`, `src/hooks/useContacts.ts`
+  - Confiança: alta
+
 ## 2026-04-01
 
 ### feat
