@@ -17,7 +17,12 @@ export async function GET(request: NextRequest) {
 
     const coupons = await stripe.coupons.list({ limit: 50 });
 
-    const formatted = coupons.data.map((c) => ({
+    // Filter to UzzApp coupons only (exclude Convoca, etc.)
+    const uzzappCoupons = coupons.data.filter(
+      (c) => c.metadata?.app === "uzzapp",
+    );
+
+    const formatted = uzzappCoupons.map((c) => ({
       id: c.id,
       name: c.name,
       percent_off: c.percent_off,
@@ -103,6 +108,8 @@ export async function POST(request: NextRequest) {
     ) {
       params.max_redemptions = Number(body.max_redemptions);
     }
+
+    params.metadata = { app: "uzzapp" };
 
     const coupon = await stripe.coupons.create(params);
 
