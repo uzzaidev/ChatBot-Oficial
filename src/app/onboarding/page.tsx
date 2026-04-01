@@ -104,9 +104,11 @@ const StepIndicator = ({ currentStep }: { currentStep: OnboardingStep }) => {
 const ConnectWhatsAppStep = ({
   clientId,
   onConnected,
+  onSkip,
 }: {
   clientId: string;
   onConnected: (returnedClientId: string) => void;
+  onSkip: () => void;
 }) => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -148,6 +150,14 @@ const ConnectWhatsAppStep = ({
       >
         Conectar WhatsApp Business
       </EmbeddedSignupButton>
+
+      <button
+        type="button"
+        onClick={onSkip}
+        className="w-full mt-3 text-sm text-gray-400 hover:text-gray-600 py-2 transition-colors"
+      >
+        Pular e ir para o Dashboard
+      </button>
     </div>
   );
 };
@@ -627,6 +637,7 @@ function OnboardingContent() {
                 });
                 router.push(`/onboarding?${params.toString()}`);
               }}
+              onSkip={() => router.push("/dashboard")}
             />
           )}
 
