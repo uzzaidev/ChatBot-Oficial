@@ -7,6 +7,13 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-01
 
 ### feat
+- Filtrado cupons Stripe para incluir apenas os específicos do UzzApp e adicionado metadata para identificar novos cupons como do UzzApp
+  - Arquivos: `src/app/api/admin/billing/coupons/route.ts`
+  - Confiança: alta
+
+## 2026-04-01
+
+### feat
 - Adicionado controle de papéis de usuário no layout do dashboard para habilitar navegação condicional e exibir seções administrativas apenas para admins.
 - Atualizada navegação do dashboard para mostrar itens de "Pagamentos" e "Gestão de Clientes" somente para usuários com papel "admin", com badges indicativos.
 - Melhorada interface da página de pagamentos, removendo botões de checkout e billing portal e ajustando layout e textos para foco em onboarding e gerenciamento de produtos.
