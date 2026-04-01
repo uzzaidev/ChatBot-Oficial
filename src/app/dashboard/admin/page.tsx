@@ -1,6 +1,12 @@
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import Link from "next/link";
 
 export default function AdminHomePage() {
   return (
@@ -17,7 +23,8 @@ export default function AdminHomePage() {
           <CardHeader>
             <CardTitle>Clientes</CardTitle>
             <CardDescription>
-              Lista de clientes, ativacao de assinatura e visao consolidada de pagamentos.
+              Lista de clientes, ativacao de assinatura e visao consolidada de
+              pagamentos.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -31,7 +38,8 @@ export default function AdminHomePage() {
           <CardHeader>
             <CardTitle>Budget plans</CardTitle>
             <CardDescription>
-              Gestao de limites de uso por cliente para IA e custos operacionais.
+              Gestao de limites de uso por cliente para IA e custos
+              operacionais.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -40,8 +48,22 @@ export default function AdminHomePage() {
             </Button>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Billing</CardTitle>
+            <CardDescription>
+              Assinaturas, planos, cupons e controle de faturamento da
+              plataforma.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild variant="outline">
+              <Link href="/dashboard/admin/billing">Abrir billing</Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
 }
-

@@ -23,6 +23,7 @@ import {
   Kanban,
   LayoutDashboard,
   MessageSquare,
+  Receipt,
   Settings,
   TrendingUp,
   Users,
@@ -289,6 +290,14 @@ export function DashboardNavigation({
         {/* SEÇÃO: CONFIGURAÇÃO */}
         <NavSection title="Configuração" isCollapsed={isCollapsed} />
         <NavItem
+          href="/dashboard/billing"
+          icon={<Receipt className="h-5 w-5 flex-shrink-0" />}
+          label="Faturamento"
+          isCollapsed={isCollapsed}
+          onClick={onLinkClick}
+          tooltip="Assinatura, pagamentos e faturas"
+        />
+        <NavItem
           href="/dashboard/settings"
           icon={<Settings className="h-5 w-5 flex-shrink-0" />}
           label="Configurações"
@@ -360,4 +369,3 @@ export function DashboardNavigation({
     </div>
   );
 }
-

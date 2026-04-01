@@ -1,19 +1,26 @@
-'use client'
+"use client";
 
-import { useState, useEffect, useRef } from 'react'
-import { usePathname } from 'next/navigation'
-import { Menu } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet'
-import { DashboardNavigation } from '@/components/DashboardNavigation'
-import { NotificationBell } from '@/components/NotificationBell'
-import { ThemeToggle } from '@/components/ThemeToggle'
-import { cn } from '@/lib/utils'
+import { BillingStatusBanner } from "@/components/BillingStatusBanner";
+import { DashboardNavigation } from "@/components/DashboardNavigation";
+import { NotificationBell } from "@/components/NotificationBell";
+import { PaymentWall } from "@/components/PaymentWall";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
+import { Menu } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
 interface DashboardLayoutClientProps {
-  userName?: string
-  userEmail?: string
-  children: React.ReactNode
+  userName?: string;
+  userEmail?: string;
+  children: React.ReactNode;
 }
 
 /**
@@ -26,59 +33,66 @@ interface DashboardLayoutClientProps {
  * - Oculta-se automaticamente em rotas de conversas
  * - Header que esconde ao rolar para baixo e aparece ao rolar para cima
  */
-export function DashboardLayoutClient({ 
-  userName, 
-  userEmail, 
-  children 
+export function DashboardLayoutClient({
+  userName,
+  userEmail,
+  children,
 }: DashboardLayoutClientProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false)
-  const [isMobileOpen, setIsMobileOpen] = useState(false)
-  const [isHeaderVisible, setIsHeaderVisible] = useState(true)
-  const [lastScrollY, setLastScrollY] = useState(0)
-  const mainContentRef = useRef<HTMLElement>(null)
-  const pathname = usePathname()
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+  const mainContentRef = useRef<HTMLElement>(null);
+  const pathname = usePathname();
 
   // Se estiver em qualquer rota de conversas, chat ou contatos, renderiza apenas children
   // (essas páginas têm seu próprio layout/sidebar full-screen)
-  const isFullScreenRoute = pathname.startsWith('/dashboard/conversations') ||
-                           pathname.startsWith('/dashboard/chat') ||
-                           pathname.startsWith('/dashboard/contacts')
+  const isFullScreenRoute =
+    pathname.startsWith("/dashboard/conversations") ||
+    pathname.startsWith("/dashboard/chat") ||
+    pathname.startsWith("/dashboard/contacts");
 
   // Detecta scroll para esconder/mostrar header (apenas desktop)
   useEffect(() => {
-    if (isFullScreenRoute) return
+    if (isFullScreenRoute) return;
 
     const handleScroll = () => {
       // Detecta scroll tanto do window quanto do elemento de conteúdo interno
-      const scrollElement = mainContentRef.current?.querySelector('[class*="overflow"]') as HTMLElement
-      const currentScrollY = scrollElement ? scrollElement.scrollTop : window.scrollY
-      
+      const scrollElement = mainContentRef.current?.querySelector(
+        '[class*="overflow"]',
+      ) as HTMLElement;
+      const currentScrollY = scrollElement
+        ? scrollElement.scrollTop
+        : window.scrollY;
+
       // Se rolar para baixo mais de 70px (altura do header), esconde o header
       if (currentScrollY > lastScrollY && currentScrollY > 70) {
-        setIsHeaderVisible(false)
-      } 
+        setIsHeaderVisible(false);
+      }
       // Se rolar para cima, mostra o header
       else if (currentScrollY < lastScrollY) {
-        setIsHeaderVisible(true)
+        setIsHeaderVisible(true);
       }
-      
-      setLastScrollY(currentScrollY)
-    }
+
+      setLastScrollY(currentScrollY);
+    };
 
     // Escuta scroll no window e no elemento de conteúdo (se existir)
-    const scrollElement = mainContentRef.current?.querySelector('[class*="overflow"]') as HTMLElement
-    
+    const scrollElement = mainContentRef.current?.querySelector(
+      '[class*="overflow"]',
+    ) as HTMLElement;
+
     if (scrollElement) {
-      scrollElement.addEventListener('scroll', handleScroll, { passive: true })
-      return () => scrollElement.removeEventListener('scroll', handleScroll)
+      scrollElement.addEventListener("scroll", handleScroll, { passive: true });
+      return () => scrollElement.removeEventListener("scroll", handleScroll);
     } else {
-      window.addEventListener('scroll', handleScroll, { passive: true })
-      return () => window.removeEventListener('scroll', handleScroll)
+      window.addEventListener("scroll", handleScroll, { passive: true });
+      return () => window.removeEventListener("scroll", handleScroll);
     }
-  }, [lastScrollY, isFullScreenRoute])
+  }, [lastScrollY, isFullScreenRoute]);
 
   if (isFullScreenRoute) {
-    return <>{children}</>
+    return <>{children}</>;
   }
 
   return (
@@ -87,7 +101,7 @@ export function DashboardLayoutClient({
       <aside
         className={cn(
           "hidden md:flex flex-col fixed left-0 top-0 h-screen border-r border-primary/10 bg-sidebar-dark transition-all duration-300 overflow-y-auto z-50",
-          isCollapsed ? "w-20" : "w-[260px]"
+          isCollapsed ? "w-20" : "w-[260px]",
         )}
       >
         <DashboardNavigation
@@ -99,12 +113,12 @@ export function DashboardLayoutClient({
       </aside>
 
       {/* Main Content - Add left margin to account for fixed sidebar */}
-      <main 
+      <main
         ref={mainContentRef}
         className={cn(
           "flex-1 flex flex-col min-w-0 transition-all duration-300 bg-background",
           "md:ml-[260px]",
-          isCollapsed && "md:ml-20"
+          isCollapsed && "md:ml-20",
         )}
       >
         {/* Desktop Header - DARK THEME - Esconde ao rolar para baixo */}
@@ -113,7 +127,7 @@ export function DashboardLayoutClient({
             "hidden md:flex h-[70px] border-b border-border/50 px-8 items-center justify-between transition-transform duration-300",
             "bg-card",
             // Transforma header para esconder/mostrar baseado no scroll
-            isHeaderVisible ? "translate-y-0" : "-translate-y-full"
+            isHeaderVisible ? "translate-y-0" : "-translate-y-full",
           )}
         >
           <div className="flex items-center gap-4">
@@ -132,9 +146,7 @@ export function DashboardLayoutClient({
         </header>
 
         {/* Mobile Header */}
-        <div
-          className="md:hidden sticky top-0 z-10 border-b border-border/50 p-4 flex items-center justify-between bg-card"
-        >
+        <div className="md:hidden sticky top-0 z-10 border-b border-border/50 p-4 flex items-center justify-between bg-card">
           <div className="flex items-center gap-3">
             <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
               <SheetTrigger asChild>
@@ -172,10 +184,11 @@ export function DashboardLayoutClient({
         {/* Page Content */}
         <div className="flex-1 overflow-auto bg-background px-2 py-3 sm:px-3 sm:py-4 md:px-6 md:py-6 xl:px-8 xl:py-8">
           <div className="max-w-[1600px] mx-auto w-full">
-            {children}
+            <BillingStatusBanner />
+            <PaymentWall>{children}</PaymentWall>
           </div>
         </div>
       </main>
     </div>
-  )
+  );
 }

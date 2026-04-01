@@ -16,6 +16,10 @@
     {
       "path": "/api/cron/crm-scheduled-actions",
       "schedule": "*/2 * * * *"
+    },
+    {
+      "path": "/api/cron/enforce-grace-period",
+      "schedule": "0 6 * * *"
     }
   ]
 }

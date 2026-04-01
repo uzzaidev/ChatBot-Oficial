@@ -607,15 +607,165 @@ function OnboardingContent() {
   const stepParam = searchParams.get("step");
   const clientId = searchParams.get("client_id") ?? "";
   const errorCode = searchParams.get("error");
+  const checkoutResult = searchParams.get("checkout");
 
   const currentStep = resolveCurrentStep(stepParam);
   const urlErrorMessage = buildErrorMessage(errorCode);
+
+  // --- Billing gate ---
+  const [billingChecked, setBillingChecked] = useState(false);
+  const [needsPayment, setNeedsPayment] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (checkoutResult === "success") {
+      setBillingChecked(true);
+      setNeedsPayment(false);
+      return;
+    }
+
+    const checkBilling = async () => {
+      try {
+        const res = await apiFetch("/api/billing");
+        if (!res.ok) {
+          setNeedsPayment(true);
+          setBillingChecked(true);
+          return;
+        }
+        const data = await res.json();
+        const status = data.subscription?.status;
+        const paid =
+          status === "active" || status === "trialing" || status === "past_due";
+        setNeedsPayment(!paid);
+      } catch {
+        setNeedsPayment(true);
+      } finally {
+        setBillingChecked(true);
+      }
+    };
+    checkBilling();
+  }, [checkoutResult]);
+
+  const handleOnboardingCheckout = async () => {
+    setCheckoutLoading(true);
+    setCheckoutError(null);
+    try {
+      const returnPath = `/onboarding?step=connect-whatsapp${
+        clientId ? `&client_id=${clientId}` : ""
+      }`;
+      const res = await apiFetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          promoCode: promoCode || undefined,
+          returnUrl: returnPath,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setCheckoutError(json.error ?? "Erro ao iniciar checkout");
+        return;
+      }
+      if (json.url) {
+        window.location.href = json.url;
+      }
+    } catch {
+      setCheckoutError("Erro de conexão. Tente novamente.");
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
 
   const navigateToStep = (step: OnboardingStep) => {
     const params = new URLSearchParams({ step });
     if (clientId) params.set("client_id", clientId);
     router.push(`/onboarding?${params.toString()}`);
   };
+
+  if (!billingChecked) {
+    return (
+      <div className="bg-gradient-to-br from-gray-950 to-gray-900 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-3" />
+          <p className="text-gray-400 text-sm">Verificando sua conta...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (needsPayment) {
+    return (
+      <div className="bg-gradient-to-br from-gray-950 to-gray-900 min-h-screen flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-lg">
+          <UzzAppLogo />
+          <div className="bg-white rounded-2xl shadow-2xl p-8">
+            <div className="text-center mb-6">
+              <div className="text-5xl mb-4">💳</div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Assinar UzzApp Pro
+              </h2>
+              <p className="text-gray-600 text-sm">
+                Para configurar seu chatbot WhatsApp, é necessário ativar sua
+                assinatura.
+              </p>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="text-2xl">🚀</div>
+                <div>
+                  <p className="font-semibold text-gray-900">UzzApp Pro</p>
+                  <p className="text-sm text-gray-600">
+                    R$ 249,00/mês — WhatsApp AI completo
+                  </p>
+                </div>
+              </div>
+              <ul className="mt-3 space-y-1 text-sm text-gray-600">
+                <li>✓ Chatbot IA ilimitado</li>
+                <li>✓ WhatsApp Business integrado</li>
+                <li>✓ Dashboard completo</li>
+                <li>✓ Base de conhecimento (RAG)</li>
+                <li>✓ Suporte prioritário</li>
+              </ul>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Código promocional (opcional)
+              </label>
+              <input
+                type="text"
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value)}
+                placeholder="Digite seu cupom"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            {checkoutError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                <p className="text-red-600 text-sm">{checkoutError}</p>
+              </div>
+            )}
+
+            <button
+              onClick={handleOnboardingCheckout}
+              disabled={checkoutLoading}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+            >
+              {checkoutLoading ? "Redirecionando..." : "Assinar e Continuar"}
+            </button>
+
+            <p className="text-center text-xs text-gray-400 mt-4">
+              Pagamento seguro via Stripe. Cancele quando quiser.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gradient-to-br from-gray-950 to-gray-900 min-h-screen flex items-center justify-center px-4 py-12">

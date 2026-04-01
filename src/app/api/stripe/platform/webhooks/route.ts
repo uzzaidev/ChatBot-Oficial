@@ -1,8 +1,16 @@
-import Stripe from "stripe";
-import { NextRequest, NextResponse } from "next/server";
-import { mapStripeSubscriptionStatus, toClientPlanStatus } from "@/lib/admin-helpers";
+import {
+  mapStripeSubscriptionStatus,
+  toClientPlanStatus,
+} from "@/lib/admin-helpers";
+import {
+  clearGracePeriod,
+  enforceNonPayment,
+  startGracePeriod,
+} from "@/lib/billing-lifecycle";
+import { constructWebhookEvent } from "@/lib/stripe";
 import { createServiceClient } from "@/lib/supabase-server";
-import { constructWebhookEvent, getStripeClient } from "@/lib/stripe";
+import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
 
 export const dynamic = "force-dynamic";
 
@@ -36,10 +44,11 @@ const logError = (message: string, context?: Record<string, unknown>) => {
 
 const getWebhookSecret = (): string => {
   const secret =
-    process.env.STRIPE_PLATFORM_WEBHOOK_SECRET ?? process.env.STRIPE_WEBHOOK_SECRET;
+    process.env.STRIPE_PLATFORM_WEBHOOK_SECRET ??
+    process.env.STRIPE_WEBHOOK_SECRET;
   if (!secret || secret.includes("whsec_...")) {
     throw new Error(
-      "Missing webhook secret. Set STRIPE_PLATFORM_WEBHOOK_SECRET (or STRIPE_WEBHOOK_SECRET)."
+      "Missing webhook secret. Set STRIPE_PLATFORM_WEBHOOK_SECRET (or STRIPE_WEBHOOK_SECRET).",
     );
   }
   return secret;
@@ -102,7 +111,7 @@ const markWebhookEventFailed = async (eventId: string, message: string) => {
 };
 
 const resolveClientIdByStripeCustomer = async (
-  stripeCustomerId?: string | null
+  stripeCustomerId?: string | null,
 ): Promise<string | null> => {
   if (!stripeCustomerId) return null;
 
@@ -117,7 +126,7 @@ const resolveClientIdByStripeCustomer = async (
 };
 
 const resolveClientIdFromSubscription = async (
-  subscription: Stripe.Subscription
+  subscription: Stripe.Subscription,
 ): Promise<string | null> => {
   if (subscription.metadata?.client_id) {
     return subscription.metadata.client_id;
@@ -130,14 +139,16 @@ const resolveClientIdFromSubscription = async (
 
 const upsertPlatformSubscription = async (
   subscription: Stripe.Subscription,
-  forcedStatus?: string
+  forcedStatus?: string,
 ) => {
   const clientId = await resolveClientIdFromSubscription(subscription);
   if (!clientId) {
     logWarn("Could not map platform subscription to client", {
       subscriptionId: subscription.id,
       customer:
-        typeof subscription.customer === "string" ? subscription.customer : null,
+        typeof subscription.customer === "string"
+          ? subscription.customer
+          : null,
     });
     return;
   }
@@ -149,9 +160,11 @@ const upsertPlatformSubscription = async (
   const currentPeriodStart = firstItem?.current_period_start ?? null;
   const currentPeriodEnd = firstItem?.current_period_end ?? null;
   const normalizedStatus = mapStripeSubscriptionStatus(
-    forcedStatus ?? subscription.status
+    forcedStatus ?? subscription.status,
   );
-  const clientPlanStatus = toClientPlanStatus(forcedStatus ?? subscription.status);
+  const clientPlanStatus = toClientPlanStatus(
+    forcedStatus ?? subscription.status,
+  );
 
   await supabase.from("platform_client_subscriptions").upsert(
     {
@@ -161,7 +174,8 @@ const upsertPlatformSubscription = async (
       stripe_price_id: firstItem?.price?.id ?? null,
       plan_name: "pro",
       plan_amount: firstItem?.price?.unit_amount ?? 24900,
-      plan_currency: firstItem?.price?.currency ?? subscription.currency ?? "brl",
+      plan_currency:
+        firstItem?.price?.currency ?? subscription.currency ?? "brl",
       plan_interval: firstItem?.price?.recurring?.interval ?? "month",
       status: normalizedStatus,
       trial_start: unixToIso(subscription.trial_start),
@@ -172,7 +186,7 @@ const upsertPlatformSubscription = async (
       canceled_at: unixToIso(subscription.canceled_at),
       updated_at: new Date().toISOString(),
     },
-    { onConflict: "client_id" }
+    { onConflict: "client_id" },
   );
 
   await supabase
@@ -209,17 +223,15 @@ const upsertInvoiceHistory = async (invoice: Stripe.Invoice) => {
     ? new Date(invoice.status_transitions.paid_at * 1000).toISOString()
     : null;
 
-  const periodStart =
-    (invoice as any).period_start
-      ? new Date((invoice as any).period_start * 1000).toISOString()
-      : null;
-  const periodEnd =
-    (invoice as any).period_end
-      ? new Date((invoice as any).period_end * 1000).toISOString()
-      : null;
+  const periodStart = (invoice as any).period_start
+    ? new Date((invoice as any).period_start * 1000).toISOString()
+    : null;
+  const periodEnd = (invoice as any).period_end
+    ? new Date((invoice as any).period_end * 1000).toISOString()
+    : null;
 
   const invoicePaymentIntent = invoice.payments?.data?.find(
-    (payment) => payment.payment?.type === "payment_intent"
+    (payment) => payment.payment?.type === "payment_intent",
   )?.payment?.payment_intent;
   const stripePaymentIntentId =
     typeof invoicePaymentIntent === "string"
@@ -242,7 +254,7 @@ const upsertInvoiceHistory = async (invoice: Stripe.Invoice) => {
       invoice_pdf: invoice.invoice_pdf ?? null,
       metadata: invoice.metadata ?? {},
     },
-    { onConflict: "stripe_invoice_id" }
+    { onConflict: "stripe_invoice_id" },
   );
 
   await supabase
@@ -255,8 +267,8 @@ const upsertInvoiceHistory = async (invoice: Stripe.Invoice) => {
         invoice.status === "paid"
           ? "active"
           : invoice.status === "open"
-            ? "past_due"
-            : undefined,
+          ? "past_due"
+          : undefined,
       updated_at: new Date().toISOString(),
     })
     .eq("client_id", clientId);
@@ -272,7 +284,7 @@ const upsertInvoiceHistory = async (invoice: Stripe.Invoice) => {
 
 const setClientPlanStatusByCustomer = async (
   stripeCustomerId: string | null,
-  status: "active" | "past_due" | "canceled"
+  status: "active" | "past_due" | "canceled",
 ) => {
   const clientId = await resolveClientIdByStripeCustomer(stripeCustomerId);
   if (!clientId) {
@@ -307,7 +319,7 @@ export async function POST(request: NextRequest) {
   if (!signature) {
     return NextResponse.json(
       { error: "Missing stripe-signature header" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -323,7 +335,7 @@ export async function POST(request: NextRequest) {
         error: "Invalid Stripe webhook signature",
         details: error?.message ?? "signature_verification_failed",
       },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -350,32 +362,75 @@ export async function POST(request: NextRequest) {
 
     switch (event.type) {
       case "customer.subscription.created":
-      case "customer.subscription.updated":
       case "customer.subscription.resumed":
       case "customer.subscription.trial_will_end":
-        await upsertPlatformSubscription(event.data.object as Stripe.Subscription);
-        break;
-
-      case "customer.subscription.deleted":
         await upsertPlatformSubscription(
           event.data.object as Stripe.Subscription,
-          "canceled"
         );
         break;
 
+      case "customer.subscription.updated": {
+        const sub = event.data.object as Stripe.Subscription;
+        await upsertPlatformSubscription(sub);
+
+        // If subscription went past_due, start grace period
+        if (sub.status === "past_due") {
+          const cId = await resolveClientIdFromSubscription(sub);
+          if (cId) await startGracePeriod(cId, 7);
+        }
+        // If subscription is back to active, clear grace period
+        if (sub.status === "active") {
+          const cId = await resolveClientIdFromSubscription(sub);
+          if (cId) await clearGracePeriod(cId);
+        }
+        break;
+      }
+
+      case "customer.subscription.deleted": {
+        const deletedSub = event.data.object as Stripe.Subscription;
+        await upsertPlatformSubscription(deletedSub, "canceled");
+
+        // Enforce non-payment: suspend + disconnect WhatsApp
+        const clientIdForDelete = await resolveClientIdFromSubscription(
+          deletedSub,
+        );
+        if (clientIdForDelete) {
+          await enforceNonPayment(clientIdForDelete);
+          logInfo("Client WhatsApp disconnected after subscription deletion", {
+            clientId: clientIdForDelete,
+          });
+        }
+        break;
+      }
+
       // Cobertura para nomenclaturas diferentes de eventos de invoice.
       case "invoice.payment_succeeded":
-      case "invoice.paid":
-        await upsertInvoiceHistory(event.data.object as Stripe.Invoice);
+      case "invoice.paid": {
+        const paidInvoice = event.data.object as Stripe.Invoice;
+        await upsertInvoiceHistory(paidInvoice);
+        // Payment succeeded → clear grace period
+        const paidCustomer =
+          typeof paidInvoice.customer === "string"
+            ? paidInvoice.customer
+            : null;
+        const paidClientId = await resolveClientIdByStripeCustomer(
+          paidCustomer,
+        );
+        if (paidClientId) await clearGracePeriod(paidClientId);
         break;
+      }
 
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
         await upsertInvoiceHistory(invoice);
-        await setClientPlanStatusByCustomer(
-          typeof invoice.customer === "string" ? invoice.customer : null,
-          "past_due"
+        const failedCustomer =
+          typeof invoice.customer === "string" ? invoice.customer : null;
+        await setClientPlanStatusByCustomer(failedCustomer, "past_due");
+        // Start 7-day grace period
+        const failedClientId = await resolveClientIdByStripeCustomer(
+          failedCustomer,
         );
+        if (failedClientId) await startGracePeriod(failedClientId, 7);
         break;
       }
 
@@ -387,7 +442,10 @@ export async function POST(request: NextRequest) {
     logInfo("Event processed", { eventId: event.id, eventType: event.type });
     return NextResponse.json({ received: true });
   } catch (error: any) {
-    await markWebhookEventFailed(event.id, error?.message ?? "webhook_processing_failed");
+    await markWebhookEventFailed(
+      event.id,
+      error?.message ?? "webhook_processing_failed",
+    );
     logError("Webhook processing failed", {
       eventId: event.id,
       eventType: event.type,
