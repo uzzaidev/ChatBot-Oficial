@@ -2,6 +2,15 @@
 
 Gerado automaticamente por IA a cada push no `main`.
 
+```
+## 2026-04-01
+
+### feat
+- Adicionado botão "Pular e ir para o Dashboard" na etapa de conexão do WhatsApp no onboarding para permitir avanço direto
+  - Arquivos: `src/app/onboarding/page.tsx`
+  - Confiança: alta
+```
+
 ## 2026-03-31
 
 ### chore
