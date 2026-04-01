@@ -14,16 +14,19 @@ export interface Contact {
 interface UseContactsOptions {
   clientId: string;
   status?: ConversationStatus;
+  search?: string;
   limit?: number;
-  offset?: number;
 }
 
 interface UseContactsResult {
   contacts: Contact[];
   loading: boolean;
+  loadingMore: boolean;
   error: string | null;
   total: number;
+  hasMore: boolean;
   refetch: () => Promise<void>;
+  loadMore: () => Promise<void>;
   addContact: (phone: string, name?: string, status?: ConversationStatus) => Promise<Contact | null>;
   updateContact: (phone: string, updates: { name?: string; status?: ConversationStatus }) => Promise<Contact | null>;
   deleteContact: (phone: string) => Promise<boolean>;
@@ -36,26 +39,40 @@ interface UseContactsResult {
 export const useContacts = ({
   clientId,
   status,
+  search,
   limit = 50,
-  offset = 0,
 }: UseContactsOptions): UseContactsResult => {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
 
-  const fetchContacts = useCallback(async () => {
+  const fetchContacts = useCallback(async (options?: { append?: boolean; offset?: number }) => {
+    const append = options?.append ?? false;
+    const currentOffset = options?.offset ?? 0;
+
     try {
-      setLoading(true);
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
+
       setError(null);
 
       const params = new URLSearchParams({
         limit: limit.toString(),
-        offset: offset.toString(),
+        offset: currentOffset.toString(),
       });
 
       if (status) {
         params.append("status", status);
+      }
+
+      const normalizedSearch = search?.trim();
+      if (normalizedSearch) {
+        params.append("search", normalizedSearch);
       }
 
       const response = await apiFetch(`/api/contacts?${params.toString()}`);
@@ -66,15 +83,44 @@ export const useContacts = ({
       }
 
       const data = await response.json();
-      setContacts(data.contacts || []);
+      const nextContacts: Contact[] = data.contacts || [];
+
+      if (append) {
+        setContacts((previous) => {
+          const existingPhones = new Set(previous.map((contact) => contact.phone));
+          const onlyNew = nextContacts.filter((contact) => !existingPhones.has(contact.phone));
+          return [...previous, ...onlyNew];
+        });
+      } else {
+        setContacts(nextContacts);
+      }
+
       setTotal(data.total || 0);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Erro desconhecido";
       setError(errorMessage);
     } finally {
-      setLoading(false);
+      if (append) {
+        setLoadingMore(false);
+      } else {
+        setLoading(false);
+      }
     }
-  }, [status, limit, offset]);
+  }, [status, search, limit]);
+
+  const refetch = useCallback(async () => {
+    await fetchContacts({ append: false, offset: 0 });
+  }, [fetchContacts]);
+
+  const hasMore = contacts.length < total;
+
+  const loadMore = useCallback(async () => {
+    if (loading || loadingMore || !hasMore) {
+      return;
+    }
+
+    await fetchContacts({ append: true, offset: contacts.length });
+  }, [loading, loadingMore, hasMore, fetchContacts, contacts.length]);
 
   const addContact = useCallback(
     async (phone: string, name?: string, contactStatus: ConversationStatus = "bot"): Promise<Contact | null> => {
@@ -93,7 +139,7 @@ export const useContacts = ({
         }
 
         const data = await response.json();
-        await fetchContacts(); // Refresh the list
+        await refetch();
         return data.contact;
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Erro desconhecido";
@@ -101,7 +147,7 @@ export const useContacts = ({
         return null;
       }
     },
-    [fetchContacts]
+    [refetch]
   );
 
   const updateContact = useCallback(
@@ -121,7 +167,7 @@ export const useContacts = ({
         }
 
         const data = await response.json();
-        await fetchContacts(); // Refresh the list
+        await refetch();
         return data.contact;
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Erro desconhecido";
@@ -129,7 +175,7 @@ export const useContacts = ({
         return null;
       }
     },
-    [fetchContacts]
+    [refetch]
   );
 
   const deleteContact = useCallback(
@@ -144,7 +190,7 @@ export const useContacts = ({
           throw new Error(errorData.error || "Erro ao remover contato");
         }
 
-        await fetchContacts(); // Refresh the list
+        await refetch();
         return true;
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Erro desconhecido";
@@ -152,7 +198,7 @@ export const useContacts = ({
         return false;
       }
     },
-    [fetchContacts]
+    [refetch]
   );
 
   const importContacts = useCallback(
@@ -179,7 +225,7 @@ export const useContacts = ({
         }
 
         const data = await response.json();
-        await fetchContacts(); // Refresh the list
+        await refetch();
         return data.result;
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Erro desconhecido";
@@ -187,19 +233,22 @@ export const useContacts = ({
         return null;
       }
     },
-    [fetchContacts]
+    [refetch]
   );
 
   useEffect(() => {
-    fetchContacts();
-  }, [fetchContacts]);
+    void refetch();
+  }, [refetch, clientId]);
 
   return {
     contacts,
     loading,
+    loadingMore,
     error,
     total,
-    refetch: fetchContacts,
+    hasMore,
+    refetch,
+    loadMore,
     addContact,
     updateContact,
     deleteContact,

@@ -110,6 +110,7 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
     "all",
   );
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
@@ -146,6 +147,10 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
   const {
     contacts,
     loading,
+    loadingMore,
+    total,
+    hasMore,
+    loadMore,
     addContact,
     updateContact,
     deleteContact,
@@ -153,17 +158,16 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
   } = useContacts({
     clientId,
     status: statusFilter === "all" ? undefined : statusFilter,
+    search: debouncedSearch || undefined,
   });
 
-  // Filter contacts by search query
-  const filteredContacts = contacts.filter((contact) => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      contact.phone.includes(query) ||
-      contact.name.toLowerCase().includes(query)
-    );
-  });
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [searchQuery]);
 
   useEffect(() => {
     if (!isImportDialogOpen) return;
@@ -971,6 +975,9 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
               </DialogContent>
             </Dialog>
           </div>
+          <p className="text-xs text-muted-foreground">
+            Mostrando {contacts.length} de {total} contatos
+          </p>
         </div>
 
         {/* Status Filter Tabs */}
@@ -1025,7 +1032,7 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
-          ) : filteredContacts.length === 0 ? (
+          ) : contacts.length === 0 ? (
             searchQuery ? (
               <EmptyState
                 icon={Search}
@@ -1046,42 +1053,57 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
               />
             )
           ) : (
-            filteredContacts.map((contact) => (
-              <div
-                key={contact.id}
-                className={`flex items-center gap-3 p-3 cursor-pointer transition-colors duration-200 border-b border-border/50 ${
-                  selectedContact?.id === contact.id
-                    ? "bg-gradient-to-r from-primary/10 to-transparent border-l-2 border-l-primary"
-                    : "hover:bg-muted/50"
-                }`}
-                onClick={() => setSelectedContact(contact)}
-              >
-                <Avatar className="h-12 w-12 flex-shrink-0">
-                  <AvatarFallback className="bg-gradient-to-br from-secondary to-primary text-white text-sm font-poppins font-semibold">
-                    {getInitials(contact.name || "Sem nome")}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-semibold text-sm truncate text-foreground">
-                      {contact.name || "Sem nome"}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-muted-foreground truncate flex-1">
-                      {formatPhone(contact.phone)}
-                    </p>
-                    <div className="ml-2">
-                      <StatusBadge
-                        status={contact.status}
-                        showIcon={false}
-                        size="sm"
-                      />
+            <>
+              {contacts.map((contact) => (
+                <div
+                  key={contact.id}
+                  className={`flex items-center gap-3 p-3 cursor-pointer transition-colors duration-200 border-b border-border/50 ${
+                    selectedContact?.id === contact.id
+                      ? "bg-gradient-to-r from-primary/10 to-transparent border-l-2 border-l-primary"
+                      : "hover:bg-muted/50"
+                  }`}
+                  onClick={() => setSelectedContact(contact)}
+                >
+                  <Avatar className="h-12 w-12 flex-shrink-0">
+                    <AvatarFallback className="bg-gradient-to-br from-secondary to-primary text-white text-sm font-poppins font-semibold">
+                      {getInitials(contact.name || "Sem nome")}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-semibold text-sm truncate text-foreground">
+                        {contact.name || "Sem nome"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-muted-foreground truncate flex-1">
+                        {formatPhone(contact.phone)}
+                      </p>
+                      <div className="ml-2">
+                        <StatusBadge
+                          status={contact.status}
+                          showIcon={false}
+                          size="sm"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))
+              ))}
+
+              {(hasMore || loadingMore) && (
+                <div className="p-3 border-t border-border/50">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => void loadMore()}
+                    disabled={loadingMore}
+                  >
+                    {loadingMore ? "Carregando..." : "Carregar mais"}
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

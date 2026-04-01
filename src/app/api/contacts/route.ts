@@ -29,9 +29,37 @@ export async function GET(request: NextRequest) {
     }
 
     const searchParams = request.nextUrl.searchParams;
-    const limit = parseInt(searchParams.get("limit") || "50");
-    const offset = parseInt(searchParams.get("offset") || "0");
+    const parsedLimit = parseInt(searchParams.get("limit") || "50", 10);
+    const parsedOffset = parseInt(searchParams.get("offset") || "0", 10);
+    const limit = Number.isNaN(parsedLimit) ? 50 : Math.min(Math.max(parsedLimit, 1), 200);
+    const offset = Number.isNaN(parsedOffset) ? 0 : Math.max(parsedOffset, 0);
     const status = searchParams.get("status");
+    const search = searchParams.get("search")?.trim();
+
+    const filterParams: Array<string | number> = [];
+    const conditions: string[] = [];
+
+    const addFilterParam = (value: string | number): string => {
+      filterParams.push(value);
+      return `$${filterParams.length}`;
+    };
+
+    conditions.push(`client_id = ${addFilterParam(clientId)}`);
+
+    if (status) {
+      conditions.push(`status = ${addFilterParam(status)}`);
+    }
+
+    if (search) {
+      const searchPlaceholder = addFilterParam(`%${search}%`);
+      conditions.push(
+        `(telefone::text ILIKE ${searchPlaceholder} OR COALESCE(nome, '') ILIKE ${searchPlaceholder})`,
+      );
+    }
+
+    const whereClause = conditions.join(" AND ");
+    const limitPlaceholder = `$${filterParams.length + 1}`;
+    const offsetPlaceholder = `$${filterParams.length + 2}`;
 
     const sqlQuery = `
       SELECT 
@@ -41,23 +69,19 @@ export async function GET(request: NextRequest) {
         created_at,
         COALESCE(updated_at, created_at) as updated_at
       FROM clientes_whatsapp
-      WHERE client_id = $1
-      ${status ? "AND status = $2" : ""}
+      WHERE ${whereClause}
       ORDER BY COALESCE(updated_at, created_at) DESC
-      LIMIT ${status ? "$3" : "$2"} OFFSET ${status ? "$4" : "$3"}
+      LIMIT ${limitPlaceholder} OFFSET ${offsetPlaceholder}
     `;
 
     const countQuery = `
       SELECT COUNT(*) as total
       FROM clientes_whatsapp
-      WHERE client_id = $1
-      ${status ? "AND status = $2" : ""}
+      WHERE ${whereClause}
     `;
 
-    const params = status
-      ? [clientId, status, limit, offset]
-      : [clientId, limit, offset];
-    const countParams = status ? [clientId, status] : [clientId];
+    const params = [...filterParams, limit, offset];
+    const countParams = [...filterParams];
 
     const [result, countResult] = await Promise.all([
       query<any>(sqlQuery, params),
@@ -78,6 +102,7 @@ export async function GET(request: NextRequest) {
       total: parseInt(countResult.rows[0]?.total || "0"),
       limit,
       offset,
+      search: search || null,
     });
   } catch (error) {
     return NextResponse.json(
