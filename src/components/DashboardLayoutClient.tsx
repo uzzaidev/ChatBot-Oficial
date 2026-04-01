@@ -20,6 +20,7 @@ import { useEffect, useRef, useState } from "react";
 interface DashboardLayoutClientProps {
   userName?: string;
   userEmail?: string;
+  userRole?: string | null;
   children: React.ReactNode;
 }
 
@@ -36,6 +37,7 @@ interface DashboardLayoutClientProps {
 export function DashboardLayoutClient({
   userName,
   userEmail,
+  userRole,
   children,
 }: DashboardLayoutClientProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -107,6 +109,7 @@ export function DashboardLayoutClient({
         <DashboardNavigation
           userName={userName}
           userEmail={userEmail}
+          userRole={userRole}
           isCollapsed={isCollapsed}
           onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
         />
@@ -166,6 +169,7 @@ export function DashboardLayoutClient({
                 <DashboardNavigation
                   userName={userName}
                   userEmail={userEmail}
+                  userRole={userRole}
                   onLinkClick={() => setIsMobileOpen(false)}
                 />
               </SheetContent>

@@ -25,6 +25,7 @@ import {
   MessageSquare,
   Receipt,
   Settings,
+  Shield,
   TrendingUp,
   Users,
   Workflow,
@@ -35,6 +36,7 @@ import { usePathname } from "next/navigation";
 interface DashboardNavigationProps {
   userName?: string;
   userEmail?: string;
+  userRole?: string | null;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
   onLinkClick?: () => void;
@@ -146,6 +148,7 @@ const NavSection = ({ title, isCollapsed }: NavSectionProps) => {
 export function DashboardNavigation({
   userName,
   userEmail,
+  userRole,
   isCollapsed = false,
   onToggleCollapse,
   onLinkClick,
@@ -278,14 +281,30 @@ export function DashboardNavigation({
           onClick={onLinkClick}
           tooltip="Performance de campanhas, ROI e conversões CAPI"
         />
-        <NavItem
-          href="/dashboard/payments"
-          icon={<CreditCard className="h-5 w-5 flex-shrink-0" />}
-          label="Pagamentos"
-          isCollapsed={isCollapsed}
-          onClick={onLinkClick}
-          tooltip="Stripe Connect - produtos, checkout e assinaturas"
-        />
+        {/* SEÇÃO: ADMINISTRAÇÃO (admin only) */}
+        {userRole === "admin" && (
+          <>
+            <NavSection title="Administração" isCollapsed={isCollapsed} />
+            <NavItem
+              href="/dashboard/payments"
+              icon={<CreditCard className="h-5 w-5 flex-shrink-0" />}
+              label="Pagamentos"
+              isCollapsed={isCollapsed}
+              onClick={onLinkClick}
+              badge="admin"
+              tooltip="Stripe Connect - produtos, checkout e assinaturas"
+            />
+            <NavItem
+              href="/dashboard/admin/billing"
+              icon={<Shield className="h-5 w-5 flex-shrink-0" />}
+              label="Gestão de Clientes"
+              isCollapsed={isCollapsed}
+              onClick={onLinkClick}
+              badge="admin"
+              tooltip="Todos os clientes, assinaturas, planos e cupons"
+            />
+          </>
+        )}
 
         {/* SEÇÃO: CONFIGURAÇÃO */}
         <NavSection title="Configuração" isCollapsed={isCollapsed} />
