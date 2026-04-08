@@ -4,6 +4,29 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-04-08
+
+### feat
+- Adicionados scripts para exportar apresentações UzzApp para PDF com alta fidelidade visual e texto extraível, utilizando transformações CSS/DOM aplicadas somente no momento da exportação via Puppeteer.
+- Implementada estratégia híbrida de exportação PDF que preserva o HTML original para edição e aplica correções específicas para compatibilidade PDF durante a geração, incluindo conversão de textos em gradiente para SVG inline e estabilização de botões CTA.
+- Refinadas versões da exportação híbrida para reduzir alterações visuais excessivas, mantendo estilos originais para elementos estáveis e estabilizando apenas camadas frágeis, além de ajuste específico para botões CTA com fundo sólido e redução do deviceScaleFactor para diminuir o tamanho do PDF.
+- Documentada e implementada variante experimental PDF-safe que substitui efeitos CSS instáveis por primitivas SVG e superfícies estáticas para melhorar compatibilidade e fidelidade em visualizadores móveis.
+- Evolução da geração de apresentações PPTX da UzzApp: reconstrução inicial baseada em imagens, seguida por rebuild nativo e editável com PptxGenJS, complementado por pós-processamento com python-pptx para aplicação de gradientes nativos e alinhamento refinado do fundo com o gradiente HTML via edição XML direta.
+- Incluída automação PowerShell para pipeline híbrido PPTX e validação via PowerPoint COM, garantindo preservação de hyperlinks e qualidade visual.
+- Atualizado domínio de arquitetura e estado do projeto com detalhamento das decisões de runtime AI, regras operacionais, snapshot do estado do repositório, e evolução das estratégias de exportação e rebuild da apresentação UzzApp.
+
+  - Arquivos principais:  
+    `scripts/export-uzzapp-luis-exportonly-hybrid-pdf.js`,  
+    `scripts/export-uzzapp-luis-pdf.js`,  
+    `scripts/export-uzzapp-luis-image-pdf.js`,  
+    `docs/UzzApp apresentacao Luis/UzzApp_Apresentacao_Comercial_v2*.pdf`,  
+    `docs/UzzApp apresentacao Luis/pptx-rebuild/build-uzzapp-ppt.js`,  
+    `docs/UzzApp apresentacao Luis/pptx-rebuild/postprocess-native-gradients.py`,  
+    `docs/UzzApp apresentacao Luis/pptx-rebuild/rebuild-native-gradients.ps1`,  
+    `.brv/context-tree/architecture/_index.md`,  
+    `.brv/context-tree/architecture/project_state/_index.md`
+  - Confiança: alta
+
 ## 2026-04-01
 
 ### feat
