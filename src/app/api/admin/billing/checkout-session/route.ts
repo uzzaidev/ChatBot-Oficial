@@ -111,6 +111,7 @@ export async function POST(request: NextRequest) {
     const sessionParams: Record<string, any> = {
       customer: stripeCustomerId,
       mode: "subscription",
+      locale: "pt-BR",
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${appUrl}/dashboard/billing?checkout=success`,
       cancel_url: `${appUrl}/dashboard/billing?checkout=canceled`,

@@ -84,9 +84,16 @@ export function ConversationsIndexClient({
     onMessageError: (tempId: string) => void;
   } | null>(null);
 
+  // Lista lateral filtrada pelo statusFilter (para exibição)
   const { conversations, loading, refetchSilent } = useConversations({
     clientId,
     status: statusFilter === "all" ? undefined : statusFilter,
+    enableRealtime: true,
+  });
+
+  // Todas as conversas sem filtro de status (para buscar a conversa selecionada independent do filtro)
+  const { conversations: allConversations } = useConversations({
+    clientId,
     enableRealtime: true,
   });
 
@@ -111,7 +118,7 @@ export function ConversationsIndexClient({
       if (!selectedPhone || loading) return;
 
       // Verificar se já existe na lista de conversas
-      const existingConversation = conversations.find((c) => c.phone === selectedPhone);
+      const existingConversation = allConversations.find((c) => c.phone === selectedPhone);
       if (existingConversation) {
         if (virtualContact) setVirtualContact(null);
         return;
@@ -180,12 +187,12 @@ export function ConversationsIndexClient({
   // Efeito para limpar virtual contact quando a conversa real aparecer
   useEffect(() => {
     if (virtualContact && selectedPhone) {
-      const existingConversation = conversations.find((c) => c.phone === selectedPhone);
+      const existingConversation = allConversations.find((c) => c.phone === selectedPhone);
       if (existingConversation) {
         setVirtualContact(null);
       }
     }
-  }, [conversations, selectedPhone, virtualContact]);
+  }, [allConversations, selectedPhone, virtualContact]);
 
   // Hook global para notificações em tempo real
   // 🔐 Multi-tenant: Pass clientId for tenant isolation
@@ -369,17 +376,17 @@ export function ConversationsIndexClient({
     [refetchSilent],
   );
 
-  // Calcular métricas por status
+  // Calcular métricas por status (sempre com allConversations para refletir totais reais)
   const metrics = useMemo(() => {
     return {
-      total: conversations.length,
-      bot: conversations.filter((c) => c.status === "bot").length,
-      humano: conversations.filter((c) => c.status === "humano").length,
-      emFlow: conversations.filter((c) => c.status === "fluxo_inicial").length,
-      transferido: conversations.filter((c) => c.status === "transferido")
+      total: allConversations.length,
+      bot: allConversations.filter((c) => c.status === "bot").length,
+      humano: allConversations.filter((c) => c.status === "humano").length,
+      emFlow: allConversations.filter((c) => c.status === "fluxo_inicial").length,
+      transferido: allConversations.filter((c) => c.status === "transferido")
         .length,
     };
-  }, [conversations]);
+  }, [allConversations]);
 
   // Helper para obter label do status
   const getStatusLabel = (status: string) => {
@@ -394,14 +401,13 @@ export function ConversationsIndexClient({
   };
 
   // Encontrar conversa selecionada (ou usar contato virtual)
+  // Usa allConversations (sem filtro) para garantir que a conversa aberta sempre apareça
   const selectedConversation = useMemo(() => {
     if (!selectedPhone) return null;
-    // Primeiro tentar encontrar na lista de conversas reais
-    const realConversation = conversations.find((c) => c.phone === selectedPhone);
+    const realConversation = allConversations.find((c) => c.phone === selectedPhone);
     if (realConversation) return realConversation;
-    // Se não encontrar, usar o contato virtual (se existir)
     return virtualContact;
-  }, [selectedPhone, conversations, virtualContact]);
+  }, [selectedPhone, allConversations, virtualContact]);
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden bg-background pt-[calc(var(--safe-area-inset-top)+8px)] pb-[calc(var(--safe-area-inset-bottom)+8px)] lg:pt-0 lg:pb-0">

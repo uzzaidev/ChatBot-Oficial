@@ -1,135 +1,146 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
-import { toast } from '@/hooks/use-toast'
-import { Bot, User, ArrowRight, HelpCircle, Workflow } from 'lucide-react'
-import { LucideIcon } from 'lucide-react'
-import { apiFetch } from '@/lib/api'
+} from "@/components/ui/select";
+import { toast } from "@/hooks/use-toast";
+import { apiFetch } from "@/lib/api";
+import {
+  ArrowRight,
+  Bot,
+  HelpCircle,
+  LucideIcon,
+  User,
+  Workflow,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 interface StatusToggleProps {
-  phone: string
-  currentStatus: string
+  phone: string;
+  currentStatus: string;
 }
 
 type StatusConfig = {
-  label: string
-  icon: LucideIcon
-  color: string
-  description: string
-}
+  label: string;
+  icon: LucideIcon;
+  color: string;
+  description: string;
+};
 
 const statusConfig: Record<string, StatusConfig> = {
   bot: {
-    label: 'Bot',
+    label: "Bot",
     icon: Bot,
-    color: 'bg-blue-500/10 text-blue-700 border-blue-200',
-    description: 'Atendimento automático',
+    color: "bg-blue-500/10 text-blue-700 border-blue-200",
+    description: "Atendimento automático",
   },
   humano: {
-    label: 'Humano',
+    label: "Humano",
     icon: User,
-    color: 'bg-green-500/10 text-green-700 border-green-200',
-    description: 'Atendimento humano ativo',
+    color: "bg-green-500/10 text-green-700 border-green-200",
+    description: "Atendimento humano ativo",
   },
   transferido: {
-    label: 'Transferido',
+    label: "Transferido",
     icon: ArrowRight,
-    color: 'bg-orange-500/10 text-orange-700 border-orange-200',
-    description: 'Aguardando atendimento humano',
+    color: "bg-orange-500/10 text-orange-700 border-orange-200",
+    description: "Aguardando atendimento humano",
   },
   fluxo_inicial: {
-    label: 'Em Flow',
+    label: "Em Flow",
     icon: Workflow,
-    color: 'bg-purple-500/10 text-purple-700 border-purple-200',
-    description: 'Em fluxo interativo',
+    color: "bg-purple-500/10 text-purple-700 border-purple-200",
+    description: "Em fluxo interativo",
   },
   // Legacy status values (for backward compatibility)
   human: {
-    label: 'Humano',
+    label: "Humano",
     icon: User,
-    color: 'bg-green-500/10 text-green-700 border-green-200',
-    description: 'Atendimento humano ativo (legacy)',
+    color: "bg-green-500/10 text-green-700 border-green-200",
+    description: "Atendimento humano ativo (legacy)",
   },
   waiting: {
-    label: 'Aguardando',
+    label: "Aguardando",
     icon: ArrowRight,
-    color: 'bg-orange-500/10 text-orange-700 border-orange-200',
-    description: 'Aguardando atendimento humano (legacy)',
+    color: "bg-orange-500/10 text-orange-700 border-orange-200",
+    description: "Aguardando atendimento humano (legacy)",
   },
-}
+};
 
 const defaultConfig: StatusConfig = {
-  label: 'Desconhecido',
+  label: "Desconhecido",
   icon: HelpCircle,
-  color: 'bg-gray-500/10 text-gray-700 border-gray-200',
-  description: 'Status desconhecido',
-}
+  color: "bg-gray-500/10 text-gray-700 border-gray-200",
+  description: "Status desconhecido",
+};
 
 export const StatusToggle = ({ phone, currentStatus }: StatusToggleProps) => {
-  const [status, setStatus] = useState(currentStatus)
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
+  const [status, setStatus] = useState(currentStatus);
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   // Sync local state when currentStatus prop changes (e.g. navigating between conversations)
   useEffect(() => {
-    setStatus(currentStatus)
-  }, [currentStatus])
+    setStatus(currentStatus);
+  }, [currentStatus]);
 
-  const handleStatusChange = async (newStatus: 'bot' | 'humano' | 'transferido' | 'fluxo_inicial') => {
-    if (newStatus === status) return
+  const handleStatusChange = async (
+    newStatus: "bot" | "humano" | "transferido" | "fluxo_inicial",
+  ) => {
+    if (newStatus === status) return;
 
-    setIsLoading(true)
+    setIsLoading(true);
 
     try {
       // apiFetch já adiciona Bearer token automaticamente no mobile
       const response = await apiFetch(`/api/customers/${phone}/status`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ status: newStatus }),
-      })
+      });
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Erro ao atualizar status')
+        const error = await response.json();
+        throw new Error(error.error || "Erro ao atualizar status");
       }
 
-      setStatus(newStatus)
-      router.refresh()
+      setStatus(newStatus);
+      router.refresh();
 
       toast({
-        title: 'Status atualizado',
+        title: "Status atualizado",
         description: `Conversa alterada para: ${statusConfig[newStatus].label}`,
-      })
+      });
     } catch (error) {
       toast({
-        title: 'Erro ao atualizar status',
-        description: error instanceof Error ? error.message : 'Erro desconhecido',
-        variant: 'destructive',
-      })
+        title: "Erro ao atualizar status",
+        description:
+          error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
-  const config = statusConfig[status] || defaultConfig
-  const CurrentIcon = config.icon
+  const config = statusConfig[status] || defaultConfig;
+  const CurrentIcon = config.icon;
 
   return (
     <div className="flex flex-wrap items-center gap-2">
       {/* Badge de status atual */}
       <div className="flex items-center gap-2">
-        <span className="hidden sm:inline text-sm font-medium text-muted-foreground">Status:</span>
+        <span className="hidden sm:inline text-sm font-medium text-muted-foreground">
+          Status:
+        </span>
         <Badge className={config.color}>
           <CurrentIcon className="mr-1 h-3 w-3" />
           {config.label}
@@ -147,9 +158,9 @@ export const StatusToggle = ({ phone, currentStatus }: StatusToggleProps) => {
         </SelectTrigger>
         <SelectContent>
           {Object.entries(statusConfig)
-            .filter(([key]) => !['human', 'waiting'].includes(key)) // Hide legacy values
+            .filter(([key]) => !["human", "waiting"].includes(key)) // Hide legacy values
             .map(([key, config]) => {
-              const Icon = config.icon
+              const Icon = config.icon;
               return (
                 <SelectItem key={key} value={key}>
                   <div className="flex items-center gap-2">
@@ -157,10 +168,10 @@ export const StatusToggle = ({ phone, currentStatus }: StatusToggleProps) => {
                     <span className="font-medium truncate">{config.label}</span>
                   </div>
                 </SelectItem>
-              )
+              );
             })}
         </SelectContent>
       </Select>
     </div>
-  )
-}
+  );
+};

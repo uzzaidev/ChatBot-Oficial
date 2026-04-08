@@ -148,6 +148,16 @@ export default function AdminBillingPage() {
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [checkoutCoupon, setCheckoutCoupon] = useState<string>("");
 
+  const fetchCoupons = async () => {
+    try {
+      const res = await fetch("/api/admin/billing/coupons");
+      const json = await res.json();
+      if (res.ok) setCoupons(json.coupons);
+    } catch {
+      // silent — coupons are optional
+    }
+  };
+
   const fetchData = async (tab: TabKey) => {
     setLoading(true);
     setError(null);
@@ -179,6 +189,11 @@ export default function AdminBillingPage() {
       setLoading(false);
     }
   };
+
+  // Load coupons once on mount so the select is available in the Clients tab
+  useEffect(() => {
+    fetchCoupons();
+  }, []);
 
   useEffect(() => {
     fetchData(activeTab);
@@ -281,6 +296,8 @@ export default function AdminBillingPage() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
       setCheckoutUrl(json.url);
+      // Open checkout immediately in a new tab (same UX as peladeiros)
+      if (json.url) window.open(json.url, "_blank", "noopener,noreferrer");
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -401,13 +418,22 @@ export default function AdminBillingPage() {
                   >
                     Cupom (opcional) — aplicado ao gerar link
                   </Label>
-                  <Input
+                  <select
                     id="checkout-coupon"
                     value={checkoutCoupon}
                     onChange={(e) => setCheckoutCoupon(e.target.value)}
-                    placeholder="Ex: LANCAMENTO50"
-                    className="w-48"
-                  />
+                    className="flex h-10 w-48 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="">Sem cupom</option>
+                    {coupons
+                      .filter((c) => c.valid)
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name ?? c.id}
+                          {c.percent_off ? ` (${c.percent_off}% off)` : ""}
+                        </option>
+                      ))}
+                  </select>
                 </div>
               </div>
 
@@ -447,7 +473,8 @@ export default function AdminBillingPage() {
                                 variant: "outline" as const,
                               };
                             const canCharge =
-                              !c.stripe_subscription_id ||
+                              (!c.stripe_subscription_id &&
+                                c.plan_status !== "trial") ||
                               c.plan_status === "canceled" ||
                               c.plan_status === "suspended";
                             return (

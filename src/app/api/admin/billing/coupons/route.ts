@@ -88,7 +88,14 @@ export async function POST(request: NextRequest) {
 
     const stripe = getStripeClient();
 
-    const params: Record<string, any> = { name, duration };
+    // Use the sanitized name as the Stripe coupon id so admins can reference it
+    // by a readable code (e.g. LANCAMENTO50) instead of a random hash.
+    const couponId = name
+      .toUpperCase()
+      .replace(/\s+/g, "_")
+      .replace(/[^A-Z0-9_]/g, "");
+
+    const params: Record<string, any> = { id: couponId, name, duration };
 
     if (hasPercent) {
       params.percent_off = Math.min(100, Math.max(1, Number(body.percent_off)));

@@ -1,25 +1,25 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef, useMemo, useLayoutEffect, memo } from 'react'
 import { ConversationDetail } from '@/components/ConversationDetail'
+import { ConversationList } from '@/components/ConversationList'
+import { DragDropZone } from '@/components/DragDropZone'
+import { LogoutButton } from '@/components/LogoutButton'
+import type { MediaAttachment } from '@/components/MediaPreview'
 import { SendMessageForm } from '@/components/SendMessageForm'
 import { StatusToggle } from '@/components/StatusToggle'
-import { DragDropZone } from '@/components/DragDropZone'
-import { useConversations } from '@/hooks/useConversations'
-import { useGlobalRealtimeNotifications } from '@/hooks/useGlobalRealtimeNotifications'
-import { ConversationList } from '@/components/ConversationList'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { getInitials } from '@/lib/utils'
+import { useConversations } from '@/hooks/useConversations'
+import { useGlobalRealtimeNotifications } from '@/hooks/useGlobalRealtimeNotifications'
 import { markConversationAsRead } from '@/lib/api'
-import { MessageCircle, Menu, Bot, User, ArrowRight, List, Home, Search, X, LogOut } from 'lucide-react'
-import Link from 'next/link'
-import { LogoutButton } from '@/components/LogoutButton'
-import type { MediaAttachment } from '@/components/MediaPreview'
 import type { Message } from '@/lib/types'
+import { getInitials } from '@/lib/utils'
+import { ArrowRight, Bot, Home, List, Menu, MessageCircle, Search, User, X } from 'lucide-react'
+import Link from 'next/link'
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 // Componente de pesquisa extraído para evitar duplicação e perda de foco
 interface SearchSectionProps {
@@ -104,14 +104,21 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
     optimisticCallbacksRef.current = callbacks
   }, [])
 
+  // Lista lateral filtrada pelo statusFilter (para exibição)
   const { conversations, loading, refetchSilent } = useConversations({
     clientId,
     status: statusFilter === 'all' ? undefined : statusFilter,
     enableRealtime: true,
   })
 
+  // Todas as conversas sem filtro de status (para buscar a conversa aberta independente do filtro)
+  const { conversations: allConversations } = useConversations({
+    clientId,
+    enableRealtime: true,
+  })
+
   // Calcular total de mensagens não lidas
-  const totalUnreadCount = conversations.reduce((sum, conv) => sum + (conv.unread_count ?? 0), 0)
+  const totalUnreadCount = allConversations.reduce((sum, conv) => sum + (conv.unread_count ?? 0), 0)
 
   // Marcar conversa como lida quando abrir
   useEffect(() => {
@@ -215,7 +222,8 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
     }
   }, [refetchSilent])
 
-  const conversation = conversations.find((c) => c.phone === phone)
+  // Buscar conversa aberta da lista completa (não filtrada por status)
+  const conversation = allConversations.find((c) => c.phone === phone)
 
   // Header da Sidebar (static content, não precisa mudar)
   const sidebarHeader = (
