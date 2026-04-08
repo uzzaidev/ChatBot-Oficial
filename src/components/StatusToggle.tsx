@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Select,
@@ -78,6 +78,11 @@ export const StatusToggle = ({ phone, currentStatus }: StatusToggleProps) => {
   const [status, setStatus] = useState(currentStatus)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+
+  // Sync local state when currentStatus prop changes (e.g. navigating between conversations)
+  useEffect(() => {
+    setStatus(currentStatus)
+  }, [currentStatus])
 
   const handleStatusChange = async (newStatus: 'bot' | 'humano' | 'transferido' | 'fluxo_inicial') => {
     if (newStatus === status) return

@@ -1,10 +1,16 @@
 {
   "active_context": [
     {
-      "order": 2,
-      "path": "architecture/_index.md",
-      "tokens": 1688,
+      "order": 1,
+      "path": "architecture/ai_runtime/_index.md",
+      "tokens": 991,
       "type": "summary"
+    },
+    {
+      "importance": 55,
+      "path": "facts/project/uzzapp_openai_slides_skill_pptx_rebuild_facts_2026_04_05.md",
+      "tokens": 976,
+      "type": "context"
     },
     {
       "importance": 50,
@@ -32,12 +38,6 @@
     },
     {
       "importance": 50,
-      "path": "architecture/project_state/chatbot_oficial_snapshot_2026_03_31.md",
-      "tokens": 905,
-      "type": "context"
-    },
-    {
-      "importance": 50,
       "path": "architecture/project_state/context.md",
       "tokens": 110,
       "type": "context"
@@ -53,21 +53,15 @@
       "path": "facts/context.md",
       "tokens": 159,
       "type": "context"
-    },
-    {
-      "importance": 50,
-      "path": "facts/project/context.md",
-      "tokens": 105,
-      "type": "context"
     }
   ],
-  "generated_at": "2026-03-31T12:57:27.435Z",
+  "generated_at": "2026-04-05T13:07:46.827Z",
   "lane_tokens": {
-    "contexts": 3937,
+    "contexts": 3903,
     "stubs": 0,
-    "summaries": 1688
+    "summaries": 991
   },
-  "source_fingerprint": "707b70c52ef3f721bd20a86908717f635193c45f5bb5e34ed858f5997bddede1",
-  "total_tokens": 5625,
+  "source_fingerprint": "ea4dc3d590f037decea6456eb6229b10a0e896604b5145f12b9c79eb342b2080",
+  "total_tokens": 4894,
   "version": 1
 }

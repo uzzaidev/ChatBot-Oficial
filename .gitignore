@@ -23,6 +23,7 @@
 # IDE / OS noise (do not commit)
 .idea/
 nul
+docs/UzzApp apresentacao Luis
 
 # Firebase Service Account (contém chaves privadas - NÃO COMMITAR!)
 firebase-service-account.json
