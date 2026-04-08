@@ -7,6 +7,23 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-08
 
 ### feat
+- Adicionado suporte a localidade pt-BR no Stripe Checkout para melhorar experiência regional; aprimorada gestão de cupons no dashboard admin permitindo uso de códigos legíveis e seleção de cupom na geração de links de checkout
+  - Arquivos: `src/app/api/admin/billing/checkout-session/route.ts`, `src/app/api/admin/billing/coupons/route.ts`, `src/app/dashboard/admin/billing/page.tsx`
+  - Confiança: alta
+
+### refactor
+- Refatorado componente `ConversationPageClient` e `ConversationsIndexClient` para usar lista completa de conversas sem filtro de status, garantindo consistência na exibição e seleção de conversas; ajustes na contagem de mensagens não lidas e métricas por status
+  - Arquivos: `src/components/ConversationPageClient.tsx`, `src/components/ConversationsIndexClient.tsx`
+  - Confiança: alta
+
+### refactor
+- Modernizada sintaxe e organização do componente `StatusToggle` com padronização de aspas, tipagem e imports; mantida lógica funcional com melhorias na legibilidade do código
+  - Arquivos: `src/components/StatusToggle.tsx`
+  - Confiança: alta
+
+## 2026-04-08
+
+### feat
 - Adicionados scripts para exportar apresentações UzzApp para PDF com alta fidelidade visual e texto extraível, utilizando transformações CSS/DOM aplicadas somente no momento da exportação via Puppeteer.
 - Implementada estratégia híbrida de exportação PDF que preserva o HTML original para edição e aplica correções específicas para compatibilidade PDF durante a geração, incluindo conversão de textos em gradiente para SVG inline e estabilização de botões CTA.
 - Refinadas versões da exportação híbrida para reduzir alterações visuais excessivas, mantendo estilos originais para elementos estáveis e estabilizando apenas camadas frágeis, além de ajuste específico para botões CTA com fundo sólido e redução do deviceScaleFactor para diminuir o tamanho do PDF.
