@@ -4,6 +4,26 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-04-11
+
+### refactor
+- Otimizado o hook `useConversations` para evitar fetches desnecessários quando o limite é zero e melhor gerenciamento de polling e realtime; ajustado `ConversationsIndexClient` e `ConversationPageClient` para usar lógica de fetch condicional baseada no filtro de status, reduzindo chamadas duplicadas e melhorando performance.
+- Melhorias no componente `ConversationPageClient` e `ConversationsIndexClient` para evitar chamadas redundantes, ajustar memoização e callbacks, e limpar imports e formatação.
+- Refatoração no fluxo `chatbotFlow` para aprimorar logging detalhado da configuração do agente e do cliente no início do processamento, além de melhorias na organização de imports.
+- Refatorado handler `handleAudioToolCall` para evitar fallback com base64 no upload de áudio, usando apenas URLs permanentes quando disponíveis e adicionando logs de advertência em falhas de upload; reorganização e limpeza de imports.
+- Ajustes no endpoint de ativação de agentes para melhorar tratamento de erros e logs detalhados ao ativar/desativar agentes.
+- Adicionado logging detalhado na resolução da configuração do cliente e do agente ativo para facilitar debugging.
+- Ajustes no `apiFetch` para garantir o header `Content-Type: application/json` em requisições com corpo JSON.
+  - Arquivos: `src/hooks/useConversations.ts`, `src/components/ConversationsIndexClient.tsx`, `src/components/ConversationPageClient.tsx`, `src/flows/chatbotFlow.ts`, `src/handlers/handleAudioToolCall.ts`, `src/app/api/agents/[id]/activate/route.ts`, `src/lib/api.ts`, `src/lib/config.ts`
+  - Confiança: alta
+
+### fix
+- Ajustado handler `handleAudioToolCall` para salvar mensagem mesmo quando upload do áudio falha, evitando perda de mensagem e registrando erros detalhados.
+- Melhorado tratamento de erros no endpoint PATCH `/api/agents/[id]` com logs detalhados de validação e atualização.
+  - Arquivos: `src/handlers/handleAudioToolCall.ts`, `src/app/api/agents/[id]/route.ts`, `src/app/api/agents/[id]/activate/route.ts`
+  - Evidência: inclusão de logs de erro e retorno de detalhes em respostas HTTP; fallback para salvar mensagens sem URL de áudio.
+  - Confiança: alta
+
 ## 2026-04-08
 
 ### feat
