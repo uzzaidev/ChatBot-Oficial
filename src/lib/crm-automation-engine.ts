@@ -1976,6 +1976,10 @@ export const emitCrmAutomationEvent = async (
         triggerData,
       );
       if (!matches) {
+        const conditions = (rule.trigger_conditions ?? {}) as JsonRecord;
+        console.log(
+          `[crm-automation] ⏭️ Rule SKIPPED: "${rule.name}" (id=${rule.id}) triggerType=${input.triggerType} | conditions=${JSON.stringify(conditions)} vs triggerData=${JSON.stringify(triggerData)}`,
+        );
         skippedRules++;
         await logRuleExecution({
           clientId: input.clientId,
