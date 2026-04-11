@@ -151,29 +151,6 @@ export default function CRMPage() {
     setDeletingColumn({ column, cardCount });
   };
 
-  const handleShiftColumn = async (
-    columnId: string,
-    direction: "left" | "right",
-  ) => {
-    const currentIndex = columns.findIndex((c) => c.id === columnId);
-    if (currentIndex === -1) return;
-
-    const targetIndex =
-      direction === "left" ? currentIndex - 1 : currentIndex + 1;
-    if (targetIndex < 0 || targetIndex >= columns.length) return;
-
-    const reordered = [...columns];
-    const [movedColumn] = reordered.splice(currentIndex, 1);
-    reordered.splice(targetIndex, 0, movedColumn);
-
-    await reorderColumns(
-      reordered.map((column, position) => ({
-        id: column.id,
-        position,
-      })),
-    );
-  };
-
   const confirmDeleteColumn = async () => {
     if (!deletingColumn || deletingColumn.cardCount > 0) return;
     const success = await deleteColumn(deletingColumn.column.id);
@@ -554,12 +531,7 @@ export default function CRMPage() {
                         onCardClick={handleCardClick}
                         onEditColumn={handleEditColumn}
                         onDeleteColumn={handleDeleteColumn}
-                        onMoveColumnLeft={(columnId) =>
-                          handleShiftColumn(columnId, "left")
-                        }
-                        onMoveColumnRight={(columnId) =>
-                          handleShiftColumn(columnId, "right")
-                        }
+                        onReorderColumns={reorderColumns}
                       />
                     ) : (
                       <div className="crm-board-scroll flex-1 overflow-auto pr-4">
@@ -605,14 +577,14 @@ export default function CRMPage() {
                                             column?.color === "red"
                                               ? "linear-gradient(180deg,#ef4444,#7f1d1d)"
                                               : column?.color === "blue"
-                                              ? "linear-gradient(180deg,#3b82f6,#1d4ed8)"
-                                              : column?.color === "green" ||
-                                                column?.color === "mint"
-                                              ? "linear-gradient(180deg,#10b981,#047857)"
-                                              : column?.color === "gold" ||
-                                                column?.color === "yellow"
-                                              ? "linear-gradient(180deg,#f59e0b,#b45309)"
-                                              : "linear-gradient(180deg,#14b8a6,#2563eb)",
+                                                ? "linear-gradient(180deg,#3b82f6,#1d4ed8)"
+                                                : column?.color === "green" ||
+                                                    column?.color === "mint"
+                                                  ? "linear-gradient(180deg,#10b981,#047857)"
+                                                  : column?.color === "gold" ||
+                                                      column?.color === "yellow"
+                                                    ? "linear-gradient(180deg,#f59e0b,#b45309)"
+                                                    : "linear-gradient(180deg,#14b8a6,#2563eb)",
                                         }}
                                       />
 
@@ -652,39 +624,47 @@ export default function CRMPage() {
                                                   tag.color === "blue"
                                                     ? "#3b82f6"
                                                     : tag.color === "green"
-                                                    ? "#22c55e"
-                                                    : tag.color === "red"
-                                                    ? "#ef4444"
-                                                    : tag.color === "yellow"
-                                                    ? "#eab308"
-                                                    : tag.color === "purple"
-                                                    ? "#a855f7"
-                                                    : tag.color === "pink"
-                                                    ? "#ec4899"
-                                                    : tag.color === "orange"
-                                                    ? "#f97316"
-                                                    : tag.color === "cyan"
-                                                    ? "#06b6d4"
-                                                    : "#6b7280"
+                                                      ? "#22c55e"
+                                                      : tag.color === "red"
+                                                        ? "#ef4444"
+                                                        : tag.color === "yellow"
+                                                          ? "#eab308"
+                                                          : tag.color ===
+                                                              "purple"
+                                                            ? "#a855f7"
+                                                            : tag.color ===
+                                                                "pink"
+                                                              ? "#ec4899"
+                                                              : tag.color ===
+                                                                  "orange"
+                                                                ? "#f97316"
+                                                                : tag.color ===
+                                                                    "cyan"
+                                                                  ? "#06b6d4"
+                                                                  : "#6b7280"
                                                 }20`,
                                                 borderColor: `${
                                                   tag.color === "blue"
                                                     ? "#3b82f6"
                                                     : tag.color === "green"
-                                                    ? "#22c55e"
-                                                    : tag.color === "red"
-                                                    ? "#ef4444"
-                                                    : tag.color === "yellow"
-                                                    ? "#eab308"
-                                                    : tag.color === "purple"
-                                                    ? "#a855f7"
-                                                    : tag.color === "pink"
-                                                    ? "#ec4899"
-                                                    : tag.color === "orange"
-                                                    ? "#f97316"
-                                                    : tag.color === "cyan"
-                                                    ? "#06b6d4"
-                                                    : "#6b7280"
+                                                      ? "#22c55e"
+                                                      : tag.color === "red"
+                                                        ? "#ef4444"
+                                                        : tag.color === "yellow"
+                                                          ? "#eab308"
+                                                          : tag.color ===
+                                                              "purple"
+                                                            ? "#a855f7"
+                                                            : tag.color ===
+                                                                "pink"
+                                                              ? "#ec4899"
+                                                              : tag.color ===
+                                                                  "orange"
+                                                                ? "#f97316"
+                                                                : tag.color ===
+                                                                    "cyan"
+                                                                  ? "#06b6d4"
+                                                                  : "#6b7280"
                                                 }33`,
                                                 color:
                                                   tag.color === "yellow"

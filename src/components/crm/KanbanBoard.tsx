@@ -17,11 +17,17 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import {
+  arrayMove,
+  horizontalListSortingStrategy,
+  SortableContext,
+  sortableKeyboardCoordinates,
+} from "@dnd-kit/sortable";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { KanbanCard } from "./KanbanCard";
 import { KanbanColumn } from "./KanbanColumn";
+import { SortableColumn } from "./SortableColumn";
 
 interface KanbanBoardProps {
   columns: CRMColumn[];
@@ -36,8 +42,9 @@ interface KanbanBoardProps {
   onCardClick: (card: CRMCard) => void;
   onEditColumn?: (column: CRMColumn) => void;
   onDeleteColumn?: (columnId: string) => void;
-  onMoveColumnLeft?: (columnId: string) => void | Promise<void>;
-  onMoveColumnRight?: (columnId: string) => void | Promise<void>;
+  onReorderColumns?: (
+    columnOrders: Array<{ id: string; position: number }>,
+  ) => Promise<boolean>;
 }
 
 const measuringConfig = {
@@ -65,14 +72,21 @@ export const KanbanBoard = ({
   onCardClick,
   onEditColumn,
   onDeleteColumn,
-  onMoveColumnLeft,
-  onMoveColumnRight,
+  onReorderColumns,
 }: KanbanBoardProps) => {
   const [activeCard, setActiveCard] = useState<CRMCard | null>(null);
+  const [activeColumn, setActiveColumn] = useState<CRMColumn | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
+  const [localColumnOrder, setLocalColumnOrder] = useState<string[]>([]);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+
+  // Sync local column order with props
+  useEffect(() => {
+    const ids = orderedColumnIds ?? columns.map((c) => c.id);
+    setLocalColumnOrder(ids);
+  }, [orderedColumnIds, columns]);
 
   const pointerSensor = useSensor(PointerSensor, {
     activationConstraint: {
@@ -96,12 +110,16 @@ export const KanbanBoard = ({
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
       const { active } = event;
-      const card = cards.find((c) => c.id === active.id);
-      if (card) {
-        setActiveCard(card);
+      const dataType = active.data.current?.type;
+      if (dataType === "column") {
+        const column = columns.find((c) => c.id === active.id);
+        if (column) setActiveColumn(column);
+      } else {
+        const card = cards.find((c) => c.id === active.id);
+        if (card) setActiveCard(card);
       }
     },
-    [cards],
+    [cards, columns],
   );
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
@@ -113,10 +131,39 @@ export const KanbanBoard = ({
       const { active, over } = event;
 
       setActiveCard(null);
+      setActiveColumn(null);
       setOverId(null);
 
       if (!over) return;
 
+      // Column reorder
+      if (active.data.current?.type === "column") {
+        const activeId = active.id as string;
+        const overId = over.id as string;
+        if (activeId === overId) return;
+
+        const oldIndex = localColumnOrder.indexOf(activeId);
+        const overIndex = localColumnOrder.indexOf(overId);
+        if (oldIndex === -1 || overIndex === -1) return;
+
+        const newOrder = arrayMove(localColumnOrder, oldIndex, overIndex);
+        setLocalColumnOrder(newOrder); // Optimistic
+
+        if (onReorderColumns) {
+          const columnOrders = newOrder.map((id, position) => ({
+            id,
+            position,
+          }));
+          const success = await onReorderColumns(columnOrders);
+          if (!success) {
+            // Rollback
+            setLocalColumnOrder(orderedColumnIds ?? columns.map((c) => c.id));
+          }
+        }
+        return;
+      }
+
+      // Card drag
       const cardId = active.id as string;
       const targetId = over.id as string;
 
@@ -139,6 +186,7 @@ export const KanbanBoard = ({
 
   const handleDragCancel = useCallback(() => {
     setActiveCard(null);
+    setActiveColumn(null);
     setOverId(null);
   }, []);
 
@@ -154,9 +202,16 @@ export const KanbanBoard = ({
   }, [columns, cards]);
 
   const columnOrderIndex = useMemo(() => {
-    const ids = orderedColumnIds ?? columns.map((c) => c.id);
-    return new Map(ids.map((id, idx) => [id, idx]));
-  }, [orderedColumnIds, columns]);
+    return new Map(localColumnOrder.map((id, idx) => [id, idx]));
+  }, [localColumnOrder]);
+
+  const sortedColumns = useMemo(() => {
+    return [...columns].sort((a, b) => {
+      const aIdx = columnOrderIndex.get(a.id) ?? 999;
+      const bIdx = columnOrderIndex.get(b.id) ?? 999;
+      return aIdx - bIdx;
+    });
+  }, [columns, columnOrderIndex]);
 
   const updateScrollState = useCallback(() => {
     const node = scrollContainerRef.current;
@@ -245,53 +300,37 @@ export const KanbanBoard = ({
           className="crm-board-scroll flex-1 overflow-x-auto overflow-y-hidden pb-3"
           style={{ WebkitOverflowScrolling: "touch" }}
         >
-          <div className="flex h-full min-w-max gap-4 pr-4">
-            {columns.map((column, index) => {
-              const columnCards = columnCardsMap.get(column.id) || [];
-              const columnPosition = columnOrderIndex.get(column.id) ?? -1;
-              const canMoveLeft = columnPosition > 0;
-              const canMoveRight =
-                columnPosition !== -1 &&
-                columnPosition < columnOrderIndex.size - 1;
-              return (
-                <div
-                  key={column.id}
-                  className="animate-fade-in"
-                  style={{ animationDelay: `${index * 40}ms` }}
-                >
-                  <KanbanColumn
-                    column={column}
-                    cards={columnCards}
-                    tags={tags}
-                    allColumns={columns}
-                    onCardClick={onCardClick}
-                    onCardMove={onMoveCard}
-                    onEditColumn={
-                      onEditColumn ? () => onEditColumn(column) : undefined
-                    }
-                    onDeleteColumn={
-                      onDeleteColumn
-                        ? () => onDeleteColumn(column.id)
-                        : undefined
-                    }
-                    onMoveColumnLeft={
-                      onMoveColumnLeft
-                        ? () => void onMoveColumnLeft(column.id)
-                        : undefined
-                    }
-                    onMoveColumnRight={
-                      onMoveColumnRight
-                        ? () => void onMoveColumnRight(column.id)
-                        : undefined
-                    }
-                    canMoveLeft={canMoveLeft}
-                    canMoveRight={canMoveRight}
-                    isOver={overId === column.id}
-                  />
-                </div>
-              );
-            })}
-          </div>
+          <SortableContext
+            items={localColumnOrder}
+            strategy={horizontalListSortingStrategy}
+          >
+            <div className="flex h-full min-w-max gap-4 pr-4">
+              {sortedColumns.map((column, index) => {
+                const columnCards = columnCardsMap.get(column.id) || [];
+                return (
+                  <SortableColumn key={column.id} column={column} index={index}>
+                    <KanbanColumn
+                      column={column}
+                      cards={columnCards}
+                      tags={tags}
+                      allColumns={columns}
+                      onCardClick={onCardClick}
+                      onCardMove={onMoveCard}
+                      onEditColumn={
+                        onEditColumn ? () => onEditColumn(column) : undefined
+                      }
+                      onDeleteColumn={
+                        onDeleteColumn
+                          ? () => onDeleteColumn(column.id)
+                          : undefined
+                      }
+                      isOver={overId === column.id}
+                    />
+                  </SortableColumn>
+                );
+              })}
+            </div>
+          </SortableContext>
         </div>
       </div>
 
@@ -308,6 +347,19 @@ export const KanbanBoard = ({
               tags={tags}
               columns={columns}
               isDragging
+            />
+          </div>
+        ) : null}
+        {activeColumn ? (
+          <div className="w-[340px] rotate-[1deg] opacity-80">
+            <KanbanColumn
+              column={activeColumn}
+              cards={columnCardsMap.get(activeColumn.id) || []}
+              tags={tags}
+              allColumns={columns}
+              onCardClick={() => {}}
+              onCardMove={() => {}}
+              isOver={false}
             />
           </div>
         ) : null}

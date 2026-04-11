@@ -15,13 +15,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import {
-  ChevronLeft,
-  ChevronRight,
-  MoreHorizontal,
-  Settings,
-  Trash2,
-} from "lucide-react";
+import { MoreHorizontal, Settings, Trash2 } from "lucide-react";
 import { ColumnHeader } from "./ColumnHeader";
 import { KanbanCard } from "./KanbanCard";
 
@@ -34,10 +28,6 @@ interface KanbanColumnProps {
   onCardMove: (cardId: string, columnId: string) => void;
   onEditColumn?: () => void;
   onDeleteColumn?: () => void;
-  onMoveColumnLeft?: () => void;
-  onMoveColumnRight?: () => void;
-  canMoveLeft?: boolean;
-  canMoveRight?: boolean;
   isOver?: boolean;
 }
 
@@ -50,10 +40,6 @@ export const KanbanColumn = ({
   onCardMove,
   onEditColumn,
   onDeleteColumn,
-  onMoveColumnLeft,
-  onMoveColumnRight,
-  canMoveLeft = false,
-  canMoveRight = false,
   isOver = false,
 }: KanbanColumnProps) => {
   const { setNodeRef, isOver: isDroppableOver } = useDroppable({
@@ -85,45 +71,8 @@ export const KanbanColumn = ({
           className="min-w-0 flex-1"
         />
 
-        {(onMoveColumnLeft ||
-          onMoveColumnRight ||
-          onEditColumn ||
-          onDeleteColumn) && (
+        {(onEditColumn || onDeleteColumn) && (
           <div className="flex items-center gap-1">
-            {onMoveColumnLeft && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-full border border-transparent text-muted-foreground hover:border-border/80 hover:bg-background/35 hover:text-foreground"
-                aria-label="Mover coluna para esquerda"
-                disabled={!canMoveLeft}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onMoveColumnLeft();
-                }}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-            )}
-
-            {onMoveColumnRight && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-full border border-transparent text-muted-foreground hover:border-border/80 hover:bg-background/35 hover:text-foreground"
-                aria-label="Mover coluna para direita"
-                disabled={!canMoveRight}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onMoveColumnRight();
-                }}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            )}
-
             {(onEditColumn || onDeleteColumn) && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -179,7 +128,10 @@ export const KanbanColumn = ({
 
       <div className="crm-column-body flex-1 min-h-0 p-3">
         <div className="crm-board-scroll h-full overflow-y-auto pr-1">
-          <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
+          <SortableContext
+            items={cardIds}
+            strategy={verticalListSortingStrategy}
+          >
             <div className="space-y-3 pb-3">
               {sortedCards.map((card) => (
                 <KanbanCard
