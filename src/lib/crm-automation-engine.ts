@@ -630,7 +630,7 @@ const parseTemplateParams = (
   return [];
 };
 
-const RULE_CACHE_TTL_MS = 5 * 60 * 1000;
+const RULE_CACHE_TTL_MS = 30 * 1000;
 const automationRuleCache = new Map<
   string,
   { expiresAt: number; rules: AutomationRuleRow[] }
