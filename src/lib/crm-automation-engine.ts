@@ -2000,6 +2000,9 @@ export const emitCrmAutomationEvent = async (
       }
 
       matchedRules++;
+      console.log(
+        `[crm-automation] 🎯 Rule MATCHED: "${rule.name}" (id=${rule.id}) triggerType=${input.triggerType} cardId=${input.cardId}`,
+      );
 
       let isDuplicate = false;
       try {
@@ -2256,6 +2259,9 @@ export const emitCrmAutomationEvent = async (
         });
       } else {
         executedRules++;
+        console.log(
+          `[crm-automation] ✅ Rule EXECUTED: "${rule.name}" (id=${rule.id}) triggerType=${input.triggerType} steps=${JSON.stringify(stepResults)}`,
+        );
         await logRuleExecution({
           clientId: input.clientId,
           ruleId: rule.id,
