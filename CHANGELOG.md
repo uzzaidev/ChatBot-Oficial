@@ -6,6 +6,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-11
 
+### feat
+- Adicionado logging para regras de automação CRM que foram correspondidas e executadas, facilitando o monitoramento e debug
+  - Arquivos: `src/lib/crm-automation-engine.ts`
+  - Confiança: alta
+
+## 2026-04-11
+
 ### fix
 - Reduzido TTL do cache de regras de automação de 5 minutos para 30 segundos para melhorar atualização de dados
   - Arquivos: `src/lib/crm-automation-engine.ts`
