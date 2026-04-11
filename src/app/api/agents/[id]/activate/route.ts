@@ -67,11 +67,25 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Deactivate any currently active agent
-    await supabase
+    const { error: deactivateError } = await supabase
       .from("agents")
       .update({ is_active: false })
       .eq("client_id", profile.client_id)
       .eq("is_active", true);
+
+    if (deactivateError) {
+      console.error(
+        "[POST /api/agents/[id]/activate] Failed to deactivate current agent:",
+        deactivateError,
+      );
+      return NextResponse.json(
+        {
+          error: "Failed to deactivate current agent",
+          details: deactivateError.message,
+        },
+        { status: 500 },
+      );
+    }
 
     // Activate the requested agent
     const { error: activateError } = await supabase
@@ -82,10 +96,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     if (activateError) {
       console.error("[POST /api/agents/[id]/activate] Error:", activateError);
       return NextResponse.json(
-        { error: "Failed to activate agent" },
+        { error: "Failed to activate agent", details: activateError.message },
         { status: 500 },
       );
     }
+
+    console.log(
+      `[activate] ✅ Agent "${agent.name}" (${id}) activated for client ${profile.client_id}`,
+    );
 
     // Update client's active_agent_id
     await supabase

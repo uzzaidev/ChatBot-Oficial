@@ -126,6 +126,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (body.name) {
       const validation = validateAgentConfig({ ...existingAgent, ...body });
       if (!validation.valid) {
+        console.error(
+          "[PATCH /api/agents/[id]] Validation failed:",
+          validation.errors,
+          "body timing fields:",
+          {
+            batching_delay_seconds: body.batching_delay_seconds,
+            message_delay_ms: body.message_delay_ms,
+          },
+        );
         return NextResponse.json(
           { error: "Validation failed", details: validation.errors },
           { status: 400 },
@@ -240,6 +249,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     // Update agent
+    console.log("[PATCH /api/agents/[id]] Updating timing fields:", {
+      batching_delay_seconds: updateData.batching_delay_seconds,
+      message_delay_ms: updateData.message_delay_ms,
+      message_split_enabled: updateData.message_split_enabled,
+    });
     const { data: updatedAgent, error: updateError } = await supabase
       .from("agents")
       .update(updateData)

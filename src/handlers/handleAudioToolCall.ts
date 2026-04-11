@@ -1,11 +1,11 @@
 // src/handlers/handleAudioToolCall.ts
-import { convertTextToSpeech } from "@/nodes/convertTextToSpeech";
-import { uploadAudioToWhatsApp } from "@/nodes/uploadAudioToWhatsApp";
 import { sendAudioMessageByMediaId, sendTextMessage } from "@/lib/meta";
-import { createServerClient } from "@/lib/supabase-server";
-import { saveChatMessage, ErrorDetails } from "@/nodes/saveChatMessage";
-import { ClientConfig, StoredMediaMetadata } from "@/lib/types";
 import { query } from "@/lib/postgres";
+import { createServerClient } from "@/lib/supabase-server";
+import { ClientConfig, StoredMediaMetadata } from "@/lib/types";
+import { convertTextToSpeech } from "@/nodes/convertTextToSpeech";
+import { ErrorDetails, saveChatMessage } from "@/nodes/saveChatMessage";
+import { uploadAudioToWhatsApp } from "@/nodes/uploadAudioToWhatsApp";
 
 export interface HandleAudioToolCallInput {
   aiResponseText: string; // Texto gerado pelo AI (aiResponse.content)
@@ -30,7 +30,6 @@ export const handleAudioToolCall = async (
 
   // 1. Verificação de segurança: TTS habilitado globalmente?
   if (!config.settings?.tts_enabled) {
-
     // Envia como texto e SALVA NO BANCO
     try {
       const { messageId } = await sendTextMessage(
@@ -57,7 +56,8 @@ export const handleAudioToolCall = async (
       };
     } catch (error) {
       // ❌ FIX: Save text send error as failed message in conversation
-      const errorMessage = error instanceof Error ? error.message : "Failed to send text";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to send text";
       const errorDetails: ErrorDetails = {
         code: "TEXT_SEND_FAILED",
         title: "Falha ao Enviar Texto",
@@ -113,9 +113,9 @@ export const handleAudioToolCall = async (
 
     let permanentAudioUrl: string | null = null;
     if (!storageError) {
-      const { data: { publicUrl } } = supabase.storage
-        .from("message-media")
-        .getPublicUrl(fileName);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("message-media").getPublicUrl(fileName);
       permanentAudioUrl = publicUrl;
     } else {
       // Storage upload failed - non-critical, fallback will be used
@@ -131,23 +131,23 @@ export const handleAudioToolCall = async (
     // 2.5 SALVAR NA TABELA n8n_chat_histories
     // Preparar media metadata no formato esperado
 
-    // ⚠️ CRITICAL: If Supabase upload failed, we MUST use a different approach
-    // We'll create a data URL or serve via API endpoint
-    let audioUrl = permanentAudioUrl;
+    // Use permanent URL if storage upload succeeded, otherwise save without media URL
+    // NEVER use base64 fallback - it bloats the database with MB-sized strings
+    const mediaMetadata: StoredMediaMetadata | undefined = permanentAudioUrl
+      ? {
+          type: "audio",
+          url: permanentAudioUrl,
+          mimeType: "audio/mpeg",
+          filename: `audio_${Date.now()}.mp3`,
+          size: audioBuffer.length,
+        }
+      : undefined;
 
-    if (!audioUrl) {
-      // Create data URL as fallback (works but increases message size)
-      const base64Audio = audioBuffer.toString('base64');
-      audioUrl = `data:audio/mpeg;base64,${base64Audio}`;
+    if (!permanentAudioUrl) {
+      console.warn(
+        "[handleAudioToolCall] Storage upload failed - saving message without media URL (audio was delivered via WhatsApp)",
+      );
     }
-
-    const mediaMetadata: StoredMediaMetadata = {
-      type: "audio",
-      url: audioUrl,
-      mimeType: "audio/mpeg",
-      filename: `audio_${Date.now()}.mp3`,
-      size: audioBuffer.length,
-    };
 
     // Salvar mensagem usando a função padrão
     await saveChatMessage({
@@ -243,16 +243,18 @@ export const handleAudioToolCall = async (
       };
     } catch (textError) {
       // ❌ FIX: Save fallback text error as failed message in conversation
-      const textErrorMessage = textError instanceof Error
-        ? textError.message
-        : "Failed to send text fallback";
+      const textErrorMessage =
+        textError instanceof Error
+          ? textError.message
+          : "Failed to send text fallback";
 
       const fallbackErrorDetails: ErrorDetails = {
         code: "FALLBACK_FAILED",
         title: "Falha no Fallback",
         message: `Não foi possível enviar o áudio nem o texto: ${textErrorMessage}`,
         error_data: {
-          originalAudioError: error instanceof Error ? error.message : "Unknown audio error",
+          originalAudioError:
+            error instanceof Error ? error.message : "Unknown audio error",
           textFallbackError: textErrorMessage,
         },
       };

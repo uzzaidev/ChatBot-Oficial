@@ -27,9 +27,9 @@ import { detectRepetition } from "@/nodes/detectRepetition";
 // 🔄 Phase 4: Interactive Flows
 import { checkInteractiveFlow } from "@/nodes/checkInteractiveFlow";
 // 🎯 CRM Automation: Lead source capture and status updates
-import { createExecutionLogger } from "@/lib/logger";
 import { emitCrmAutomationEvent } from "@/lib/crm-automation-engine";
 import { classifyCRMIntent } from "@/lib/crm-intent-classifier";
+import { createExecutionLogger } from "@/lib/logger";
 import { setWithExpiry } from "@/lib/redis";
 import { createServiceRoleClient } from "@/lib/supabase";
 import {
@@ -153,6 +153,26 @@ export const processChatbotMessage = async (
     },
     config.id,
   ); // ⚡ Multi-tenant: passa client_id para isolamento de logs
+
+  // 📋 Log config summary at flow start for Vercel debugging
+  console.log(`[chatbotFlow] 🤖 Starting flow for client "${config.name}":`, {
+    activeAgent: config.activeAgent
+      ? `${config.activeAgent.name} (id: ${config.activeAgent.id.substring(0, 8)}...)`
+      : "NONE",
+    provider: config.primaryProvider,
+    model:
+      config.primaryProvider === "groq"
+        ? config.models.groqModel
+        : config.models.openaiModel,
+    batchingDelaySeconds: config.settings.batchingDelaySeconds,
+    messageDelayMs: config.settings.messageDelayMs,
+    messageSplitEnabled: config.settings.messageSplitEnabled,
+    temperature: config.settings.temperature,
+    maxTokens: config.settings.maxTokens,
+    promptFirstLine:
+      config.prompts.systemPrompt?.split("\n")[0]?.substring(0, 120) ||
+      "(empty)",
+  });
 
   try {
     // 🔄 FLOW SYNC: Fetch all node enabled states for this client
@@ -723,7 +743,10 @@ export const processChatbotMessage = async (
           },
         });
       } catch (automationError) {
-        console.warn("[chatbotFlow] keyword_detected emit failed:", automationError);
+        console.warn(
+          "[chatbotFlow] keyword_detected emit failed:",
+          automationError,
+        );
       }
     }
 
@@ -821,9 +844,8 @@ export const processChatbotMessage = async (
       contentLength: normalizedMessage.content.length,
     });
 
-    const { checkDuplicateMessage } = await import(
-      "@/nodes/checkDuplicateMessage"
-    );
+    const { checkDuplicateMessage } =
+      await import("@/nodes/checkDuplicateMessage");
     const duplicateCheck = await checkDuplicateMessage({
       phone: parsedMessage.phone,
       messageContent: normalizedMessage.content,
@@ -1187,8 +1209,8 @@ export const processChatbotMessage = async (
       aiResponse.wasCached === true
         ? "cache_hit"
         : isSameUserMessageAsLast
-        ? "same_user_message"
-        : null;
+          ? "same_user_message"
+          : null;
 
     // 🔧 Phase 3: Detect Repetition and regenerate if needed (configurable)
     if (
@@ -1349,9 +1371,7 @@ export const processChatbotMessage = async (
             });
           }
 
-          if (
-            intentSignal.urgencyLevel
-          ) {
+          if (intentSignal.urgencyLevel) {
             await emitCrmAutomationEvent({
               clientId: config.id,
               cardId: crmCardId,
@@ -1365,7 +1385,10 @@ export const processChatbotMessage = async (
           }
         }
       } catch (intentError) {
-        console.warn("[chatbotFlow] CRM intent classification error:", intentError);
+        console.warn(
+          "[chatbotFlow] CRM intent classification error:",
+          intentError,
+        );
       }
     }
 
@@ -1419,9 +1442,8 @@ export const processChatbotMessage = async (
             toolCallId: toolCall.id,
           });
 
-          const { handleDocumentSearchToolCall } = await import(
-            "@/nodes/handleDocumentSearchToolCall"
-          );
+          const { handleDocumentSearchToolCall } =
+            await import("@/nodes/handleDocumentSearchToolCall");
 
           const documentSearchResult = await handleDocumentSearchToolCall({
             toolCall,
@@ -1515,9 +1537,8 @@ export const processChatbotMessage = async (
             toolCallId: toolCall.id,
           });
 
-          const { handleAudioToolCall } = await import(
-            "@/handlers/handleAudioToolCall"
-          );
+          const { handleAudioToolCall } =
+            await import("@/handlers/handleAudioToolCall");
 
           // Parse argumentos da tool
           const args = JSON.parse(toolCall.function.arguments || "{}");
@@ -1578,9 +1599,8 @@ export const processChatbotMessage = async (
             toolCallId: toolCall.id,
           });
 
-          const { handleCalendarToolCall } = await import(
-            "@/nodes/handleCalendarToolCall"
-          );
+          const { handleCalendarToolCall } =
+            await import("@/nodes/handleCalendarToolCall");
 
           const args = JSON.parse(toolCall.function.arguments || "{}");
           const calendarResult = await handleCalendarToolCall(
@@ -1605,9 +1625,8 @@ export const processChatbotMessage = async (
             toolCallId: toolCall.id,
           });
 
-          const { handleCalendarToolCall } = await import(
-            "@/nodes/handleCalendarToolCall"
-          );
+          const { handleCalendarToolCall } =
+            await import("@/nodes/handleCalendarToolCall");
 
           const args = JSON.parse(toolCall.function.arguments || "{}");
           const calendarResult = await handleCalendarToolCall(

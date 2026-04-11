@@ -135,10 +135,26 @@ export const getActiveAgent = async (
 
     if (error || !agent) {
       console.log(
-        `[getActiveAgent] No active agent found for client ${clientId}`,
+        `[getActiveAgent] ⚠️ No active agent found for client ${clientId} (error: ${error?.message || "no rows"})`,
       );
       return null;
     }
+
+    console.log(`[getActiveAgent] ✅ Active agent loaded:`, {
+      agentId: agent.id,
+      agentName: agent.name,
+      is_active: agent.is_active,
+      is_archived: agent.is_archived,
+      batching_delay_seconds: agent.batching_delay_seconds,
+      message_delay_ms: agent.message_delay_ms,
+      message_split_enabled: agent.message_split_enabled,
+      temperature: agent.temperature,
+      max_tokens: agent.max_tokens,
+      primary_provider: agent.primary_provider,
+      promptFirstLine:
+        agent.compiled_system_prompt?.split("\n")[0]?.substring(0, 100) ||
+        "(no compiled prompt)",
+    });
 
     return agent as Agent;
   } catch (error) {
@@ -344,6 +360,39 @@ export const getClientConfig = async (
       // 🤖 Include active agent info for reference
       activeAgent: activeAgent || undefined,
     };
+
+    // 📋 Log resolved config summary for debugging
+    console.log(
+      `[getClientConfig] 📋 Config resolved for client "${client.name}":`,
+      {
+        activeAgent: activeAgent
+          ? `${activeAgent.name} (${activeAgent.id.substring(0, 8)}...)`
+          : "NONE (using client defaults)",
+        usingAgentPrompt: !!activeAgent?.compiled_system_prompt,
+        promptSource: activeAgent?.compiled_system_prompt
+          ? "agent.compiled_system_prompt"
+          : "client.system_prompt",
+        promptFirstLine:
+          config.prompts.systemPrompt?.split("\n")[0]?.substring(0, 120) ||
+          "(empty)",
+        provider: config.primaryProvider,
+        model:
+          config.primaryProvider === "groq"
+            ? config.models.groqModel
+            : config.models.openaiModel,
+        settings: {
+          batchingDelaySeconds: config.settings.batchingDelaySeconds,
+          messageDelayMs: config.settings.messageDelayMs,
+          messageSplitEnabled: config.settings.messageSplitEnabled,
+          maxChatHistory: config.settings.maxChatHistory,
+          temperature: config.settings.temperature,
+          maxTokens: config.settings.maxTokens,
+          enableRAG: config.settings.enableRAG,
+          enableTools: config.settings.enableTools,
+          enableHumanHandoff: config.settings.enableHumanHandoff,
+        },
+      },
+    );
 
     return config;
   } catch (error) {

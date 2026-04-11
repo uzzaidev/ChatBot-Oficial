@@ -66,15 +66,24 @@ export async function apiFetch(
   const baseUrl = getApiBaseUrl();
   const url = `${baseUrl}${endpoint}`;
 
-  // Mobile: pegar token de autenticação e incluir no header
+  // Garantir Content-Type para requests com body JSON
   let headers = { ...options?.headers } as Record<string, string>;
+  if (
+    options?.body &&
+    typeof options.body === "string" &&
+    !headers["Content-Type"]
+  ) {
+    headers["Content-Type"] = "application/json";
+  }
 
   if (Capacitor.isNativePlatform()) {
     try {
       // Importar dinamicamente para evitar erro no servidor
       const { createBrowserClient } = await import("@/lib/supabase-browser");
       const supabase = createBrowserClient();
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
       if (session?.access_token) {
         headers["Authorization"] = `Bearer ${session.access_token}`;

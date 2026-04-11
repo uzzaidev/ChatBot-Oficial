@@ -1,32 +1,50 @@
-'use client'
+"use client";
 
-import { ConversationDetail } from '@/components/ConversationDetail'
-import { ConversationList } from '@/components/ConversationList'
-import { DragDropZone } from '@/components/DragDropZone'
-import { LogoutButton } from '@/components/LogoutButton'
-import type { MediaAttachment } from '@/components/MediaPreview'
-import { SendMessageForm } from '@/components/SendMessageForm'
-import { StatusToggle } from '@/components/StatusToggle'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useConversations } from '@/hooks/useConversations'
-import { useGlobalRealtimeNotifications } from '@/hooks/useGlobalRealtimeNotifications'
-import { markConversationAsRead } from '@/lib/api'
-import type { Message } from '@/lib/types'
-import { getInitials } from '@/lib/utils'
-import { ArrowRight, Bot, Home, List, Menu, MessageCircle, Search, User, X } from 'lucide-react'
-import Link from 'next/link'
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { ConversationDetail } from "@/components/ConversationDetail";
+import { ConversationList } from "@/components/ConversationList";
+import { DragDropZone } from "@/components/DragDropZone";
+import { LogoutButton } from "@/components/LogoutButton";
+import type { MediaAttachment } from "@/components/MediaPreview";
+import { SendMessageForm } from "@/components/SendMessageForm";
+import { StatusToggle } from "@/components/StatusToggle";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useConversations } from "@/hooks/useConversations";
+import { useGlobalRealtimeNotifications } from "@/hooks/useGlobalRealtimeNotifications";
+import { markConversationAsRead } from "@/lib/api";
+import type { Message } from "@/lib/types";
+import { getInitials } from "@/lib/utils";
+import {
+  ArrowRight,
+  Bot,
+  Home,
+  List,
+  Menu,
+  MessageCircle,
+  Search,
+  User,
+  X,
+} from "lucide-react";
+import Link from "next/link";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 // Componente de pesquisa extraído para evitar duplicação e perda de foco
 interface SearchSectionProps {
-  searchTerm: string
-  onSearchChange: (value: string) => void
-  onClearSearch: () => void
-  resultCount: number
+  searchTerm: string;
+  onSearchChange: (value: string) => void;
+  onClearSearch: () => void;
+  resultCount: number;
 }
 
 const SearchSection = memo(function SearchSection({
@@ -58,7 +76,8 @@ const SearchSection = memo(function SearchSection({
       {/* Indicador de pesquisa ativa */}
       {searchTerm.length >= 2 && (
         <p className="text-xs text-muted-foreground mt-2">
-          {resultCount} resultado{resultCount !== 1 ? 's' : ''} encontrado{resultCount !== 1 ? 's' : ''}
+          {resultCount} resultado{resultCount !== 1 ? "s" : ""} encontrado
+          {resultCount !== 1 ? "s" : ""}
         </p>
       )}
       {searchTerm.length === 1 && (
@@ -67,12 +86,12 @@ const SearchSection = memo(function SearchSection({
         </p>
       )}
     </div>
-  )
-})
+  );
+});
 
 interface ConversationPageClientProps {
-  phone: string
-  clientId: string
+  phone: string;
+  clientId: string;
 }
 
 /**
@@ -82,43 +101,59 @@ interface ConversationPageClientProps {
  *
  * Componente que renderiza a página de detalhes de conversa
  */
-export function ConversationPageClient({ phone, clientId }: ConversationPageClientProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [statusFilter, setStatusFilter] = useState<'all' | 'bot' | 'humano' | 'transferido' | 'fluxo_inicial'>('all')
-  const [attachments, setAttachments] = useState<MediaAttachment[]>([])
-  const [searchTerm, setSearchTerm] = useState('')
-  const scrollContainerRef = useRef<HTMLDivElement>(null)
-  const scrollPositionRef = useRef(0)
+export function ConversationPageClient({
+  phone,
+  clientId,
+}: ConversationPageClientProps) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "bot" | "humano" | "transferido" | "fluxo_inicial"
+  >("all");
+  const [attachments, setAttachments] = useState<MediaAttachment[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const scrollPositionRef = useRef(0);
 
   // Refs para callbacks de optimistic updates
   const optimisticCallbacksRef = useRef<{
-    onOptimisticMessage: (message: Message) => void
-    onMessageError: (tempId: string) => void
-  } | null>(null)
+    onOptimisticMessage: (message: Message) => void;
+    onMessageError: (tempId: string) => void;
+  } | null>(null);
 
   // Callback para capturar os callbacks do ConversationDetail
-  const handleGetOptimisticCallbacks = useCallback((callbacks: {
-    onOptimisticMessage: (message: Message) => void
-    onMessageError: (tempId: string) => void
-  }) => {
-    optimisticCallbacksRef.current = callbacks
-  }, [])
+  const handleGetOptimisticCallbacks = useCallback(
+    (callbacks: {
+      onOptimisticMessage: (message: Message) => void;
+      onMessageError: (tempId: string) => void;
+    }) => {
+      optimisticCallbacksRef.current = callbacks;
+    },
+    [],
+  );
 
   // Lista lateral filtrada pelo statusFilter (para exibição)
   const { conversations, loading, refetchSilent } = useConversations({
     clientId,
-    status: statusFilter === 'all' ? undefined : statusFilter,
+    status: statusFilter === "all" ? undefined : statusFilter,
     enableRealtime: true,
-  })
+  });
 
-  // Todas as conversas sem filtro de status (para buscar a conversa aberta independente do filtro)
-  const { conversations: allConversations } = useConversations({
+  // Quando filtro é "all", já temos todas as conversas — evitar chamada duplicada
+  // Quando filtro é específico, buscar todas sem realtime (apenas para lookup)
+  const { conversations: filteredAllConversations } = useConversations({
     clientId,
-    enableRealtime: true,
-  })
+    enableRealtime: false,
+    limit: statusFilter === "all" ? 0 : 50,
+  });
+
+  const allConversations =
+    statusFilter === "all" ? conversations : filteredAllConversations;
 
   // Calcular total de mensagens não lidas
-  const totalUnreadCount = allConversations.reduce((sum, conv) => sum + (conv.unread_count ?? 0), 0)
+  const totalUnreadCount = allConversations.reduce(
+    (sum, conv) => sum + (conv.unread_count ?? 0),
+    0,
+  );
 
   // Marcar conversa como lida quando abrir
   useEffect(() => {
@@ -126,104 +161,114 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
       markConversationAsRead(phone).then((result) => {
         if (result.success) {
           // Refetch silencioso (sem loading) para atualizar UI
-          refetchSilent()
+          refetchSilent();
         }
-      })
+      });
     }
-  }, [phone, refetchSilent])
+  }, [phone, refetchSilent]);
 
   // Gerenciar anexos de mídia
-  const handleAddAttachment = useCallback((file: File, type: 'image' | 'document') => {
-    const attachment: MediaAttachment = {
-      file,
-      type,
-    }
+  const handleAddAttachment = useCallback(
+    (file: File, type: "image" | "document") => {
+      const attachment: MediaAttachment = {
+        file,
+        type,
+      };
 
-    // Gerar preview para imagens
-    if (type === 'image') {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setAttachments(prev => [...prev, {
-          ...attachment,
-          preview: e.target?.result as string
-        }])
+      // Gerar preview para imagens
+      if (type === "image") {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setAttachments((prev) => [
+            ...prev,
+            {
+              ...attachment,
+              preview: e.target?.result as string,
+            },
+          ]);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setAttachments((prev) => [...prev, attachment]);
       }
-      reader.readAsDataURL(file)
-    } else {
-      setAttachments(prev => [...prev, attachment])
-    }
-  }, [])
+    },
+    [],
+  );
 
   const handleRemoveAttachment = useCallback((index: number) => {
-    setAttachments(prev => prev.filter((_, i) => i !== index))
-  }, [])
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  }, []);
 
   const handleClearAttachments = useCallback(() => {
-    setAttachments([])
-  }, [])
+    setAttachments([]);
+  }, []);
 
   // Hook global para notificações em tempo real
   // 🔐 Multi-tenant: Pass clientId for tenant isolation
-  const { lastUpdatePhone } = useGlobalRealtimeNotifications({ clientId })
+  const { lastUpdatePhone } = useGlobalRealtimeNotifications({ clientId });
 
   // Salvar posição do scroll antes de atualizar
   const saveScrollPosition = useCallback(() => {
     if (scrollContainerRef.current) {
-      scrollPositionRef.current = scrollContainerRef.current.scrollTop
+      scrollPositionRef.current = scrollContainerRef.current.scrollTop;
     }
-  }, [])
+  }, []);
 
   // Restaurar posição do scroll após atualização
   const restoreScrollPosition = useCallback(() => {
     if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = scrollPositionRef.current
+      scrollContainerRef.current.scrollTop = scrollPositionRef.current;
     }
-  }, [])
+  }, []);
 
   // Filtrar conversas baseado no termo de pesquisa (após 2 caracteres)
   const filteredConversations = useMemo(() => {
     // Se o termo de pesquisa tiver menos de 2 caracteres, mostrar todas
     if (searchTerm.length < 2) {
-      return conversations
+      return conversations;
     }
 
-    const searchLower = searchTerm.toLowerCase().trim()
+    const searchLower = searchTerm.toLowerCase().trim();
     // Limpar o termo de pesquisa uma vez fora do loop de filter
-    const phoneSearchTerm = searchTerm.replace(/\D/g, '')
+    const phoneSearchTerm = searchTerm.replace(/\D/g, "");
 
     // Filtrar por nome ou telefone
     return conversations.filter((conversation) => {
-      const nameMatch = conversation.name?.toLowerCase().includes(searchLower)
-      const phoneMatch = phoneSearchTerm && conversation.phone?.includes(phoneSearchTerm)
-      return nameMatch || phoneMatch
-    })
-  }, [conversations, searchTerm])
+      const nameMatch = conversation.name?.toLowerCase().includes(searchLower);
+      const phoneMatch =
+        phoneSearchTerm && conversation.phone?.includes(phoneSearchTerm);
+      return nameMatch || phoneMatch;
+    });
+  }, [conversations, searchTerm]);
 
   // Restaurar scroll quando as conversas são atualizadas (useLayoutEffect para sincronização imediata com DOM)
   useLayoutEffect(() => {
-    restoreScrollPosition()
-  }, [conversations, restoreScrollPosition])
+    restoreScrollPosition();
+  }, [conversations, restoreScrollPosition]);
 
   // Handler para scroll - salva posição durante scroll
   const handleScroll = useCallback(() => {
-    saveScrollPosition()
-  }, [saveScrollPosition])
+    saveScrollPosition();
+  }, [saveScrollPosition]);
 
   const handleClearSearch = useCallback(() => {
-    setSearchTerm('')
-  }, [])
+    setSearchTerm("");
+  }, []);
 
   // Callback para marcar como lida (usado pelo ConversationDetail)
-  const handleMarkAsRead = useCallback(async (conversationPhone: string) => {
-    const result = await markConversationAsRead(conversationPhone)
-    if (result.success) {
-      // Refetch silencioso (sem loading) para atualizar UI
-      await refetchSilent()
-    }
-  }, [refetchSilent])
+  const handleMarkAsRead = useCallback(
+    async (conversationPhone: string) => {
+      const result = await markConversationAsRead(conversationPhone);
+      if (result.success) {
+        // Refetch silencioso (sem loading) para atualizar UI
+        await refetchSilent();
+      }
+    },
+    [refetchSilent],
+  );
 
   // Buscar conversa aberta da lista completa (não filtrada por status)
-  const conversation = allConversations.find((c) => c.phone === phone)
+  const conversation = allConversations.find((c) => c.phone === phone);
 
   // Header da Sidebar (static content, não precisa mudar)
   const sidebarHeader = (
@@ -246,49 +291,64 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
         <LogoutButton isCollapsed />
       </div>
     </div>
-  )
+  );
 
   // Filtros por Status (memoizado para evitar re-renders desnecessários)
-  const statusFilters = useMemo(() => (
-    <div className="border-b border-border bg-card">
-      <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'all' | 'bot' | 'humano' | 'transferido' | 'fluxo_inicial')}>
-        <TabsList className="w-full justify-start rounded-none h-auto p-0 bg-transparent flex-wrap">
-          <TabsTrigger
-            value="all"
-            className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none text-xs sm:text-sm px-2 sm:px-3 text-muted-foreground data-[state=active]:text-foreground"
-          >
-            <List className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Todas</span>
-            <span className="sm:hidden">Todas</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="bot"
-            className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-secondary rounded-none text-xs sm:text-sm px-2 sm:px-3 text-muted-foreground data-[state=active]:text-foreground"
-          >
-            <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Bot</span>
-            <span className="sm:hidden">Bot</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="humano"
-            className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none text-xs sm:text-sm px-2 sm:px-3 text-muted-foreground data-[state=active]:text-foreground"
-          >
-            <User className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Humano</span>
-            <span className="sm:hidden">Humano</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="transferido"
-            className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-orange-400 rounded-none text-xs sm:text-sm px-2 sm:px-3 text-muted-foreground data-[state=active]:text-foreground"
-          >
-            <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Transferido</span>
-            <span className="sm:hidden">Transf.</span>
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
-    </div>
-  ), [statusFilter])
+  const statusFilters = useMemo(
+    () => (
+      <div className="border-b border-border bg-card">
+        <Tabs
+          value={statusFilter}
+          onValueChange={(value) =>
+            setStatusFilter(
+              value as
+                | "all"
+                | "bot"
+                | "humano"
+                | "transferido"
+                | "fluxo_inicial",
+            )
+          }
+        >
+          <TabsList className="w-full justify-start rounded-none h-auto p-0 bg-transparent flex-wrap">
+            <TabsTrigger
+              value="all"
+              className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none text-xs sm:text-sm px-2 sm:px-3 text-muted-foreground data-[state=active]:text-foreground"
+            >
+              <List className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Todas</span>
+              <span className="sm:hidden">Todas</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="bot"
+              className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-secondary rounded-none text-xs sm:text-sm px-2 sm:px-3 text-muted-foreground data-[state=active]:text-foreground"
+            >
+              <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Bot</span>
+              <span className="sm:hidden">Bot</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="humano"
+              className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none text-xs sm:text-sm px-2 sm:px-3 text-muted-foreground data-[state=active]:text-foreground"
+            >
+              <User className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Humano</span>
+              <span className="sm:hidden">Humano</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="transferido"
+              className="flex items-center gap-1.5 data-[state=active]:border-b-2 data-[state=active]:border-orange-400 rounded-none text-xs sm:text-sm px-2 sm:px-3 text-muted-foreground data-[state=active]:text-foreground"
+            >
+              <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Transferido</span>
+              <span className="sm:hidden">Transf.</span>
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+    ),
+    [statusFilter],
+  );
 
   return (
     <div className="fixed inset-0 flex overflow-hidden bg-background pt-[calc(var(--safe-area-inset-top)+8px)] pb-[calc(var(--safe-area-inset-bottom)+8px)] lg:pt-0 lg:pb-0">
@@ -374,19 +434,23 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
                   <Menu className="h-5 w-5" />
                   {totalUnreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
-                      {totalUnreadCount > 9 ? '9+' : totalUnreadCount}
+                      {totalUnreadCount > 9 ? "9+" : totalUnreadCount}
                     </span>
                   )}
                 </Button>
 
                 <Avatar className="h-10 w-10 flex-shrink-0">
                   <AvatarFallback className="bg-primary text-primary-foreground">
-                    {getInitials(conversation.name || '')}
+                    {getInitials(conversation.name || "")}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-foreground truncate">{conversation.name}</h3>
-                  <p className="text-xs text-muted-foreground truncate">{conversation.phone}</p>
+                  <h3 className="font-semibold text-foreground truncate">
+                    {conversation.name}
+                  </h3>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {conversation.phone}
+                  </p>
                 </div>
 
                 {/* Status Toggle */}
@@ -421,7 +485,9 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
                 onAddAttachment={handleAddAttachment}
                 onRemoveAttachment={handleRemoveAttachment}
                 onClearAttachments={handleClearAttachments}
-                onOptimisticMessage={optimisticCallbacksRef.current?.onOptimisticMessage}
+                onOptimisticMessage={
+                  optimisticCallbacksRef.current?.onOptimisticMessage
+                }
                 onMessageError={optimisticCallbacksRef.current?.onMessageError}
               />
             </div>
@@ -443,5 +509,5 @@ export function ConversationPageClient({ phone, clientId }: ConversationPageClie
         )}
       </div>
     </div>
-  )
+  );
 }

@@ -91,14 +91,22 @@ export function ConversationsIndexClient({
     enableRealtime: true,
   });
 
-  // Todas as conversas sem filtro de status (para buscar a conversa selecionada independent do filtro)
-  const { conversations: allConversations } = useConversations({
+  // Quando filtro é "all", já temos todas as conversas — evitar chamada duplicada
+  // Quando filtro é específico, buscar todas sem realtime (apenas para lookup da selecionada)
+  const { conversations: filteredAllConversations } = useConversations({
     clientId,
-    enableRealtime: true,
+    enableRealtime: false,
+    // Só buscar quando filtro NÃO é "all" (caso contrário "conversations" já tem tudo)
+    limit: statusFilter === "all" ? 0 : 50,
   });
 
+  const allConversations =
+    statusFilter === "all" ? conversations : filteredAllConversations;
+
   // Estado para contato virtual (quando contato existe mas não tem conversa ainda)
-  const [virtualContact, setVirtualContact] = useState<Conversation | null>(null);
+  const [virtualContact, setVirtualContact] = useState<Conversation | null>(
+    null,
+  );
   const [loadingVirtualContact, setLoadingVirtualContact] = useState(false);
 
   // Efeito para garantir que a conversa inicial seja selecionada
@@ -118,7 +126,9 @@ export function ConversationsIndexClient({
       if (!selectedPhone || loading) return;
 
       // Verificar se já existe na lista de conversas
-      const existingConversation = allConversations.find((c) => c.phone === selectedPhone);
+      const existingConversation = allConversations.find(
+        (c) => c.phone === selectedPhone,
+      );
       if (existingConversation) {
         if (virtualContact) setVirtualContact(null);
         return;
@@ -187,7 +197,9 @@ export function ConversationsIndexClient({
   // Efeito para limpar virtual contact quando a conversa real aparecer
   useEffect(() => {
     if (virtualContact && selectedPhone) {
-      const existingConversation = allConversations.find((c) => c.phone === selectedPhone);
+      const existingConversation = allConversations.find(
+        (c) => c.phone === selectedPhone,
+      );
       if (existingConversation) {
         setVirtualContact(null);
       }
@@ -382,7 +394,8 @@ export function ConversationsIndexClient({
       total: allConversations.length,
       bot: allConversations.filter((c) => c.status === "bot").length,
       humano: allConversations.filter((c) => c.status === "humano").length,
-      emFlow: allConversations.filter((c) => c.status === "fluxo_inicial").length,
+      emFlow: allConversations.filter((c) => c.status === "fluxo_inicial")
+        .length,
       transferido: allConversations.filter((c) => c.status === "transferido")
         .length,
     };
@@ -404,7 +417,9 @@ export function ConversationsIndexClient({
   // Usa allConversations (sem filtro) para garantir que a conversa aberta sempre apareça
   const selectedConversation = useMemo(() => {
     if (!selectedPhone) return null;
-    const realConversation = allConversations.find((c) => c.phone === selectedPhone);
+    const realConversation = allConversations.find(
+      (c) => c.phone === selectedPhone,
+    );
     if (realConversation) return realConversation;
     return virtualContact;
   }, [selectedPhone, allConversations, virtualContact]);
@@ -534,34 +549,34 @@ export function ConversationsIndexClient({
                   showUnreadOnly
                     ? MessageCircle
                     : statusFilter === "all"
-                    ? MessageCircle
-                    : statusFilter === "bot"
-                    ? Bot
-                    : statusFilter === "humano"
-                    ? User
-                    : statusFilter === "fluxo_inicial"
-                    ? Workflow
-                    : statusFilter === "transferido"
-                    ? ArrowRight
-                    : MessageCircle
+                      ? MessageCircle
+                      : statusFilter === "bot"
+                        ? Bot
+                        : statusFilter === "humano"
+                          ? User
+                          : statusFilter === "fluxo_inicial"
+                            ? Workflow
+                            : statusFilter === "transferido"
+                              ? ArrowRight
+                              : MessageCircle
                 }
                 title={
                   showUnreadOnly
                     ? "Nenhuma conversa não lida"
                     : statusFilter === "all"
-                    ? "Nenhuma conversa encontrada"
-                    : `Nenhuma conversa com status "${getStatusLabel(
-                        statusFilter,
-                      )}"`
+                      ? "Nenhuma conversa encontrada"
+                      : `Nenhuma conversa com status "${getStatusLabel(
+                          statusFilter,
+                        )}"`
                 }
                 description={
                   showUnreadOnly
-                    ? "Todas as conversas já foram lidas. Clique em \"Todas\" para ver todas as conversas."
+                    ? 'Todas as conversas já foram lidas. Clique em "Todas" para ver todas as conversas.'
                     : statusFilter === "all"
-                    ? "Quando você receber mensagens no WhatsApp, elas aparecerão aqui"
-                    : `Não há conversas com status "${getStatusLabel(
-                        statusFilter,
-                      )}" no momento. Tente mudar o filtro ou aguarde novas conversas.`
+                      ? "Quando você receber mensagens no WhatsApp, elas aparecerão aqui"
+                      : `Não há conversas com status "${getStatusLabel(
+                          statusFilter,
+                        )}" no momento. Tente mudar o filtro ou aguarde novas conversas.`
                 }
               />
             ) : (
@@ -671,34 +686,34 @@ export function ConversationsIndexClient({
                       showUnreadOnly
                         ? MessageCircle
                         : statusFilter === "all"
-                        ? MessageCircle
-                        : statusFilter === "bot"
-                        ? Bot
-                        : statusFilter === "humano"
-                        ? User
-                        : statusFilter === "fluxo_inicial"
-                        ? Workflow
-                        : statusFilter === "transferido"
-                        ? ArrowRight
-                        : MessageCircle
+                          ? MessageCircle
+                          : statusFilter === "bot"
+                            ? Bot
+                            : statusFilter === "humano"
+                              ? User
+                              : statusFilter === "fluxo_inicial"
+                                ? Workflow
+                                : statusFilter === "transferido"
+                                  ? ArrowRight
+                                  : MessageCircle
                     }
                     title={
                       showUnreadOnly
                         ? "Nenhuma conversa não lida"
                         : statusFilter === "all"
-                        ? "Nenhuma conversa encontrada"
-                        : `Nenhuma conversa com status "${getStatusLabel(
-                            statusFilter,
-                          )}"`
+                          ? "Nenhuma conversa encontrada"
+                          : `Nenhuma conversa com status "${getStatusLabel(
+                              statusFilter,
+                            )}"`
                     }
                     description={
                       showUnreadOnly
-                        ? "Todas as conversas já foram lidas. Clique em \"Todas\" para ver todas as conversas."
+                        ? 'Todas as conversas já foram lidas. Clique em "Todas" para ver todas as conversas.'
                         : statusFilter === "all"
-                        ? "Quando você receber mensagens no WhatsApp, elas aparecerão aqui"
-                        : `Não há conversas com status "${getStatusLabel(
-                            statusFilter,
-                          )}" no momento. Tente mudar o filtro ou aguarde novas conversas.`
+                          ? "Quando você receber mensagens no WhatsApp, elas aparecerão aqui"
+                          : `Não há conversas com status "${getStatusLabel(
+                              statusFilter,
+                            )}" no momento. Tente mudar o filtro ou aguarde novas conversas.`
                     }
                   />
                 ) : (
