@@ -140,23 +140,25 @@ export const getActiveAgent = async (
       return null;
     }
 
+    const typedAgent = agent as Agent;
+
     console.log(`[getActiveAgent] ✅ Active agent loaded:`, {
-      agentId: agent.id,
-      agentName: agent.name,
-      is_active: agent.is_active,
-      is_archived: agent.is_archived,
-      batching_delay_seconds: agent.batching_delay_seconds,
-      message_delay_ms: agent.message_delay_ms,
-      message_split_enabled: agent.message_split_enabled,
-      temperature: agent.temperature,
-      max_tokens: agent.max_tokens,
-      primary_provider: agent.primary_provider,
+      agentId: typedAgent.id,
+      agentName: typedAgent.name,
+      is_active: typedAgent.is_active,
+      is_archived: typedAgent.is_archived,
+      batching_delay_seconds: typedAgent.batching_delay_seconds,
+      message_delay_ms: typedAgent.message_delay_ms,
+      message_split_enabled: typedAgent.message_split_enabled,
+      temperature: typedAgent.temperature,
+      max_tokens: typedAgent.max_tokens,
+      primary_provider: typedAgent.primary_provider,
       promptFirstLine:
-        agent.compiled_system_prompt?.split("\n")[0]?.substring(0, 100) ||
+        typedAgent.compiled_system_prompt?.split("\n")[0]?.substring(0, 100) ||
         "(no compiled prompt)",
     });
 
-    return agent as Agent;
+    return typedAgent;
   } catch (error) {
     console.error("[getActiveAgent] Error:", error);
     return null;
