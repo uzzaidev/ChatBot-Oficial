@@ -73,6 +73,9 @@ export const updateCRMCardStatus = async (
       .single();
 
     if (settings?.auto_status_enabled === false) {
+      console.log(
+        `[updateCRMCardStatus] 🔒 auto_status DISABLED for client=${clientId}`,
+      );
       return {
         updated: false,
         automationsTriggered: 0,
@@ -88,6 +91,9 @@ export const updateCRMCardStatus = async (
       .single();
 
     if (cardError || !card) {
+      console.log(
+        `[updateCRMCardStatus] ⚠️ No CRM card found for phone=${phone} client=${clientId}`,
+      );
       return {
         updated: false,
         automationsTriggered: 0,
@@ -243,6 +249,9 @@ export const ensureCRMCard = async (
       .single();
 
     if (settings?.auto_create_cards === false) {
+      console.log(
+        `[ensureCRMCard] 🔒 auto_create_cards DISABLED for client=${clientId}`,
+      );
       return null;
     }
 

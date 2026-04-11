@@ -68,33 +68,34 @@ const deterministicFallback = (
   const highUrgency = /(urgente|agora|hoje|imediat|rapido|rápido)/i.test(text);
   const mediumUrgency = /(quando|prazo|ainda hoje|essa semana)/i.test(text);
 
-  const rules: Array<{ intent: string; pattern: RegExp; confidence: number }> = [
-    {
-      intent: "close_sale",
-      pattern: /(fechar|comprar|pagar|assinar|contratar|matr[ií]cula)/i,
-      confidence: 0.9,
-    },
-    {
-      intent: "schedule_trial",
-      pattern: /(aula experimental|agendar|marcar|hor[aá]rio|consulta)/i,
-      confidence: 0.88,
-    },
-    {
-      intent: "pricing",
-      pattern: /(pre[cç]o|valor|quanto|mensalidade|plano)/i,
-      confidence: 0.86,
-    },
-    {
-      intent: "cancellation_risk",
-      pattern: /(cancelar|desistir|n[aã]o quero|parar)/i,
-      confidence: 0.82,
-    },
-    {
-      intent: "support_human",
-      pattern: /(humano|atendente|pessoa|falar com algu[eé]m)/i,
-      confidence: 0.84,
-    },
-  ];
+  const rules: Array<{ intent: string; pattern: RegExp; confidence: number }> =
+    [
+      {
+        intent: "close_sale",
+        pattern: /(fechar|comprar|pagar|assinar|contratar|matr[ií]cula)/i,
+        confidence: 0.9,
+      },
+      {
+        intent: "schedule_trial",
+        pattern: /(aula experimental|agendar|marcar|hor[aá]rio|consulta)/i,
+        confidence: 0.88,
+      },
+      {
+        intent: "pricing",
+        pattern: /(pre[cç]o|valor|quanto|mensalidade|plano)/i,
+        confidence: 0.86,
+      },
+      {
+        intent: "cancellation_risk",
+        pattern: /(cancelar|desistir|n[aã]o quero|parar)/i,
+        confidence: 0.82,
+      },
+      {
+        intent: "support_human",
+        pattern: /(humano|atendente|pessoa|falar com algu[eé]m)/i,
+        confidence: 0.84,
+      },
+    ];
 
   const matched = rules.find((rule) => rule.pattern.test(text));
 
@@ -106,7 +107,9 @@ const deterministicFallback = (
   };
 };
 
-const getIntentSettings = async (clientId: string): Promise<{
+const getIntentSettings = async (
+  clientId: string,
+): Promise<{
   enabled: boolean;
   threshold: number;
 }> => {
@@ -157,7 +160,10 @@ const getTodayClassifierCost = async (clientId: string): Promise<number> => {
   }
 };
 
-const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
+const withTimeout = async <T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+): Promise<T> => {
   return await Promise.race([
     promise,
     new Promise<T>((_, reject) =>
@@ -174,6 +180,9 @@ export const classifyCRMIntent = async (params: {
 }): Promise<CRMIntentClassification> => {
   const settings = await getIntentSettings(params.clientId);
   if (!settings.enabled) {
+    console.log(
+      `[crm-intent] 🔒 Intent classification DISABLED for client=${params.clientId} (llm_intent_enabled=false in crm_settings)`,
+    );
     return {
       enabled: false,
       llmUsed: false,
@@ -191,6 +200,9 @@ export const classifyCRMIntent = async (params: {
   );
   const todayCost = await getTodayClassifierCost(params.clientId);
   if (Number.isFinite(budgetLimit) && todayCost >= budgetLimit) {
+    console.log(
+      `[crm-intent] 💰 Budget exceeded for client=${params.clientId} (today=$${todayCost.toFixed(4)} limit=$${budgetLimit}), using fallback`,
+    );
     const fallback = deterministicFallback(params.message);
     return {
       enabled: true,
@@ -247,6 +259,10 @@ Regras:
 
     const parsed = IntentSchema.parse(parseJsonObject(llm.text));
 
+    console.log(
+      `[crm-intent] ✅ LLM classified intent=${parsed.intent} urgency=${parsed.urgency_level ?? "none"} confidence=${parsed.confidence} threshold=${settings.threshold} client=${params.clientId}`,
+    );
+
     return {
       enabled: true,
       llmUsed: true,
@@ -263,6 +279,10 @@ Regras:
       error instanceof Error && error.message === "crm_intent_timeout"
         ? "llm_timeout_fallback"
         : "llm_error_fallback";
+
+    console.warn(
+      `[crm-intent] ⚠️ LLM failed for client=${params.clientId}, using fallback. reason=${reason} intent=${fallback.intent} error=${error instanceof Error ? error.message : String(error)}`,
+    );
 
     return {
       enabled: true,

@@ -236,6 +236,10 @@ export const processChatbotMessage = async (
         parsedMessage.name,
       );
 
+      console.log(
+        `[chatbotFlow] 🎯 CRM ensureCRMCard result: ${cardResult ? `cardId=${cardResult.cardId} created=${cardResult.created}` : "null (auto_create_cards disabled or no column)"}`,
+      );
+
       if (cardResult) {
         crmCardId = cardResult.cardId;
 
@@ -1340,12 +1344,19 @@ export const processChatbotMessage = async (
     // NODE 12.6: LLM-assisted CRM intent/urgency classification (optional, feature-flagged)
     if (crmCardId && batchedContent && batchedContent.trim().length > 0) {
       try {
+        console.log(
+          `[chatbotFlow] 🧠 CRM intent classification starting | cardId=${crmCardId} messageLength=${batchedContent.trim().length}`,
+        );
         const intentSignal = await classifyCRMIntent({
           clientId: config.id,
           message: batchedContent,
           conversationId: conversation?.id,
           phone: parsedMessage.phone,
         });
+
+        console.log(
+          `[chatbotFlow] 🧠 CRM intent result: enabled=${intentSignal.enabled} intent=${intentSignal.intent} urgency=${intentSignal.urgencyLevel} confidence=${intentSignal.confidence} reason=${intentSignal.reason} llmUsed=${intentSignal.llmUsed}`,
+        );
 
         if (intentSignal.enabled) {
           const baseTriggerData = {
@@ -1390,6 +1401,10 @@ export const processChatbotMessage = async (
           intentError,
         );
       }
+    } else {
+      console.log(
+        `[chatbotFlow] 🧠 CRM intent classification SKIPPED | crmCardId=${crmCardId ?? "undefined"} batchedContentLength=${batchedContent?.trim().length ?? 0}`,
+      );
     }
 
     if (aiResponse.toolCalls && aiResponse.toolCalls.length > 0) {

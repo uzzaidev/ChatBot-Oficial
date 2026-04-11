@@ -1,9 +1,9 @@
-import { createHash, randomUUID } from "crypto";
 import { getClientConfig } from "@/lib/config";
 import { sendTemplateMessage, sendTextMessage } from "@/lib/meta";
 import { getClient, query } from "@/lib/postgres";
 import { sendCategorizedPush } from "@/lib/push-dispatch";
 import { createServiceRoleClient } from "@/lib/supabase";
+import { createHash, randomUUID } from "crypto";
 import type { QueryResult } from "pg";
 
 type JsonRecord = Record<string, unknown>;
@@ -189,7 +189,9 @@ const evaluateJsonLogic = (logic: unknown, data: JsonRecord): unknown => {
       const result = evaluateJsonLogic(operand, data);
       if (!result) return result;
     }
-    return value.length > 0 ? evaluateJsonLogic(value[value.length - 1], data) : true;
+    return value.length > 0
+      ? evaluateJsonLogic(value[value.length - 1], data)
+      : true;
   }
 
   if (operator === "or" && Array.isArray(value)) {
@@ -269,7 +271,10 @@ const matchesTriggerConditions = (
       }
     } else if (triggerType === "tag_added") {
       const tagId = conditions.tag_id;
-      if (tagId !== undefined && String(tagId) !== String(triggerData.tag_id ?? "")) {
+      if (
+        tagId !== undefined &&
+        String(tagId) !== String(triggerData.tag_id ?? "")
+      ) {
         return false;
       }
     } else if (triggerType === "card_moved") {
@@ -290,7 +295,8 @@ const matchesTriggerConditions = (
     } else if (triggerType === "message_received") {
       const expectedFirstMessage = toBoolean(conditions.is_first_message);
       if (expectedFirstMessage !== null) {
-        const gotFirstMessage = toBoolean(triggerData.is_first_message) ?? false;
+        const gotFirstMessage =
+          toBoolean(triggerData.is_first_message) ?? false;
         if (expectedFirstMessage !== gotFirstMessage) return false;
       }
     } else if (triggerType === "keyword_detected") {
@@ -300,7 +306,13 @@ const matchesTriggerConditions = (
           : "";
       const keywordsRaw = conditions.keywords;
       const keywords = Array.isArray(keywordsRaw)
-        ? keywordsRaw.map((item) => String(item ?? "").trim().toLowerCase()).filter(Boolean)
+        ? keywordsRaw
+            .map((item) =>
+              String(item ?? "")
+                .trim()
+                .toLowerCase(),
+            )
+            .filter(Boolean)
         : typeof keywordsRaw === "string"
           ? keywordsRaw
               .split(",")
@@ -310,8 +322,7 @@ const matchesTriggerConditions = (
 
       if (keywords.length === 0) return false;
 
-      const matchMode =
-        conditions.match_mode === "all" ? "all" : "any";
+      const matchMode = conditions.match_mode === "all" ? "all" : "any";
       const matchedKeywords = keywords.filter((k) => sourceText.includes(k));
 
       if (matchMode === "all" && matchedKeywords.length !== keywords.length) {
@@ -481,16 +492,14 @@ const getExternalActionRetryConfig = (
   return EXTERNAL_ACTION_RETRY_CONFIG[actionType] ?? null;
 };
 
-const calcNextRetryAt = (
-  actionType: string,
-  attempts: number,
-): Date | null => {
+const calcNextRetryAt = (actionType: string, attempts: number): Date | null => {
   const config = getExternalActionRetryConfig(actionType);
   if (!config) return null;
   if (attempts >= config.maxAttempts) return null;
 
   const jitter = 0.75 + Math.random() * 0.5;
-  const delayMs = config.baseDelayMs * Math.pow(2, Math.max(attempts - 1, 0)) * jitter;
+  const delayMs =
+    config.baseDelayMs * Math.pow(2, Math.max(attempts - 1, 0)) * jitter;
   return new Date(Date.now() + delayMs);
 };
 
@@ -600,7 +609,9 @@ const parseTemplateParams = (
   if (!rawValue) return [];
 
   if (Array.isArray(rawValue)) {
-    return rawValue.map((item) => interpolateTemplate(String(item ?? ""), variables));
+    return rawValue.map((item) =>
+      interpolateTemplate(String(item ?? ""), variables),
+    );
   }
 
   if (typeof rawValue === "string") {
@@ -761,7 +772,11 @@ const isInsideWhatsAppWindow = async (params: {
   const now = Date.now();
   const maxMs = 24 * 60 * 60 * 1000;
 
-  const lastIncoming = await getLastIncomingMessageAt(clientId, cardContext.phone, db);
+  const lastIncoming = await getLastIncomingMessageAt(
+    clientId,
+    cardContext.phone,
+    db,
+  );
   if (lastIncoming) {
     return now - lastIncoming.getTime() <= maxMs;
   }
@@ -786,7 +801,11 @@ const resolveTemplateRecord = async (
   templateId: string,
   db: DBExecutor,
 ): Promise<{ name: string; language: string }> => {
-  const templateResult = await db.query<{ name: string; language: string; status: string }>(
+  const templateResult = await db.query<{
+    name: string;
+    language: string;
+    status: string;
+  }>(
     `SELECT name, language, status
      FROM message_templates
      WHERE id = $1
@@ -842,7 +861,10 @@ const executeSendMessageAction = async (params: {
   const cardContext = await getCardContext(cardId, db);
   const config = await getClientConfig(clientId);
 
-  if (!config?.apiKeys?.metaAccessToken || !config?.apiKeys?.metaPhoneNumberId) {
+  if (
+    !config?.apiKeys?.metaAccessToken ||
+    !config?.apiKeys?.metaPhoneNumberId
+  ) {
     throw new Error("Meta credentials not configured for this client");
   }
 
@@ -858,7 +880,8 @@ const executeSendMessageAction = async (params: {
     db,
   });
 
-  let mode: "text" | "template" = requestedMessageType === "template" ? "template" : "text";
+  let mode: "text" | "template" =
+    requestedMessageType === "template" ? "template" : "text";
 
   if (!insideWindow && mode === "text") {
     const fallbackTemplateId =
@@ -877,7 +900,9 @@ const executeSendMessageAction = async (params: {
 
   if (mode === "template") {
     const templateId =
-      typeof actionParams.template_id === "string" ? actionParams.template_id : null;
+      typeof actionParams.template_id === "string"
+        ? actionParams.template_id
+        : null;
     if (!templateId) {
       throw new Error("send_message template mode requires template_id");
     }
@@ -965,7 +990,9 @@ const resolveNotifyTargets = async (
   if (explicitUserId) return [explicitUserId];
 
   const target =
-    typeof actionParams.target === "string" ? actionParams.target : "assigned_to";
+    typeof actionParams.target === "string"
+      ? actionParams.target
+      : "assigned_to";
 
   if (target === "assigned_to") {
     const card = await getCardContext(cardId, db);
@@ -1011,7 +1038,12 @@ const executeNotifyUserAction = async (params: {
   db: DBExecutor;
 }): Promise<JsonRecord> => {
   const { clientId, cardId, actionParams, variables, db } = params;
-  const targetUserIds = await resolveNotifyTargets(clientId, cardId, actionParams, db);
+  const targetUserIds = await resolveNotifyTargets(
+    clientId,
+    cardId,
+    actionParams,
+    db,
+  );
 
   const titleTemplate =
     typeof actionParams.title === "string"
@@ -1028,9 +1060,13 @@ const executeNotifyUserAction = async (params: {
   const body = interpolateTemplate(bodyTemplate, variables).slice(0, 240);
 
   const categoryRaw =
-    typeof actionParams.category === "string" ? actionParams.category : "important";
+    typeof actionParams.category === "string"
+      ? actionParams.category
+      : "important";
   const category: NotifyCategory = (
-    ["critical", "important", "normal", "low", "marketing"].includes(categoryRaw)
+    ["critical", "important", "normal", "low", "marketing"].includes(
+      categoryRaw,
+    )
       ? categoryRaw
       : "important"
   ) as NotifyCategory;
@@ -1094,7 +1130,9 @@ const executeActionStep = async (
       const previousColumnId = previousCard.rows[0]?.column_id ?? null;
 
       const columnId =
-        typeof actionParams.column_id === "string" ? actionParams.column_id : null;
+        typeof actionParams.column_id === "string"
+          ? actionParams.column_id
+          : null;
       if (!columnId) {
         throw new Error("move_to_column requires action_params.column_id");
       }
@@ -1147,10 +1185,10 @@ const executeActionStep = async (
         [cardId, tagId],
       );
 
-      await db.query(`DELETE FROM crm_card_tags WHERE card_id = $1 AND tag_id = $2`, [
-        cardId,
-        tagId,
-      ]);
+      await db.query(
+        `DELETE FROM crm_card_tags WHERE card_id = $1 AND tag_id = $2`,
+        [cardId, tagId],
+      );
 
       return {
         result: { tag_id: tagId },
@@ -1205,7 +1243,9 @@ const executeActionStep = async (
 
       const normalized = canonicalizeStatus(actionParams.auto_status);
       if (!normalized) {
-        throw new Error("update_auto_status requires action_params.auto_status");
+        throw new Error(
+          "update_auto_status requires action_params.auto_status",
+        );
       }
       await db.query(
         `UPDATE crm_cards
@@ -1249,7 +1289,10 @@ const executeActionStep = async (
             cardId,
             activityType,
             content,
-            JSON.stringify({ automation: true, raw_activity_type: rawActivityType }),
+            JSON.stringify({
+              automation: true,
+              raw_activity_type: rawActivityType,
+            }),
           ],
         );
         return { result: { activity_type: activityType, backend } };
@@ -1528,7 +1571,12 @@ const updateDlqAfterFailure = async (
            next_retry_at = $4,
            updated_at = NOW()
        WHERE id = $1`,
-      [item.id, attempts, errorMessage.slice(0, 2000), nextRetryAt.toISOString()],
+      [
+        item.id,
+        attempts,
+        errorMessage.slice(0, 2000),
+        nextRetryAt.toISOString(),
+      ],
     );
     return;
   }
@@ -1679,8 +1727,17 @@ export const runDueScheduledCrmActions = async (
           on_error: "stop",
         };
 
-        const stepVariables = await buildAutomationStepVariables(item.card_id, db);
-        await executeActionStep(item.client_id, item.card_id, step, stepVariables, db);
+        const stepVariables = await buildAutomationStepVariables(
+          item.card_id,
+          db,
+        );
+        await executeActionStep(
+          item.client_id,
+          item.card_id,
+          step,
+          stepVariables,
+          db,
+        );
 
         await db.query(
           `UPDATE crm_scheduled_actions
@@ -1773,7 +1830,11 @@ export const simulateCrmAutomationEvent = async (
 
   for (const rule of rules) {
     const localTriggerData = { ...triggerData };
-    const matched = matchesTriggerConditions(rule, input.triggerType, localTriggerData);
+    const matched = matchesTriggerConditions(
+      rule,
+      input.triggerType,
+      localTriggerData,
+    );
     if (!matched) {
       skippedRules.push({
         rule_id: rule.id,
@@ -1820,6 +1881,9 @@ export const emitCrmAutomationEvent = async (
   const eventId = randomUUID();
 
   if (!input.clientId || !input.cardId || !input.triggerType) {
+    console.warn(
+      `[crm-automation] ⚠️ emitCrmAutomationEvent missing required fields | clientId=${input.clientId} cardId=${input.cardId} triggerType=${input.triggerType}`,
+    );
     return {
       processed: false,
       matchedRules: 0,
@@ -1832,6 +1896,9 @@ export const emitCrmAutomationEvent = async (
 
   const enabled = await isEngineEnabledForClient(input.clientId);
   if (!enabled) {
+    console.log(
+      `[crm-automation] 🔒 Engine disabled for client=${input.clientId} triggerType=${input.triggerType}`,
+    );
     return {
       processed: false,
       matchedRules: 0,
@@ -1853,6 +1920,10 @@ export const emitCrmAutomationEvent = async (
   const dedupeKey = input.dedupeKey ?? eventHash;
 
   const rules = await getActiveRules(input.clientId, input.triggerType);
+
+  console.log(
+    `[crm-automation] 📋 triggerType=${input.triggerType} cardId=${input.cardId} activeRules=${rules.length}`,
+  );
 
   if (rules.length === 0) {
     return {
@@ -1899,7 +1970,11 @@ export const emitCrmAutomationEvent = async (
     let failedRules = 0;
 
     for (const rule of rules) {
-      const matches = matchesTriggerConditions(rule, input.triggerType, triggerData);
+      const matches = matchesTriggerConditions(
+        rule,
+        input.triggerType,
+        triggerData,
+      );
       if (!matches) {
         skippedRules++;
         await logRuleExecution({
@@ -1995,7 +2070,8 @@ export const emitCrmAutomationEvent = async (
       let firstSkipReason: string | null = null;
       let hasSuccessfulStep = false;
       let hasSkippedStep = false;
-      const compensationSteps: Array<{ stepIndex: number; step: ActionStep }> = [];
+      const compensationSteps: Array<{ stepIndex: number; step: ActionStep }> =
+        [];
 
       for (let stepIndex = 0; stepIndex < steps.length; stepIndex++) {
         const step = steps[stepIndex];
@@ -2075,7 +2151,9 @@ export const emitCrmAutomationEvent = async (
 
           const message =
             error instanceof Error ? error.message : "Unknown action error";
-          const retryableConfig = getExternalActionRetryConfig(step.action_type);
+          const retryableConfig = getExternalActionRetryConfig(
+            step.action_type,
+          );
           if (retryableConfig) {
             await enqueueExternalActionRetry({
               clientId: input.clientId,
@@ -2201,6 +2279,9 @@ export const emitCrmAutomationEvent = async (
   });
 
   if (!lockResult.locked) {
+    console.warn(
+      `[crm-automation] 🔒 Card locked (concurrent process) cardId=${input.cardId} triggerType=${input.triggerType}`,
+    );
     return {
       processed: false,
       matchedRules: 0,
@@ -2212,6 +2293,9 @@ export const emitCrmAutomationEvent = async (
   }
 
   const counters = lockResult.result!;
+  console.log(
+    `[crm-automation] ✅ triggerType=${input.triggerType} cardId=${input.cardId} matched=${counters.matchedRules} executed=${counters.executedRules} skipped=${counters.skippedRules} failed=${counters.failedRules}`,
+  );
   return {
     processed: true,
     matchedRules: counters.matchedRules,
