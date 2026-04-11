@@ -7,6 +7,17 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-11
 
 ### feat
+- Implementado reordenamento de colunas no quadro Kanban usando contexto sortable do dnd-kit, permitindo arrastar e soltar colunas horizontalmente.
+- Removidos botões de mover coluna para esquerda/direita, substituídos pela interação drag-and-drop para reordenar colunas.
+- Criado componente `SortableColumn` para encapsular a lógica de sortable nas colunas do Kanban.
+- Ajustes no componente `KanbanBoard` para gerenciar estado local da ordem das colunas e atualizar ordem via callback `onReorderColumns`.
+- Atualizada renderização das colunas para usar `SortableContext` com estratégia horizontal e ordenar colunas conforme estado local.
+  - Arquivos: `src/components/crm/KanbanBoard.tsx`, `src/components/crm/KanbanColumn.tsx`, `src/components/crm/SortableColumn.tsx`, `src/app/dashboard/crm/page.tsx`
+  - Confiança: alta
+
+## 2026-04-11
+
+### feat
 - Adicionado logging para regras de automação CRM que foram correspondidas e executadas, facilitando o monitoramento e debug
   - Arquivos: `src/lib/crm-automation-engine.ts`
   - Confiança: alta
