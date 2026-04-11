@@ -7,6 +7,13 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-11
 
 ### refactor
+- Melhorada a segurança de tipos e o logging na função `getActiveAgent` para maior clareza e consistência
+  - Arquivos: `src/lib/config.ts`
+  - Confiança: alta
+
+## 2026-04-11
+
+### refactor
 - Otimizado o hook `useConversations` para evitar fetches desnecessários quando o limite é zero e melhor gerenciamento de polling e realtime; ajustado `ConversationsIndexClient` e `ConversationPageClient` para usar lógica de fetch condicional baseada no filtro de status, reduzindo chamadas duplicadas e melhorando performance.
 - Melhorias no componente `ConversationPageClient` e `ConversationsIndexClient` para evitar chamadas redundantes, ajustar memoização e callbacks, e limpar imports e formatação.
 - Refatoração no fluxo `chatbotFlow` para aprimorar logging detalhado da configuração do agente e do cliente no início do processamento, além de melhorias na organização de imports.
