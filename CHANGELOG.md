@@ -6,6 +6,18 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-11
 
+### feat
+- Adicionado logging detalhado para classificação de intenção CRM e atualizações de status de cartão, incluindo início, resultados e casos de skip para melhor monitoramento e diagnóstico.
+  - Arquivos: `src/flows/chatbotFlow.ts`, `src/lib/crm-intent-classifier.ts`, `src/nodes/updateCRMCardStatus.ts`
+  - Confiança: alta
+
+### refactor
+- Melhorias de formatação e padronização no código da engine de automação CRM, incluindo ajustes em quebras de linha, indentação e chamadas de funções para maior legibilidade.
+  - Arquivos: `src/lib/crm-automation-engine.ts`
+  - Confiança: alta
+
+## 2026-04-11
+
 ### refactor
 - Melhorada a segurança de tipos e o logging na função `getActiveAgent` para maior clareza e consistência
   - Arquivos: `src/lib/config.ts`
