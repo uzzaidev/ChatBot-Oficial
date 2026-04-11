@@ -6,6 +6,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-11
 
+### fix
+- Reduzido TTL do cache de regras de automação de 5 minutos para 30 segundos para melhorar atualização de dados
+  - Arquivos: `src/lib/crm-automation-engine.ts`
+  - Evidência: alteração do valor da constante `RULE_CACHE_TTL_MS` de 300000 para 30000
+  - Confiança: alta
+
+## 2026-04-11
+
 ### feat
 - Adicionado logging para regras de automação CRM que são puladas por não atenderem condições de gatilho
   - Arquivos: `src/lib/crm-automation-engine.ts`
