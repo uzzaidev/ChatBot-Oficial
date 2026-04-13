@@ -4,6 +4,21 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-04-13
+
+### feat
+- Adicionada verificação de permissão `whatsapp_business_messaging` no token durante o signup embutido para alertar sobre possíveis limitações no envio de templates
+  - Arquivos: `src/app/api/auth/meta/embedded-signup/route.ts`
+  - Confiança: alta
+
+- Refatorado envio de mensagens agendadas para usar configuração de cliente obtida via Vault com cache para otimizar múltiplos envios; implementado uso das funções `sendTemplateMessage` e `sendTextMessage` para envio via API do WhatsApp
+  - Arquivos: `src/app/api/cron/scheduled-messages/route.ts`
+  - Confiança: alta
+
+- Melhorada a mensagem de erro ao enviar templates no componente de seleção, exibindo detalhes adicionais quando disponíveis
+  - Arquivos: `src/components/TemplateSelectorDialog.tsx`
+  - Confiança: alta
+
 ## 2026-04-11
 
 ### feat
