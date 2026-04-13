@@ -7,6 +7,13 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-13
 
 ### feat
+- Adicionado verificação de permissões de token na rota de signup embutido da Meta e padronizado strings de tipos de sincronização para minúsculas em `coexistence-sync.ts`
+  - Arquivos: `src/app/api/auth/meta/embedded-signup/route.ts`, `src/lib/coexistence-sync.ts`
+  - Confiança: alta
+
+## 2026-04-13
+
+### feat
 - Adicionada verificação de permissão `whatsapp_business_messaging` no token durante o signup embutido para alertar sobre possíveis limitações no envio de templates
   - Arquivos: `src/app/api/auth/meta/embedded-signup/route.ts`
   - Confiança: alta
