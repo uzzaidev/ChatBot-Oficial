@@ -1,3 +1,5 @@
+import { getClientConfig } from "@/lib/config";
+import { sendTemplateMessage, sendTextMessage } from "@/lib/meta";
 import { createServiceClient } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -13,11 +15,6 @@ interface ScheduledMessageWithClient {
   template_id: string | null;
   template_params: Record<string, any> | null;
   status: string;
-  client: {
-    id: string;
-    whatsapp_phone_id: string | null;
-    whatsapp_token: string | null;
-  } | null;
 }
 
 /**
@@ -53,12 +50,7 @@ export async function POST(request: NextRequest) {
         content,
         template_id,
         template_params,
-        status,
-        client:clients!scheduled_messages_client_id_fkey(
-          id,
-          whatsapp_phone_id,
-          whatsapp_token
-        )
+        status
       `,
       )
       .eq("status", "pending")
@@ -86,53 +78,59 @@ export async function POST(request: NextRequest) {
       errors: [] as string[],
     };
 
+    // Cache client configs to avoid repeated Vault lookups for same client
+    const clientConfigCache = new Map<
+      string,
+      Awaited<ReturnType<typeof getClientConfig>>
+    >();
+
     // Process each message
     for (const msg of pendingMessages as unknown as ScheduledMessageWithClient[]) {
       results.processed++;
 
       try {
-        // Check if client has WhatsApp credentials
-        const client = msg.client;
-        if (!client?.whatsapp_phone_id || !client?.whatsapp_token) {
-          throw new Error("Client missing WhatsApp credentials");
+        // Get client config (Vault-based credentials) - cached per client
+        let config = clientConfigCache.get(msg.client_id);
+        if (!config) {
+          config = await getClientConfig(msg.client_id);
+          if (config) clientConfigCache.set(msg.client_id, config);
         }
 
-        // Send the message via WhatsApp API
-        const response = await fetch(
-          `https://graph.facebook.com/v22.0/${client.whatsapp_phone_id}/messages`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${client.whatsapp_token}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              messaging_product: "whatsapp",
-              recipient_type: "individual",
-              to: String(msg.phone),
-              type: msg.message_type === "template" ? "template" : "text",
-              ...(msg.message_type === "template"
-                ? {
-                    template: {
-                      name: msg.template_id,
-                      language: { code: "pt_BR" },
-                      components: msg.template_params?.components || [],
-                    },
-                  }
-                : {
-                    text: { body: msg.content },
-                  }),
-            }),
-          },
-        );
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error?.message || "WhatsApp API error");
+        if (!config) {
+          throw new Error(
+            `Client config not found for client ${msg.client_id}`,
+          );
         }
 
-        const whatsappResponse = await response.json();
-        const wamid = whatsappResponse.messages?.[0]?.id;
+        const phone = String(msg.phone);
+        let wamid: string | undefined;
+
+        if (msg.message_type === "template") {
+          if (!msg.template_id) {
+            throw new Error("Template message missing template_id");
+          }
+          const components = msg.template_params?.components || [];
+          // Extract simple text parameters from body component for sendTemplateMessage
+          const bodyComp = components.find((c: any) => c.type === "body");
+          const parameters: string[] | undefined = bodyComp?.parameters
+            ?.filter((p: any) => p.type === "text")
+            .map((p: any) => String(p.text));
+
+          const result = await sendTemplateMessage(
+            phone,
+            msg.template_id,
+            msg.template_params?.language || "pt_BR",
+            parameters,
+            config,
+          );
+          wamid = result.messageId;
+        } else {
+          if (!msg.content) {
+            throw new Error("Text message missing content");
+          }
+          const result = await sendTextMessage(phone, msg.content, config);
+          wamid = result.messageId;
+        }
 
         // Update message status to sent
         await (supabase as any)

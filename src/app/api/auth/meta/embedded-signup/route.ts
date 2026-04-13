@@ -84,6 +84,26 @@ export async function POST(request: NextRequest) {
     const accessToken = await exchangeCodeForToken(code);
     console.log("[Embedded Signup] ✅ Token received");
 
+    // 3b. Verify messaging permission is granted
+    try {
+      const permissions = await checkTokenPermissions(accessToken);
+      if (!permissions.includes("whatsapp_business_messaging")) {
+        console.warn(
+          "[Embedded Signup] ⚠️ Token is missing whatsapp_business_messaging permission. Templates may not send. Granted:",
+          permissions,
+        );
+      } else {
+        console.log(
+          "[Embedded Signup] ✅ whatsapp_business_messaging permission confirmed",
+        );
+      }
+    } catch (permErr) {
+      console.warn(
+        "[Embedded Signup] ⚠️ Could not verify token permissions:",
+        permErr,
+      );
+    }
+
     // 4. Fetch Meta user ID
     const metaUserId = await fetchMetaUserId(accessToken);
 

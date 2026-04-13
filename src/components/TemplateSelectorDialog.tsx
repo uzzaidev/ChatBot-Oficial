@@ -163,7 +163,9 @@ export const TemplateSelectorDialog = ({
           onTemplateSent();
         }
       } else {
-        throw new Error(data.error || "Falha ao enviar template");
+        throw new Error(
+          data.details || data.error || "Falha ao enviar template",
+        );
       }
     } catch (error: any) {
       toast({
