@@ -9,6 +9,7 @@
  */
 
 import {
+  checkTokenPermissions,
   exchangeCodeForToken,
   fetchMetaUserId,
   fetchWABADetails,

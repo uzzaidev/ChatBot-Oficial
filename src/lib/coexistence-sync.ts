@@ -21,8 +21,8 @@ type ProvisioningStatus = Record<string, any> | null | undefined;
 const META_API_VERSION = "v22.0";
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 const META_SYNC_TYPE_MAP: Record<CoexistenceSyncType, string> = {
-  contacts: "SMB_APP_STATE_SYNC",
-  history: "HISTORY",
+  contacts: "smb_app_state_sync",
+  history: "history",
 };
 
 export const getSyncKey = (syncType: CoexistenceSyncType): string =>
@@ -61,7 +61,9 @@ export async function updateClientProvisioningStatus(
   clientId: string,
   updater: (current: Record<string, any>) => Record<string, any>,
 ): Promise<Record<string, any>> {
-  const currentResult = await query<{ provisioning_status: Record<string, any> }>(
+  const currentResult = await query<{
+    provisioning_status: Record<string, any>;
+  }>(
     `SELECT provisioning_status
      FROM clients
      WHERE id = $1
@@ -124,7 +126,9 @@ export async function requestCoexistenceSync(input: {
   if (provisionedAt) {
     const provisionedAtDate = new Date(provisionedAt);
     if (!Number.isNaN(provisionedAtDate.getTime())) {
-      const expiresAt = new Date(provisionedAtDate.getTime() + TWENTY_FOUR_HOURS_MS);
+      const expiresAt = new Date(
+        provisionedAtDate.getTime() + TWENTY_FOUR_HOURS_MS,
+      );
       if (Date.now() > expiresAt.getTime()) {
         throw new Error(
           `A janela de 24h expirou. Onboarding em ${formatAbsoluteTimestamp(
