@@ -146,27 +146,68 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   } catch (error) {
     console.error("[POST /api/agents/[id]/test] Error:", error);
 
-    // Handle specific error types
+    // Handle specific error types with user-friendly Portuguese messages
     if (error instanceof Error) {
-      if (error.message.includes("API key")) {
+      // Missing API key in Vault (most common cause)
+      if (
+        error.message.includes("API key configured in Vault") ||
+        error.message.includes("No GROQ") ||
+        error.message.includes("No OPENAI")
+      ) {
         return NextResponse.json(
-          { error: "Invalid API key configuration" },
+          {
+            error:
+              "Chave de API OpenAI não configurada. Acesse Configurações → Modelo IA e cadastre sua chave de API para continuar.",
+          },
+          { status: 422 },
+        );
+      }
+      // Invalid/wrong API key rejected by provider
+      if (
+        error.message.includes("API key") ||
+        error.message.includes("Incorrect API key") ||
+        error.message.includes("invalid_api_key")
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "Chave de API inválida. Verifique a chave cadastrada em Configurações → Modelo IA.",
+          },
           { status: 401 },
         );
       }
       if (
         error.message.includes("rate limit") ||
-        error.message.includes("quota")
+        error.message.includes("quota") ||
+        error.message.includes("429")
       ) {
         return NextResponse.json(
-          { error: "Rate limit exceeded. Please try again later." },
+          {
+            error:
+              "Limite de requisições atingido. Aguarde alguns segundos e tente novamente.",
+          },
           { status: 429 },
+        );
+      }
+      if (
+        error.message.includes("model") &&
+        error.message.includes("not found")
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "Modelo de IA não encontrado. Verifique o modelo selecionado em Configurações → Modelo IA.",
+          },
+          { status: 422 },
         );
       }
     }
 
     return NextResponse.json(
-      { error: "Failed to test agent" },
+      {
+        error:
+          "Erro ao testar o agente. Tente novamente ou verifique as configurações de IA.",
+      },
       { status: 500 },
     );
   }
