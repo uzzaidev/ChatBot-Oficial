@@ -4,6 +4,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-04-14
+
+### feat
+- Melhorado o tratamento de erros na API de teste de agentes com mensagens em português mais amigáveis para problemas comuns como chave de API ausente, inválida, limite de requisições e modelo não encontrado
+  - Arquivos: `src/app/api/agents/[id]/test/route.ts`
+  - Confiança: alta
+
 ## 2026-04-13
 
 ### feat
