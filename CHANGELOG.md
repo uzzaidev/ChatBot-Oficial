@@ -7,6 +7,14 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-15
 
 ### feat
+- Adicionado suporte para exibir o perfil coletado pelo bot no painel de detalhes do contato, incluindo campos como "Como conheceu", "Indicado por", "Objetivo", "E-mail" e "CPF".
+- Atualizadas as APIs de contatos para incluir o campo `metadata` na resposta, permitindo o acesso a informações adicionais do perfil.
+  - Arquivos: `src/app/api/contacts/[phone]/route.ts`, `src/app/api/contacts/route.ts`, `src/components/ContactsClient.tsx`, `src/hooks/useContacts.ts`
+  - Confiança: alta
+
+## 2026-04-15
+
+### feat
 - Implementado bloqueio para impedir chamada de `verificar_agenda` antes da coleta completa dos dados cadastrais (como_conheceu, indicado_por, objetivo, email, CPF) no fluxo de agendamento Umana. Ajustada ordem dos passos para garantir coleta total antes de verificar disponibilidade e confirmar horário.
   - Arquivos: `CONTATOS UMANA/prommpt Umana/prompt.md`
   - Confiança: alta
