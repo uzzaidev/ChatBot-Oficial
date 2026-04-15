@@ -262,6 +262,127 @@ Objetivo: Validar que o sistema detecta duplicatas e que a confirmação de agen
 
 ---
 
+## BATERIA DE TESTES — CALENDÁRIO
+
+> Estes testes devem ser executados com o Google Calendar conectado e o toggle "Agendamento via bot" **ATIVO** no dashboard `/dashboard/calendar`, salvo onde indicado.
+
+---
+
+### CAL-01: Agendamento completo via bot (caminho feliz)
+
+**Pré-requisito:** Calendário conectado, toggle ativo.
+
+| # | Mensagem para enviar | O que verificar | Resultado | Obs |
+|---|---------------------|-----------------|-----------|-----|
+| C01.1 | "Quero marcar uma visita" | Bot iniciou coleta de dados? Não foi direto para agenda? | | |
+| C01.2 | (Fornecer: como_conheceu → objetivo → email → CPF) | Bot coletou um campo por vez, confirmando cada um? | | |
+| C01.3 | (Após coleta completa) Bot propôs horário | Horário proposto está dentro da grade (seg-qui 10h-13h / 15h-20h, sex 15h-18h)? | | |
+| C01.4 | "Pode ser quarta às 17h" | Bot verificou disponibilidade antes de confirmar? | | |
+| C01.5 | "Sim, confirma" | Bot criou evento? Confirmação contém só título e horário (sem telefone/email/ID)? | | |
+| C01.6 | Verificar no Google Calendar | Evento aparece com nome do contato, WhatsApp e e-mail na DESCRIÇÃO (campo interno)? | | |
+
+---
+
+### CAL-02: Cancelamento único
+
+**Pré-requisito:** 1 visita agendada para o contato.
+
+| # | Mensagem para enviar | O que verificar | Resultado | Obs |
+|---|---------------------|-----------------|-----------|-----|
+| C02.1 | "Quero cancelar minha visita" | Bot chamou `cancelar_evento_agenda` (NÃO criou novo evento)? | | |
+| C02.2 | (Se bot pediu confirmação) "Sim, pode cancelar" | Confirmação de cancelamento veio sem dados internos? | | |
+| C02.3 | Verificar no Google Calendar | Evento foi removido da agenda? | | |
+| C02.4 | "Quero cancelar minha visita" (sem nenhum evento) | Bot informou que não encontrou compromisso? Não quebrou com erro? | | |
+
+---
+
+### CAL-03: Cancelamento múltiplo com lista numerada
+
+**Pré-requisito:** 2 ou mais visitas agendadas para o contato.
+
+| # | Mensagem para enviar | O que verificar | Resultado | Obs |
+|---|---------------------|-----------------|-----------|-----|
+| C03.1 | "Pode cancelar minha visita" | Bot exibiu lista numerada (1. / 2. ...)? Incluiu linha `[IDs: 1=xxx, 2=yyy]` (oculta)? | | |
+| C03.2 | "Cancela o 1" | Bot cancelou apenas o evento 1? Não cancelou os outros? | | |
+| C03.3 | (Com 2 eventos) "Cancela o 1 e o 2" | Bot cancelou os dois em uma única operação? Confirmou a quantidade? | | |
+| C03.4 | "Cancela todos" | Bot cancelou todos os eventos listados? Informou quantos foram cancelados? | | |
+| C03.5 | Verificar no Google Calendar | Todos os cancelados foram removidos? Nenhum extra foi apagado? | | |
+
+---
+
+### CAL-04: Reagendamento (alterar sem cancelar)
+
+**Pré-requisito:** 1 visita agendada para o contato.
+
+| # | Mensagem para enviar | O que verificar | Resultado | Obs |
+|---|---------------------|-----------------|-----------|-----|
+| C04.1 | "Quero mudar minha visita para sexta às 16h" | Bot chamou `alterar_evento_agenda` (NÃO cancelou e recriou)? | | |
+| C04.2 | Verificar no Google Calendar | É o mesmo evento (mesmo ID)? Horário foi atualizado para sexta 16h? | | |
+| C04.3 | "Quero reagendar para terça às 19h" | Bot verificou disponibilidade do novo horário antes de alterar? | | |
+| C04.4 | (Horário novo ocupado) | Bot informou conflito e sugeriu alternativa? Não alterou para horário ocupado? | | |
+| C04.5 | "Mudar para fora da grade, tipo sábado às 8h" | Bot informou que sábado às 8h está fora da grade de visitas? | | |
+
+---
+
+### CAL-05: Verificação de disponibilidade
+
+| # | Mensagem para enviar | O que verificar | Resultado | Obs |
+|---|---------------------|-----------------|-----------|-----|
+| C05.1 | "Tem horário livre quarta de manhã?" | Bot chamou `verificar_agenda`? Respondeu com slots livres? | | |
+| C05.2 | "E quinta à tarde?" | Bot verificou sem reiniciar coleta de dados? | | |
+| C05.3 | (Horário totalmente ocupado) | Bot sugeriu até 3 alternativas de horários livres no mesmo dia? | | |
+| C05.4 | "Quais meus compromissos da semana?" | Bot listou eventos sem expor e-mails/IDs internos? | | |
+
+---
+
+### CAL-06: Anti-duplicata
+
+**Pré-requisito:** 1 visita já criada para o contato em determinado horário.
+
+| # | Mensagem para enviar | O que verificar | Resultado | Obs |
+|---|---------------------|-----------------|-----------|-----|
+| C06.1 | (Tentar agendar no mesmo horário já ocupado) | Bot detectou duplicata e informou "já existe evento semelhante"? NÃO criou segundo evento? | | |
+| C06.2 | Verificar no Google Calendar | Apenas 1 evento no horário (sem duplicata)? | | |
+| C06.3 | (Tentar agendar 20 min antes do mesmo horário) | Bot ainda detectou como duplicata (tolerância ±30 min)? | | |
+| C06.4 | "Pode marcar de novo para o mesmo dia" | Bot perguntou se quer cancelar o anterior ou escolher novo horário? | | |
+
+---
+
+### CAL-07: Toggle desativado (bot pausado)
+
+**Pré-requisito:** Ir em `/dashboard/calendar` e **desativar** o toggle "Agendamento via bot".
+
+| # | Mensagem para enviar | O que verificar | Resultado | Obs |
+|---|---------------------|-----------------|-----------|-----|
+| C07.1 | "Quero marcar uma visita" | Bot NÃO usou `verificar_agenda` nem `criar_evento_agenda`? Respondeu como se não tivesse calendário? | | |
+| C07.2 | "Quero cancelar minha visita" | Bot NÃO tentou acessar o calendário? Tratou como dúvida normal? | | |
+| C07.3 | "Quais meus compromissos?" | Bot NÃO listou eventos do calendário? | | |
+| C07.4 | (Reativar o toggle) "Quero marcar uma visita" | Bot voltou a oferecer agendamento normalmente? | | |
+
+---
+
+### CAL-08: Dados internos não vazam
+
+| # | Mensagem para enviar | O que verificar | Resultado | Obs |
+|---|---------------------|-----------------|-----------|-----|
+| C08.1 | (Após qualquer agendamento) Revisar confirmação enviada ao usuário | Tem "+55...", e-mail ou ID de evento? Se sim: FALHA. | | |
+| C08.2 | (Após cancelamento) Revisar mensagem de confirmação | Bot mencionou ID do evento? E-mail do convidado? Se sim: FALHA. | | |
+| C08.3 | "Qual o e-mail de vocês?" | Bot deu APENAS o e-mail público da Umana (não e-mail de convite do Google)? | | |
+| C08.4 | "Me passa o número de vocês" | Bot deu telefone fixo? NÃO deu WhatsApp nem e-mail de sistema? | | |
+
+---
+
+### CAL-09: Coleta de dados antes do calendário (ORDEM INVIOLÁVEL)
+
+| # | Mensagem para enviar | O que verificar | Resultado | Obs |
+|---|---------------------|-----------------|-----------|-----|
+| C09.1 | "Queria agendar para amanhã às 10h" (sem ter dados) | Bot NÃO chamou `verificar_agenda`? Iniciou coleta de dados primeiro? | | |
+| C09.2 | "Já te disse, quero às 10h de terça" (repetindo horário) | Bot respondeu "Ótimo, vou guardar esse horário" e continuou a coleta? NÃO foi para o calendário? | | |
+| C09.3 | (Fornecer só como_conheceu e objetivo, sem email e CPF) | Bot NÃO avançou para verificar agenda? Pediu email na sequência? | | |
+| C09.4 | (Fornecer todos os 4 campos) | Agora sim bot chamou `verificar_agenda` e propôs horário? | | |
+
+---
+
 ## Checklist Geral (todos os testadores devem verificar)
 
 Apos completar seus testes, cada testador deve responder:
