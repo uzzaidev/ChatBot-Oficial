@@ -118,6 +118,37 @@ export const createGoogleCalendarClient = (
     };
   };
 
+  const updateEvent = async (
+    eventId: string,
+    updates: Partial<Omit<CalendarEvent, "id">>,
+  ): Promise<CalendarEvent> => {
+    const requestBody: Record<string, any> = {};
+    if (updates.title !== undefined) requestBody.summary = updates.title;
+    if (updates.description !== undefined) requestBody.description = updates.description;
+    if (updates.location !== undefined) requestBody.location = updates.location;
+    if (updates.startDateTime !== undefined) requestBody.start = { dateTime: updates.startDateTime };
+    if (updates.endDateTime !== undefined) requestBody.end = { dateTime: updates.endDateTime };
+    if (updates.attendees !== undefined) requestBody.attendees = updates.attendees.map((email) => ({ email }));
+
+    const res = await withRefresh(() =>
+      calendar.events.patch({
+        calendarId: "primary",
+        eventId,
+        requestBody,
+      }),
+    );
+
+    return {
+      id: res.data.id || eventId,
+      title: res.data.summary || updates.title || "",
+      startDateTime: res.data.start?.dateTime || res.data.start?.date || updates.startDateTime || "",
+      endDateTime: res.data.end?.dateTime || res.data.end?.date || updates.endDateTime || "",
+      description: res.data.description || updates.description,
+      location: res.data.location || updates.location,
+      attendees: res.data.attendees?.map((a) => a.email || "").filter(Boolean),
+    };
+  };
+
   const deleteEvent = async (eventId: string): Promise<void> => {
     await withRefresh(() =>
       calendar.events.delete({
@@ -145,5 +176,5 @@ export const createGoogleCalendarClient = (
     return busySlots.length === 0;
   };
 
-  return { listEvents, createEvent, deleteEvent, checkAvailability };
+  return { listEvents, createEvent, updateEvent, deleteEvent, checkAvailability };
 };

@@ -44,6 +44,10 @@ export const handleCalendarToolCall = async (
     return await handleCriarEvento(calendarClient, toolArgs, clientId, context);
   }
 
+  if (toolName === "alterar_evento_agenda") {
+    return await handleAlterarEvento(calendarClient, toolArgs);
+  }
+
   if (toolName === "cancelar_evento_agenda") {
     return await handleCancelarEvento(calendarClient, toolArgs);
   }
@@ -196,7 +200,10 @@ const handleCriarEvento = async (
   return response;
 };
 
-const DUPLICATE_TIME_TOLERANCE_MS = 5 * 60 * 1000;
+// Tolerance for exact-time duplicate: ±30 min
+const DUPLICATE_TIME_TOLERANCE_MS = 30 * 60 * 1000;
+// Wider same-day search: ±12h (catches Google Calendar eventual consistency lag)
+const DUPLICATE_DAY_TOLERANCE_MS = 12 * 60 * 60 * 1000;
 
 const findDuplicateEvent = async (
   client: Awaited<ReturnType<typeof getCalendarClient>> & {},
@@ -205,24 +212,44 @@ const findDuplicateEvent = async (
   const startMs = new Date(event.startDateTime).getTime();
   const endMs = new Date(event.endDateTime).getTime();
 
-  const windowStart = new Date(startMs - DUPLICATE_TIME_TOLERANCE_MS);
-  const windowEnd = new Date(endMs + DUPLICATE_TIME_TOLERANCE_MS);
+  // Search a full-day window to survive eventual consistency lag
+  const windowStart = new Date(startMs - DUPLICATE_DAY_TOLERANCE_MS);
+  const windowEnd = new Date(endMs + DUPLICATE_DAY_TOLERANCE_MS);
   const existingEvents = await client.listEvents(windowStart, windowEnd);
 
-  const duplicate = existingEvents.find((candidate) => {
+  // First pass: exact time match (±30 min) + title match
+  const exactMatch = existingEvents.find((candidate) => {
     const candidateStart = new Date(candidate.startDateTime).getTime();
     const candidateEnd = new Date(candidate.endDateTime).getTime();
 
     const sameTitle = isTitleMatch(candidate.title, event.title);
-    const sameStart =
-      Math.abs(candidateStart - startMs) <= DUPLICATE_TIME_TOLERANCE_MS;
-    const sameEnd =
-      Math.abs(candidateEnd - endMs) <= DUPLICATE_TIME_TOLERANCE_MS;
+    const sameStart = Math.abs(candidateStart - startMs) <= DUPLICATE_TIME_TOLERANCE_MS;
+    const sameEnd = Math.abs(candidateEnd - endMs) <= DUPLICATE_TIME_TOLERANCE_MS;
 
     return sameTitle && sameStart && sameEnd;
   });
 
-  return duplicate || null;
+  if (exactMatch) return exactMatch;
+
+  // Second pass: same contact phone in description on the same day (catches renamed duplicates)
+  const phoneInNewEvent = extractPhoneFromDescription(event.description);
+  if (phoneInNewEvent) {
+    const phoneMatch = existingEvents.find((candidate) => {
+      const samePhone = candidate.description?.includes(phoneInNewEvent);
+      const candidateStart = new Date(candidate.startDateTime).getTime();
+      const sameDay = Math.abs(candidateStart - startMs) <= DUPLICATE_DAY_TOLERANCE_MS;
+      return samePhone && sameDay;
+    });
+    if (phoneMatch) return phoneMatch;
+  }
+
+  return null;
+};
+
+const extractPhoneFromDescription = (description: string | undefined): string | null => {
+  if (!description) return null;
+  const match = description.match(/\+\d{10,15}/);
+  return match ? match[0] : null;
 };
 
 const saveCalendarEventSystemMessage = async (
@@ -249,6 +276,49 @@ const saveCalendarEventSystemMessage = async (
       "[Calendar] Failed to save system event marker to chat history:",
       error,
     );
+  }
+};
+
+const handleAlterarEvento = async (
+  client: Awaited<ReturnType<typeof getCalendarClient>> & {},
+  args: Record<string, any>,
+): Promise<string> => {
+  const eventId = typeof args.event_id === "string" ? args.event_id.trim() : "";
+
+  if (!eventId) {
+    return "Para alterar um evento preciso do ID. Verifique o histórico da conversa por '[SISTEMA] Evento agendado' para obter o ID.";
+  }
+
+  const updates: Record<string, string> = {};
+  if (typeof args.novo_titulo === "string" && args.novo_titulo.trim()) {
+    updates.title = args.novo_titulo.trim();
+  }
+
+  const newStart = parseIsoDateArg(args.nova_data_hora_inicio);
+  const newEnd = parseIsoDateArg(args.nova_data_hora_fim);
+
+  if (args.nova_data_hora_inicio && !newStart) {
+    return "Data/hora de início inválida. Use formato ISO 8601 (ex: 2025-03-10T10:00:00-03:00).";
+  }
+  if (args.nova_data_hora_fim && !newEnd) {
+    return "Data/hora de fim inválida. Use formato ISO 8601 (ex: 2025-03-10T11:00:00-03:00).";
+  }
+
+  if (newStart) updates.startDateTime = newStart.toISOString();
+  if (newEnd) updates.endDateTime = newEnd.toISOString();
+
+  if (Object.keys(updates).length === 0) {
+    return "Nenhuma alteração fornecida. Informe o novo título, data ou horário.";
+  }
+
+  try {
+    const updated = await client.updateEvent(eventId, updates);
+    const updatedStart = new Date(updated.startDateTime);
+    const updatedEnd = new Date(updated.endDateTime);
+    return `✅ Compromisso atualizado com sucesso!\n\n📌 ${updated.title}\n📅 ${formatEventRange(updatedStart, updatedEnd)}`;
+  } catch (error: any) {
+    const message = error?.message || "erro desconhecido";
+    return `Não consegui alterar o evento (${message}). Verifique se o ID está correto ou tente cancelar e criar um novo.`;
   }
 };
 

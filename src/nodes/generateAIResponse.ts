@@ -262,6 +262,38 @@ const REGISTER_CONTACT_DATA_TOOL_DEFINITION = {
   },
 };
 
+const RESCHEDULE_CALENDAR_EVENT_TOOL_DEFINITION = {
+  type: "function",
+  function: {
+    name: "alterar_evento_agenda",
+    description:
+      'Altera (reagenda) um evento existente na agenda — muda data, horário ou título sem cancelar e recriar. Use quando o usuário quiser mudar o horário de um compromisso já agendado. Para encontrar o event_id: procure no histórico por "[SISTEMA] Evento agendado" — o ID está no final. Forneça apenas os campos que precisam mudar; os outros ficam como estão.',
+    parameters: {
+      type: "object",
+      properties: {
+        event_id: {
+          type: "string",
+          description:
+            "ID do evento a alterar. Encontre em mensagens '[SISTEMA] Evento agendado' no histórico.",
+        },
+        novo_titulo: {
+          type: "string",
+          description: "Novo título do evento (opcional — omita se não mudar)",
+        },
+        nova_data_hora_inicio: {
+          type: "string",
+          description: "Nova data/hora de início (ISO 8601, opcional)",
+        },
+        nova_data_hora_fim: {
+          type: "string",
+          description: "Nova data/hora de fim (ISO 8601, opcional)",
+        },
+      },
+      required: ["event_id"],
+    },
+  },
+};
+
 const CANCEL_CALENDAR_EVENT_TOOL_DEFINITION = {
   type: "function",
   function: {
@@ -409,9 +441,10 @@ export const generateAIResponse = async (
         content: [
           "REGRAS OBRIGATÓRIAS DE CALENDÁRIO:",
           "1. NUNCA inclua nas mensagens ao usuário: número de WhatsApp do contato, e-mail de convidados, IDs de eventos ou qualquer dado interno. A confirmação de criação de evento deve conter APENAS o que o resultado da ferramenta retornar — título e data/horário.",
-          "2. Quando o usuário pedir cancelamento (palavras como 'cancelar', 'desmarcar', 'não posso mais', 'não vou conseguir', 'cancela'): use SEMPRE cancelar_evento_agenda. NUNCA chame criar_evento_agenda quando o usuário estiver pedindo cancelamento.",
-          "3. Para encontrar o event_id ao cancelar: procure no histórico de conversa por mensagens '[SISTEMA] Evento agendado' — o ID está no final (ex: 'ID: abc123'). Passe esse ID na ferramenta cancelar_evento_agenda.",
-          "4. Se a ferramenta criar_evento_agenda retornar 'Já existe um evento semelhante', NÃO tente criar novamente — informe o usuário que o evento já está na agenda.",
+          "2. Quando o usuário pedir cancelamento (palavras: 'cancelar', 'desmarcar', 'não posso mais', 'não vou conseguir', 'cancela', 'remove'): use SEMPRE cancelar_evento_agenda. NUNCA chame criar_evento_agenda quando o usuário pedir cancelamento.",
+          "3. Quando o usuário quiser mudar o horário de um evento já agendado (palavras: 'mudar', 'remarcar', 'reagendar', 'trocar o horário'): use alterar_evento_agenda — NÃO cancele e recrie.",
+          "4. Para encontrar o event_id: procure no histórico de conversa por mensagens '[SISTEMA] Evento agendado' — o ID está no final (ex: 'ID: abc123'). Passe esse ID nas ferramentas cancelar_evento_agenda ou alterar_evento_agenda.",
+          "5. Se criar_evento_agenda retornar 'Já existe um evento semelhante', NÃO tente criar novamente — informe o usuário que o evento já está na agenda.",
         ].join("\n"),
       });
     }
@@ -605,6 +638,30 @@ export const generateAIResponse = async (
                           .describe(
                             "Email de um participante a convidar (opcional)",
                           ),
+                      }),
+                    },
+                    alterar_evento_agenda: {
+                      description:
+                        RESCHEDULE_CALENDAR_EVENT_TOOL_DEFINITION.function
+                          .description,
+                      inputSchema: z.object({
+                        event_id: z
+                          .string()
+                          .describe(
+                            "ID do evento a alterar. Encontre em '[SISTEMA] Evento agendado' no histórico.",
+                          ),
+                        novo_titulo: z
+                          .string()
+                          .optional()
+                          .describe("Novo título do evento (omita se não mudar)"),
+                        nova_data_hora_inicio: z
+                          .string()
+                          .optional()
+                          .describe("Nova data/hora de início (ISO 8601, opcional)"),
+                        nova_data_hora_fim: z
+                          .string()
+                          .optional()
+                          .describe("Nova data/hora de fim (ISO 8601, opcional)"),
                       }),
                     },
                     cancelar_evento_agenda: {

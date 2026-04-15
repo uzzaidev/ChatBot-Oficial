@@ -169,6 +169,39 @@ export const createMicrosoftCalendarClient = (
     };
   };
 
+  const updateEvent = async (
+    eventId: string,
+    updates: Partial<Omit<CalendarEvent, "id">>,
+  ): Promise<CalendarEvent> => {
+    const body: Record<string, any> = {};
+    if (updates.title !== undefined) body.subject = updates.title;
+    if (updates.description !== undefined) body.body = { contentType: "Text", content: updates.description };
+    if (updates.location !== undefined) body.location = { displayName: updates.location };
+    if (updates.startDateTime !== undefined) body.start = { dateTime: updates.startDateTime, timeZone: "UTC" };
+    if (updates.endDateTime !== undefined) body.end = { dateTime: updates.endDateTime, timeZone: "UTC" };
+    if (updates.attendees !== undefined) {
+      body.attendees = updates.attendees.map((email) => ({
+        emailAddress: { address: email },
+        type: "required",
+      }));
+    }
+
+    const data = await graphFetch(`${GRAPH_BASE}/me/events/${eventId}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    });
+
+    return {
+      id: data.id || eventId,
+      title: data.subject || updates.title || "",
+      startDateTime: data.start?.dateTime ? `${data.start.dateTime}Z` : updates.startDateTime || "",
+      endDateTime: data.end?.dateTime ? `${data.end.dateTime}Z` : updates.endDateTime || "",
+      description: data.bodyPreview || updates.description,
+      location: data.location?.displayName || updates.location,
+      attendees: data.attendees?.map((a: any) => a.emailAddress?.address || "").filter(Boolean),
+    };
+  };
+
   const deleteEvent = async (eventId: string): Promise<void> => {
     await graphFetch(`${GRAPH_BASE}/me/events/${eventId}`, {
       method: "DELETE",
@@ -184,5 +217,5 @@ export const createMicrosoftCalendarClient = (
     return events.length === 0;
   };
 
-  return { listEvents, createEvent, deleteEvent, checkAvailability };
+  return { listEvents, createEvent, updateEvent, deleteEvent, checkAvailability };
 };
