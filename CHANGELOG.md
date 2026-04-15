@@ -6,6 +6,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-15
 
+### feat
+- Implementado cancelamento múltiplo de eventos na agenda via lista numerada. Agora é possível cancelar vários compromissos selecionando números da lista ou usando "todos". Ajustes na ferramenta `cancelar_evento_agenda` para suportar array de IDs (`event_ids`) e fluxo de confirmação pelo usuário.
+  - Arquivos: `src/nodes/generateAIResponse.ts`, `src/nodes/handleCalendarToolCall.ts`
+  - Confiança: alta
+
+## 2026-04-15
+
 ### chore
 - Atualizado `pnpm-lock.yaml` para incluir a dependência `@capacitor/camera` na versão 7.0.5
   - Arquivos: `pnpm-lock.yaml`
