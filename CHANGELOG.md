@@ -6,6 +6,17 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-15
 
+### feat
+- Refinadas regras de transferência para atendimento humano e agendamento no bot Umana, diferenciando claramente entre visita gratuita (agendada autonomamente pelo bot) e aula experimental/particular (sempre com transferência para instrutor e confirmação de custo). Atualizadas orientações para coleta de dados, confirmação e criação de eventos de calendário.
+  - Arquivos: `CONTATOS UMANA/prommpt Umana/prompt.md`
+  - Confiança: alta
+
+- Atualizadas regras de manipulação de eventos de calendário no código, incluindo instruções para uso exclusivo da ferramenta de cancelamento ao lidar com pedidos de cancelamento, e orientações para evitar exposição de dados sensíveis nas mensagens ao usuário. Implementada injeção de sistema com regras obrigatórias para integração com Google e Microsoft Calendar.
+  - Arquivos: `src/nodes/generateAIResponse.ts`
+  - Confiança: alta
+
+## 2026-04-15
+
 ### chore
 - Adicionadas diversas planilhas CSV e XLSX com listas de contatos, prospects e ex-alunos para gestão da Casa Rio Branco Umåna Yōga.
 - Incluído script `xlsx-to-csv.js` para conversão de arquivos XLSX em CSV, com opções de filtro por aba, delimitador e saída.
