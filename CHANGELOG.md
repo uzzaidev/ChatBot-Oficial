@@ -4,6 +4,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-04-15
+
+### feat
+- Incluído nome e telefone do contato na criação de eventos no calendário, com sanitização e formatação dos dados para título e descrição do evento. Também simplificada a exibição da faixa de horário do evento considerando fuso horário de São Paulo.
+  - Arquivos: `src/nodes/handleCalendarToolCall.ts`, `src/flows/chatbotFlow.ts`
+  - Confiança: alta
+
 ## 2026-04-14
 
 ### feat
