@@ -514,6 +514,7 @@ export interface ClientConfig {
 
   // 📅 Calendar Integration (Google/Microsoft OAuth)
   calendar?: {
+    botEnabled: boolean; // master toggle: bot uses calendar tools at all
     google: { enabled: boolean; userEmail?: string };
     microsoft: { enabled: boolean; userEmail?: string };
   };

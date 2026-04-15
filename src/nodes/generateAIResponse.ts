@@ -440,10 +440,10 @@ export const generateAIResponse = async (
       }
     }
 
-    // 📅 Calendar rules — injected whenever any calendar integration is active
+    // 📅 Calendar rules — injected only when calendar is connected AND bot is enabled
     if (
-      config.calendar?.google?.enabled ||
-      config.calendar?.microsoft?.enabled
+      config.calendar?.botEnabled !== false &&
+      (config.calendar?.google?.enabled || config.calendar?.microsoft?.enabled)
     ) {
       messages.push({
         role: "system",
@@ -597,8 +597,9 @@ export const generateAIResponse = async (
                     .describe("Valor informado pelo usuário para o campo."),
                 }),
               },
-              ...(config.calendar?.google?.enabled ||
-              config.calendar?.microsoft?.enabled
+              ...(config.calendar?.botEnabled !== false &&
+              (config.calendar?.google?.enabled ||
+              config.calendar?.microsoft?.enabled)
                 ? {
                     verificar_agenda: {
                       description:

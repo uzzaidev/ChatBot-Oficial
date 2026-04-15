@@ -20,7 +20,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
 import {
+  BotOff,
   Calendar,
   CalendarDays,
   CheckCircle,
@@ -48,6 +50,7 @@ interface CalendarEvent {
 }
 
 interface CalendarStatus {
+  botEnabled: boolean;
   google: { enabled: boolean; userEmail?: string };
   microsoft: { enabled: boolean; userEmail?: string };
 }
@@ -85,9 +88,11 @@ export default function CalendarPage() {
 function CalendarPageContent() {
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<CalendarStatus>({
+    botEnabled: true,
     google: { enabled: false },
     microsoft: { enabled: false },
   });
+  const [togglingBot, setTogglingBot] = useState(false);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingEvents, setLoadingEvents] = useState(false);
@@ -136,6 +141,7 @@ function CalendarPageContent() {
 
         if (response.ok && data) {
           setStatus({
+            botEnabled: data.settings?.calendar_bot_enabled !== false,
             google: {
               enabled: data.google_calendar_enabled || false,
               userEmail: data.google_calendar_user_email || undefined,
@@ -188,6 +194,34 @@ function CalendarPageContent() {
       type: "success",
       message: "Eventos sincronizados!",
     });
+  };
+
+  const handleToggleBot = async (enabled: boolean) => {
+    setTogglingBot(true);
+    try {
+      const { apiFetch } = await import("@/lib/api");
+      const response = await apiFetch("/api/calendar/toggle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled }),
+      });
+
+      if (response.ok) {
+        setStatus((prev) => ({ ...prev, botEnabled: enabled }));
+        setNotification({
+          type: "success",
+          message: enabled
+            ? "Agendamento via bot ativado."
+            : "Agendamento via bot pausado. O bot não usará o calendário.",
+        });
+      } else {
+        setNotification({ type: "error", message: "Erro ao salvar configuração." });
+      }
+    } catch {
+      setNotification({ type: "error", message: "Erro ao salvar configuração." });
+    } finally {
+      setTogglingBot(false);
+    }
   };
 
   const handleConnect = (provider: "google" | "microsoft") => {
@@ -379,6 +413,41 @@ function CalendarPageContent() {
         >
           <AlertDescription>{notification.message}</AlertDescription>
         </Alert>
+      )}
+
+      {/* Bot Toggle Card */}
+      {isConnected && (
+        <Card className={cn(
+          "border-2 transition-colors",
+          status.botEnabled ? "border-green-500/40 bg-green-500/5" : "border-orange-500/40 bg-orange-500/5"
+        )}>
+          <CardContent className="flex items-center justify-between gap-4 py-4">
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                "h-10 w-10 rounded-full flex items-center justify-center",
+                status.botEnabled ? "bg-green-500/15 text-green-600" : "bg-orange-500/15 text-orange-500"
+              )}>
+                <BotOff className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-semibold text-sm">
+                  Agendamento via bot
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {status.botEnabled
+                    ? "Ativo — o bot pode verificar e criar eventos na agenda"
+                    : "Pausado — o bot não usará o calendário (conexão OAuth mantida)"}
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={status.botEnabled}
+              disabled={togglingBot}
+              onCheckedChange={handleToggleBot}
+              className="data-[state=checked]:bg-green-500"
+            />
+          </CardContent>
+        </Card>
       )}
 
       {/* Provider Cards */}

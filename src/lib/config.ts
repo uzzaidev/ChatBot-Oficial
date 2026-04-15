@@ -349,6 +349,9 @@ export const getClientConfig = async (
 
       // 📅 Calendar Integration
       calendar: {
+        // Master toggle: if false, bot does not get calendar tools even when OAuth is connected.
+        // Defaults to true so existing clients are unaffected until they explicitly disable it.
+        botEnabled: client.settings?.calendar_bot_enabled !== false,
         google: {
           enabled: client.google_calendar_enabled || false,
           userEmail: client.google_calendar_user_email || undefined,
