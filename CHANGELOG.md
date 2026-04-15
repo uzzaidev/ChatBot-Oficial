@@ -7,6 +7,14 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-15
 
 ### feat
+- Adicionada coluna JSONB `metadata` para armazenar dados flexíveis de contatos em `clientes_whatsapp`, com suporte a tabelas legadas e índice GIN para consultas eficientes.
+- Criada função RPC `merge_contact_metadata` para mesclar dados de metadata de contatos de forma segura e multi-tenant, atualizando registros por telefone e client_id quando disponível.
+  - Arquivos: `supabase/migrations/20260415110000_add_metadata_to_clientes_whatsapp.sql`, `supabase/migrations/20260415113000_create_merge_contact_metadata_rpc.sql`
+  - Confiança: alta
+
+## 2026-04-15
+
+### feat
 - Adicionado suporte para cancelar eventos existentes na agenda sem criar novos compromissos. Implementada nova ferramenta "cancelar_evento_agenda" que permite cancelar eventos pelo ID, título e/ou intervalo de datas, com lógica para busca e seleção do compromisso mais adequado para cancelamento.
   - Arquivos: `src/flows/chatbotFlow.ts`, `src/lib/calendar-client.ts`, `src/lib/google-calendar-client.ts`, `src/lib/microsoft-calendar-client.ts`, `src/nodes/generateAIResponse.ts`, `src/nodes/handleCalendarToolCall.ts`
   - Confiança: alta
