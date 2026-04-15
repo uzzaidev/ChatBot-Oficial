@@ -6,6 +6,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-15
 
+### docs
+- Adicionada bateria detalhada de testes de calendário (CAL-01 a CAL-09) para validação do agendamento via bot, incluindo agendamento, cancelamento, reagendamento, verificação de disponibilidade, anti-duplicata, toggle de ativação e segurança de dados
+  - Arquivos: `docs/prompts/Umana Rio Branco/QA_TESTES_UMANA.md`
+  - Confiança: alta
+
+## 2026-04-15
+
 ### feat
 - Adicionado toggle para ativar ou pausar o uso do calendário pelo bot sem desconectar OAuth, controlado pelo campo `calendar_bot_enabled` nas configurações do cliente. Implementado endpoint POST `/api/calendar/toggle` para atualizar essa configuração e componente de UI com switch no dashboard do calendário para controlar essa funcionalidade.
 - Atualizado o carregamento da configuração do cliente para incluir o novo toggle `botEnabled` que determina se o bot pode usar as integrações de calendário.
