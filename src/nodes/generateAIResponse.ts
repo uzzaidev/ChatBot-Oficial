@@ -1,5 +1,10 @@
 import { callDirectAI } from "@/lib/direct-ai-client";
-import { AIResponse, ChatMessage, ClientConfig } from "@/lib/types";
+import {
+  AIResponse,
+  ChatMessage,
+  ClientConfig,
+  ContactMetadata,
+} from "@/lib/types";
 import { checkBudgetAvailable } from "@/lib/unified-tracking";
 import type { CoreMessage } from "ai";
 import { z } from "zod";
@@ -200,7 +205,7 @@ const CREATE_CALENDAR_EVENT_TOOL_DEFINITION = {
   function: {
     name: "criar_evento_agenda",
     description:
-      'Cria um novo evento na agenda do cliente. Use quando o usuário solicitar marcar um compromisso, reunião ou evento. Exemplos: "marca uma reunião amanhã às 10h", "agenda um compromisso sexta às 14h", "cria um evento para a consulta".',
+      'Cria um novo evento na agenda do cliente. REGRA CRÍTICA: SÓ use esta tool após o usuário confirmar EXPLICITAMENTE que quer criar o evento — palavras como "marca", "cria", "pode agendar", "confirma", "sim" após você perguntar. NUNCA crie um evento quando o usuário estiver apenas mencionando opções, verificando disponibilidade, ou usando palavras de incerteza como "acho que", "precisaria confirmar", "me passou uma opção". O fluxo correto é: (1) verificar disponibilidade de todos os horários mencionados com verificar_agenda, (2) apresentar as opções disponíveis ao usuário, (3) perguntar "Posso criar o evento para [dia/horário]?", (4) aguardar confirmação explícita, (5) só então chamar esta tool. Antes de criar, verificar no historico se ja existe "[SISTEMA] Evento agendado" para este contato e evitar duplicidade.',
     parameters: {
       type: "object",
       properties: {
@@ -229,6 +234,30 @@ const CREATE_CALENDAR_EVENT_TOOL_DEFINITION = {
         },
       },
       required: ["titulo", "data_hora_inicio", "data_hora_fim"],
+    },
+  },
+};
+
+const REGISTER_CONTACT_DATA_TOOL_DEFINITION = {
+  type: "function",
+  function: {
+    name: "registrar_dado_cadastral",
+    description:
+      "Use quando o usuario fornecer dado cadastral. Salva o campo para nao perguntar novamente em conversas futuras.",
+    parameters: {
+      type: "object",
+      properties: {
+        campo: {
+          type: "string",
+          enum: ["cpf", "email", "como_conheceu", "indicado_por", "objetivo"],
+          description: "Campo cadastral coletado na conversa.",
+        },
+        valor: {
+          type: "string",
+          description: "Valor informado pelo usuario para o campo.",
+        },
+      },
+      required: ["campo", "valor"],
     },
   },
 };
@@ -273,6 +302,7 @@ export interface GenerateAIResponseInput {
   chatHistory: ChatMessage[];
   ragContext: string;
   customerName: string;
+  contactMetadata?: ContactMetadata;
   config: ClientConfig; // 🔐 Config dinâmica do cliente
   greetingInstruction?: string; // 🔧 Phase 1: Continuity greeting instruction
   includeDateTimeInfo?: boolean; // 🚀 Fast Track: Whether to include date/time in prompt (default: true)
@@ -297,6 +327,7 @@ export const generateAIResponse = async (
       chatHistory,
       ragContext,
       customerName,
+      contactMetadata,
       config,
       greetingInstruction,
       includeDateTimeInfo = true, // 🚀 Fast Track: default to true for backward compatibility
@@ -344,6 +375,30 @@ export const generateAIResponse = async (
       });
     }
 
+    if (contactMetadata && Object.keys(contactMetadata).length > 0) {
+      const metaLines: string[] = [];
+      if (contactMetadata.email) metaLines.push(`E-mail: ${contactMetadata.email}`);
+      if (contactMetadata.cpf) metaLines.push(`CPF: ${contactMetadata.cpf}`);
+      if (contactMetadata.como_conheceu) {
+        metaLines.push(`Como conheceu: ${contactMetadata.como_conheceu}`);
+      }
+      if (contactMetadata.indicado_por) {
+        metaLines.push(`Indicado por: ${contactMetadata.indicado_por}`);
+      }
+      if (contactMetadata.objetivo) {
+        metaLines.push(`Objetivo declarado: ${contactMetadata.objetivo}`);
+      }
+
+      if (metaLines.length > 0) {
+        messages.push({
+          role: "system",
+          content:
+            "DADOS JÁ COLETADOS DESTE CONTATO - NÃO pergunte novamente:\n" +
+            metaLines.join("\n"),
+        });
+      }
+    }
+
     if (ragContext && ragContext.trim().length > 0) {
       messages.push({
         role: "user",
@@ -357,7 +412,9 @@ export const generateAIResponse = async (
         const isValid =
           msg &&
           typeof msg === "object" &&
-          (msg.role === "user" || msg.role === "assistant") &&
+          (msg.role === "user" ||
+            msg.role === "assistant" ||
+            msg.role === "system") &&
           typeof msg.content === "string" &&
           msg.content.trim().length > 0;
 
@@ -392,6 +449,7 @@ export const generateAIResponse = async (
           HUMAN_HANDOFF_TOOL_DEFINITION,
           SEARCH_DOCUMENT_TOOL_DEFINITION, // NEW: Buscar documentos da base de conhecimento
           TTS_AUDIO_TOOL_DEFINITION, // NEW: Enviar resposta em áudio (TTS)
+          REGISTER_CONTACT_DATA_TOOL_DEFINITION, // NEW: Registrar dado cadastral
         ]
       : []; // Empty tools array for fast track
 
@@ -460,6 +518,24 @@ export const generateAIResponse = async (
                     .describe(
                       "Texto que será convertido em áudio (sua resposta completa para o cliente)",
                     ),
+                }),
+              },
+              registrar_dado_cadastral: {
+                description:
+                  REGISTER_CONTACT_DATA_TOOL_DEFINITION.function.description,
+                inputSchema: z.object({
+                  campo: z
+                    .enum([
+                      "cpf",
+                      "email",
+                      "como_conheceu",
+                      "indicado_por",
+                      "objetivo",
+                    ])
+                    .describe("Campo cadastral coletado na conversa."),
+                  valor: z
+                    .string()
+                    .describe("Valor informado pelo usuário para o campo."),
                 }),
               },
               ...(config.calendar?.google?.enabled ||
@@ -595,3 +671,4 @@ export const generateAIResponse = async (
     throw new Error(`Failed to generate AI response: ${errorMessage}`);
   }
 };
+
