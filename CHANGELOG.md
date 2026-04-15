@@ -7,6 +7,13 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-15
 
 ### feat
+- Adicionado suporte para cancelar eventos existentes na agenda sem criar novos compromissos. Implementada nova ferramenta "cancelar_evento_agenda" que permite cancelar eventos pelo ID, título e/ou intervalo de datas, com lógica para busca e seleção do compromisso mais adequado para cancelamento.
+  - Arquivos: `src/flows/chatbotFlow.ts`, `src/lib/calendar-client.ts`, `src/lib/google-calendar-client.ts`, `src/lib/microsoft-calendar-client.ts`, `src/nodes/generateAIResponse.ts`, `src/nodes/handleCalendarToolCall.ts`
+  - Confiança: alta
+
+## 2026-04-15
+
+### feat
 - Integrado plugin de câmera do Capacitor para Android e iOS, incluindo permissões necessárias nos manifestos e plist. Adicionados scripts PowerShell para build e pré-verificação de release Android no Windows. 
 - Adicionado botão "Voltar" nas telas de contatos e conversas para facilitar navegação ao dashboard.
   - Arquivos: `android/app/src/main/AndroidManifest.xml`, `ios/App/App/Info.plist`, `android/app/capacitor.build.gradle`, `android/capacitor.settings.gradle`, `capacitor.config.ts`, `package.json`, `src/components/ContactsClient.tsx`, `src/components/ConversationsIndexClient.tsx`, `scripts/android-preflight-check.ps1`, `scripts/build-android-release.ps1`
