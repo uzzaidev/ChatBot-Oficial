@@ -267,24 +267,24 @@ const CANCEL_CALENDAR_EVENT_TOOL_DEFINITION = {
   function: {
     name: "cancelar_evento_agenda",
     description:
-      'Cancela/desmarca um evento existente da agenda do cliente. Use quando o usuÃ¡rio pedir para cancelar, desmarcar ou remover um compromisso. NÃƒO cria novo evento.',
+      'Cancela/desmarca um evento existente da agenda. Use quando o usuário disser "cancelar", "desmarcar", "não posso mais", "não vou conseguir" ou qualquer variação que indique que não quer mais o compromisso. NUNCA chame criar_evento_agenda quando o usuário pedir cancelamento. Para localizar o evento: procure no histórico de conversa por mensagens "[SISTEMA] Evento agendado" — o event_id está no final dessas mensagens (ex: "ID: abc123"). Passe sempre o event_id quando disponível; caso contrário, passe titulo e data_inicio.',
     parameters: {
       type: "object",
       properties: {
         event_id: {
           type: "string",
           description:
-            "ID do evento na agenda (use quando jÃ¡ tiver esse identificador)",
+            "ID do evento na agenda. Encontre nas mensagens '[SISTEMA] Evento agendado' no histórico.",
         },
         titulo: {
           type: "string",
           description:
-            "TÃ­tulo do evento para localizar e cancelar (quando nÃ£o tiver event_id)",
+            "Título do evento para localizar e cancelar (quando não tiver event_id)",
         },
         data_inicio: {
           type: "string",
           description:
-            "Data/hora de inÃ­cio para localizar o evento (ISO 8601). Pode ser o inÃ­cio exato ou apenas referÃªncia de data/hora.",
+            "Data/hora de início para localizar o evento (ISO 8601). Pode ser o início exato ou apenas referência de data/hora.",
         },
         data_fim: {
           type: "string",
@@ -397,6 +397,23 @@ export const generateAIResponse = async (
             metaLines.join("\n"),
         });
       }
+    }
+
+    // 📅 Calendar rules — injected whenever any calendar integration is active
+    if (
+      config.calendar?.google?.enabled ||
+      config.calendar?.microsoft?.enabled
+    ) {
+      messages.push({
+        role: "system",
+        content: [
+          "REGRAS OBRIGATÓRIAS DE CALENDÁRIO:",
+          "1. NUNCA inclua nas mensagens ao usuário: número de WhatsApp do contato, e-mail de convidados, IDs de eventos ou qualquer dado interno. A confirmação de criação de evento deve conter APENAS o que o resultado da ferramenta retornar — título e data/horário.",
+          "2. Quando o usuário pedir cancelamento (palavras como 'cancelar', 'desmarcar', 'não posso mais', 'não vou conseguir', 'cancela'): use SEMPRE cancelar_evento_agenda. NUNCA chame criar_evento_agenda quando o usuário estiver pedindo cancelamento.",
+          "3. Para encontrar o event_id ao cancelar: procure no histórico de conversa por mensagens '[SISTEMA] Evento agendado' — o ID está no final (ex: 'ID: abc123'). Passe esse ID na ferramenta cancelar_evento_agenda.",
+          "4. Se a ferramenta criar_evento_agenda retornar 'Já existe um evento semelhante', NÃO tente criar novamente — informe o usuário que o evento já está na agenda.",
+        ].join("\n"),
+      });
     }
 
     if (ragContext && ragContext.trim().length > 0) {
