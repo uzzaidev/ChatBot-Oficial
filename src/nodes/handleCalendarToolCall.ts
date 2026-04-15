@@ -330,6 +330,25 @@ const handleCancelarEvento = async (
   client: Awaited<ReturnType<typeof getCalendarClient>> & {},
   args: Record<string, any>,
 ): Promise<string> => {
+  // ── Bulk cancel: array of IDs (user confirmed from a numbered list) ──────
+  const eventIds: string[] = Array.isArray(args.event_ids)
+    ? args.event_ids.filter((id): id is string => typeof id === "string" && id.trim().length > 0)
+    : [];
+
+  if (eventIds.length > 0) {
+    const results = await Promise.allSettled(
+      eventIds.map((id) => client.deleteEvent(id.trim())),
+    );
+    const succeeded = results.filter((r) => r.status === "fulfilled").length;
+    const failed = results.filter((r) => r.status === "rejected").length;
+
+    if (failed === 0) {
+      return `✅ ${succeeded} compromisso(s) cancelado(s) com sucesso.`;
+    }
+    return `✅ ${succeeded} cancelado(s). ❌ ${failed} não foi possível cancelar (ID inválido ou já removido).`;
+  }
+
+  // ── Single cancel by event_id ─────────────────────────────────────────────
   const eventId = typeof args.event_id === "string" ? args.event_id.trim() : "";
   const title = typeof args.titulo === "string" ? args.titulo.trim() : "";
   const startRef = parseIsoDateArg(args.data_inicio);
@@ -354,9 +373,10 @@ const handleCancelarEvento = async (
   }
 
   if (!title && !startRef && !endRef) {
-    return "Para cancelar, preciso de pelo menos um identificador: event_id, título ou data/hora do compromisso.";
+    return "Para cancelar, preciso de pelo menos um identificador: event_id, event_ids, título ou data/hora do compromisso.";
   }
 
+  // ── Search candidates ─────────────────────────────────────────────────────
   const { searchStart, searchEnd } = buildCancelSearchWindow(startRef, endRef);
   const allEvents = await client.listEvents(searchStart, searchEnd);
 
@@ -396,32 +416,41 @@ const handleCancelarEvento = async (
     return "Não encontrei um compromisso correspondente para cancelar com os dados informados.";
   }
 
+  // ── Single unambiguous match ──────────────────────────────────────────────
   const chosen = chooseBestCandidate(candidates, {
     title: title || undefined,
     startRef: startRef || undefined,
     endRef: endRef || undefined,
   });
 
-  if (!chosen) {
-    const options = candidates
-      .slice(0, 3)
-      .map((event) => {
-        const start = new Date(event.startDateTime);
-        const end = new Date(event.endDateTime);
-        return `• ${event.title} (${formatEventRange(start, end)})`;
-      })
-      .join("\n");
-
-    return `Encontrei mais de um compromisso possível para cancelamento. Me confirme título e horário exato:\n${options}`;
+  if (chosen) {
+    await client.deleteEvent(chosen.id);
+    const chosenStart = new Date(chosen.startDateTime);
+    const chosenEnd = new Date(chosen.endDateTime);
+    return `✅ Compromisso cancelado com sucesso!\n\n📌 ${chosen.title}\n📅 ${formatEventRange(chosenStart, chosenEnd)}`;
   }
 
-  await client.deleteEvent(chosen.id);
+  // ── Multiple candidates — return numbered list with IDs so AI can bulk-cancel ──
+  const list = candidates.slice(0, 5);
+  const numbered = list
+    .map((event, idx) => {
+      const start = new Date(event.startDateTime);
+      const end = new Date(event.endDateTime);
+      return `${idx + 1}. ${event.title} — ${formatEventRange(start, end)}`;
+    })
+    .join("\n");
 
-  const chosenStart = new Date(chosen.startDateTime);
-  const chosenEnd = new Date(chosen.endDateTime);
-  return `✅ Compromisso cancelado com sucesso!\n\n📌 *${
-    chosen.title
-  }*\n📅 ${formatEventRange(chosenStart, chosenEnd)}`;
+  // Machine-readable ID map the AI uses to build event_ids[] on next call
+  const idMap = list
+    .map((event, idx) => `${idx + 1}=${event.id}`)
+    .join(", ");
+
+  return (
+    `Encontrei ${list.length} compromissos possíveis. ` +
+    `Responda com os números a cancelar (ex: "1, 3") ou "todos":\n\n` +
+    `${numbered}\n\n` +
+    `[IDs: ${idMap}]`
+  );
 };
 
 const parseIsoDateArg = (value: unknown): Date | null => {

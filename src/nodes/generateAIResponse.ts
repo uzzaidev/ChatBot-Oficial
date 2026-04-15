@@ -299,29 +299,38 @@ const CANCEL_CALENDAR_EVENT_TOOL_DEFINITION = {
   function: {
     name: "cancelar_evento_agenda",
     description:
-      'Cancela/desmarca um evento existente da agenda. Use quando o usuário disser "cancelar", "desmarcar", "não posso mais", "não vou conseguir" ou qualquer variação que indique que não quer mais o compromisso. NUNCA chame criar_evento_agenda quando o usuário pedir cancelamento. Para localizar o evento: procure no histórico de conversa por mensagens "[SISTEMA] Evento agendado" — o event_id está no final dessas mensagens (ex: "ID: abc123"). Passe sempre o event_id quando disponível; caso contrário, passe titulo e data_inicio.',
+      'Cancela um ou mais eventos da agenda. Use quando o usuário disser "cancelar", "desmarcar", "não posso mais", "não vou conseguir" ou similar. NUNCA chame criar_evento_agenda quando o usuário pedir cancelamento. ' +
+      'Fluxo: (1) tente cancelar pelo event_id do histórico ("[SISTEMA] Evento agendado — ID: xxx"); ' +
+      '(2) se houver múltiplos e a ferramenta retornar lista numerada com [IDs: 1=xxx, 2=yyy], use event_ids com os IDs selecionados pelo usuário; ' +
+      '(3) se o usuário disser "todos", passe todos os IDs do [IDs: ...] em event_ids.',
     parameters: {
       type: "object",
       properties: {
         event_id: {
           type: "string",
           description:
-            "ID do evento na agenda. Encontre nas mensagens '[SISTEMA] Evento agendado' no histórico.",
+            "ID de um único evento. Encontre em '[SISTEMA] Evento agendado' no histórico.",
+        },
+        event_ids: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "Lista de IDs para cancelamento em massa. Use quando o usuário confirmar múltiplos itens da lista numerada (ex: '1, 3') ou disser 'todos'. Os IDs estão no [IDs: ...] da resposta anterior.",
         },
         titulo: {
           type: "string",
           description:
-            "Título do evento para localizar e cancelar (quando não tiver event_id)",
+            "Título do evento para localizar (quando não tiver event_id)",
         },
         data_inicio: {
           type: "string",
           description:
-            "Data/hora de início para localizar o evento (ISO 8601). Pode ser o início exato ou apenas referência de data/hora.",
+            "Data/hora de início para localizar o evento (ISO 8601).",
         },
         data_fim: {
           type: "string",
           description:
-            "Data/hora de fim para localizar o evento (ISO 8601). Opcional.",
+            "Data/hora de fim para localizar o evento (ISO 8601, opcional).",
         },
       },
       required: [],
@@ -441,7 +450,7 @@ export const generateAIResponse = async (
         content: [
           "REGRAS OBRIGATÓRIAS DE CALENDÁRIO:",
           "1. NUNCA inclua nas mensagens ao usuário: número de WhatsApp do contato, e-mail de convidados, IDs de eventos ou qualquer dado interno. A confirmação de criação de evento deve conter APENAS o que o resultado da ferramenta retornar — título e data/horário.",
-          "2. Quando o usuário pedir cancelamento (palavras: 'cancelar', 'desmarcar', 'não posso mais', 'não vou conseguir', 'cancela', 'remove'): use SEMPRE cancelar_evento_agenda. NUNCA chame criar_evento_agenda quando o usuário pedir cancelamento.",
+          "2. Quando o usuário pedir cancelamento (palavras: 'cancelar', 'desmarcar', 'não posso mais', 'não vou conseguir', 'cancela', 'remove'): use SEMPRE cancelar_evento_agenda. NUNCA chame criar_evento_agenda quando o usuário pedir cancelamento. Se a ferramenta retornar uma lista numerada com [IDs: 1=xxx, 2=yyy], aguarde o usuário dizer os números (ex: '1, 2') ou 'todos', então chame cancelar_evento_agenda novamente com event_ids contendo os IDs correspondentes.",
           "3. Quando o usuário quiser mudar o horário de um evento já agendado (palavras: 'mudar', 'remarcar', 'reagendar', 'trocar o horário'): use alterar_evento_agenda — NÃO cancele e recrie.",
           "4. Para encontrar o event_id: procure no histórico de conversa por mensagens '[SISTEMA] Evento agendado' — o ID está no final (ex: 'ID: abc123'). Passe esse ID nas ferramentas cancelar_evento_agenda ou alterar_evento_agenda.",
           "5. Se criar_evento_agenda retornar 'Já existe um evento semelhante', NÃO tente criar novamente — informe o usuário que o evento já está na agenda.",
@@ -673,13 +682,19 @@ export const generateAIResponse = async (
                           .string()
                           .optional()
                           .describe(
-                            "ID do evento na agenda (use quando ja tiver esse identificador)",
+                            "ID de um único evento (encontre em '[SISTEMA] Evento agendado' no histórico)",
+                          ),
+                        event_ids: z
+                          .array(z.string())
+                          .optional()
+                          .describe(
+                            "Lista de IDs para cancelamento em massa. Use os IDs do [IDs: ...] da resposta anterior quando o usuário confirmar múltiplos ou disser 'todos'.",
                           ),
                         titulo: z
                           .string()
                           .optional()
                           .describe(
-                            "Titulo do evento para localizar e cancelar (quando nao tiver event_id)",
+                            "Titulo do evento para localizar (quando nao tiver event_id)",
                           ),
                         data_inicio: z
                           .string()
