@@ -6,6 +6,65 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-15
 
+### chore
+- Adicionadas diversas planilhas CSV e XLSX com listas de contatos, prospects e ex-alunos para gestão da Casa Rio Branco Umåna Yōga.
+- Incluído script `xlsx-to-csv.js` para conversão de arquivos XLSX em CSV, com opções de filtro por aba, delimitador e saída.
+- Adicionado arquivo HTML `canvas-uzzapp.html` com Business Model Canvas interativo para o projeto UzzApp, usando React e Tailwind CSS.
+  - Arquivos: `CONTATOS UMANA/CSVs/*.csv`, `CONTATOS UMANA/CSVs/*.xlsx`, `CONTATOS UMANA/xlsx-to-csv.js`, `canvas-uzzapp.html`
+  - Confiança: alta
+
+### feat
+- Implementada nova versão do prompt do chatbot para atendimento da Umåna Yōga (Casa Rio Branco & Casa Bela Vista), com regras detalhadas para:
+  - Filosofia, estilo de vida e apresentação da escola
+  - Fluxo de coleta de dados pré-agendamento (como conheceu, indicação, objetivo, email, CPF)
+  - Diferença clara entre visita gratuita e aula experimental paga
+  - Horários disponíveis para agendamento (Seg-Qui 10h-13h e 15h-20h, Sex 15h-18h)
+  - Regras de linguagem para respostas no WhatsApp (crase obrigatória, vocabulário específico, proibição de markdown)
+  - Gatilhos para transferência para atendimento humano e fluxo de confirmação de agendamento
+  - Orientações para não oferecer contatos automaticamente, apenas sob solicitação explícita
+- Arquivo principal: `CONTATOS UMANA/prommpt Umana/prompt.md`
+- Confiança: alta
+
+### feat
+- CRM: Adicionada coluna JSONB `metadata` na tabela `clientes_whatsapp` para armazenar dados cadastrais coletados (CPF, email, como conheceu, indicado por, objetivo).
+- Criada função RPC `merge_contact_metadata` para merge não-destrutivo dos dados no metadata.
+- Novos nodes:
+  - `updateContactMetadata.ts` para atualizar metadata via RPC
+  - `upsertContactMetadata.ts` para detecção e inserção automática de dados no fluxo
+- Modificações em nodes para suportar metadata no contexto da IA e tool call `registrar_dado_cadastral` para salvar dados coletados pelo bot.
+- Fluxo chatbot atualizado para injetar dados coletados no prompt e evitar perguntas repetidas.
+- Arquivos relevantes: `src/nodes/updateContactMetadata.ts`, `src/nodes/upsertContactMetadata.ts`, `src/nodes/checkOrCreateCustomer.ts`, `src/nodes/generateAIResponse.ts`, `src/flows/chatbotFlow.ts`, `src/lib/types.ts`
+- Confiança: alta
+
+### feat
+- Calendário:
+  - Melhorias no cancelamento de eventos: fallback para buscar evento por título e data quando `event_id` não é fornecido.
+  - Ao criar evento, salva mensagem de sistema no histórico do chat para evitar duplicação de eventos.
+  - Inclui email do contato como participante do evento, se disponível.
+  - Modificações em `handleCalendarToolCall.ts`, `saveChatMessage.ts`, `generateAIResponse.ts`, `google-calendar-client.ts`, `microsoft-calendar-client.ts`
+- Confiança: alta
+
+### fix
+- Corrigido bug de criação prematura de evento no calendário sem confirmação explícita do usuário.
+- Atualizada descrição da tool `criar_evento_agenda` para exigir fluxo de confirmação em 6 passos antes de criar evento.
+- Atualizado prompt Umåna para reforçar fluxo obrigatório de confirmação e evitar criação automática.
+- Confiança: alta
+- Evidência: alteração na descrição da tool e regras no prompt para confirmação explícita antes de criar evento.
+
+### feat
+- Mobile: integração da câmera via Capacitor e adição de botão "voltar" nas telas de contatos e conversas.
+- Confiança: alta
+
+### fix
+- Templates:
+  - Corrigido erro 404 ao editar templates em rascunho no dashboard.
+  - Backend atualizado para suportar documentos PDF como header de template.
+- Pendências: UI para upload de PDF e bug accordion no dashboard.
+- Arquivos: `src/app/dashboard/templates/[id]/edit/page.tsx`, `src/lib/meta.ts`, `src/app/api/templates/send/route.ts`
+- Confiança: alta
+
+## 2026-04-15
+
 ### feat
 - Adicionada ferramenta para captura e registro de dados cadastrais do contato (ex: CPF, email, indicação) para evitar perguntas repetidas em futuras conversas.
 - Implementadas regras rigorosas para criação de eventos na agenda, exigindo confirmação explícita do usuário e evitando duplicidade de eventos.
