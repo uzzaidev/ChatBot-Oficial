@@ -7,6 +7,15 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-15
 
 ### feat
+- Adicionado toggle para ativar ou pausar o uso do calendário pelo bot sem desconectar OAuth, controlado pelo campo `calendar_bot_enabled` nas configurações do cliente. Implementado endpoint POST `/api/calendar/toggle` para atualizar essa configuração e componente de UI com switch no dashboard do calendário para controlar essa funcionalidade.
+- Atualizado o carregamento da configuração do cliente para incluir o novo toggle `botEnabled` que determina se o bot pode usar as integrações de calendário.
+- Ajustada a geração de respostas da IA para considerar o toggle `botEnabled` ao injetar regras de calendário, ativando-as somente se o bot estiver habilitado e a integração estiver ativa.
+  - Arquivos: `src/app/api/calendar/toggle/route.ts`, `src/app/dashboard/calendar/page.tsx`, `src/lib/config.ts`, `src/lib/types.ts`, `src/nodes/generateAIResponse.ts`
+  - Confiança: alta
+
+## 2026-04-15
+
+### feat
 - Adicionado suporte para exibir o perfil coletado pelo bot no painel de detalhes do contato, incluindo campos como "Como conheceu", "Indicado por", "Objetivo", "E-mail" e "CPF".
 - Atualizadas as APIs de contatos para incluir o campo `metadata` na resposta, permitindo o acesso a informações adicionais do perfil.
   - Arquivos: `src/app/api/contacts/[phone]/route.ts`, `src/app/api/contacts/route.ts`, `src/components/ContactsClient.tsx`, `src/hooks/useContacts.ts`
