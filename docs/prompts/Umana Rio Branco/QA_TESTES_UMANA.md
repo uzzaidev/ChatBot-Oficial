@@ -29,8 +29,8 @@ Objetivo: Testar se o bot faz a saudacao correta, coleta informacoes naturalment
 | 1.6 | "Qualquer dia ta bom" | Bot sugeriu opcoes de manha e direcionou para visita? | | |
 | 1.7 | "Quanto custa?" | Bot respondeu "a partir de R$X" SEM enviar imagem? Sugeriu visita? | | |
 | 1.8 | "Mas quais sao os planos?" | Agora sim enviou imagem "Planos Umana.jpeg"? Veio com texto explicativo? | | |
-| 1.9 | "Quero conhecer a escola" | Bot ofereceu agendar visita? Perguntou dia e periodo? | | |
-| 1.10 | "Pode ser quinta de manha" | Bot confirmou agendamento ou ofereceu falar com instrutor? | | |
+| 1.9 | "Quero conhecer a escola" | Bot ofereceu marcar visita ("Quer que eu te ajude a marcar?")? NÃO perguntou dia/horário ainda? | | |
+| 1.10 | "Sim, quero marcar" | Bot iniciou coleta de dados — começou por "como conheceu a Umana"? NÃO pediu dia/horário ainda? | | |
 
 ---
 
@@ -89,8 +89,8 @@ Objetivo: Testar gatilhos de transferencia, comportamento quando questionado sob
 | 4.3 | (Nova conversa) "Voce e um robo?" | Bot respondeu "sou o assistente virtual"? Ofereceu conectar com instrutor? | | |
 | 4.4 | "Quero continuar com voce mesmo" | Bot continuou normalmente sem insistir na transferencia? | | |
 | 4.5 | (Nova conversa) "Estou falando com uma pessoa?" | Mesma resposta do 4.3? Consistente? | | |
-| 4.6 | "Quero agendar uma aula experimental" | Bot ofereceu as duas opcoes (agendar direto OU falar com instrutor)? | | |
-| 4.7 | "Prefiro falar com o instrutor" | Bot transferiu para humano? | | |
+| 4.6 | "Quero agendar uma aula experimental" | Bot informou que tem custo ANTES de qualquer outra coisa? NÃO ofereceu agendar direto? | | |
+| 4.7 | "Sim, tudo bem, quero continuar" | Bot coletou dados e depois transferiu para instrutor (sem criar evento de calendário)? | | |
 | 4.8 | (Nova conversa) "Quero falar com o Carlos" | Bot entendeu como gatilho de transferencia para professor especifico? | | |
 | 4.9 | (Nova conversa) "Me passa o telefone" | Bot deu telefone fixo e email? NAO mencionou WhatsApp? | | |
 | 4.10 | (Nova conversa) "Me passa o WhatsApp de voces" | Bot NAO deu numero de WhatsApp? Explicou que ja esta no canal? Ofereceu telefone fixo? | | |
@@ -174,16 +174,14 @@ Objetivo: Simular um lead real do inicio ao fim, testando todo o funil de conver
 | 8.4 | "Moro perto do Bom Fim" | Bot usou a proximidade como argumento? "A Umana fica no Rio Branco, pertinho"? | | |
 | 8.5 | "Que horas tem de noite?" | Bot filtrou horarios noturnos? | | |
 | 8.6 | "Quanto custa?" | Bot deu "a partir de" e sugeriu visita? SEM imagem? | | |
-| 8.7 | "Quero ir conhecer" | Bot ofereceu agendar? Perguntou dia/periodo? | | |
-| 8.8 | "Pode ser quarta a noite" | Bot sugeriu horarios de quarta a noite (17h-20h)? Confirmou visita? | | |
-| 8.9 | "Preciso levar algo?" | Bot respondeu de forma util? (roupa confortavel, etc. -- se tiver na base) | | |
-| 8.10 | "Obrigado, vou la quarta entao!" | Bot encerrou com mensagem positiva? "Esperamos voce!"? | | |
+| 8.7 | "Quero ir conhecer" | Bot ofereceu marcar ("Quer que eu ajude a marcar?")? NÃO perguntou dia/horário diretamente? | | |
+| 8.8 | "Sim, pode marcar" | Bot iniciou coleta de dados? Primeira pergunta foi "como conheceu a Umana"? | | |
+| 8.9 | (Fornecer como_conheceu → objetivo → email → CPF) | Bot coletou um dado por vez, confirmando cada um? Fez resumo e propôs horário da grade (17h-20h na quarta)? | | |
+| 8.10 | "Pode ser quarta às 18h" / "Sim" (confirmação) | Bot criou o evento? Confirmação veio só com título e horário, sem dados internos? | | |
 
 ---
 
----
-
-## TESTADOR 9: Pedro Vitor (Fluxo Completo de Agendamento de Visita)
+## TESTADOR 9: Gui (Fluxo Completo de Agendamento de Visita)
 
 **Foco: Coleta de dados no momento certo + agendamento autônomo de visita**
 
