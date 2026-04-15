@@ -233,6 +233,41 @@ const CREATE_CALENDAR_EVENT_TOOL_DEFINITION = {
   },
 };
 
+const CANCEL_CALENDAR_EVENT_TOOL_DEFINITION = {
+  type: "function",
+  function: {
+    name: "cancelar_evento_agenda",
+    description:
+      'Cancela/desmarca um evento existente da agenda do cliente. Use quando o usuÃ¡rio pedir para cancelar, desmarcar ou remover um compromisso. NÃƒO cria novo evento.',
+    parameters: {
+      type: "object",
+      properties: {
+        event_id: {
+          type: "string",
+          description:
+            "ID do evento na agenda (use quando jÃ¡ tiver esse identificador)",
+        },
+        titulo: {
+          type: "string",
+          description:
+            "TÃ­tulo do evento para localizar e cancelar (quando nÃ£o tiver event_id)",
+        },
+        data_inicio: {
+          type: "string",
+          description:
+            "Data/hora de inÃ­cio para localizar o evento (ISO 8601). Pode ser o inÃ­cio exato ou apenas referÃªncia de data/hora.",
+        },
+        data_fim: {
+          type: "string",
+          description:
+            "Data/hora de fim para localizar o evento (ISO 8601). Opcional.",
+        },
+      },
+      required: [],
+    },
+  },
+};
+
 export interface GenerateAIResponseInput {
   message: string;
   chatHistory: ChatMessage[];
@@ -476,6 +511,37 @@ export const generateAIResponse = async (
                           .optional()
                           .describe(
                             "Email de um participante a convidar (opcional)",
+                          ),
+                      }),
+                    },
+                    cancelar_evento_agenda: {
+                      description:
+                        CANCEL_CALENDAR_EVENT_TOOL_DEFINITION.function
+                          .description,
+                      inputSchema: z.object({
+                        event_id: z
+                          .string()
+                          .optional()
+                          .describe(
+                            "ID do evento na agenda (use quando ja tiver esse identificador)",
+                          ),
+                        titulo: z
+                          .string()
+                          .optional()
+                          .describe(
+                            "Titulo do evento para localizar e cancelar (quando nao tiver event_id)",
+                          ),
+                        data_inicio: z
+                          .string()
+                          .optional()
+                          .describe(
+                            "Data/hora de inicio para localizar o evento (formato ISO 8601)",
+                          ),
+                        data_fim: z
+                          .string()
+                          .optional()
+                          .describe(
+                            "Data/hora de fim para localizar o evento (formato ISO 8601, opcional)",
                           ),
                       }),
                     },

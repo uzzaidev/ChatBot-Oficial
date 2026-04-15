@@ -118,6 +118,15 @@ export const createGoogleCalendarClient = (
     };
   };
 
+  const deleteEvent = async (eventId: string): Promise<void> => {
+    await withRefresh(() =>
+      calendar.events.delete({
+        calendarId: "primary",
+        eventId,
+      }),
+    );
+  };
+
   const checkAvailability = async (
     start: Date,
     end: Date,
@@ -136,5 +145,5 @@ export const createGoogleCalendarClient = (
     return busySlots.length === 0;
   };
 
-  return { listEvents, createEvent, checkAvailability };
+  return { listEvents, createEvent, deleteEvent, checkAvailability };
 };

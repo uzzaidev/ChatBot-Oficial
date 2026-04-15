@@ -73,7 +73,20 @@ export const createMicrosoftCalendarClient = (
         throw err;
       }
 
-      return res.json();
+      if (res.status === 204) {
+        return null;
+      }
+
+      const text = await res.text();
+      if (!text) {
+        return null;
+      }
+
+      try {
+        return JSON.parse(text);
+      } catch {
+        return text;
+      }
     };
 
     try {
@@ -156,6 +169,12 @@ export const createMicrosoftCalendarClient = (
     };
   };
 
+  const deleteEvent = async (eventId: string): Promise<void> => {
+    await graphFetch(`${GRAPH_BASE}/me/events/${eventId}`, {
+      method: "DELETE",
+    });
+  };
+
   const checkAvailability = async (
     start: Date,
     end: Date,
@@ -165,5 +184,5 @@ export const createMicrosoftCalendarClient = (
     return events.length === 0;
   };
 
-  return { listEvents, createEvent, checkAvailability };
+  return { listEvents, createEvent, deleteEvent, checkAvailability };
 };

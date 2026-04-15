@@ -21,6 +21,7 @@ export interface CalendarEvent {
 export interface CalendarClient {
   listEvents(start: Date, end: Date): Promise<CalendarEvent[]>;
   createEvent(event: Omit<CalendarEvent, "id">): Promise<CalendarEvent>;
+  deleteEvent(eventId: string): Promise<void>;
   checkAvailability(start: Date, end: Date): Promise<boolean>;
 }
 

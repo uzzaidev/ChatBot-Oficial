@@ -4,6 +4,7 @@
  * Processes AI tool calls for calendar operations:
  * - verificar_agenda: check availability or list events
  * - criar_evento_agenda: create a new calendar event
+ * - cancelar_evento_agenda: cancel/delete an existing event
  */
 
 import type { CalendarEvent } from "@/lib/calendar-client";
@@ -17,7 +18,7 @@ interface CalendarToolContext {
 /**
  * Handle a calendar-related tool call from the AI
  *
- * @param toolName - 'verificar_agenda' or 'criar_evento_agenda'
+ * @param toolName - 'verificar_agenda' | 'criar_evento_agenda' | 'cancelar_evento_agenda'
  * @param toolArgs - Parsed arguments from the AI tool call
  * @param clientId - UUID of the client
  * @returns Message in pt-BR to send back to the user
@@ -40,6 +41,10 @@ export const handleCalendarToolCall = async (
 
   if (toolName === "criar_evento_agenda") {
     return await handleCriarEvento(calendarClient, toolArgs, context);
+  }
+
+  if (toolName === "cancelar_evento_agenda") {
+    return await handleCancelarEvento(calendarClient, toolArgs);
   }
 
   return `Ferramenta de calendário desconhecida: ${toolName}`;
@@ -178,6 +183,231 @@ const handleCriarEvento = async (
   }
 
   return response;
+};
+
+const CANCEL_SEARCH_BUFFER_MS = 24 * 60 * 60 * 1000; // 24h
+const CANCEL_DEFAULT_PAST_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+const CANCEL_DEFAULT_FUTURE_MS = 180 * 24 * 60 * 60 * 1000; // 180 days
+
+const handleCancelarEvento = async (
+  client: Awaited<ReturnType<typeof getCalendarClient>> & {},
+  args: Record<string, any>,
+): Promise<string> => {
+  const eventId = typeof args.event_id === "string" ? args.event_id.trim() : "";
+  const title = typeof args.titulo === "string" ? args.titulo.trim() : "";
+  const startRef = parseIsoDateArg(args.data_inicio);
+  const endRef = parseIsoDateArg(args.data_fim);
+
+  if (args.data_inicio && !startRef) {
+    return "Data de início inválida. Use formato ISO 8601 (ex: 2025-03-10T10:00:00-03:00).";
+  }
+
+  if (args.data_fim && !endRef) {
+    return "Data de fim inválida. Use formato ISO 8601 (ex: 2025-03-10T11:00:00-03:00).";
+  }
+
+  if (eventId) {
+    try {
+      await client.deleteEvent(eventId);
+      return "✅ Compromisso cancelado com sucesso na agenda.";
+    } catch (error: any) {
+      const message = error?.message || "erro desconhecido";
+      return `Não consegui cancelar pelo ID informado (${message}). Tente informar também título e horário do compromisso.`;
+    }
+  }
+
+  if (!title && !startRef && !endRef) {
+    return "Para cancelar, preciso de pelo menos um identificador: event_id, título ou data/hora do compromisso.";
+  }
+
+  const { searchStart, searchEnd } = buildCancelSearchWindow(startRef, endRef);
+  const allEvents = await client.listEvents(searchStart, searchEnd);
+
+  if (allEvents.length === 0) {
+    return "Não encontrei compromissos nesse período para cancelar.";
+  }
+
+  const filteredByTitle = title
+    ? allEvents.filter((event) => isTitleMatch(event.title, title))
+    : allEvents;
+
+  let candidates = filteredByTitle;
+
+  if (startRef) {
+    const targetStartMs = startRef.getTime();
+    candidates = candidates.filter((event) => {
+      const eventStartMs = new Date(event.startDateTime).getTime();
+      return (
+        Number.isFinite(eventStartMs) &&
+        Math.abs(eventStartMs - targetStartMs) <= CANCEL_SEARCH_BUFFER_MS
+      );
+    });
+  }
+
+  if (endRef) {
+    const targetEndMs = endRef.getTime();
+    candidates = candidates.filter((event) => {
+      const eventEndMs = new Date(event.endDateTime).getTime();
+      return (
+        Number.isFinite(eventEndMs) &&
+        Math.abs(eventEndMs - targetEndMs) <= CANCEL_SEARCH_BUFFER_MS
+      );
+    });
+  }
+
+  if (candidates.length === 0) {
+    return "Não encontrei um compromisso correspondente para cancelar com os dados informados.";
+  }
+
+  const chosen = chooseBestCandidate(candidates, {
+    title: title || undefined,
+    startRef: startRef || undefined,
+    endRef: endRef || undefined,
+  });
+
+  if (!chosen) {
+    const options = candidates
+      .slice(0, 3)
+      .map((event) => {
+        const start = new Date(event.startDateTime);
+        const end = new Date(event.endDateTime);
+        return `• ${event.title} (${formatEventRange(start, end)})`;
+      })
+      .join("\n");
+
+    return `Encontrei mais de um compromisso possível para cancelamento. Me confirme título e horário exato:\n${options}`;
+  }
+
+  await client.deleteEvent(chosen.id);
+
+  const chosenStart = new Date(chosen.startDateTime);
+  const chosenEnd = new Date(chosen.endDateTime);
+  return `✅ Compromisso cancelado com sucesso!\n\n📌 *${
+    chosen.title
+  }*\n📅 ${formatEventRange(chosenStart, chosenEnd)}`;
+};
+
+const parseIsoDateArg = (value: unknown): Date | null => {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return null;
+  }
+
+  const parsed = new Date(value);
+  if (isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return parsed;
+};
+
+const buildCancelSearchWindow = (startRef: Date | null, endRef: Date | null) => {
+  const now = Date.now();
+
+  if (startRef && endRef) {
+    return {
+      searchStart: new Date(startRef.getTime() - CANCEL_SEARCH_BUFFER_MS),
+      searchEnd: new Date(endRef.getTime() + CANCEL_SEARCH_BUFFER_MS),
+    };
+  }
+
+  if (startRef) {
+    return {
+      searchStart: new Date(startRef.getTime() - CANCEL_SEARCH_BUFFER_MS),
+      searchEnd: new Date(startRef.getTime() + CANCEL_SEARCH_BUFFER_MS),
+    };
+  }
+
+  if (endRef) {
+    return {
+      searchStart: new Date(endRef.getTime() - CANCEL_SEARCH_BUFFER_MS),
+      searchEnd: new Date(endRef.getTime() + CANCEL_SEARCH_BUFFER_MS),
+    };
+  }
+
+  return {
+    searchStart: new Date(now - CANCEL_DEFAULT_PAST_MS),
+    searchEnd: new Date(now + CANCEL_DEFAULT_FUTURE_MS),
+  };
+};
+
+const normalizeForMatch = (value: string): string =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+
+const isTitleMatch = (eventTitle: string, wantedTitle: string): boolean => {
+  const normalizedEvent = normalizeForMatch(eventTitle || "");
+  const normalizedWanted = normalizeForMatch(wantedTitle || "");
+
+  if (!normalizedWanted) return true;
+  if (!normalizedEvent) return false;
+
+  return (
+    normalizedEvent === normalizedWanted ||
+    normalizedEvent.includes(normalizedWanted) ||
+    normalizedWanted.includes(normalizedEvent)
+  );
+};
+
+const chooseBestCandidate = (
+  candidates: CalendarEvent[],
+  criteria: { title?: string; startRef?: Date; endRef?: Date },
+): CalendarEvent | null => {
+  if (candidates.length === 1) return candidates[0];
+
+  const ranked = candidates
+    .map((event) => {
+      let score = 0;
+      let proximityMs = Number.MAX_SAFE_INTEGER;
+
+      if (criteria.title) {
+        const normalizedEvent = normalizeForMatch(event.title || "");
+        const normalizedWanted = normalizeForMatch(criteria.title);
+
+        if (normalizedEvent === normalizedWanted) {
+          score += 6;
+        } else if (normalizedEvent.includes(normalizedWanted)) {
+          score += 4;
+        }
+      }
+
+      if (criteria.startRef) {
+        const eventStartMs = new Date(event.startDateTime).getTime();
+        const diff = Math.abs(eventStartMs - criteria.startRef.getTime());
+        proximityMs = Math.min(proximityMs, diff);
+        if (diff <= 5 * 60 * 1000) score += 6;
+        else if (diff <= 30 * 60 * 1000) score += 4;
+        else if (diff <= 2 * 60 * 60 * 1000) score += 2;
+      }
+
+      if (criteria.endRef) {
+        const eventEndMs = new Date(event.endDateTime).getTime();
+        const diff = Math.abs(eventEndMs - criteria.endRef.getTime());
+        proximityMs = Math.min(proximityMs, diff);
+        if (diff <= 5 * 60 * 1000) score += 3;
+        else if (diff <= 30 * 60 * 1000) score += 2;
+        else if (diff <= 2 * 60 * 60 * 1000) score += 1;
+      }
+
+      return { event, score, proximityMs };
+    })
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return a.proximityMs - b.proximityMs;
+    });
+
+  const best = ranked[0];
+  const second = ranked[1];
+
+  if (!best) return null;
+  if (best.score <= 0) return null;
+  if (second && second.score === best.score && second.proximityMs === best.proximityMs) {
+    return null;
+  }
+
+  return best.event;
 };
 
 const sanitizeContactName = (name?: string): string | null => {

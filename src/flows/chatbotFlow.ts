@@ -1666,6 +1666,36 @@ export const processChatbotMessage = async (
           aiResponse.content = calendarResult;
           aiResponse.toolCalls = undefined;
         }
+
+        // Tool 6: cancelar_evento_agenda (Calendar cancel)
+        if (toolCall.function.name === "cancelar_evento_agenda") {
+          logger.logNodeStart("15.10. Handle Calendar Cancel Event", {
+            phone: parsedMessage.phone,
+            toolCallId: toolCall.id,
+          });
+
+          const { handleCalendarToolCall } =
+            await import("@/nodes/handleCalendarToolCall");
+
+          const args = JSON.parse(toolCall.function.arguments || "{}");
+          const calendarResult = await handleCalendarToolCall(
+            "cancelar_evento_agenda",
+            args,
+            config.id,
+            {
+              contactName: parsedMessage.name,
+              contactPhone: parsedMessage.phone,
+            },
+          );
+
+          logger.logNodeSuccess("15.10. Handle Calendar Cancel Event", {
+            resultLength: calendarResult.length,
+          });
+
+          // Use the calendar result as the AI response content
+          aiResponse.content = calendarResult;
+          aiResponse.toolCalls = undefined;
+        }
       }
     }
 
