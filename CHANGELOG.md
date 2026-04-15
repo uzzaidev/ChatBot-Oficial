@@ -7,6 +7,13 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-15
 
 ### docs
+- Atualizado documento de testes QA para alinhar os casos de teste ao fluxo real do bot, corrigindo descrições e sequências de interações em múltiplos cenários de agendamento e transferência.
+  - Arquivos: `docs/prompts/Umana Rio Branco/QA_TESTES_UMANA.md`
+  - Confiança: alta
+
+## 2026-04-15
+
+### docs
 - Atualizados testes de QA do bot Umana com novos fluxos detalhados de calendário, coleta de dados, agendamento, cancelamento, reagendamento, distinção entre visita e aula experimental, e prevenção de eventos duplicados.
 - Incluídas tabelas de mensagens, objetivos e critérios para múltiplos testadores focados em cenários reais e comportamentos esperados.
   - Arquivos: `docs/prompts/Umana Rio Branco/QA_TESTES_UMANA.md`
