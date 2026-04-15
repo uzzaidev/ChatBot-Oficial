@@ -670,6 +670,16 @@ export interface CustomerRecord {
   status: ConversationStatus;
   created_at: string;
   updated_at: string;
+  metadata?: ContactMetadata;
+}
+
+export interface ContactMetadata {
+  cpf?: string;
+  email?: string;
+  como_conheceu?: string;
+  indicado_por?: string;
+  objetivo?: string;
+  [key: string]: string | boolean | null | undefined;
 }
 
 export interface ChatMessage {

@@ -11,7 +11,7 @@ export interface ErrorDetails {
 export interface SaveChatMessageInput {
   phone: string
   message: string
-  type: 'user' | 'ai'
+  type: 'user' | 'ai' | 'system'
   clientId: string // 🔐 Multi-tenant: ID do cliente
   mediaMetadata?: StoredMediaMetadata // 📎 Media attachment metadata
   wamid?: string // 📱 WhatsApp message ID for reactions (wamid.xxx format)
@@ -26,7 +26,7 @@ export const saveChatMessage = async (input: SaveChatMessageInput): Promise<void
     const { phone, message, type, clientId, mediaMetadata, wamid, status, errorDetails } = input
 
     const messageJson = {
-      type: type === 'user' ? 'human' : 'ai',
+      type: type === 'user' ? 'human' : type === 'system' ? 'system' : 'ai',
       content: message,
       additional_kwargs: {},
     }
@@ -34,7 +34,9 @@ export const saveChatMessage = async (input: SaveChatMessageInput): Promise<void
     // Determine status based on message type
     // - User messages: 'sent' (they already sent it to us)
     // - AI messages: 'pending' (waiting to be sent to WhatsApp API)
-    const messageStatus = status || (type === 'user' ? 'sent' : 'pending')
+    // - System messages: 'sent' (internal memory entries)
+    const messageStatus =
+      status || (type === 'ai' ? 'pending' : 'sent')
 
     // OTIMIZAÇÃO: INSERT simples, beneficia-se do índice idx_chat_histories_session_id
     // NOTA: A coluna 'type' não existe na tabela - o type fica dentro do JSON 'message'

@@ -1,3 +1,4 @@
+import type { ContactMetadata } from "@/lib/types";
 import { ConversationStatus, CustomerRecord } from "@/lib/types";
 import { createServiceRoleClient } from "@/lib/supabase";
 
@@ -15,6 +16,7 @@ interface ClienteWhatsAppData {
   nome: string;
   status: string;
   created_at?: string;
+  metadata?: ContactMetadata;
 }
 
 /**
@@ -41,7 +43,7 @@ const upsertClienteWhatsApp = async (
   // Seleciona apenas os campos necessários para reduzir transferência de dados
   const { data: existingCustomer, error: selectError } = await supabaseAny
     .from("clientes_whatsapp")
-    .select("telefone, nome, status, created_at, client_id")
+    .select("telefone, nome, status, created_at, client_id, metadata")
     .eq("telefone", phone)
     .eq("client_id", clientId)
     .single();
@@ -156,6 +158,8 @@ export const checkOrCreateCustomer = async (
       status: data.status as ConversationStatus,
       created_at: data.created_at,
       updated_at: data.created_at,
+      metadata:
+        data.metadata && typeof data.metadata === "object" ? data.metadata : {},
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);

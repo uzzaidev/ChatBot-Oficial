@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Model Canvas - UzzApp</title>
+    
+    <!-- Carregando Tailwind CSS para o visual -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonte Patrick Hand para o estilo "escrita a mão" -->
+    <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
+    
+    <!-- React e ReactDOM via CDN para rodar o código sem instalação -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        .font-handwriting {
+            font-family: 'Patrick Hand', cursive;
+        }
+        /* Ajustes específicos para impressão */
+        @media print {
+            @page {
+                size: landscape; /* Força orientação paisagem se possível */
+                margin: 0.5cm;
+            }
+            body { 
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact; 
+                background: white;
+            }
+            .no-print { 
+                display: none !important; 
+            }
+            /* Remove sombras para economizar tinta e limpar visual */
+            .shadow-2xl {
+                box-shadow: none !important;
+            }
+        }
+        
+        /* Estilização da barra de rolagem para ficar discreta na tela */
+        textarea::-webkit-scrollbar {
+            width: 8px;
+        }
+        textarea::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background-color: rgba(0,0,0,0.1);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const BusinessModelCanvas = () => {
+            // Conteúdo preenchido com informações do UzzApp
+            const [content, setContent] = useState({
+                parcerias: `1. Meta (WhatsApp Cloud API):
+- Fornecedor oficial da infraestrutura de mensageria WhatsApp.
+- Cliente paga diretamente à Meta pelas mensagens (transparência total).
+- Integração via Cloud API oficial (não BSP intermediário).
+
+2. OpenAI / Provedores de IA:
+- Fornecedores da infraestrutura de inteligência artificial (GPT-4o, Whisper, GPT-4V).
+- Cliente configura sua própria conta OpenAI (tokens pagos diretamente).
+- Suporte multi-provedor: Claude, Gemini (futuro).
+
+3. Supabase / Vercel (Infraestrutura):
+- Supabase: Banco de dados PostgreSQL, autenticação, storage, Vault (secrets).
+- Vercel: Hospedagem frontend Next.js, edge functions, CDN global.
+- Stack serverless moderna e escalável.
+
+4. Parceiros Estratégicos:
+- Cristian Grazziotion (Mentor Imobiliárias) - Validação segmento imobiliário.
+- Associações de classe (IAB, CAU, CREA) - Canais B2B.
+- Hubs e aceleradoras - Networking e validação.
+
+5. Integrações:
+- Pipedrive, HubSpot (CRM básico Pro).
+- Google Calendar (agendamento automático).
+- Zapier (futuro) - Conectores no-code.`,
+
+                atividades: `1. Desenvolvimento & Produto:
+- Manutenção da arquitetura Flow (13 nodes especializados).
+- Evolução do sistema RAG semântico avançado.
+- Desenvolvimento de integrações (CRM, Calendar, APIs).
+- Mobile App iOS/Android (Capacitor) - 60% completo.
+
+2. Comercial & Vendas:
+- Processo de vendas consultivo B2B (BANT + SPIN).
+- Demo personalizada ao vivo (diferencial exclusivo).
+- Onboarding intensivo 14 dias (time-to-value).
+- Customer Success com Health Score e retenção.
+
+3. Marketing & Aquisição:
+- LinkedIn orgânico e ads (B2B direto).
+- SEO blog (conteúdo educacional).
+- Referrals (programa 1:5 clientes).
+- Webinars e eventos do setor.
+
+4. Suporte & Operação:
+- Suporte por plano (Email 48h → Chat 4h → 24/7 phone).
+- Monitoramento 24/7 (uptime 99.9% SLA Business).
+- Account Manager dedicado (Business).
+- LGPD compliance e segurança (Vault, RLS, audit logs).`,
+
+                recursos: `1. Arquitetura Técnica Proprietária:
+- Sistema Flow modular (13 nodes especializados).
+- RAG semântico avançado (vector search otimizado).
+- Multi-tenant nativo com isolamento total (RLS).
+- Mobile App híbrido (iOS/Android) - Capacitor.
+
+2. Stack Tecnológica Moderna:
+- Next.js 15 + React 19 (frontend).
+- Supabase (PostgreSQL + Realtime + Vault).
+- TypeScript (type-safety completo).
+- Serverless architecture (escalável).
+
+3. Equipe Híbrida Especializada:
+- Pedro Vitor (CEO 50%): Full-stack + IA + Negócios.
+- Luis Boff (Tech Lead): 10+ anos backend enterprise.
+- Vitor Pirolli (Vendas): Processo consultivo.
+- Arthur Brandalise (Marketing): Social media + branding.
+- Lucas Dezotti (Jurídico): LGPD + contratos.
+- Pedro Corso (Financeiro): NF-e + fluxo caixa.
+
+4. Diferenciais Competitivos:
+- Demo personalizada real-time (exclusivo mercado).
+- App Mobile (raro em SaaS chatbot).
+- IA premium (GPT-4o otimizado) com resultados superiores.
+- Setup 1 semana vs 3 meses concorrentes.`,
+
+                proposta: `1. Redução de Custos Extremo (88-96%):
+- Substitui atendentes humanos (R$ 2.500-5.000/mês cada).
+- Custo UzzApp: R$ 59-1.000+/mês vs R$ 10.000-40.000/mês humanos.
+- ROI potencial: 500-2.000% ao ano (simulação).
+- Payback: 1-7 dias (meta).
+
+2. Atendimento 24/7 Instantâneo:
+- Resposta < 2 segundos (vs 4-24h humano).
+- Escalabilidade infinita (sem limite de conversas simultâneas).
+- Nunca perde lead por horário ou capacidade.
+
+3. IA Premium com Resultados Superiores:
+- GPT-4o otimizado (vs GPT-3.5 concorrentes).
+- RAG semântico avançado (vs básico mercado).
+- Taxa de resolução 1º contato: 70%+ (meta).
+- 80% dos usuários não distinguem IA de humano.
+
+4. Transparência Total de Custos:
+- Cliente paga mensagens/tokens diretamente (sem markup).
+- Sem limite artificial de mensagens.
+- Custo previsível e escalável.
+- Dashboard real-time de custos.`,
+
+                relacionamento: `1. Self-Service (Starter):
+- Onboarding via tutorial interativo.
+- Suporte email (resposta 48h).
+- Documentação completa e vídeos.
+- Trial 30 dias grátis.
+
+2. Consultivo (Pro):
+- Onboarding intensivo 14 dias.
+- Suporte chat prioritário (4h).
+- Demo personalizada ao vivo.
+- Customer Success com Health Score.
+
+3. Enterprise (Business):
+- Account Manager dedicado.
+- Suporte 24/7 (phone + WhatsApp).
+- SLA 99.9% contratual.
+- Consultoria estratégica inclusa.
+
+4. Comunidade & Advocacy:
+- Programa de referrals (1:5 clientes).
+- Case studies e depoimentos.
+- Webinars educacionais.
+- White Label para parceiros (R$ 4.970).`,
+
+                canais: `1. Vendas Diretas B2B:
+- Processo consultivo (BANT + SPIN).
+- Demo personalizada ao vivo (diferencial exclusivo).
+- LinkedIn Sales Navigator.
+- Referrals de clientes (CAC R$ 50).
+
+2. Marketing Digital:
+- LinkedIn orgânico (posts educacionais).
+- LinkedIn Ads (CEOs, gerentes).
+- SEO blog ("chatbot whatsapp", "automação atendimento").
+- Email marketing (nurture leads).
+
+3. Parcerias Estratégicas:
+- Associações de classe (IAB, CAU, CREA).
+- Hubs e aceleradoras.
+- Integradores e consultores.
+- White Label para agências.
+
+4. Eventos & Feiras:
+- Webinars educacionais.
+- Eventos do setor (Feicon, Congressos).
+- Networking presencial.
+- Apresentações em incubadoras.`,
+
+                segmentos: `1. Imobiliárias (Segmento Prioritário #1):
+- Qualificação de leads 24/7.
+- Agendamento de visitas automático.
+- Faturamento: R$ 500k-50M/ano.
+- Ticket médio: R$ 297-1.000/mês.
+
+2. E-commerce (Alto Volume):
+- Atendimento pós-venda automatizado.
+- Suporte a pedidos e rastreamento.
+- Volume: 1.000-10.000 mensagens/dia.
+- Ticket médio: R$ 297-697/mês.
+
+3. Clínicas e Saúde:
+- Agendamento de consultas automático.
+- Lembretes e confirmações.
+- Integração com sistemas de gestão.
+- Ticket médio: R$ 159-297/mês.
+
+4. SaaS e Suporte Técnico:
+- Suporte escalável 24/7.
+- Resolução de dúvidas técnicas.
+- Integração com documentação (RAG).
+- Ticket médio: R$ 297-1.000/mês.
+
+5. Restaurantes e Delivery:
+- Pedidos via WhatsApp.
+- Confirmação e status.
+- Integração com sistemas de delivery.
+- Ticket médio: R$ 97-297/mês.`,
+
+                custos: `1. Infraestrutura Cloud (Variável):
+- Supabase: R$ 0-125/mês (Free → Pro conforme escala).
+- Vercel: R$ 0-100/mês (Hobby → Pro conforme tráfego).
+- Redis Upstash: R$ 0-50/mês (Free → Paid).
+- Domínio: R$ 40/ano.
+- Total estimado: R$ 200-400/mês (1-5 clientes).
+
+2. Desenvolvimento & Manutenção:
+- Equipe técnica (Pedro Vitor + Luis Boff).
+- Desenvolvimento contínuo de features.
+- Correções e melhorias baseadas em feedback.
+- Mobile App (iOS/Android) - publicação e manutenção.
+
+3. Marketing & Vendas (CAC):
+- LinkedIn Ads: R$ 800/lead (10% clientes).
+- SEO/Inbound: R$ 400/lead (18% clientes).
+- Email Marketing: R$ 180/lead (20% clientes).
+- Referrals: R$ 50/lead (7% clientes).
+- CAC Blended: R$ 380 (meta).
+
+4. Suporte & Operação:
+- Suporte por plano (escalável).
+- Account Manager (Business).
+- Monitoramento e alertas.
+- LGPD compliance e jurídico (Lucas Dezotti).
+
+5. Custos Variáveis (Cliente Paga Direto):
+- Mensagens WhatsApp: Cliente paga Meta (R$ 0,15-0,30/conversa).
+- Tokens IA: Cliente paga OpenAI (R$ 0,01-0,05/1k tokens).
+- Não entram no nosso custo (transparência total).`,
+
+                receitas: `1. Setup Único (Receita Inicial):
+- Starter: R$ 300-600 (configuração básica).
+- Pro: R$ 600-1.500 (mapeamento + integrações).
+- Business: R$ 1.500-3.000+ (complexo + consultoria).
+- Justificativa: Cobre trabalho real (2-20h) + filtro qualidade.
+
+2. Mensalidade Recorrente (MRR):
+- Starter: R$ 59-97/mês (ARPU médio: R$ 78).
+- Pro: R$ 159-297/mês (ARPU médio: R$ 228) - MAIS POPULAR.
+- Business: R$ 349-1.000+/mês (ARPU médio: R$ 675).
+- ARPU Blended: R$ 540/mês (meta).
+
+3. Add-ons e Customizações:
+- Integrações custom: R$ 500-2.000 (setup único).
+- Consultoria estratégica: R$ 1.500 (projeto).
+- Fine-tuning modelo: R$ 2.000 (setup único).
+- Deployment dedicado: R$ 500/mês (Business).
+
+4. White Label:
+- Licenciamento: R$ 4.970 (setup único).
+- Royalties: 10-15% receita do parceiro (futuro).
+- Suporte técnico: R$ 500-1.000/mês.
+
+5. Projeção Receita (Cenário Realista):
+- Ano 1: R$ 58.145 (9 clientes ativos).
+- Ano 2: R$ 420.000 (50 clientes ativos).
+- Ano 3: R$ 1.300.000 (150 clientes ativos).
+- LTV: R$ 12.960 (24 meses, churn 5%).`
+            });
+
+            const handleChange = (key, value) => {
+                setContent(prev => ({ ...prev, [key]: value }));
+            };
+
+            // Componente de Textarea que auto-expande
+            const AutoResizeTextarea = ({ value, onChange, placeholder, className }) => {
+                const textareaRef = useRef(null);
+
+                useEffect(() => {
+                    if (textareaRef.current) {
+                        textareaRef.current.style.height = 'auto';
+                        textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+                    }
+                }, [value]);
+
+                return (
+                    <textarea
+                        ref={textareaRef}
+                        className={`${className} overflow-hidden resize-none`}
+                        placeholder={placeholder}
+                        value={value}
+                        onChange={onChange}
+                        rows={1}
+                        style={{ minHeight: '100px' }}
+                    />
+                );
+            };
+
+            const CanvasBlock = ({ title, bgClass, contentKey, className = "", placeholder = "Digite aqui..." }) => (
+                <div className={`flex flex-col border-2 border-black p-3 relative group ${bgClass} ${className} h-full`}>
+                    <h3 className="font-bold text-base md:text-lg uppercase mb-3 text-black z-10 tracking-wide">{title}</h3>
+                    <AutoResizeTextarea
+                        className="flex-grow w-full bg-transparent outline-none text-gray-900 placeholder-gray-500/50 z-10 text-sm md:text-base font-medium leading-relaxed"
+                        placeholder={placeholder}
+                        value={content[contentKey]}
+                        onChange={(e) => handleChange(contentKey, e.target.value)}
+                    />
+                </div>
+            );
+
+            return (
+                <div className="min-h-screen bg-white p-4 md:p-8 font-sans print:p-0">
+                    <div className="max-w-[1400px] mx-auto bg-white shadow-2xl p-1 print:shadow-none print:max-w-none">
+                        
+                        <div className="mb-6 text-center print:mb-4">
+                            <h1 className="text-3xl md:text-4xl font-bold text-gray-800 uppercase tracking-wider">Business Model Canvas</h1>
+                            <p className="text-gray-500 text-sm mt-1">Projeto: UzzApp — Chatbot Empresarial WhatsApp com IA Premium</p>
+                            <p className="text-gray-400 text-xs mt-1">87% completo • Lançamento Janeiro/2026 • LTV:CAC 34:1 • ROI 500-2.000%</p>
+                        </div>
+
+                        <div className="flex flex-col border-2 border-black">
+                            
+                            {/* SEÇÃO SUPERIOR */}
+                            <div className="flex flex-col md:flex-row items-stretch w-full">
+                                
+                                {/* 1. Parcerias */}
+                                <div className="md:w-[20%] relative">
+                                    <CanvasBlock 
+                                        title="Parcerias Principais" 
+                                        bgClass="bg-blue-200" 
+                                        contentKey="parcerias"
+                                        className="border-b-2 md:border-b-0 md:border-r-2"
+                                    />
+                                    <div className="absolute bottom-10 right-2 pointer-events-none opacity-40 transform -rotate-12 z-0 hidden md:block">
+                                        <span className="text-5xl font-handwriting text-white drop-shadow-md stroke-black" style={{ textShadow: '2px 2px 0 #000' }}>Como?</span>
+                                    </div>
+                                </div>
+
+                                {/* 2. Atividades + Recursos */}
+                                <div className="md:w-[20%] flex flex-col md:border-r-2 border-black">
+                                    <div className="flex-1">
+                                        <CanvasBlock 
+                                            title="Atividades Principais" 
+                                            bgClass="bg-blue-200" 
+                                            contentKey="atividades" 
+                                            className="border-b-2"
+                                        />
+                                    </div>
+                                    <div className="flex-1">
+                                        <CanvasBlock 
+                                            title="Recursos Principais" 
+                                            bgClass="bg-blue-200" 
+                                            contentKey="recursos"
+                                            className="border-b-2 md:border-b-0"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* 3. Proposta de Valor */}
+                                <div className="md:w-[20%] relative md:border-r-2 border-black">
+                                    <CanvasBlock 
+                                        title="Proposta de Valor" 
+                                        bgClass="bg-red-400" 
+                                        contentKey="proposta"
+                                        className="border-b-2 md:border-b-0"
+                                    />
+                                    <div className="absolute bottom-1/3 left-1/2 transform -translate-x-1/2 pointer-events-none opacity-40 -rotate-6 z-0 hidden md:block">
+                                        <span className="text-5xl font-handwriting text-white" style={{ textShadow: '2px 2px 0 #000' }}>O quê?</span>
+                                    </div>
+                                </div>
+
+                                {/* 4. Relacionamento + Canais */}
+                                <div className="md:w-[20%] flex flex-col md:border-r-2 border-black">
+                                    <div className="flex-1">
+                                        <CanvasBlock 
+                                            title="Relacionamento" 
+                                            bgClass="bg-green-300" 
+                                            contentKey="relacionamento"
+                                            className="border-b-2"
+                                        />
+                                    </div>
+                                    <div className="flex-1">
+                                        <CanvasBlock 
+                                            title="Canais" 
+                                            bgClass="bg-green-300" 
+                                            contentKey="canais"
+                                            className="border-b-2 md:border-b-0"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* 5. Segmentos */}
+                                <div className="md:w-[20%] relative">
+                                    <CanvasBlock 
+                                        title="Segmentos de Clientes" 
+                                        bgClass="bg-green-300" 
+                                        contentKey="segmentos"
+                                        className="border-b-2 md:border-b-0"
+                                    />
+                                    <div className="absolute bottom-20 left-4 pointer-events-none opacity-40 transform -rotate-12 z-0 hidden md:block">
+                                        <span className="text-4xl lg:text-5xl font-handwriting text-white" style={{ textShadow: '2px 2px 0 #000' }}>Para quem?</span>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            {/* SEÇÃO INFERIOR */}
+                            <div className="flex flex-col md:flex-row items-stretch w-full border-t-2 border-black">
+                                
+                                {/* 8. Custos */}
+                                <div className="md:w-[50%] relative border-b-2 md:border-b-0 md:border-r-2 border-black">
+                                    <CanvasBlock 
+                                        title="Estruturas de Custos" 
+                                        bgClass="bg-orange-300" 
+                                        contentKey="custos"
+                                    />
+                                    <div className="absolute bottom-4 right-10 pointer-events-none opacity-40 transform -rotate-6 z-0 hidden md:block">
+                                        <span className="text-5xl font-handwriting text-white" style={{ textShadow: '2px 2px 0 #000' }}>Quanto?</span>
+                                    </div>
+                                </div>
+
+                                {/* 9. Receitas */}
+                                <div className="md:w-[50%] relative">
+                                    <CanvasBlock 
+                                        title="Fontes de Receitas" 
+                                        bgClass="bg-orange-300" 
+                                        contentKey="receitas"
+                                    />
+                                </div>
+
+                            </div>
+                        </div>
+                        
+                        <div className="mt-6 text-sm text-gray-500 text-center no-print">
+                            <p>Para imprimir ou salvar como PDF: Pressione <strong>Ctrl + P</strong></p>
+                            <p className="text-xs mt-1">Este arquivo é autocontido. Você pode salvá-lo e abri-lo offline.</p>
+                            <p className="text-xs mt-1 text-gray-400">Versão: UzzApp Canvas v1.0 • Baseado em Plano de Negócio R03, Dashboard e Modelo de Precificação</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<BusinessModelCanvas />);
+    </script>
+</body>
+</html>
+

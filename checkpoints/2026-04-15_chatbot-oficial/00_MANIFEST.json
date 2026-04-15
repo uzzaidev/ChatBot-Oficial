@@ -1,0 +1,110 @@
+{
+  "checkpoint_metadata": {
+    "project_name": "ChatBot-Oficial (UzzApp WhatsApp SaaS)",
+    "checkpoint_date": "2026-04-15T23:59:59-03:00",
+    "timezone": "America/Sao_Paulo",
+    "generated_by": "Claude Code - Manual Update",
+    "version": "1.1.0",
+    "previous_checkpoint": "2026-03-15_chatbot-oficial"
+  },
+  "repository_info": {
+    "git_commit": "4ca6fbb",
+    "git_branch": "main",
+    "last_commit_author": "Pedro",
+    "last_commit_date": "2026-04-15",
+    "last_commit_message": "feat(calendar): cancelar evento existente sem criar novo"
+  },
+  "technology_stack": {
+    "framework": "Next.js 16",
+    "react_version": "18.3.1",
+    "typescript": "5.x",
+    "node_runtime": "Node.js (via Vercel serverless)",
+    "database": "Supabase (PostgreSQL)",
+    "mobile_framework": "Capacitor 8.0.1",
+    "state_management": "Zustand 5.0.9",
+    "ui_library": "Radix UI + Tailwind CSS",
+    "form_validation": "Zod 4.1.13",
+    "ai_providers": ["OpenAI", "Groq", "Anthropic", "Google"],
+    "payment": "Stripe 20.4.1"
+  },
+  "statistics": {
+    "total_migrations": 140,
+    "migrations_since_last_checkpoint": 11
+  },
+  "changes_since_2026-03-15": {
+    "crm_metadata": {
+      "status": "implemented",
+      "description": "JSONB metadata column in clientes_whatsapp for flexible lead data (cpf, email, como_conheceu, indicado_por, objetivo)",
+      "migrations": [
+        "20260415110000_add_metadata_to_clientes_whatsapp.sql",
+        "20260415113000_create_merge_contact_metadata_rpc.sql"
+      ],
+      "new_files": [
+        "src/nodes/updateContactMetadata.ts",
+        "src/nodes/upsertContactMetadata.ts"
+      ],
+      "modified_files": [
+        "src/nodes/checkOrCreateCustomer.ts",
+        "src/nodes/generateAIResponse.ts",
+        "src/flows/chatbotFlow.ts",
+        "src/lib/types.ts"
+      ]
+    },
+    "calendar": {
+      "status": "implemented",
+      "description": "Cancel existing event without creating new one. Event history saved in chat to prevent duplicates. Contact added to events.",
+      "commits": ["69662f4"],
+      "modified_files": [
+        "src/flows/chatbotFlow.ts",
+        "src/lib/calendar-client.ts",
+        "src/lib/google-calendar-client.ts",
+        "src/lib/microsoft-calendar-client.ts",
+        "src/nodes/generateAIResponse.ts",
+        "src/nodes/handleCalendarToolCall.ts",
+        "src/nodes/saveChatMessage.ts"
+      ]
+    },
+    "templates": {
+      "status": "partially_implemented",
+      "description": "Bug fix: 404 when editing draft template. Backend updated to support document (PDF) as header media type.",
+      "modified_files": [
+        "src/app/dashboard/templates/[id]/edit/page.tsx",
+        "src/lib/meta.ts",
+        "src/app/api/templates/send/route.ts"
+      ],
+      "pending": "accordion bug, PDF header in dashboard UI"
+    },
+    "umana_prompt": {
+      "status": "implemented",
+      "description": "System prompt updates for Umåna Yōga client",
+      "changes": [
+        "Crase rules: às Xh, à escola, à tarde",
+        "Vocabulary: técnicas corporais instead of posturas básicas",
+        "Visit hours: Seg-Qui 10h-13h and 15h-20h / Sex 15h-18h",
+        "Pre-scheduling data collection flow: CPF, email, como_conheceu, indicado_por, objetivo",
+        "Visit (free) vs experimental class (paid) distinction",
+        "No markdown (**, ###) in WhatsApp messages"
+      ],
+      "file": "CONTATOS UMANA/prommpt Umana/prompt.md"
+    },
+    "mobile": {
+      "status": "implemented",
+      "description": "Camera integration in Capacitor, back button in contacts and conversations screens",
+      "commits": ["2c570df", "d2aa44d"]
+    }
+  },
+  "checkpoint_files": [
+    "00_MANIFEST.json",
+    "01_CHANGES_SINCE_2026-03-15.md",
+    "02_SCHEMA_UPDATES.md",
+    "03_NEW_NODES_AND_FLOWS.md",
+    "04_PENDING_ITEMS.md"
+  ],
+  "notes": [
+    "This checkpoint documents changes since 2026-03-15",
+    "For full baseline schema and architecture, refer to 2026-03-15_chatbot-oficial/",
+    "supabase db push pending for 2 new migrations (metadata + RPC)",
+    "Calendar cancel event: tested via TypeScript, E2E in WhatsApp pending",
+    "Umåna prompt updated in CONTATOS UMANA/prommpt Umana/prompt.md"
+  ]
+}

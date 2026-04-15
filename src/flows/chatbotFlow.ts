@@ -20,6 +20,7 @@ import { parseMessage } from "@/nodes/parseMessage";
 import { pushToRedis } from "@/nodes/pushToRedis";
 import { ErrorDetails, saveChatMessage } from "@/nodes/saveChatMessage";
 import { transcribeAudio } from "@/nodes/transcribeAudio";
+import { updateContactMetadata } from "@/nodes/updateContactMetadata";
 // 🔧 Phase 1-3: Configuration-driven nodes
 import { checkContinuity } from "@/nodes/checkContinuity";
 import { classifyIntent } from "@/nodes/classifyIntent";
@@ -1170,6 +1171,7 @@ export const processChatbotMessage = async (
       chatHistory: chatHistory2,
       ragContext,
       customerName: parsedMessage.name,
+      contactMetadata: customer.metadata,
       config, // 🔐 Passa config com systemPrompt e groqApiKey
       greetingInstruction: continuityInfo.greetingInstruction, // 🔧 Phase 1: Inject greeting
       includeDateTimeInfo: !isFastTrack, // 🚀 Fast Track: Disable datetime for cache
@@ -1268,6 +1270,7 @@ export const processChatbotMessage = async (
             chatHistory: chatHistory2,
             ragContext,
             customerName: parsedMessage.name,
+            contactMetadata: customer.metadata,
             config: {
               ...config,
               settings: {
@@ -1507,6 +1510,7 @@ export const processChatbotMessage = async (
               chatHistory: chatHistory2,
               ragContext: documentSearchResult.message,
               customerName: parsedMessage.name,
+              contactMetadata: customer.metadata,
               config,
               greetingInstruction: continuityInfo.greetingInstruction,
               enableTools: false,
@@ -1607,7 +1611,49 @@ export const processChatbotMessage = async (
           });
         }
 
-        // Tool 4: verificar_agenda (Calendar check)
+        // Tool 4: registrar_dado_cadastral (CRM metadata)
+        if (toolCall.function.name === "registrar_dado_cadastral") {
+          logger.logNodeStart("15.75. Register Contact Metadata", {
+            phone: parsedMessage.phone,
+            toolCallId: toolCall.id,
+          });
+
+          try {
+            const args = JSON.parse(toolCall.function.arguments || "{}");
+            const campo = args?.campo;
+            const valor = args?.valor;
+
+            if (campo && typeof valor === "string" && valor.trim().length > 0) {
+              await updateContactMetadata({
+                phone: parsedMessage.phone,
+                clientId: config.id,
+                fields: {
+                  [campo]: valor.trim(),
+                },
+              });
+
+              logger.logNodeSuccess("15.75. Register Contact Metadata", {
+                campo,
+                saved: true,
+              });
+            } else {
+              logger.logNodeWarning("15.75. Register Contact Metadata", {
+                warning: "invalid_args",
+                args,
+              });
+            }
+          } catch (metadataError) {
+            logger.logNodeWarning("15.75. Register Contact Metadata", {
+              warning: "metadata_save_failed",
+              error:
+                metadataError instanceof Error
+                  ? metadataError.message
+                  : "unknown_error",
+            });
+          }
+        }
+
+        // Tool 5: verificar_agenda (Calendar check)
         if (toolCall.function.name === "verificar_agenda") {
           logger.logNodeStart("15.8. Handle Calendar Check", {
             phone: parsedMessage.phone,
@@ -1637,7 +1683,7 @@ export const processChatbotMessage = async (
           aiResponse.toolCalls = undefined;
         }
 
-        // Tool 5: criar_evento_agenda (Calendar create)
+        // Tool 6: criar_evento_agenda (Calendar create)
         if (toolCall.function.name === "criar_evento_agenda") {
           logger.logNodeStart("15.9. Handle Calendar Create Event", {
             phone: parsedMessage.phone,
@@ -1667,7 +1713,7 @@ export const processChatbotMessage = async (
           aiResponse.toolCalls = undefined;
         }
 
-        // Tool 6: cancelar_evento_agenda (Calendar cancel)
+        // Tool 7: cancelar_evento_agenda (Calendar cancel)
         if (toolCall.function.name === "cancelar_evento_agenda") {
           logger.logNodeStart("15.10. Handle Calendar Cancel Event", {
             phone: parsedMessage.phone,

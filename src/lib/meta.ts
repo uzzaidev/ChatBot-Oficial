@@ -472,6 +472,8 @@ export const sendTemplateMessage = async (
   language: string,
   parameters?: string[],
   config?: ClientConfig,
+  headerParameters?: TemplateParameter[],
+  buttonParameters?: Record<number, string[]>,
 ): Promise<{ messageId: string }> => {
   try {
     const accessToken = config?.apiKeys.metaAccessToken;
@@ -483,6 +485,13 @@ export const sendTemplateMessage = async (
     // Build components with parameters
     const components: TemplateComponentPayload[] = [];
 
+    if (headerParameters && headerParameters.length > 0) {
+      components.push({
+        type: "header",
+        parameters: headerParameters,
+      });
+    }
+
     if (parameters && parameters.length > 0) {
       const bodyParameters: TemplateParameter[] = parameters.map((value) => ({
         type: "text",
@@ -493,6 +502,26 @@ export const sendTemplateMessage = async (
         type: "body",
         parameters: bodyParameters,
       });
+    }
+
+    if (buttonParameters) {
+      const sortedButtonEntries = Object.entries(buttonParameters).sort(
+        ([a], [b]) => Number(a) - Number(b),
+      );
+
+      for (const [index, values] of sortedButtonEntries) {
+        if (!Array.isArray(values) || values.length === 0) continue;
+
+        components.push({
+          type: "button",
+          sub_type: "url",
+          index: Number(index),
+          parameters: values.map((value) => ({
+            type: "text",
+            text: value,
+          })),
+        });
+      }
     }
 
     const payload: TemplateSendPayload = {

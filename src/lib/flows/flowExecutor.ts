@@ -684,6 +684,10 @@ export class FlowExecutor {
 
     const execution = this.dbToExecution(executionDB);
 
+    // Persist collected lead/contact data from flow variables to customer metadata
+    // so the data survives beyond the flow execution lifecycle.
+    await this.persistCollectedMetadata(clientId, phone, execution.variables);
+
     // 2. Send transition message (if configured)
     if (transitionMessage) {
       await this.sendTextMessage(phone, clientId, transitionMessage);
@@ -740,6 +744,162 @@ export class FlowExecutor {
         flowContext,
       );
     }
+  }
+
+  /**
+   * Merge selected flow variables into clientes_whatsapp.metadata (JSONB).
+   * This is a best-effort operation and must never break flow execution.
+   */
+  private async persistCollectedMetadata(
+    clientId: string,
+    phone: string,
+    variables: Record<string, any>,
+  ): Promise<void> {
+    try {
+      if (!variables || typeof variables !== "object") {
+        return;
+      }
+
+      const mapped = this.mapFlowVariablesToContactMetadata(variables);
+      if (Object.keys(mapped).length === 0) {
+        return;
+      }
+
+      const { data: currentCustomer, error: readError } = await this.supabase
+        .from("clientes_whatsapp")
+        .select("metadata")
+        .eq("telefone", phone)
+        .eq("client_id", clientId)
+        .maybeSingle();
+
+      if (readError) {
+        console.warn(
+          "[FlowExecutor] Could not read existing customer metadata:",
+          readError.message,
+        );
+        return;
+      }
+
+      const existing = this.toPlainObject(currentCustomer?.metadata);
+      const merged = {
+        ...existing,
+        ...mapped,
+        last_flow_metadata_update_at: new Date().toISOString(),
+      };
+
+      const { error: updateError } = await this.supabase
+        .from("clientes_whatsapp")
+        .update({ metadata: merged })
+        .eq("telefone", phone)
+        .eq("client_id", clientId);
+
+      if (updateError) {
+        console.warn(
+          "[FlowExecutor] Could not update customer metadata:",
+          updateError.message,
+        );
+      }
+    } catch (error) {
+      console.warn(
+        "[FlowExecutor] Unexpected error while persisting customer metadata:",
+        error,
+      );
+    }
+  }
+
+  private mapFlowVariablesToContactMetadata(
+    variables: Record<string, any>,
+  ): Record<string, any> {
+    const metadata: Record<string, any> = {};
+
+    const scalarEntries = Object.entries(variables).filter(([, value]) => {
+      return (
+        value !== null &&
+        value !== undefined &&
+        (typeof value === "string" ||
+          typeof value === "number" ||
+          typeof value === "boolean")
+      );
+    });
+
+    for (const [rawKey, value] of scalarEntries) {
+      const key = this.normalizeKey(rawKey);
+      if (!key) continue;
+
+      if (this.isKnownMetadataKey(key)) {
+        metadata[key] = value;
+        continue;
+      }
+
+      // Allow custom lead fields with explicit prefixes.
+      if (key.startsWith("lead_") || key.startsWith("crm_")) {
+        metadata[key] = value;
+      }
+    }
+
+    // Alias mapping for common terms used in conversational flows.
+    const aliasMap: Array<{ aliases: string[]; target: string }> = [
+      { aliases: ["email", "e_mail"], target: "email" },
+      { aliases: ["cpf", "documento", "document"], target: "cpf" },
+      {
+        aliases: ["como_conheceu", "origem", "source", "canal_origem"],
+        target: "como_conheceu",
+      },
+      { aliases: ["indicado_por", "indicacao", "referral"], target: "indicado_por" },
+      { aliases: ["objetivo", "objetivo_yoga"], target: "objetivo" },
+      {
+        aliases: ["tecnofit_reservado", "reservou_tecnofit"],
+        target: "tecnofit_reservado",
+      },
+      { aliases: ["slack_avisado", "aviso_slack"], target: "slack_avisado" },
+    ];
+
+    for (const mapping of aliasMap) {
+      if (metadata[mapping.target] !== undefined) continue;
+
+      for (const alias of mapping.aliases) {
+        const aliasValue = variables[alias];
+        if (aliasValue !== null && aliasValue !== undefined && aliasValue !== "") {
+          metadata[mapping.target] = aliasValue;
+          break;
+        }
+      }
+    }
+
+    return metadata;
+  }
+
+  private isKnownMetadataKey(key: string): boolean {
+    return [
+      "cpf",
+      "email",
+      "como_conheceu",
+      "indicado_por",
+      "objetivo",
+      "tecnofit_reservado",
+      "slack_avisado",
+      "instrutor_preferido",
+      "responsavel_agendamento",
+    ].includes(key);
+  }
+
+  private normalizeKey(key: string): string {
+    if (!key || typeof key !== "string") return "";
+
+    return key
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9_]+/g, "_")
+      .replace(/^_+|_+$/g, "");
+  }
+
+  private toPlainObject(value: any): Record<string, any> {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      return {};
+    }
+
+    return value;
   }
 
   /**

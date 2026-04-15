@@ -40,7 +40,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // Parse request body
     const body: SendTemplateRequest = await request.json();
-    const { phone, parameters } = body;
+    const { phone, parameters, headerParameters, buttonParameters } = body;
 
     if (!phone) {
       return NextResponse.json(
@@ -115,7 +115,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         template.name,
         template.language,
         parameters,
-        config
+        config,
+        headerParameters,
+        buttonParameters,
       );
 
       // Log the message in the database (optional - for tracking)
@@ -140,6 +142,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           template_components: template.components, // Include template structure for display
           whatsapp_message_id: result.messageId,
           parameters,
+          headerParameters,
+          buttonParameters,
         };
 
         await query(logSql, [

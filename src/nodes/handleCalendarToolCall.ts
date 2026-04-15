@@ -9,6 +9,7 @@
 
 import type { CalendarEvent } from "@/lib/calendar-client";
 import { getCalendarClient } from "@/lib/calendar-client";
+import { saveChatMessage } from "@/nodes/saveChatMessage";
 
 interface CalendarToolContext {
   contactName?: string;
@@ -40,7 +41,7 @@ export const handleCalendarToolCall = async (
   }
 
   if (toolName === "criar_evento_agenda") {
-    return await handleCriarEvento(calendarClient, toolArgs, context);
+    return await handleCriarEvento(calendarClient, toolArgs, clientId, context);
   }
 
   if (toolName === "cancelar_evento_agenda") {
@@ -137,6 +138,7 @@ const handleVerificarAgenda = async (
 const handleCriarEvento = async (
   client: Awaited<ReturnType<typeof getCalendarClient>> & {},
   args: Record<string, any>,
+  clientId: string,
   context?: CalendarToolContext,
 ): Promise<string> => {
   const {
@@ -165,24 +167,89 @@ const handleCriarEvento = async (
     attendees: email_participante ? [email_participante] : undefined,
   };
 
+  const duplicate = await findDuplicateEvent(client, newEvent);
+  if (duplicate) {
+    const duplicateStart = new Date(duplicate.startDateTime);
+    const duplicateEnd = new Date(duplicate.endDateTime);
+    return `ℹ️ Já existe um evento semelhante para este contato nesse horário.\n\n📌 *${
+      duplicate.title
+    }*\n📅 ${formatEventRange(duplicateStart, duplicateEnd)}`;
+  }
+
   const created = await client.createEvent(newEvent);
+
+  await saveCalendarEventSystemMessage(
+    clientId,
+    context?.contactPhone,
+    created,
+  );
 
   const createdStart = new Date(created.startDateTime);
   const createdEnd = new Date(created.endDateTime);
 
-  let response = `✅ Evento criado com sucesso!\n\n📌 *${
+  // Mensagem de confirmação ao usuário — apenas dados relevantes para ele.
+  // Descrição interna (contato, WhatsApp) e lista de convidados ficam no calendário, não na mensagem.
+  const response = `✅ Evento criado com sucesso!\n\n📌 ${
     created.title
-  }*\n📅 ${formatEventRange(createdStart, createdEnd)}`;
-
-  if (created.description) {
-    response += `\n📝 ${created.description}`;
-  }
-
-  if (created.attendees && created.attendees.length > 0) {
-    response += `\n👥 Convidado(s): ${created.attendees.join(", ")}`;
-  }
+  }\n📅 ${formatEventRange(createdStart, createdEnd)}`;
 
   return response;
+};
+
+const DUPLICATE_TIME_TOLERANCE_MS = 5 * 60 * 1000;
+
+const findDuplicateEvent = async (
+  client: Awaited<ReturnType<typeof getCalendarClient>> & {},
+  event: Omit<CalendarEvent, "id">,
+): Promise<CalendarEvent | null> => {
+  const startMs = new Date(event.startDateTime).getTime();
+  const endMs = new Date(event.endDateTime).getTime();
+
+  const windowStart = new Date(startMs - DUPLICATE_TIME_TOLERANCE_MS);
+  const windowEnd = new Date(endMs + DUPLICATE_TIME_TOLERANCE_MS);
+  const existingEvents = await client.listEvents(windowStart, windowEnd);
+
+  const duplicate = existingEvents.find((candidate) => {
+    const candidateStart = new Date(candidate.startDateTime).getTime();
+    const candidateEnd = new Date(candidate.endDateTime).getTime();
+
+    const sameTitle = isTitleMatch(candidate.title, event.title);
+    const sameStart =
+      Math.abs(candidateStart - startMs) <= DUPLICATE_TIME_TOLERANCE_MS;
+    const sameEnd =
+      Math.abs(candidateEnd - endMs) <= DUPLICATE_TIME_TOLERANCE_MS;
+
+    return sameTitle && sameStart && sameEnd;
+  });
+
+  return duplicate || null;
+};
+
+const saveCalendarEventSystemMessage = async (
+  clientId: string,
+  phone: string | undefined,
+  event: CalendarEvent,
+): Promise<void> => {
+  if (!phone) {
+    return;
+  }
+
+  const systemLine = `[SISTEMA] Evento agendado: ${event.title} em ${event.startDateTime}. ID: ${event.id}`;
+
+  try {
+    await saveChatMessage({
+      phone,
+      message: systemLine,
+      type: "system",
+      clientId,
+      status: "sent",
+    });
+  } catch (error) {
+    console.warn(
+      "[Calendar] Failed to save system event marker to chat history:",
+      error,
+    );
+  }
 };
 
 const CANCEL_SEARCH_BUFFER_MS = 24 * 60 * 60 * 1000; // 24h
