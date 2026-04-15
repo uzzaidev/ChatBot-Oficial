@@ -7,6 +7,17 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-15
 
 ### feat
+- Implementado reagendamento de eventos no calendário com atualização parcial de título, datas e participantes, sem necessidade de cancelar e recriar o evento.
+- Adicionada função para evitar duplicação de eventos, com tolerância ampliada para busca de eventos semelhantes no mesmo dia e detecção por telefone na descrição.
+- Atualizadas integrações com Google Calendar e Microsoft Calendar para suportar atualização (patch) de eventos.
+- Incluído novo comando de ferramenta "alterar_evento_agenda" para uso pela IA, com validação de parâmetros e mensagens de erro amigáveis.
+- Refinadas regras de uso das ferramentas de calendário para incluir o reagendamento e melhorar o fluxo de cancelamento e criação.
+  - Arquivos: `src/lib/calendar-client.ts`, `src/lib/google-calendar-client.ts`, `src/lib/microsoft-calendar-client.ts`, `src/nodes/generateAIResponse.ts`, `src/nodes/handleCalendarToolCall.ts`
+  - Confiança: alta
+
+## 2026-04-15
+
+### feat
 - Refinadas regras de transferência para atendimento humano e agendamento no bot Umana, diferenciando claramente entre visita gratuita (agendada autonomamente pelo bot) e aula experimental/particular (sempre com transferência para instrutor e confirmação de custo). Atualizadas orientações para coleta de dados, confirmação e criação de eventos de calendário.
   - Arquivos: `CONTATOS UMANA/prommpt Umana/prompt.md`
   - Confiança: alta
