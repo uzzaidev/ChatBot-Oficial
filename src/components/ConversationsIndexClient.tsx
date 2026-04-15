@@ -20,6 +20,7 @@ import { apiFetch, markConversationAsRead } from "@/lib/api";
 import type { Conversation, Message } from "@/lib/types";
 import { getInitials } from "@/lib/utils";
 import {
+  ArrowLeft,
   ArrowRight,
   Bot,
   Home,
@@ -461,6 +462,16 @@ export function ConversationsIndexClient({
                 Conversas
               </h3>
               <div className="flex items-center gap-1">
+                <Link href="/dashboard">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 gap-1.5 border-border/60 text-foreground hover:bg-muted/60"
+                  >
+                    <ArrowLeft className="h-3.5 w-3.5" />
+                    <span className="text-xs">Voltar</span>
+                  </Button>
+                </Link>
                 <ChatThemePaletteButton />
                 <ThemeToggle />
                 <Link href="/dashboard">
@@ -603,12 +614,9 @@ export function ConversationsIndexClient({
               <div className="p-4 border-b border-border/50">
                 <div className="flex items-center gap-3 mb-4">
                   <Link href="/dashboard">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                    >
-                      <Home className="h-4 w-4" />
+                    <Button variant="outline" size="sm" className="h-8 gap-1.5 border-border/60">
+                      <ArrowLeft className="h-3.5 w-3.5" />
+                      <span className="text-xs">Voltar</span>
                     </Button>
                   </Link>
                   <h3 className="font-poppins font-semibold text-sm text-foreground/90">
@@ -756,6 +764,16 @@ export function ConversationsIndexClient({
                   >
                     <Menu className="h-5 w-5" />
                   </Button>
+                  <Link href="/dashboard">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="flex-shrink-0 text-foreground hover:bg-muted"
+                      aria-label="Voltar ao painel"
+                    >
+                      <ArrowLeft className="h-5 w-5" />
+                    </Button>
+                  </Link>
 
                   <Avatar className="h-10 w-10 flex-shrink-0">
                     <AvatarFallback className="bg-gradient-to-br from-secondary to-primary text-white">

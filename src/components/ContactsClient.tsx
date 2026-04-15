@@ -55,6 +55,7 @@ import { formatDateTime, formatPhone, getInitials } from "@/lib/utils";
 import {
   AlertCircle,
   AlertTriangle,
+  ArrowLeft,
   ArrowRight,
   Bot,
   CheckCircle,
@@ -563,6 +564,16 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
               </h2>
             </div>
             <div className="flex items-center gap-1">
+              <Link href="/dashboard">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 border-border/60 text-foreground hover:bg-muted/60"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  <span className="hidden sm:inline">Voltar</span>
+                </Button>
+              </Link>
               <ThemeToggle />
               <Link href="/dashboard">
                 <Button
