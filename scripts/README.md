@@ -87,6 +87,24 @@ npm test integration
 
 Ver checklist em: `docs/flows/TRANSFER_TESTING_CHECKLIST.md`
 
+## 📱 Android Release (Windows)
+
+Scripts adicionados para build de release Android:
+
+- `scripts/android-preflight-check.ps1`
+- `scripts/build-android-release.ps1`
+
+Uso rapido:
+
+```powershell
+.\scripts\android-preflight-check.ps1
+.\scripts\build-android-release.ps1
+```
+
+Obs:
+- O script usa automaticamente o JDK 21 do Android Studio (`jbr`) quando disponivel.
+- O artefato final sai em `android/app/build/outputs/bundle/release/app-release.aab`.
+
 ## 📋 Ordem Recomendada
 
 1. **Rodar migration** (se tiver flows existentes)

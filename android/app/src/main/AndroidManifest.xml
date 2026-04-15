@@ -50,6 +50,7 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CAMERA" />
     <!-- Push Notifications: Android 13+ requer permissão explícita -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Biometric Auth: Permissão para usar biometria (FaceID/TouchID/Fingerprint) -->

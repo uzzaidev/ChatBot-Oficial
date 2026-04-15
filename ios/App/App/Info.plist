@@ -48,6 +48,14 @@
 	</dict>
 	<key>NSFaceIDUsageDescription</key>
 	<string>UzzApp usa Face ID para autenticacao segura e rapida.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>UzzApp precisa acessar a camera para tirar fotos na base de conhecimento.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>UzzApp precisa acessar sua galeria para selecionar arquivos.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>UzzApp precisa salvar arquivos na sua galeria.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>UzzApp precisa acessar o microfone para gravar audios.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
