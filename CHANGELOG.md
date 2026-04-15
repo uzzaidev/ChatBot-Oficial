@@ -6,6 +6,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-15
 
+### feat
+- Implementado bloqueio para impedir chamada de `verificar_agenda` antes da coleta completa dos dados cadastrais (como_conheceu, indicado_por, objetivo, email, CPF) no fluxo de agendamento Umana. Ajustada ordem dos passos para garantir coleta total antes de verificar disponibilidade e confirmar horário.
+  - Arquivos: `CONTATOS UMANA/prommpt Umana/prompt.md`
+  - Confiança: alta
+
+## 2026-04-15
+
 ### docs
 - Atualizado documento de testes QA para alinhar os casos de teste ao fluxo real do bot, corrigindo descrições e sequências de interações em múltiplos cenários de agendamento e transferência.
   - Arquivos: `docs/prompts/Umana Rio Branco/QA_TESTES_UMANA.md`
