@@ -1622,6 +1622,10 @@ export const processChatbotMessage = async (
             "verificar_agenda",
             args,
             config.id,
+            {
+              contactName: parsedMessage.name,
+              contactPhone: parsedMessage.phone,
+            },
           );
 
           logger.logNodeSuccess("15.8. Handle Calendar Check", {
@@ -1648,6 +1652,10 @@ export const processChatbotMessage = async (
             "criar_evento_agenda",
             args,
             config.id,
+            {
+              contactName: parsedMessage.name,
+              contactPhone: parsedMessage.phone,
+            },
           );
 
           logger.logNodeSuccess("15.9. Handle Calendar Create Event", {

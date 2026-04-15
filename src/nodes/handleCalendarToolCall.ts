@@ -9,6 +9,11 @@
 import type { CalendarEvent } from "@/lib/calendar-client";
 import { getCalendarClient } from "@/lib/calendar-client";
 
+interface CalendarToolContext {
+  contactName?: string;
+  contactPhone?: string;
+}
+
 /**
  * Handle a calendar-related tool call from the AI
  *
@@ -21,6 +26,7 @@ export const handleCalendarToolCall = async (
   toolName: string,
   toolArgs: Record<string, any>,
   clientId: string,
+  context?: CalendarToolContext,
 ): Promise<string> => {
   const calendarClient = await getCalendarClient(clientId);
 
@@ -33,7 +39,7 @@ export const handleCalendarToolCall = async (
   }
 
   if (toolName === "criar_evento_agenda") {
-    return await handleCriarEvento(calendarClient, toolArgs);
+    return await handleCriarEvento(calendarClient, toolArgs, context);
   }
 
   return `Ferramenta de calendário desconhecida: ${toolName}`;
@@ -126,6 +132,7 @@ const handleVerificarAgenda = async (
 const handleCriarEvento = async (
   client: Awaited<ReturnType<typeof getCalendarClient>> & {},
   args: Record<string, any>,
+  context?: CalendarToolContext,
 ): Promise<string> => {
   const {
     titulo,
@@ -142,21 +149,25 @@ const handleCriarEvento = async (
     return "Datas inválidas fornecidas. Use formato ISO 8601 (ex: 2025-03-10T10:00:00-03:00).";
   }
 
+  const contactName = sanitizeContactName(context?.contactName);
+  const contactPhone = normalizeContactPhone(context?.contactPhone);
+
   const newEvent: Omit<CalendarEvent, "id"> = {
-    title: titulo,
+    title: buildEventTitle(titulo, contactName),
     startDateTime: startDate.toISOString(),
     endDateTime: endDate.toISOString(),
-    description: descricao || undefined,
+    description: buildEventDescription(descricao, contactPhone),
     attendees: email_participante ? [email_participante] : undefined,
   };
 
   const created = await client.createEvent(newEvent);
 
+  const createdStart = new Date(created.startDateTime);
+  const createdEnd = new Date(created.endDateTime);
+
   let response = `✅ Evento criado com sucesso!\n\n📌 *${
     created.title
-  }*\n📅 ${formatDateTime(new Date(created.startDateTime))} - ${formatDateTime(
-    new Date(created.endDateTime),
-  )}`;
+  }*\n📅 ${formatEventRange(createdStart, createdEnd)}`;
 
   if (created.description) {
     response += `\n📝 ${created.description}`;
@@ -169,6 +180,65 @@ const handleCriarEvento = async (
   return response;
 };
 
+const sanitizeContactName = (name?: string): string | null => {
+  if (!name) return null;
+  const cleaned = name.trim().replace(/\s+/g, " ");
+  if (!cleaned) return null;
+
+  // Ignore values that look like raw phone numbers.
+  if (/^\+?\d[\d\s()-]{6,}$/.test(cleaned)) {
+    return null;
+  }
+
+  return cleaned;
+};
+
+const normalizeContactPhone = (phone?: string): string | null => {
+  if (!phone) return null;
+  const cleaned = phone.trim();
+  if (!cleaned) return null;
+
+  const digitsOnly = cleaned.replace(/\D/g, "");
+  if (!digitsOnly) return null;
+
+  return `+${digitsOnly}`;
+};
+
+const buildEventTitle = (
+  baseTitle: string,
+  contactName: string | null,
+): string => {
+  const safeBase = (baseTitle || "Agendamento").trim();
+  if (!contactName) return safeBase;
+
+  const lowerBase = safeBase.toLowerCase();
+  const lowerName = contactName.toLowerCase();
+  if (lowerBase.includes(lowerName)) return safeBase;
+
+  return `${safeBase} - ${contactName}`;
+};
+
+const buildEventDescription = (
+  baseDescription: string | undefined,
+  contactPhone: string | null,
+): string | undefined => {
+  const trimmedBase = baseDescription?.trim();
+  if (!contactPhone) return trimmedBase || undefined;
+
+  const phoneLine = `Contato (WhatsApp): ${contactPhone}`;
+
+  // Avoid duplicate phone markers if AI already included it.
+  if (trimmedBase && trimmedBase.includes(contactPhone)) {
+    return trimmedBase;
+  }
+
+  if (!trimmedBase) {
+    return phoneLine;
+  }
+
+  return `${trimmedBase}\n\n${phoneLine}`;
+};
+
 const formatDateTime = (date: Date): string => {
   return date.toLocaleString("pt-BR", {
     weekday: "short",
@@ -179,6 +249,49 @@ const formatDateTime = (date: Date): string => {
     minute: "2-digit",
     timeZone: "America/Sao_Paulo",
   });
+};
+
+const CALENDAR_TZ = "America/Sao_Paulo";
+
+const formatEventRange = (start: Date, end: Date): string => {
+  const startDateKey = start.toLocaleDateString("en-CA", {
+    timeZone: CALENDAR_TZ,
+  });
+  const endDateKey = end.toLocaleDateString("en-CA", {
+    timeZone: CALENDAR_TZ,
+  });
+
+  const startTime = start.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: CALENDAR_TZ,
+  });
+  const endTime = end.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: CALENDAR_TZ,
+  });
+
+  // Common case: start and end on the same day.
+  if (startDateKey === endDateKey) {
+    const dayLabel = start
+      .toLocaleDateString("pt-BR", {
+        weekday: "short",
+        day: "2-digit",
+        month: "2-digit",
+        year: "2-digit",
+        timeZone: CALENDAR_TZ,
+      })
+      .replace(/\./g, "")
+      .replace(",", "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    return `${dayLabel} - ${startTime} - ${endTime}`;
+  }
+
+  // Exceptional case: event spans different days.
+  return `${formatDateTime(start)} - ${formatDateTime(end)}`;
 };
 
 /**
@@ -252,3 +365,4 @@ const findFreeSlots = async (
   }
   return slots;
 };
+
