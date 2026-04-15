@@ -6,6 +6,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-15
 
+### chore
+- Atualizado `pnpm-lock.yaml` para incluir a dependência `@capacitor/camera` na versão 7.0.5
+  - Arquivos: `pnpm-lock.yaml`
+  - Confiança: alta
+
+## 2026-04-15
+
 ### feat
 - Implementado reagendamento de eventos no calendário com atualização parcial de título, datas e participantes, sem necessidade de cancelar e recriar o evento.
 - Adicionada função para evitar duplicação de eventos, com tolerância ampliada para busca de eventos semelhantes no mesmo dia e detecção por telefone na descrição.
