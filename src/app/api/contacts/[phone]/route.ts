@@ -27,12 +27,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const cleanPhone = phone.replace(/\D/g, "");
 
     const sqlQuery = `
-      SELECT 
+      SELECT
         telefone as phone,
         nome as name,
         status,
         created_at,
-        COALESCE(updated_at, created_at) as updated_at
+        COALESCE(updated_at, created_at) as updated_at,
+        metadata
       FROM clientes_whatsapp
       WHERE client_id = $1 AND telefone = $2
     `;
@@ -56,6 +57,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         status: row.status || "bot",
         created_at: row.created_at,
         updated_at: row.updated_at,
+        metadata: row.metadata || undefined,
       },
     });
   } catch (error) {

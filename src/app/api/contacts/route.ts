@@ -62,12 +62,13 @@ export async function GET(request: NextRequest) {
     const offsetPlaceholder = `$${filterParams.length + 2}`;
 
     const sqlQuery = `
-      SELECT 
+      SELECT
         telefone as phone,
         nome as name,
         status,
         created_at,
-        COALESCE(updated_at, created_at) as updated_at
+        COALESCE(updated_at, created_at) as updated_at,
+        metadata
       FROM clientes_whatsapp
       WHERE ${whereClause}
       ORDER BY COALESCE(updated_at, created_at) DESC
@@ -95,6 +96,7 @@ export async function GET(request: NextRequest) {
       status: row.status || "bot",
       created_at: row.created_at,
       updated_at: row.updated_at,
+      metadata: row.metadata || undefined,
     }));
 
     return NextResponse.json({

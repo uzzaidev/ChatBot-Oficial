@@ -1198,6 +1198,45 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                 </p>
               </div>
 
+              {/* Perfil coletado pelo bot */}
+              {selectedContact.metadata && Object.values(selectedContact.metadata).some(Boolean) && (
+                <div className="space-y-2">
+                  <Label className="text-xs uppercase tracking-wide text-muted-foreground">Perfil coletado</Label>
+                  <div className="rounded-md border border-border bg-muted/30 px-3 py-2 space-y-1 text-sm">
+                    {selectedContact.metadata.como_conheceu && (
+                      <div className="flex justify-between gap-2">
+                        <span className="text-muted-foreground shrink-0">Como conheceu</span>
+                        <span className="text-right">{selectedContact.metadata.como_conheceu}</span>
+                      </div>
+                    )}
+                    {selectedContact.metadata.indicado_por && (
+                      <div className="flex justify-between gap-2">
+                        <span className="text-muted-foreground shrink-0">Indicado por</span>
+                        <span className="text-right">{selectedContact.metadata.indicado_por}</span>
+                      </div>
+                    )}
+                    {selectedContact.metadata.objetivo && (
+                      <div className="flex justify-between gap-2">
+                        <span className="text-muted-foreground shrink-0">Objetivo</span>
+                        <span className="text-right">{selectedContact.metadata.objetivo}</span>
+                      </div>
+                    )}
+                    {selectedContact.metadata.email && (
+                      <div className="flex justify-between gap-2">
+                        <span className="text-muted-foreground shrink-0">E-mail</span>
+                        <span className="text-right break-all">{selectedContact.metadata.email}</span>
+                      </div>
+                    )}
+                    {selectedContact.metadata.cpf && (
+                      <div className="flex justify-between gap-2">
+                        <span className="text-muted-foreground shrink-0">CPF</span>
+                        <span className="text-right">{selectedContact.metadata.cpf}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Contact Info */}
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">

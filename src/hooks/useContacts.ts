@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import type { ConversationStatus, ContactImportResult } from "@/lib/types";
+import type { ConversationStatus, ContactImportResult, ContactMetadata } from "@/lib/types";
 
 export interface Contact {
   id: string;
@@ -9,6 +9,7 @@ export interface Contact {
   status: ConversationStatus;
   created_at: string;
   updated_at: string;
+  metadata?: ContactMetadata;
 }
 
 interface UseContactsOptions {
