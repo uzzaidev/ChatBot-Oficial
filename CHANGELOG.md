@@ -6,6 +6,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-15
 
+### docs
+- Atualizados testes de QA do bot Umana com novos fluxos detalhados de calendário, coleta de dados, agendamento, cancelamento, reagendamento, distinção entre visita e aula experimental, e prevenção de eventos duplicados.
+- Incluídas tabelas de mensagens, objetivos e critérios para múltiplos testadores focados em cenários reais e comportamentos esperados.
+  - Arquivos: `docs/prompts/Umana Rio Branco/QA_TESTES_UMANA.md`
+  - Confiança: alta
+
+## 2026-04-15
+
 ### feat
 - Alterado fluxo de coleta de dados para iniciar somente após o usuário demonstrar intenção explícita de agendar visita ou aula experimental, evitando coleta prematura durante dúvidas ou exploração.
 - Atualizado prompt e instruções no arquivo de contato Umana para refletir essa mudança no atendimento.
