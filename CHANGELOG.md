@@ -7,6 +7,15 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-15
 
 ### feat
+- Adicionada ferramenta para captura e registro de dados cadastrais do contato (ex: CPF, email, indicação) para evitar perguntas repetidas em futuras conversas.
+- Implementadas regras rigorosas para criação de eventos na agenda, exigindo confirmação explícita do usuário e evitando duplicidade de eventos.
+- Incluído envio de metadados cadastrais coletados no contexto da conversa para o modelo de IA, melhorando o fluxo de atendimento.
+  - Arquivos: `src/nodes/generateAIResponse.ts`
+  - Confiança: alta
+
+## 2026-04-15
+
+### feat
 - Adicionada coluna JSONB `metadata` para armazenar dados flexíveis de contatos em `clientes_whatsapp`, com suporte a tabelas legadas e índice GIN para consultas eficientes.
 - Criada função RPC `merge_contact_metadata` para mesclar dados de metadata de contatos de forma segura e multi-tenant, atualizando registros por telefone e client_id quando disponível.
   - Arquivos: `supabase/migrations/20260415110000_add_metadata_to_clientes_whatsapp.sql`, `supabase/migrations/20260415113000_create_merge_contact_metadata_rpc.sql`
