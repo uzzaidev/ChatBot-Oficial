@@ -7,6 +7,14 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-15
 
 ### feat
+- Integrado plugin de câmera do Capacitor para Android e iOS, incluindo permissões necessárias nos manifestos e plist. Adicionados scripts PowerShell para build e pré-verificação de release Android no Windows. 
+- Adicionado botão "Voltar" nas telas de contatos e conversas para facilitar navegação ao dashboard.
+  - Arquivos: `android/app/src/main/AndroidManifest.xml`, `ios/App/App/Info.plist`, `android/app/capacitor.build.gradle`, `android/capacitor.settings.gradle`, `capacitor.config.ts`, `package.json`, `src/components/ContactsClient.tsx`, `src/components/ConversationsIndexClient.tsx`, `scripts/android-preflight-check.ps1`, `scripts/build-android-release.ps1`
+  - Confiança: alta
+
+## 2026-04-15
+
+### feat
 - Incluído nome e telefone do contato na criação de eventos no calendário, com sanitização e formatação dos dados para título e descrição do evento. Também simplificada a exibição da faixa de horário do evento considerando fuso horário de São Paulo.
   - Arquivos: `src/nodes/handleCalendarToolCall.ts`, `src/flows/chatbotFlow.ts`
   - Confiança: alta
