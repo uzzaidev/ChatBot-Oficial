@@ -1,6 +1,6 @@
 # QA -- Testes do Bot Umana Rio Branco
 
-**Data:** 2026-04-01
+**Data:** 2026-04-15 (atualizado com testes de calendário, coleta de dados e fluxo de agendamento)
 **Objetivo:** Validar o comportamento do bot conforme o prompt configurado
 **Como testar:** Envie as mensagens listadas pelo WhatsApp e avalie a resposta do bot
 
@@ -181,24 +181,132 @@ Objetivo: Simular um lead real do inicio ao fim, testando todo o funil de conver
 
 ---
 
+---
+
+## TESTADOR 9: Pedro Vitor (Fluxo Completo de Agendamento de Visita)
+
+**Foco: Coleta de dados no momento certo + agendamento autônomo de visita**
+
+Objetivo: Validar que o bot NÃO pede dados cadastrais durante perguntas gerais, e SÓ inicia a coleta quando há intenção explícita de agendar. Verificar o fluxo completo até a criação do evento.
+
+| # | Mensagem para enviar | O que verificar | Resultado | Obs |
+|---|---------------------|-----------------|-----------|-----|
+| 9.1 | "Oi, quero saber como funciona a escola" | Bot respondeu sobre a escola SEM pedir CPF, email ou "como conheceu"? | | |
+| 9.2 | "Que horários têm disponíveis para visita?" | Bot informou os horários de visita (seg-qui 10h-13h e 15h-20h / sex 15h-18h) SEM pedir dados? | | |
+| 9.3 | "Estou pensando em conhecer o lugar" | Bot NÃO iniciou coleta de dados? Respondeu normalmente e ofereceu marcar? | | |
+| 9.4 | "Quero marcar uma visita" | Agora sim o bot iniciou a coleta de dados? Começou por "como conheceu"? | | |
+| 9.5 | "Vi no Instagram" | Bot confirmou e passou para o próximo dado (objetivo)? Sem lista de perguntas de uma vez? | | |
+| 9.6 | "Quero reduzir o estresse" | Bot confirmou ("Ótimo, anotado!") e pediu e-mail? | | |
+| 9.7 | (Fornecer e-mail) | Bot pediu CPF na sequência? | | |
+| 9.8 | (Fornecer CPF) | Bot fez resumo dos dados e propôs horário dentro da grade disponível? | | |
+| 9.9 | "Pode ser quinta às 16h" | Bot verificou disponibilidade e perguntou "Posso confirmar a visita para quinta às 16h?"? | | |
+| 9.10 | "Sim" | Bot criou o evento? Confirmação veio APENAS com título e horário, sem dados internos (telefone/email)? | | |
+
+---
+
+## TESTADOR 10: Luis (Cancelamento e Reagendamento via WhatsApp)
+
+**Foco: Cancelar evento, cancelar múltiplos, reagendar**
+
+Objetivo: Validar que o bot usa a ferramenta correta ao cancelar (não cria novo evento), suporta múltiplos cancelamentos com lista numerada, e consegue reagendar sem cancelar e recriar.
+
+**Pré-requisito:** Ter pelo menos 1 visita agendada para este contato antes de iniciar.
+
+| # | Mensagem para enviar | O que verificar | Resultado | Obs |
+|---|---------------------|-----------------|-----------|-----|
+| 10.1 | "Quero cancelar minha visita" | Bot usou `cancelar_evento_agenda` (NÃO criou evento novo)? | | |
+| 10.2 | (Se bot pediu confirmação) "Pode cancelar" | Bot confirmou cancelamento? Mensagem contém título e horário? SEM dados internos? | | |
+| 10.3 | (Nova conversa com 2+ visitas) "Não vou conseguir ir, pode cancelar" | Se houver múltiplos eventos, bot exibiu lista numerada (1. ... / 2. ...)? | | |
+| 10.4 | "Pode cancelar o 1 e o 2" | Bot cancelou os dois em uma única operação? Confirmou quantidade cancelada? | | |
+| 10.5 | (Nova conversa com múltiplos) "Cancela todos os meus compromissos aí" | Bot cancelou todos de uma vez após confirmação? | | |
+| 10.6 | (Nova conversa com visita agendada) "Quero mudar minha visita para sexta às 16h" | Bot usou `alterar_evento_agenda` em vez de cancelar e recriar? | | |
+| 10.7 | (Pós-reagendamento) Verificar no Google Calendar | Evento foi atualizado para sexta às 16h? Ainda é o mesmo evento (mesmo ID)? | | |
+| 10.8 | "Não posso mais" | Bot entendeu como cancelamento? NÃO criou evento com "não posso mais" no título? | | |
+| 10.9 | "Desmarcar aquela visita da quarta" | Bot localizou pelo dia/título? Cancelou corretamente? | | |
+| 10.10 | (Sem nenhuma visita agendada) "Quero cancelar minha visita" | Bot informou que não encontrou compromisso? Não quebrou? | | |
+
+---
+
+## TESTADOR 11: Vitor (Distinção Visita vs Aula Experimental)
+
+**Foco: Visita gratuita (bot autônomo) vs aula experimental/particular (transferência para humano)**
+
+Objetivo: Validar que visitas são agendadas pelo bot e aulas experimentais/particulares sempre vão para humano com aviso de custo.
+
+| # | Mensagem para enviar | O que verificar | Resultado | Obs |
+|---|---------------------|-----------------|-----------|-----|
+| 11.1 | "Quero fazer uma aula experimental" | Bot informou que tem custo ANTES de qualquer outra ação? NÃO abriu agenda? | | |
+| 11.2 | "Sim, tudo bem pagar" | Bot coletou dados e depois usou `transferir_atendimento`? NÃO criou evento de calendário? | | |
+| 11.3 | (Nova conversa) "Quero uma aula particular com o Carlos" | Bot informou custo + usou transferência? Carlos não foi agendado direto? | | |
+| 11.4 | (Nova conversa) "Quero conhecer a escola" | Bot ofereceu visita gratuita como primeiro passo? NÃO mencionou custo? | | |
+| 11.5 | "Pode ser hoje às 11h" | Bot verificou se 11h está dentro da grade de visitas (seg-qui 10h-13h)? Confirmou? | | |
+| 11.6 | "Pode ser hoje às 22h" | Bot recusou e sugeriu horário dentro da grade? NÃO agendou fora do horário? | | |
+| 11.7 | "Aula experimental é gratuita?" | Bot deixou claro que tem custo? Ofereceu visita gratuita como alternativa? | | |
+| 11.8 | "Qual o valor da aula experimental?" | Bot disse que não tem o valor exato e transferiu para equipe confirmar? | | |
+| 11.9 | "Quero visitar mas quero falar com um instrutor antes" | Bot ofereceu transferência? Aguardou confirmação antes de passar contatos? | | |
+| 11.10 | (Nova conversa) "Quero marcar com o Fabrício" | Bot entendeu como aula particular → informou custo → transferiu? | | |
+
+---
+
+## TESTADOR 12: Pedro Corso (Anti-duplicata + Dados internos)
+
+**Foco: Evitar criação de eventos duplicados e garantir que dados internos não vazem ao usuário**
+
+Objetivo: Validar que o sistema detecta duplicatas e que a confirmação de agendamento não expõe dados privados (WhatsApp, e-mail de convidado).
+
+| # | Mensagem para enviar | O que verificar | Resultado | Obs |
+|---|---------------------|-----------------|-----------|-----|
+| 12.1 | (Após criar uma visita) "Quero marcar uma visita para o mesmo horário" | Bot identificou que já existe evento semelhante? NÃO criou duplicata? | | |
+| 12.2 | Verificar mensagem de confirmação do agendamento | A confirmação contém APENAS título e data/horário? Sem "+55...", sem e-mail de convidado, sem ID? | | |
+| 12.3 | (Nova conversa) "Tenho uma visita marcada, qual é?" | Bot informou os detalhes sem expor dados do sistema? | | |
+| 12.4 | Verificar no Google Calendar o evento criado | O número de WhatsApp e o e-mail aparecem na DESCRIÇÃO do evento (interno)? NÃO foram enviados ao usuário? | | |
+| 12.5 | "Pode marcar de novo para o mesmo horário" | Bot avisa que já existe e pergunta se quer cancelar o anterior ou escolher novo horário? | | |
+
+---
+
 ## Checklist Geral (todos os testadores devem verificar)
 
 Apos completar seus testes, cada testador deve responder:
 
-| Criterio | Sim | Nao | Obs |
+**Comportamento geral**
+
+| Critério | Sim | Não | Obs |
 |----------|-----|-----|-----|
-| O bot se identificou como robo em algum momento sem ser perguntado? | | | |
+| O bot se identificou como robô em algum momento sem ser perguntado? | | | |
 | O bot enviou mais de uma imagem na mesma mensagem? | | | |
-| O bot ofereceu o numero de WhatsApp? | | | |
-| O bot inventou informacao que nao existe? (horarios falsos, valores falsos, professores falsos) | | | |
+| O bot ofereceu o número de WhatsApp? | | | |
+| O bot inventou informação que não existe? (horários falsos, valores falsos, professores falsos) | | | |
 | O bot usou emoji em alguma resposta? | | | |
-| O bot usou markdown (negrito, italico, titulos) nas mensagens? | | | |
-| O bot repetiu a mesma resposta identica em algum momento? | | | |
+| O bot usou markdown nas mensagens? (negrito `**`, itálico `*`, títulos `#`) | | | |
+| O bot repetiu a mesma resposta idêntica em algum momento? | | | |
 | O bot fez mais de 2 perguntas de uma vez? | | | |
 | O bot enviou mensagem com mais de 4-5 frases? | | | |
-| O bot falou sobre metodos de Yoga que a Umana nao pratica? | | | |
-| O bot ofereceu contato sem o usuario pedir? | | | |
-| O bot adaptou o tom de linguagem ao usuario (ficou informal se usuario era informal)? | | | |
+| O bot falou sobre métodos de Yōga que a Umåna não pratica? | | | |
+| O bot ofereceu contato sem o usuário pedir? | | | |
+| O bot adaptou o tom de linguagem ao usuário (ficou informal se usuário era informal)? | | | |
+| O bot usou crase corretamente nos horários? ("às 10h", "à escola") | | | |
+| O bot usou "técnicas corporais" em vez de "posturas" ou "poses"? | | | |
+
+**Coleta de dados**
+
+| Critério | Sim | Não | Obs |
+|----------|-----|-----|-----|
+| O bot pediu CPF/email/objetivo durante perguntas gerais (antes de haver intenção de agendar)? | | | |
+| O bot coletou os dados um por vez (não enviou lista de perguntas de uma vez)? | | | |
+| O bot confirmou cada dado antes de pedir o próximo ("Ótimo, anotado!")? | | | |
+| Em segunda conversa, o bot voltou a pedir dados já coletados anteriormente? | | | |
+
+**Agendamento e calendário**
+
+| Critério | Sim | Não | Obs |
+|----------|-----|-----|-----|
+| O bot criou evento sem aguardar confirmação explícita ("sim", "pode", "confirma")? | | | |
+| O bot agendou visita fora da grade de horários (seg-qui 10h-13h / 15h-20h, sex 15h-18h)? | | | |
+| O bot agendou aula experimental/particular direto (sem transferir para instrutor)? | | | |
+| A confirmação de agendamento exibiu número de WhatsApp ou e-mail ao usuário? | | | |
+| O bot criou evento duplicado para o mesmo contato e horário? | | | |
+| Ao pedir cancelamento, o bot criou um novo evento em vez de cancelar? | | | |
+| O bot reagendou corretamente (alterou o evento existente, não cancelou e recriou)? | | | |
 
 ---
 
