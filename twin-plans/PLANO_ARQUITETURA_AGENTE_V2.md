@@ -1,6 +1,6 @@
 # Plano de Arquitetura: Agente Conversacional V2 — Motor de Políticas Global
 **Projeto:** UzzApp — ChatBot-Oficial  
-**Data:** 2026-04-16 (rev.2 — generalização para produto multi-tenant)  
+**Data:** 2026-04-16 (rev.3 — guardrails operacionais adicionados)  
 **Autor:** Pedro + Luis + Claude Code  
 **Status:** Proposta técnica revisada — pronta para Sprint 1
 
@@ -823,7 +823,384 @@ export interface ClientConfig {
 
 ---
 
-## 13. Referências Internas
+---
+
+## ADENDO — Guardrails Operacionais da V2
+
+> Rev.3 — Quatro guardrails que completam a fundação antes de chamar o plano de blueprint oficial da plataforma. Nenhum deles muda o que foi decidido nas seções anteriores; eles adicionam as regras de operação que garantem que a V2 não reproduza as falhas da V1 em outro formato.
+
+---
+
+### Guardrail 1: ResponseValidator — Camada Pós-LLM
+
+#### Por que existe
+
+O CapabilityPolicyEngine garante que o modelo não recebe tools proibidas. O SkillLoader garante que o prompt instrui o comportamento correto. Mas o modelo ainda pode:
+
+- Afirmar que executou uma ação que não executou
+- Responder fora do estado atual (ex: propor horário durante `slot_collection`)
+- Pular confirmação explícita antes de tool de criação
+- Gerar texto incompatível com o `policy_context` vigente
+
+Sem validação pós-LLM, a arquitetura ainda depende parcialmente de "o modelo vai seguir o prompt". O ResponseValidator fecha essa lacuna.
+
+#### Responsabilidade
+
+```
+Onde fica no pipeline: entre o generateAIResponse() e o formatResponse/send
+
+[06] generateAIResponse → AIResponse (raw)
+  │
+  ▼
+[06b] ResponseValidator
+  │    ├── Valida aderência ao PolicyState
+  │    ├── Valida aderência ao ActiveCapability
+  │    ├── Valida uso/ausência de tool esperada
+  │    └── Aciona: pass | regenerate | fallback
+  │
+  ▼
+[07] Tool Executor / formatResponse / send
+```
+
+#### Interface
+
+```typescript
+export interface ValidationResult {
+  valid: boolean;
+  action: "pass" | "regenerate" | "fallback";
+  reason?: string;
+  fallback_message?: string;
+}
+
+export const validateResponse = (
+  response: AIResponse,
+  policyContext: PolicyContext,
+): ValidationResult => {
+  // Regra 1: Durante slot_collection, resposta não deve propor horários nem confirmar ação
+  if (policyContext.state === "slot_collection") {
+    if (containsScheduleConfirmation(response.content)) {
+      return {
+        valid: false,
+        action: "regenerate",
+        reason: "slot_collection: proposed schedule before slots complete",
+      };
+    }
+  }
+
+  // Regra 2: Durante action_ready, tool call de criação exige confirmação explícita no histórico
+  if (policyContext.state === "action_ready") {
+    const hasCreationToolCall = response.toolCalls?.some(tc =>
+      ["criar_evento_agenda", "open_ticket"].includes(tc.function.name)
+    );
+    if (hasCreationToolCall && !hasExplicitConfirmation(response)) {
+      return {
+        valid: false,
+        action: "regenerate",
+        reason: "action_ready: creation tool called without explicit confirmation",
+      };
+    }
+  }
+
+  // Regra 3: Tool chamada não deve estar fora de allowed_tools
+  if (response.toolCalls) {
+    const violation = response.toolCalls.find(
+      tc => !policyContext.allowed_tools.includes(tc.function.name as ToolName)
+    );
+    if (violation) {
+      return {
+        valid: false,
+        action: "fallback",
+        reason: `policy_violation: tool ${violation.function.name} not in allowed_tools`,
+        fallback_message: "Desculpe, não consegui processar isso agora. Pode repetir?",
+      };
+    }
+  }
+
+  return { valid: true, action: "pass" };
+};
+```
+
+#### Regras de ResponseValidator por PolicyState
+
+| PolicyState | Regras de validação |
+|-------------|---------------------|
+| `slot_collection` | Não propor horário; não confirmar ação; não usar tool de ação |
+| `action_ready` | Tool de criação exige confirmação no histórico recente |
+| `handoff` | Apenas `transferir_atendimento` é tool válida |
+| `discovery` | Nenhuma tool de ação (só `buscar_documento`) |
+| `post_action` | Não criar novo evento sem intenção explícita do usuário |
+| `action_management` | Apenas tools de cancelamento/alteração |
+
+**Quando usar `regenerate` vs `fallback`:**
+- `regenerate`: o modelo entendeu o contexto mas desobedeceu uma regra — vale tentar de novo com instrução adicional
+- `fallback`: violação de policy (tool fora da lista) — não tentar de novo, retornar mensagem segura
+
+---
+
+### Guardrail 2: PolicyState Refinado — Separação do `support`
+
+#### Problema
+
+O estado `support` na rev.2 acumulava três semânticas distintas:
+1. Suporte livre / dúvidas sem capability ativa
+2. Gestão de ação existente (cancelar, remarcar)
+3. Follow-up após ação concluída
+
+Isso cria um "estado saco de gatos" que dificulta tool gating e skill loading precisos.
+
+#### Solução: Separar em três estados distintos
+
+```typescript
+export type PolicyState =
+  | "discovery"          // Navegando, sem intenção ou capability ativa
+  | "qualification"      // Intenção detectada, capability ativada, slots não iniciados
+  | "slot_collection"    // Capability ativa, coletando campos obrigatórios
+  | "action_ready"       // Todos os slots preenchidos, aguardando confirmação
+  | "action_execution"   // Tool de ação sendo executada
+  | "post_action"        // Ação concluída, conversa de follow-up imediato
+  | "action_management"  // ← NOVO: cancelar, remarcar, ver status de ação existente
+  | "support_freeform"   // ← NOVO: dúvidas livres, sem capability ou ação associada
+  | "handoff"            // Transferência para humano
+```
+
+**O que foi removido:** `support` genérico.  
+**O que foi adicionado:** `action_management` + `support_freeform`.
+
+#### Mapeamento de tools por estado refinado
+
+```
+action_management  → cancelar_evento_agenda, alterar_evento_agenda, verificar_agenda
+support_freeform   → buscar_documento, transferir_atendimento
+```
+
+Isso elimina a ambiguidade: quando o usuário diz "quero cancelar", o resolver retorna `action_management` — não `support`. Tools e skill são precisas para o contexto.
+
+---
+
+### Guardrail 3: Matriz de Precedência — Fonte da Verdade
+
+#### Por que formalizar
+
+Em runtime, podem colidir:
+- Capability persistida no `policy_context` (da mensagem anterior)
+- Capability recém-detectada (da mensagem atual)
+- Gatilho de handoff (prioridade de negócio)
+- Trigger de gestão de ação (cancelar o que foi feito)
+
+Sem uma matriz explícita, o resolver vai tratar esses casos de forma ad hoc e o comportamento será inconsistente entre clientes.
+
+#### Matriz de Precedência (ordem decrescente de prioridade)
+
+| Prioridade | Condição | State resultante | Justificativa |
+|-----------|----------|-----------------|---------------|
+| **1** | `customerStatus === "transferido" \| "humano"` | `handoff` | Status do banco é autoritativo — supera qualquer detecção |
+| **2** | Matches `handoff_triggers` do lexicon | `handoff` | Intenção explícita de transferência supera capability ativa |
+| **3** | `capability` em execução + matches `action_management_triggers` | `action_management` | Gestão do que já foi agendado/criado tem prioridade sobre novo fluxo |
+| **4** | `policy_context.state` é `action_ready` ou `action_execution` | manter | Não interromper fluxo de confirmação em andamento |
+| **5** | Nova capability detectada com score > threshold | nova capability | Usuário mudou de assunto explicitamente |
+| **6** | `policy_context.state` persistido (non-regressive) | manter | Continuidade da jornada em andamento |
+| **7** | Nenhuma capability detectada | `discovery` ou `support_freeform` | Default seguro |
+
+#### Regras de conflito de capability
+
+```typescript
+// Quando duas capabilities batem ao mesmo tempo:
+// Ex: usuário diz "quero marcar uma visita e também cancelar a de ontem"
+
+const resolveCapabilityConflict = (
+  detected: CapabilityMatch[],
+  persisted: CapabilityId | null,
+): CapabilityResolution => {
+  // Regra 1: action_management sempre vence sobre nova capability
+  const hasManagement = detected.some(c => c.is_management_intent);
+  if (hasManagement) {
+    return { capability: persisted, state: "action_management" };
+  }
+
+  // Regra 2: Se só uma capability detectada, usar ela
+  if (detected.length === 1) {
+    return { capability: detected[0].id, state: resolveStateFromSlots(detected[0]) };
+  }
+
+  // Regra 3: Múltiplas — manter a persistida, responder à nova como suporte
+  // (bot responde à dúvida mas não troca de capability no meio do fluxo)
+  if (persisted) {
+    return { capability: persisted, state: "support_freeform" };
+  }
+
+  // Regra 4: Sem persistida — usar a de maior score
+  const highest = detected.sort((a, b) => b.score - a.score)[0];
+  return { capability: highest.id, state: resolveStateFromSlots(highest) };
+};
+```
+
+#### Lifecycle do `policy_context`
+
+```typescript
+export interface PolicyContextLifecycle {
+  // Quando expirar (horas de inatividade)
+  expiration_hours: number;       // Default: 48h — conversa retomada depois disso requalifica
+
+  // Condições de reset (volta para discovery)
+  reset_conditions: ResetCondition[];
+
+  // Condições de retomada (mantém context)
+  resume_conditions: ResumeCondition[];
+}
+
+// Condições de reset
+const DEFAULT_RESET_CONDITIONS: ResetCondition[] = [
+  { type: "state_is",        value: "handoff",    action: "reset_to_discovery_on_resume" },
+  { type: "inactive_hours",  value: 48,           action: "reset_capability_keep_slots" },
+  { type: "inactive_hours",  value: 168,          action: "full_reset" }, // 7 dias
+  { type: "explicit_phrase", value: "recomeçar",  action: "full_reset" },
+];
+
+// Condições de retomada
+const DEFAULT_RESUME_CONDITIONS: ResumeCondition[] = [
+  { inactive_less_than_hours: 2,   action: "full_resume"              }, // <2h: mantém tudo
+  { inactive_less_than_hours: 48,  action: "resume_keep_slots_requalify_capability" }, // 2-48h: slots mantidos, capability requalifica
+  { inactive_more_than_hours: 48,  action: "reset_capability_keep_slots" }, // >48h: slots mantidos, capability resetada
+];
+```
+
+**Regras práticas:**
+- Conversa retomada em < 2h → mantém `policy_context` completo, sem requalificar
+- Conversa retomada em 2-48h → mantém slots coletados, requalifica capability pela nova mensagem
+- Conversa retomada em > 48h → mantém slots (usuário não precisa repetir CPF/email), capability volta a discovery
+- Handoff encerrado → volta para `discovery` ou `post_action` dependendo de como o humano encerrou
+- `full_reset` apenas por: +7 dias de inatividade ou frase explícita de reinício
+
+---
+
+### Guardrail 4: Compatibilidade com o Legado
+
+#### Contexto
+
+O projeto tem dívida técnica conhecida que pode criar conflitos com a V2:
+
+1. **`pg` em serverless** — documentado como proibido no CLAUDE.md mas ainda presente em pontos críticos
+2. **Histórico duplicado** — `n8n_chat_histories` (histórico do bot) e `messages` (UI) coexistem
+3. **Schema parcialmente desatualizado** — `docs/tables/tabelas.md` pode ter divergências do banco real
+4. **`generateAIResponse.ts` com 764 linhas** — ponto de integração que vai receber mudanças da V2
+
+#### Contrato de Compatibilidade da V2
+
+Toda implementação da V2 **deve** respeitar:
+
+```
+REGRAS DE COMPATIBILIDADE — obrigatórias para qualquer PR da V2
+
+1. NENHUMA query nova usando `pg` ou `Pool`
+   → Usar SEMPRE Supabase client (createServiceRoleClient ou createServerClient)
+   → Motivo: pg causa hang em serverless (Vercel). Documentado e verificado.
+
+2. policy_context APENAS via Supabase client
+   → Leitura: supabase.from("conversations").select("policy_context")
+   → Escrita: supabase.from("conversations").update({ policy_context: ... })
+   → Nunca via RPC raw ou pg
+
+3. Toda operação com client_id explícito
+   → Nenhum SELECT sem WHERE client_id = ?
+   → Motivo: RLS e isolamento multi-tenant
+
+4. Histórico de chat = n8n_chat_histories (fonte oficial do bot)
+   → A tabela `messages` é para a UI — não misturar nas queries do pipeline
+   → PolicyStateResolver e SkillLoader leem de n8n_chat_histories
+
+5. Não depender de colunas não confirmadas no schema
+   → Antes de ler/escrever qualquer coluna nova, criar migration
+   → Consultar docs/tables/tabelas.md e verificar com o banco real
+
+6. generateAIResponse.ts deve permanecer como ponto único de chamada ao LLM
+   → Não criar novos arquivos que chamem callDirectAI() diretamente
+   → ResponseValidator, SkillLoader e PolicyStateResolver são pré-processadores,
+     não chamam o LLM eles mesmos
+
+7. Toda feature nova é opt-in via client.settings
+   → Default de todos os campos agentV2 é false/undefined
+   → Nunca ativar por default para todos os clientes
+```
+
+#### Separação de responsabilidades: CapabilityPolicyEngine vs Skill
+
+Para evitar que, com o tempo, a skill volte a concentrar regra de negócio e reproduza o prompt monolítico em outro formato:
+
+```
+CapabilityPolicyEngine decide:           Skill decide:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Quais tools estão disponíveis         ✅ Como se comportar neste state
+✅ Se slots estão completos              ✅ Tom da conversa neste momento
+✅ Unlock conditions                     ✅ Como perguntar o próximo slot
+✅ Tool access policy (always/contextual) ✅ Como confirmar dados coletados
+✅ Modo de RAG (full/minimal/off)        ✅ Como responder durante este state
+✅ Modo de histórico                     ✅ Formato e tamanho das respostas
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+❌ NÃO decide comportamento conversacional ❌ NÃO decide tools ou acesso
+❌ NÃO decide tom ou vocabulário           ❌ NÃO decide se slots estão ok
+❌ NÃO decide formato das respostas        ❌ NÃO decide unlock conditions
+```
+
+**Regra prática:** Se você está tentando colocar um `if` de negócio dentro de uma skill, está na camada errada. Coloca na `CapabilityPolicy`. Se está tentando colocar texto de instrução dentro do `CapabilityPolicyEngine`, também está errado — vai para a skill.
+
+---
+
+## 13. Estado Final do Diagrama de Fluxo (rev.3)
+
+```
+WhatsApp / Canal de entrada
+  │
+  ▼
+[01] Parse & Batch
+  │
+  ▼
+[02] Load Customer + Metadata + policy_context persistido
+  │
+  ▼
+[03] PolicyStateResolver
+  │   ├── Aplica matriz de precedência (Guardrail 3)
+  │   ├── Lê TenantLexicon do client.settings
+  │   ├── Avalia SlotSchema via SlotManager
+  │   └── Resolve: PolicyState + ActiveCapability + missing_slots
+  │
+  ▼
+[04] CapabilityPolicyEngine
+  │   ├── Determina allowed_tools[] para o state
+  │   ├── Define rag_mode e history_mode
+  │   └── Produz: ToolAccessPolicy
+  │
+  ▼
+[05] SkillLoader
+  │   ├── Carrega skill global (behavior layer)
+  │   ├── Mescla camada do tenant (tone/vocab/offer)
+  │   ├── Executa buildContext() com dados do runtime
+  │   └── Produz: compiled_skill_prompt
+  │
+  ▼
+[06] generateAIResponse (reduzido)
+  │   ├── Recebe: base_prompt + compiled_skill_prompt + allowed_tools[]
+  │   ├── NÃO recebe: tools bloqueadas pela policy
+  │   └── Retorna: AIResponse (raw)
+  │
+  ▼
+[06b] ResponseValidator (Guardrail 1)
+  │    ├── Valida aderência ao PolicyState
+  │    ├── Valida tool calls contra allowed_tools[]
+  │    └── Decide: pass | regenerate | fallback
+  │
+  ▼
+[07] Tool Executor (handleCalendarToolCall, etc.)
+  │
+  ▼
+[08] Send + Save
+  │
+  ▼
+[09] Update policy_context na conversations (Guardrail 2 + lifecycle Guardrail 3)
+```
+
+---
+
+## 14. Referências Internas
 
 - `src/nodes/generateAIResponse.ts` — ponto de integração principal (764 linhas)
 - `src/flows/chatbotFlow.ts:1169` — onde `generateAIResponse` é chamado
