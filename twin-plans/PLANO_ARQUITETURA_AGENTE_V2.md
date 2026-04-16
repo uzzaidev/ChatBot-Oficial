@@ -1,23 +1,42 @@
-# Plano de Arquitetura: Agente Conversacional V2
+# Plano de Arquitetura: Agente Conversacional V2 — Motor de Políticas Global
 **Projeto:** UzzApp — ChatBot-Oficial  
-**Data:** 2026-04-16  
-**Autor:** Pedro + Claude Code  
-**Status:** Proposta técnica para revisão antes de implementar
+**Data:** 2026-04-16 (rev.2 — generalização para produto multi-tenant)  
+**Autor:** Pedro + Luis + Claude Code  
+**Status:** Proposta técnica revisada — pronta para Sprint 1
 
 ---
 
-## 1. Contexto e Problema
+## 0. Contexto da Revisão
 
-### Estado Atual (V1)
+A versão anterior deste plano estava correta na **direção arquitetural** mas ainda acoplada ao funil de agendamento da Umåna (stages de visita, campos CPF/email fixos, keywords de professores, flags específicas de calendário). Este documento substitui a v1 com uma **arquitetura global** que serve agenda, suporte, vendas, e-commerce, documentos e qualquer funil que venha a existir na plataforma.
 
-O agente atual é um LLM monolítico com:
+**O que foi mantido da v1:**
+- Tool gating / capability gating
+- Skills / mini-prompts por contexto
+- Persistência de state
+- Opt-in por cliente
+- Redução do prompt base
+- Roteamento de modelo por contexto
+- Heurística barata antes de LLM
 
-- **1 prompt de sistema de ~780 linhas** (`generateAIResponse.ts` + prompt do cliente)
-- **7 tools sempre disponíveis** independente do contexto da conversa
-- **Regras comportamentais em texto** competindo com a intenção do usuário em tempo real
-- **Zero enforcement de código** para a jornada do cliente — tudo depende do modelo seguir o prompt
+**O que foi generalizado:**
+- `ConversationStageDetector` → `PolicyStateResolver`
+- `REQUIRED_FIELDS` hardcoded → `SlotSchema` configurável por capability/cliente
+- Keywords fixas no código → `TenantLexicon` em camadas
+- `requireMetadataForCalendar` → `CapabilityPolicy` genérico
+- `current_stage TEXT` → `policy_context JSONB`
+- Skills com semântica do cliente → Skills genéricas + camada de configuração do tenant
+- Métricas só de agenda → métricas globais + métricas por capability
 
-### Sintoma Observado
+**Princípio central que permanece:**
+
+> **Não tente convencer o modelo por texto o que ele não pode fazer. Remova o instrumento.**
+
+---
+
+## 1. Diagnóstico: Por que o V1 Falha
+
+### Sintoma observado (caso Umåna)
 
 ```
 Usuário: "Quero agendar uma visita"
@@ -25,40 +44,31 @@ Bot: [chama verificar_agenda IMEDIATAMENTE]  ← ERRADO
      "O período de ter., 21/04/2026, 11:00 está livre"
 
 Usuário: "Otimo eu gostaria de marcar"
-Bot: "Antes de confirmar, como você conheceu?"  ← pergunta tardia, 1 de 4 campos
- 
+Bot: "Antes de confirmar, como você conheceu?"  ← tardio, 1 de 4 campos
+
 Usuário: "Atraves do Luciano" [x3 repetições]
 Bot: [cria evento com 1/4 campos coletados]  ← FALHA CRÍTICA
 ```
 
-### Causa Raiz (diagnóstico técnico)
+### Três causas raiz
 
-**Problema 1 — Degradação de atenção em contexto longo:**  
-O Llama 3.3 70B (e qualquer transformer) distribui atenção de forma não uniforme em prompts longos. Regras no meio do prompt (como `ORDEM INVIOLÁVEL` na seção 5 de 8) recebem peso menor que início e fim. A regra existe, mas perde para a pressão imediata da mensagem do usuário.
+**Causa 1 — Degradação de atenção em contexto longo:**  
+O Llama 3.3 70B distribui atenção de forma não uniforme em prompts longos. Regras enterradas no meio de 780 linhas recebem peso menor. A regra existe, mas perde para a pressão imediata da mensagem do usuário.
 
-**Problema 2 — Tools sempre expostas criam atalhos cognitivos:**  
-Ao receber `verificar_agenda` como tool disponível, o modelo tem o caminho mais curto para resolver "quero agendar" — verificar a agenda. O modelo não está desobedecendo o prompt; está resolvendo o problema pelo caminho de menor resistência com os instrumentos disponíveis. Remover o instrumento é mais eficaz do que proibir seu uso via texto.
+**Causa 2 — Tools sempre expostas criam atalhos cognitivos:**  
+Ao receber `verificar_agenda` disponível, o modelo tem o caminho mais curto para resolver "quero agendar". Não está desobedecendo o prompt — está resolvendo pelo caminho de menor resistência com os instrumentos disponíveis. Remover o instrumento é mais eficaz do que proibir por texto.
 
-**Problema 3 — Regras de negócio em linguagem natural são ambíguas:**  
-`REGRAS DE BLOQUEIO — NÃO chame verificar_agenda antes de coletar TODOS os dados` é uma instrução linguística. O modelo a interpreta com sua distribuição de probabilidades, que inclui a possibilidade de que "quero marcar amanhã às 10h" já seja intenção suficiente para pular a coleta. A instrução e a mensagem do usuário competem — e o usuário ganha.
-
-**Problema 4 — Estado da jornada não é persistido de forma legível pelo modelo:**  
-O modelo recebe: sistema de 780 linhas + histórico de chat + metadata já coletada + regras de calendário. Toda vez. Não há separação clara de "você está em qual fase agora". O modelo precisa inferir a fase lendo o histórico, o que é frágil.
+**Causa 3 — State da jornada não é persistido de forma legível:**  
+O modelo recebe 780 linhas + histórico + metadata + regras toda vez. Não há separação clara de "você está em qual fase agora". O modelo infere a fase lendo o histórico — o que é frágil.
 
 ---
 
 ## 2. Visão da Arquitetura V2
 
-### Princípio Central
-
-> **Não tente convencer o modelo por texto o que ele não pode fazer. Remova o instrumento.**
-
-A V2 não é uma reescrita completa — é uma **camada de controle de intenção** inserida antes do LLM. O modelo continua fazendo o que faz bem: linguagem natural, empatia, adaptação de tom. O código faz o que o modelo faz mal: respeitar ordem, state machine, enforcement de regras de negócio.
-
-### Diagrama de Fluxo V2
+### Diagrama de Fluxo Global
 
 ```
-WhatsApp
+WhatsApp / Canal de entrada
   │
   ▼
 [01] Parse & Batch (existente)
@@ -67,593 +77,709 @@ WhatsApp
 [02] Load Customer + Metadata (existente)
   │
   ▼
-[03] ── NOVO ──► ConversationStageDetector
-  │               │
-  │               ├── stage: "browsing"
-  │               ├── stage: "intent_to_schedule"
-  │               ├── stage: "collecting_data"
-  │               ├── stage: "data_complete"
-  │               ├── stage: "calendar_management"
-  │               └── stage: "handoff"
+[03] ─── NOVO ──► PolicyStateResolver
+  │                │
+  │                ├── Lê: last_message, chat_history, metadata, tenant_lexicon
+  │                ├── Consulta: CapabilityRegistry do cliente
+  │                └── Resolve: PolicyState + ActiveCapability + missing_slots
   │
   ▼
-[04] ── NOVO ──► SkillLoader (baseado no stage)
-  │               │
-  │               ├── Carrega APENAS o mini-prompt relevante
-  │               └── Expõe APENAS as tools relevantes
+[04] ─── NOVO ──► CapabilityPolicyEngine
+  │                │
+  │                ├── Verifica: slot_schema (campos obrigatórios do capability)
+  │                ├── Avalia: unlock_conditions (quando tools ficam disponíveis)
+  │                └── Produz: ToolAccessPolicy + allowed_tools[]
   │
   ▼
-[05] generateAIResponse (reduzido)
-  │               │
-  │               ├── Recebe: prompt_base + skill_prompt + tools_filtradas
-  │               └── NÃO recebe: ferramentas proibidas para o stage
+[05] ─── NOVO ──► SkillLoader
+  │                │
+  │                ├── Carrega: skill global (behavior + constraints)
+  │                ├── Mescla: camada do tenant (tom, vocabulário, oferta)
+  │                └── Produz: compiled_skill_prompt
   │
   ▼
-[06] Tool Executor (existente)
+[06] generateAIResponse (reduzido)
+  │   Recebe: base_prompt + compiled_skill_prompt + allowed_tools[]
+  │   NÃO recebe: tools bloqueadas pela policy
   │
   ▼
-[07] Send + Save (existente)
+[07] Tool Executor (existente — handleCalendarToolCall, etc.)
+  │
+  ▼
+[08] Send + Save + Update policy_context (existente + novo)
 ```
+
+### Camadas do Motor
+
+| Camada | Global? | Config por cliente? | Responsável |
+|--------|---------|---------------------|-------------|
+| PolicyStateResolver | ✅ | ⚠️ lexicon + regras | código |
+| CapabilityPolicyEngine | ✅ | ✅ capability + unlock | config |
+| SlotManager | ✅ | ✅ schema por tenant | config |
+| ToolAccessPolicy | ✅ | ✅ por capability | config |
+| SkillLoader | ✅ | ✅ conteúdo/tom/oferta | config + arquivo |
+| PromptCompiler | ✅ | ✅ base_prompt do tenant | config |
+| TenantLexicon | ✅ | ✅ keywords por cliente | config |
+| StatePersistence | ✅ | — | código + DB |
+| Metrics | ✅ | ✅ por capability | observabilidade |
 
 ---
 
-## 3. Componente 1: ConversationStageDetector
+## 3. Componente 1: PolicyStateResolver
 
 ### Responsabilidade
 
-Determinar em qual fase da jornada a conversa está, **sem usar LLM** — apenas heurísticas de código baseadas em:
-1. `contactMetadata` — quais campos já foram coletados
-2. Histórico de chat — palavras-chave na última mensagem e nas últimas N mensagens
-3. Status do contato — `bot`, `humano`, `transferido`
+Determinar em qual estado de política a conversa está — **sem usar LLM**. Heurísticas de código combinadas com o `TenantLexicon` configurável.
 
-### Definição dos Stages
+### PolicyState (genérico, independente de funil)
 
 ```typescript
-export type ConversationStage =
-  | "browsing"           // Navegando, perguntando informações gerais
-  | "intent_to_schedule" // Expressou vontade de agendar mas dados ainda não coletados
-  | "collecting_data"    // Em processo de coleta de dados (parcialmente coletados)
-  | "data_complete"      // Todos os campos coletados, pode avançar para calendário
-  | "calendar_management"// Quer cancelar, remarcar, ver compromissos
-  | "handoff"            // Aula experimental/particular — vai para humano
-  | "post_schedule"      // Evento já criado, conversa de follow-up
+export type PolicyState =
+  | "discovery"        // Navegando, perguntas abertas, sem intenção clara
+  | "qualification"    // Intenção detectada, capability ativada, slots não iniciados
+  | "slot_collection"  // Capability ativa, coletando campos obrigatórios
+  | "action_ready"     // Todos os slots preenchidos, ação pode ser executada
+  | "action_execution" // Tool de ação sendo executada (schedule, ticket, document)
+  | "post_action"      // Ação concluída, conversa de follow-up
+  | "handoff"          // Transferência para humano
+  | "support"          // Suporte/dúvida livre sem capability ativa
 ```
 
-### Algoritmo de Detecção
+**Por que não mais `intent_to_schedule`, `collecting_data`, `data_complete`:**  
+Esses nomes são semântica de um funil. `slot_collection` e `action_ready` descrevem o **mecanismo** — funcionam para agenda, abertura de ticket, coleta de documento, qualificação de lead. A semântica de negócio fica no `ActiveCapability`, não no state.
 
-A detecção opera em **cascata de prioridade** — cada verificação retorna imediatamente se a condição for atendida.
+### ActiveCapability (o que o cliente faz com o state)
 
 ```typescript
-export const detectConversationStage = (
-  input: StageDetectorInput
-): ConversationStage => {
-  const { lastMessage, chatHistory, contactMetadata, customerStatus } = input;
+export type CapabilityId =
+  | "calendar_booking"     // Agendar compromisso
+  | "lead_qualification"   // Qualificar lead comercial
+  | "support_ticket"       // Abrir chamado de suporte
+  | "document_request"     // Coletar solicitação documental
+  | "onboarding_flow"      // Onboarding guiado
+  | string;                // Capabilities customizadas por cliente
+```
 
-  // PRIORIDADE 1: Status do contato no banco
-  // Se já foi transferido, não alterar o stage
+### Algoritmo de Resolução (cascata de prioridade)
+
+```typescript
+export const resolvePolicyState = (input: PolicyResolverInput): PolicyResolution => {
+  const { lastMessage, chatHistory, contactMetadata, customerStatus, tenantLexicon, capabilityRegistry } = input;
+
+  // P1: Status do contato no banco — estado mais autoritativo
   if (customerStatus === "transferido" || customerStatus === "humano") {
-    return "handoff";
+    return { state: "handoff", capability: null };
   }
 
-  // PRIORIDADE 2: Gatilhos de handoff explícitos
-  // Aula experimental e particular SEMPRE vão para humano — sem exceção
-  if (matchesHandoffTriggers(lastMessage)) {
-    return "handoff";
+  // P2: Gatilhos de handoff — do léxico do tenant (não hardcoded)
+  if (matchesLexicon(lastMessage, tenantLexicon.handoff_triggers)) {
+    return { state: "handoff", capability: null };
   }
 
-  // PRIORIDADE 3: Gestão de calendário
-  // Usuário quer cancelar, remarcar ou ver compromissos existentes
-  if (matchesCalendarManagement(lastMessage, chatHistory)) {
-    return "calendar_management";
+  // P3: Estado persistido que não deve ser reclassificado
+  // (ver Seção 6 — persistência)
+  const persisted = input.persistedContext;
+  if (persisted && isNonRegressiveState(persisted.state)) {
+    // Verificar se o state avançou
+    const advanced = checkStateAdvancement(persisted, lastMessage, contactMetadata, tenantLexicon);
+    if (!advanced) return { state: persisted.state, capability: persisted.capability };
   }
 
-  // PRIORIDADE 4: Evento já foi criado nesta conversa
-  // Verificar no histórico recente se há marcador [SISTEMA] Evento agendado
-  if (hasRecentScheduledEvent(chatHistory)) {
-    return "post_schedule";
+  // P4: Gestão de ação existente (cancelar, reagendar, status)
+  if (matchesLexicon(lastMessage, tenantLexicon.action_management_triggers)) {
+    return { state: "support", capability: detectManagementCapability(chatHistory, capabilityRegistry) };
   }
 
-  // PRIORIDADE 5: Intenção de agendar detectada
-  if (matchesScheduleIntent(lastMessage, chatHistory)) {
-    // Avaliar estado da coleta de dados
-    const collectedFields = countCollectedFields(contactMetadata);
+  // P5: Detecção de capability — qual funil o usuário quer ativar?
+  const detectedCapability = detectCapability(lastMessage, chatHistory, tenantLexicon, capabilityRegistry);
 
-    if (collectedFields >= REQUIRED_FIELDS.length) {
-      return "data_complete";
-    }
+  if (detectedCapability) {
+    const slotStatus = evaluateSlots(contactMetadata, detectedCapability.slotSchema);
 
-    if (collectedFields > 0) {
-      return "collecting_data";
-    }
-
-    return "intent_to_schedule";
+    if (slotStatus.allComplete) return { state: "action_ready",    capability: detectedCapability.id };
+    if (slotStatus.anyCollected) return { state: "slot_collection", capability: detectedCapability.id };
+    return                              { state: "qualification",   capability: detectedCapability.id };
   }
 
-  // DEFAULT: Navegando / perguntas gerais
-  return "browsing";
+  // DEFAULT
+  return { state: "discovery", capability: null };
 };
 ```
 
-### Funções de Matching (sem LLM)
+### TenantLexicon — Keywords sem hardcode
 
 ```typescript
-// Palavras-chave que disparam handoff para humano
-const HANDOFF_KEYWORDS = [
-  "aula experimental", "aula particular", "particular",
-  "falar com professor", "falar com instrutor", "falar com alguém",
-  "falar com uma pessoa", "atendente", "humano",
-  "Carlos", "Julia", "Fabrício", "Naiana", // professores por nome
-];
+export interface TenantLexicon {
+  // Gatilhos de handoff (global + cliente)
+  handoff_triggers: LexiconLayer;
+  
+  // Gatilhos de ativação de capability (por capability_id)
+  capability_triggers: Record<CapabilityId, LexiconLayer>;
+  
+  // Gatilhos de gestão de ação existente
+  action_management_triggers: LexiconLayer;
+}
 
-// Palavras-chave de intenção de agendar visita
-const SCHEDULE_INTENT_KEYWORDS = [
-  "quero marcar", "pode marcar", "quero agendar", "pode agendar",
-  "quero conhecer", "quero visitar", "quero ir", "visita",
-  "marcar uma visita", "agendar uma visita",
-];
-
-// Palavras-chave de gestão de calendário
-const CALENDAR_MANAGEMENT_KEYWORDS = [
-  "cancelar", "desmarcar", "cancela", "não posso mais", "não vou conseguir",
-  "remarcar", "reagendar", "mudar horário", "trocar horário",
-  "meus compromissos", "o que tenho marcado", "tenho algo marcado",
-];
-
-// Campos obrigatórios para avançar para o calendário
-const REQUIRED_FIELDS = ["como_conheceu", "objetivo", "email", "cpf"] as const;
+export interface LexiconLayer {
+  global: string[];          // Defaults do produto — válidos para todos os clientes
+  client_specific: string[]; // Termos específicos do cliente (nomes, serviços, jargão)
+}
 ```
 
-### Por que heurísticas de código e não um LLM de classificação?
+**Configuração no banco (client.settings JSONB):**
+```json
+{
+  "tenant_lexicon": {
+    "handoff_triggers": {
+      "global": ["atendente", "humano", "pessoa real", "falar com alguém"],
+      "client_specific": ["Carlos", "Julia", "aula experimental", "aula particular"]
+    },
+    "capability_triggers": {
+      "calendar_booking": {
+        "global": ["quero agendar", "pode marcar", "quero marcar"],
+        "client_specific": ["quero conhecer", "quero visitar", "fazer uma visita"]
+      }
+    },
+    "action_management_triggers": {
+      "global": ["cancelar", "desmarcar", "remarcar", "reagendar"],
+      "client_specific": []
+    }
+  }
+}
+```
 
-**Justificativa técnica:**
-1. **Latência:** Um LLM adicional para classificar stage adicionaria 300-800ms por mensagem. Para WhatsApp, isso é perceptível.
-2. **Custo:** Cada mensagem já custa uma chamada de LLM. Dobrar as chamadas para classificação não é sustentável em multi-tenant.
-3. **Previsibilidade:** Heurísticas de código são 100% determinísticas. "quero marcar" SEMPRE detecta `intent_to_schedule`. Um LLM classificador pode errar.
-4. **Manutenção:** Adicionar palavras-chave ao array é trivial. Ajustar um classificador de LLM requer prompting, teste e iteração.
-
-**Limitação conhecida:** Mensagens ambíguas como "está bem" podem não ser detectadas corretamente. Para esses casos, o stage anterior é mantido (persistência de stage — ver Seção 6).
+**Por que keywords não podem morar no core como lista fixa:**  
+Nomes de professores, tipos de serviço, jargões do negócio são semântica do cliente. No core, isso criaria acoplamento entre a plataforma e um cliente específico. A camada `client_specific` do léxico dá ao cliente controle total sobre seus gatilhos sem tocar no código.
 
 ---
 
-## 4. Componente 2: SkillLoader
+## 4. Componente 2: CapabilityPolicyEngine + SlotSchema
 
-### Responsabilidade
+### SlotSchema — Campos configuráveis por capability/cliente
 
-Dado o stage detectado, carregar:
-1. O **mini-prompt** (skill) relevante para aquele momento
-2. As **tools** disponíveis para o modelo naquele momento
+```typescript
+export interface SlotSchema {
+  capability_id: CapabilityId;
+  slots: SlotDefinition[];
+}
 
-### Estrutura de Skills
+export interface SlotDefinition {
+  key: string;           // Ex: "email", "cpf", "empresa", "numero_pedido"
+  label: string;         // Ex: "E-mail de contato"
+  type: SlotType;        // "email" | "cpf" | "cnpj" | "text" | "date" | "phone" | "select"
+  required: boolean;     // Obrigatório para desbloquear a ação
+  validator?: string;    // Nome do validador (ex: "cpf_format", "email_format")
+  unlock_condition?: string; // Expressão — quando pedir este slot (ex: "slots.goal is filled")
+}
 
-```
-src/
-  lib/
-    agent-skills/
-      index.ts                    ← exports all skills
-      skill-types.ts              ← interfaces
-      skills/
-        browsing.skill.ts         ← info, preços, filosofia, horários
-        intent-to-schedule.skill.ts ← inicia coleta, qual campo falta
-        collecting-data.skill.ts  ← coleta em andamento, confirmações
-        data-complete.skill.ts    ← verificar agenda + criar evento
-        calendar-management.skill.ts ← cancelar, reagendar, listar
-        handoff.skill.ts          ← aula experimental, professor específico
-        post-schedule.skill.ts    ← follow-up após agendamento
+export type SlotType = "email" | "cpf" | "cnpj" | "text" | "date" | "phone" | "number" | "select";
 ```
 
-### Interface de Skill
+**Exemplo — Umåna (calendar_booking):**
+```json
+{
+  "capability_id": "calendar_booking",
+  "slots": [
+    { "key": "como_conheceu", "label": "Como conheceu a Umåna",  "type": "text",  "required": true },
+    { "key": "objetivo",      "label": "Objetivo com a prática", "type": "text",  "required": true },
+    { "key": "email",         "label": "E-mail de contato",      "type": "email", "required": true },
+    { "key": "cpf",           "label": "CPF",                    "type": "cpf",   "required": true }
+  ]
+}
+```
+
+**Exemplo — cliente de suporte técnico (support_ticket):**
+```json
+{
+  "capability_id": "support_ticket",
+  "slots": [
+    { "key": "nome",       "label": "Nome completo",   "type": "text",   "required": true },
+    { "key": "empresa",    "label": "Empresa",          "type": "text",   "required": true },
+    { "key": "descricao",  "label": "Descrição do problema", "type": "text", "required": true }
+  ]
+}
+```
+
+**Exemplo — cliente de documentos (document_request):**
+```json
+{
+  "capability_id": "document_request",
+  "slots": [
+    { "key": "tipo_doc", "label": "Tipo de documento", "type": "select", "required": true,
+      "options": ["declaração", "contrato", "certidão"] },
+    { "key": "nome",     "label": "Nome completo",      "type": "text",   "required": true }
+  ]
+}
+```
+
+**Por que REQUIRED_FIELDS não pode ser global hardcoded:**  
+CPF, e-mail, como_conheceu e objetivo são campos específicos do funil da Umåna. Um cliente de suporte precisa de empresa e descrição. Um e-commerce precisa de número de pedido. O motor não conhece campos — ele conhece `required_slots`, `validators` e `unlock_conditions`. A semântica dos campos fica no `SlotSchema` do cliente.
+
+### CapabilityPolicy — Controle de acesso às tools
+
+```typescript
+export interface CapabilityPolicy {
+  capability_id: CapabilityId;
+  tool_access: "always" | "contextual" | "disabled";
+  unlock_when_slots_complete: boolean;
+  allowed_tools_when_locked: ToolName[];    // Tools antes de slots completos
+  allowed_tools_when_unlocked: ToolName[];  // Tools após slots completos
+}
+```
+
+**Exemplo — calendar_booking:**
+```typescript
+{
+  capability_id: "calendar_booking",
+  tool_access: "contextual",
+  unlock_when_slots_complete: true,
+  allowed_tools_when_locked: ["registrar_dado_cadastral", "transferir_atendimento"],
+  allowed_tools_when_unlocked: ["verificar_agenda", "criar_evento_agenda", "registrar_dado_cadastral"]
+}
+```
+
+**Exemplo — lead_qualification (sem tool gate):**
+```typescript
+{
+  capability_id: "lead_qualification",
+  tool_access: "always",
+  unlock_when_slots_complete: false,
+  allowed_tools_when_locked: ["registrar_dado_cadastral", "buscar_documento"],
+  allowed_tools_when_unlocked: ["registrar_dado_cadastral", "buscar_documento", "transferir_atendimento"]
+}
+```
+
+**Por que `requireMetadataForCalendar` não escala:**  
+É uma flag de caso. Com 10 tipos de capability, você teria 10 flags. O `CapabilityPolicy` com `tool_access: "contextual"` é o mecanismo genérico — funciona para qualquer capability, não apenas para calendário.
+
+---
+
+## 5. Componente 3: SkillLoader — Duas Camadas
+
+### Arquitetura de Skill em Duas Camadas
+
+```
+Skill Global (src/lib/agent-skills/global/)
+  ├── discovery.skill.ts        ← comportamento universal de descoberta
+  ├── slot-collection.skill.ts  ← comportamento universal de coleta
+  ├── action-ready.skill.ts     ← comportamento universal pré-execução
+  ├── post-action.skill.ts      ← comportamento universal pós-ação
+  └── handoff.skill.ts          ← comportamento universal de handoff
+
+Camada do Tenant (client.settings ou arquivo por cliente)
+  └── tone, vocabulary, offer, examples, restrictions
+```
+
+### Interface de Skill com Camadas
 
 ```typescript
 export interface AgentSkill {
-  name: string;
+  id: string;
+  policy_state: PolicyState;
   
-  // Prompt da skill — CURTO, focado, sem regras de outros stages
-  systemPrompt: string;
+  // CAMADA GLOBAL — universal, agnóstico de cliente
+  global_prompt: string;          // objetivo do state, regras de comportamento, política de tool use
   
-  // Tools disponíveis para este stage
-  allowedTools: ToolName[];
+  // CAMADA DO TENANT — injetada em runtime
+  tenant_prompt?: string;         // tom, vocabulário, oferta, restrições de negócio
   
-  // Contexto adicional para injetar (ex: campos ainda faltantes)
+  // Contexto dinâmico — gerado em runtime pelo SkillLoader
   buildContext?: (input: SkillContextInput) => string;
+  
+  // Tools permitidas — definidas pela CapabilityPolicy, não pela skill
+  // (skill não conhece tools — quem define é o CapabilityPolicyEngine)
 }
-
-export type ToolName =
-  | "transferir_atendimento"
-  | "registrar_dado_cadastral"
-  | "verificar_agenda"
-  | "criar_evento_agenda"
-  | "cancelar_evento_agenda"
-  | "alterar_evento_agenda"
-  | "buscar_documento";
 ```
 
-### Mapeamento Stage → Tools Disponíveis
+### Exemplo — `slot-collection.skill.ts` (global, sem semântica de cliente)
 
-Esta é a peça central da arquitetura. O LLM **literalmente não sabe** que as outras tools existem.
-
-```
-Stage                  | Tools Disponíveis
------------------------|------------------------------------------
-browsing               | buscar_documento, transferir_atendimento
-intent_to_schedule     | registrar_dado_cadastral, transferir_atendimento
-collecting_data        | registrar_dado_cadastral, transferir_atendimento
-data_complete          | verificar_agenda, criar_evento_agenda, registrar_dado_cadastral
-calendar_management    | cancelar_evento_agenda, alterar_evento_agenda, verificar_agenda
-handoff                | transferir_atendimento
-post_schedule          | verificar_agenda, cancelar_evento_agenda, alterar_evento_agenda
-```
-
-**Por que isso resolve o problema raiz:**
-
-Em `intent_to_schedule`, o modelo recebe `registrar_dado_cadastral` e `transferir_atendimento`. Não recebe `verificar_agenda`. Não importa o que o usuário diga — "quero às 10h de terça", "pode ser segunda" — o modelo **não tem o instrumento** para verificar a agenda. Ele só consegue pedir mais dados ou transferir. O prompt de texto passa a reforçar o que o código já garantiu, em vez de ser a única linha de defesa.
-
-### Exemplos de Mini-Prompts por Skill
-
-#### `browsing.skill.ts`
 ```typescript
-export const browsingSkill: AgentSkill = {
-  name: "browsing",
-  allowedTools: ["buscar_documento", "transferir_atendimento"],
-  systemPrompt: `
-Você está na fase de descoberta com este lead.
+export const slotCollectionSkill: AgentSkill = {
+  id: "slot_collection",
+  policy_state: "slot_collection",
+  
+  global_prompt: `
+Você está coletando informações necessárias para avançar com o que o usuário quer.
 
-Seu único objetivo agora: entender quem é essa pessoa e criar conexão.
-
-REGRAS DESTA FASE:
-- Responda perguntas sobre horários, valores, filosofia, professores
-- Use no máximo 3 frases por mensagem
-- Se o usuário demonstrar interesse em agendar, confirme: "Quer que eu te ajude a marcar uma visita?"
-- NÃO ofereça marcar sem que o usuário sinalize interesse primeiro
-- Se mencionar aula experimental ou professor específico: use transferir_atendimento
+REGRAS UNIVERSAIS DESTA FASE:
+- Colete UM campo por mensagem — nunca duas perguntas de uma vez
+- Após cada resposta, confirme antes de pedir o próximo
+- Se o usuário mencionar a ação que quer antes de coletar tudo: 
+  confirme que anotou e continue a coleta
+- Se o usuário repetir a mesma informação: confirme e avance para o próximo campo
+- NÃO execute nenhuma ação (criar, cancelar, agendar) até ter todos os campos
   `,
-  buildContext: () => "", // sem contexto adicional nesta fase
-};
-```
-
-#### `collecting-data.skill.ts`
-```typescript
-export const collectingDataSkill: AgentSkill = {
-  name: "collecting_data",
-  allowedTools: ["registrar_dado_cadastral", "transferir_atendimento"],
-  systemPrompt: `
-Você está coletando os dados necessários para agendar a visita.
-
-REGRAS DESTA FASE:
-- Colete UM dado por mensagem — nunca faça duas perguntas de uma vez
-- Após cada resposta, confirme com "Ótimo!" ou "Perfeito!" antes de pedir o próximo
-- Se o usuário mencionar um horário: responda "Ótimo, vou guardar esse horário! Antes de confirmarmos, preciso de mais algumas informações." — e continue a coleta
-- Se o usuário repetir a mesma informação: confirme ("Entendido!") e avance para o próximo campo
-- NÃO mencione agenda, horários disponíveis nem confirmação de visita até ter TODOS os dados
-  `,
-  buildContext: (input) => {
-    const missing = getMissingFields(input.contactMetadata);
-    const collected = getCollectedFields(input.contactMetadata);
+  
+  // Contexto específico é gerado pelo buildContext com dados do cliente
+  buildContext: (input: SkillContextInput) => {
+    const schema = input.capabilityPolicy?.slotSchema;
+    if (!schema) return "";
+    
+    const missing = getMissingSlots(input.contactMetadata, schema);
+    const collected = getCollectedSlots(input.contactMetadata, schema);
     
     return [
       collected.length > 0
-        ? `DADOS JÁ COLETADOS (NÃO pergunte novamente): ${collected.join(", ")}`
+        ? `CAMPOS JÁ COLETADOS (não pergunte novamente): ${collected.map(s => s.label).join(", ")}`
         : "",
-      `PRÓXIMO CAMPO A COLETAR: ${missing[0]}`,
-      `CAMPOS AINDA FALTANTES: ${missing.slice(1).join(", ") || "nenhum após este"}`,
+      missing.length > 0
+        ? `PRÓXIMO CAMPO A COLETAR: ${missing[0].label}`
+        : "",
+      missing.length > 1
+        ? `CAMPOS AINDA FALTANTES: ${missing.slice(1).map(s => s.label).join(", ")}`
+        : "",
     ].filter(Boolean).join("\n");
   },
 };
 ```
 
-#### `data-complete.skill.ts`
-```typescript
-export const dataCompleteSkill: AgentSkill = {
-  name: "data_complete",
-  allowedTools: ["verificar_agenda", "criar_evento_agenda", "registrar_dado_cadastral"],
-  systemPrompt: `
-Todos os dados foram coletados. Agora você pode verificar a agenda e agendar a visita.
-
-FLUXO OBRIGATÓRIO:
-1. Chame verificar_agenda para confirmar disponibilidade
-2. Apresente a opção disponível: "O horário de [dia] às [hora] está disponível. Posso confirmar a visita?"
-3. Aguarde confirmação explícita ("sim", "pode", "confirma", "ok")
-4. Só então chame criar_evento_agenda
-5. Após criar: confirme APENAS com título e horário — SEM telefone, email ou ID
-
-GRADE DE VISITAS: Seg-Qui 10h-13h e 15h-20h / Sex 15h-18h
-Se o horário pedido estiver fora da grade: informe e sugira o mais próximo disponível.
-  `,
-  buildContext: (input) => {
-    const fields = input.contactMetadata;
-    return `DADOS DO VISITANTE:\n` +
-      `- Como conheceu: ${fields?.como_conheceu}\n` +
-      `- Objetivo: ${fields?.objetivo}\n` +
-      `- E-mail: ${fields?.email}\n` +
-      `- CPF: ${fields?.cpf}`;
-  },
-};
-```
+**Por que a skill não tem semântica de "visita" ou "agendamento":**  
+A skill global descreve o **comportamento** para o estado de coleta. "O que está sendo coletado" é fornecido pelo `buildContext` em runtime, lendo o `SlotSchema` do cliente. Assim a mesma skill funciona para coleta de dados de visita, abertura de ticket ou qualificação de lead.
 
 ---
 
-## 5. Componente 3: Prompt Base Comprimido
+## 6. Persistência de State — `policy_context JSONB`
 
-### Problema atual
+### Por que não `current_stage TEXT`
 
-O prompt do cliente (`prompt.md`) tem **780 linhas** incluindo:
-- Identidade e tom (essencial — sempre necessário)
-- Horários e grade (essencial — sempre necessário)
-- Preços e estratégia comercial (necessário apenas em `browsing`)
-- Regras de imagem (necessário em `browsing`)
-- Coleta de dados e ORDEM INVIOLÁVEL (substituído pela skill)
-- Regras de calendário (substituído pela skill)
-- Transferência humana (substituído pela skill)
+Um campo de texto simples comporta apenas o nome do estado. Em produção, você vai precisar responder perguntas como:
+- "Qual capability está ativa?"
+- "Quais slots já foram coletados nesta conversa?"
+- "Quais tools estão permitidas agora?"
+- "Em qual versão da policy este contexto foi criado?"
 
-### Estrutura do Prompt Pós-Refatoração
+### Estrutura do `policy_context`
 
-O prompt do cliente é dividido em **dois blocos**:
-
-**Bloco A — Base (sempre injetado, ~150 linhas)**
-```
-- Identidade da Umåna (quem somos, filosofia, missão)
-- Tom de voz e linguagem (sem emojis, sem markdown, crase correta, "técnicas corporais")
-- Professores e horários de aulas (grade semanal completa)
-- Regras de imagem (uma por vez, quando enviar cada imagem)
-- Informações proibidas (não dar WhatsApp, não comentar concorrentes)
-- Contraindicações e saúde (orientar médico sem desencorajar)
-```
-
-**Bloco B — Skills (injetado conforme stage)**
-```
-- Carregado pelo SkillLoader
-- Focado e pequeno (~30-60 linhas cada)
-- Contém APENAS o que é relevante para aquele momento
-```
-
-### Benefício de Tamanho
-
-```
-V1: 780 linhas de prompt + 7 tools na mesma chamada
-V2: ~150 linhas base + ~40 linhas skill + 2-3 tools
-    = ~75% de redução no context window usado pelo prompt
-```
-
-Isso aumenta o peso relativo de cada instrução que permanece. Com 150 linhas de base e 40 de skill, **toda regra relevante fica no top 25% do contexto** — onde a atenção do modelo é mais alta.
-
----
-
-## 6. Persistência de Stage
-
-### Problema
-
-A detecção de stage é feita a cada mensagem. Entre mensagens, o stage pode "resetar" se a heurística não reconhecer a continuação.
-
-**Exemplo problemático:**
-```
-Usuário: "Quero marcar" → stage: intent_to_schedule
-Bot: "Como conheceu a Umåna?"
-Usuário: "Através do Luciano"  ← mensagem sem palavra-chave de agendamento
-→ stage detector pode retornar "browsing" ← ERRADO
-```
-
-### Solução: Stage Persistence via Conversation State
-
-O stage detectado é **salvo na conversa** e só avança (nunca regride) exceto por gatilhos explícitos.
-
-**Opção A — Redis (recomendado para performance):**
 ```typescript
-// Ao detectar novo stage
-await redis.set(`stage:${clientId}:${phone}`, newStage, "EX", 3600);
-
-// Ao iniciar processamento
-const persistedStage = await redis.get(`stage:${clientId}:${phone}`);
-const detectedStage = detectConversationStage(input);
-
-// Stage só avança, nunca regride (exceto reset explícito)
-const finalStage = resolveStage(persistedStage, detectedStage);
+export interface PolicyContext {
+  state: PolicyState;
+  capability: CapabilityId | null;
+  slot_schema_id: string | null;
+  missing_slots: string[];           // slots que ainda faltam
+  allowed_tools: ToolName[];         // resolvidos no último turno
+  rag_mode: "full" | "minimal" | "off";
+  history_mode: "full" | "minimal";
+  version: string;                   // "v2" — para migrações futuras
+  last_updated_at: string;           // ISO timestamp
+}
 ```
 
-**Opção B — `conversations` table (mais simples, sem Redis adicional):**
-```typescript
-// Coluna nova: current_stage TEXT na tabela conversations
-await supabase
-  .from("conversations")
-  .update({ current_stage: newStage })
-  .eq("phone", phone)
-  .eq("client_id", clientId);
+**Exemplo em produção:**
+```json
+{
+  "state": "slot_collection",
+  "capability": "calendar_booking",
+  "slot_schema_id": "calendar_v1",
+  "missing_slots": ["objetivo", "email", "cpf"],
+  "allowed_tools": ["registrar_dado_cadastral"],
+  "rag_mode": "minimal",
+  "history_mode": "full",
+  "version": "v2",
+  "last_updated_at": "2026-04-16T14:30:00-03:00"
+}
 ```
 
-**Lógica de resolução:**
+### Migration
+
+```sql
+-- supabase/migrations/TIMESTAMP_add_policy_context_to_conversations.sql
+
+ALTER TABLE conversations
+ADD COLUMN IF NOT EXISTS policy_context JSONB DEFAULT NULL;
+
+COMMENT ON COLUMN conversations.policy_context IS
+  'V2 policy engine context: state, capability, missing_slots, allowed_tools, etc.';
+
+CREATE INDEX IF NOT EXISTS idx_conversations_policy_state
+  ON conversations ((policy_context->>'state'));
+```
+
+### Lógica de Progressão (não regressão)
+
 ```typescript
-const STAGE_PROGRESSION = [
-  "browsing",
-  "intent_to_schedule",
-  "collecting_data",
-  "data_complete",
-  "post_schedule",
+const STATE_ORDER: PolicyState[] = [
+  "discovery",
+  "qualification",
+  "slot_collection",
+  "action_ready",
+  "action_execution",
+  "post_action",
 ];
 
-const resolveStage = (
-  persisted: ConversationStage | null,
-  detected: ConversationStage
-): ConversationStage => {
-  // Handoff e calendar_management sempre têm prioridade
-  if (detected === "handoff" || detected === "calendar_management") {
-    return detected;
+const resolveFinalContext = (
+  persisted: PolicyContext | null,
+  resolved: PolicyResolution,
+): PolicyContext => {
+  // Handoff e support sempre têm prioridade
+  if (resolved.state === "handoff" || resolved.state === "support") {
+    return buildContext(resolved);
   }
 
-  // Se não há stage persistido, usar o detectado
-  if (!persisted) return detected;
+  if (!persisted) return buildContext(resolved);
 
-  // Nunca regredir na jornada de agendamento
-  const persistedIdx = STAGE_PROGRESSION.indexOf(persisted);
-  const detectedIdx = STAGE_PROGRESSION.indexOf(detected);
+  // Nunca regredir na progressão da jornada
+  const persistedIdx = STATE_ORDER.indexOf(persisted.state);
+  const resolvedIdx = STATE_ORDER.indexOf(resolved.state);
 
-  if (persistedIdx > detectedIdx) return persisted;
-  return detected;
+  if (persistedIdx > resolvedIdx) {
+    // Manter state mas atualizar missing_slots (podem ter mudado)
+    return { ...persisted, missing_slots: resolved.missing_slots, last_updated_at: now() };
+  }
+
+  return buildContext(resolved);
 };
 ```
 
-**Recomendação:** Usar a tabela `conversations` (Opção B) por simplicidade — já existe, está no Supabase, e uma leitura adicional por mensagem é marginal. Redis fica para quando o volume justificar.
-
 ---
 
-## 7. Escolha do Modelo por Stage
+## 7. Roteamento de Modelo por PolicyState
 
-### Hipótese de Luis
+### Hipótese
 
-> "Talvez menos reasoning e modelo mais direto que segue bem o que está ali"
+> "Menos reasoning, modelo mais direto que segue bem o que está ali"
 
 ### Análise
 
-O Llama 3.3 70B é excelente para raciocínio aberto mas **sobre-pensa fluxos estruturados**. Para stages que são essencialmente formulários conversacionais (`collecting_data`, `data_complete`), um modelo menor e mais diretivo é mais previsível.
+O Llama 3.3 70B sobre-pensa fluxos estruturados. Para estados mecânicos (`slot_collection`, `handoff`), um modelo menor e mais diretivo é mais previsível e ~10x mais barato.
 
-**Proposta de roteamento por stage:**
+### Configuração por State
 
 ```typescript
-const MODEL_BY_STAGE: Record<ConversationStage, ModelConfig> = {
-  // Navegação e filosofia — precisa de qualidade de linguagem
-  browsing: { provider: "groq", model: "llama-3.3-70b-versatile", temperature: 0.7 },
-  
-  // Coleta de dados — fluxo estruturado, modelo menor é mais previsível
-  intent_to_schedule: { provider: "groq", model: "llama-3.1-8b-instant", temperature: 0.3 },
-  collecting_data:    { provider: "groq", model: "llama-3.1-8b-instant", temperature: 0.3 },
-  
-  // Dados completos — precisa interpretar disponibilidade e confirmar
-  data_complete:      { provider: "groq", model: "llama-3.3-70b-versatile", temperature: 0.4 },
-  
-  // Gestão de calendário — operações bem definidas
-  calendar_management: { provider: "groq", model: "llama-3.1-8b-instant", temperature: 0.2 },
-  
-  // Handoff — mensagem simples + tool call
-  handoff:            { provider: "groq", model: "llama-3.1-8b-instant", temperature: 0.3 },
-  
-  // Pós-agendamento — qualidade de linguagem para follow-up
-  post_schedule:      { provider: "groq", model: "llama-3.3-70b-versatile", temperature: 0.6 },
+const MODEL_BY_STATE: Record<PolicyState, ModelConfig> = {
+  // Estados abertos — precisam de qualidade de linguagem e raciocínio
+  discovery:         { provider: "groq", model: "llama-3.3-70b-versatile", temperature: 0.7 },
+  post_action:       { provider: "groq", model: "llama-3.3-70b-versatile", temperature: 0.6 },
+  support:           { provider: "groq", model: "llama-3.3-70b-versatile", temperature: 0.6 },
+
+  // Estados de formulário — modelo menor é mais previsível e barato
+  qualification:     { provider: "groq", model: "llama-3.1-8b-instant",    temperature: 0.3 },
+  slot_collection:   { provider: "groq", model: "llama-3.1-8b-instant",    temperature: 0.3 },
+  handoff:           { provider: "groq", model: "llama-3.1-8b-instant",    temperature: 0.3 },
+
+  // Estados de decisão — precisam interpretar disponibilidade e confirmar
+  action_ready:      { provider: "groq", model: "llama-3.3-70b-versatile", temperature: 0.4 },
+  action_execution:  { provider: "groq", model: "llama-3.3-70b-versatile", temperature: 0.4 },
 };
 ```
 
-**Vantagem de custo:** `llama-3.1-8b-instant` é ~10x mais barato que `llama-3.3-70b-versatile`. Stages mecânicos representam ~60% das mensagens em clientes como Umåna — isso pode reduzir custo de API em 40-50%.
+**Impacto esperado em custo:** `slot_collection` e `qualification` representam ~60% das mensagens em clientes de agendamento. Rotear para `llama-3.1-8b-instant` pode reduzir custo de API em 40-50% nesses clientes.
 
-**Nota de cautela:** A troca de modelo por stage só faz sentido **após** o tool gating e skills estarem funcionando. Um modelo pequeno com prompt grande e muitas tools é pior, não melhor.
+**Condição de ativação:** Somente após PolicyStateResolver + CapabilityPolicyEngine + SkillLoader validados. Não trocar modelo antes do comportamento estar correto com o modelo maior.
 
 ---
 
-## 8. Plano de Implementação — Fases
+## 8. PromptCompiler — Montagem Final
 
-### Fase 1: Tool Gating (menor risco, maior impacto imediato)
+O `generateAIResponse.ts` atual monta o prompt empilhando mensagens de sistema. Na V2, essa montagem passa a ser explícita:
 
-**O que muda:** `generateAIResponse.ts` — filtrar tools baseado em `contactMetadata`.
-
-**Arquivos afetados:**
-- `src/nodes/generateAIResponse.ts` — lógica de filtragem de tools
-- `src/lib/types.ts` — tipo `ToolGatingContext`
-
-**Implementação:**
 ```typescript
-// Em generateAIResponse.ts, antes de montar o array de tools:
+export const compilePrompt = (input: PromptCompilerInput): CompiledPrompt => {
+  const { config, skill, policyContext, contactMetadata, tenantLexicon } = input;
 
-const calendarEnabled =
+  const messages: SystemMessage[] = [];
+
+  // 1. Base do cliente — identidade, tom, grade, regras universais (~150 linhas)
+  messages.push({ role: "system", content: config.prompts.systemPrompt });
+
+  // 2. Data/hora (apenas se não for estado mecânico)
+  if (policyContext.state !== "slot_collection" && policyContext.state !== "handoff") {
+    messages.push({ role: "system", content: buildDateTimeContext() });
+  }
+
+  // 3. Skill global — regras de comportamento para este state
+  messages.push({ role: "system", content: skill.global_prompt });
+
+  // 4. Contexto dinâmico da skill — slots faltantes, dados coletados
+  if (skill.buildContext) {
+    const ctx = skill.buildContext({ contactMetadata, policyContext });
+    if (ctx) messages.push({ role: "system", content: ctx });
+  }
+
+  // 5. Dados já coletados — nunca perguntar novamente
+  const collectedData = buildCollectedDataContext(contactMetadata, policyContext);
+  if (collectedData) messages.push({ role: "system", content: collectedData });
+
+  // 6. Regras operacionais por capability (ex: regras de calendário)
+  const opRules = buildOperationalRules(policyContext, config);
+  if (opRules) messages.push({ role: "system", content: opRules });
+
+  return { messages, model: MODEL_BY_STATE[policyContext.state] };
+};
+```
+
+**Resultado em tamanho:**
+```
+V1: ~780 linhas de prompt + 7 tools em toda conversa
+V2: ~150 base + ~40 skill global + ~20 contexto dinâmico = ~210 linhas
+    + 2-3 tools relevantes para o state
+    = ~73% de redução no context window
+```
+
+---
+
+## 9. Métricas em Duas Famílias
+
+### Família 1 — Métricas Globais de Plataforma (independente de funil)
+
+| Métrica | O que mede | Alerta se |
+|---------|-----------|-----------|
+| `tool_call_policy_violation_rate` | Tool chamada fora da policy | > 0% (deve ser impossível na V2) |
+| `state_regression_rate` | State regredindo sem gatilho | > 5% |
+| `handoff_rate` | Conversas que chegam ao handoff | desvio > 20% do baseline |
+| `avg_cost_per_conversation` | Custo médio por conversa | crescimento > 10% mês |
+| `avg_turns_to_action` | Turnos até executar ação | > 8 turnos |
+| `fallback_rate` | Respostas de fallback/erro | > 3% |
+| `p95_latency_ms` | Latência do 95° percentil | > 3000ms |
+| `slot_save_failure_rate` | `registrar_dado_cadastral` sem sucesso | > 1% |
+
+### Família 2 — Métricas por Capability
+
+**calendar_booking:**
+```
+- % de action_ready sem todos os slots completos
+- % de criar_evento_agenda chamado sem confirmação explícita  
+- % de eventos duplicados detectados
+- taxa de cancelamento bem-sucedido
+```
+
+**support_ticket:**
+```
+- % de ticket aberto com campos obrigatórios faltando
+- tempo médio de resolução após handoff
+```
+
+**lead_qualification:**
+```
+- % de leads com score mínimo antes de transferir
+- taxa de conversão qualificado → handoff
+```
+
+**Separação global + capability garante que você não prende a arquitetura a um único funil.**
+
+---
+
+## 10. Plano de Implementação — 5 Sprints
+
+### Sprint 1 — Tool Gating (menor risco, maior impacto imediato)
+
+**Objetivo:** Garantir que tools de ação só aparecem quando a policy permite. Zero mudança arquitetural, máximo impacto no comportamento.
+
+**Arquivos:**
+- `src/nodes/generateAIResponse.ts` — filtrar tools via `CapabilityPolicy` simples
+- `src/lib/types.ts` — adicionar `agentV2` ao `ClientConfig`
+
+**Implementação mínima viável:**
+```typescript
+// generateAIResponse.ts — antes de montar tools
+
+const v2Config = config.agentV2;
+const useToolGating = v2Config?.requireSlotsForCalendar ?? false;
+
+const metadataComplete = useToolGating
+  ? evaluateRequiredSlots(contactMetadata, config.slotSchema ?? DEFAULT_CALENDAR_SCHEMA)
+  : true;
+
+const exposeCalendarTools =
   config.calendar?.botEnabled !== false &&
-  (config.calendar?.google?.enabled || config.calendar?.microsoft?.enabled);
-
-const metadataComplete =
-  contactMetadata?.como_conheceu &&
-  contactMetadata?.objetivo &&
-  contactMetadata?.email &&
-  contactMetadata?.cpf;
-
-// Só expõe tools de calendário se:
-// 1. Calendário está conectado e ativo
-// 2. Todos os campos obrigatórios estão coletados
-const exposeCalendarTools = calendarEnabled && metadataComplete;
+  (config.calendar?.google?.enabled || config.calendar?.microsoft?.enabled) &&
+  metadataComplete;
 ```
 
-**Por que primeiro:** Zero risco de quebrar outros clientes. Se `contactMetadata` não tiver os campos (cliente sem fluxo de coleta), `metadataComplete` = false e as tools de calendário ficam ocultas — mas o cliente em questão já não usava coleta obrigatória. Flag pode ser condicionado a um campo no config do cliente.
+**Config no banco (opt-in Umåna):**
+```json
+{
+  "agent_v2_enabled": true,
+  "require_slots_for_calendar": true,
+  "slot_schema": {
+    "capability_id": "calendar_booking",
+    "slots": [
+      { "key": "como_conheceu", "required": true },
+      { "key": "objetivo",      "required": true },
+      { "key": "email",         "required": true },
+      { "key": "cpf",           "required": true }
+    ]
+  }
+}
+```
+
+**Critério de conclusão:** Bot da Umåna nunca chama `verificar_agenda` antes de `contactMetadata` estar completo. Testar com os casos CAL-09 do QA.
 
 ---
 
-### Fase 2: ConversationStageDetector (infraestrutura)
+### Sprint 2 — PolicyStateResolver + StatePersistence
 
-**O que cria:**
-- `src/lib/conversation-stage/detector.ts`
-- `src/lib/conversation-stage/types.ts`
-- `src/lib/conversation-stage/keywords.ts`
+**Objetivo:** Detectar e persistir o state da conversa sem afetar o comportamento atual. Logar, não agir.
 
-**Migração no banco:**
+**Novos arquivos:**
+```
+src/lib/policy-engine/
+  types.ts
+  state-resolver.ts
+  tenant-lexicon.ts
+  slot-manager.ts
+```
+
+**Migration:**
 ```sql
--- supabase/migrations/TIMESTAMP_add_current_stage_to_conversations.sql
 ALTER TABLE conversations
-ADD COLUMN IF NOT EXISTS current_stage TEXT DEFAULT 'browsing';
-
-COMMENT ON COLUMN conversations.current_stage IS
-  'Current stage of the conversation journey: browsing | intent_to_schedule | collecting_data | data_complete | calendar_management | handoff | post_schedule';
+ADD COLUMN IF NOT EXISTS policy_context JSONB DEFAULT NULL;
 ```
 
-**Integração em `chatbotFlow.ts`:**
-```typescript
-// Após NODE 9 (get chat history), antes de NODE 12 (generate AI response):
+**Integração em `chatbotFlow.ts`:** Resolver o state e logar — não mudar o que vai para o LLM ainda.
 
-const conversationStage = await detectAndPersistStage({
-  lastMessage: batchedContent,
-  chatHistory: chatHistory2,
-  contactMetadata: customer.metadata,
-  customerStatus: customer.status,
-  conversationId: conversation?.id,
-  clientId: config.id,
-});
-```
+**Critério de conclusão:** Dashboard de debug mostra `policy_context` correto em todas as conversas de teste.
 
 ---
 
-### Fase 3: SkillLoader + Mini-Prompts
+### Sprint 3 — SkillLoader + Mini-Prompts
+
+**Objetivo:** Substituir o prompt monolítico por base + skill compilada.
+
+**Novos arquivos:**
+```
+src/lib/agent-skills/
+  index.ts
+  skill-compiler.ts
+  global/
+    discovery.skill.ts
+    slot-collection.skill.ts
+    action-ready.skill.ts
+    post-action.skill.ts
+    handoff.skill.ts
+    support.skill.ts
+```
+
+**Condição de ativação:** `agent_v2_stage_aware_prompting: true` no `client.settings`. Piloto só na Umåna.
+
+**Prompt do cliente:** Reduzir de 780 para ~150 linhas — apenas Bloco A (identidade, tom, grade, regras universais). As seções de coleta de dados e fluxo de calendário saem do prompt e vivem nas skills.
+
+**Critério de conclusão:** QA completo passando — Testadores 1-12 + bateria CAL-01 a CAL-09.
+
+---
+
+### Sprint 4 — Roteamento de Modelo por State
+
+**Objetivo:** Usar `llama-3.1-8b-instant` em `slot_collection` e `handoff`.
+
+**Condição de ativação:** Somente após Sprint 3 validado. Não mudar modelo antes do comportamento estar correto.
+
+**Critério de conclusão:** Custo por conversa reduzido, qualidade mantida em QA.
+
+---
+
+### Sprint 5 — Generalização para Outros Clientes
+
+**Objetivo:** Tornar a arquitetura disponível como produto para todos os clientes via dashboard.
 
 **O que cria:**
-- `src/lib/agent-skills/` (diretório completo)
-- 7 skill files
-
-**Integração em `generateAIResponse.ts`:**
-```typescript
-// Recebe stage como parâmetro adicional
-export interface GenerateAIResponseInput {
-  // ... campos existentes ...
-  conversationStage?: ConversationStage; // ← NOVO
-}
-
-// Em generateAIResponse():
-const skill = loadSkill(conversationStage, config, contactMetadata);
-
-// Prompt final = base do cliente + skill prompt
-messages.push({ role: "system", content: config.prompts.systemPrompt }); // base (~150 linhas)
-messages.push({ role: "system", content: skill.systemPrompt });           // skill (~40 linhas)
-if (skill.buildContext) {
-  messages.push({ role: "system", content: skill.buildContext({ contactMetadata }) });
-}
-
-// Tools = skill.allowedTools ∩ tools habilitadas no config do cliente
-const tools = filterToolsBySkill(allTools, skill.allowedTools);
-```
+- Interface no dashboard para configurar `SlotSchema` por capability
+- Interface para configurar `TenantLexicon` (handoff triggers, capability triggers)
+- Interface para habilitar/desabilitar capabilities por cliente
+- Métricas por capability no dashboard de analytics
 
 ---
 
-### Fase 4: Roteamento de Modelo por Stage (opcional, após validação)
-
-**O que muda:**
-- `src/lib/direct-ai-client.ts` — aceitar override de modelo por stage
-- `src/lib/agent-skills/index.ts` — expor `modelConfig` por skill
-
-**Condição de ativação:** Somente após Fases 1-3 validadas em produção. Não implementar antes de confirmar que o comportamento está correto com 70B.
-
----
-
-### Fase 5: Refatoração do Prompt do Cliente (Umåna)
-
-**O que muda:**
-- `CONTATOS UMANA/prommpt Umana/prompt.md` — reduzir de 780 para ~150 linhas (apenas Bloco A)
-- As seções de coleta de dados, ordem do fluxo, regras de calendário são removidas do prompt e vivem nas skills
-
-**Condição de ativação:** Somente após Fases 1-4 validadas. O prompt atual funciona (com falhas), as skills são o substituto. Não remover o prompt antes das skills estarem em produção.
-
----
-
-## 9. Impacto em Outros Clientes
-
-A arquitetura V2 deve ser **opt-in por cliente**. O `ClientConfig` ganha:
+## 11. Opt-in por Cliente — Contrato de Config
 
 ```typescript
 // src/lib/types.ts
@@ -661,86 +787,48 @@ export interface ClientConfig {
   // ... campos existentes ...
   
   agentV2?: {
-    enabled: boolean;           // opt-in — default false
-    requireMetadataForCalendar: boolean; // Tool gating — default false
-    stageAwarePrompting: boolean;        // Skills — default false
+    enabled: boolean;
+    
+    // Sprint 1
+    requireSlotsForAction: boolean;
+    slotSchema?: SlotSchema[];
+    
+    // Sprint 2
+    statePersistenceEnabled: boolean;
+    tenantLexicon?: TenantLexicon;
+    
+    // Sprint 3
+    stageAwarePromptingEnabled: boolean;
+    
+    // Sprint 4
+    modelRoutingByStateEnabled: boolean;
   };
 }
 ```
 
-No `config.ts`, ler do `client.settings`:
-```typescript
-agentV2: {
-  enabled: client.settings?.agent_v2_enabled ?? false,
-  requireMetadataForCalendar: client.settings?.require_metadata_for_calendar ?? false,
-  stageAwarePrompting: client.settings?.stage_aware_prompting ?? false,
-},
-```
-
-Isso garante que a Umåna pode ser o cliente piloto sem afetar outros clientes.
+**Garantia:** Clientes sem `agentV2` na config continuam com o comportamento V1 exatamente como hoje. Zero risco de regressão.
 
 ---
 
-## 10. Métricas de Sucesso
-
-Para validar que a V2 está funcionando melhor:
-
-| Métrica | V1 (atual) | V2 (esperado) |
-|---------|-----------|---------------|
-| Taxa de chamada `verificar_agenda` antes de coleta completa | ~40% dos casos | 0% (impossível por design) |
-| Taxa de evento criado sem confirmação explícita | ~15% | <2% |
-| Campos coletados antes de agendar (média) | 1.2/4 | 4/4 |
-| Custo de API por conversa (stages mecânicos) | baseline | -40% (com modelo por stage) |
-| Tempo médio até agendamento confirmado | baseline | medir |
-
----
-
-## 11. Riscos e Mitigações
+## 12. Riscos e Mitigações
 
 | Risco | Probabilidade | Impacto | Mitigação |
 |-------|--------------|---------|-----------|
-| Stage detector classifica errado em mensagem ambígua | Médio | Médio | Persistência de stage — não regride sem gatilho explícito |
-| Skill prompt muito restritivo bloqueia resposta legítima | Baixo | Alto | Cada skill tem `transferir_atendimento` como saída de emergência |
-| Clientes sem fluxo de coleta perdem acesso ao calendário | Baixo | Alto | `requireMetadataForCalendar` é opt-in — default `false` |
-| Migração de banco com `current_stage` causa lock | Baixo | Médio | `ADD COLUMN IF NOT EXISTS` — operação segura no Postgres |
-| Latência adicional pelo stage detector | Baixo | Baixo | Detector é pure function em código — <1ms |
-
----
-
-## 12. Ordem de Prioridade Sugerida
-
-```
-SPRINT 1 (impacto imediato, reversível)
-  ├── [F1] Tool gating em generateAIResponse.ts
-  │         Condição: contactMetadata completo para expor tools de calendário
-  └── Testar com Umåna — medir se resolve o problema do "pula coleta"
-
-SPRINT 2 (infraestrutura)
-  ├── [F2] ConversationStageDetector + migration current_stage
-  └── Logar o stage detectado em cada mensagem (sem mudar comportamento ainda)
-
-SPRINT 3 (skills)
-  ├── [F3] SkillLoader + 3 skills prioritárias:
-  │         collecting_data, data_complete, calendar_management
-  └── Testar com prompt do cliente reduzido para Bloco A
-
-SPRINT 4 (otimização)
-  ├── [F4] Modelo por stage — testar llama-3.1-8b em collecting_data
-  └── [F5] Refatorar prompt do cliente
-
-SPRINT 5 (produção)
-  ├── Dashboard de configuração (toggle por feature no settings)
-  └── Documentação para outros clientes
-```
+| PolicyStateResolver classifica errado em mensagem ambígua | Médio | Médio | Persistência de state — não regride sem gatilho explícito |
+| SlotSchema incompleto bloqueia capability para sempre | Baixo | Alto | `handoff` sempre disponível como saída de emergência em toda skill |
+| Latência adicional pelo resolver | Baixo | Baixo | Pure function em código — <1ms |
+| `policy_context` JSONB cresce sem controle | Baixo | Baixo | Estrutura tipada + TTL via `last_updated_at` |
+| Outros clientes afetados por mudança | Baixo | Alto | `agent_v2_enabled: false` é o default — completamente opt-in |
+| Skill global muito restritiva bloqueia resposta legítima | Baixo | Médio | `support` state sempre expõe `buscar_documento` e `transferir_atendimento` |
 
 ---
 
 ## 13. Referências Internas
 
-- `src/nodes/generateAIResponse.ts` — ponto de integração principal
+- `src/nodes/generateAIResponse.ts` — ponto de integração principal (764 linhas)
 - `src/flows/chatbotFlow.ts:1169` — onde `generateAIResponse` é chamado
 - `src/lib/types.ts:516` — tipo `ClientConfig.calendar`
 - `CONTATOS UMANA/prommpt Umana/prompt.md` — prompt atual (780 linhas)
-- `docs/prompts/Umana Rio Branco/QA_TESTES_UMANA.md` — testes de referência
-- `twin-plans/PLANO_UMANA_MELHORIAS_2026-04.md` — plano anterior de referência
-- `checkpoints/2026-04-15_chatbot-oficial/03_NEW_NODES_AND_FLOWS.md` — estado atual documentado
+- `docs/prompts/Umana Rio Branco/QA_TESTES_UMANA.md` — casos de teste
+- `checkpoints/2026-04-15_chatbot-oficial/03_NEW_NODES_AND_FLOWS.md` — estado atual
+- `twin-plans/PLANO_UMANA_MELHORIAS_2026-04.md` — plano anterior
