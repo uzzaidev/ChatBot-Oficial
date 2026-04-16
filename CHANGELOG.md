@@ -7,6 +7,15 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-16
 
 ### docs
+- Adicionados guardrails operacionais para a arquitetura do Agente Conversacional V2, incluindo validação pós-LLM, refinamento dos estados de política, matriz de precedência para resolução de conflitos e regras de compatibilidade com legado.
+- Documentada a responsabilidade clara entre CapabilityPolicyEngine e Skills para evitar acumulo indevido de regras de negócio.
+- Atualizado o fluxo final do pipeline detalhando as etapas desde o parse até a atualização do policy_context.
+  - Arquivos: `twin-plans/PLANO_ARQUITETURA_AGENTE_V2.md`
+  - Confiança: alta
+
+## 2026-04-16
+
+### docs
 - Generalizada a arquitetura do agente conversacional V2 para um motor de políticas global multi-tenant, substituindo o modelo específico de funil de agendamento da Umåna.
 - Documentação detalha nova estrutura de PolicyStateResolver, CapabilityPolicyEngine, SkillLoader em camadas, persistência de estado via JSONB, roteamento de modelo por estado e métricas específicas por capability.
 - Definidas interfaces para SlotSchema, TenantLexicon e CapabilityPolicy para configuração dinâmica por cliente, eliminando hardcodes e aumentando flexibilidade.
