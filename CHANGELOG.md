@@ -4,6 +4,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-04-16
+
+### docs
+- Adicionado plano técnico detalhado da arquitetura Agente Conversacional V2 para melhoria do fluxo de agendamento e controle de ferramentas por estágio da conversa.
+- Documento inclui diagnóstico dos problemas da versão atual, proposta de arquitetura com detecção de estágio da conversa via heurísticas, carregamento de skills específicas por estágio, persistência do estágio, roteamento de modelos, plano de implementação faseado e métricas de sucesso.
+- Arquivo novo: `twin-plans/PLANO_ARQUITETURA_AGENTE_V2.md`
+- Confiança: alta
+
 ## 2026-04-15
 
 ### docs
