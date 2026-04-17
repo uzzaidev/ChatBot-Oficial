@@ -6,6 +6,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-17
 
+### fix
+- Ajustado renderização do seletor de colunas protegidas para usar fallback por campo no painel de regras de automação CRM
+  - Arquivos: `src/components/crm/AutomationRulesPanel.tsx`
+  - Evidência: modificação da condição que determina renderização do seletor para incluir campo protegido específico
+  - Confiança: alta
+
+## 2026-04-17
+
 ### feat
 - Permitido uso de colunas protegidas na regra `move_to_column` para evitar mover cards que já estejam em colunas específicas. Implementada interface para seleção múltipla dessas colunas no painel de automações.
 - Normalização dos parâmetros da ação `move_to_column` para tratar e deduplicar colunas protegidas, garantindo que a coluna de destino não esteja na lista de proteção.
