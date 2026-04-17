@@ -639,7 +639,11 @@ export function AutomationRulesPanel({
   const renderActionParamField = (param: ActionParam) => {
     const value = formData.actionParams[param.field];
 
-    if (param.type === "column_multi_select") {
+    const isProtectedColumnsField =
+      formData.actionType === "move_to_column" &&
+      param.field === "skip_if_in_columns";
+
+    if (param.type === "column_multi_select" || isProtectedColumnsField) {
       const selectedIds = normalizeStringArray(value);
       const destinationColumnId =
         typeof formData.actionParams.column_id === "string"
