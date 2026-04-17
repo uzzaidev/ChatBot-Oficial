@@ -370,6 +370,16 @@ export const getClientConfig = async (
         statePersistenceEnabled: client.settings?.agent_v2_state_persistence ?? false,
       },
 
+      // 🕐 Business Hours (from active agent)
+      businessHours: activeAgent?.business_hours_enabled
+        ? {
+            enabled: true,
+            timezone: activeAgent.business_hours_timezone || "America/Sao_Paulo",
+            schedule: activeAgent.business_hours_schedule || [],
+            offMessage: activeAgent.business_hours_off_message || null,
+          }
+        : undefined,
+
       // 🤖 Include active agent info for reference
       activeAgent: activeAgent || undefined,
     };

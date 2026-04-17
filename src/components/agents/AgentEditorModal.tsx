@@ -28,11 +28,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { AGENT_TEMPLATES, getTemplateBySlug } from "@/lib/agent-templates";
 import { apiFetch } from "@/lib/api";
-import type { Agent } from "@/lib/types";
+import type { Agent, DaySchedule } from "@/lib/types";
 import {
   Bot,
   Brain,
   Check,
+  Clock,
   FileText,
   History,
   Loader2,
@@ -228,6 +229,18 @@ const DEFAULT_AGENT: Partial<Agent> = {
   batching_delay_seconds: 10,
   message_delay_ms: 2000,
   message_split_enabled: false,
+  business_hours_enabled: false,
+  business_hours_timezone: "America/Sao_Paulo",
+  business_hours_schedule: [
+    { day: 0, active: false, start: "09:00", end: "18:00" },
+    { day: 1, active: true, start: "09:00", end: "18:00" },
+    { day: 2, active: true, start: "09:00", end: "18:00" },
+    { day: 3, active: true, start: "09:00", end: "18:00" },
+    { day: 4, active: true, start: "09:00", end: "18:00" },
+    { day: 5, active: true, start: "09:00", end: "18:00" },
+    { day: 6, active: false, start: "09:00", end: "18:00" },
+  ],
+  business_hours_off_message: "",
 };
 
 // =====================================================
@@ -1233,6 +1246,154 @@ export const AgentEditorModal = ({
                       />
                     </div>
                   </div>
+                </div>
+
+                <Separator />
+
+                {/* BUSINESS HOURS */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium flex items-center gap-2">
+                        <Clock className="h-4 w-4" />
+                        Horario de Funcionamento
+                      </h4>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Quando ativado, o bot so responde dentro do horario configurado
+                      </p>
+                    </div>
+                    <Switch
+                      checked={formData.business_hours_enabled || false}
+                      onCheckedChange={(v) => updateField("business_hours_enabled", v)}
+                    />
+                  </div>
+
+                  {formData.business_hours_enabled && (
+                    <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
+                      {/* Timezone */}
+                      <div className="space-y-2">
+                        <Label>Fuso Horario</Label>
+                        <Select
+                          value={formData.business_hours_timezone || "America/Sao_Paulo"}
+                          onValueChange={(v) => updateField("business_hours_timezone", v)}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="America/Sao_Paulo">Brasilia (GMT-3)</SelectItem>
+                            <SelectItem value="America/Manaus">Manaus (GMT-4)</SelectItem>
+                            <SelectItem value="America/Rio_Branco">Rio Branco (GMT-5)</SelectItem>
+                            <SelectItem value="America/Noronha">Fernando de Noronha (GMT-2)</SelectItem>
+                            <SelectItem value="America/Belem">Belem (GMT-3)</SelectItem>
+                            <SelectItem value="America/Cuiaba">Cuiaba (GMT-4)</SelectItem>
+                            <SelectItem value="America/Recife">Recife (GMT-3)</SelectItem>
+                            <SelectItem value="America/Fortaleza">Fortaleza (GMT-3)</SelectItem>
+                            <SelectItem value="America/New_York">Nova York (GMT-5)</SelectItem>
+                            <SelectItem value="America/Los_Angeles">Los Angeles (GMT-8)</SelectItem>
+                            <SelectItem value="Europe/Lisbon">Lisboa (GMT+0)</SelectItem>
+                            <SelectItem value="Europe/London">Londres (GMT+0)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Select All / Deselect All */}
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const schedule = (formData.business_hours_schedule || []).map((d: DaySchedule) => ({ ...d, active: true }));
+                            updateField("business_hours_schedule", schedule);
+                          }}
+                        >
+                          Marcar todos
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const schedule = (formData.business_hours_schedule || []).map((d: DaySchedule) => ({ ...d, active: false }));
+                            updateField("business_hours_schedule", schedule);
+                          }}
+                        >
+                          Desmarcar todos
+                        </Button>
+                      </div>
+
+                      {/* Day-by-day schedule */}
+                      <div className="space-y-2">
+                        {(formData.business_hours_schedule || []).map((day: DaySchedule, idx: number) => {
+                          const dayNames = ["Domingo", "Segunda", "Terca", "Quarta", "Quinta", "Sexta", "Sabado"];
+                          const dayAbbr = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
+                          return (
+                            <div
+                              key={day.day}
+                              className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+                                day.active ? "bg-background border-primary/30" : "bg-muted/30 border-border opacity-60"
+                              }`}
+                            >
+                              <Switch
+                                checked={day.active}
+                                onCheckedChange={(checked) => {
+                                  const schedule = [...(formData.business_hours_schedule || [])];
+                                  schedule[idx] = { ...schedule[idx], active: checked };
+                                  updateField("business_hours_schedule", schedule);
+                                }}
+                              />
+                              <span className="w-20 text-sm font-medium hidden sm:inline">{dayNames[day.day]}</span>
+                              <span className="w-10 text-sm font-medium sm:hidden">{dayAbbr[day.day]}</span>
+
+                              {day.active && (
+                                <>
+                                  <Input
+                                    type="time"
+                                    value={day.start}
+                                    className="w-[110px] text-sm"
+                                    onChange={(e) => {
+                                      const schedule = [...(formData.business_hours_schedule || [])];
+                                      schedule[idx] = { ...schedule[idx], start: e.target.value };
+                                      updateField("business_hours_schedule", schedule);
+                                    }}
+                                  />
+                                  <span className="text-muted-foreground text-xs">ate</span>
+                                  <Input
+                                    type="time"
+                                    value={day.end}
+                                    className="w-[110px] text-sm"
+                                    onChange={(e) => {
+                                      const schedule = [...(formData.business_hours_schedule || [])];
+                                      schedule[idx] = { ...schedule[idx], end: e.target.value };
+                                      updateField("business_hours_schedule", schedule);
+                                    }}
+                                  />
+                                </>
+                              )}
+                              {!day.active && (
+                                <span className="text-xs text-muted-foreground italic">Indisponivel</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Off-hours message */}
+                      <div className="space-y-2">
+                        <Label>Mensagem fora do horario (opcional)</Label>
+                        <Textarea
+                          value={formData.business_hours_off_message || ""}
+                          onChange={(e) => updateField("business_hours_off_message", e.target.value)}
+                          placeholder="Ex: Nosso horario de atendimento e de segunda a sexta, 9h as 18h. Retornaremos em breve!"
+                          rows={3}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Se preenchida, o bot envia esta mensagem quando alguem escreve fora do horario. Se vazia, o bot fica em silencio.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <Separator />

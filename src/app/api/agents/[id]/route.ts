@@ -217,6 +217,16 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       updateData.temperature = body.temperature;
     if (body.max_tokens !== undefined) updateData.max_tokens = body.max_tokens;
 
+    // Business Hours
+    if (body.business_hours_enabled !== undefined)
+      updateData.business_hours_enabled = body.business_hours_enabled;
+    if (body.business_hours_timezone !== undefined)
+      updateData.business_hours_timezone = body.business_hours_timezone;
+    if (body.business_hours_schedule !== undefined)
+      updateData.business_hours_schedule = body.business_hours_schedule;
+    if (body.business_hours_off_message !== undefined)
+      updateData.business_hours_off_message = body.business_hours_off_message;
+
     // Recompile prompts if any relevant fields changed
     const promptRelatedFields = [
       "name",

@@ -70,6 +70,12 @@ Minha abordagem é consultiva: primeiro ouço e entendo, depois sugiro. Acredito
     batching_delay_seconds: 10,
     message_delay_ms: 2000,
     message_split_enabled: false,
+
+    // Business Hours (disabled by default)
+    business_hours_enabled: false,
+    business_hours_timezone: "America/Sao_Paulo",
+    business_hours_schedule: null,
+    business_hours_off_message: null,
   },
   {
     name: "Suporte Técnico",
@@ -120,6 +126,12 @@ Explico as soluções passo a passo, garantindo que o cliente entenda o que est�
     batching_delay_seconds: 10,
     message_delay_ms: 2000,
     message_split_enabled: false,
+
+    // Business Hours (disabled by default)
+    business_hours_enabled: false,
+    business_hours_timezone: "America/Sao_Paulo",
+    business_hours_schedule: null,
+    business_hours_off_message: null,
   },
   {
     name: "Qualificador(a) de Leads",
@@ -170,6 +182,12 @@ Faço perguntas estratégicas para entender o contexto, urgência e capacidade d
     batching_delay_seconds: 8, // Faster response for leads
     message_delay_ms: 1500,
     message_split_enabled: false,
+
+    // Business Hours (disabled by default)
+    business_hours_enabled: false,
+    business_hours_timezone: "America/Sao_Paulo",
+    business_hours_schedule: null,
+    business_hours_off_message: null,
   },
   {
     name: "Atendente Geral",
@@ -220,6 +238,12 @@ Meu foco é ser prestativo e eficiente, direcionando o cliente para a melhor sol
     batching_delay_seconds: 10,
     message_delay_ms: 2000,
     message_split_enabled: false,
+
+    // Business Hours (disabled by default)
+    business_hours_enabled: false,
+    business_hours_timezone: "America/Sao_Paulo",
+    business_hours_schedule: null,
+    business_hours_off_message: null,
   },
   {
     name: "Consultor(a) Premium",
@@ -270,6 +294,12 @@ Dedico atenção especial a cada detalhe, oferecendo um serviço de excelência 
     batching_delay_seconds: 15, // More time for thoughtful responses
     message_delay_ms: 2500, // Slower for premium feel
     message_split_enabled: true, // Split long responses for readability
+
+    // Business Hours (disabled by default)
+    business_hours_enabled: false,
+    business_hours_timezone: "America/Sao_Paulo",
+    business_hours_schedule: null,
+    business_hours_off_message: null,
   },
 ];
 
@@ -410,6 +440,12 @@ export const createLegacyAgentFromClientConfig = (
     batching_delay_seconds: clientConfig.settings.batchingDelaySeconds || 10,
     message_delay_ms: clientConfig.settings.messageDelayMs || 2000,
     message_split_enabled: clientConfig.settings.messageSplitEnabled || false,
+
+    // Business Hours (disabled by default for legacy agents)
+    business_hours_enabled: false,
+    business_hours_timezone: "America/Sao_Paulo",
+    business_hours_schedule: null,
+    business_hours_off_message: null,
   };
 };
 

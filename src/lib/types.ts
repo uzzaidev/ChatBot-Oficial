@@ -529,6 +529,14 @@ export interface ClientConfig {
     statePersistenceEnabled: boolean;
   };
 
+  // 🕐 Business Hours (from active agent)
+  businessHours?: {
+    enabled: boolean;
+    timezone: string;
+    schedule: DaySchedule[];
+    offMessage: string | null;
+  };
+
   // Active Agent (NEW - Multi-Agent System)
   activeAgentId?: string | null;
   activeAgent?: Agent; // Full agent object when loaded via getClientConfig
@@ -595,6 +603,12 @@ export interface Agent {
   message_delay_ms: number; // Delay entre mensagens divididas
   message_split_enabled: boolean; // Dividir mensagens longas
 
+  // === HORÁRIO DE FUNCIONAMENTO ===
+  business_hours_enabled: boolean;
+  business_hours_timezone: string;
+  business_hours_schedule: DaySchedule[];
+  business_hours_off_message: string | null;
+
   // === PROMPT COMPILADO (Generated) ===
   compiled_system_prompt: string | null;
   compiled_formatter_prompt: string | null;
@@ -602,6 +616,13 @@ export interface Agent {
   // Timestamps
   created_at: string;
   updated_at: string;
+}
+
+export interface DaySchedule {
+  day: number;     // 0=Dom, 1=Seg, 2=Ter, 3=Qua, 4=Qui, 5=Sex, 6=Sab
+  active: boolean;
+  start: string;   // "HH:MM" ex: "09:00"
+  end: string;     // "HH:MM" ex: "18:00"
 }
 
 /**

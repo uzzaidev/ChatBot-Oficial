@@ -201,6 +201,41 @@ export const processChatbotMessage = async (
       type: parsedMessage.type,
     });
 
+    // NODE 2.5: Business Hours Check
+    if (config.businessHours?.enabled) {
+      const { isWithinBusinessHours } = await import("@/lib/business-hours");
+      const withinHours = isWithinBusinessHours(
+        config.businessHours.schedule,
+        config.businessHours.timezone,
+      );
+
+      if (!withinHours) {
+        logger.logNodeStart("2.5. Business Hours Check", {
+          timezone: config.businessHours.timezone,
+          result: "outside_hours",
+        });
+
+        if (config.businessHours.offMessage) {
+          const { sendTextMessage } = await import("@/lib/meta");
+          await sendTextMessage(
+            parsedMessage.phone,
+            config.businessHours.offMessage,
+            config,
+          );
+        }
+
+        logger.logNodeSuccess("2.5. Business Hours Check", {
+          action: config.businessHours.offMessage ? "sent_off_message" : "silent",
+        });
+        logger.finishExecution("success");
+        return { success: true };
+      }
+
+      logger.logNodeSuccess("2.5. Business Hours Check", {
+        result: "within_hours",
+      });
+    }
+
     // NODE 3: Check/Create Customer
     logger.logNodeStart("3. Check/Create Customer", {
       phone: parsedMessage.phone,
