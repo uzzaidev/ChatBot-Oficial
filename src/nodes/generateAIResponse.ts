@@ -9,6 +9,18 @@ import { checkBudgetAvailable } from "@/lib/unified-tracking";
 import type { CoreMessage } from "ai";
 import { z } from "zod";
 
+// V2: verifica se todos os slots obrigatórios estão preenchidos no metadata do contato
+const checkSlotsAreFilled = (
+  metadata: ContactMetadata | null | undefined,
+  requiredSlots: string[],
+): boolean => {
+  if (!requiredSlots || requiredSlots.length === 0) return true;
+  if (!metadata) return false;
+  return requiredSlots.every(
+    (slot) => metadata[slot] !== undefined && metadata[slot] !== null && metadata[slot] !== "",
+  );
+};
+
 // 📝 PROMPT PADRÃO (usado apenas como fallback se config não tiver systemPrompt)
 const DEFAULT_SYSTEM_PROMPT = `## Papel
 Você é o **assistente principal de IA do engenheiro Luis Fernando Boff**, profissional especializado em **engenharia elétrica, energia solar, ciência de dados e desenvolvimento full stack**.
@@ -440,10 +452,16 @@ export const generateAIResponse = async (
       }
     }
 
-    // 📅 Calendar rules — injected only when calendar is connected AND bot is enabled
+    // V2: calendar tools exposed only when slots are filled (opt-in via agentV2.requireSlotsForCalendar)
+    const calendarSlotsOk =
+      !config.agentV2?.requireSlotsForCalendar ||
+      checkSlotsAreFilled(contactMetadata, config.agentV2?.calendarRequiredSlots ?? []);
+
+    // 📅 Calendar rules — injected only when calendar is connected AND bot is enabled AND slots ok
     if (
       config.calendar?.botEnabled !== false &&
-      (config.calendar?.google?.enabled || config.calendar?.microsoft?.enabled)
+      (config.calendar?.google?.enabled || config.calendar?.microsoft?.enabled) &&
+      calendarSlotsOk
     ) {
       messages.push({
         role: "system",
@@ -599,7 +617,8 @@ export const generateAIResponse = async (
               },
               ...(config.calendar?.botEnabled !== false &&
               (config.calendar?.google?.enabled ||
-              config.calendar?.microsoft?.enabled)
+              config.calendar?.microsoft?.enabled) &&
+              calendarSlotsOk
                 ? {
                     verificar_agenda: {
                       description:

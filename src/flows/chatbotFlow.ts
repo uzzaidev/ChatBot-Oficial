@@ -12,6 +12,7 @@ import { downloadMetaMedia } from "@/nodes/downloadMetaMedia";
 import { filterStatusUpdates } from "@/nodes/filterStatusUpdates";
 import { formatResponse } from "@/nodes/formatResponse";
 import { generateAIResponse } from "@/nodes/generateAIResponse";
+import { resolvePolicy } from "@/lib/policy-engine";
 import { getChatHistory } from "@/nodes/getChatHistory";
 import { getRAGContext } from "@/nodes/getRAGContext";
 import { handleHumanHandoff } from "@/nodes/handleHumanHandoff";
@@ -1166,6 +1167,15 @@ export const processChatbotMessage = async (
       enableTools: !isFastTrack || !fastTrackResult?.catalogSize,
       conversationId: conversation?.id || null, // ✨ FASE 8: Track conversation
     });
+
+    // V2: resolve policy state before LLM call (Sprint 2 — logging + persistence)
+    const v2PolicyResolution = config.agentV2?.enabled
+      ? resolvePolicy(messageForAI, config, customer.metadata)
+      : null;
+    if (v2PolicyResolution) {
+      console.log("[PolicyEngine V2]", JSON.stringify(v2PolicyResolution));
+    }
+
     const aiResponse = await generateAIResponse({
       message: messageForAI, // 🚀 Use canonical for cache hits
       chatHistory: chatHistory2,
@@ -1194,6 +1204,28 @@ export const processChatbotMessage = async (
       fallbackUsedProvider: aiResponse.fallbackUsedProvider || null,
       fallbackUsedModel: aiResponse.fallbackUsedModel || null,
     });
+
+    // V2: persist policy_context after AI response (fire-and-forget — not critical)
+    if (v2PolicyResolution && config.agentV2?.statePersistenceEnabled && conversation?.id) {
+      void supabase
+        .from("conversations")
+        .update({
+          policy_context: {
+            state: v2PolicyResolution.state,
+            capability: v2PolicyResolution.capability,
+            missing_slots: v2PolicyResolution.missing_slots,
+            collected_slots: v2PolicyResolution.collected_slots,
+            allowed_tools: [],
+            version: "v2",
+            last_updated_at: new Date().toISOString(),
+          },
+        })
+        .eq("id", conversation.id)
+        .eq("client_id", config.id)
+        .then(({ error }: { error: Error | null }) => {
+          if (error) console.error("[PolicyEngine V2] Failed to persist policy_context:", error.message);
+        });
+    }
 
     // If the user repeats the same message, a cached identical response is expected.
     // In those cases, we should not force variation (which breaks cache and UX).

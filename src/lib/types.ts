@@ -519,6 +519,16 @@ export interface ClientConfig {
     microsoft: { enabled: boolean; userEmail?: string };
   };
 
+  // 🤖 Agent V2 — Motor de Políticas Global (opt-in por cliente)
+  agentV2?: {
+    enabled: boolean;
+    // Sprint 1 — Tool Gating
+    requireSlotsForCalendar: boolean;
+    calendarRequiredSlots: string[]; // ex: ["como_conheceu", "objetivo", "email", "cpf"]
+    // Sprint 2 — State Persistence
+    statePersistenceEnabled: boolean;
+  };
+
   // Active Agent (NEW - Multi-Agent System)
   activeAgentId?: string | null;
   activeAgent?: Agent; // Full agent object when loaded via getClientConfig
@@ -1339,3 +1349,4 @@ export interface ScheduledMessage {
     name: string | null;
   };
 }
+

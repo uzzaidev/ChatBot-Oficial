@@ -362,6 +362,14 @@ export const getClientConfig = async (
         },
       },
 
+      // 🤖 Agent V2 — Motor de Políticas Global (opt-in por cliente)
+      agentV2: {
+        enabled: client.settings?.agent_v2_enabled ?? false,
+        requireSlotsForCalendar: client.settings?.require_slots_for_calendar ?? false,
+        calendarRequiredSlots: client.settings?.calendar_required_slots ?? [],
+        statePersistenceEnabled: client.settings?.agent_v2_state_persistence ?? false,
+      },
+
       // 🤖 Include active agent info for reference
       activeAgent: activeAgent || undefined,
     };
