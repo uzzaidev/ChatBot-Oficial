@@ -7,6 +7,16 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-17
 
 ### feat
+- Implementado endpoint para atualização em massa do status de atendimento dos contatos por coluna no CRM (`POST /api/crm/columns/[id]/bulk-status`), com validação de status e controle de usuário que realizou transferência.
+- Adicionada funcionalidade no dashboard CRM para disparar atualização em massa de status via interface, incluindo confirmação modal e feedback visual.
+- Atualizado componente KanbanColumn para incluir opções de alteração em massa de status com ícones e estados de carregamento.
+- Hook `useCRMCards` estendido para suportar a chamada da API de bulk update e atualizar a lista de cards após a operação.
+  - Arquivos: `src/app/api/crm/columns/[id]/bulk-status/route.ts`, `src/app/dashboard/crm/page.tsx`, `src/components/crm/KanbanBoard.tsx`, `src/components/crm/KanbanColumn.tsx`, `src/hooks/useCRMCards.ts`
+  - Confiança: alta
+
+## 2026-04-17
+
+### feat
 - Implementado editor inline para nome de contato nas telas de contatos, conversas e CRM, permitindo edição direta com validação e feedback visual.
 - Adicionado componente `ContactNameEditor` reutilizável com estados de edição, salvamento e cancelamento, integrado ao backend via PATCH `/api/contacts/[phone]`.
 - Atualizado endpoint PATCH de contatos para validar e normalizar nome e status, incluindo novo status `fluxo_inicial`.
