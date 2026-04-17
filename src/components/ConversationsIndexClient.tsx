@@ -1,6 +1,7 @@
 "use client";
 
 import { ChatThemePaletteButton } from "@/components/ChatThemePaletteButton";
+import { ContactNameEditor } from "@/components/ContactNameEditor";
 import { ConversationDetail } from "@/components/ConversationDetail";
 import { ConversationList } from "@/components/ConversationList";
 import { ConversationsHeader } from "@/components/ConversationsHeader";
@@ -70,6 +71,9 @@ export function ConversationsIndexClient({
   const [selectedPhone, setSelectedPhone] = useState<string | null>(
     initialPhone || null,
   );
+  const [optimisticContactName, setOptimisticContactName] = useState<
+    string | null
+  >(null);
   const [attachments, setAttachments] = useState<MediaAttachment[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -119,7 +123,11 @@ export function ConversationsIndexClient({
         setSelectedPhone(initialPhone);
       }
     }
-  }, [initialPhone, loading]);
+  }, [initialPhone, loading, selectedPhone]);
+
+  useEffect(() => {
+    setOptimisticContactName(null);
+  }, [selectedPhone]);
 
   // Efeito para buscar contato virtual quando o telefone não está nas conversas
   useEffect(() => {
@@ -338,6 +346,23 @@ export function ConversationsIndexClient({
     setSelectedPhone(phone);
   }, []);
 
+  const handleConversationNameSaved = useCallback(
+    (updatedName: string) => {
+      setOptimisticContactName(updatedName);
+
+      if (selectedPhone) {
+        setVirtualContact((current) =>
+          current && current.phone === selectedPhone
+            ? { ...current, name: updatedName }
+            : current,
+        );
+      }
+
+      void refetchSilent();
+    },
+    [refetchSilent, selectedPhone],
+  );
+
   // Handlers para attachments
   const handleAddAttachment = useCallback((attachment: MediaAttachment) => {
     setAttachments((prev) => [...prev, attachment]);
@@ -424,6 +449,11 @@ export function ConversationsIndexClient({
     if (realConversation) return realConversation;
     return virtualContact;
   }, [selectedPhone, allConversations, virtualContact]);
+
+  const selectedConversationRawName =
+    optimisticContactName ?? selectedConversation?.name ?? "";
+  const selectedConversationDisplayName =
+    selectedConversationRawName || "Sem nome";
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden bg-background pt-[calc(var(--safe-area-inset-top)+8px)] pb-[calc(var(--safe-area-inset-bottom)+8px)] lg:pt-0 lg:pb-0">
@@ -777,12 +807,20 @@ export function ConversationsIndexClient({
 
                   <Avatar className="h-10 w-10 flex-shrink-0">
                     <AvatarFallback className="bg-gradient-to-br from-secondary to-primary text-white">
-                      {getInitials(selectedConversation.name || "Sem nome")}
+                      {getInitials(selectedConversationDisplayName)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-foreground truncate">
-                      {selectedConversation.name || "Sem nome"}
+                    <h3 className="font-semibold text-foreground">
+                      <ContactNameEditor
+                        phone={selectedPhone}
+                        initialName={selectedConversationRawName}
+                        onSaved={handleConversationNameSaved}
+                        className="w-full justify-start"
+                        textClassName="truncate"
+                        inputClassName="h-8 text-sm"
+                        editButtonClassName="h-6 w-6"
+                      />
                     </h3>
                     <p className="text-xs text-muted-foreground truncate">
                       {selectedPhone}
@@ -805,7 +843,7 @@ export function ConversationsIndexClient({
                   <ConversationDetail
                     phone={selectedPhone}
                     clientId={clientId}
-                    conversationName={selectedConversation.name || undefined}
+                    conversationName={selectedConversationRawName || undefined}
                     onGetOptimisticCallbacks={handleGetOptimisticCallbacks}
                     onMarkAsRead={handleMarkAsRead}
                   />

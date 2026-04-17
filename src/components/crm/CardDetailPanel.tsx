@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ContactNameEditor } from "../ContactNameEditor";
 import { CardNotes } from "./CardNotes";
 import { CardStatusBadge } from "./CardStatusBadge";
 import { CardTimeline } from "./CardTimeline";
@@ -58,6 +59,7 @@ interface CardDetailPanelProps {
   open: boolean;
   onClose: () => void;
   onUpdate?: () => void;
+  onContactNameSaved?: (cardId: string, name: string) => void;
   tags?: CRMTag[];
   onAddTag?: (cardId: string, tagId: string) => Promise<boolean>;
   onRemoveTag?: (cardId: string, tagId: string) => Promise<boolean>;
@@ -114,6 +116,7 @@ export const CardDetailPanel = ({
   open,
   onClose,
   onUpdate,
+  onContactNameSaved,
   tags = [],
   onAddTag,
   onRemoveTag,
@@ -307,8 +310,22 @@ export const CardDetailPanel = ({
                   )}
                 </div>
 
-                <SheetTitle className="mt-3 text-2xl font-semibold tracking-tight text-foreground">
-                  {contactName}
+                <SheetTitle className="mt-3">
+                  <ContactNameEditor
+                    phone={card.phone}
+                    initialName={card.contact?.name}
+                    onSaved={(updatedName) => {
+                      if (onContactNameSaved) {
+                        onContactNameSaved(card.id, updatedName);
+                      } else {
+                        onUpdate?.();
+                      }
+                    }}
+                    className="w-full justify-start"
+                    textClassName="truncate text-2xl font-semibold tracking-tight text-foreground"
+                    inputClassName="h-10 text-lg font-semibold"
+                    editButtonClassName="h-8 w-8"
+                  />
                 </SheetTitle>
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                   <span className="inline-flex items-center gap-1.5">

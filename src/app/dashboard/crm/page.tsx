@@ -125,6 +125,21 @@ export default function CRMPage() {
     await refetchCards();
   };
 
+  const handleContactNameSaved = (cardId: string, updatedName: string) => {
+    setSelectedCard((current) =>
+      current && current.id === cardId
+        ? {
+            ...current,
+            contact: {
+              ...current.contact,
+              name: updatedName,
+            },
+          }
+        : current,
+    );
+    void refetchCards();
+  };
+
   const handleEditColumn = (column: CRMColumn) => {
     setEditingColumn(column);
   };
@@ -698,6 +713,7 @@ export default function CRMPage() {
         open={!!selectedCard}
         onClose={handleCloseDetail}
         onUpdate={handleUpdateCard}
+        onContactNameSaved={handleContactNameSaved}
         tags={tags}
         onAddTag={addTag}
         onRemoveTag={removeTag}

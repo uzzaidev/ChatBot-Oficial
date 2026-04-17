@@ -1,6 +1,7 @@
 "use client";
 
 import { EmptyState } from "@/components/EmptyState";
+import { ContactNameEditor } from "@/components/ContactNameEditor";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import {
@@ -152,6 +153,7 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
     total,
     hasMore,
     loadMore,
+    refetch,
     addContact,
     updateContact,
     deleteContact,
@@ -1138,7 +1140,27 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                   {getInitials(selectedContact.name || "Sem nome")}
                 </AvatarFallback>
               </Avatar>
-              <CardTitle>{selectedContact.name || "Sem nome"}</CardTitle>
+              <CardTitle className="flex justify-center">
+                <ContactNameEditor
+                  phone={selectedContact.phone}
+                  initialName={selectedContact.name}
+                  className="justify-center"
+                  textClassName="text-center text-xl font-semibold"
+                  inputClassName="h-10 text-center"
+                  onSaved={(updatedName) => {
+                    setSelectedContact((current) =>
+                      current
+                        ? {
+                            ...current,
+                            name: updatedName,
+                            updated_at: new Date().toISOString(),
+                          }
+                        : current,
+                    );
+                    void refetch();
+                  }}
+                />
+              </CardTitle>
               <CardDescription className="flex items-center justify-center gap-2">
                 <Phone className="h-4 w-4" />
                 {formatPhone(selectedContact.phone)}

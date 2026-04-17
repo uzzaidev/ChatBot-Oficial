@@ -86,14 +86,38 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const { phone } = await params;
     const cleanPhone = phone.replace(/\D/g, "");
     const body = await request.json();
-    const { name, status } = body;
+    const { name, status } = body as { name?: unknown; status?: string };
 
     // Validar status se fornecido
-    if (status && !["bot", "humano", "transferido"].includes(status)) {
+    if (
+      status &&
+      !["bot", "humano", "transferido", "fluxo_inicial"].includes(status)
+    ) {
       return NextResponse.json(
-        { error: "Status inválido. Use: bot, humano ou transferido" },
+        {
+          error:
+            "Status inválido. Use: bot, humano, transferido ou fluxo_inicial",
+        },
         { status: 400 }
       );
+    }
+
+    let normalizedName: string | undefined;
+    if (name !== undefined) {
+      if (typeof name !== "string") {
+        return NextResponse.json(
+          { error: "Nome inválido. Informe um texto válido" },
+          { status: 400 }
+        );
+      }
+
+      normalizedName = name.trim();
+      if (!normalizedName) {
+        return NextResponse.json(
+          { error: "Nome inválido. O nome não pode ficar vazio" },
+          { status: 400 }
+        );
+      }
     }
 
     // Construir query de update dinamicamente
@@ -101,9 +125,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const values: any[] = [clientId, cleanPhone];
     let paramIndex = 3;
 
-    if (name !== undefined) {
+    if (normalizedName !== undefined) {
       updates.push(`nome = $${paramIndex}`);
-      values.push(name);
+      values.push(normalizedName);
       paramIndex++;
     }
 
