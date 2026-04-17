@@ -6,6 +6,18 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-17
 
+### chore
+- Adicionada configuração local para comandos psql no Claude CLI (`.claude/settings.local.json`)
+  - Arquivos: `.claude/settings.local.json`
+  - Confiança: alta
+
+### docs
+- Criado documento detalhado do Plano de Arquitetura Agente Conversacional V2 com motor de políticas global, incluindo diagnóstico, visão arquitetural, componentes (PolicyStateResolver, CapabilityPolicyEngine, SkillLoader), persistência de estado, roteamento de modelo, prompt compiler, métricas, plano de implementação em 5 sprints, opt-in por cliente, riscos, guardrails operacionais e compatibilidade com legado
+  - Arquivos: `docs/PLANO_ARQUITETURA_AGENTE_V2.md`
+  - Confiança: alta
+
+## 2026-04-17
+
 ### feat
 - Adicionada verificação de saúde do Supabase no fluxo de login para detectar instabilidade do serviço e informar o usuário com mensagens e contagem de tentativas.
 - Implementada lógica de retry no login com email para tentativas automáticas em caso de falhas de rede ou indisponibilidade temporária.
