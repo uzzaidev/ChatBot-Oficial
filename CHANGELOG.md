@@ -7,6 +7,16 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-17
 
 ### feat
+- Implementado editor inline para nome de contato nas telas de contatos, conversas e CRM, permitindo edição direta com validação e feedback visual.
+- Adicionado componente `ContactNameEditor` reutilizável com estados de edição, salvamento e cancelamento, integrado ao backend via PATCH `/api/contacts/[phone]`.
+- Atualizado endpoint PATCH de contatos para validar e normalizar nome e status, incluindo novo status `fluxo_inicial`.
+- Ajustado componentes `ContactsClient`, `ConversationsIndexClient` e `CardDetailPanel` para usar o editor inline e atualizar visualmente o nome do contato após edição.
+  - Arquivos: `src/app/api/contacts/[phone]/route.ts`, `src/app/dashboard/crm/page.tsx`, `src/components/ContactNameEditor.tsx`, `src/components/ContactsClient.tsx`, `src/components/ConversationsIndexClient.tsx`, `src/components/crm/CardDetailPanel.tsx`
+  - Confiança: alta
+
+## 2026-04-17
+
+### feat
 - Implementado suporte a horário de funcionamento por agente, permitindo configurar dias, horários, fuso horário e mensagem fora do expediente. O bot passa a responder apenas dentro do horário configurado, com opção de enviar mensagem personalizada fora do horário.
   - Arquivos: `src/app/api/agents/[id]/route.ts`, `src/components/agents/AgentEditorModal.tsx`, `src/flows/chatbotFlow.ts`, `src/lib/agent-templates.ts`, `src/lib/business-hours.ts`, `src/lib/config.ts`, `src/lib/types.ts`, `supabase/migrations/20260417200000_add_business_hours_to_agents.sql`
   - Confiança: alta
