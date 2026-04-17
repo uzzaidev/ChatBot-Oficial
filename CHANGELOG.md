@@ -6,6 +6,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-17
 
+### feat
+- Implementado suporte a horário de funcionamento por agente, permitindo configurar dias, horários, fuso horário e mensagem fora do expediente. O bot passa a responder apenas dentro do horário configurado, com opção de enviar mensagem personalizada fora do horário.
+  - Arquivos: `src/app/api/agents/[id]/route.ts`, `src/components/agents/AgentEditorModal.tsx`, `src/flows/chatbotFlow.ts`, `src/lib/agent-templates.ts`, `src/lib/business-hours.ts`, `src/lib/config.ts`, `src/lib/types.ts`, `supabase/migrations/20260417200000_add_business_hours_to_agents.sql`
+  - Confiança: alta
+
+## 2026-04-17
+
 ### chore
 - Adicionada configuração local para comandos psql no Claude CLI (`.claude/settings.local.json`)
   - Arquivos: `.claude/settings.local.json`
