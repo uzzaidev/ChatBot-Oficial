@@ -4,6 +4,16 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-04-17
+
+### feat
+- Adicionada verificação de saúde do Supabase no fluxo de login para detectar instabilidade do serviço e informar o usuário com mensagens e contagem de tentativas.
+- Implementada lógica de retry no login com email para tentativas automáticas em caso de falhas de rede ou indisponibilidade temporária.
+- Melhorado tratamento de erros no webhook Stripe para capturar falha na configuração do segredo e falha na verificação de assinatura, com logs específicos.
+- Refatorado cliente Supabase para navegador com padronização de código e melhorias na tipagem e formatação.
+  - Arquivos: `src/app/(auth)/login/page.tsx`, `src/lib/supabase-browser.ts`, `src/app/api/stripe/platform/webhooks/route.ts`
+  - Confiança: alta
+
 ## 2026-04-16
 
 ### docs
