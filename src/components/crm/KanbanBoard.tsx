@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import type { CRMCard, CRMColumn, CRMTag } from "@/lib/types";
+import type { ConversationStatus, CRMCard, CRMColumn, CRMTag } from "@/lib/types";
 import {
   DndContext,
   DragEndEvent,
@@ -39,6 +39,10 @@ interface KanbanBoardProps {
     columnId: string,
     position?: number,
   ) => Promise<boolean>;
+  onBulkUpdateColumnStatus?: (
+    columnId: string,
+    status: ConversationStatus,
+  ) => Promise<{ updated: number } | null>;
   onCardClick: (card: CRMCard) => void;
   onEditColumn?: (column: CRMColumn) => void;
   onDeleteColumn?: (columnId: string) => void;
@@ -69,6 +73,7 @@ export const KanbanBoard = ({
   cards,
   tags,
   onMoveCard,
+  onBulkUpdateColumnStatus,
   onCardClick,
   onEditColumn,
   onDeleteColumn,
@@ -181,7 +186,14 @@ export const KanbanBoard = ({
         await onMoveCard(cardId, targetCard.column_id, targetCard.position);
       }
     },
-    [columns, cards, onMoveCard],
+    [
+      cards,
+      columns,
+      localColumnOrder,
+      onMoveCard,
+      onReorderColumns,
+      orderedColumnIds,
+    ],
   );
 
   const handleDragCancel = useCallback(() => {
@@ -316,6 +328,7 @@ export const KanbanBoard = ({
                       allColumns={columns}
                       onCardClick={onCardClick}
                       onCardMove={onMoveCard}
+                      onBulkUpdateColumnStatus={onBulkUpdateColumnStatus}
                       onEditColumn={
                         onEditColumn ? () => onEditColumn(column) : undefined
                       }

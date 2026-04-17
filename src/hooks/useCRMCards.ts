@@ -1,7 +1,7 @@
 "use client";
 
 import { apiFetch } from "@/lib/api";
-import type { CRMCard, CRMFilters } from "@/lib/types";
+import type { ConversationStatus, CRMCard, CRMFilters } from "@/lib/types";
 import { useCallback, useEffect, useState } from "react";
 
 interface UseCRMCardsResult {
@@ -21,6 +21,10 @@ interface UseCRMCardsResult {
   ) => Promise<boolean>;
   addTag: (cardId: string, tagId: string) => Promise<boolean>;
   removeTag: (cardId: string, tagId: string) => Promise<boolean>;
+  bulkUpdateColumnStatus: (
+    columnId: string,
+    status: ConversationStatus,
+  ) => Promise<{ updated: number } | null>;
   refetch: () => Promise<void>;
 }
 
@@ -309,6 +313,41 @@ export const useCRMCards = (
     }
   }, []);
 
+  const bulkUpdateColumnStatus = useCallback(
+    async (
+      columnId: string,
+      status: ConversationStatus,
+    ): Promise<{ updated: number } | null> => {
+      try {
+        const response = await apiFetch(
+          `/api/crm/columns/${columnId}/bulk-status`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status }),
+          },
+        );
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to bulk update status");
+        }
+
+        const result = await response.json();
+        await fetchCards();
+
+        return {
+          updated: Number(result.updated || 0),
+        };
+      } catch (err: any) {
+        setError(err.message);
+        console.error("Error bulk updating column status:", err);
+        return null;
+      }
+    },
+    [fetchCards],
+  );
+
   return {
     cards,
     loading,
@@ -319,6 +358,7 @@ export const useCRMCards = (
     moveCard,
     addTag,
     removeTag,
+    bulkUpdateColumnStatus,
     refetch: fetchCards,
   };
 };

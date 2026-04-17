@@ -17,7 +17,7 @@ import { useCRMCards } from "@/hooks/useCRMCards";
 import { useCRMColumns } from "@/hooks/useCRMColumns";
 import { useCRMTags } from "@/hooks/useCRMTags";
 import { createBrowserClient } from "@/lib/supabase-browser";
-import type { CRMCard, CRMColumn, CRMFilters } from "@/lib/types";
+import type { ConversationStatus, CRMCard, CRMColumn, CRMFilters } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -95,6 +95,7 @@ export default function CRMPage() {
     moveCard,
     addTag,
     removeTag,
+    bulkUpdateColumnStatus,
     refetch: refetchCards,
   } = useCRMCards(clientId, filters);
 
@@ -111,6 +112,13 @@ export default function CRMPage() {
     position?: number,
   ): Promise<boolean> => {
     return await moveCard(cardId, columnId, position);
+  };
+
+  const handleBulkUpdateColumnStatus = async (
+    columnId: string,
+    status: ConversationStatus,
+  ): Promise<{ updated: number } | null> => {
+    return await bulkUpdateColumnStatus(columnId, status);
   };
 
   const handleCardClick = (card: CRMCard) => {
@@ -543,6 +551,7 @@ export default function CRMPage() {
                         cards={cards}
                         tags={tags}
                         onMoveCard={handleMoveCard}
+                        onBulkUpdateColumnStatus={handleBulkUpdateColumnStatus}
                         onCardClick={handleCardClick}
                         onEditColumn={handleEditColumn}
                         onDeleteColumn={handleDeleteColumn}
