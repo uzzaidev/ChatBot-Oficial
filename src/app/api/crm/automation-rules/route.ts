@@ -26,6 +26,50 @@ const ensureClientId = async (request: NextRequest): Promise<string | null> => {
   return getClientIdFromSession(request);
 };
 
+const normalizeActionParams = (
+  actionType: string,
+  actionParams: unknown,
+): Record<string, unknown> => {
+  const normalized =
+    actionParams && typeof actionParams === "object" && !Array.isArray(actionParams)
+      ? { ...(actionParams as Record<string, unknown>) }
+      : {};
+
+  if (actionType !== "move_to_column") {
+    return normalized;
+  }
+
+  const rawColumnId = normalized.column_id;
+  const columnId =
+    typeof rawColumnId === "string" ? rawColumnId.trim() : String(rawColumnId ?? "").trim();
+
+  if (columnId) {
+    normalized.column_id = columnId;
+  }
+
+  const rawProtected = normalized.skip_if_in_columns;
+  const protectedColumns = Array.isArray(rawProtected)
+    ? rawProtected
+        .map((item) => (typeof item === "string" ? item.trim() : ""))
+        .filter(Boolean)
+    : [];
+
+  if (protectedColumns.length > 0) {
+    const deduped = Array.from(
+      new Set(protectedColumns.filter((value) => value !== columnId)),
+    );
+    if (deduped.length > 0) {
+      normalized.skip_if_in_columns = deduped;
+    } else {
+      delete normalized.skip_if_in_columns;
+    }
+  } else {
+    delete normalized.skip_if_in_columns;
+  }
+
+  return normalized;
+};
+
 const toActionSteps = (payload: {
   actionType?: unknown;
   actionParams?: unknown;
@@ -36,12 +80,11 @@ const toActionSteps = (payload: {
       .filter((step) => step && typeof step === "object")
       .map((step) => {
         const stepObj = step as Record<string, unknown>;
+        const actionType =
+          typeof stepObj.action_type === "string" ? stepObj.action_type : "";
         return {
-          action_type: stepObj.action_type,
-          action_params:
-            stepObj.action_params && typeof stepObj.action_params === "object"
-              ? stepObj.action_params
-              : {},
+          action_type: actionType,
+          action_params: normalizeActionParams(actionType, stepObj.action_params),
           on_error:
             stepObj.on_error === "continue"
               ? "continue"
@@ -56,10 +99,10 @@ const toActionSteps = (payload: {
     return [
       {
         action_type: payload.actionType,
-        action_params:
-          payload.actionParams && typeof payload.actionParams === "object"
-            ? (payload.actionParams as Record<string, unknown>)
-            : {},
+        action_params: normalizeActionParams(
+          payload.actionType,
+          payload.actionParams,
+        ),
         on_error: "stop",
       },
     ];

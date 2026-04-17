@@ -193,6 +193,11 @@ export const AVAILABLE_ACTIONS = [
         label: "Coluna de destino",
         required: true,
       },
+      {
+        field: "skip_if_in_columns",
+        type: "column_multi_select",
+        label: "Nao mover se ja estiver em",
+      },
     ],
   },
   {

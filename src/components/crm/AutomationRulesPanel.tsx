@@ -181,6 +181,13 @@ const actionIcons: Record<string, React.ReactNode> = {
   notify_user: <Users className="h-4 w-4" />,
 };
 
+const normalizeStringArray = (value: unknown): string[] => {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => (typeof item === "string" ? item.trim() : ""))
+    .filter(Boolean);
+};
+
 export function AutomationRulesPanel({
   clientId,
   columns,
@@ -632,17 +639,109 @@ export function AutomationRulesPanel({
   const renderActionParamField = (param: ActionParam) => {
     const value = formData.actionParams[param.field];
 
+    if (param.type === "column_multi_select") {
+      const selectedIds = normalizeStringArray(value);
+      const destinationColumnId =
+        typeof formData.actionParams.column_id === "string"
+          ? formData.actionParams.column_id
+          : "";
+      const availableColumns = columns.filter(
+        (column) => column.id !== destinationColumnId,
+      );
+
+      const toggleColumn = (columnId: string) => {
+        const currentValues = normalizeStringArray(
+          formData.actionParams[param.field],
+        );
+        const nextValues = currentValues.includes(columnId)
+          ? currentValues.filter((id) => id !== columnId)
+          : [...currentValues, columnId];
+
+        setFormData({
+          ...formData,
+          actionParams: {
+            ...formData.actionParams,
+            [param.field]: nextValues,
+          },
+        });
+      };
+
+      return (
+        <div className="space-y-2 rounded-md border border-border/70 p-2">
+          <p className="text-[11px] text-muted-foreground">
+            Opcional: se o card ja estiver em uma dessas colunas, a acao sera
+            ignorada.
+          </p>
+          <div className="max-h-40 space-y-1 overflow-y-auto pr-1">
+            {availableColumns.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                Nenhuma coluna disponivel.
+              </p>
+            ) : (
+              availableColumns.map((column) => {
+                const selected = selectedIds.includes(column.id);
+                return (
+                  <Button
+                    key={column.id}
+                    type="button"
+                    variant={selected ? "secondary" : "ghost"}
+                    className="h-8 w-full justify-between"
+                    onClick={() => toggleColumn(column.id)}
+                  >
+                    <span className="truncate">{column.name}</span>
+                    {selected && <CheckCircle2 className="h-3.5 w-3.5" />}
+                  </Button>
+                );
+              })
+            )}
+          </div>
+          {selectedIds.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {selectedIds.map((id) => {
+                const columnName =
+                  columns.find((column) => column.id === id)?.name ?? id;
+                return (
+                  <Badge key={id} variant="outline" className="text-[10px]">
+                    {columnName}
+                  </Badge>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      );
+    }
+
     if (param.type === "column_select") {
       return (
         <Select
           value={(value as string) || ""}
           onValueChange={(v) =>
-            setFormData({
-              ...formData,
-              actionParams: {
-                ...formData.actionParams,
+            setFormData((prev) => {
+              const nextActionParams: Record<string, unknown> = {
+                ...prev.actionParams,
                 [param.field]: v,
-              },
+              };
+
+              if (
+                prev.actionType === "move_to_column" &&
+                param.field === "column_id"
+              ) {
+                const protectedColumns = normalizeStringArray(
+                  nextActionParams.skip_if_in_columns,
+                ).filter((columnId) => columnId !== v);
+
+                if (protectedColumns.length > 0) {
+                  nextActionParams.skip_if_in_columns = protectedColumns;
+                } else {
+                  delete nextActionParams.skip_if_in_columns;
+                }
+              }
+
+              return {
+                ...prev,
+                actionParams: nextActionParams,
+              };
             })
           }
         >

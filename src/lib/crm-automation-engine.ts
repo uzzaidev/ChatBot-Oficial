@@ -1136,6 +1136,24 @@ const executeActionStep = async (
       if (!columnId) {
         throw new Error("move_to_column requires action_params.column_id");
       }
+
+      const protectedColumns = Array.isArray(actionParams.skip_if_in_columns)
+        ? actionParams.skip_if_in_columns
+            .map((value) => (typeof value === "string" ? value.trim() : ""))
+            .filter(Boolean)
+        : [];
+
+      if (
+        previousColumnId &&
+        protectedColumns.length > 0 &&
+        protectedColumns.includes(previousColumnId)
+      ) {
+        throw new ActionSkipError(
+          "card_in_protected_column",
+          `Card is already in protected column ${previousColumnId}`,
+        );
+      }
+
       const position = toInt(actionParams.position);
       await db.query(`SELECT crm_move_card($1, $2, $3)`, [
         cardId,
