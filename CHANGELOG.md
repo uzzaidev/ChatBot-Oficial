@@ -7,6 +7,15 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-17
 
 ### feat
+- Permitido uso de colunas protegidas na regra `move_to_column` para evitar mover cards que já estejam em colunas específicas. Implementada interface para seleção múltipla dessas colunas no painel de automações.
+- Normalização dos parâmetros da ação `move_to_column` para tratar e deduplicar colunas protegidas, garantindo que a coluna de destino não esteja na lista de proteção.
+- Adicionada lógica no motor de automação para pular a ação de mover se o card estiver em uma coluna protegida, lançando erro específico para controle do fluxo.
+  - Arquivos: `src/app/api/crm/automation-rules/route.ts`, `src/components/crm/AutomationRulesPanel.tsx`, `src/lib/crm-automation-engine.ts`, `src/lib/crm-automation-constants.ts`
+  - Confiança: alta
+
+## 2026-04-17
+
+### feat
 - Implementado endpoint para atualização em massa do status de atendimento dos contatos por coluna no CRM (`POST /api/crm/columns/[id]/bulk-status`), com validação de status e controle de usuário que realizou transferência.
 - Adicionada funcionalidade no dashboard CRM para disparar atualização em massa de status via interface, incluindo confirmação modal e feedback visual.
 - Atualizado componente KanbanColumn para incluir opções de alteração em massa de status com ícones e estados de carregamento.
