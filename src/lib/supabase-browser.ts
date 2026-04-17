@@ -11,10 +11,10 @@
  * - Type-safe with Database types
  */
 
-'use client'
+"use client";
 
-import { createBrowserClient as createSupabaseBrowserClient } from '@supabase/ssr'
-import type { Database } from './types'
+import { createBrowserClient as createSupabaseBrowserClient } from "@supabase/ssr";
+import type { Database } from "./types";
 
 /**
  * Cria cliente Supabase para Client Components
@@ -34,9 +34,9 @@ import type { Database } from './types'
 export const createBrowserClient = () => {
   return createSupabaseBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-}
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  );
+};
 
 /**
  * Helper: Login com email e senha
@@ -53,10 +53,59 @@ export const createBrowserClient = () => {
  *   console.log('Logged in:', data.user.email)
  * }
  */
-export const signInWithEmail = async (email: string, password: string) => {
-  const supabase = createBrowserClient()
-  return supabase.auth.signInWithPassword({ email, password })
-}
+export const signInWithEmail = async (
+  email: string,
+  password: string,
+  maxRetries = 2,
+) => {
+  const supabase = createBrowserClient();
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      // If it's a credential error, don't retry
+      if (
+        result.error &&
+        result.error.message.includes("Invalid login credentials")
+      ) {
+        return result;
+      }
+      if (
+        result.error &&
+        result.error.message.includes("Email not confirmed")
+      ) {
+        return result;
+      }
+
+      // If success or non-retryable error on last attempt, return
+      if (!result.error || attempt === maxRetries) {
+        return result;
+      }
+
+      // Network/server error - wait and retry
+      await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
+    } catch (err) {
+      if (attempt === maxRetries) {
+        return {
+          data: { user: null, session: null },
+          error: {
+            message: "fetch_failed",
+            name: "AuthApiError",
+            status: 0,
+          } as import("@supabase/supabase-js").AuthError,
+        };
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
+    }
+  }
+
+  // Should not reach here, but satisfy TypeScript
+  return supabase.auth.signInWithPassword({ email, password });
+};
 
 /**
  * Helper: Logout
@@ -66,9 +115,9 @@ export const signInWithEmail = async (email: string, password: string) => {
  * router.push('/login')
  */
 export const signOut = async () => {
-  const supabase = createBrowserClient()
-  return supabase.auth.signOut()
-}
+  const supabase = createBrowserClient();
+  return supabase.auth.signOut();
+};
 
 /**
  * Helper: Signup (criar nova conta)
@@ -93,9 +142,9 @@ export const signUp = async (
   email: string,
   password: string,
   clientId: string,
-  fullName?: string
+  fullName?: string,
 ) => {
-  const supabase = createBrowserClient()
+  const supabase = createBrowserClient();
 
   return supabase.auth.signUp({
     email,
@@ -106,8 +155,8 @@ export const signUp = async (
         full_name: fullName,
       },
     },
-  })
-}
+  });
+};
 
 /**
  * Helper: Obtém usuário atual (client-side)
@@ -121,10 +170,12 @@ export const signUp = async (
  * }
  */
 export const getCurrentUser = async () => {
-  const supabase = createBrowserClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  return user
-}
+  const supabase = createBrowserClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user;
+};
 
 /**
  * Helper: Subscribe to auth state changes
@@ -147,29 +198,31 @@ export const getCurrentUser = async () => {
  * }, [])
  */
 export const onAuthStateChange = (
-  callback: (event: string, session: any) => void
+  callback: (event: string, session: any) => void,
 ) => {
-  const supabase = createBrowserClient()
-  const { data: { subscription } } = supabase.auth.onAuthStateChange(callback)
+  const supabase = createBrowserClient();
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange(callback);
 
-  return () => subscription.unsubscribe()
-}
+  return () => subscription.unsubscribe();
+};
 
 export const signInWithOAuth = async (
-  provider: 'google' | 'github' | 'azure',
-  inviteToken?: string
+  provider: "google" | "github" | "azure",
+  inviteToken?: string,
 ) => {
-  const supabase = createBrowserClient()
-  const base = window.location.origin
+  const supabase = createBrowserClient();
+  const base = window.location.origin;
   const redirectTo = inviteToken
     ? `${base}/auth/callback?invite_token=${encodeURIComponent(inviteToken)}`
-    : `${base}/auth/callback`
+    : `${base}/auth/callback`;
 
   return supabase.auth.signInWithOAuth({
     provider,
     options: {
       redirectTo,
-      ...(provider === 'azure' && { scopes: 'openid profile email' }),
+      ...(provider === "azure" && { scopes: "openid profile email" }),
     },
-  })
-}
+  });
+};

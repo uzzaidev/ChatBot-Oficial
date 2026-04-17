@@ -324,12 +324,27 @@ export async function POST(request: NextRequest) {
   }
 
   const rawBody = await request.text();
-  const webhookSecret = getWebhookSecret();
+
+  let webhookSecret: string;
+  try {
+    webhookSecret = getWebhookSecret();
+  } catch (error: any) {
+    logError("Webhook secret not configured", {
+      error: error?.message ?? "missing_env",
+    });
+    return NextResponse.json(
+      { error: "Webhook secret not configured" },
+      { status: 500 },
+    );
+  }
 
   let event: Stripe.Event;
   try {
     event = constructWebhookEvent(rawBody, signature, webhookSecret);
   } catch (error: any) {
+    logError("Signature verification failed", {
+      error: error?.message ?? "signature_verification_failed",
+    });
     return NextResponse.json(
       {
         error: "Invalid Stripe webhook signature",

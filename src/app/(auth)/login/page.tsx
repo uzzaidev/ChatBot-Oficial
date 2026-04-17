@@ -17,6 +17,23 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useEffect, useState } from "react";
 
+const checkSupabaseHealth = async (): Promise<boolean> => {
+  try {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (!url) return false;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(`${url}/auth/v1/health`, {
+      signal: controller.signal,
+      headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
+    });
+    clearTimeout(timeout);
+    return res.ok;
+  } catch {
+    return false;
+  }
+};
+
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -29,6 +46,8 @@ function LoginContent() {
   const [error, setError] = useState<string | null>(null);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [showBiometricPrompt, setShowBiometricPrompt] = useState(false);
+  const [supabaseDown, setSupabaseDown] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     const checkBiometric = async () => {
@@ -46,6 +65,12 @@ function LoginContent() {
     };
 
     checkBiometric();
+  }, []);
+
+  useEffect(() => {
+    checkSupabaseHealth().then((ok) => {
+      if (!ok) setSupabaseDown(true);
+    });
   }, []);
 
   const handleBiometricSuccess = async () => {
@@ -109,6 +134,19 @@ function LoginContent() {
           setError("Email ou senha incorretos");
         } else if (signInError.message.includes("Email not confirmed")) {
           setError("Email não confirmado. Verifique sua caixa de entrada.");
+        } else if (
+          signInError.message === "fetch_failed" ||
+          signInError.message.includes("Failed to fetch") ||
+          signInError.message.includes("NetworkError") ||
+          signInError.message.includes("fetch") ||
+          (signInError.status !== undefined && signInError.status === 0)
+        ) {
+          setSupabaseDown(true);
+          setRetryCount((c) => c + 1);
+          setError(
+            "Servidor de autenticação temporariamente indisponível. " +
+              "Isso geralmente se resolve em alguns minutos. Tente novamente em breve.",
+          );
         } else {
           setError(signInError.message);
         }
@@ -168,7 +206,12 @@ function LoginContent() {
       }
       router.refresh();
     } catch {
-      setError("Erro inesperado ao fazer login. Tente novamente.");
+      setSupabaseDown(true);
+      setRetryCount((c) => c + 1);
+      setError(
+        "Não foi possível conectar ao servidor de autenticação. " +
+          "Verifique sua conexão e tente novamente.",
+      );
       setLoading(false);
     }
   };
@@ -206,6 +249,24 @@ function LoginContent() {
             Fa&#231;a login para acessar o dashboard
           </p>
         </div>
+
+        {supabaseDown && (
+          <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+            <div className="flex items-start gap-3">
+              <span className="text-amber-400 text-lg">&#9888;</span>
+              <div>
+                <p className="text-sm font-medium text-amber-400">
+                  Servi&#231;o de autentica&#231;&#227;o inst&#225;vel
+                </p>
+                <p className="text-xs text-amber-400/70 mt-1">
+                  O provedor de autentica&#231;&#227;o (Supabase) pode estar com
+                  instabilidade. O login inclui tentativas autom&#225;ticas.
+                  {retryCount > 0 && ` Tentativas: ${retryCount}`}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
