@@ -6,6 +6,7 @@
  */
 
 import { createServerClient } from "@/lib/supabase";
+import { invalidateWABACache } from "@/lib/waba-lookup";
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +14,25 @@ export const dynamic = "force-dynamic";
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
+
+const invalidateWebhookConfigCache = async (
+  supabase: any,
+  clientId: string,
+) => {
+  const { data: clientRow } = await supabase
+    .from("clients")
+    .select("meta_waba_id")
+    .eq("id", clientId)
+    .maybeSingle();
+
+  const wabaId =
+    clientRow && typeof clientRow.meta_waba_id === "string"
+      ? clientRow.meta_waba_id
+      : null;
+
+  if (!wabaId) return;
+  await invalidateWABACache(wabaId);
+};
 
 /**
  * POST /api/agents/[id]/activate
@@ -111,6 +131,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .update({ active_agent_id: id })
       .eq("id", profile.client_id);
 
+    // Invalida cache de config por WABA para trocar agente efetivo imediatamente
+    await invalidateWebhookConfigCache(supabase, profile.client_id);
+
     return NextResponse.json({
       success: true,
       message: `Agent "${agent.name}" is now active`,
@@ -178,6 +201,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       .from("clients")
       .update({ active_agent_id: null })
       .eq("id", profile.client_id);
+
+    await invalidateWebhookConfigCache(supabase, profile.client_id);
 
     return NextResponse.json({
       success: true,

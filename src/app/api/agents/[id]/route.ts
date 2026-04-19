@@ -11,6 +11,7 @@ import {
 } from "@/lib/prompt-builder";
 import { createServerClient } from "@/lib/supabase";
 import type { Agent } from "@/lib/types";
+import { invalidateWABACache } from "@/lib/waba-lookup";
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +19,26 @@ export const dynamic = "force-dynamic";
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
+
+const invalidateWebhookConfigCache = async (
+  supabase: any,
+  clientId: string,
+) => {
+  const { data: clientRow } = await supabase
+    .from("clients")
+    .select("meta_waba_id")
+    .eq("id", clientId)
+    .maybeSingle();
+
+  const wabaId =
+    clientRow && typeof clientRow.meta_waba_id === "string"
+      ? clientRow.meta_waba_id
+      : null;
+
+  if (!wabaId) return;
+
+  await invalidateWABACache(wabaId);
+};
 
 /**
  * GET /api/agents/[id]
@@ -313,6 +334,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       const versionsToDelete = allVersions.slice(20).map((v) => v.id);
       await supabase.from("agent_versions").delete().in("id", versionsToDelete);
     }
+
+    // Invalida cache de config por WABA para refletir mudancas de horario imediatamente
+    await invalidateWebhookConfigCache(supabase, profile.client_id);
 
     return NextResponse.json({
       success: true,

@@ -125,13 +125,16 @@ export const getActiveAgent = async (
     const supabase = createServiceRoleClient();
 
     // Busca o agente ativo (is_active = true, is_archived = false)
+    // LIMIT + ORDER evita erro se houver mais de um ativo por inconsistência.
     const { data: agent, error } = await supabase
       .from("agents")
       .select("*")
       .eq("client_id", clientId)
       .eq("is_active", true)
       .eq("is_archived", false)
-      .single();
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     if (error || !agent) {
       console.log(
