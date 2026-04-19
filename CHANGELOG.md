@@ -4,6 +4,19 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-04-19
+
+### fix
+- Ajustada invalidação do cache de configuração do webhook ao ativar, atualizar ou deletar agentes para refletir mudanças imediatamente no WABA
+  - Arquivos: `src/app/api/agents/[id]/activate/route.ts`, `src/app/api/agents/[id]/route.ts`
+  - Evidência: chamadas a `invalidateWABACache` após operações de ativação, patch e delete de agentes
+  - Confiança: alta
+
+### refactor
+- Modificada consulta para buscar agente ativo para usar `order` e `limit` ao invés de `single`, evitando erro se houver múltiplos agentes ativos por inconsistência
+  - Arquivos: `src/lib/config.ts`
+  - Confiança: alta
+
 ## 2026-04-17
 
 ### fix
