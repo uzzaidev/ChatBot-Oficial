@@ -7,6 +7,15 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-20
 
 ### fix
+- Garantida persistência dos traces de observabilidade com flush await no fluxo do chatbot para evitar perda de dados. Adicionados tratamentos e exibição de erros no dashboard de traces para melhor visibilidade.
+- Implementada detecção e aviso único para ausência das tabelas de traces no banco, prevenindo erros silenciosos.
+  - Arquivos: `src/components/TracesClient.tsx`, `src/flows/chatbotFlow.ts`, `src/lib/trace-logger.ts`
+  - Evidência: alteração de chamadas fire-and-forget para await no flush do traceLogger; captura e exibição de erros HTTP no componente de traces; logs de aviso para erro de tabela ausente.
+  - Confiança: alta
+
+## 2026-04-20
+
+### fix
 - Migrado o método `checkDuplicateMessage` de PostgreSQL para Supabase, incluindo verificação de duplicidade por `wamid` para evitar processamentos repetidos de webhooks do Meta.
 - Ajustado o fluxo do chatbot para enviar o campo `wamid` na checagem de mensagens duplicadas.
 - Refatoradas funções auxiliares de normalização e cálculo de similaridade de mensagens para formato mais conciso.
