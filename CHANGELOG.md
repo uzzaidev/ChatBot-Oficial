@@ -7,6 +7,16 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-20
 
 ### fix
+- Migrado o método `checkDuplicateMessage` de PostgreSQL para Supabase, incluindo verificação de duplicidade por `wamid` para evitar processamentos repetidos de webhooks do Meta.
+- Ajustado o fluxo do chatbot para enviar o campo `wamid` na checagem de mensagens duplicadas.
+- Refatoradas funções auxiliares de normalização e cálculo de similaridade de mensagens para formato mais conciso.
+  - Arquivos: `src/nodes/checkDuplicateMessage.ts`, `src/flows/chatbotFlow.ts`
+  - Evidência: substituição de queries SQL diretas por chamadas ao Supabase, inclusão de filtro por `wamid` e tratamento de erros para não bloquear o fluxo.
+  - Confiança: alta
+
+## 2026-04-20
+
+### fix
 - Migradas as funções `saveChatMessage` e `getChatHistory` para utilizar o cliente Supabase em vez de consultas diretas ao PostgreSQL, mantendo suporte multi-tenant e campos como status, mídia e erros.
 - Ajustado o tratamento dos dados retornados e inseridos para compatibilidade com JSONB do Supabase, incluindo melhorias na tipagem e remoção de queries SQL manuais.
   - Arquivos: `src/nodes/getChatHistory.ts`, `src/nodes/saveChatMessage.ts`
