@@ -6,6 +6,17 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-20
 
+### fix
+- Atualizado `pushToRedis` e `batchMessages` para incluir `clientId` nas chaves e na estrutura de entrada, garantindo segregação por cliente nas operações Redis.
+- Ajustado endpoint API de teste para validar presença de `clientId` no input e incluir `clientId` na mensagem de log.
+- Modificado debounce key para incluir `clientId` no fluxo principal do chatbot.
+- Corrigidos imports dinâmicos para manter padrão consistente.
+  - Arquivos: `src/nodes/pushToRedis.ts`, `src/nodes/batchMessages.ts`, `src/app/api/test/nodes/push-redis/route.ts`, `src/flows/chatbotFlow.ts`
+  - Evidência: alteração explícita das chaves Redis para incluir `clientId` e validação no endpoint.
+  - Confiança: alta
+
+## 2026-04-20
+
 ### refactor
 - Reorganizado imports e aprimorado prompt de análise de imagens para gerar descrições detalhadas e texto extraído, melhorando a busca semântica de imagens de propriedades.
 - Atualizado endpoint de upload para incluir nome original do arquivo na descrição da imagem, facilitando buscas por nome de propriedade.
