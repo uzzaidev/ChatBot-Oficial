@@ -6,6 +6,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-20
 
+### feat
+- Adicionada tela de Traces no dashboard para rastrear mensagens processadas com detalhes do pipeline, chamadas de ferramentas (tool calls) e RAG (retrieval-augmented generation). Inclui filtros por status, busca por telefone ou texto, estatísticas diárias, e visualização detalhada em abas (Visão Geral, Tool Calls e RAG).
+- Atualizada navegação do dashboard para incluir link para a nova tela de Traces.
+  - Arquivos: `src/app/dashboard/traces/page.tsx`, `src/components/TracesClient.tsx`, `src/components/DashboardNavigation.tsx`
+  - Confiança: alta
+
+## 2026-04-20
+
 ### docs
 - Adicionado guia completo de debug e observabilidade detalhando logs, tabelas de trace, APIs, dashboard, queries de diagnóstico e cenários de debug passo a passo
   - Arquivos: `checkpoints/2026-04-16_chatbot-oficial/14_DEBUG_AND_OBSERVABILITY_GUIDE.md`
