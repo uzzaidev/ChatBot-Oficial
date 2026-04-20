@@ -1,3 +1,4 @@
+import { resolvePolicy } from "@/lib/policy-engine";
 import {
   ClientConfig,
   StoredMediaMetadata,
@@ -12,7 +13,6 @@ import { downloadMetaMedia } from "@/nodes/downloadMetaMedia";
 import { filterStatusUpdates } from "@/nodes/filterStatusUpdates";
 import { formatResponse } from "@/nodes/formatResponse";
 import { generateAIResponse } from "@/nodes/generateAIResponse";
-import { resolvePolicy } from "@/lib/policy-engine";
 import { getChatHistory } from "@/nodes/getChatHistory";
 import { getRAGContext } from "@/nodes/getRAGContext";
 import { handleHumanHandoff } from "@/nodes/handleHumanHandoff";
@@ -160,7 +160,10 @@ export const processChatbotMessage = async (
   // 📋 Log config summary at flow start for Vercel debugging
   console.log(`[chatbotFlow] 🤖 Starting flow for client "${config.name}":`, {
     activeAgent: config.activeAgent
-      ? `${config.activeAgent.name} (id: ${config.activeAgent.id.substring(0, 8)}...)`
+      ? `${config.activeAgent.name} (id: ${config.activeAgent.id.substring(
+          0,
+          8,
+        )}...)`
       : "NONE",
     provider: config.primaryProvider,
     model:
@@ -226,7 +229,9 @@ export const processChatbotMessage = async (
         }
 
         logger.logNodeSuccess("2.5. Business Hours Check", {
-          action: config.businessHours.offMessage ? "sent_off_message" : "silent",
+          action: config.businessHours.offMessage
+            ? "sent_off_message"
+            : "silent",
         });
         logger.finishExecution("success");
         return { success: true };
@@ -297,7 +302,11 @@ export const processChatbotMessage = async (
       );
 
       console.log(
-        `[chatbotFlow] 🎯 CRM ensureCRMCard result: ${cardResult ? `cardId=${cardResult.cardId} created=${cardResult.created}` : "null (auto_create_cards disabled or no column)"}`,
+        `[chatbotFlow] 🎯 CRM ensureCRMCard result: ${
+          cardResult
+            ? `cardId=${cardResult.cardId} created=${cardResult.created}`
+            : "null (auto_create_cards disabled or no column)"
+        }`,
       );
 
       if (cardResult) {
@@ -800,7 +809,9 @@ export const processChatbotMessage = async (
           clientId: config.id,
           cardId: crmCardId,
           triggerType: "keyword_detected",
-          dedupeKey: `keyword_detected:${crmCardId}:${parsedMessage.messageId || normalizedMessage.content.slice(0, 80)}`,
+          dedupeKey: `keyword_detected:${crmCardId}:${
+            parsedMessage.messageId || normalizedMessage.content.slice(0, 80)
+          }`,
           triggerData: {
             message_text: normalizedMessage.content,
             message_text_lower: normalizedMessage.content.toLowerCase(),
@@ -872,11 +883,11 @@ export const processChatbotMessage = async (
       logger.logNodeStart("7. Push to Redis", normalizedMessage);
 
       try {
-        await pushToRedis(normalizedMessage);
+        await pushToRedis({ ...normalizedMessage, clientId: config.id });
         logger.logNodeSuccess("7. Push to Redis", { success: true });
 
         // Update debounce timestamp (resets the 10s timer)
-        const debounceKey = `debounce:${parsedMessage.phone}`;
+        const debounceKey = `debounce:${config.id}:${parsedMessage.phone}`;
         await setWithExpiry(debounceKey, String(Date.now()), 15); // 15s TTL (buffer above 10s delay)
       } catch (redisError) {
         logger.logNodeError("7. Push to Redis", redisError);
@@ -911,8 +922,9 @@ export const processChatbotMessage = async (
       contentLength: normalizedMessage.content.length,
     });
 
-    const { checkDuplicateMessage } =
-      await import("@/nodes/checkDuplicateMessage");
+    const { checkDuplicateMessage } = await import(
+      "@/nodes/checkDuplicateMessage"
+    );
     const duplicateCheck = await checkDuplicateMessage({
       phone: parsedMessage.phone,
       messageContent: normalizedMessage.content,
@@ -1267,7 +1279,11 @@ export const processChatbotMessage = async (
     });
 
     // V2: persist policy_context after AI response (fire-and-forget — not critical)
-    if (v2PolicyResolution && config.agentV2?.statePersistenceEnabled && conversation?.id) {
+    if (
+      v2PolicyResolution &&
+      config.agentV2?.statePersistenceEnabled &&
+      conversation?.id
+    ) {
       void supabase
         .from("conversations")
         .update({
@@ -1284,7 +1300,11 @@ export const processChatbotMessage = async (
         .eq("id", conversation.id)
         .eq("client_id", config.id)
         .then(({ error }: { error: Error | null }) => {
-          if (error) console.error("[PolicyEngine V2] Failed to persist policy_context:", error.message);
+          if (error)
+            console.error(
+              "[PolicyEngine V2] Failed to persist policy_context:",
+              error.message,
+            );
         });
     }
 
@@ -1308,8 +1328,8 @@ export const processChatbotMessage = async (
       aiResponse.wasCached === true
         ? "cache_hit"
         : isSameUserMessageAsLast
-          ? "same_user_message"
-          : null;
+        ? "same_user_message"
+        : null;
 
     // 🔧 Phase 3: Detect Repetition and regenerate if needed (configurable)
     if (
@@ -1441,7 +1461,9 @@ export const processChatbotMessage = async (
     if (crmCardId && batchedContent && batchedContent.trim().length > 0) {
       try {
         console.log(
-          `[chatbotFlow] 🧠 CRM intent classification starting | cardId=${crmCardId} messageLength=${batchedContent.trim().length}`,
+          `[chatbotFlow] 🧠 CRM intent classification starting | cardId=${crmCardId} messageLength=${
+            batchedContent.trim().length
+          }`,
         );
         const intentSignal = await classifyCRMIntent({
           clientId: config.id,
@@ -1470,7 +1492,9 @@ export const processChatbotMessage = async (
               clientId: config.id,
               cardId: crmCardId,
               triggerType: "intent_detected",
-              dedupeKey: `intent_detected:${crmCardId}:${parsedMessage.messageId || Date.now()}`,
+              dedupeKey: `intent_detected:${crmCardId}:${
+                parsedMessage.messageId || Date.now()
+              }`,
               triggerData: {
                 ...baseTriggerData,
                 intent: intentSignal.intent,
@@ -1483,7 +1507,9 @@ export const processChatbotMessage = async (
               clientId: config.id,
               cardId: crmCardId,
               triggerType: "urgency_detected",
-              dedupeKey: `urgency_detected:${crmCardId}:${parsedMessage.messageId || Date.now()}`,
+              dedupeKey: `urgency_detected:${crmCardId}:${
+                parsedMessage.messageId || Date.now()
+              }`,
               triggerData: {
                 ...baseTriggerData,
                 urgency_level: intentSignal.urgencyLevel,
@@ -1499,7 +1525,9 @@ export const processChatbotMessage = async (
       }
     } else {
       console.log(
-        `[chatbotFlow] 🧠 CRM intent classification SKIPPED | crmCardId=${crmCardId ?? "undefined"} batchedContentLength=${batchedContent?.trim().length ?? 0}`,
+        `[chatbotFlow] 🧠 CRM intent classification SKIPPED | crmCardId=${
+          crmCardId ?? "undefined"
+        } batchedContentLength=${batchedContent?.trim().length ?? 0}`,
       );
     }
 
@@ -1553,8 +1581,9 @@ export const processChatbotMessage = async (
             toolCallId: toolCall.id,
           });
 
-          const { handleDocumentSearchToolCall } =
-            await import("@/nodes/handleDocumentSearchToolCall");
+          const { handleDocumentSearchToolCall } = await import(
+            "@/nodes/handleDocumentSearchToolCall"
+          );
 
           const documentSearchResult = await handleDocumentSearchToolCall({
             toolCall,
@@ -1649,8 +1678,9 @@ export const processChatbotMessage = async (
             toolCallId: toolCall.id,
           });
 
-          const { handleAudioToolCall } =
-            await import("@/handlers/handleAudioToolCall");
+          const { handleAudioToolCall } = await import(
+            "@/handlers/handleAudioToolCall"
+          );
 
           // Parse argumentos da tool
           const args = JSON.parse(toolCall.function.arguments || "{}");
@@ -1773,8 +1803,9 @@ export const processChatbotMessage = async (
             toolCallId: toolCall.id,
           });
 
-          const { handleCalendarToolCall } =
-            await import("@/nodes/handleCalendarToolCall");
+          const { handleCalendarToolCall } = await import(
+            "@/nodes/handleCalendarToolCall"
+          );
 
           const args = JSON.parse(toolCall.function.arguments || "{}");
           const calendarResult = await handleCalendarToolCall(
@@ -1803,8 +1834,9 @@ export const processChatbotMessage = async (
             toolCallId: toolCall.id,
           });
 
-          const { handleCalendarToolCall } =
-            await import("@/nodes/handleCalendarToolCall");
+          const { handleCalendarToolCall } = await import(
+            "@/nodes/handleCalendarToolCall"
+          );
 
           const args = JSON.parse(toolCall.function.arguments || "{}");
           const calendarResult = await handleCalendarToolCall(
@@ -1833,8 +1865,9 @@ export const processChatbotMessage = async (
             toolCallId: toolCall.id,
           });
 
-          const { handleCalendarToolCall } =
-            await import("@/nodes/handleCalendarToolCall");
+          const { handleCalendarToolCall } = await import(
+            "@/nodes/handleCalendarToolCall"
+          );
 
           const args = JSON.parse(toolCall.function.arguments || "{}");
           const calendarResult = await handleCalendarToolCall(

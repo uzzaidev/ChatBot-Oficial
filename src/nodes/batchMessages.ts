@@ -39,10 +39,10 @@ export const batchMessages = async (
   clientId: string,
   batchingDelaySeconds?: number,
 ): Promise<string> => {
-  const lockKey = `batch_lock:${phone}`;
-  const debounceKey = `debounce:${phone}`;
-  const messagesKey = `messages:${phone}`;
-  const lastProcessedKey = `last_processed:${phone}`; // Track when we last processed this user
+  const lockKey = `batch_lock:${clientId}:${phone}`;
+  const debounceKey = `debounce:${clientId}:${phone}`;
+  const messagesKey = `messages:${clientId}:${phone}`;
+  const lastProcessedKey = `last_processed:${clientId}:${phone}`; // Track when we last processed this user
 
   // Generate unique execution ID for this flow
   const executionId = crypto.randomUUID();
