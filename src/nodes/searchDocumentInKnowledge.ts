@@ -16,9 +16,9 @@
  * - Agente principal usa como tool para buscar documentos sob demanda
  */
 
-import { createServiceRoleClient } from "@/lib/supabase";
-import { generateEmbedding } from "@/lib/openai";
 import { getBotConfig } from "@/lib/config";
+import { generateEmbedding } from "@/lib/openai";
+import { createServiceRoleClient } from "@/lib/supabase";
 
 export interface SearchDocumentInput {
   /** Termo de busca (nome do arquivo, assunto, etc.) */
@@ -205,7 +205,69 @@ export const searchDocumentInKnowledge = async (
 
     const chunksFound = data?.length || 0;
 
+    // 4. Agrupar chunks por arquivo original (filename)
+    // Múltiplos chunks do mesmo arquivo → retorna apenas o de maior similaridade
+    const groupedByFile = new Map<string, DocumentSearchResult>();
+
+    // 3.5. Filename-based fallback when semantic search returns nothing
+    // This handles cases where images were uploaded before the descriptive-analysis fix,
+    // or where the property name does not appear in the Vision-AI description.
+    // e.g. searching "Facchin" finds files whose metadata.filename contains "Facchin".
     if (!data || data.length === 0) {
+      const queryWords = query
+        .toLowerCase()
+        .replace(/[^\w\s]/g, " ")
+        .split(/\s+/)
+        .filter((w) => w.length > 3);
+
+      if (queryWords.length > 0) {
+        const ilikeConditions = queryWords
+          .map((w) => `metadata->>filename.ilike.%${w}%`)
+          .join(",");
+
+        const { data: filenameData } = await supabaseAny
+          .from("documents")
+          .select(
+            "id, content, metadata, original_file_url, original_file_path, original_mime_type, original_file_size",
+          )
+          .eq("client_id", clientId)
+          .not("original_file_url", "is", null)
+          .or(ilikeConditions)
+          .limit(max * 3);
+
+        if (filenameData && filenameData.length > 0) {
+          for (const doc of filenameData) {
+            const filename = doc.metadata?.filename;
+            if (!filename || !doc.original_file_url) continue;
+            if (!groupedByFile.has(filename)) {
+              groupedByFile.set(filename, {
+                id: doc.id,
+                filename,
+                documentType: doc.metadata?.documentType || "unknown",
+                originalFileUrl: doc.original_file_url,
+                originalFilePath: doc.original_file_path,
+                originalMimeType: doc.original_mime_type,
+                originalFileSize: doc.original_file_size,
+                similarity: 0.5, // nominal similarity for filename match
+                preview: doc.content.substring(0, 200),
+              });
+            }
+          }
+
+          const results = Array.from(groupedByFile.values()).slice(0, max);
+          return {
+            results,
+            metadata: {
+              totalDocumentsInBase,
+              chunksFound: filenameData.length,
+              uniqueDocumentsFound: results.length,
+              threshold,
+              documentTypeFilter: documentType,
+            },
+          };
+        }
+      }
+
       return {
         results: [],
         metadata: {
@@ -217,10 +279,6 @@ export const searchDocumentInKnowledge = async (
         },
       };
     }
-
-    // 4. Agrupar chunks por arquivo original (filename)
-    // Múltiplos chunks do mesmo arquivo → retorna apenas o de maior similaridade
-    const groupedByFile = new Map<string, DocumentSearchResult>();
 
     for (const doc of data) {
       const filename = doc.metadata?.filename;

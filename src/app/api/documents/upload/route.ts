@@ -20,11 +20,11 @@
  * - 500: Server error
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { getBotConfig } from "@/lib/config";
+import { analyzeImageFromBuffer } from "@/lib/openai";
 import { createServerClient, createServiceRoleClient } from "@/lib/supabase";
 import { processDocumentWithChunking } from "@/nodes/processDocumentWithChunking";
-import { analyzeImageFromBuffer } from "@/lib/openai";
-import { getBotConfig } from "@/lib/config";
+import { NextRequest, NextResponse } from "next/server";
 // pdf-parse v1.1.0 uses a function-based API that works in serverless environments
 // It bundles an older version of pdf.js (v1.9.426) that doesn't require browser APIs like DOMMatrix
 import * as pdfParseModule from "pdf-parse";
@@ -169,8 +169,8 @@ const categorizeOpenAIError = (
   // Check for model not found
   if (
     errorString.includes("model_not_found") ||
-    errorString.includes("the model") &&
-      errorString.includes("does not exist") ||
+    (errorString.includes("the model") &&
+      errorString.includes("does not exist")) ||
     errorString.includes("model not found")
   ) {
     return {
@@ -188,8 +188,9 @@ const categorizeOpenAIError = (
 };
 
 /**
- * Extract text from image using OpenAI Vision API (GPT-4o)
- * Serverless-compatible, no canvas dependencies
+ * Analyze image using OpenAI Vision API (GPT-4o)
+ * Generates a rich description + extracts any visible text.
+ * Used to create searchable embeddings for property photos and other images.
  *
  * MULTI-TENANT: Uses client's OpenAI API key directly from Vault
  * (analyzeImageFromBuffer automatically fetches key via getClientOpenAIKey)
@@ -199,40 +200,42 @@ const extractTextFromImage = async (
   mimeType: string,
   clientId: string,
 ): Promise<string> => {
-  const OCR_PROMPT =
-    "Extraia TODO o texto desta imagem. Retorne APENAS o texto extraído, sem explicações. " +
-    'Se não houver texto, retorne exatamente: "No text found".';
+  const ANALYSIS_PROMPT =
+    "Analise esta imagem detalhadamente. Descreva o que você vê: tipo de imóvel ou propriedade, " +
+    "características visuais, localização aparente, estado de conservação, e qualquer detalhe relevante. " +
+    "Se houver texto visível na imagem (placas, endereços, legendas), transcreva-o também. " +
+    "Seja específico e informativo para facilitar a busca semântica desta imagem.";
 
   // analyzeImageFromBuffer uses getClientOpenAIKey(clientId) from Vault internally
   // No need to pass apiKey - it's fetched directly from client's Vault
   const result = await analyzeImageFromBuffer(
     buffer,
-    OCR_PROMPT,
+    ANALYSIS_PROMPT,
     mimeType,
     undefined, // apiKey not needed - fetched from Vault
     clientId,
   );
 
-  const extractedText = result.text || "";
+  const analysisText = result.text || "";
 
-  if (extractedText === "No text found" || !extractedText.trim()) {
-    throw new Error("No text found in image");
+  if (!analysisText.trim()) {
+    throw new Error("Falha ao analisar imagem: resposta vazia");
   }
 
-  return extractedText;
+  return analysisText;
 };
 
 export async function POST(request: NextRequest) {
   try {
     // 1. Authenticate user
     const supabase = await createServerClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 },
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // 2. Get user's client_id
@@ -257,19 +260,22 @@ export async function POST(request: NextRequest) {
     // 2.6. Buscar tamanho máximo configurado do backend
     let maxFileSize = DEFAULT_MAX_FILE_SIZE;
     try {
-      const maxUploadSizeConfig = await getBotConfig(clientId, 'knowledge_media:max_upload_size_mb');
+      const maxUploadSizeConfig = await getBotConfig(
+        clientId,
+        "knowledge_media:max_upload_size_mb",
+      );
       if (maxUploadSizeConfig !== null) {
         maxFileSize = Number(maxUploadSizeConfig) * 1024 * 1024; // Converter MB para bytes
       }
     } catch (error) {
       // Usa valor padrão se der erro
-      console.error('Erro ao buscar tamanho máximo de upload:', error);
+      console.error("Erro ao buscar tamanho máximo de upload:", error);
     }
 
     // 3. Parse multipart form data
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
-    const documentType = formData.get("documentType") as string || "general";
+    const documentType = (formData.get("documentType") as string) || "general";
 
     if (!file) {
       return NextResponse.json(
@@ -280,13 +286,16 @@ export async function POST(request: NextRequest) {
 
     // 4. Validate file
     // Check MIME type or file extension for .md files
-    const fileName = file.name.toLowerCase()
-    const isMarkdown = fileName.endsWith('.md') || fileName.endsWith('.markdown')
-    const isValidType = ALLOWED_TYPES.includes(file.type) || isMarkdown
-    
+    const fileName = file.name.toLowerCase();
+    const isMarkdown =
+      fileName.endsWith(".md") || fileName.endsWith(".markdown");
+    const isValidType = ALLOWED_TYPES.includes(file.type) || isMarkdown;
+
     if (!isValidType) {
       return NextResponse.json(
-        { error: `Invalid file type. Allowed: PDF, TXT, MD, and images (JPG, PNG, WEBP)` },
+        {
+          error: `Invalid file type. Allowed: PDF, TXT, MD, and images (JPG, PNG, WEBP)`,
+        },
         { status: 400 },
       );
     }
@@ -312,33 +321,35 @@ export async function POST(request: NextRequest) {
         const pdfData = await pdfParse(buffer);
         text = pdfData?.text ?? "";
       } catch (pdfError) {
-        const pdfErrorMessage = pdfError instanceof Error
-          ? pdfError.message
-          : "Erro PDF desconhecido";
+        const pdfErrorMessage =
+          pdfError instanceof Error
+            ? pdfError.message
+            : "Erro PDF desconhecido";
         return NextResponse.json(
           {
-            error:
-              `Erro ao processar PDF: ${pdfErrorMessage}. Verifique se o arquivo não está corrompido ou protegido por senha.`,
+            error: `Erro ao processar PDF: ${pdfErrorMessage}. Verifique se o arquivo não está corrompido ou protegido por senha.`,
           },
           { status: 400 },
         );
       }
     } else if (file.type.startsWith("image/")) {
-      // Image OCR extraction using OpenAI Vision (serverless-compatible)
+      // Image analysis using OpenAI Vision (serverless-compatible)
+      // Generates a rich description so the image is searchable by property name / content.
       // Uses client's OpenAI key directly from Vault (multi-tenant)
       const buffer = Buffer.from(await file.arrayBuffer());
       try {
-        text = await extractTextFromImage(
+        const imageAnalysis = await extractTextFromImage(
           buffer,
           file.type,
           clientId,
         );
+        // Prepend the original filename so semantic search can match by property name
+        // e.g. searching "Facchin" will find "Fazenda Facchin1.jpg" even if the
+        // visual description doesn't mention the word "Facchin"
+        text = `Imagem: ${file.name}\n\n${imageAnalysis}`;
       } catch (ocrError) {
         const { message: ocrErrorMessage } = categorizeOpenAIError(ocrError);
-        return NextResponse.json(
-          { error: ocrErrorMessage },
-          { status: 400 },
-        );
+        return NextResponse.json({ error: ocrErrorMessage }, { status: 400 });
       }
     } else if (file.type === "text/markdown" || isMarkdown) {
       // Markdown files - treat as plain text
@@ -350,28 +361,25 @@ export async function POST(request: NextRequest) {
 
     if (!text || text.trim().length === 0) {
       // Provide more helpful error message based on file type
-      const specificError = EMPTY_TEXT_ERROR_MESSAGES[file.type] ||
+      const specificError =
+        EMPTY_TEXT_ERROR_MESSAGES[file.type] ||
         "Arquivo vazio ou falha na extração de texto";
-      return NextResponse.json(
-        { error: specificError },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: specificError }, { status: 400 });
     }
 
     // 6. Upload original file to Supabase Storage
     const fileBuffer = Buffer.from(await file.arrayBuffer());
     const timestamp = Date.now();
     const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, "_"); // Sanitize filename
-    const storagePath =
-      `${clientId}/${documentType}/${timestamp}-${sanitizedFilename}`;
+    const storagePath = `${clientId}/${documentType}/${timestamp}-${sanitizedFilename}`;
 
-    const { data: uploadData, error: uploadError } = await supabaseServiceRole
-      .storage
-      .from("knowledge-documents")
-      .upload(storagePath, fileBuffer, {
-        contentType: file.type,
-        upsert: false,
-      });
+    const { data: uploadData, error: uploadError } =
+      await supabaseServiceRole.storage
+        .from("knowledge-documents")
+        .upload(storagePath, fileBuffer, {
+          contentType: file.type,
+          upsert: false,
+        });
 
     if (uploadError) {
       return NextResponse.json(
@@ -381,8 +389,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 7. Generate public URL for the uploaded file
-    const { data: publicUrlData } = supabaseServiceRole
-      .storage
+    const { data: publicUrlData } = supabaseServiceRole.storage
       .from("knowledge-documents")
       .getPublicUrl(storagePath);
 
@@ -412,9 +419,8 @@ export async function POST(request: NextRequest) {
         // openaiApiKey not needed - generateEmbedding() fetches from Vault
       });
     } catch (processingError) {
-      const { message: processingErrorMessage } = categorizeOpenAIError(
-        processingError,
-      );
+      const { message: processingErrorMessage } =
+        categorizeOpenAIError(processingError);
       return NextResponse.json(
         { error: processingErrorMessage },
         { status: 400 },
@@ -432,9 +438,8 @@ export async function POST(request: NextRequest) {
       documentIds: result.documentIds,
     });
   } catch (error) {
-    const errorMessage = error instanceof Error
-      ? error.message
-      : "Unknown error";
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
 
     return NextResponse.json(
       { error: `Failed to process document: ${errorMessage}` },
