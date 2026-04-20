@@ -1,174 +1,127 @@
-import { query } from "@/lib/postgres";
+import { createServiceRoleClient } from '@/lib/supabase'
 
 export interface CheckDuplicateMessageInput {
-  phone: string;
-  messageContent: string;
-  clientId: string;
+  phone: string
+  messageContent: string
+  clientId: string
+  wamid?: string
 }
 
 export interface CheckDuplicateMessageResult {
-  isDuplicate: boolean;
-  reason?: string;
+  isDuplicate: boolean
+  reason?: string
   recentMessage?: {
-    content: string;
-    timestamp: Date;
-    timeSinceMs: number;
-  };
+    content: string
+    timestamp: Date
+    timeSinceMs: number
+  }
 }
 
-/**
- * 🔍 Check if incoming message is a duplicate or very similar to a recent message
- *
- * Prevents duplicate responses when:
- * - User sends same message multiple times quickly
- * - Network issues cause duplicate webhook deliveries
- * - Race conditions cause overlapping batch processing
- *
- * @param input - Message to check
- * @returns Whether message is duplicate and details
- */
 export const checkDuplicateMessage = async (
   input: CheckDuplicateMessageInput,
 ): Promise<CheckDuplicateMessageResult> => {
-  const { phone, messageContent, clientId } = input;
+  const { phone, messageContent, clientId, wamid } = input
 
   try {
-    // Look for recent user messages (last 15 seconds)
-    // that are identical or very similar
-    const result = await query(
-      `SELECT
-        message->>'content' as content,
-        created_at,
-        EXTRACT(EPOCH FROM (NOW() - created_at)) * 1000 as time_since_ms
-       FROM n8n_chat_histories
-       WHERE session_id = $1
-         AND client_id = $2
-         AND (message->>'type') = 'human'
-         AND created_at > NOW() - INTERVAL '15 seconds'
-       ORDER BY created_at DESC
-       LIMIT 5`,
-      [phone, clientId],
-    );
+    const supabase = createServiceRoleClient()
 
-    if (result.rows.length === 0) {
-      // No recent messages - definitely not a duplicate
-      return { isDuplicate: false };
+    // Primary check: exact wamid match (Meta may deliver same webhook twice)
+    if (wamid) {
+      const { data: wamidRows } = await (supabase as any)
+        .from('n8n_chat_histories')
+        .select('wamid, created_at')
+        .eq('wamid', wamid)
+        .eq('client_id', clientId)
+        .limit(1)
+
+      if (wamidRows && wamidRows.length > 0) {
+        return { isDuplicate: true, reason: 'wamid_match' }
+      }
     }
 
-    const normalizedInput = normalizeMessage(messageContent);
+    // Secondary check: same content within last 15 seconds
+    const since = new Date(Date.now() - 15_000).toISOString()
+    const { data: rows } = await (supabase as any)
+      .from('n8n_chat_histories')
+      .select('message, created_at')
+      .eq('session_id', phone)
+      .eq('client_id', clientId)
+      .gte('created_at', since)
+      .order('created_at', { ascending: false })
+      .limit(5)
 
-    for (const row of result.rows) {
-      const recentContent = row.content;
-      const timeSinceMs = parseFloat(row.time_since_ms);
-      const normalizedRecent = normalizeMessage(recentContent);
+    if (!rows || rows.length === 0) return { isDuplicate: false }
 
-      // Check for exact match (case-insensitive, whitespace-normalized)
+    const normalizedInput = normalizeMessage(messageContent)
+
+    for (const row of rows) {
+      const msg = typeof row.message === 'string' ? JSON.parse(row.message) : row.message
+      if (msg?.type !== 'human') continue
+
+      const recentContent = msg.content || msg.data?.content || ''
+      const timeSinceMs = Date.now() - new Date(row.created_at).getTime()
+      const normalizedRecent = normalizeMessage(recentContent)
+
       if (normalizedInput === normalizedRecent) {
-        console.warn(
-          `⚠️ [checkDuplicateMessage] Exact duplicate detected for ${phone}:`,
-          {
-            message: messageContent,
-            timeSinceMs: Math.round(timeSinceMs),
-          },
-        );
-
         return {
           isDuplicate: true,
-          reason: "exact_match",
+          reason: 'exact_match',
           recentMessage: {
             content: recentContent,
             timestamp: new Date(row.created_at),
             timeSinceMs: Math.round(timeSinceMs),
           },
-        };
+        }
       }
 
-      // Check for very similar messages (>90% similarity)
-      const similarity = calculateSimilarity(normalizedInput, normalizedRecent);
-
-      if (similarity > 0.9 && timeSinceMs < 10000) {
-        // Within 10s and 90%+ similar
-        console.warn(
-          `⚠️ [checkDuplicateMessage] Similar duplicate detected for ${phone}:`,
-          {
-            message: messageContent,
-            similarity: Math.round(similarity * 100) + "%",
-            timeSinceMs: Math.round(timeSinceMs),
-          },
-        );
-
+      const similarity = calculateSimilarity(normalizedInput, normalizedRecent)
+      if (similarity > 0.9 && timeSinceMs < 10_000) {
         return {
           isDuplicate: true,
-          reason: "high_similarity",
+          reason: 'high_similarity',
           recentMessage: {
             content: recentContent,
             timestamp: new Date(row.created_at),
             timeSinceMs: Math.round(timeSinceMs),
           },
-        };
+        }
       }
     }
 
-    // No duplicates found
-    return { isDuplicate: false };
-  } catch (error) {
-    console.error("[checkDuplicateMessage] Error checking duplicates:", error);
-    // On error, don't block - assume not duplicate
-    return { isDuplicate: false };
+    return { isDuplicate: false }
+  } catch {
+    // On error, don't block — assume not duplicate
+    return { isDuplicate: false }
   }
-};
-
-/**
- * Normalize message for comparison
- * - Lowercase
- * - Remove extra whitespace
- * - Remove punctuation
- */
-function normalizeMessage(message: string): string {
-  return message
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, " ") // Multiple spaces → single space
-    .replace(/[^\w\s]/g, ""); // Remove punctuation
 }
 
-/**
- * Calculate similarity between two strings using Levenshtein distance
- * Returns value between 0 (completely different) and 1 (identical)
- */
-function calculateSimilarity(str1: string, str2: string): number {
-  const len1 = str1.length;
-  const len2 = str2.length;
+const normalizeMessage = (message: string): string =>
+  message
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ')
+    .replace(/[^\w\s]/g, '')
 
-  // Edge cases
-  if (len1 === 0 && len2 === 0) return 1;
-  if (len1 === 0 || len2 === 0) return 0;
+const calculateSimilarity = (str1: string, str2: string): number => {
+  const len1 = str1.length
+  const len2 = str2.length
+  if (len1 === 0 && len2 === 0) return 1
+  if (len1 === 0 || len2 === 0) return 0
 
-  // Levenshtein distance matrix
-  const matrix: number[][] = [];
-
-  for (let i = 0; i <= len1; i++) {
-    matrix[i] = [i];
-  }
-
-  for (let j = 0; j <= len2; j++) {
-    matrix[0][j] = j;
-  }
+  const matrix: number[][] = []
+  for (let i = 0; i <= len1; i++) matrix[i] = [i]
+  for (let j = 0; j <= len2; j++) matrix[0][j] = j
 
   for (let i = 1; i <= len1; i++) {
     for (let j = 1; j <= len2; j++) {
-      const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+      const cost = str1[i - 1] === str2[j - 1] ? 0 : 1
       matrix[i][j] = Math.min(
-        matrix[i - 1][j] + 1, // deletion
-        matrix[i][j - 1] + 1, // insertion
-        matrix[i - 1][j - 1] + cost, // substitution
-      );
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + cost,
+      )
     }
   }
 
-  const distance = matrix[len1][len2];
-  const maxLen = Math.max(len1, len2);
-  const similarity = 1 - distance / maxLen;
-
-  return similarity;
+  return 1 - matrix[len1][len2] / Math.max(len1, len2)
 }

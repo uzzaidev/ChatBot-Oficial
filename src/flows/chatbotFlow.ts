@@ -950,6 +950,7 @@ export const processChatbotMessage = async (
       phone: parsedMessage.phone,
       messageContent: normalizedMessage.content,
       clientId: config.id,
+      wamid: parsedMessage.messageId,
     });
 
     if (duplicateCheck.isDuplicate) {
