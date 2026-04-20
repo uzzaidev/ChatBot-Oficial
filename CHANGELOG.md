@@ -7,6 +7,14 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-20
 
 ### fix
+- Corrigida sobreposição da sidebar na página de traces e ajustado erro silencioso no widget de traces para evitar quebra do dashboard
+  - Arquivos: `src/components/DashboardLayoutClient.tsx`, `src/components/TracesWidget.tsx`
+  - Evidência: inclusão da rota `/dashboard/traces` na detecção da sidebar e tratamento silencioso de erros HTTP e de rede no widget
+  - Confiança: alta
+
+## 2026-04-20
+
+### fix
 - Ajustado await para `params` do tipo Promise no endpoint GET `/api/traces/[id]` para compatibilidade com Next.js 15
   - Arquivos: `src/app/api/traces/[id]/route.ts`
   - Evidência: alteração de desestruturação para `await params` na função GET
