@@ -11,6 +11,7 @@ import { ExportDialog } from '@/components/ExportDialog'
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics'
 import type { ChartConfig, MetricDataPoint } from '@/lib/types/dashboard-metrics'
 import { cn } from '@/lib/utils'
+import { TracesWidget } from '@/components/TracesWidget'
 
 interface DashboardMetricsViewProps {
   clientId: string
@@ -229,6 +230,13 @@ export function DashboardMetricsView({ clientId }: DashboardMetricsViewProps) {
             />
           </>
         )}
+      </div>
+
+      {/* Observability traces widget */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-1">
+          <TracesWidget />
+        </div>
       </div>
 
       <div className="analytics-shell px-4 py-4 sm:px-5 sm:py-5 lg:px-6 lg:py-6">

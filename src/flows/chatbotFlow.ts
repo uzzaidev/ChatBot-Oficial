@@ -49,6 +49,8 @@ import {
 import { getAllNodeStates, shouldExecuteNode } from "@/lib/flowHelpers";
 // 📎 Media storage for displaying real files in conversations
 import { uploadFileToStorage } from "@/lib/storage";
+// 📊 Observability: trace logger (Sprint 1)
+import { createTraceLogger, MessageTraceLogger } from "@/lib/trace-logger";
 
 export interface ChatbotFlowResult {
   success: boolean;
@@ -156,6 +158,25 @@ export const processChatbotMessage = async (
     },
     config.id,
   ); // ⚡ Multi-tenant: passa client_id para isolamento de logs
+
+  // 📊 Observability trace (fire-and-forget at the end)
+  const rawPhone =
+    payload.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from ?? "";
+  const rawMsg = payload.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
+  const rawMessage =
+    (rawMsg as { text?: { body?: string } })?.text?.body ??
+    rawMsg?.type ??
+    "";
+  const whatsappMsgId =
+    payload.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.id;
+
+  const traceLogger: MessageTraceLogger = createTraceLogger({
+    clientId: config.id,
+    phone: rawPhone,
+    userMessage: rawMessage,
+    whatsappMessageId: whatsappMsgId,
+  });
+  traceLogger.markStage("webhook_received");
 
   // 📋 Log config summary at flow start for Vercel debugging
   console.log(`[chatbotFlow] 🤖 Starting flow for client "${config.name}":`, {
@@ -1531,6 +1552,8 @@ export const processChatbotMessage = async (
       );
     }
 
+    let metadataToolTriggered = false;
+
     if (aiResponse.toolCalls && aiResponse.toolCalls.length > 0) {
       for (const toolCall of aiResponse.toolCalls) {
         // Tool 1: transferir_atendimento
@@ -1538,6 +1561,7 @@ export const processChatbotMessage = async (
           toolCall.function.name === "transferir_atendimento" &&
           config.settings.enableHumanHandoff
         ) {
+          const tcStart1 = new Date();
           // NODE 15: Handle Human Handoff
           logger.logNodeStart("15. Handle Human Handoff", {
             phone: parsedMessage.phone,
@@ -1564,6 +1588,19 @@ export const processChatbotMessage = async (
             console.warn("[chatbotFlow] CRM status update error:", crmError);
           }
 
+          traceLogger.logToolCall({
+            toolName: "transferir_atendimento",
+            toolCallId: toolCall.id,
+            arguments: {},
+            result: { transferred: true, email: config.notificationEmail },
+            status: "success",
+            source: "agent",
+            startedAt: tcStart1,
+            completedAt: new Date(),
+          });
+          traceLogger.markStage("sent");
+          setImmediate(() => { traceLogger.finish().catch(() => {}); });
+
           logger.logNodeSuccess("15. Handle Human Handoff", {
             transferred: true,
             emailSent: true,
@@ -1575,6 +1612,7 @@ export const processChatbotMessage = async (
 
         // Tool 2: buscar_documento (NEW)
         if (toolCall.function.name === "buscar_documento") {
+          const tcStart2 = new Date();
           // NODE 15.5: Handle Document Search
           logger.logNodeStart("15.5. Handle Document Search", {
             phone: parsedMessage.phone,
@@ -1592,6 +1630,21 @@ export const processChatbotMessage = async (
             config,
           });
 
+          traceLogger.logToolCall({
+            toolName: "buscar_documento",
+            toolCallId: toolCall.id,
+            arguments: JSON.parse(toolCall.function.arguments || "{}"),
+            result: {
+              success: documentSearchResult.success,
+              documentsFound: documentSearchResult.documentsFound,
+              documentsSent: documentSearchResult.documentsSent,
+            },
+            status: documentSearchResult.success ? "success" : "error",
+            source: "agent",
+            startedAt: tcStart2,
+            completedAt: new Date(),
+          });
+
           logger.logNodeSuccess("15.5. Handle Document Search", {
             success: documentSearchResult.success,
             documentsFound: documentSearchResult.documentsFound,
@@ -1604,6 +1657,8 @@ export const processChatbotMessage = async (
             documentSearchResult.documentsSent &&
             documentSearchResult.documentsSent > 0
           ) {
+            traceLogger.markStage("sent");
+            setImmediate(() => { traceLogger.finish().catch(() => {}); });
             logger.finishExecution("success");
             return {
               success: true,
@@ -1672,6 +1727,7 @@ export const processChatbotMessage = async (
 
         // Tool 3: enviar_resposta_em_audio (NEW - TTS)
         if (toolCall.function.name === "enviar_resposta_em_audio") {
+          const tcStart3 = new Date();
           // NODE 15.7: Handle Audio Tool Call
           logger.logNodeStart("15.7. Handle Audio Tool Call (TTS)", {
             phone: parsedMessage.phone,
@@ -1687,9 +1743,18 @@ export const processChatbotMessage = async (
           const textoParaAudio = args.texto_para_audio || "";
 
           if (!textoParaAudio || textoParaAudio.trim().length === 0) {
+            traceLogger.logToolCall({
+              toolName: "enviar_resposta_em_audio",
+              toolCallId: toolCall.id,
+              arguments: args,
+              status: "rejected",
+              errorMessage: "no_text_provided",
+              source: "agent",
+              startedAt: tcStart3,
+              completedAt: new Date(),
+            });
             logger.logNodeWarning("15.7. Handle Audio Tool Call (TTS)", {
-              warning:
-                "No text provided in texto_para_audio argument, skipping",
+              warning: "No text provided in texto_para_audio argument, skipping",
               args,
             });
             continue;
@@ -1702,6 +1767,17 @@ export const processChatbotMessage = async (
             config,
           });
 
+          traceLogger.logToolCall({
+            toolName: "enviar_resposta_em_audio",
+            toolCallId: toolCall.id,
+            arguments: { texto_para_audio: textoParaAudio.slice(0, 200) },
+            result: { sentAsAudio: audioResult.sentAsAudio, messageId: audioResult.messageId },
+            status: audioResult.success ? "success" : "error",
+            source: "agent",
+            startedAt: tcStart3,
+            completedAt: new Date(),
+          });
+
           logger.logNodeSuccess("15.7. Handle Audio Tool Call (TTS)", {
             success: audioResult.success,
             sentAsAudio: audioResult.sentAsAudio,
@@ -1710,6 +1786,8 @@ export const processChatbotMessage = async (
 
           // Se enviou áudio com sucesso, terminar fluxo
           if (audioResult.sentAsAudio) {
+            traceLogger.markStage("sent");
+            setImmediate(() => { traceLogger.finish().catch(() => {}); });
             logger.finishExecution("success");
             return {
               success: true,
@@ -1720,6 +1798,8 @@ export const processChatbotMessage = async (
 
           // Se falhou mas enviou texto (fallback), terminar fluxo
           if (audioResult.success && !audioResult.sentAsAudio) {
+            traceLogger.markStage("sent");
+            setImmediate(() => { traceLogger.finish().catch(() => {}); });
             logger.finishExecution("success");
             return {
               success: true,
@@ -1736,11 +1816,13 @@ export const processChatbotMessage = async (
 
         // Tool 4: registrar_dado_cadastral (CRM metadata)
         if (toolCall.function.name === "registrar_dado_cadastral") {
+          metadataToolTriggered = true;
           logger.logNodeStart("15.75. Register Contact Metadata", {
             phone: parsedMessage.phone,
             toolCallId: toolCall.id,
           });
 
+          const tcStartedAt = new Date();
           try {
             const args = JSON.parse(toolCall.function.arguments || "{}");
             const fieldsToSave: Record<string, string> = {};
@@ -1758,6 +1840,7 @@ export const processChatbotMessage = async (
               }
             }
 
+            // backward-compat: single campo+valor
             const campo = args?.campo;
             const valor = args?.valor;
             if (
@@ -1769,23 +1852,58 @@ export const processChatbotMessage = async (
             }
 
             if (Object.keys(fieldsToSave).length > 0) {
-              await updateContactMetadata({
+              const metadataResult = await updateContactMetadata({
                 phone: parsedMessage.phone,
                 clientId: config.id,
                 fields: fieldsToSave,
               });
 
+              traceLogger.logToolCall({
+                toolName: "registrar_dado_cadastral",
+                toolCallId: toolCall.id,
+                arguments: fieldsToSave,
+                result: { saved: metadataResult.saved, rejected: metadataResult.rejected },
+                status: metadataResult.persisted ? "success" : "error",
+                errorMessage: metadataResult.error ?? undefined,
+                source: "agent",
+                startedAt: tcStartedAt,
+                completedAt: new Date(),
+              });
+
               logger.logNodeSuccess("15.75. Register Contact Metadata", {
-                fields: Object.keys(fieldsToSave),
-                saved: true,
+                attemptedFields: Object.keys(fieldsToSave),
+                savedFields: Object.keys(metadataResult.saved),
+                rejected: metadataResult.rejected,
+                persisted: metadataResult.persisted,
+                error: metadataResult.error ?? null,
               });
             } else {
+              traceLogger.logToolCall({
+                toolName: "registrar_dado_cadastral",
+                toolCallId: toolCall.id,
+                arguments: args,
+                status: "rejected",
+                errorMessage: "no_valid_fields",
+                source: "agent",
+                startedAt: tcStartedAt,
+                completedAt: new Date(),
+              });
               logger.logNodeWarning("15.75. Register Contact Metadata", {
                 warning: "invalid_args",
                 args,
               });
             }
           } catch (metadataError) {
+            traceLogger.logToolCall({
+              toolName: "registrar_dado_cadastral",
+              toolCallId: toolCall.id,
+              arguments: {},
+              status: "error",
+              errorMessage: metadataError instanceof Error ? metadataError.message : "unknown",
+              source: "agent",
+              startedAt: tcStartedAt,
+              completedAt: new Date(),
+            });
             logger.logNodeWarning("15.75. Register Contact Metadata", {
               warning: "metadata_save_failed",
               error:
@@ -1798,6 +1916,7 @@ export const processChatbotMessage = async (
 
         // Tool 5: verificar_agenda (Calendar check)
         if (toolCall.function.name === "verificar_agenda") {
+          const tcStart5 = new Date();
           logger.logNodeStart("15.8. Handle Calendar Check", {
             phone: parsedMessage.phone,
             toolCallId: toolCall.id,
@@ -1807,28 +1926,36 @@ export const processChatbotMessage = async (
             "@/nodes/handleCalendarToolCall"
           );
 
-          const args = JSON.parse(toolCall.function.arguments || "{}");
-          const calendarResult = await handleCalendarToolCall(
+          const args5 = JSON.parse(toolCall.function.arguments || "{}");
+          const calendarResult5 = await handleCalendarToolCall(
             "verificar_agenda",
-            args,
+            args5,
             config.id,
-            {
-              contactName: parsedMessage.name,
-              contactPhone: parsedMessage.phone,
-            },
+            { contactName: parsedMessage.name, contactPhone: parsedMessage.phone },
           );
 
-          logger.logNodeSuccess("15.8. Handle Calendar Check", {
-            resultLength: calendarResult.length,
+          traceLogger.logToolCall({
+            toolName: "verificar_agenda",
+            toolCallId: toolCall.id,
+            arguments: args5,
+            result: { resultLength: calendarResult5.length },
+            status: "success",
+            source: "agent",
+            startedAt: tcStart5,
+            completedAt: new Date(),
           });
 
-          // Use the calendar result as the AI response content
-          aiResponse.content = calendarResult;
+          logger.logNodeSuccess("15.8. Handle Calendar Check", {
+            resultLength: calendarResult5.length,
+          });
+
+          aiResponse.content = calendarResult5;
           aiResponse.toolCalls = undefined;
         }
 
         // Tool 6: criar_evento_agenda (Calendar create)
         if (toolCall.function.name === "criar_evento_agenda") {
+          const tcStart6 = new Date();
           logger.logNodeStart("15.9. Handle Calendar Create Event", {
             phone: parsedMessage.phone,
             toolCallId: toolCall.id,
@@ -1838,28 +1965,36 @@ export const processChatbotMessage = async (
             "@/nodes/handleCalendarToolCall"
           );
 
-          const args = JSON.parse(toolCall.function.arguments || "{}");
-          const calendarResult = await handleCalendarToolCall(
+          const args6 = JSON.parse(toolCall.function.arguments || "{}");
+          const calendarResult6 = await handleCalendarToolCall(
             "criar_evento_agenda",
-            args,
+            args6,
             config.id,
-            {
-              contactName: parsedMessage.name,
-              contactPhone: parsedMessage.phone,
-            },
+            { contactName: parsedMessage.name, contactPhone: parsedMessage.phone },
           );
 
-          logger.logNodeSuccess("15.9. Handle Calendar Create Event", {
-            resultLength: calendarResult.length,
+          traceLogger.logToolCall({
+            toolName: "criar_evento_agenda",
+            toolCallId: toolCall.id,
+            arguments: args6,
+            result: { resultLength: calendarResult6.length },
+            status: "success",
+            source: "agent",
+            startedAt: tcStart6,
+            completedAt: new Date(),
           });
 
-          // Use the calendar result as the AI response content
-          aiResponse.content = calendarResult;
+          logger.logNodeSuccess("15.9. Handle Calendar Create Event", {
+            resultLength: calendarResult6.length,
+          });
+
+          aiResponse.content = calendarResult6;
           aiResponse.toolCalls = undefined;
         }
 
         // Tool 7: cancelar_evento_agenda (Calendar cancel)
         if (toolCall.function.name === "cancelar_evento_agenda") {
+          const tcStart7 = new Date();
           logger.logNodeStart("15.10. Handle Calendar Cancel Event", {
             phone: parsedMessage.phone,
             toolCallId: toolCall.id,
@@ -1869,25 +2004,74 @@ export const processChatbotMessage = async (
             "@/nodes/handleCalendarToolCall"
           );
 
-          const args = JSON.parse(toolCall.function.arguments || "{}");
-          const calendarResult = await handleCalendarToolCall(
+          const args7 = JSON.parse(toolCall.function.arguments || "{}");
+          const calendarResult7 = await handleCalendarToolCall(
             "cancelar_evento_agenda",
-            args,
+            args7,
             config.id,
-            {
-              contactName: parsedMessage.name,
-              contactPhone: parsedMessage.phone,
-            },
+            { contactName: parsedMessage.name, contactPhone: parsedMessage.phone },
           );
 
-          logger.logNodeSuccess("15.10. Handle Calendar Cancel Event", {
-            resultLength: calendarResult.length,
+          traceLogger.logToolCall({
+            toolName: "cancelar_evento_agenda",
+            toolCallId: toolCall.id,
+            arguments: args7,
+            result: { resultLength: calendarResult7.length },
+            status: "success",
+            source: "agent",
+            startedAt: tcStart7,
+            completedAt: new Date(),
           });
 
-          // Use the calendar result as the AI response content
-          aiResponse.content = calendarResult;
+          logger.logNodeSuccess("15.10. Handle Calendar Cancel Event", {
+            resultLength: calendarResult7.length,
+          });
+
+          aiResponse.content = calendarResult7;
           aiResponse.toolCalls = undefined;
         }
+      }
+    }
+
+    if (!metadataToolTriggered) {
+      try {
+        const {
+          hasLikelyContactData,
+          scheduleExtractContactDataFallback,
+        } = await import("@/nodes/extractContactDataFallback");
+
+        if (hasLikelyContactData(batchedContent)) {
+          logger.logNodeStart("15.76. Contact Metadata Fallback", {
+            phone: parsedMessage.phone,
+            source: "fallback",
+          });
+
+          scheduleExtractContactDataFallback({
+            clientId: config.id,
+            phone: parsedMessage.phone,
+            userMessage: batchedContent,
+            agentResponse: aiResponse.content,
+            existingMetadata: customer.metadata,
+          });
+
+          logger.logNodeSuccess("15.76. Contact Metadata Fallback", {
+            scheduled: true,
+            reason: "metadata_tool_not_called",
+          });
+        } else {
+          logger.logNodeSuccess("15.76. Contact Metadata Fallback", {
+            skipped: true,
+            reason: "no_likely_contact_data",
+          });
+        }
+      } catch (fallbackError) {
+        logger.logNodeWarning("15.76. Contact Metadata Fallback", {
+          warning: "fallback_schedule_failed",
+          error:
+            fallbackError instanceof Error
+              ? fallbackError.message
+              : "unknown_error",
+        });
       }
     }
 
@@ -2043,11 +2227,18 @@ export const processChatbotMessage = async (
       sentAndSaved: messageIds.length,
     });
 
+    traceLogger.markStage("sent");
+    // Fire-and-forget: flush trace to DB without blocking the response
+    setImmediate(() => { traceLogger.finish().catch(() => {}); });
+
     logger.finishExecution("success");
     return { success: true, messagesSent: messageIds.length };
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error occurred";
+
+    traceLogger.setError(errorMessage);
+    setImmediate(() => { traceLogger.finish().catch(() => {}); });
 
     logger.finishExecution("error");
 

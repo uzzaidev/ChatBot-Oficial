@@ -251,6 +251,7 @@ const CREATE_CALENDAR_EVENT_TOOL_DEFINITION = {
 };
 
 const CONTACT_METADATA_FIELDS = [
+  "nome",
   "cpf",
   "email",
   "como_conheceu",
@@ -264,7 +265,10 @@ const CONTACT_METADATA_FIELDS = [
   "bairro",
   "cidade",
   "estado",
+  "telefone_alternativo",
+  "profissao",
 ] as const;
+const CONTACT_METADATA_FIELD_SET = new Set<string>(CONTACT_METADATA_FIELDS);
 
 const REGISTER_CONTACT_DATA_TOOL_DEFINITION = {
   type: "function",
@@ -459,6 +463,7 @@ export const generateAIResponse = async (
           "REGRA OBRIGATORIA DE CADASTRO:",
           "Sempre que o usuario informar dados cadastrais, chame a tool registrar_dado_cadastral.",
           `Campos permitidos: ${CONTACT_METADATA_FIELDS.join(", ")}.`,
+          "Use preferencialmente `nome_completo` para nome do cliente (se vier `nome`, ele sera convertido internamente).",
           "Quando houver varios dados na mesma mensagem, faca UMA unica chamada usando `campos` com todos eles.",
           "Nao responda apenas em texto confirmando cadastro sem antes chamar a tool.",
         ].join("\n"),
@@ -467,6 +472,7 @@ export const generateAIResponse = async (
 
     if (contactMetadata && Object.keys(contactMetadata).length > 0) {
       const metaLines: string[] = [];
+      if (contactMetadata.nome) metaLines.push(`Nome: ${contactMetadata.nome}`);
       if (contactMetadata.email) metaLines.push(`E-mail: ${contactMetadata.email}`);
       if (contactMetadata.cpf) metaLines.push(`CPF: ${contactMetadata.cpf}`);
       if (contactMetadata.nome_completo) {
@@ -483,6 +489,14 @@ export const generateAIResponse = async (
       if (contactMetadata.bairro) metaLines.push(`Bairro: ${contactMetadata.bairro}`);
       if (contactMetadata.cidade) metaLines.push(`Cidade: ${contactMetadata.cidade}`);
       if (contactMetadata.estado) metaLines.push(`Estado: ${contactMetadata.estado}`);
+      if (contactMetadata.telefone_alternativo) {
+        metaLines.push(
+          `Telefone alternativo: ${contactMetadata.telefone_alternativo}`,
+        );
+      }
+      if (contactMetadata.profissao) {
+        metaLines.push(`Profissao: ${contactMetadata.profissao}`);
+      }
       if (contactMetadata.como_conheceu) {
         metaLines.push(`Como conheceu: ${contactMetadata.como_conheceu}`);
       }
@@ -674,10 +688,13 @@ export const generateAIResponse = async (
                         typeof payload.campo === "string" &&
                         typeof payload.valor === "string" &&
                         payload.valor.trim().length > 0;
-                      const hasMultiFields = Object.values(
+                      const hasMultiFields = Object.entries(
                         payload.campos ?? {},
-                      ).some((value) =>
-                        typeof value === "string" && value.trim().length > 0
+                      ).some(
+                        ([field, value]) =>
+                          CONTACT_METADATA_FIELD_SET.has(field) &&
+                          typeof value === "string" &&
+                          value.trim().length > 0,
                       );
                       return hasSingleField || hasMultiFields;
                     },
