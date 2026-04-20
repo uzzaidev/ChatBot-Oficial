@@ -7,6 +7,17 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-20
 
 ### fix
+- Ajustado layout da sidebar e área de conteúdo para rotas de traces, garantindo exibição correta sem padding e com sidebar visível
+- Corrigida renderização do componente `TracesClient` para ocupar toda a altura disponível, evitando overflow inesperado
+- Modificado flush do traceLogger para usar `void` em vez de `setImmediate`, melhorando gravação de traces no ambiente Vercel
+- Refinada lógica de tratamento silencioso de erros no trace-logger para ignorar apenas erros relacionados a tabelas inexistentes, evitando logs falsos de erro
+  - Arquivos: `src/components/DashboardLayoutClient.tsx`, `src/components/TracesClient.tsx`, `src/flows/chatbotFlow.ts`, `src/lib/trace-logger.ts`
+  - Evidência: mudanças no flush de traceLogger e ajuste de layout indicam correção de problemas de gravação e visualização no Vercel
+  - Confiança: alta
+
+## 2026-04-20
+
+### fix
 - Corrigida sobreposição da sidebar na página de traces e ajustado erro silencioso no widget de traces para evitar quebra do dashboard
   - Arquivos: `src/components/DashboardLayoutClient.tsx`, `src/components/TracesWidget.tsx`
   - Evidência: inclusão da rota `/dashboard/traces` na detecção da sidebar e tratamento silencioso de erros HTTP e de rede no widget
