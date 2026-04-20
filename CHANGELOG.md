@@ -4,6 +4,24 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-04-20
+
+### fix
+- Estabilizado o cadastro automático e triggers do CRM, incluindo melhorias no tratamento de eventos e atualização de status de cards CRM com dados de mensagens enviadas e recebidas.
+- Ajustado cálculo de primeira mensagem do usuário considerando histórico real para melhor integração CRM.
+  - Arquivos: `src/app/api/crm/automation-executions/route.ts`, `src/nodes/updateCRMCardStatus.ts`, `src/flows/chatbotFlow.ts`
+  - Evidência: inclusão de contagem de mensagens históricas para definir primeira mensagem e envio de eventos "message_sent" e "message_received" com metadados.
+  - Confiança: alta
+
+### feat
+- Adicionado suporte para múltiplos campos cadastrais no chatbot, permitindo envio e armazenamento simultâneo de vários dados do contato.
+- Expandido conjunto de campos cadastrais suportados, incluindo nome completo, data de nascimento, RG, CEP, endereço, bairro, cidade e estado.
+- Implementada exibição ordenada e formatada dos dados cadastrais coletados no painel de contatos.
+- Atualizadas definições de ferramentas para registro de dados cadastrais com validação aprimorada e instruções para uso de múltiplos campos.
+- Mapeamento de aliases para novos campos cadastrais nas flows de chatbot para padronização.
+  - Arquivos: `src/components/ContactsClient.tsx`, `src/nodes/generateAIResponse.ts`, `src/lib/flows/flowExecutor.ts`, `src/lib/types.ts`, `src/nodes/updateContactMetadata.ts`
+  - Confiança: alta
+
 ## 2026-04-19
 
 ### fix
