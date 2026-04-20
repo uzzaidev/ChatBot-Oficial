@@ -1599,7 +1599,7 @@ export const processChatbotMessage = async (
             completedAt: new Date(),
           });
           traceLogger.markStage("sent");
-          setImmediate(() => { traceLogger.finish().catch(() => {}); });
+          void traceLogger.finish().catch(() => {});
 
           logger.logNodeSuccess("15. Handle Human Handoff", {
             transferred: true,
@@ -1658,7 +1658,7 @@ export const processChatbotMessage = async (
             documentSearchResult.documentsSent > 0
           ) {
             traceLogger.markStage("sent");
-            setImmediate(() => { traceLogger.finish().catch(() => {}); });
+            void traceLogger.finish().catch(() => {});
             logger.finishExecution("success");
             return {
               success: true,
@@ -1787,7 +1787,7 @@ export const processChatbotMessage = async (
           // Se enviou áudio com sucesso, terminar fluxo
           if (audioResult.sentAsAudio) {
             traceLogger.markStage("sent");
-            setImmediate(() => { traceLogger.finish().catch(() => {}); });
+            void traceLogger.finish().catch(() => {});
             logger.finishExecution("success");
             return {
               success: true,
@@ -1799,7 +1799,7 @@ export const processChatbotMessage = async (
           // Se falhou mas enviou texto (fallback), terminar fluxo
           if (audioResult.success && !audioResult.sentAsAudio) {
             traceLogger.markStage("sent");
-            setImmediate(() => { traceLogger.finish().catch(() => {}); });
+            void traceLogger.finish().catch(() => {});
             logger.finishExecution("success");
             return {
               success: true,
@@ -2229,7 +2229,7 @@ export const processChatbotMessage = async (
 
     traceLogger.markStage("sent");
     // Fire-and-forget: flush trace to DB without blocking the response
-    setImmediate(() => { traceLogger.finish().catch(() => {}); });
+    void traceLogger.finish().catch(() => {});
 
     logger.finishExecution("success");
     return { success: true, messagesSent: messageIds.length };
@@ -2238,7 +2238,7 @@ export const processChatbotMessage = async (
       error instanceof Error ? error.message : "Unknown error occurred";
 
     traceLogger.setError(errorMessage);
-    setImmediate(() => { traceLogger.finish().catch(() => {}); });
+    void traceLogger.finish().catch(() => {});
 
     logger.finishExecution("error");
 

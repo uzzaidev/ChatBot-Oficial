@@ -52,8 +52,10 @@ export function DashboardLayoutClient({
   const isFullScreenRoute =
     pathname.startsWith("/dashboard/conversations") ||
     pathname.startsWith("/dashboard/chat") ||
-    pathname.startsWith("/dashboard/contacts") ||
-    pathname.startsWith("/dashboard/traces");
+    pathname.startsWith("/dashboard/contacts");
+
+  // Rotas que usam layout fluid (sem padding/max-width) mas mantêm a sidebar
+  const isFluidRoute = pathname.startsWith("/dashboard/traces");
 
   // Detecta scroll para esconder/mostrar header (apenas desktop)
   useEffect(() => {
@@ -187,12 +189,18 @@ export function DashboardLayoutClient({
         </div>
 
         {/* Page Content */}
-        <div className="flex-1 overflow-auto bg-background px-2 py-3 sm:px-3 sm:py-4 md:px-6 md:py-6 xl:px-8 xl:py-8">
-          <div className="max-w-[1600px] mx-auto w-full">
-            <BillingStatusBanner />
+        {isFluidRoute ? (
+          <div className="flex-1 overflow-hidden bg-background flex flex-col">
             <PaymentWall>{children}</PaymentWall>
           </div>
-        </div>
+        ) : (
+          <div className="flex-1 overflow-auto bg-background px-2 py-3 sm:px-3 sm:py-4 md:px-6 md:py-6 xl:px-8 xl:py-8">
+            <div className="max-w-[1600px] mx-auto w-full">
+              <BillingStatusBanner />
+              <PaymentWall>{children}</PaymentWall>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

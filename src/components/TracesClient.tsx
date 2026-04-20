@@ -581,7 +581,7 @@ export function TracesClient() {
   const costToday = meta?.costTodayUsd ?? 0
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden bg-background">
+    <div className="flex flex-col flex-1 h-full overflow-hidden bg-background">
 
       {/* ── Top stats bar ─────────────────────────────────────────────── */}
       <div className="border-b border-border/50 bg-card/60 px-4 py-3 shrink-0">

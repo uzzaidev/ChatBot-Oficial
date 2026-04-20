@@ -208,8 +208,8 @@ export const createTraceLogger = (
 
     if (traceError) {
       const msg = String(traceError.message ?? "").toLowerCase();
-      // Silently skip if table doesn't exist yet (migration not applied)
-      if (!msg.includes("message_traces") && !msg.includes("does not exist")) {
+      // Silently skip only if table doesn't exist yet (migration not applied)
+      if (!msg.includes("does not exist") && !msg.includes("relation") && !msg.includes("undefined")) {
         console.error("[trace-logger] message_traces insert error:", traceError.message);
       }
     }
@@ -258,7 +258,7 @@ export const createTraceLogger = (
 
       if (toolError) {
         const msg = String(toolError.message ?? "").toLowerCase();
-        if (!msg.includes("tool_call_traces") && !msg.includes("does not exist")) {
+        if (!msg.includes("does not exist") && !msg.includes("relation") && !msg.includes("undefined")) {
           console.error("[trace-logger] tool_call_traces insert error:", toolError.message);
         }
       }
