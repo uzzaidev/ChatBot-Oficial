@@ -6,6 +6,21 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-20
 
+### refactor
+- Reorganizado imports e aprimorado prompt de análise de imagens para gerar descrições detalhadas e texto extraído, melhorando a busca semântica de imagens de propriedades.
+- Atualizado endpoint de upload para incluir nome original do arquivo na descrição da imagem, facilitando buscas por nome de propriedade.
+- Ajustes gerais de formatação e tratamento de erros no upload de documentos.
+  - Arquivos: `src/app/api/documents/upload/route.ts`
+  - Confiança: alta
+
+### feat
+- Implementada busca fallback por nome de arquivo quando a busca semântica não retorna resultados, permitindo encontrar documentos pelo nome original mesmo sem correspondência semântica.
+- Agrupamento de resultados de busca por arquivo original, retornando apenas o chunk com maior similaridade por arquivo.
+  - Arquivos: `src/nodes/searchDocumentInKnowledge.ts`
+  - Confiança: alta
+
+## 2026-04-20
+
 ### fix
 - Estabilizado o cadastro automático e triggers do CRM, incluindo melhorias no tratamento de eventos e atualização de status de cards CRM com dados de mensagens enviadas e recebidas.
 - Ajustado cálculo de primeira mensagem do usuário considerando histórico real para melhor integração CRM.
