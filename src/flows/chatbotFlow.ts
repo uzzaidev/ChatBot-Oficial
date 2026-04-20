@@ -159,7 +159,7 @@ export const processChatbotMessage = async (
     config.id,
   ); // ⚡ Multi-tenant: passa client_id para isolamento de logs
 
-  // 📊 Observability trace (fire-and-forget at the end)
+  // 📊 Observability trace
   const rawPhone =
     payload.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from ?? "";
   const rawMsg = payload.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
@@ -177,6 +177,16 @@ export const processChatbotMessage = async (
     whatsappMessageId: whatsappMsgId,
   });
   traceLogger.markStage("webhook_received");
+  let traceFlushed = false;
+  const flushTrace = async (): Promise<void> => {
+    if (traceFlushed) return;
+    traceFlushed = true;
+    try {
+      await traceLogger.finish();
+    } catch (flushError) {
+      console.error("[chatbotFlow] Failed to flush trace:", flushError);
+    }
+  };
 
   // 📋 Log config summary at flow start for Vercel debugging
   console.log(`[chatbotFlow] 🤖 Starting flow for client "${config.name}":`, {
@@ -1600,7 +1610,7 @@ export const processChatbotMessage = async (
             completedAt: new Date(),
           });
           traceLogger.markStage("sent");
-          void traceLogger.finish().catch(() => {});
+          await flushTrace();
 
           logger.logNodeSuccess("15. Handle Human Handoff", {
             transferred: true,
@@ -1659,7 +1669,7 @@ export const processChatbotMessage = async (
             documentSearchResult.documentsSent > 0
           ) {
             traceLogger.markStage("sent");
-            void traceLogger.finish().catch(() => {});
+            await flushTrace();
             logger.finishExecution("success");
             return {
               success: true,
@@ -1788,7 +1798,7 @@ export const processChatbotMessage = async (
           // Se enviou áudio com sucesso, terminar fluxo
           if (audioResult.sentAsAudio) {
             traceLogger.markStage("sent");
-            void traceLogger.finish().catch(() => {});
+            await flushTrace();
             logger.finishExecution("success");
             return {
               success: true,
@@ -1800,7 +1810,7 @@ export const processChatbotMessage = async (
           // Se falhou mas enviou texto (fallback), terminar fluxo
           if (audioResult.success && !audioResult.sentAsAudio) {
             traceLogger.markStage("sent");
-            void traceLogger.finish().catch(() => {});
+            await flushTrace();
             logger.finishExecution("success");
             return {
               success: true,
@@ -2229,8 +2239,7 @@ export const processChatbotMessage = async (
     });
 
     traceLogger.markStage("sent");
-    // Fire-and-forget: flush trace to DB without blocking the response
-    void traceLogger.finish().catch(() => {});
+    await flushTrace();
 
     logger.finishExecution("success");
     return { success: true, messagesSent: messageIds.length };
@@ -2239,7 +2248,6 @@ export const processChatbotMessage = async (
       error instanceof Error ? error.message : "Unknown error occurred";
 
     traceLogger.setError(errorMessage);
-    void traceLogger.finish().catch(() => {});
 
     logger.finishExecution("error");
 
@@ -2247,5 +2255,7 @@ export const processChatbotMessage = async (
       success: false,
       error: errorMessage,
     };
+  } finally {
+    await flushTrace();
   }
 };

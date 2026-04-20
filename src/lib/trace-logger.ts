@@ -82,6 +82,27 @@ export const sanitizePII = (text: string): string => {
   return PII_REGEXES.reduce((acc, { re, mask }) => acc.replace(re, mask), text);
 };
 
+const TRACE_SCHEMA_HINT =
+  "Check migration supabase/migrations/20260422130000_create_observability_traces.sql";
+let missingTraceTablesWarned = false;
+
+const isMissingRelationError = (message: string): boolean => {
+  const msg = message.toLowerCase();
+  return (
+    msg.includes("does not exist") ||
+    msg.includes("relation") ||
+    msg.includes("undefined")
+  );
+};
+
+const warnMissingTraceTablesOnce = (tableName: string): void => {
+  if (missingTraceTablesWarned) return;
+  missingTraceTablesWarned = true;
+  console.warn(
+    `[trace-logger] Table "${tableName}" not found or unavailable. ${TRACE_SCHEMA_HINT}`,
+  );
+};
+
 // ─── crypto.randomUUID shim ──────────────────────────────────────────────────
 
 const generateId = (): string => {
@@ -207,9 +228,10 @@ export const createTraceLogger = (
       .upsert(traceRow, { onConflict: "id" });
 
     if (traceError) {
-      const msg = String(traceError.message ?? "").toLowerCase();
-      // Silently skip only if table doesn't exist yet (migration not applied)
-      if (!msg.includes("does not exist") && !msg.includes("relation") && !msg.includes("undefined")) {
+      const message = String(traceError.message ?? "");
+      if (isMissingRelationError(message)) {
+        warnMissingTraceTablesOnce("message_traces");
+      } else {
         console.error("[trace-logger] message_traces insert error:", traceError.message);
       }
     }
@@ -229,7 +251,12 @@ export const createTraceLogger = (
         });
 
       if (retError) {
-        console.error("[trace-logger] retrieval_traces insert error:", retError.message);
+        const message = String(retError.message ?? "");
+        if (isMissingRelationError(message)) {
+          warnMissingTraceTablesOnce("retrieval_traces");
+        } else {
+          console.error("[trace-logger] retrieval_traces insert error:", retError.message);
+        }
       }
     }
 
@@ -257,8 +284,10 @@ export const createTraceLogger = (
         .insert(toolRows);
 
       if (toolError) {
-        const msg = String(toolError.message ?? "").toLowerCase();
-        if (!msg.includes("does not exist") && !msg.includes("relation") && !msg.includes("undefined")) {
+        const message = String(toolError.message ?? "");
+        if (isMissingRelationError(message)) {
+          warnMissingTraceTablesOnce("tool_call_traces");
+        } else {
           console.error("[trace-logger] tool_call_traces insert error:", toolError.message);
         }
       }

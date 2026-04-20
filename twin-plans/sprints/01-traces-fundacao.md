@@ -854,13 +854,13 @@ export const TraceDetailSchema = z.object({
 - [ ] Rodar validação de 20 conversas reais e medir taxa de captura (meta ≥95%)
 
 ### Integração no chatbotFlow
-- [ ] Adicionar `createTraceLogger` no início de `processChatbotMessage`
+- [x] Adicionar `createTraceLogger` no início de `processChatbotMessage`
 - [ ] Adicionar `markStage` em todos os 11 estágios mapeados
 - [ ] Adicionar `setRetrievalData` após RAG
 - [ ] Adicionar `setGenerationData` após geração
-- [ ] Adicionar `markStage('sent')` após `sendWhatsAppMessage`
-- [ ] Adicionar `await traceLogger.finish()` ao final (try)
-- [ ] Adicionar `setError` + `finish()` no catch
+- [x] Adicionar `markStage('sent')` após `sendWhatsAppMessage`
+- [x] Adicionar `await traceLogger.finish()` ao final (try)
+- [x] Adicionar `setError` + `finish()` no catch
 - [ ] Validar localmente: enviar 1 mensagem e ver o registro em `message_traces`
 
 ### APIs
@@ -1492,3 +1492,5 @@ test('envia bloco com 4 dados cadastrais e todos aparecem no card', async ({ req
 ---
 
 **Próximo:** [`02-ground-truth.md`](./02-ground-truth.md)
+
+

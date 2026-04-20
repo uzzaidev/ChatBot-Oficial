@@ -522,6 +522,8 @@ export function TracesClient() {
   const [selected, setSelected] = useState<TraceDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [detailLoading, setDetailLoading] = useState(false)
+  const [listError, setListError] = useState<string | null>(null)
+  const [detailError, setDetailError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [tab, setTab] = useState<DetailTab>('overview')
@@ -531,12 +533,21 @@ export function TracesClient() {
   const fetchTraces = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
     else setRefreshing(true)
+    setListError(null)
     try {
       const res = await fetch('/api/traces?limit=100')
-      if (!res.ok) return
+      if (!res.ok) {
+        const reason = await res.text().catch(() => '')
+        throw new Error(`Falha ao carregar traces (${res.status})${reason ? `: ${reason.slice(0, 180)}` : ''}`)
+      }
       const json = await res.json()
       setTraces(json.data ?? [])
       setMeta(json.meta ?? null)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Erro ao carregar traces'
+      setListError(message)
+      setTraces([])
+      setMeta(null)
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -547,12 +558,20 @@ export function TracesClient() {
 
   const fetchDetail = async (id: string) => {
     setDetailLoading(true)
+    setDetailError(null)
     setTab('overview')
     try {
       const res = await fetch(`/api/traces/${id}`)
-      if (!res.ok) return
+      if (!res.ok) {
+        const reason = await res.text().catch(() => '')
+        throw new Error(`Falha ao carregar detalhe (${res.status})${reason ? `: ${reason.slice(0, 180)}` : ''}`)
+      }
       const json = await res.json()
       setSelected(json.data)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Erro ao carregar detalhe do trace'
+      setDetailError(message)
+      setSelected(null)
     } finally {
       setDetailLoading(false)
     }
@@ -615,6 +634,18 @@ export function TracesClient() {
       </div>
 
       {/* ── Body: list + detail ────────────────────────────────────────── */}
+      {listError && (
+        <div className="mx-4 mt-3 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+          {listError}
+        </div>
+      )}
+
+      {detailError && (
+        <div className="mx-4 mt-3 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
+          {detailError}
+        </div>
+      )}
+
       <div className="flex flex-1 overflow-hidden">
 
         {/* LEFT — list ──────────────────────────────────────────────────── */}
@@ -807,3 +838,4 @@ function TraceListItem({
     </button>
   )
 }
+
