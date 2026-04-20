@@ -12,6 +12,14 @@ const ALLOWED_FIELDS = new Set([
   "como_conheceu",
   "indicado_por",
   "objetivo",
+  "nome_completo",
+  "data_nascimento",
+  "rg",
+  "cep",
+  "endereco",
+  "bairro",
+  "cidade",
+  "estado",
 ]);
 
 const sanitizeMetadataFields = (
@@ -73,4 +81,3 @@ export const updateContactMetadata = async (
     console.error("[updateContactMetadata] unexpected error:", error);
   }
 };
-

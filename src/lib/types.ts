@@ -706,12 +706,20 @@ export interface CustomerRecord {
 }
 
 export interface ContactMetadata {
+  nome_completo?: string;
+  data_nascimento?: string;
   cpf?: string;
+  rg?: string;
+  cep?: string;
+  endereco?: string;
+  bairro?: string;
+  cidade?: string;
+  estado?: string;
   email?: string;
   como_conheceu?: string;
   indicado_por?: string;
   objetivo?: string;
-  [key: string]: string | boolean | null | undefined;
+  [key: string]: string | number | boolean | null | undefined;
 }
 
 export interface ChatMessage {

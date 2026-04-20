@@ -30,6 +30,8 @@ export interface UpdateCRMCardStatusInput {
     messageDirection?: "incoming" | "outgoing";
     sentBy?: "bot" | "human";
     transferReason?: string;
+    messageId?: string;
+    isFirstMessage?: boolean;
   };
 }
 
@@ -102,6 +104,7 @@ export const updateCRMCardStatus = async (
 
     const previousStatus = normalizeStatus(card.auto_status);
     let newStatus: AutoStatus = previousStatus;
+    let statusUpdated = false;
     let automationsTriggered = 0;
 
     // 3. Determinar novo status baseado no evento
@@ -143,6 +146,7 @@ export const updateCRMCardStatus = async (
           updated_at: new Date().toISOString(),
         })
         .eq("id", card.id);
+      statusUpdated = true;
 
       // 5. Regras customizadas via engine
       const statusRuleResult = await emitCrmAutomationEvent({
@@ -160,51 +164,72 @@ export const updateCRMCardStatus = async (
       });
 
       automationsTriggered += statusRuleResult.executedRules;
+    }
 
-      if (event === "transfer_human") {
-        const transferResult = await emitCrmAutomationEvent({
-          clientId,
-          cardId: card.id,
-          triggerType: "transfer_human",
-          dedupeKey: `transfer_human:${card.id}:${newStatus}`,
-          triggerData: {
-            request_text: metadata?.transferReason || "transfer_requested",
-            current_status: conversationStatus || "transferido",
-          },
-        });
+    // 6. Regras orientadas a evento (independente de mudanca de status)
+    if (
+      event === "message_received" ||
+      event === "message_sent" ||
+      event === "transfer_human"
+    ) {
+      const eventDedupeKey = metadata?.messageId
+        ? `${event}:${card.id}:${metadata.messageId}`
+        : event === "transfer_human"
+          ? `transfer_human:${card.id}:${newStatus}`
+          : `${event}:${card.id}:${Date.now()}`;
 
-        automationsTriggered += transferResult.executedRules;
-
-        // Log funcional de transferencia
-        await supabase.from("crm_card_activities").insert({
-          client_id: clientId,
-          card_id: card.id,
-          activity_type: "event",
-          content: `Transferido para atendimento humano${
-            metadata?.transferReason ? `: ${metadata.transferReason}` : ""
-          }`,
-          metadata: {
-            automation: "status_change",
-            event,
-            from_status: previousStatus,
-            to_status: newStatus,
-          },
-        });
-
-        automationsTriggered++;
-      }
-
-      return {
-        updated: true,
+      const eventRuleResult = await emitCrmAutomationEvent({
+        clientId,
         cardId: card.id,
-        previousStatus,
-        newStatus,
-        automationsTriggered,
-      };
+        triggerType: event,
+        dedupeKey: eventDedupeKey,
+        triggerData: {
+          message_direction:
+            metadata?.messageDirection ??
+            (event === "message_received" ? "incoming" : "outgoing"),
+          sent_by: metadata?.sentBy,
+          message_id: metadata?.messageId,
+          is_first_message: metadata?.isFirstMessage,
+          conversation_status: conversationStatus,
+          request_text:
+            event === "transfer_human"
+              ? metadata?.transferReason || "transfer_requested"
+              : undefined,
+          current_status:
+            event === "transfer_human"
+              ? conversationStatus || "transferido"
+              : undefined,
+          from_status: previousStatus,
+          to_status: newStatus,
+          event,
+        },
+      });
+
+      automationsTriggered += eventRuleResult.executedRules;
+    }
+
+    if (event === "transfer_human") {
+      // Log funcional de transferencia
+      await supabase.from("crm_card_activities").insert({
+        client_id: clientId,
+        card_id: card.id,
+        activity_type: "event",
+        content: `Transferido para atendimento humano${
+          metadata?.transferReason ? `: ${metadata.transferReason}` : ""
+        }`,
+        metadata: {
+          automation: "status_change",
+          event,
+          from_status: previousStatus,
+          to_status: newStatus,
+        },
+      });
+
+      automationsTriggered++;
     }
 
     return {
-      updated: false,
+      updated: statusUpdated,
       cardId: card.id,
       previousStatus,
       newStatus,

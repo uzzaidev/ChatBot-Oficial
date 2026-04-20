@@ -32,6 +32,7 @@ import { checkInteractiveFlow } from "@/nodes/checkInteractiveFlow";
 import { emitCrmAutomationEvent } from "@/lib/crm-automation-engine";
 import { classifyCRMIntent } from "@/lib/crm-intent-classifier";
 import { createExecutionLogger } from "@/lib/logger";
+import { query } from "@/lib/postgres";
 import { setWithExpiry } from "@/lib/redis";
 import { createServiceRoleClient } from "@/lib/supabase";
 import {
@@ -262,7 +263,29 @@ export const processChatbotMessage = async (
     // ═════════════════════════════════════════════════════════════════
     // 🎯 CRM INTEGRATION: Ensure card exists and capture lead source
     // ═════════════════════════════════════════════════════════════════
-    const isFirstMessage = customer.status === "bot" && !conversation;
+    let isFirstMessage = customer.status === "bot" && !conversation;
+    try {
+      const historyCount = await query<{ user_messages: number }>(
+        `SELECT COUNT(*)::int AS user_messages
+         FROM n8n_chat_histories
+         WHERE client_id = $1
+           AND session_id = $2
+           AND message->>'type' = 'human'`,
+        [config.id, parsedMessage.phone],
+      );
+      const priorUserMessages = historyCount.rows[0]?.user_messages ?? 0;
+      isFirstMessage = priorUserMessages === 0;
+    } catch (historyError) {
+      console.warn(
+        "[chatbotFlow] Failed to compute first-message from history, using fallback heuristic:",
+        historyError,
+      );
+    }
+
+    const crmConversationStatus = customer.status as
+      | "bot"
+      | "humano"
+      | "transferido";
     let crmCardId: string | undefined;
 
     try {
@@ -307,10 +330,13 @@ export const processChatbotMessage = async (
           clientId: config.id,
           phone: parsedMessage.phone,
           event: "message_received",
-          conversationStatus: customer.status as
-            | "bot"
-            | "humano"
-            | "transferido",
+          conversationStatus: crmConversationStatus,
+          metadata: {
+            messageDirection: "incoming",
+            sentBy: "human",
+            messageId: parsedMessage.messageId,
+            isFirstMessage,
+          },
         });
       }
     } catch (crmError) {
@@ -1687,20 +1713,40 @@ export const processChatbotMessage = async (
 
           try {
             const args = JSON.parse(toolCall.function.arguments || "{}");
+            const fieldsToSave: Record<string, string> = {};
+
+            if (
+              args?.campos &&
+              typeof args.campos === "object" &&
+              !Array.isArray(args.campos)
+            ) {
+              for (const [key, rawValue] of Object.entries(args.campos)) {
+                if (typeof rawValue !== "string") continue;
+                const cleaned = rawValue.trim();
+                if (!cleaned) continue;
+                fieldsToSave[key] = cleaned;
+              }
+            }
+
             const campo = args?.campo;
             const valor = args?.valor;
+            if (
+              typeof campo === "string" &&
+              typeof valor === "string" &&
+              valor.trim().length > 0
+            ) {
+              fieldsToSave[campo] = valor.trim();
+            }
 
-            if (campo && typeof valor === "string" && valor.trim().length > 0) {
+            if (Object.keys(fieldsToSave).length > 0) {
               await updateContactMetadata({
                 phone: parsedMessage.phone,
                 clientId: config.id,
-                fields: {
-                  [campo]: valor.trim(),
-                },
+                fields: fieldsToSave,
               });
 
               logger.logNodeSuccess("15.75. Register Contact Metadata", {
-                campo,
+                fields: Object.keys(fieldsToSave),
                 saved: true,
               });
             } else {
@@ -1915,6 +1961,25 @@ export const processChatbotMessage = async (
           wamid,
           status: "sent", // Already sent to WhatsApp API
         });
+
+        try {
+          await updateCRMCardStatus({
+            clientId: config.id,
+            phone: parsedMessage.phone,
+            event: "message_sent",
+            conversationStatus: crmConversationStatus,
+            metadata: {
+              messageDirection: "outgoing",
+              sentBy: "bot",
+              messageId: wamid,
+            },
+          });
+        } catch (crmError) {
+          console.warn(
+            "[chatbotFlow] CRM status update error for message_sent:",
+            crmError,
+          );
+        }
 
         console.log(
           `✅ [chatbotFlow] Message ${i + 1}/${

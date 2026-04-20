@@ -142,6 +142,7 @@ interface AutomationExecutionRow {
   skip_reason?: string | null;
   error_message?: string | null;
   depth?: number | null;
+  trigger_conditions?: Record<string, unknown> | null;
   trigger_data?: Record<string, unknown> | null;
   result?: Record<string, unknown> | null;
   rule_version?: number | null;
@@ -1670,7 +1671,13 @@ export function AutomationRulesPanel({
                   </div>
 
                   {expandedLogId === row.id && (
-                    <div className="grid gap-2 sm:grid-cols-2">
+                    <div className="grid gap-2 sm:grid-cols-3">
+                      <div className="space-y-1">
+                        <p className="text-muted-foreground">trigger_conditions</p>
+                        <pre className="max-h-44 overflow-auto rounded bg-muted/30 p-2 text-[11px] leading-relaxed">
+                          {JSON.stringify(row.trigger_conditions || {}, null, 2)}
+                        </pre>
+                      </div>
                       <div className="space-y-1">
                         <p className="text-muted-foreground">trigger_data</p>
                         <pre className="max-h-44 overflow-auto rounded bg-muted/30 p-2 text-[11px] leading-relaxed">

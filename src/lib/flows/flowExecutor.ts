@@ -839,8 +839,27 @@ export class FlowExecutor {
 
     // Alias mapping for common terms used in conversational flows.
     const aliasMap: Array<{ aliases: string[]; target: string }> = [
+      {
+        aliases: ["nome_completo", "nome", "full_name", "nome_cliente"],
+        target: "nome_completo",
+      },
+      {
+        aliases: [
+          "data_nascimento",
+          "data_de_nascimento",
+          "nascimento",
+          "birth_date",
+        ],
+        target: "data_nascimento",
+      },
       { aliases: ["email", "e_mail"], target: "email" },
       { aliases: ["cpf", "documento", "document"], target: "cpf" },
+      { aliases: ["rg", "registro_geral", "identidade"], target: "rg" },
+      { aliases: ["cep", "zip_code", "zipcode"], target: "cep" },
+      { aliases: ["endereco", "address", "logradouro"], target: "endereco" },
+      { aliases: ["bairro", "district"], target: "bairro" },
+      { aliases: ["cidade", "city"], target: "cidade" },
+      { aliases: ["estado", "uf", "state"], target: "estado" },
       {
         aliases: ["como_conheceu", "origem", "source", "canal_origem"],
         target: "como_conheceu",
@@ -871,7 +890,15 @@ export class FlowExecutor {
 
   private isKnownMetadataKey(key: string): boolean {
     return [
+      "nome_completo",
+      "data_nascimento",
       "cpf",
+      "rg",
+      "cep",
+      "endereco",
+      "bairro",
+      "cidade",
+      "estado",
       "email",
       "como_conheceu",
       "indicado_por",

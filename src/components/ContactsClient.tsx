@@ -97,6 +97,39 @@ const PHONE_HEADER_ALIASES = [
 
 const NAME_HEADER_ALIASES = ["nome", "name", "cliente", "contato"];
 const STATUS_HEADER_ALIASES = ["status", "situacao", "estado"];
+const PROFILE_FIELDS_ORDER = [
+  "nome_completo",
+  "data_nascimento",
+  "cpf",
+  "rg",
+  "email",
+  "cep",
+  "endereco",
+  "bairro",
+  "cidade",
+  "estado",
+  "como_conheceu",
+  "indicado_por",
+  "objetivo",
+] as const;
+
+const PROFILE_FIELD_LABELS: Record<string, string> = {
+  nome_completo: "Nome completo",
+  data_nascimento: "Data de nascimento",
+  cpf: "CPF",
+  rg: "RG",
+  email: "E-mail",
+  cep: "CEP",
+  endereco: "Endereco",
+  bairro: "Bairro",
+  cidade: "Cidade",
+  estado: "Estado",
+  como_conheceu: "Como conheceu",
+  indicado_por: "Indicado por",
+  objetivo: "Objetivo",
+};
+
+const INTERNAL_PROFILE_FIELDS = new Set(["last_flow_metadata_update_at"]);
 
 const normalizeHeaderName = (value: string): string =>
   value
@@ -105,6 +138,24 @@ const normalizeHeaderName = (value: string): string =>
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
+
+const formatProfileFieldLabel = (key: string): string => {
+  if (PROFILE_FIELD_LABELS[key]) return PROFILE_FIELD_LABELS[key];
+  return key
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+const formatProfileFieldValue = (value: unknown): string | null => {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "string") {
+    const cleaned = value.trim();
+    return cleaned.length > 0 ? cleaned : null;
+  }
+  if (typeof value === "number") return String(value);
+  if (typeof value === "boolean") return value ? "Sim" : "Nao";
+  return null;
+};
 
 export function ContactsClient({ clientId }: ContactsClientProps) {
   const router = useRouter();
@@ -551,6 +602,31 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
     setSelectedColumnId("");
     setImportResult(null);
   };
+
+  const selectedContactProfileEntries = selectedContact?.metadata
+    ? Object.entries(selectedContact.metadata)
+        .filter(([key]) => !INTERNAL_PROFILE_FIELDS.has(key))
+        .map(([key, rawValue]) => {
+          const value = formatProfileFieldValue(rawValue);
+          return value ? { key, value } : null;
+        })
+        .filter((entry): entry is { key: string; value: string } =>
+          entry !== null
+        )
+        .sort((a, b) => {
+          const fieldOrder = PROFILE_FIELDS_ORDER as readonly string[];
+          const indexA = fieldOrder.indexOf(a.key);
+          const indexB = fieldOrder.indexOf(b.key);
+
+          const safeIndexA =
+            indexA === -1 ? PROFILE_FIELDS_ORDER.length + 1 : indexA;
+          const safeIndexB =
+            indexB === -1 ? PROFILE_FIELDS_ORDER.length + 1 : indexB;
+
+          if (safeIndexA !== safeIndexB) return safeIndexA - safeIndexB;
+          return a.key.localeCompare(b.key);
+        })
+    : [];
 
   return (
     <div className="fixed inset-0 flex overflow-hidden bg-background">
@@ -1221,40 +1297,18 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
               </div>
 
               {/* Perfil coletado pelo bot */}
-              {selectedContact.metadata && Object.values(selectedContact.metadata).some(Boolean) && (
+              {selectedContactProfileEntries.length > 0 && (
                 <div className="space-y-2">
                   <Label className="text-xs uppercase tracking-wide text-muted-foreground">Perfil coletado</Label>
                   <div className="rounded-md border border-border bg-muted/30 px-3 py-2 space-y-1 text-sm">
-                    {selectedContact.metadata.como_conheceu && (
-                      <div className="flex justify-between gap-2">
-                        <span className="text-muted-foreground shrink-0">Como conheceu</span>
-                        <span className="text-right">{selectedContact.metadata.como_conheceu}</span>
+                    {selectedContactProfileEntries.map((entry) => (
+                      <div key={entry.key} className="flex justify-between gap-2">
+                        <span className="text-muted-foreground shrink-0">
+                          {formatProfileFieldLabel(entry.key)}
+                        </span>
+                        <span className="text-right break-all">{entry.value}</span>
                       </div>
-                    )}
-                    {selectedContact.metadata.indicado_por && (
-                      <div className="flex justify-between gap-2">
-                        <span className="text-muted-foreground shrink-0">Indicado por</span>
-                        <span className="text-right">{selectedContact.metadata.indicado_por}</span>
-                      </div>
-                    )}
-                    {selectedContact.metadata.objetivo && (
-                      <div className="flex justify-between gap-2">
-                        <span className="text-muted-foreground shrink-0">Objetivo</span>
-                        <span className="text-right">{selectedContact.metadata.objetivo}</span>
-                      </div>
-                    )}
-                    {selectedContact.metadata.email && (
-                      <div className="flex justify-between gap-2">
-                        <span className="text-muted-foreground shrink-0">E-mail</span>
-                        <span className="text-right break-all">{selectedContact.metadata.email}</span>
-                      </div>
-                    )}
-                    {selectedContact.metadata.cpf && (
-                      <div className="flex justify-between gap-2">
-                        <span className="text-muted-foreground shrink-0">CPF</span>
-                        <span className="text-right">{selectedContact.metadata.cpf}</span>
-                      </div>
-                    )}
+                    ))}
                   </div>
                 </div>
               )}

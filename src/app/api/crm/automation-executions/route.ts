@@ -77,6 +77,7 @@ export async function GET(request: NextRequest) {
       executed_at: string;
       rule_id: string | null;
       rule_name: string | null;
+      trigger_conditions: Record<string, unknown> | null;
       contact_name: string | null;
       phone: string | null;
       card_id: string;
@@ -95,6 +96,7 @@ export async function GET(request: NextRequest) {
          e.executed_at,
          e.rule_id,
          r.name AS rule_name,
+         r.trigger_conditions,
          c.contact_name,
          c.phone,
          e.card_id,
@@ -121,6 +123,7 @@ export async function GET(request: NextRequest) {
         executed_at: string;
         rule_id: string | null;
         rule_name: string | null;
+        trigger_conditions: Record<string, unknown> | null;
         contact_name: string | null;
         phone: string | null;
         card_id: string;
@@ -139,6 +142,7 @@ export async function GET(request: NextRequest) {
            e.executed_at,
            e.rule_id,
            r.name AS rule_name,
+           r.trigger_conditions,
            NULL::text AS contact_name,
            c.phone,
            e.card_id,

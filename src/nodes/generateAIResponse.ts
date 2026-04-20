@@ -250,26 +250,50 @@ const CREATE_CALENDAR_EVENT_TOOL_DEFINITION = {
   },
 };
 
+const CONTACT_METADATA_FIELDS = [
+  "cpf",
+  "email",
+  "como_conheceu",
+  "indicado_por",
+  "objetivo",
+  "nome_completo",
+  "data_nascimento",
+  "rg",
+  "cep",
+  "endereco",
+  "bairro",
+  "cidade",
+  "estado",
+] as const;
+
 const REGISTER_CONTACT_DATA_TOOL_DEFINITION = {
   type: "function",
   function: {
     name: "registrar_dado_cadastral",
     description:
-      "Use quando o usuario fornecer dado cadastral. Salva o campo para nao perguntar novamente em conversas futuras.",
+      "Use quando o usuario fornecer dado cadastral. Salva os campos para nao perguntar novamente em conversas futuras. Prefira enviar varios campos de uma vez usando `campos`.",
     parameters: {
       type: "object",
       properties: {
         campo: {
           type: "string",
-          enum: ["cpf", "email", "como_conheceu", "indicado_por", "objetivo"],
+          enum: CONTACT_METADATA_FIELDS,
           description: "Campo cadastral coletado na conversa.",
         },
         valor: {
           type: "string",
           description: "Valor informado pelo usuario para o campo.",
         },
+        campos: {
+          type: "object",
+          description:
+            "Mapa de multiplos campos para salvar em uma unica chamada. Exemplo: {\"cpf\":\"...\",\"email\":\"...\"}.",
+          additionalProperties: {
+            type: "string",
+          },
+        },
       },
-      required: ["campo", "valor"],
+      required: [],
     },
   },
 };
@@ -428,10 +452,37 @@ export const generateAIResponse = async (
       });
     }
 
+    if (enableTools && config.settings.enableTools) {
+      messages.push({
+        role: "system",
+        content: [
+          "REGRA OBRIGATORIA DE CADASTRO:",
+          "Sempre que o usuario informar dados cadastrais, chame a tool registrar_dado_cadastral.",
+          `Campos permitidos: ${CONTACT_METADATA_FIELDS.join(", ")}.`,
+          "Quando houver varios dados na mesma mensagem, faca UMA unica chamada usando `campos` com todos eles.",
+          "Nao responda apenas em texto confirmando cadastro sem antes chamar a tool.",
+        ].join("\n"),
+      });
+    }
+
     if (contactMetadata && Object.keys(contactMetadata).length > 0) {
       const metaLines: string[] = [];
       if (contactMetadata.email) metaLines.push(`E-mail: ${contactMetadata.email}`);
       if (contactMetadata.cpf) metaLines.push(`CPF: ${contactMetadata.cpf}`);
+      if (contactMetadata.nome_completo) {
+        metaLines.push(`Nome completo: ${contactMetadata.nome_completo}`);
+      }
+      if (contactMetadata.data_nascimento) {
+        metaLines.push(`Data de nascimento: ${contactMetadata.data_nascimento}`);
+      }
+      if (contactMetadata.rg) metaLines.push(`RG: ${contactMetadata.rg}`);
+      if (contactMetadata.cep) metaLines.push(`CEP: ${contactMetadata.cep}`);
+      if (contactMetadata.endereco) {
+        metaLines.push(`Endereco: ${contactMetadata.endereco}`);
+      }
+      if (contactMetadata.bairro) metaLines.push(`Bairro: ${contactMetadata.bairro}`);
+      if (contactMetadata.cidade) metaLines.push(`Cidade: ${contactMetadata.cidade}`);
+      if (contactMetadata.estado) metaLines.push(`Estado: ${contactMetadata.estado}`);
       if (contactMetadata.como_conheceu) {
         metaLines.push(`Como conheceu: ${contactMetadata.como_conheceu}`);
       }
@@ -600,20 +651,41 @@ export const generateAIResponse = async (
               registrar_dado_cadastral: {
                 description:
                   REGISTER_CONTACT_DATA_TOOL_DEFINITION.function.description,
-                inputSchema: z.object({
-                  campo: z
-                    .enum([
-                      "cpf",
-                      "email",
-                      "como_conheceu",
-                      "indicado_por",
-                      "objetivo",
-                    ])
-                    .describe("Campo cadastral coletado na conversa."),
-                  valor: z
-                    .string()
-                    .describe("Valor informado pelo usuário para o campo."),
-                }),
+                inputSchema: z
+                  .object({
+                    campo: z
+                      .enum(CONTACT_METADATA_FIELDS)
+                      .optional()
+                      .describe("Campo cadastral coletado na conversa."),
+                    valor: z
+                      .string()
+                      .optional()
+                      .describe("Valor informado pelo usuário para o campo."),
+                    campos: z
+                      .record(z.string(), z.string())
+                      .optional()
+                      .describe(
+                        "Mapa de multiplos campos para salvar em uma unica chamada.",
+                      ),
+                  })
+                  .refine(
+                    (payload) => {
+                      const hasSingleField =
+                        typeof payload.campo === "string" &&
+                        typeof payload.valor === "string" &&
+                        payload.valor.trim().length > 0;
+                      const hasMultiFields = Object.values(
+                        payload.campos ?? {},
+                      ).some((value) =>
+                        typeof value === "string" && value.trim().length > 0
+                      );
+                      return hasSingleField || hasMultiFields;
+                    },
+                    {
+                      message:
+                        "Informe `campo` + `valor` ou `campos` com pelo menos um campo valido.",
+                    },
+                  ),
               },
               ...(config.calendar?.botEnabled !== false &&
               (config.calendar?.google?.enabled ||
@@ -780,4 +852,3 @@ export const generateAIResponse = async (
     throw new Error(`Failed to generate AI response: ${errorMessage}`);
   }
 };
-
