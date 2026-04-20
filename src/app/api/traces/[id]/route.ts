@@ -6,11 +6,11 @@ export const dynamic = "force-dynamic";
 // GET /api/traces/[id] — full trace detail with retrieval + tool_calls
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createServerClient();
-    const { id } = params;
+    const { id } = await params;
 
     // Auth check
     const {
