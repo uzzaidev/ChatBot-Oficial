@@ -6,6 +6,37 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-20
 
+### feat
+- Implementada fundação do sistema de observabilidade com rastreamento detalhado por mensagem, incluindo estágios do processamento, latências, custos, modelo usado e status. Criadas tabelas `message_traces`, `retrieval_traces` e `tool_call_traces` com políticas RLS para isolamento multi-tenant.
+- Adicionadas APIs REST para consulta de traces (`/api/traces` e `/api/traces/[id]`) com autenticação e paginação.
+- Integrado logger de trace no fluxo principal do chatbot (`chatbotFlow.ts`), registrando eventos de webhook, chamadas de ferramentas e erros, com envio assíncrono para banco.
+- Criado componente React `TracesWidget` para exibir no dashboard métricas de custo diário e últimas mensagens traceadas com status, latência e custo.
+- Desenvolvido módulo `trace-logger.ts` para criação e gerenciamento estruturado dos traces, incluindo sanitização de PII (CPF, email, cartão).
+- Implementado fallback para extração automática de dados cadastrais do usuário via IA (`extractContactDataFallback.ts`), acionado quando ferramenta específica não é chamada, com salvamento validado e normalizado.
+- Ampliado tratamento de metadados cadastrais (`updateContactMetadata.ts`) com validações rigorosas, normalizações (CPF, email, CEP, data, telefone alternativo, estado) e rejeições detalhadas.
+- Atualizado fluxo de geração de resposta para suportar logging detalhado das chamadas de ferramentas e integração com o trace logger.
+- Documentação extensa do plano mestre e sprints para observabilidade, avaliação automática e feedback humano adicionada em `twin-plans/PLANO_SPRINTS_OBSERVABILIDADE_E_FEEDBACK.md` e arquivos relacionados.
+- Configurado ambiente de testes com vitest, msw, playwright e scripts CI para garantir qualidade e segurança do novo sistema.
+
+  - Arquivos principais:  
+    `src/lib/trace-logger.ts`,  
+    `src/app/api/traces/route.ts`,  
+    `src/app/api/traces/[id]/route.ts`,  
+    `src/components/TracesWidget.tsx`,  
+    `src/components/DashboardMetricsView.tsx`,  
+    `src/flows/chatbotFlow.ts`,  
+    `src/nodes/extractContactDataFallback.ts`,  
+    `src/nodes/updateContactMetadata.ts`,  
+    `src/nodes/generateAIResponse.ts`,  
+    `supabase/migrations/20260422130000_create_observability_traces.sql`,  
+    `twin-plans/PLANO_SPRINTS_OBSERVABILIDADE_E_FEEDBACK.md`,  
+    `twin-plans/sprints/00-sprint-zero-prep.md`,  
+    `twin-plans/sprints/00-stack-e-arquitetura.md`
+
+  - Confiança: alta
+
+## 2026-04-20
+
 ### fix
 - Corrigido erro de digitação na documentação do resumo por email do UzzApp
   - Arquivos: `docs/UZZAPP_RECURSOS_E_FEATURES.md`
