@@ -52,7 +52,8 @@ export function DashboardLayoutClient({
   const isFullScreenRoute =
     pathname.startsWith("/dashboard/conversations") ||
     pathname.startsWith("/dashboard/chat") ||
-    pathname.startsWith("/dashboard/contacts");
+    pathname.startsWith("/dashboard/contacts") ||
+    pathname.startsWith("/dashboard/traces");
 
   // Detecta scroll para esconder/mostrar header (apenas desktop)
   useEffect(() => {

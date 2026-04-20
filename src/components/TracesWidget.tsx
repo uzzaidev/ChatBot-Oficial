@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { DollarSign, Clock, ExternalLink, CheckCircle2, XCircle, AlertCircle } from 'lucide-react'
+import { DollarSign, Clock, ExternalLink, CheckCircle2, XCircle, AlertCircle, Activity } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 
@@ -42,18 +42,21 @@ export function TracesWidget() {
   const [traces, setTraces] = useState<TraceRow[]>([])
   const [meta, setMeta] = useState<TracesMeta | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchTraces = async () => {
       try {
         const res = await fetch('/api/traces?limit=5')
-        if (!res.ok) throw new Error(`${res.status}`)
+        if (!res.ok) {
+          // Tabela pode não existir ainda ou sem permissão — silencia
+          setLoading(false)
+          return
+        }
         const json = await res.json()
         setTraces(json.data ?? [])
         setMeta(json.meta ?? null)
-      } catch (err) {
-        setError('Erro ao carregar traces')
+      } catch {
+        // Rede ou parse error — silencia, não quebra o dashboard
       } finally {
         setLoading(false)
       }
@@ -72,15 +75,6 @@ export function TracesWidget() {
             <div key={i} className="h-10 bg-muted rounded" />
           ))}
         </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="metric-card flex items-center gap-3 text-muted-foreground text-sm">
-        <XCircle className="h-4 w-4 text-destructive shrink-0" />
-        {error}
       </div>
     )
   }
