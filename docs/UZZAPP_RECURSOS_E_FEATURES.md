@@ -8,7 +8,7 @@
 
 Olá, [Nome]!
 
-Aqui está um resumo completo de tudo que você terá acesso ao usar o UzzApp — nossa plataforma de atendimento inteligente via WhatsApp com Inteligência Artificial. Também estou enviando em anexo um documento visual com todas as informações organizadas.
+Aqui está umm resumo completo de tudo que você terá acesso ao usar o UzzApp — nossa plataforma de atendimento inteligente via WhatsApp com Inteligência Artificial. Também estou enviando em anexo um documento visual com todas as informações organizadas.
 
 ---
 
