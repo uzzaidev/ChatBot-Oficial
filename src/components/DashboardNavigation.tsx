@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import {
+  Activity,
   BarChart3,
   BookOpen,
   Bot,
@@ -264,6 +265,14 @@ export function DashboardNavigation({
 
         {/* SEÇÃO: ANÁLISE */}
         <NavSection title="Análise" isCollapsed={isCollapsed} />
+        <NavItem
+          href="/dashboard/traces"
+          icon={<Activity className="h-5 w-5 flex-shrink-0" />}
+          label="Traces"
+          isCollapsed={isCollapsed}
+          onClick={onLinkClick}
+          tooltip="Rastreio completo de cada mensagem — pipeline, tool calls e RAG"
+        />
         <NavItem
           href="/dashboard/analytics-comparison"
           icon={<BarChart3 className="h-5 w-5 flex-shrink-0" />}
