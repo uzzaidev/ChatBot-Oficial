@@ -7,6 +7,14 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-20
 
 ### fix
+- Corrigido erro de digitação na documentação do resumo por email do UzzApp
+  - Arquivos: `docs/UZZAPP_RECURSOS_E_FEATURES.md`
+  - Evidência: correção de "umm" para "um" no texto
+  - Confiança: alta
+
+## 2026-04-20
+
+### fix
 - Atualizado `pushToRedis` e `batchMessages` para incluir `clientId` nas chaves e na estrutura de entrada, garantindo segregação por cliente nas operações Redis.
 - Ajustado endpoint API de teste para validar presença de `clientId` no input e incluir `clientId` na mensagem de log.
 - Modificado debounce key para incluir `clientId` no fluxo principal do chatbot.
