@@ -1,4 +1,4 @@
-import { query } from '@/lib/postgres'
+import { createServiceRoleClient } from '@/lib/supabase'
 import type { StoredMediaMetadata } from '@/lib/types'
 
 export interface ErrorDetails {
@@ -12,59 +12,44 @@ export interface SaveChatMessageInput {
   phone: string
   message: string
   type: 'user' | 'ai' | 'system'
-  clientId: string // 🔐 Multi-tenant: ID do cliente
-  mediaMetadata?: StoredMediaMetadata // 📎 Media attachment metadata
-  wamid?: string // 📱 WhatsApp message ID for reactions (wamid.xxx format)
-  status?: 'pending' | 'sent' | 'delivered' | 'read' | 'failed' // 📊 Message delivery status
-  errorDetails?: ErrorDetails // ❌ Error details when status is 'failed'
+  clientId: string
+  mediaMetadata?: StoredMediaMetadata
+  wamid?: string
+  status?: 'pending' | 'sent' | 'delivered' | 'read' | 'failed'
+  errorDetails?: ErrorDetails
 }
 
 export const saveChatMessage = async (input: SaveChatMessageInput): Promise<void> => {
-  const startTime = Date.now()
+  const { phone, message, type, clientId, mediaMetadata, wamid, status, errorDetails } = input
 
-  try {
-    const { phone, message, type, clientId, mediaMetadata, wamid, status, errorDetails } = input
+  // LangChain-compatible message format stored in JSONB column
+  const messageJson = {
+    type: type === 'user' ? 'human' : type === 'system' ? 'system' : 'ai',
+    content: message,
+    additional_kwargs: {},
+  }
 
-    const messageJson = {
-      type: type === 'user' ? 'human' : type === 'system' ? 'system' : 'ai',
-      content: message,
-      additional_kwargs: {},
-    }
+  // User messages arrive already sent; AI messages are pending WhatsApp delivery
+  const messageStatus = status || (type === 'ai' ? 'pending' : 'sent')
 
-    // Determine status based on message type
-    // - User messages: 'sent' (they already sent it to us)
-    // - AI messages: 'pending' (waiting to be sent to WhatsApp API)
-    // - System messages: 'sent' (internal memory entries)
-    const messageStatus =
-      status || (type === 'ai' ? 'pending' : 'sent')
+  const now = new Date().toISOString()
 
-    // OTIMIZAÇÃO: INSERT simples, beneficia-se do índice idx_chat_histories_session_id
-    // NOTA: A coluna 'type' não existe na tabela - o type fica dentro do JSON 'message'
-    // 🔐 Multi-tenant: Adicionado client_id após migration 005
-    // 📎 Media: Adicionado media_metadata para armazenar URL da mídia
-    // 📱 Wamid: Adicionado wamid para permitir reações via WhatsApp API
-    // 📊 Status: Adicionado status para rastreamento de entrega (pending, sent, delivered, read, failed)
-    // ❌ Error: Adicionado error_details para armazenar detalhes de erros
-    await query(
-      `INSERT INTO n8n_chat_histories (session_id, message, client_id, media_metadata, wamid, status, error_details, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())`,
-      [
-        phone,
-        JSON.stringify(messageJson),
-        clientId,
-        mediaMetadata ? JSON.stringify(mediaMetadata) : null,
-        wamid || null,
-        messageStatus,
-        errorDetails ? JSON.stringify(errorDetails) : null
-      ]
-    )
+  const supabase = createServiceRoleClient()
+  const { error } = await (supabase as any)
+    .from('n8n_chat_histories')
+    .insert({
+      session_id: phone,
+      message: messageJson,            // Supabase client auto-serializes JSONB
+      client_id: clientId,
+      media_metadata: mediaMetadata ?? null,
+      wamid: wamid ?? null,
+      status: messageStatus,
+      error_details: errorDetails ?? null,
+      created_at: now,
+      updated_at: now,
+    })
 
-    const duration = Date.now() - startTime
-
-    // Alerta se INSERT for lento
-    if (duration > 500) {
-    }
-  } catch (error) {
-    throw new Error(`Failed to save chat message: ${error instanceof Error ? error.message : 'Unknown error'}`)
+  if (error) {
+    throw new Error(`Failed to save chat message: ${error.message}`)
   }
 }

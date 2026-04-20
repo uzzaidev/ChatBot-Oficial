@@ -1,26 +1,20 @@
 import { ChatMessage } from '@/lib/types'
-import { query } from '@/lib/postgres'
+import { createServiceRoleClient } from '@/lib/supabase'
 import { getBotConfig } from '@/lib/config'
 
 export interface GetChatHistoryInput {
   phone: string
-  clientId: string // 🔐 Multi-tenant: ID do cliente
-  maxHistory?: number // 🔧 Configurável (padrão: busca do banco, fallback 30)
+  clientId: string
+  maxHistory?: number
 }
 
-/**
- * 📊 Estatísticas do histórico para monitoramento no backend
- */
 export interface ChatHistoryStats {
-  messageCount: number       // Número de mensagens válidas retornadas
-  totalPromptSize: number    // Tamanho total do conteúdo em caracteres
-  maxHistoryRequested: number // Limite de mensagens solicitado
-  durationMs: number         // Tempo de execução em ms
+  messageCount: number
+  totalPromptSize: number
+  maxHistoryRequested: number
+  durationMs: number
 }
 
-/**
- * Resultado do getChatHistory com mensagens e estatísticas
- */
 export interface GetChatHistoryResult {
   messages: ChatMessage[]
   stats: ChatHistoryStats
@@ -28,35 +22,29 @@ export interface GetChatHistoryResult {
 
 export const getChatHistory = async (input: GetChatHistoryInput): Promise<GetChatHistoryResult> => {
   const startTime = Date.now()
-  // Default fallback value for maxHistory
   const defaultMaxHistory = input.maxHistory ?? 30
 
   try {
     const { phone, clientId } = input
 
-    // 🔧 Phase 1: Get max_messages from bot configuration
     let maxHistory = input.maxHistory
     if (maxHistory === undefined) {
       const configValue = await getBotConfig(clientId, 'chat_history:max_messages')
       maxHistory = configValue !== null ? Number(configValue) : 30
     }
 
-
-    // OTIMIZAÇÃO: Query usa índice idx_chat_histories_session_created
-    // NOTA: A coluna 'type' não existe - extraímos o type do JSON 'message'
-    // 🔐 Multi-tenant: Filtra por client_id após migration 005
-    const result = await query<any>(
-      `SELECT session_id, message, created_at
-       FROM n8n_chat_histories
-       WHERE session_id = $1 AND client_id = $2
-       ORDER BY created_at DESC
-       LIMIT $3`,
-      [phone, clientId, maxHistory]
-    )
+    const supabase = createServiceRoleClient()
+    const { data, error } = await (supabase as any)
+      .from('n8n_chat_histories')
+      .select('session_id, message, created_at')
+      .eq('session_id', phone)
+      .eq('client_id', clientId)
+      .order('created_at', { ascending: false })
+      .limit(maxHistory)
 
     const duration = Date.now() - startTime
 
-    if (!result.rows || result.rows.length === 0) {
+    if (error || !data || data.length === 0) {
       return {
         messages: [],
         stats: {
@@ -64,32 +52,27 @@ export const getChatHistory = async (input: GetChatHistoryInput): Promise<GetCha
           totalPromptSize: 0,
           maxHistoryRequested: maxHistory,
           durationMs: duration,
-        }
+        },
       }
     }
 
-    const chatMessages: ChatMessage[] = result.rows
+    const chatMessages: ChatMessage[] = (data as any[])
       .reverse()
       .map((record) => {
-        // Parse JSON da coluna message para extrair type e content
+        // Supabase returns JSONB as JS object already; keep defensive parse for safety
         let parsedMessage: any
         try {
-          parsedMessage = typeof record.message === 'string'
-            ? JSON.parse(record.message)
-            : record.message
-        } catch (error) {
+          parsedMessage =
+            typeof record.message === 'string'
+              ? JSON.parse(record.message)
+              : record.message
+        } catch {
           parsedMessage = { type: 'human', content: record.message }
         }
 
-        // Map message type to role (ai -> assistant, human -> user, system -> system)
-        let role: "user" | "assistant" | "system" = "user";
-        if (parsedMessage.type === "ai") {
-          role = "assistant";
-        } else if (parsedMessage.type === "system") {
-          role = "system";
-        } else {
-          role = "user"; // human or any other type defaults to user
-        }
+        let role: 'user' | 'assistant' | 'system' = 'user'
+        if (parsedMessage.type === 'ai') role = 'assistant'
+        else if (parsedMessage.type === 'system') role = 'system'
 
         return {
           role,
@@ -98,13 +81,11 @@ export const getChatHistory = async (input: GetChatHistoryInput): Promise<GetCha
         }
       })
 
-    // 📊 Calcula o tamanho total do prompt (soma de todos os conteúdos)
-    const totalPromptSize = chatMessages.reduce((acc, msg) => acc + (msg.content?.length || 0), 0)
-    
-    // Alerta se query for lenta
-    if (duration > 1000) {
-    }
-    
+    const totalPromptSize = chatMessages.reduce(
+      (acc, msg) => acc + (msg.content?.length || 0),
+      0
+    )
+
     return {
       messages: chatMessages,
       stats: {
@@ -112,9 +93,9 @@ export const getChatHistory = async (input: GetChatHistoryInput): Promise<GetCha
         totalPromptSize,
         maxHistoryRequested: maxHistory,
         durationMs: duration,
-      }
+      },
     }
-  } catch (error) {
+  } catch {
     const duration = Date.now() - startTime
     return {
       messages: [],
@@ -123,7 +104,7 @@ export const getChatHistory = async (input: GetChatHistoryInput): Promise<GetCha
         totalPromptSize: 0,
         maxHistoryRequested: defaultMaxHistory,
         durationMs: duration,
-      }
+      },
     }
   }
 }
