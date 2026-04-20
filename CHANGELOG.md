@@ -6,6 +6,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-20
 
+### fix
+- Ajustado await para `params` do tipo Promise no endpoint GET `/api/traces/[id]` para compatibilidade com Next.js 15
+  - Arquivos: `src/app/api/traces/[id]/route.ts`
+  - Evidência: alteração de desestruturação para `await params` na função GET
+  - Confiança: alta
+
+## 2026-04-20
+
 ### feat
 - Adicionada tela de Traces no dashboard para rastrear mensagens processadas com detalhes do pipeline, chamadas de ferramentas (tool calls) e RAG (retrieval-augmented generation). Inclui filtros por status, busca por telefone ou texto, estatísticas diárias, e visualização detalhada em abas (Visão Geral, Tool Calls e RAG).
 - Atualizada navegação do dashboard para incluir link para a nova tela de Traces.
