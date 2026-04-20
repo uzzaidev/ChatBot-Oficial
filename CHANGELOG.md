@@ -6,6 +6,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-20
 
+### docs
+- Adicionado guia completo de debug e observabilidade detalhando logs, tabelas de trace, APIs, dashboard, queries de diagnóstico e cenários de debug passo a passo
+  - Arquivos: `checkpoints/2026-04-16_chatbot-oficial/14_DEBUG_AND_OBSERVABILITY_GUIDE.md`
+  - Confiança: alta
+
+## 2026-04-20
+
 ### feat
 - Implementada fundação do sistema de observabilidade com rastreamento detalhado por mensagem, incluindo estágios do processamento, latências, custos, modelo usado e status. Criadas tabelas `message_traces`, `retrieval_traces` e `tool_call_traces` com políticas RLS para isolamento multi-tenant.
 - Adicionadas APIs REST para consulta de traces (`/api/traces` e `/api/traces/[id]`) com autenticação e paginação.
