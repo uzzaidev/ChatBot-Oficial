@@ -7,6 +7,15 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-20
 
 ### fix
+- Migradas as funções `saveChatMessage` e `getChatHistory` para utilizar o cliente Supabase em vez de consultas diretas ao PostgreSQL, mantendo suporte multi-tenant e campos como status, mídia e erros.
+- Ajustado o tratamento dos dados retornados e inseridos para compatibilidade com JSONB do Supabase, incluindo melhorias na tipagem e remoção de queries SQL manuais.
+  - Arquivos: `src/nodes/getChatHistory.ts`, `src/nodes/saveChatMessage.ts`
+  - Evidência: substituição de `query` por `createServiceRoleClient` e uso do método `.from().select()` e `.from().insert()` do Supabase client.
+  - Confiança: alta
+
+## 2026-04-20
+
+### fix
 - Ajustado layout da sidebar e área de conteúdo para rotas de traces, garantindo exibição correta sem padding e com sidebar visível
 - Corrigida renderização do componente `TracesClient` para ocupar toda a altura disponível, evitando overflow inesperado
 - Modificado flush do traceLogger para usar `void` em vez de `setImmediate`, melhorando gravação de traces no ambiente Vercel
