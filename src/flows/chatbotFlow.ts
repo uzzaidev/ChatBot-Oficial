@@ -1693,6 +1693,13 @@ export const processChatbotMessage = async (
             startedAt: tcStart1,
             completedAt: new Date(),
           });
+          traceLogger.setGenerationData({
+            model: aiResponse.model || "unknown",
+            tokensInput: aiResponse.usage?.prompt_tokens ?? 0,
+            tokensOutput: aiResponse.usage?.completion_tokens ?? 0,
+            costUsd: 0,
+            response: aiResponse.content || "",
+          });
           traceLogger.markStage("sent");
           await flushTrace();
 
@@ -1754,6 +1761,13 @@ export const processChatbotMessage = async (
             documentSearchResult.documentsSent &&
             documentSearchResult.documentsSent > 0
           ) {
+            traceLogger.setGenerationData({
+              model: aiResponse.model || "unknown",
+              tokensInput: aiResponse.usage?.prompt_tokens ?? 0,
+              tokensOutput: aiResponse.usage?.completion_tokens ?? 0,
+              costUsd: 0,
+              response: aiResponse.content || "",
+            });
             traceLogger.markStage("sent");
             await flushTrace();
             logger.finishExecution("success");
@@ -1883,6 +1897,13 @@ export const processChatbotMessage = async (
 
           // Se enviou áudio com sucesso, terminar fluxo
           if (audioResult.sentAsAudio) {
+            traceLogger.setGenerationData({
+              model: aiResponse.model || "unknown",
+              tokensInput: aiResponse.usage?.prompt_tokens ?? 0,
+              tokensOutput: aiResponse.usage?.completion_tokens ?? 0,
+              costUsd: 0,
+              response: aiResponse.content || "",
+            });
             traceLogger.markStage("sent");
             await flushTrace();
             logger.finishExecution("success");
@@ -1895,6 +1916,13 @@ export const processChatbotMessage = async (
 
           // Se falhou mas enviou texto (fallback), terminar fluxo
           if (audioResult.success && !audioResult.sentAsAudio) {
+            traceLogger.setGenerationData({
+              model: aiResponse.model || "unknown",
+              tokensInput: aiResponse.usage?.prompt_tokens ?? 0,
+              tokensOutput: aiResponse.usage?.completion_tokens ?? 0,
+              costUsd: 0,
+              response: aiResponse.content || "",
+            });
             traceLogger.markStage("sent");
             await flushTrace();
             logger.finishExecution("success");

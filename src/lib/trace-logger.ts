@@ -213,7 +213,7 @@ export const createTraceLogger = (
       cost_usd: generationData?.costUsd ?? null,
 
       // Status
-      status: errorMsg ? "failed" : "pending",
+      status: errorMsg ? "failed" : (stageTimes.sent ? "success" : "pending"),
 
       // Flexible metadata
       metadata: {
