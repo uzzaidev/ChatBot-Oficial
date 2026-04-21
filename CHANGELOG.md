@@ -5,6 +5,28 @@ Gerado automaticamente por IA a cada push no `main`.
 ```
 
 ```
+
+## 2026-04-21
+
+### fix
+- Ajustado uso dos clientes Supabase nas APIs para utilizar `createServiceRoleClient` em vez de `createRouteHandlerClient`, corrigindo problemas de autenticação e sessão nas rotas de avaliações, ground-truth e traces.
+- Melhorada a captura e retorno de detalhes de erro nas respostas JSON das APIs para facilitar diagnóstico.
+- Tratamento aprimorado de erros específicos de banco de dados nas APIs de traces, incluindo mensagens claras para migrações pendentes.
+  - Arquivos: `src/app/api/evaluations/route.ts`, `src/app/api/ground-truth/route.ts`, `src/app/api/traces/[id]/route.ts`, `src/app/api/traces/route.ts`
+  - Evidência: substituição consistente do cliente Supabase e inclusão de detalhes de erro nas respostas HTTP.
+  - Confiança: alta
+
+### chore
+- Aplicadas migrações de qualidade no banco de dados para garantir existência de tabelas e índices com cláusulas IF NOT EXISTS, evitando erros em ambientes com migrações parciais.
+- Criada nova migration para concessão de permissão EXECUTE na função RPC `submit_human_feedback_atomic` para o papel `authenticated`.
+  - Arquivos: múltiplas migrations em `supabase/migrations/`
+  - Confiança: alta
+
+### docs
+- Adicionado documento detalhado de continuação da sprint com diagnóstico do estado atual do projeto, desvios do plano, sequência de execução recomendada, riscos e checklist de próximos passos para validação e desenvolvimento futuros.
+  - Arquivos: `twin-plans/sprints/CONTINUACAO-2026-04-21.md`
+  - Confiança: alta
+
 ## 2026-04-21
 
 ### fix
