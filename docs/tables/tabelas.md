@@ -284,3 +284,9 @@ ORDER BY policy_name;
 | table_schema | table_name         | columns principais |
 | ------------ | ------------------ | ------------------ |
 | public       | agent_evaluations  | id, trace_id, client_id, ground_truth_id, judge_model, judge_prompt_version, alignment_score, relevance_score, finality_score, safety_score, composite_score, alignment_reasoning, relevance_reasoning, finality_reasoning, safety_reasoning, verdict, tokens_input, tokens_output, cost_usd, duration_ms, evaluated_at, metadata, created_at |
+
+## Sprint 4 - Human Feedback (adicionado)
+
+| table_schema | table_name      | columns principais |
+| ------------ | --------------- | ------------------ |
+| public       | human_feedback  | id, trace_id, evaluation_id, client_id, operator_id, verdict(correct/incorrect/partial), correction_text, reason, error_category, marked_as_ground_truth, ground_truth_id, metadata, created_at |

@@ -38,6 +38,7 @@ interface DashboardNavigationProps {
   userName?: string;
   userEmail?: string;
   userRole?: string | null;
+  pendingQualityCount?: number;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
   onLinkClick?: () => void;
@@ -50,6 +51,7 @@ interface NavItemProps {
   isCollapsed?: boolean;
   onClick?: () => void;
   badge?: "new" | "beta" | "admin" | "dev";
+  badgeCount?: number;
   tooltip?: string;
 }
 
@@ -60,6 +62,7 @@ const NavItem = ({
   isCollapsed,
   onClick,
   badge,
+  badgeCount,
   tooltip,
 }: NavItemProps) => {
   const pathname = usePathname();
@@ -86,6 +89,13 @@ const NavItem = ({
       {!isCollapsed && (
         <>
           <span className="flex-1">{label}</span>
+          {typeof badgeCount === "number" && badgeCount > 0 && (
+            <Badge
+              className="text-[10px] px-2 py-0.5 font-bold bg-red-500/15 text-red-600 border-red-500/30"
+            >
+              {badgeCount}
+            </Badge>
+          )}
           {badge && (
             <Badge
               variant={badge}
@@ -150,6 +160,7 @@ export function DashboardNavigation({
   userName,
   userEmail,
   userRole,
+  pendingQualityCount = 0,
   isCollapsed = false,
   onToggleCollapse,
   onLinkClick,
@@ -291,6 +302,16 @@ export function DashboardNavigation({
           onClick={onLinkClick}
           badge="new"
           tooltip="Gerencie o gabarito por cliente para avaliar e melhorar respostas"
+        />
+        <NavItem
+          href="/dashboard/quality/evaluations"
+          icon={<CheckCircle className="h-5 w-5 flex-shrink-0" />}
+          label="Revisões"
+          isCollapsed={isCollapsed}
+          onClick={onLinkClick}
+          badge="new"
+          badgeCount={pendingQualityCount}
+          tooltip="Triagem operacional (lista, conversa e detalhe) para feedback humano"
         />
         <NavItem
           href="/dashboard/analytics-comparison"

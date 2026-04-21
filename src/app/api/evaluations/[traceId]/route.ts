@@ -37,10 +37,20 @@ export async function GET(
       .eq("client_id", clientId)
       .maybeSingle();
 
+    const { data: humanFeedback } = await (supabase as any)
+      .from("human_feedback")
+      .select(
+        "id, operator_id, verdict, correction_text, reason, error_category, marked_as_ground_truth, ground_truth_id, created_at",
+      )
+      .eq("trace_id", traceId)
+      .eq("client_id", clientId)
+      .order("created_at", { ascending: false });
+
     return NextResponse.json({
       data: {
         ...evaluation,
         trace: trace ?? null,
+        human_feedback: humanFeedback ?? [],
       },
     });
   } catch (error) {

@@ -4,6 +4,7 @@ import { BillingStatusBanner } from "@/components/BillingStatusBanner";
 import { DashboardNavigation } from "@/components/DashboardNavigation";
 import { NotificationBell } from "@/components/NotificationBell";
 import { PaymentWall } from "@/components/PaymentWall";
+import { QualityAlertBadge } from "@/components/quality/QualityAlertBadge";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +14,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { useQualityPendingCount } from "@/hooks/useQualityPendingCount";
 import { Menu } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -46,6 +48,7 @@ export function DashboardLayoutClient({
   const [lastScrollY, setLastScrollY] = useState(0);
   const mainContentRef = useRef<HTMLElement>(null);
   const pathname = usePathname();
+  const { pendingCount } = useQualityPendingCount();
 
   // Se estiver em qualquer rota de conversas, chat ou contatos, renderiza apenas children
   // (essas páginas têm seu próprio layout/sidebar full-screen)
@@ -113,6 +116,7 @@ export function DashboardLayoutClient({
           userName={userName}
           userEmail={userEmail}
           userRole={userRole}
+          pendingQualityCount={pendingCount}
           isCollapsed={isCollapsed}
           onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
         />
@@ -146,6 +150,7 @@ export function DashboardLayoutClient({
             </p>
           </div>
           <div className="flex items-center gap-4">
+            <QualityAlertBadge pendingCount={pendingCount} />
             <ThemeToggle />
             <NotificationBell />
           </div>
@@ -173,6 +178,7 @@ export function DashboardLayoutClient({
                   userName={userName}
                   userEmail={userEmail}
                   userRole={userRole}
+                  pendingQualityCount={pendingCount}
                   onLinkClick={() => setIsMobileOpen(false)}
                 />
               </SheetContent>
@@ -183,6 +189,7 @@ export function DashboardLayoutClient({
             </h1>
           </div>
           <div className="flex items-center gap-2">
+            <QualityAlertBadge pendingCount={pendingCount} />
             <ThemeToggle />
             <NotificationBell />
           </div>

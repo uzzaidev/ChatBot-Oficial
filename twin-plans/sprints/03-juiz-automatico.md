@@ -18,7 +18,7 @@
 
 ## 2. Definition of Done (DoD)
 
-- [ ] Migration `agent_evaluations` aplicada com RLS.
+- [x] Migration `agent_evaluations` aplicada com RLS.
 - [x] `evaluateAgentResponse` retorna JSON validado por `zod`.
 - [x] Sampling 20% funciona (validado estatisticamente em 1000 mensagens).
 - [x] Idempotência: mesmo `trace_id` nunca gera 2 evaluations.
@@ -428,7 +428,7 @@ Cards: avg score, distribuição PASS/REVIEW/FAIL, custo do juiz hoje.
 - [ ] Backup
 - [x] Migration `20260506120000_create_agent_evaluations.sql`
 - [ ] Aplicar dev → validar manualmente
-- [ ] Aplicar prod
+- [x] Aplicar prod
 - [x] Atualizar `docs/tables/tabelas.md`
 
 ### Lib

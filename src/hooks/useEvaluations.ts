@@ -10,6 +10,7 @@ export interface EvaluationItem {
   duration_ms: number | null;
   evaluated_at: string;
   judge_model: string;
+  has_human_feedback?: boolean;
 }
 
 export interface EvaluationStats {

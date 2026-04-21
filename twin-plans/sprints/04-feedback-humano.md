@@ -1,31 +1,31 @@
-# Sprint 4 — Operador Humano: Feedback que Corrige o Sistema
+﻿# Sprint 4 â€” Operador Humano: Feedback que Corrige o Sistema
 
-> **Duração:** 1–2 semanas
-> **Pré-requisito:** Sprints 1, 2, 3
-> **Meta:** fluxo **rápido** (lista → conversa → detalhe) e feedback humano que alimenta melhoria do sistema.
+> **DuraÃ§Ã£o:** 1â€“2 semanas
+> **PrÃ©-requisito:** Sprints 1, 2, 3
+> **Meta:** fluxo **rÃ¡pido** (lista â†’ conversa â†’ detalhe) e feedback humano que alimenta melhoria do sistema.
 
 ---
 
 ## 1. Objetivo
 
-1. Tabela `human_feedback` para registrar revisão manual.
-2. UI 3-painéis (`EvaluationList` / `ConversationReview` / `EvaluationDetails`).
+1. Tabela `human_feedback` para registrar revisÃ£o manual.
+2. UI 3-painÃ©is (`EvaluationList` / `ConversationReview` / `EvaluationDetails`).
 3. Atalhos de teclado (J/K/1/2/3) para alta produtividade.
-4. Promote-to-GT: operador transforma trace + correção em entry de ground truth.
-5. Alertas básicos para FAIL/REVIEW (badge no menu, opcionalmente email).
+4. Promote-to-GT: operador transforma trace + correÃ§Ã£o em entry de ground truth.
+5. Alertas bÃ¡sicos para FAIL/REVIEW (badge no menu, opcionalmente email).
 
 ---
 
 ## 2. Definition of Done (DoD)
 
-- [ ] Migration `human_feedback` aplicada com RLS.
-- [ ] Página `/dashboard/quality/evaluations` em produção, com 3 painéis.
+- [x] Migration `human_feedback` aplicada com RLS.
+- [ ] PÃ¡gina `/dashboard/quality/evaluations` em produÃ§Ã£o, com 3 painÃ©is.
 - [ ] Operador consegue revisar 1 FAIL em < 90s (cronometrado).
-- [ ] Atalhos J/K (próximo/anterior) e 1/2/3 (correto/incorreto/parcial) funcionam.
-- [ ] Promote-to-GT cria nova linha em `ground_truth` com `source='operator_correction'` e `source_trace_id`.
-- [ ] Trilha auditável: quem corrigiu, quando, vínculo com `trace_id`.
-- [ ] Cobertura ≥ 70% em componentes (`EvaluationList`, `HumanFeedbackModal`).
-- [ ] E2E: fluxo completo de revisão valida em CI.
+- [ ] Atalhos J/K (prÃ³ximo/anterior) e 1/2/3 (correto/incorreto/parcial) funcionam.
+- [x] Promote-to-GT cria nova linha em `ground_truth` com `source='operator_correction'` e `source_trace_id`.
+- [x] Trilha auditÃ¡vel: quem corrigiu, quando, vÃ­nculo com `trace_id`.
+- [ ] Cobertura â‰¥ 70% em componentes (`EvaluationList`, `HumanFeedbackModal`).
+- [ ] E2E: fluxo completo de revisÃ£o valida em CI.
 
 ---
 
@@ -64,7 +64,7 @@ CREATE INDEX idx_human_feedback_operator_id ON human_feedback(operator_id);
 CREATE INDEX idx_human_feedback_verdict ON human_feedback(verdict);
 CREATE INDEX idx_human_feedback_created_at ON human_feedback(created_at DESC);
 
--- Operador só pode ter 1 feedback por trace (UNIQUE)
+-- Operador sÃ³ pode ter 1 feedback por trace (UNIQUE)
 CREATE UNIQUE INDEX uniq_human_feedback_trace_op ON human_feedback(trace_id, operator_id);
 
 ALTER TABLE human_feedback ENABLE ROW LEVEL SECURITY;
@@ -170,25 +170,25 @@ export async function POST(
 
 ### 3.3 Frontend (componentes)
 
-#### `src/components/quality/EvaluationList.tsx` *(NOVO — Painel A)*
+#### `src/components/quality/EvaluationList.tsx` *(NOVO â€” Painel A)*
 
-- Filtros: score range (0-10), verdict (PASS/REVIEW/FAIL), "sem revisão humana", período (24h/7d/30d), categoria.
-- Lista de itens com: avatar, telefone, score badge, verdict badge, tempo atrás.
-- Ordenação default: FAIL → REVIEW → PASS, mais recente primeiro.
-- Atalhos: `J` próximo, `K` anterior, `Enter` abre detalhe.
+- Filtros: score range (0-10), verdict (PASS/REVIEW/FAIL), "sem revisÃ£o humana", perÃ­odo (24h/7d/30d), categoria.
+- Lista de itens com: avatar, telefone, score badge, verdict badge, tempo atrÃ¡s.
+- OrdenaÃ§Ã£o default: FAIL â†’ REVIEW â†’ PASS, mais recente primeiro.
+- Atalhos: `J` prÃ³ximo, `K` anterior, `Enter` abre detalhe.
 
-#### `src/components/quality/ConversationReview.tsx` *(NOVO — Painel B)*
+#### `src/components/quality/ConversationReview.tsx` *(NOVO â€” Painel B)*
 
 - Render conversa selecionada (mensagens user + agent).
-- Para mensagens do agent: badge inline com score + verdict + botões (1: correto, 2: incorreto, 3: parcial).
+- Para mensagens do agent: badge inline com score + verdict + botÃµes (1: correto, 2: incorreto, 3: parcial).
 - Atalhos: `1`/`2`/`3` aplicam veredito ao item focado.
 
-#### `src/components/quality/EvaluationDetails.tsx` *(NOVO — Painel C)*
+#### `src/components/quality/EvaluationDetails.tsx` *(NOVO â€” Painel C)*
 
-- Score breakdown (4 dimensões, com reasoning expansível).
-- Chunks recuperados (id, similarity, preview, link "ver completo", botão "marcar irrelevante" — Sprint 5).
-- Custo + latência por estágio.
-- Histórico de conversa (últimas 15 msgs).
+- Score breakdown (4 dimensÃµes, com reasoning expansÃ­vel).
+- Chunks recuperados (id, similarity, preview, link "ver completo", botÃ£o "marcar irrelevante" â€” Sprint 5).
+- Custo + latÃªncia por estÃ¡gio.
+- HistÃ³rico de conversa (Ãºltimas 15 msgs).
 - Prompt completo (collapse).
 
 #### `src/components/quality/HumanFeedbackModal.tsx` *(NOVO)*
@@ -196,36 +196,36 @@ export async function POST(
 Modal contextual quando operador marca incorreto/parcial. Campos:
 - Motivo (radio): wrong_chunk / bad_generation / missing_info / hallucination / gt_outdated / other
 - Correction text (textarea)
-- Checkbox: "Promover essa correção a Ground Truth"
-- Botões: Cancelar / Confirmar (`Esc` / `Enter`)
+- Checkbox: "Promover essa correÃ§Ã£o a Ground Truth"
+- BotÃµes: Cancelar / Confirmar (`Esc` / `Enter`)
 
 #### `src/components/quality/ScoreBadge.tsx` *(NOVO)*
 
 ```tsx
 export const ScoreBadge: React.FC<{ score: number; verdict?: 'PASS' | 'REVIEW' | 'FAIL' }> = ({ score, verdict }) => {
   const color = score >= 7 ? 'green' : score >= 4 ? 'yellow' : 'red'
-  // ... render badge com cor + ícone do verdict
+  // ... render badge com cor + Ã­cone do verdict
 }
 ```
 
 #### Hooks
 
-- `src/hooks/useEvaluations.ts` — lista, filtros, paginação.
-- `src/hooks/useHumanFeedback.ts` — submit feedback, promote-to-GT.
+- `src/hooks/useEvaluations.ts` â€” lista, filtros, paginaÃ§Ã£o.
+- `src/hooks/useHumanFeedback.ts` â€” submit feedback, promote-to-GT.
 
-#### Página
+#### PÃ¡gina
 
-- `src/app/dashboard/quality/evaluations/page.tsx` — layout 3 colunas (responsivo).
-- `src/app/dashboard/quality/evaluations/[id]/page.tsx` — vista focada de 1 evaluation (deep link).
+- `src/app/dashboard/quality/evaluations/page.tsx` â€” layout 3 colunas (responsivo).
+- `src/app/dashboard/quality/evaluations/[id]/page.tsx` â€” vista focada de 1 evaluation (deep link).
 
 #### Sidebar
 
-- Adicionar "Qualidade > Revisões" com badge do número de FAIL/REVIEW pendentes.
+- Adicionar "Qualidade > RevisÃµes" com badge do nÃºmero de FAIL/REVIEW pendentes.
 
-### 3.4 Alertas básicos
+### 3.4 Alertas bÃ¡sicos
 
-- Componente `QualityAlertBadge` no header — número de mensagens com `status='needs_review'`.
-- Toast quando nova evaluation FAIL chega (via Supabase Realtime — opcional).
+- Componente `QualityAlertBadge` no header â€” nÃºmero de mensagens com `status='needs_review'`.
+- Toast quando nova evaluation FAIL chega (via Supabase Realtime â€” opcional).
 
 ---
 
@@ -233,45 +233,45 @@ export const ScoreBadge: React.FC<{ score: number; verdict?: 'PASS' | 'REVIEW' |
 
 ### Banco
 - [ ] Backup
-- [ ] Migration `20260513120000_create_human_feedback.sql`
-- [ ] Validar UNIQUE (trace_id, operator_id) — operador único por trace
-- [ ] Aplicar prod
+- [x] Migration `20260513120000_create_human_feedback.sql`
+- [ ] Validar UNIQUE (trace_id, operator_id) â€” operador Ãºnico por trace
+- [x] Aplicar prod
 
 ### APIs
-- [ ] `POST /api/evaluations/[traceId]/human-feedback`
-- [ ] `GET /api/evaluations/[traceId]` — incluir `human_feedback` agregado
-- [ ] Tratar promote-to-GT atomicamente (transação)
+- [x] `POST /api/evaluations/[traceId]/human-feedback`
+- [x] `GET /api/evaluations/[traceId]` â€” incluir `human_feedback` agregado
+- [x] Tratar promote-to-GT atomicamente (transaÃ§Ã£o)
 
 ### Componentes
-- [ ] `EvaluationList.tsx` (Painel A) com filtros e atalhos J/K
-- [ ] `ConversationReview.tsx` (Painel B) com inline scoring
-- [ ] `EvaluationDetails.tsx` (Painel C) com breakdown
-- [ ] `HumanFeedbackModal.tsx` com validação
-- [ ] `ScoreBadge.tsx` reutilizável
-- [ ] `QualityAlertBadge.tsx` no header
+- [x] `EvaluationList.tsx` (Painel A) com filtros e atalhos J/K
+- [x] `ConversationReview.tsx` (Painel B) com inline scoring
+- [x] `EvaluationDetails.tsx` (Painel C) com breakdown
+- [x] `HumanFeedbackModal.tsx` com validaÃ§Ã£o
+- [x] `ScoreBadge.tsx` reutilizÃ¡vel
+- [x] `QualityAlertBadge.tsx` no header
 
 ### Hooks
-- [ ] `useEvaluations` — paginação + filtros
-- [ ] `useHumanFeedback` — submit + promote
+- [x] `useEvaluations` â€” paginaÃ§Ã£o + filtros
+- [x] `useHumanFeedback` â€” submit + promote
 - [ ] `useKeyboardShortcuts` (helper opcional)
 
-### Páginas
-- [ ] `/dashboard/quality/evaluations` (3 painéis)
-- [ ] `/dashboard/quality/evaluations/[id]` (deep link)
-- [ ] Atualizar Sidebar com badge
+### PÃ¡ginas
+- [x] `/dashboard/quality/evaluations` (3 painÃ©is)
+- [x] `/dashboard/quality/evaluations/[id]` (deep link)
+- [x] Atualizar Sidebar com badge
 
-### Testes (ver §5)
+### Testes (ver Â§5)
 
-### Observação
+### ObservaÃ§Ã£o
 - [ ] Dogfooding: equipe revisa 50 evaluations reais antes do go-live
-- [ ] Coletar feedback de UX: tempo médio, atalhos, modal
+- [ ] Coletar feedback de UX: tempo mÃ©dio, atalhos, modal
 - [ ] Iterar UI antes de oferecer ao cliente piloto
 
 ---
 
-## 5. Bateria de testes — Sprint 4
+## 5. Bateria de testes â€” Sprint 4
 
-### 5.1 Unit — `HumanFeedbackModal`
+### 5.1 Unit â€” `HumanFeedbackModal`
 
 **Arquivo:** `src/components/quality/HumanFeedbackModal.test.tsx`
 
@@ -293,7 +293,7 @@ describe('HumanFeedbackModal', () => {
     expect(screen.getByText(/4.2/)).toBeInTheDocument()
   })
   
-  it('exige seleção de motivo quando verdict=incorrect', async () => {
+  it('exige seleÃ§Ã£o de motivo quando verdict=incorrect', async () => {
     render(<HumanFeedbackModal {...baseProps} />)
     fireEvent.click(screen.getByLabelText('Incorreto'))
     fireEvent.click(screen.getByText('Confirmar'))
@@ -304,8 +304,8 @@ describe('HumanFeedbackModal', () => {
   it('chama onSubmit com payload correto', async () => {
     render(<HumanFeedbackModal {...baseProps} />)
     fireEvent.click(screen.getByLabelText('Incorreto'))
-    fireEvent.click(screen.getByLabelText('Geração interpretou errado'))
-    fireEvent.change(screen.getByLabelText(/correção/i), { target: { value: 'resposta correta' } })
+    fireEvent.click(screen.getByLabelText('GeraÃ§Ã£o interpretou errado'))
+    fireEvent.change(screen.getByLabelText(/correÃ§Ã£o/i), { target: { value: 'resposta correta' } })
     fireEvent.click(screen.getByLabelText(/promover.*ground truth/i))
     fireEvent.click(screen.getByText('Confirmar'))
     
@@ -324,7 +324,7 @@ describe('HumanFeedbackModal', () => {
     expect(baseProps.onClose).toHaveBeenCalled()
   })
   
-  it('Enter submete se há verdict válido', () => {
+  it('Enter submete se hÃ¡ verdict vÃ¡lido', () => {
     render(<HumanFeedbackModal {...baseProps} />)
     fireEvent.click(screen.getByLabelText('Correto'))
     fireEvent.keyDown(document, { key: 'Enter' })
@@ -333,7 +333,7 @@ describe('HumanFeedbackModal', () => {
 })
 ```
 
-### 5.2 Unit — `EvaluationList` filtros e atalhos
+### 5.2 Unit â€” `EvaluationList` filtros e atalhos
 
 **Arquivo:** `src/components/quality/EvaluationList.test.tsx`
 
@@ -354,14 +354,14 @@ vi.mock('@/hooks/useEvaluations', () => ({
 }))
 
 describe('EvaluationList', () => {
-  it('ordena FAIL antes de PASS por padrão', () => {
+  it('ordena FAIL antes de PASS por padrÃ£o', () => {
     render(<EvaluationList onSelect={vi.fn()} />)
     const items = screen.getAllByRole('listitem')
     expect(items[0].textContent).toContain('FAIL')
     expect(items[1].textContent).toContain('PASS')
   })
   
-  it('atalho J avança seleção', () => {
+  it('atalho J avanÃ§a seleÃ§Ã£o', () => {
     const onSelect = vi.fn()
     render(<EvaluationList onSelect={onSelect} />)
     fireEvent.keyDown(document, { key: 'j' })
@@ -369,7 +369,7 @@ describe('EvaluationList', () => {
     expect(onSelect).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'e2' }))
   })
   
-  it('atalho K volta seleção', () => {
+  it('atalho K volta seleÃ§Ã£o', () => {
     const onSelect = vi.fn()
     render(<EvaluationList onSelect={onSelect} />)
     fireEvent.keyDown(document, { key: 'j' })
@@ -386,7 +386,7 @@ describe('EvaluationList', () => {
 })
 ```
 
-### 5.3 Integration — POST human-feedback
+### 5.3 Integration â€” POST human-feedback
 
 **Arquivo:** `src/app/api/evaluations/[traceId]/human-feedback/route.test.ts`
 
@@ -426,13 +426,13 @@ const req = (body: any) => new NextRequest('http://localhost', {
 })
 
 describe('POST human-feedback', () => {
-  it('rejeita 404 se trace não pertence ao client', async () => {
+  it('rejeita 404 se trace nÃ£o pertence ao client', async () => {
     mockSupabase.single = vi.fn().mockResolvedValueOnce({ data: null, error: null })
     const res = await POST(req({ verdict: 'correct' }), { params: { traceId: 'tX' } })
     expect(res.status).toBe(404)
   })
   
-  it('cria feedback com verdict válido', async () => {
+  it('cria feedback com verdict vÃ¡lido', async () => {
     mockSupabase.single = vi.fn()
       .mockResolvedValueOnce({ data: { id: 't1', user_message: 'q' }, error: null })  // get trace
       .mockResolvedValueOnce({ data: { id: 'fb1' }, error: null })                     // upsert feedback
@@ -453,7 +453,7 @@ describe('POST human-feedback', () => {
     
     await POST(req({
       verdict: 'incorrect',
-      correction_text: 'das 9h às 18h',
+      correction_text: 'das 9h Ã s 18h',
       promote_to_ground_truth: true
     }), { params: { traceId: 't1' } })
     
@@ -462,7 +462,7 @@ describe('POST human-feedback', () => {
     expect(insertCalls.some((c: any[]) => c[0].source === 'operator_correction')).toBe(true)
   })
   
-  it('promote_to_ground_truth sem correction_text NÃO cria GT', async () => {
+  it('promote_to_ground_truth sem correction_text NÃƒO cria GT', async () => {
     mockSupabase.single = vi.fn()
       .mockResolvedValueOnce({ data: { id: 't1', user_message: 'q' }, error: null })
       .mockResolvedValueOnce({ data: { id: 'fb1' }, error: null })
@@ -482,14 +482,14 @@ describe('POST human-feedback', () => {
     expect(mockSupabase.update).toHaveBeenCalledWith({ status: 'human_reviewed' })
   })
   
-  it('valida verdict inválido com 400', async () => {
+  it('valida verdict invÃ¡lido com 400', async () => {
     const res = await POST(req({ verdict: 'WHATEVER' }), { params: { traceId: 't1' } })
     expect(res.status).toBe(400)
   })
 })
 ```
 
-### 5.4 E2E — fluxo completo de revisão (Playwright)
+### 5.4 E2E â€” fluxo completo de revisÃ£o (Playwright)
 
 **Arquivo:** `tests/e2e/operator-review-flow.spec.ts`
 
@@ -498,7 +498,7 @@ import { test, expect } from '@playwright/test'
 
 test.use({ storageState: 'tests/e2e/.auth/operator-A.json' })
 
-test('operador completa revisão de FAIL em < 90s', async ({ page }) => {
+test('operador completa revisÃ£o de FAIL em < 90s', async ({ page }) => {
   await page.goto('/dashboard/quality/evaluations')
   
   await expect(page.locator('[data-testid=eval-item]').first()).toBeVisible()
@@ -514,9 +514,9 @@ test('operador completa revisão de FAIL em < 90s', async ({ page }) => {
   // 3. Apertar 2 (incorreto)
   await page.keyboard.press('2')
   
-  // 4. Modal abre — preencher motivo
-  await page.click('label:has-text("Geração interpretou errado")')
-  await page.fill('[name=correction_text]', 'A resposta correta seria das 9h às 18h.')
+  // 4. Modal abre â€” preencher motivo
+  await page.click('label:has-text("GeraÃ§Ã£o interpretou errado")')
+  await page.fill('[name=correction_text]', 'A resposta correta seria das 9h Ã s 18h.')
   await page.click('input[name=promote_to_ground_truth]')
   
   // 5. Confirmar com Enter
@@ -528,7 +528,7 @@ test('operador completa revisão de FAIL em < 90s', async ({ page }) => {
   expect(Date.now() - start).toBeLessThan(90_000)
 })
 
-test('promote-to-GT cria entry visível em /ground-truth', async ({ page }) => {
+test('promote-to-GT cria entry visÃ­vel em /ground-truth', async ({ page }) => {
   await page.goto('/dashboard/quality/evaluations')
   await page.keyboard.press('j')
   await page.keyboard.press('2')
@@ -542,7 +542,7 @@ test('promote-to-GT cria entry visível em /ground-truth', async ({ page }) => {
   await expect(page.getByText('Resposta promovida E2E')).toBeVisible({ timeout: 5000 })
 })
 
-test('badge de pendentes diminui após revisão', async ({ page }) => {
+test('badge de pendentes diminui apÃ³s revisÃ£o', async ({ page }) => {
   await page.goto('/dashboard')
   const badgeBefore = await page.locator('[data-testid=quality-alert-badge]').textContent()
   const before = Number(badgeBefore)
@@ -558,7 +558,7 @@ test('badge de pendentes diminui após revisão', async ({ page }) => {
 })
 ```
 
-### 5.5 Acessibilidade — keyboard navigation
+### 5.5 Acessibilidade â€” keyboard navigation
 
 **Arquivo:** `tests/e2e/quality-a11y.spec.ts`
 
@@ -568,14 +568,14 @@ import AxeBuilder from '@axe-core/playwright'
 
 test.use({ storageState: 'tests/e2e/.auth/operator-A.json' })
 
-test('a11y: /dashboard/quality/evaluations não tem violações sérias', async ({ page }) => {
+test('a11y: /dashboard/quality/evaluations nÃ£o tem violaÃ§Ãµes sÃ©rias', async ({ page }) => {
   await page.goto('/dashboard/quality/evaluations')
   const results = await new AxeBuilder({ page }).analyze()
   const serious = results.violations.filter(v => v.impact === 'serious' || v.impact === 'critical')
   expect(serious).toEqual([])
 })
 
-test('a11y: todos os botões têm rótulo acessível', async ({ page }) => {
+test('a11y: todos os botÃµes tÃªm rÃ³tulo acessÃ­vel', async ({ page }) => {
   await page.goto('/dashboard/quality/evaluations')
   const buttons = await page.locator('button').all()
   for (const b of buttons) {
@@ -585,7 +585,7 @@ test('a11y: todos os botões têm rótulo acessível', async ({ page }) => {
 })
 ```
 
-### 5.6 Performance — render lista com 1000 items
+### 5.6 Performance â€” render lista com 1000 items
 
 **Arquivo:** `src/components/quality/EvaluationList.perf.test.tsx`
 
@@ -605,7 +605,7 @@ vi.mock('@/hooks/useEvaluations', () => ({
 }))
 
 describe('perf: EvaluationList', () => {
-  it('renderiza 1000 items em < 200ms (com virtualização)', () => {
+  it('renderiza 1000 items em < 200ms (com virtualizaÃ§Ã£o)', () => {
     const start = performance.now()
     render(<EvaluationList onSelect={vi.fn()} />)
     expect(performance.now() - start).toBeLessThan(200)
@@ -613,7 +613,7 @@ describe('perf: EvaluationList', () => {
 })
 ```
 
-### 5.7 Trilha auditável — verifica que feedback é rastreável
+### 5.7 Trilha auditÃ¡vel â€” verifica que feedback Ã© rastreÃ¡vel
 
 **Arquivo:** `tests/integration/audit-trail.test.ts`
 
@@ -641,11 +641,11 @@ describe.skipIf(!process.env.E2E_CLIENT_A_ID)('audit trail: human_feedback', () 
 })
 ```
 
-### 5.8 RLS — operador não vê feedback de outros clientes
+### 5.8 RLS â€” operador nÃ£o vÃª feedback de outros clientes
 
 **Arquivo:** `tests/security/rls-human-feedback.test.ts`
 
-Mesmo padrão das outras RLS — confirmar isolamento cross-tenant em SELECT, INSERT, UPDATE.
+Mesmo padrÃ£o das outras RLS â€” confirmar isolamento cross-tenant em SELECT, INSERT, UPDATE.
 
 ### 5.9 Smoke manual
 
@@ -654,7 +654,7 @@ Mesmo padrão das outras RLS — confirmar isolamento cross-tenant em SELECT, IN
 ```markdown
 1. Login como operador do cliente A
 2. Abrir /dashboard/quality/evaluations
-3. Verificar contagem no badge do menu = número de FAIL+REVIEW pendentes
+3. Verificar contagem no badge do menu = nÃºmero de FAIL+REVIEW pendentes
 4. Selecionar 1 FAIL com J
 5. Apertar 2 (incorreto), preencher modal, marcar promote-to-GT, Enter
 6. Verificar:
@@ -662,38 +662,40 @@ Mesmo padrão das outras RLS — confirmar isolamento cross-tenant em SELECT, IN
    - [ ] Lista atualiza (FAIL sai do topo)
    - [ ] Badge decrementa
    - [ ] Em /ground-truth, nova entrada aparece com source=operator_correction
-   - [ ] Em /traces/[id], status agora é "human_reviewed"
-7. Logar como operador do cliente B → não deve ver nada do cliente A
+   - [ ] Em /traces/[id], status agora Ã© "human_reviewed"
+7. Logar como operador do cliente B â†’ nÃ£o deve ver nada do cliente A
 ```
 
 ---
 
-## 6. Critérios de aceite (Sprint 4)
+## 6. CritÃ©rios de aceite (Sprint 4)
 
-| # | Critério | Como validar |
+| # | CritÃ©rio | Como validar |
 |---|----------|--------------|
-| 1 | Operador revisa FAIL em < 90s | §5.4 |
-| 2 | Promote-to-GT cria entrada `source=operator_correction` | §5.3 + manual |
-| 3 | Atalhos J/K/1/2/3 funcionam | §5.2 + §5.4 |
-| 4 | Badge reflete contagem correta | §5.4 |
+| 1 | Operador revisa FAIL em < 90s | Â§5.4 |
+| 2 | Promote-to-GT cria entrada `source=operator_correction` | Â§5.3 + manual |
+| 3 | Atalhos J/K/1/2/3 funcionam | Â§5.2 + Â§5.4 |
+| 4 | Badge reflete contagem correta | Â§5.4 |
 | 5 | UNIQUE (trace_id, operator_id) impede duplicatas | Migration + teste manual de duplo submit |
-| 6 | A11y sem violações críticas | §5.5 |
-| 7 | RLS isola feedback cross-tenant | §5.8 |
-| 8 | Cobertura ≥ 70% nos novos componentes | `npm run test:coverage` |
+| 6 | A11y sem violaÃ§Ãµes crÃ­ticas | Â§5.5 |
+| 7 | RLS isola feedback cross-tenant | Â§5.8 |
+| 8 | Cobertura â‰¥ 70% nos novos componentes | `npm run test:coverage` |
 
 ---
 
 ## 7. Riscos do Sprint 4
 
-| Risco | Mitigação |
+| Risco | MitigaÃ§Ã£o |
 |-------|-----------|
-| UI lenta com 1000+ evaluations | Virtualização (`react-window` ou `tanstack-virtual`); paginar API |
-| Operador comete erros sob pressão | Modal de confirmação para FAIL→correto e correto→FAIL |
-| Conflito de feedback entre operadores | UNIQUE + UI mostra "X já revisou esta" + botão "discordar" cria nova linha de auditoria (S5) |
+| UI lenta com 1000+ evaluations | VirtualizaÃ§Ã£o (`react-window` ou `tanstack-virtual`); paginar API |
+| Operador comete erros sob pressÃ£o | Modal de confirmaÃ§Ã£o para FAILâ†’correto e corretoâ†’FAIL |
+| Conflito de feedback entre operadores | UNIQUE + UI mostra "X jÃ¡ revisou esta" + botÃ£o "discordar" cria nova linha de auditoria (S5) |
 | Promote-to-GT gera GTs ruins | Confidence default 0.85 (vs 0.70 manual); validate workflow opcional |
-| Realtime de Supabase não disponível em todas as contas | Fallback: poll a cada 30s para badge (já implementado) |
+| Realtime de Supabase nÃ£o disponÃ­vel em todas as contas | Fallback: poll a cada 30s para badge (jÃ¡ implementado) |
 | Hotkeys conflitam com input fields | `useKeyboardShortcuts` ignora se `event.target instanceof HTMLInputElement` |
 
 ---
 
-**Próximo:** [`05-rag-insights.md`](./05-rag-insights.md)
+**PrÃ³ximo:** [`05-rag-insights.md`](./05-rag-insights.md)
+
+

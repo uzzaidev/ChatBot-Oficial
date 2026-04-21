@@ -55,8 +55,27 @@ export async function GET(request: NextRequest) {
       throw error;
     }
 
+    const rows = (data ?? []) as Array<{ trace_id: string } & Record<string, any>>;
+    const traceIds = rows.map((row) => row.trace_id).filter(Boolean);
+    let reviewedTraceIds = new Set<string>();
+
+    if (traceIds.length > 0) {
+      const { data: feedbackRows } = await (supabase as any)
+        .from("human_feedback")
+        .select("trace_id")
+        .eq("client_id", clientId)
+        .in("trace_id", traceIds);
+
+      reviewedTraceIds = new Set(
+        (feedbackRows ?? []).map((row: { trace_id: string }) => row.trace_id),
+      );
+    }
+
     return NextResponse.json({
-      data: data ?? [],
+      data: rows.map((row) => ({
+        ...row,
+        has_human_feedback: reviewedTraceIds.has(row.trace_id),
+      })),
       meta: {
         limit,
         offset,
