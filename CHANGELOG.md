@@ -7,6 +7,35 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-21
 
 ### feat
+- Implementado fluxo completo de revisão humana para avaliações com feedback atômico e promoção opcional para ground truth.
+- Criada tabela `human_feedback` com RLS para armazenar feedbacks manuais de operadores, incluindo veredito, correção, motivo, categoria de erro e vínculo com ground truth.
+- Adicionada API RESTful para envio (`POST /api/evaluations/[traceId]/human-feedback`) e consulta (`GET /api/evaluations/[traceId]`) de feedback humano, com tratamento atômico via função RPC `submit_human_feedback_atomic`.
+- Desenvolvida interface de usuário com três painéis: lista de avaliações filtrável e navegável por atalhos, visualização da conversa para revisão rápida, e detalhes da avaliação com histórico de feedbacks humanos.
+- Adicionados atalhos de teclado (J/K para navegar, 1/2/3 para marcar veredito) para aumentar produtividade do operador.
+- Incluído badge de alertas no menu principal indicando número de avaliações pendentes de revisão humana.
+- Criado hook `useHumanFeedback` para submissão de feedback e `useQualityPendingCount` para contagem e atualização periódica de pendentes.
+- Aplicadas migrações SQL para criação da tabela `human_feedback` e da função RPC atômica para submissão de feedback.
+- Atualizado sistema de permissões e políticas RLS para garantir isolamento multi-tenant e segurança no acesso aos feedbacks.
+- Documentação atualizada com detalhes da nova tabela e fluxo de feedback humano.
+
+- Arquivos principais:  
+  `src/app/api/evaluations/[traceId]/human-feedback/route.ts`,  
+  `src/app/api/evaluations/pending/route.ts`,  
+  `src/app/api/evaluations/[traceId]/route.ts`,  
+  `src/components/quality/*`,  
+  `src/hooks/useHumanFeedback.ts`,  
+  `src/hooks/useQualityPendingCount.ts`,  
+  `src/hooks/useEvaluations.ts`,  
+  `src/components/DashboardLayoutClient.tsx`,  
+  `src/components/DashboardNavigation.tsx`,  
+  `supabase/migrations/20260513120000_create_human_feedback.sql`,  
+  `supabase/migrations/20260513123000_add_submit_human_feedback_atomic_rpc.sql`
+
+- Confiança: alta
+
+## 2026-04-21
+
+### feat
 - Implementado módulo Ground Truth para criação e manutenção de gabarito de perguntas e respostas por cliente, com versionamento imutável e busca semântica via pgvector.
 - Criadas APIs REST para gerenciamento de Ground Truth, incluindo listagem, criação, edição (nova versão), exclusão lógica, validação e promoção de message trace para ground truth.
 - Desenvolvido dashboard de qualidade com páginas e componentes React para gerenciar Ground Truth e visualizar métricas e avaliações do juiz automático.
