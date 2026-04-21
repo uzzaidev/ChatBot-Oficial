@@ -1340,34 +1340,67 @@ export const processChatbotMessage = async (
       toolsEnabled: !isFastTrack || !fastTrackResult?.catalogSize,
     });
 
-    const aiResponse = await generateAIResponse({
-      message: messageForAI, // 🚀 Use canonical for cache hits
-      chatHistory: chatHistory2,
-      ragContext,
-      customerName: parsedMessage.name,
-      contactMetadata: customer.metadata,
-      config, // 🔐 Passa config com systemPrompt e groqApiKey
-      greetingInstruction: continuityInfo.greetingInstruction, // 🔧 Phase 1: Inject greeting
-      includeDateTimeInfo: !isFastTrack, // 🚀 Fast Track: Disable datetime for cache
-      enableTools: !isFastTrack || !fastTrackResult?.catalogSize, // 🚀 Fast Track: Disable tools for cache
-      conversationId: conversation?.id, // ✨ FASE 8: Conversation ID for unified tracking
-      phone: parsedMessage.phone, // ✨ FASE 8: Phone number for analytics
-    });
-    logger.logNodeSuccess("12. Generate AI Response", {
-      contentLength: aiResponse.content?.length || 0,
-      hasToolCalls: !!aiResponse.toolCalls,
-      toolCount: aiResponse.toolCalls?.length || 0,
-      provider: aiResponse.provider || null,
-      model: aiResponse.model || null,
-      requestId: aiResponse.requestId || null,
-      wasCached: aiResponse.wasCached || false,
-      wasFallback: aiResponse.wasFallback || false,
-      fallbackReason: aiResponse.fallbackReason || null,
-      primaryAttemptedProvider: aiResponse.primaryAttemptedProvider || null,
-      primaryAttemptedModel: aiResponse.primaryAttemptedModel || null,
-      fallbackUsedProvider: aiResponse.fallbackUsedProvider || null,
-      fallbackUsedModel: aiResponse.fallbackUsedModel || null,
-    });
+    let aiResponse: Awaited<ReturnType<typeof generateAIResponse>>;
+    try {
+      aiResponse = await generateAIResponse({
+        message: messageForAI, // 🚀 Use canonical for cache hits
+        chatHistory: chatHistory2,
+        ragContext,
+        customerName: parsedMessage.name,
+        contactMetadata: customer.metadata,
+        config, // 🔐 Passa config com systemPrompt e groqApiKey
+        greetingInstruction: continuityInfo.greetingInstruction, // 🔧 Phase 1: Inject greeting
+        includeDateTimeInfo: !isFastTrack, // 🚀 Fast Track: Disable datetime for cache
+        enableTools: !isFastTrack || !fastTrackResult?.catalogSize, // 🚀 Fast Track: Disable tools for cache
+        conversationId: conversation?.id, // ✨ FASE 8: Conversation ID for unified tracking
+        phone: parsedMessage.phone, // ✨ FASE 8: Phone number for analytics
+      });
+
+      logger.logNodeSuccess("12. Generate AI Response", {
+        contentLength: aiResponse.content?.length || 0,
+        hasToolCalls: !!aiResponse.toolCalls,
+        toolCount: aiResponse.toolCalls?.length || 0,
+        provider: aiResponse.provider || null,
+        model: aiResponse.model || null,
+        requestId: aiResponse.requestId || null,
+        wasCached: aiResponse.wasCached || false,
+        wasFallback: aiResponse.wasFallback || false,
+        fallbackReason: aiResponse.fallbackReason || null,
+        primaryAttemptedProvider: aiResponse.primaryAttemptedProvider || null,
+        primaryAttemptedModel: aiResponse.primaryAttemptedModel || null,
+        fallbackUsedProvider: aiResponse.fallbackUsedProvider || null,
+        fallbackUsedModel: aiResponse.fallbackUsedModel || null,
+      });
+    } catch (aiError) {
+      logger.logNodeError("12. Generate AI Response", aiError);
+
+      const firstName = (parsedMessage.name || "").trim().split(/\s+/)[0] || "";
+      const greeting = firstName ? `Oi, ${firstName}.` : "Oi.";
+      const fallbackText =
+        `${greeting} Estou com uma instabilidade momentanea para gerar a resposta completa, ` +
+        "mas posso te ajudar agora com informacoes de horarios, planos e como iniciar. " +
+        "Voce prefere que eu te passe os horarios primeiro ou os valores?";
+
+      aiResponse = {
+        content: fallbackText,
+        finished: true,
+        model: "fallback_local",
+        wasFallback: true,
+        fallbackReason:
+          aiError instanceof Error ? aiError.message : "ai_generation_failed",
+        primaryAttemptedProvider: config.primaryProvider,
+        primaryAttemptedModel:
+          config.primaryProvider === "groq"
+            ? config.models.groqModel
+            : config.models.openaiModel,
+      };
+
+      logger.logNodeWarning("12. Generate AI Response", {
+        warning: "ai_generation_failed_using_local_fallback",
+        error: aiError instanceof Error ? aiError.message : "unknown_error",
+        fallbackLength: fallbackText.length,
+      });
+    }
 
     // V2: persist policy_context after AI response (fire-and-forget — not critical)
     if (
