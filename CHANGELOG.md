@@ -6,6 +6,24 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-21
 
+### docs
+- Atualizada documentação das sprints para refletir o estado real pós-Sprint 1, incluindo decisões técnicas e hotfixes aplicados em produção
+  - Arquivos: `twin-plans/sprints/00-sprint-zero-prep.md`, `twin-plans/sprints/00-stack-e-arquitetura.md`, `twin-plans/sprints/01-traces-fundacao.md`, `twin-plans/sprints/QA-STRATEGY.md`
+  - Confiança: alta
+
+### fix
+- Aplicados hotfixes críticos em produção para mitigar hangs e erros no fluxo do webhook:
+  - Migrado uso de `pg.Pool` para Supabase client em nodes críticos (`saveChatMessage.ts`, `getChatHistory.ts`, `checkDuplicateMessage.ts`)
+  - Implementada deduplicação de webhooks por `wamid` antes do processamento para evitar respostas duplicadas e erros
+  - Substituído `setImmediate()` por `void promise.catch()` para garantir execução de finalização de trace antes do freeze do Vercel
+  - Corrigida condição de supressão de erros no trace-logger para suprimir apenas erros de tabela inexistente
+  - Atualizada assinatura de route handlers dinâmicos para usar `params` como Promise conforme Next.js 16
+  - Arquivos principais afetados: `src/nodes/saveChatMessage.ts`, `src/nodes/getChatHistory.ts`, `src/nodes/checkDuplicateMessage.ts`, `src/app/api/traces/[id]/route.ts`, `src/chatbotFlow.ts`
+  - Evidência: migração para Supabase client e checagem de `wamid` para evitar hangs e duplicatas, correção de assinatura e tratamento de erros detalhados no changelog interno
+  - Confiança: alta
+
+## 2026-04-21
+
 ### fix
 - Exportada nova função `getRAGContextWithTrace` que retorna contexto RAG junto com dados de rastreamento detalhados, melhorando a visibilidade do processo de recuperação de contexto para chatbotFlow.
 - Ajustada função `getRAGContext` para usar internamente `getRAGContextWithTrace` e manter compatibilidade retornando apenas o contexto como string.
