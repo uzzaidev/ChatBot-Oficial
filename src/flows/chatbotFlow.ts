@@ -14,7 +14,7 @@ import { filterStatusUpdates } from "@/nodes/filterStatusUpdates";
 import { formatResponse } from "@/nodes/formatResponse";
 import { generateAIResponse } from "@/nodes/generateAIResponse";
 import { getChatHistory } from "@/nodes/getChatHistory";
-import { getRAGContext } from "@/nodes/getRAGContext";
+import { getRAGContextWithTrace } from "@/nodes/getRAGContext";
 import { handleHumanHandoff } from "@/nodes/handleHumanHandoff";
 import { normalizeMessage } from "@/nodes/normalizeMessage";
 import { parseMessage } from "@/nodes/parseMessage";
@@ -231,6 +231,9 @@ export const processChatbotMessage = async (
     // NODE 2: Parse Message
     logger.logNodeStart("2. Parse Message", filteredPayload);
     const parsedMessage = parseMessage(filteredPayload);
+    traceLogger.markStage("normalized", {
+      messageType: parsedMessage.type,
+    });
     logger.logNodeSuccess("2. Parse Message", {
       phone: parsedMessage.phone,
       type: parsedMessage.type,
@@ -383,6 +386,11 @@ export const processChatbotMessage = async (
       // CRM integration is non-critical, continue processing
       console.warn("[chatbotFlow] CRM integration error:", crmError);
     }
+    traceLogger.markStage("context_loaded", {
+      customerStatus: customer.status,
+      hasConversation: !!conversation,
+      crmCardId: crmCardId ?? null,
+    });
 
     // ═════════════════════════════════════════════════════════════════
     // 🚦 PHASE 4: STATUS-BASED ROUTING (CRITICAL - EXECUTES FIRST)
@@ -1079,6 +1087,13 @@ export const processChatbotMessage = async (
     // 🚀 Fast Track: Skip if in fast track mode
     let chatHistory2: any[] = [];
     let ragContext: string = "";
+    let ragTraceData: {
+      chunkIds: string[];
+      similarityScores: number[];
+      topK: number;
+      threshold: number;
+      strategy: string;
+    } | null = null;
 
     // Check if we should fetch chat history
     const shouldGetHistory =
@@ -1101,6 +1116,12 @@ export const processChatbotMessage = async (
       config.settings.enableRAG &&
       !isFastTrack; // Skip if fast track
 
+    if (shouldGetRAG) {
+      traceLogger.markStage("retrieval_started", {
+        queryLength: batchedContent.length,
+      });
+    }
+
     if (shouldGetRAG && isFastTrack) {
       logger.logNodeSuccess("11. Get RAG Context", {
         skipped: true,
@@ -1121,7 +1142,7 @@ export const processChatbotMessage = async (
             clientId: config.id,
             maxHistory: config.settings.maxChatHistory,
           }),
-          getRAGContext({
+          getRAGContextWithTrace({
             query: batchedContent,
             clientId: config.id,
             openaiApiKey: config.apiKeys.openaiApiKey,
@@ -1129,7 +1150,8 @@ export const processChatbotMessage = async (
         ]);
 
         chatHistory2 = historyResult.messages;
-        ragContext = rag;
+        ragContext = rag.context;
+        ragTraceData = rag.traceData;
 
         // 📊 Log com estatísticas detalhadas para monitoramento do histórico
         logger.logNodeSuccess("10. Get Chat History", {
@@ -1166,11 +1188,13 @@ export const processChatbotMessage = async (
         logger.logNodeStart("11. Get RAG Context", {
           queryLength: batchedContent.length,
         });
-        ragContext = await getRAGContext({
+        const ragResult = await getRAGContextWithTrace({
           query: batchedContent,
           clientId: config.id,
           openaiApiKey: config.apiKeys.openaiApiKey,
         });
+        ragContext = ragResult.context;
+        ragTraceData = ragResult.traceData;
         logger.logNodeSuccess("10. Get Chat History", {
           skipped: true,
           reason: "node disabled",
@@ -1189,6 +1213,23 @@ export const processChatbotMessage = async (
         skipped: true,
         reason: "node disabled or config disabled",
       });
+    }
+
+    if (shouldGetRAG) {
+      traceLogger.markStage("retrieval_completed", {
+        contextLength: ragContext.length,
+        chunkCount: ragTraceData?.chunkIds.length ?? 0,
+      });
+
+      if (ragTraceData) {
+        traceLogger.setRetrievalData({
+          chunkIds: ragTraceData.chunkIds,
+          similarityScores: ragTraceData.similarityScores,
+          topK: ragTraceData.topK,
+          threshold: ragTraceData.threshold,
+          strategy: ragTraceData.strategy,
+        });
+      }
     }
 
     // 🔧 Phase 1: Check Conversation Continuity (configurable)
@@ -1280,6 +1321,11 @@ export const processChatbotMessage = async (
     if (v2PolicyResolution) {
       console.log("[PolicyEngine V2]", JSON.stringify(v2PolicyResolution));
     }
+
+    traceLogger.markStage("generation_started", {
+      fastTrack: isFastTrack,
+      toolsEnabled: !isFastTrack || !fastTrackResult?.catalogSize,
+    });
 
     const aiResponse = await generateAIResponse({
       message: messageForAI, // 🚀 Use canonical for cache hits
@@ -1573,6 +1619,37 @@ export const processChatbotMessage = async (
           config.settings.enableHumanHandoff
         ) {
           const tcStart1 = new Date();
+          let handoffNoticeSent = false;
+          let handoffNoticeWamid: string | null = null;
+
+          // Always notify the user before switching to human handoff.
+          try {
+            const handoffNotice =
+              "Vou te conectar agora com nossa equipe para te atender melhor.";
+            const { sendTextMessage } = await import("@/lib/meta");
+            const { messageId } = await sendTextMessage(
+              parsedMessage.phone,
+              handoffNotice,
+              config,
+            );
+            handoffNoticeWamid = messageId;
+            handoffNoticeSent = true;
+
+            await saveChatMessage({
+              phone: parsedMessage.phone,
+              message: handoffNotice,
+              type: "ai",
+              clientId: config.id,
+              wamid: messageId,
+              status: "sent",
+            });
+          } catch (handoffNoticeError) {
+            console.warn(
+              "[chatbotFlow] Failed to send handoff notice to user:",
+              handoffNoticeError,
+            );
+          }
+
           // NODE 15: Handle Human Handoff
           logger.logNodeStart("15. Handle Human Handoff", {
             phone: parsedMessage.phone,
@@ -1603,7 +1680,12 @@ export const processChatbotMessage = async (
             toolName: "transferir_atendimento",
             toolCallId: toolCall.id,
             arguments: {},
-            result: { transferred: true, email: config.notificationEmail },
+            result: {
+              transferred: true,
+              email: config.notificationEmail,
+              handoffNoticeSent,
+              handoffNoticeWamid,
+            },
             status: "success",
             source: "agent",
             startedAt: tcStart1,
@@ -1616,6 +1698,8 @@ export const processChatbotMessage = async (
             transferred: true,
             emailSent: true,
             notificationEmail: config.notificationEmail,
+            handoffNoticeSent,
+            handoffNoticeWamid,
           });
           logger.finishExecution("success");
           return { success: true, handedOff: true };
@@ -2085,6 +2169,19 @@ export const processChatbotMessage = async (
         });
       }
     }
+
+    traceLogger.markStage("generation_completed", {
+      contentLength: aiResponse.content?.length ?? 0,
+      provider: aiResponse.provider ?? null,
+      model: aiResponse.model ?? null,
+    });
+    traceLogger.setGenerationData({
+      model: aiResponse.model || "unknown",
+      tokensInput: aiResponse.usage?.prompt_tokens ?? 0,
+      tokensOutput: aiResponse.usage?.completion_tokens ?? 0,
+      costUsd: 0,
+      response: aiResponse.content || "",
+    });
 
     if (!aiResponse.content || aiResponse.content.trim().length === 0) {
       logger.finishExecution("success");

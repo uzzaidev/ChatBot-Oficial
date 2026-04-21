@@ -22,10 +22,14 @@ export const handleHumanHandoff = async (input: HandleHumanHandoffInput): Promis
 
   try {
     // Atualizar status do cliente para 'transferido' (CRÍTICO - deve sempre funcionar)
-    await query(
-      'UPDATE clientes_whatsapp SET status = $1 WHERE telefone = $2',
-      ['transferido', phone]
+    const updateResult = await query(
+      'UPDATE clientes_whatsapp SET status = $1 WHERE telefone = $2 AND client_id = $3',
+      ['transferido', phone, config.id]
     )
+
+    if ((updateResult.rowCount ?? 0) === 0) {
+      throw new Error('Customer not found for tenant during human handoff')
+    }
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'

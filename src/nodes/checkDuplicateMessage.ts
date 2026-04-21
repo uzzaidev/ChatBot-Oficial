@@ -26,6 +26,8 @@ export const checkDuplicateMessage = async (
     const supabase = createServiceRoleClient()
 
     // Primary check: exact wamid match (Meta may deliver same webhook twice)
+    // IMPORTANT: when wamid exists and is not found, do NOT run content-based
+    // similarity fallback. WAMID is authoritative and avoids false positives.
     if (wamid) {
       const { data: wamidRows } = await (supabase as any)
         .from('n8n_chat_histories')
@@ -37,9 +39,11 @@ export const checkDuplicateMessage = async (
       if (wamidRows && wamidRows.length > 0) {
         return { isDuplicate: true, reason: 'wamid_match' }
       }
+
+      return { isDuplicate: false }
     }
 
-    // Secondary check: same content within last 15 seconds
+    // Fallback check (only when no wamid is available): same content within 15s.
     const since = new Date(Date.now() - 15_000).toISOString()
     const { data: rows } = await (supabase as any)
       .from('n8n_chat_histories')
@@ -53,6 +57,7 @@ export const checkDuplicateMessage = async (
     if (!rows || rows.length === 0) return { isDuplicate: false }
 
     const normalizedInput = normalizeMessage(messageContent)
+    if (!normalizedInput) return { isDuplicate: false }
 
     for (const row of rows) {
       const msg = typeof row.message === 'string' ? JSON.parse(row.message) : row.message
@@ -61,6 +66,7 @@ export const checkDuplicateMessage = async (
       const recentContent = msg.content || msg.data?.content || ''
       const timeSinceMs = Date.now() - new Date(row.created_at).getTime()
       const normalizedRecent = normalizeMessage(recentContent)
+      if (!normalizedRecent) continue
 
       if (normalizedInput === normalizedRecent) {
         return {
