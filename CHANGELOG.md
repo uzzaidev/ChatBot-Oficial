@@ -7,6 +7,15 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-21
 
 ### docs
+- Atualizado guia de setup local para uso do gerenciador de pacotes pnpm em vez de npm, com comandos ajustados no arquivo `twin-plans/sprints/00-stack-e-arquitetura.md`.
+- Documentada estratégia e metas para pipelines de CI/CD futuras, incluindo status e cronogramas esperados para criação dos workflows no GitHub Actions, em `twin-plans/sprints/QA-STRATEGY.md`.
+- Ajustes gerais de formatação e conteúdo nas seções de CI/CD e cheat sheet para refletir o uso de pnpm e o planejamento dos scripts de teste e deploy.
+  - Arquivos: `twin-plans/sprints/00-stack-e-arquitetura.md`, `twin-plans/sprints/QA-STRATEGY.md`
+  - Confiança: alta
+
+## 2026-04-21
+
+### docs
 - Atualizada documentação das sprints para refletir o estado real pós-Sprint 1, incluindo decisões técnicas e hotfixes aplicados em produção
   - Arquivos: `twin-plans/sprints/00-sprint-zero-prep.md`, `twin-plans/sprints/00-stack-e-arquitetura.md`, `twin-plans/sprints/01-traces-fundacao.md`, `twin-plans/sprints/QA-STRATEGY.md`
   - Confiança: alta
