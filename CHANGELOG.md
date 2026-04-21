@@ -9,6 +9,15 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-21
 
 ### fix
+- Reforçado tratamento de casos onde o fluxo do chatbot pode gerar respostas vazias ou falhas silenciosas, adicionando logs de aviso e erro para conteúdos vazios após batch, formatação e envio de mensagens.
+- Incluído fallback para conteúdo bruto quando a formatação retorna array vazio, e validação para garantir que ao menos uma mensagem seja enviada.
+- Arquivos: `src/flows/chatbotFlow.ts`
+- Evidência: adição de verificações explícitas para conteúdo vazio e erros, com logs e retornos de erro claros.
+- Confiança: alta
+
+## 2026-04-21
+
+### fix
 - Ajustado para popular dados de geração (modelo, tokens, resposta) em saídas antecipadas de chamadas de ferramentas, garantindo que o status seja definido como "success" quando apropriado
   - Arquivos: `src/flows/chatbotFlow.ts`, `src/lib/trace-logger.ts`
   - Evidência: inserção de `traceLogger.setGenerationData` em múltiplos retornos antecipados e alteração da lógica de status para considerar estágio "sent"
