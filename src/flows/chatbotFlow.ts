@@ -1036,8 +1036,19 @@ export const processChatbotMessage = async (
     }
 
     if (!batchedContent || batchedContent.trim().length === 0) {
-      logger.finishExecution("success");
-      return { success: true };
+      logger.logNodeWarning("9. Batch Messages", {
+        warning: "empty_batch_content",
+        fallbackToNormalized: true,
+        normalizedContentLength: normalizedMessage.content?.length || 0,
+      });
+
+      batchedContent = normalizedMessage.content?.trim() || "";
+
+      if (!batchedContent) {
+        traceLogger.setError("empty_content_after_batch");
+        logger.finishExecution("error");
+        return { success: false, error: "empty_content_after_batch" };
+      }
     }
 
     // ═════════════════════════════════════════════════════════════════
@@ -2290,8 +2301,19 @@ export const processChatbotMessage = async (
     }
 
     if (formattedMessages.length === 0) {
-      logger.finishExecution("success");
-      return { success: true, messagesSent: 0 };
+      const contentFallback = aiResponse.content?.trim() || "";
+      if (contentFallback.length > 0) {
+        formattedMessages = [contentFallback];
+        logger.logNodeWarning("13. Format Response", {
+          warning: "format_returned_empty_array",
+          fallbackInjected: true,
+          fallbackLength: contentFallback.length,
+        });
+      } else {
+        traceLogger.setError("empty_formatted_messages");
+        logger.finishExecution("error");
+        return { success: false, error: "empty_formatted_messages" };
+      }
     }
 
     // NODE 14: Send and Save WhatsApp Messages (intercalado para evitar race condition)
@@ -2408,6 +2430,17 @@ export const processChatbotMessage = async (
         );
         // Continue with next message - don't fail entire flow
       }
+    }
+
+    if (messageIds.length === 0) {
+      traceLogger.setError("no_messages_sent");
+      logger.logNodeError(
+        "14. Send and Save WhatsApp Messages",
+        new Error("all_send_attempts_failed"),
+      );
+      await flushTrace();
+      logger.finishExecution("error");
+      return { success: false, error: "no_messages_sent" };
     }
 
     logger.logNodeSuccess("14. Send and Save WhatsApp Messages", {
