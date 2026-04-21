@@ -4,6 +4,16 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-04-21
+
+### fix
+- Reforçado o bloqueio de mensagens duplicadas para priorizar verificação por WAMID, evitando falsos positivos em checagem por similaridade de conteúdo; ajustado para não executar fallback quando WAMID não é encontrado.
+- Melhorado o processo de handoff humano para sempre enviar aviso ao usuário antes da transferência e registrar o envio da notificação; corrigida atualização do status do cliente para incluir filtro por tenant (client_id) e lançar erro se cliente não for encontrado.
+- Adicionadas marcações detalhadas de trace para estágios do fluxo de chatbot, incluindo carregamento de contexto RAG, início e conclusão da geração de resposta e início da transferência para humano, para melhor monitoramento e rastreabilidade.
+  - Arquivos: `src/flows/chatbotFlow.ts`, `src/nodes/checkDuplicateMessage.ts`, `src/nodes/handleHumanHandoff.ts`
+  - Evidência: mudanças explícitas no tratamento de duplicatas, envio de mensagem de aviso antes do handoff, e inclusão de logs de trace detalhados
+  - Confiança: alta
+
 ## 2026-04-20
 
 ### fix
