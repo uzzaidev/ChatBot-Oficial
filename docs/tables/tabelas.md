@@ -273,3 +273,14 @@ JOIN pg_catalog.pg_namespace nsp ON cls.relnamespace = nsp.oid
 WHERE nsp.nspname = 'public'   -- schema da tabela
   AND cls.relname = 'sua_tabela_aqui'  -- substitua pelo nome da tabela
 ORDER BY policy_name;
+## Sprint 2 - Ground Truth (adicionado)
+
+| table_schema | table_name   | columns principais |
+| ------------ | ------------ | ------------------ |
+| public       | ground_truth | id, client_id, user_query, expected_response, query_embedding(vector1536), category, subcategory, tags, confidence, is_active, version, parent_id, superseded_by, source, source_trace_id, validated_by, metadata, created_at, updated_at |
+
+## Sprint 3 - Agent Evaluations (adicionado)
+
+| table_schema | table_name         | columns principais |
+| ------------ | ------------------ | ------------------ |
+| public       | agent_evaluations  | id, trace_id, client_id, ground_truth_id, judge_model, judge_prompt_version, alignment_score, relevance_score, finality_score, safety_score, composite_score, alignment_reasoning, relevance_reasoning, finality_reasoning, safety_reasoning, verdict, tokens_input, tokens_output, cost_usd, duration_ms, evaluated_at, metadata, created_at |

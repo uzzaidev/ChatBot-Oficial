@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { LogoutButton } from "@/components/LogoutButton";
 import { Badge } from "@/components/ui/badge";
@@ -171,14 +171,14 @@ export function DashboardNavigation({
               </h1>
             </div>
             <p className="text-xs text-muted-foreground mt-2 ml-0.5">
-              Automação Criativa, Realizada
+              AutomaÃ§Ã£o Criativa, Realizada
             </p>
           </>
         )}
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-        {/* SEÇÃO: PRINCIPAL */}
+        {/* SEÃ‡ÃƒO: PRINCIPAL */}
         <NavSection title="Principal" isCollapsed={isCollapsed} />
         <NavItem
           href="/dashboard"
@@ -186,7 +186,7 @@ export function DashboardNavigation({
           label="Dashboard"
           isCollapsed={isCollapsed}
           onClick={onLinkClick}
-          tooltip="Visão geral com métricas principais e gráficos customizáveis"
+          tooltip="VisÃ£o geral com mÃ©tricas principais e grÃ¡ficos customizÃ¡veis"
         />
 
         <NavItem
@@ -198,8 +198,8 @@ export function DashboardNavigation({
           tooltip="Gerenciar conversas do WhatsApp em tempo real"
         />
 
-        {/* SEÇÃO: GESTÃO */}
-        <NavSection title="Gestão" isCollapsed={isCollapsed} />
+        {/* SEÃ‡ÃƒO: GESTÃƒO */}
+        <NavSection title="GestÃ£o" isCollapsed={isCollapsed} />
         <NavItem
           href="/dashboard/contacts"
           icon={<Users className="h-5 w-5 flex-shrink-0" />}
@@ -233,7 +233,7 @@ export function DashboardNavigation({
           label="Base de Conhecimento"
           isCollapsed={isCollapsed}
           onClick={onLinkClick}
-          tooltip="Upload de documentos (PDF, TXT) para RAG com busca semântica"
+          tooltip="Upload de documentos (PDF, TXT) para RAG com busca semÃ¢ntica"
         />
 
         <NavItem
@@ -242,7 +242,7 @@ export function DashboardNavigation({
           label="Agentes IA"
           isCollapsed={isCollapsed}
           onClick={onLinkClick}
-          tooltip="Configure múltiplos agentes com diferentes personalidades"
+          tooltip="Configure mÃºltiplos agentes com diferentes personalidades"
         />
 
         <NavItem
@@ -257,15 +257,16 @@ export function DashboardNavigation({
         <NavItem
           href="/dashboard/calendar"
           icon={<Calendar className="h-5 w-5 flex-shrink-0" />}
-          label="Calendário"
+          label="CalendÃ¡rio"
           isCollapsed={isCollapsed}
           onClick={onLinkClick}
           tooltip="Conecte Google Calendar ou Microsoft Outlook para o agente gerenciar sua agenda"
         />
 
-        {/* SEÇÃO: ANÁLISE */}
-        <NavSection title="Análise" isCollapsed={isCollapsed} />
-        <NavItem
+        {/* SEÃ‡ÃƒO: ANÃLISE */}
+        <NavSection title="AnÃ¡lise" isCollapsed={isCollapsed} />
+        
+                <NavItem
           href="/dashboard/traces"
           icon={<Activity className="h-5 w-5 flex-shrink-0" />}
           label="Traces"
@@ -273,13 +274,31 @@ export function DashboardNavigation({
           onClick={onLinkClick}
           tooltip="Rastreio completo de cada mensagem — pipeline, tool calls e RAG"
         />
+<NavItem
+          href="/dashboard/quality"
+          icon={<CheckCircle className="h-5 w-5 flex-shrink-0" />}
+          label="Qualidade"
+          isCollapsed={isCollapsed}
+          onClick={onLinkClick}
+          badge="new"
+          tooltip="Dashboard com score médio, distribuição PASS/REVIEW/FAIL e custo do juiz automático"
+        />
+        <NavItem
+          href="/dashboard/quality/ground-truth"
+          icon={<CheckCircle className="h-5 w-5 flex-shrink-0" />}
+          label="Ground Truth"
+          isCollapsed={isCollapsed}
+          onClick={onLinkClick}
+          badge="new"
+          tooltip="Gerencie o gabarito por cliente para avaliar e melhorar respostas"
+        />
         <NavItem
           href="/dashboard/analytics-comparison"
           icon={<BarChart3 className="h-5 w-5 flex-shrink-0" />}
           label="Analytics"
           isCollapsed={isCollapsed}
           onClick={onLinkClick}
-          tooltip="Comparação de dados OpenAI oficial vs nosso tracking"
+          tooltip="ComparaÃ§Ã£o de dados OpenAI oficial vs nosso tracking"
         />
 
         <NavItem
@@ -288,12 +307,12 @@ export function DashboardNavigation({
           label="Meta Ads"
           isCollapsed={isCollapsed}
           onClick={onLinkClick}
-          tooltip="Performance de campanhas, ROI e conversões CAPI"
+          tooltip="Performance de campanhas, ROI e conversÃµes CAPI"
         />
-        {/* SEÇÃO: ADMINISTRAÇÃO (admin only) */}
+        {/* SEÃ‡ÃƒO: ADMINISTRAÃ‡ÃƒO (admin only) */}
         {userRole === "admin" && (
           <>
-            <NavSection title="Administração" isCollapsed={isCollapsed} />
+            <NavSection title="AdministraÃ§Ã£o" isCollapsed={isCollapsed} />
             <NavItem
               href="/dashboard/payments"
               icon={<CreditCard className="h-5 w-5 flex-shrink-0" />}
@@ -306,7 +325,7 @@ export function DashboardNavigation({
             <NavItem
               href="/dashboard/admin/billing"
               icon={<Shield className="h-5 w-5 flex-shrink-0" />}
-              label="Gestão de Clientes"
+              label="GestÃ£o de Clientes"
               isCollapsed={isCollapsed}
               onClick={onLinkClick}
               badge="admin"
@@ -315,8 +334,8 @@ export function DashboardNavigation({
           </>
         )}
 
-        {/* SEÇÃO: CONFIGURAÇÃO */}
-        <NavSection title="Configuração" isCollapsed={isCollapsed} />
+        {/* SEÃ‡ÃƒO: CONFIGURAÃ‡ÃƒO */}
+        <NavSection title="ConfiguraÃ§Ã£o" isCollapsed={isCollapsed} />
         <NavItem
           href="/dashboard/billing"
           icon={<Receipt className="h-5 w-5 flex-shrink-0" />}
@@ -328,10 +347,10 @@ export function DashboardNavigation({
         <NavItem
           href="/dashboard/settings"
           icon={<Settings className="h-5 w-5 flex-shrink-0" />}
-          label="Configurações"
+          label="ConfiguraÃ§Ãµes"
           isCollapsed={isCollapsed}
           onClick={onLinkClick}
-          tooltip="Configurações do sistema, perfil e preferências"
+          tooltip="ConfiguraÃ§Ãµes do sistema, perfil e preferÃªncias"
         />
       </nav>
 
@@ -364,10 +383,10 @@ export function DashboardNavigation({
         {/* Version Info */}
         {!isCollapsed && (
           <div className="text-xs text-muted-foreground/60 px-3">
-            <p>Versão 2.0.0</p>
+            <p>VersÃ£o 2.0.0</p>
             <p className="mt-1 flex items-center gap-1">
               <CheckCircle className="h-3 w-3 text-status-success" />
-              <span>Autenticação Ativa</span>
+              <span>AutenticaÃ§Ã£o Ativa</span>
             </p>
           </div>
         )}
@@ -397,3 +416,5 @@ export function DashboardNavigation({
     </div>
   );
 }
+
+

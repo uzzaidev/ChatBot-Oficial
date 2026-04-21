@@ -51,6 +51,7 @@ import { getAllNodeStates, shouldExecuteNode } from "@/lib/flowHelpers";
 import { uploadFileToStorage } from "@/lib/storage";
 // 📊 Observability: trace logger (Sprint 1)
 import { createTraceLogger, MessageTraceLogger } from "@/lib/trace-logger";
+import { enqueueEvaluation } from "@/lib/evaluation-worker";
 
 export interface ChatbotFlowResult {
   success: boolean;
@@ -178,14 +179,16 @@ export const processChatbotMessage = async (
   });
   traceLogger.markStage("webhook_received");
   let traceFlushed = false;
-  const flushTrace = async (): Promise<void> => {
-    if (traceFlushed) return;
+  let persistedTraceId: string | null = null;
+  const flushTrace = async (): Promise<string | null> => {
+    if (traceFlushed) return persistedTraceId;
     traceFlushed = true;
     try {
-      await traceLogger.finish();
+      persistedTraceId = await traceLogger.finish();
     } catch (flushError) {
       console.error("[chatbotFlow] Failed to flush trace:", flushError);
     }
+    return persistedTraceId;
   };
 
   // 📋 Log config summary at flow start for Vercel debugging
@@ -917,6 +920,42 @@ export const processChatbotMessage = async (
       };
     }
 
+    // NODE 6.5: Check Duplicate Message EARLY (before Redis push)
+    // ⚠️ CRITICAL: Prevent duplicate webhook deliveries from polluting Redis batch buffer.
+    logger.logNodeStart("6.5. Check Duplicate Message (Early)", {
+      phone: parsedMessage.phone,
+      contentLength: normalizedMessage.content.length,
+    });
+
+    const { checkDuplicateMessage } = await import(
+      "@/nodes/checkDuplicateMessage"
+    );
+    const duplicateCheck = await checkDuplicateMessage({
+      phone: parsedMessage.phone,
+      messageContent: normalizedMessage.content,
+      clientId: config.id,
+      wamid: parsedMessage.messageId,
+    });
+
+    if (duplicateCheck.isDuplicate) {
+      logger.logNodeSuccess("6.5. Check Duplicate Message (Early)", {
+        isDuplicate: true,
+        reason: duplicateCheck.reason,
+        timeSinceMs: duplicateCheck.recentMessage?.timeSinceMs,
+      });
+
+      console.warn(
+        `⚠️ [chatbotFlow] Duplicate message detected early for ${parsedMessage.phone}, skipping processing before Redis push`,
+      );
+
+      logger.finishExecution("success");
+      return { success: true, skipped: true, reason: "duplicate_message" };
+    }
+
+    logger.logNodeSuccess("6.5. Check Duplicate Message (Early)", {
+      isDuplicate: false,
+    });
+
     // NODE 7: Push to Redis (configurable)
     if (shouldExecuteNode("push_to_redis", nodeStates)) {
       logger.logNodeStart("7. Push to Redis", normalizedMessage);
@@ -954,44 +993,7 @@ export const processChatbotMessage = async (
           : "[Imagem recebida]";
     }
 
-    // NODE 8: Check Duplicate Message FIRST (prevent duplicate responses)
-    // ⚠️ CRITICAL: Must check BEFORE saving to avoid finding the message we just saved!
-    logger.logNodeStart("8. Check Duplicate Message", {
-      phone: parsedMessage.phone,
-      contentLength: normalizedMessage.content.length,
-    });
-
-    const { checkDuplicateMessage } = await import(
-      "@/nodes/checkDuplicateMessage"
-    );
-    const duplicateCheck = await checkDuplicateMessage({
-      phone: parsedMessage.phone,
-      messageContent: normalizedMessage.content,
-      clientId: config.id,
-      wamid: parsedMessage.messageId,
-    });
-
-    if (duplicateCheck.isDuplicate) {
-      logger.logNodeSuccess("8. Check Duplicate Message", {
-        isDuplicate: true,
-        reason: duplicateCheck.reason,
-        timeSinceMs: duplicateCheck.recentMessage?.timeSinceMs,
-      });
-
-      console.warn(
-        `⚠️ [chatbotFlow] Duplicate message detected for ${parsedMessage.phone}, skipping processing to avoid duplicate response`,
-      );
-
-      // Exit gracefully - don't process duplicate
-      logger.finishExecution("success");
-      return { success: true, skipped: true, reason: "duplicate_message" };
-    }
-
-    logger.logNodeSuccess("8. Check Duplicate Message", {
-      isDuplicate: false,
-    });
-
-    // NODE 8.5: Save Chat Message (User) - AFTER duplicate check
+    // NODE 8.5: Save Chat Message (User)
     // 📎 Include media metadata for displaying real files in conversation
     // 📱 Include wamid for WhatsApp message reactions
     logger.logNodeStart("8.5. Save Chat Message (User)", {
@@ -2336,7 +2338,27 @@ export const processChatbotMessage = async (
     });
 
     traceLogger.markStage("sent");
-    await flushTrace();
+    traceLogger.markStage("evaluation_enqueued", {
+      scheduled: true,
+      hasRag: !!ragTraceData,
+    });
+    const traceId = await flushTrace();
+
+    if (traceId) {
+      enqueueEvaluation({
+        traceId,
+        clientId: config.id,
+        phone: parsedMessage.phone,
+        userMessage: batchedContent,
+        agentResponse: aiResponse.content,
+        retrievedChunks:
+          ragTraceData?.chunkIds.map((chunkId, index) => ({
+            id: chunkId,
+            similarity: ragTraceData?.similarityScores[index] ?? 0,
+            content: "",
+          })) ?? [],
+      });
+    }
 
     logger.finishExecution("success");
     return { success: true, messagesSent: messageIds.length };

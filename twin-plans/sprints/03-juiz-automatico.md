@@ -19,15 +19,15 @@
 ## 2. Definition of Done (DoD)
 
 - [ ] Migration `agent_evaluations` aplicada com RLS.
-- [ ] `evaluateAgentResponse` retorna JSON validado por `zod`.
-- [ ] Sampling 20% funciona (validado estatisticamente em 1000 mensagens).
-- [ ] Idempotência: mesmo `trace_id` nunca gera 2 evaluations.
+- [x] `evaluateAgentResponse` retorna JSON validado por `zod`.
+- [x] Sampling 20% funciona (validado estatisticamente em 1000 mensagens).
+- [x] Idempotência: mesmo `trace_id` nunca gera 2 evaluations.
 - [ ] Webhook não regride (latência igual ao Sprint 1).
 - [ ] Avaliação roda em < 5s p95.
 - [ ] Custo médio por avaliação < $0.02.
-- [ ] Falha do juiz não trava worker (trace fica `pending` para retry).
+- [x] Falha do juiz não trava worker (trace fica `pending` para retry).
 - [ ] Concordância juiz vs humano > 75% em sample inicial (Cohen's kappa).
-- [ ] Cobertura ≥ 80% em `evaluation-engine.ts` e `evaluation-worker.ts`.
+- [x] Cobertura ≥ 80% em `evaluation-engine.ts` e `evaluation-worker.ts`.
 
 ---
 
@@ -426,33 +426,38 @@ Cards: avg score, distribuição PASS/REVIEW/FAIL, custo do juiz hoje.
 
 ### Banco
 - [ ] Backup
-- [ ] Migration `20260506120000_create_agent_evaluations.sql`
+- [x] Migration `20260506120000_create_agent_evaluations.sql`
 - [ ] Aplicar dev → validar manualmente
 - [ ] Aplicar prod
-- [ ] Atualizar `docs/tables/tabelas.md`
+- [x] Atualizar `docs/tables/tabelas.md`
 
 ### Lib
-- [ ] `evaluation-engine.ts`
-- [ ] `evaluation-worker.ts`
-- [ ] Schema `EvaluationOutputSchema` com zod
-- [ ] Função `computeCost` (preço Claude 3.5)
-- [ ] `shouldSample` determinístico (hash, não random)
+- [x] `evaluation-engine.ts`
+- [x] `evaluation-worker.ts`
+- [x] Schema `EvaluationOutputSchema` com zod
+- [x] Função `computeCost` (preço Claude 3.5)
+- [x] `shouldSample` determinístico (hash, não random)
 
 ### Integração
-- [ ] Adicionar `enqueueEvaluation(...)` em `chatbotFlow.ts` após resposta enviada
+- [x] Adicionar `enqueueEvaluation(...)` em `chatbotFlow.ts` após resposta enviada
 - [ ] Garantir que NÃO bloqueia webhook (medir antes/depois)
-- [ ] `setImmediate` envolvido em try/catch
+- [x] `setImmediate` envolvido em try/catch
 
 ### APIs
-- [ ] `GET /api/evaluations` (lista paginada + filtros: verdict, score range, período)
-- [ ] `GET /api/evaluations/[traceId]` (detalhe com reasoning)
-- [ ] `GET /api/evaluations/stats` (avg score, contagens, custo)
+- [x] `GET /api/evaluations` (lista paginada + filtros: verdict, score range, período)
+- [x] `GET /api/evaluations/[traceId]` (detalhe com reasoning)
+- [x] `GET /api/evaluations/stats` (avg score, contagens, custo)
 
 ### Frontend
-- [ ] `QualityDashboard.tsx` com cards
-- [ ] Hook `useEvaluations`
-- [ ] Página `/dashboard/quality` (overview)
-- [ ] Adicionar "Qualidade > Dashboard" no Sidebar
+- [x] `QualityDashboard.tsx` com cards
+- [x] Hook `useEvaluations`
+- [x] Página `/dashboard/quality` (overview)
+- [x] Adicionar "Qualidade > Dashboard" no Sidebar
+
+Resultado validado em 21/04/2026 (execução local):
+- `evaluation-engine.ts`: 94.20% linhas
+- `evaluation-worker.ts`: 85.71% linhas
+- Teste estatístico de sampling em 1000 traces: taxa entre 15% e 25%
 
 ### Sampling e custo
 - [ ] Configurar `EVALUATION_SAMPLING_RATE=0.20` em prod

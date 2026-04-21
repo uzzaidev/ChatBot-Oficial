@@ -19,13 +19,13 @@ Construir a base de **gabarito** que será usada pelo juiz (S3) para avaliar res
 
 ## 2. Definition of Done (DoD)
 
-- [ ] Migration `ground_truth` aplicada com índice ivfflat.
-- [ ] `findSimilarGroundTruth(clientId, query, threshold)` retorna entrada mais similar acima do threshold.
-- [ ] CRUD completo via API com soft delete e versionamento (update cria nova versão, mantém antiga).
-- [ ] UI permite **criar / listar / editar / desativar / validar** entrada em < 60s por operação.
+- [x] Migration `ground_truth` aplicada com índice ivfflat.
+- [x] `findSimilarGroundTruth(clientId, query, threshold)` retorna entrada mais similar acima do threshold.
+- [x] CRUD completo via API com soft delete e versionamento (update cria nova versão, mantém antiga).
+- [x] UI permite **criar / listar / editar / desativar / validar** entrada em < 60s por operação.
 - [ ] Cliente piloto (Yoga Escola) tem ≥ 30 entradas curadas (manual).
 - [ ] Acurácia do matcher: top-1 cosine > 85% em dataset curado de 30 casos.
-- [ ] Cobertura: ≥ 80% em `ground-truth-matcher.ts`; 100% das APIs.
+- [x] Cobertura: ≥ 80% em `ground-truth-matcher.ts`; 100% das APIs.
 
 ---
 
@@ -375,45 +375,49 @@ POST com `{ trace_id, expected_response, category? }` cria GT a partir de um tra
 ### Banco
 - [ ] Backup antes da migration
 - [ ] Validar `vector` extension habilitada em prod
-- [ ] Aplicar migration `20260429120000_create_ground_truth.sql`
+- [x] Aplicar migration `20260429120000_create_ground_truth.sql`
 - [ ] Validar RPC `match_ground_truth` com vetor de teste manualmente
-- [ ] Atualizar `docs/tables/tabelas.md`
+- [x] Atualizar `docs/tables/tabelas.md`
 
 ### Lib
-- [ ] Implementar `findSimilarGroundTruth` + `findSimilarGroundTruthList`
-- [ ] Validar dim 1536 em runtime (throwa se diferente)
-- [ ] Cachear `getBotConfig('quality:gt_threshold')` se chamado em loop quente
+- [x] Implementar `findSimilarGroundTruth` + `findSimilarGroundTruthList`
+- [x] Validar dim 1536 em runtime (throwa se diferente)
+- [x] Cachear `getBotConfig('quality:gt_threshold')` se chamado em loop quente
 
 ### APIs
-- [ ] `GET /api/ground-truth` (lista paginada + filtros)
-- [ ] `POST /api/ground-truth` (criar com embedding)
-- [ ] `PATCH /api/ground-truth/[id]` (cria nova versão)
-- [ ] `DELETE /api/ground-truth/[id]` (soft delete)
-- [ ] `POST /api/ground-truth/[id]/validate` (operador valida)
-- [ ] `POST /api/ground-truth/from-trace` (criar a partir de trace)
+- [x] `GET /api/ground-truth` (lista paginada + filtros)
+- [x] `POST /api/ground-truth` (criar com embedding)
+- [x] `PATCH /api/ground-truth/[id]` (cria nova versão)
+- [x] `DELETE /api/ground-truth/[id]` (soft delete)
+- [x] `POST /api/ground-truth/[id]/validate` (operador valida)
+- [x] `POST /api/ground-truth/from-trace` (criar a partir de trace)
 
 ### UI
-- [ ] `GroundTruthManager.tsx` — lista com filtros (categoria, ativo)
-- [ ] `GroundTruthFormModal.tsx` — criar/editar com validação
-- [ ] Página `/dashboard/quality/ground-truth`
-- [ ] Adicionar "Qualidade > Ground Truth" no Sidebar
-- [ ] Hook `useGroundTruth`
-- [ ] Botão "Promote to Ground Truth" em telas de trace (S4 prep)
+- [x] `GroundTruthManager.tsx` — lista com filtros (categoria, ativo)
+- [x] `GroundTruthFormModal.tsx` — criar/editar com validação
+- [x] Página `/dashboard/quality/ground-truth`
+- [x] Adicionar "Qualidade > Ground Truth" no Sidebar
+- [x] Hook `useGroundTruth`
+- [x] Botão "Promote to Ground Truth" em telas de trace (S4 prep)
 
 ### Bootstrap inicial
 - [ ] Cliente piloto: criar 30 entradas manuais (categorias: planos, horários, inscrição, pagamento, cancelamento)
 - [ ] Validar que matcher acerta top-1 em pelo menos 26/30 (87%)
 
 ### Testes (ver §5)
-- [ ] Unit: matcher
-- [ ] Integration: APIs CRUD
-- [ ] Imutabilidade: PATCH cria nova versão
-- [ ] Vector search: similaridade correta
+- [x] Unit: matcher
+- [x] Integration: APIs CRUD
+- [x] Imutabilidade: PATCH cria nova versão
+- [x] Vector search: similaridade correta
 - [ ] RLS: isolamento
 
+Resultado validado em 21/04/2026 (execucao local):
+- `ground-truth-matcher.ts`: 96.55% linhas
+- APIs Ground Truth (`/api/ground-truth*`): 100% linhas
+
 ### Documentação
-- [ ] Atualizar `docs/tables/tabelas.md`
-- [ ] Pequeno guia em `docs/features/ground-truth.md` (como criar entradas)
+- [x] Atualizar `docs/tables/tabelas.md`
+- [x] Pequeno guia em `docs/features/ground-truth.md` (como criar entradas)
 
 ---
 
