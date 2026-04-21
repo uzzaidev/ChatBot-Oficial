@@ -9,6 +9,14 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-21
 
 ### fix
+- Adicionado fallback local para geração de resposta de IA no fluxo do chatbot em caso de falha na geração principal, com mensagem padrão e logs de erro e aviso
+  - Arquivos: `src/flows/chatbotFlow.ts`
+  - Evidência: try/catch envolvendo chamada a `generateAIResponse` e fallback com texto padrão e logs
+  - Confiança: alta
+
+## 2026-04-21
+
+### fix
 - Reforçado tratamento de casos onde o fluxo do chatbot pode gerar respostas vazias ou falhas silenciosas, adicionando logs de aviso e erro para conteúdos vazios após batch, formatação e envio de mensagens.
 - Incluído fallback para conteúdo bruto quando a formatação retorna array vazio, e validação para garantir que ao menos uma mensagem seja enviada.
 - Arquivos: `src/flows/chatbotFlow.ts`
