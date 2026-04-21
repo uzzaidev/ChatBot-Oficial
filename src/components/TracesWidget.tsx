@@ -1,7 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { DollarSign, Clock, ExternalLink, CheckCircle2, XCircle, AlertCircle, Activity } from 'lucide-react'
+import {
+  Activity,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  DollarSign,
+  ExternalLink,
+  XCircle,
+} from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 
@@ -20,11 +28,11 @@ interface TracesMeta {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; icon: typeof CheckCircle2; color: string }> = {
-  pending:        { label: 'pendente',  icon: AlertCircle,    color: 'text-yellow-500' },
-  evaluated:      { label: 'avaliado',  icon: CheckCircle2,   color: 'text-green-500' },
-  failed:         { label: 'falhou',    icon: XCircle,        color: 'text-red-500' },
-  needs_review:   { label: 'revisão',   icon: AlertCircle,    color: 'text-orange-500' },
-  human_reviewed: { label: 'revisado',  icon: CheckCircle2,   color: 'text-blue-500' },
+  pending: { label: 'pendente', icon: AlertCircle, color: 'text-yellow-500' },
+  evaluated: { label: 'avaliado', icon: CheckCircle2, color: 'text-green-500' },
+  failed: { label: 'falhou', icon: XCircle, color: 'text-red-500' },
+  needs_review: { label: 'revisao', icon: AlertCircle, color: 'text-orange-500' },
+  human_reviewed: { label: 'revisado', icon: CheckCircle2, color: 'text-blue-500' },
 }
 
 const maskPhone = (phone: string) => {
@@ -33,30 +41,36 @@ const maskPhone = (phone: string) => {
 }
 
 const formatLatency = (ms: number | null) =>
-  ms == null ? '—' : ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms`
+  ms == null ? '-' : ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms`
 
 const formatCost = (usd: number | null) =>
-  usd == null ? '—' : `$${usd.toFixed(5)}`
+  usd == null ? '-' : `$${usd.toFixed(5)}`
 
 export function TracesWidget() {
   const [traces, setTraces] = useState<TraceRow[]>([])
   const [meta, setMeta] = useState<TracesMeta | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchTraces = async () => {
       try {
+        setError(null)
         const res = await fetch('/api/traces?limit=5')
         if (!res.ok) {
-          // Tabela pode não existir ainda ou sem permissão — silencia
-          setLoading(false)
+          const reason = await res.text().catch(() => '')
+          setError(
+            `Falha ao carregar traces (${res.status})${reason ? `: ${reason.slice(0, 140)}` : ''}`,
+          )
           return
         }
         const json = await res.json()
         setTraces(json.data ?? [])
         setMeta(json.meta ?? null)
-      } catch {
-        // Rede ou parse error — silencia, não quebra o dashboard
+      } catch (e) {
+        const message =
+          e instanceof Error ? e.message : 'Erro de rede ao carregar traces'
+        setError(message)
       } finally {
         setLoading(false)
       }
@@ -83,7 +97,6 @@ export function TracesWidget() {
 
   return (
     <div className="metric-card space-y-4">
-      {/* Header */}
       <div className="flex items-start justify-between">
         <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
           Observabilidade
@@ -91,7 +104,6 @@ export function TracesWidget() {
         <DollarSign className="h-5 w-5 text-uzz-mint opacity-60" />
       </div>
 
-      {/* Cost today */}
       <div>
         <p className="text-3xl font-bold font-poppins text-foreground">
           ${costToday.toFixed(4)}
@@ -99,7 +111,12 @@ export function TracesWidget() {
         <p className="text-xs text-muted-foreground mt-0.5">custo de hoje (USD)</p>
       </div>
 
-      {/* Recent traces table */}
+      {error ? (
+        <div className="rounded-md border border-red-500/30 bg-red-500/10 px-2.5 py-2 text-xs text-red-400">
+          {error}
+        </div>
+      ) : null}
+
       {traces.length === 0 ? (
         <p className="text-xs text-muted-foreground italic">Nenhum trace hoje.</p>
       ) : (
@@ -119,7 +136,7 @@ export function TracesWidget() {
                   {maskPhone(t.phone)}
                 </span>
                 <span className="flex-1 truncate text-foreground/80">
-                  {t.user_message?.slice(0, 40) ?? '—'}
+                  {t.user_message?.slice(0, 40) ?? '-'}
                 </span>
                 <span className="flex items-center gap-1 text-muted-foreground shrink-0">
                   <Clock className="h-3 w-3" />
@@ -135,17 +152,27 @@ export function TracesWidget() {
         </div>
       )}
 
-      {/* Ver todas */}
       <div className="pt-1 border-t border-border/40">
-        <Link
-          href="/api/traces"
-          target="_blank"
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ExternalLink className="h-3 w-3" />
-          Ver todas via API
-        </Link>
+        <div className="flex flex-col gap-1.5">
+          <Link
+            href="/api/traces"
+            target="_blank"
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ExternalLink className="h-3 w-3" />
+            Ver todas via API
+          </Link>
+          <Link
+            href="/api/traces/health"
+            target="_blank"
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Activity className="h-3 w-3" />
+            Diagnostico de traces
+          </Link>
+        </div>
       </div>
     </div>
   )
 }
+

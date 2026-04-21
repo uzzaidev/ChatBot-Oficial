@@ -861,6 +861,11 @@ export class FlowExecutor {
       { aliases: ["cidade", "city"], target: "cidade" },
       { aliases: ["estado", "uf", "state"], target: "estado" },
       {
+        aliases: ["telefone_alternativo", "telefone_secundario", "telefone_2", "phone_alt"],
+        target: "telefone_alternativo",
+      },
+      { aliases: ["profissao", "occupation", "cargo_profissional"], target: "profissao" },
+      {
         aliases: ["como_conheceu", "origem", "source", "canal_origem"],
         target: "como_conheceu",
       },
@@ -899,6 +904,8 @@ export class FlowExecutor {
       "bairro",
       "cidade",
       "estado",
+      "telefone_alternativo",
+      "profissao",
       "email",
       "como_conheceu",
       "indicado_por",

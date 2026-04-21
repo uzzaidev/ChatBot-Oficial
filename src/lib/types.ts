@@ -706,6 +706,7 @@ export interface CustomerRecord {
 }
 
 export interface ContactMetadata {
+  nome?: string;
   nome_completo?: string;
   data_nascimento?: string;
   cpf?: string;
@@ -715,6 +716,8 @@ export interface ContactMetadata {
   bairro?: string;
   cidade?: string;
   estado?: string;
+  telefone_alternativo?: string;
+  profissao?: string;
   email?: string;
   como_conheceu?: string;
   indicado_por?: string;

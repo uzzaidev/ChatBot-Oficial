@@ -58,7 +58,7 @@ jwt_expiry = 3600
 enable_refresh_token_rotation = true
 # Allows refresh tokens to be reused after expiry, up to the specified interval in seconds.
 # Requires enable_refresh_token_rotation = true.
-refreshtoken_reuse_interval = 10
+refresh_token_reuse_interval = 10
 # Allow/disallow new user signups to your project.
 enable_signup = true
 
@@ -79,4 +79,3 @@ vector_port = 54328
 # See: https://supabase.com/docs/guides/getting-started/local-development#setting-up-bigquery
 gcp_project_id = ""
 gcp_project_number = ""
-gcp_jwt_audience = ""

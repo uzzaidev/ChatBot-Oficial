@@ -1,4 +1,4 @@
-import { createServerClient } from "@/lib/supabase";
+import { createRouteHandlerClient, getClientIdFromSession } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -9,25 +9,12 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createServerClient();
+    const supabase = await createRouteHandlerClient(_request);
     const { id } = await params;
 
-    // Auth check
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
+    const clientId = await getClientIdFromSession(_request);
+    if (!clientId) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from("user_profiles")
-      .select("client_id")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile?.client_id) {
-      return NextResponse.json({ error: "client_not_found" }, { status: 403 });
     }
 
     // Fetch trace (RLS will restrict to tenant)
@@ -35,7 +22,7 @@ export async function GET(
       .from("message_traces")
       .select("*")
       .eq("id", id)
-      .eq("client_id", profile.client_id)
+      .eq("client_id", clientId)
       .single();
 
     if (traceError || !trace) {

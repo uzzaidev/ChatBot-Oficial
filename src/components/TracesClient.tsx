@@ -267,7 +267,15 @@ function PipelineTimeline({ trace }: { trace: TraceDetail }) {
   )
 }
 
-function OverviewTab({ trace }: { trace: TraceDetail }) {
+function OverviewTab({
+  trace,
+  onPromote,
+  promoting,
+}: {
+  trace: TraceDetail
+  onPromote: (trace: TraceDetail) => void
+  promoting: boolean
+}) {
   return (
     <div className="space-y-5 p-5">
       {/* Status + timing */}
@@ -336,6 +344,16 @@ function OverviewTab({ trace }: { trace: TraceDetail }) {
               {trace.agent_response || <span className="italic text-muted-foreground">Sem resposta registrada</span>}
             </div>
           </div>
+        </div>
+        <div className="pt-1">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onPromote(trace)}
+            disabled={promoting}
+          >
+            {promoting ? "Promovendo..." : "Promover para Ground Truth"}
+          </Button>
         </div>
       </div>
     </div>
@@ -528,6 +546,7 @@ export function TracesClient() {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [tab, setTab] = useState<DetailTab>('overview')
   const [refreshing, setRefreshing] = useState(false)
+  const [promotingTraceId, setPromotingTraceId] = useState<string | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
 
   const fetchTraces = useCallback(async (silent = false) => {
@@ -574,6 +593,42 @@ export function TracesClient() {
       setSelected(null)
     } finally {
       setDetailLoading(false)
+    }
+  }
+
+  const promoteToGroundTruth = async (trace: TraceDetail) => {
+    try {
+      const suggested = (trace.agent_response ?? "").trim()
+      const expectedResponse = window.prompt(
+        "Resposta esperada para Ground Truth:",
+        suggested || "",
+      )
+      if (!expectedResponse || !expectedResponse.trim()) {
+        return
+      }
+
+      setPromotingTraceId(trace.id)
+      const res = await fetch("/api/ground-truth/from-trace", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          trace_id: trace.id,
+          expected_response: expectedResponse.trim(),
+        }),
+      })
+
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}))
+        throw new Error(payload.error ?? `HTTP ${res.status}`)
+      }
+
+      await res.json().catch(() => ({}))
+      alert("Trace promovido para Ground Truth com sucesso.")
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erro desconhecido"
+      alert(`Nao foi possivel promover para Ground Truth: ${message}`)
+    } finally {
+      setPromotingTraceId(null)
     }
   }
 
@@ -766,7 +821,13 @@ export function TracesClient() {
 
               {/* Tab content */}
               <div className="flex-1 overflow-y-auto">
-                {tab === 'overview'  && <OverviewTab trace={selected} />}
+                {tab === 'overview'  && (
+                  <OverviewTab
+                    trace={selected}
+                    onPromote={promoteToGroundTruth}
+                    promoting={promotingTraceId === selected.id}
+                  />
+                )}
                 {tab === 'toolcalls' && <ToolCallsTab toolCalls={selected.tool_calls} />}
                 {tab === 'rag'       && <RagTab retrieval={selected.retrieval} />}
               </div>

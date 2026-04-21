@@ -31,7 +31,7 @@ Instrumentar o pipeline `chatbotFlow.ts` para que **toda mensagem** que entra pe
 - [x] Dashboard tem card de "custo do dia" e link para "últimas mensagens". (`TracesWidget` em `DashboardMetricsView`)
 - [ ] Cobertura de testes: ≥ 80% em `trace-logger.ts`; 100% das APIs novas.
 - [ ] Eval suite (smoke) executa em CI sem falhas.
-- [ ] Zero regressão no webhook em smoke test E2E.
+- [x] Zero regressão no webhook em smoke test E2E.
 - [x] **Hardening de captura cadastral (assertividade):**
   - [x] Enum `registrar_dado_cadastral` ampliado para 14 campos (inclui `nome`, `data_nascimento`, `endereco`, `cep`, `telefone_alternativo`, `rg`, `cidade`, `estado`, `como_conheceu`, `indicado_por`, `objetivo`, `profissao`).
   - [x] Tool aceita **múltiplos campos em uma única chamada** (`dados: object`).
@@ -39,6 +39,11 @@ Instrumentar o pipeline `chatbotFlow.ts` para que **toda mensagem** que entra pe
   - [x] Nó `extractContactDataFallback.ts` implementado — chamada LLM estruturada (JSON mode, gpt-4o-mini, temp=0) que roda via `setImmediate` pós-resposta.
   - [x] Toda `tool_call` emitida (registrar_dado_cadastral, transferir_atendimento, buscar_documento, verificar_agenda, criar_evento_agenda, enviar_resposta_em_audio) é persistida em `tool_call_traces` com input/output/status/latência.
   - [ ] Validação: em 20 conversas reais com dados cadastrais, ≥95% dos campos fornecidos aparecem em `clientes_whatsapp.metadata`.
+
+**Status técnico em 2026-04-21:**
+- `trace-logger.ts` com cobertura validada acima da meta (≥80%).
+- Testes de integração das APIs de traces implementados e passando em `jest --runInBand`.
+- Pendências de fechamento total do DoD seguem concentradas em validação com tráfego real (3/20 conversas) e execução em ambiente remoto/CI.
 
 ---
 
@@ -826,7 +831,7 @@ export const TraceDetailSchema = z.object({
 ### Código de biblioteca
 - [x] Criar `src/lib/trace-logger.ts` com `createTraceLogger`, `sanitizePII`, `logToolCall`
 - [x] Tipos: `TraceStage`, `GenerationData`, `RetrievalData`, `MessageTraceLogger`, `ToolCallLogInput`
-- [ ] Implementar testes unitários (ver §5.1)
+- [x] Implementar testes unitários (ver §5.1)
 - [ ] Validar PII sanitization com casos reais (CPF, cartão)
 
 ### Modificação de nodes
@@ -864,10 +869,10 @@ export const TraceDetailSchema = z.object({
 - [ ] Validar localmente: enviar 1 mensagem e ver o registro em `message_traces`
 
 ### APIs
-- [ ] Criar `src/app/api/traces/route.ts` (GET list)
-- [ ] Criar `src/app/api/traces/[id]/route.ts` (GET detail)
-- [ ] Implementar testes de integração (ver §5.2)
-- [ ] Confirmar `export const dynamic = 'force-dynamic'`
+- [x] Criar `src/app/api/traces/route.ts` (GET list)
+- [x] Criar `src/app/api/traces/[id]/route.ts` (GET detail)
+- [x] Implementar testes de integração (ver §5.2)
+- [x] Confirmar `export const dynamic = 'force-dynamic'`
 - [ ] Validar manualmente com 2 contas de operadores diferentes
 
 ### Frontend
@@ -1515,7 +1520,7 @@ test('envia bloco com 4 dados cadastrais e todos aparecem no card', async ({ req
 **Solução:** `checkDuplicateMessage` agora verifica primeiro se o `wamid` já existe em `n8n_chat_histories` via Supabase client. Se existir → `isDuplicate: true, reason: 'wamid_match'` → flow para limpo (success, não error).
 
 **Item pendente registrado:**
-- [ ] Avaliar mover a checagem de `wamid` para **antes do push ao Redis** (atualmente ocorre após) — buffer Redis pode acumular mensagens duplicadas durante race condition de <300ms entre entregas gêmeas do Meta.
+- [x] Checagem de `wamid` movida para **antes do push ao Redis** (2026-04-21) — duplicatas agora saem do fluxo antes de contaminar buffer/batching.
 
 ### 8.3 `setImmediate` → `void promise.catch()` (FIX-003)
 
@@ -1534,6 +1539,16 @@ test('envia bloco com 4 dados cadastrais e todos aparecem no card', async ({ req
 **Problema:** `src/app/api/traces/[id]/route.ts` falhou no build do Vercel porque Next.js 15+ requer `params` como `Promise<{ id: string }>` com `await params`.
 
 **Solução:** assinatura corrigida; todos os novos route handlers com params dinâmicos devem usar esse padrão.
+
+### 8.6 Compatibilidade do `supabase/config.toml` com CLI local (FIX-006)
+
+**Problema:** `supabase link` falhava localmente com erro de parsing (`auth.refreshtoken_reuse_interval` e `analytics.gcp_jwt_audience`), bloqueando validação de migrations via CLI.
+
+**Solução:** ajustes de compatibilidade no `supabase/config.toml`:
+- `refreshtoken_reuse_interval` -> `refresh_token_reuse_interval`
+- remoção de `analytics.gcp_jwt_audience` (não suportado na CLI atual)
+
+**Observação operacional:** para listar/aplicar migrations remotas ainda é necessário `supabase login` ou `SUPABASE_ACCESS_TOKEN` no ambiente local.
 
 ---
 

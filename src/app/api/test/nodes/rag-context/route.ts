@@ -21,8 +21,19 @@ export async function POST(request: NextRequest) {
     // Se input é string, usa diretamente; se é objeto, tenta pegar .content
     const messageContent = typeof input === 'string' ? input : input.content || input
 
+    const clientId = typeof input === 'object' ? input.clientId : undefined
+    if (!clientId || typeof clientId !== 'string') {
+      return NextResponse.json(
+        { error: 'Input must include clientId for multi-tenant RAG lookup' },
+        { status: 400 }
+      )
+    }
+
     // Executa o node
-    const output = await getRAGContext(messageContent)
+    const output = await getRAGContext({
+      query: String(messageContent || ''),
+      clientId,
+    })
 
     return NextResponse.json({
       success: true,
