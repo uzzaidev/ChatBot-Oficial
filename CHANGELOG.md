@@ -7,6 +7,15 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-21
 
 ### fix
+- Exportada nova função `getRAGContextWithTrace` que retorna contexto RAG junto com dados de rastreamento detalhados, melhorando a visibilidade do processo de recuperação de contexto para chatbotFlow.
+- Ajustada função `getRAGContext` para usar internamente `getRAGContextWithTrace` e manter compatibilidade retornando apenas o contexto como string.
+- Arquivos: `src/nodes/getRAGContext.ts`
+- Evidência: alteração explícita na exportação e retorno de dados estruturados com traceData.
+- Confiança: alta
+
+## 2026-04-21
+
+### fix
 - Reforçado o bloqueio de mensagens duplicadas para priorizar verificação por WAMID, evitando falsos positivos em checagem por similaridade de conteúdo; ajustado para não executar fallback quando WAMID não é encontrado.
 - Melhorado o processo de handoff humano para sempre enviar aviso ao usuário antes da transferência e registrar o envio da notificação; corrigida atualização do status do cliente para incluir filtro por tenant (client_id) e lançar erro se cliente não for encontrado.
 - Adicionadas marcações detalhadas de trace para estágios do fluxo de chatbot, incluindo carregamento de contexto RAG, início e conclusão da geração de resposta e início da transferência para humano, para melhor monitoramento e rastreabilidade.
