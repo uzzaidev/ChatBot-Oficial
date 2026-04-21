@@ -279,8 +279,8 @@ supabase/migrations/YYYYMMDDHHMMSS_<verbo>_<entidade>.sql
 ```
 
 Exemplos:
-- `20260422120000_create_message_traces.sql`
-- `20260423090000_create_ground_truth.sql`
+- `20260422130000_create_observability_traces.sql` *(aplicado em prod — inclui message_traces, retrieval_traces, tool_call_traces)*
+- `20260429120000_create_ground_truth.sql` *(Sprint 2 — ainda não criado)*
 - `20260429140000_add_metadata_jsonb_to_traces.sql`
 
 **Regras:**
@@ -407,10 +407,12 @@ tests/
 
 ## 6. Setup local (resumo)
 
+> **Gerenciador de pacotes:** o projeto usa **pnpm** (há `pnpm-lock.yaml`). Substituir `npm` por `pnpm` nos comandos abaixo.
+
 ```bash
 # 1. Instalar deps novas
-npm install @anthropic-ai/sdk
-npm install -D vitest @vitest/coverage-v8 msw supertest @playwright/test autocannon
+pnpm add @anthropic-ai/sdk
+pnpm add -D vitest @vitest/coverage-v8 msw supertest @playwright/test autocannon
 
 # 2. Configurar .env.local
 cp .env.example .env.local
@@ -420,17 +422,18 @@ cp .env.example .env.local
 supabase db push
 
 # 4. Rodar dev
-npm run dev
+pnpm dev
 
-# 5. Rodar testes
-npm run test           # vitest
-npm run test:e2e       # playwright
-npm run eval-suite     # script custom
+# 5. Rodar testes (alvo — vitest ainda não instalado, ver estado em 00-sprint-zero-prep.md)
+pnpm test              # vitest
+pnpm test:e2e          # playwright
+pnpm eval-suite        # script custom
 ```
 
 ### Scripts a adicionar em `package.json`
 
 ```json
+// ⚠️ TARGET — ainda não adicionados ao package.json do projeto
 {
   "scripts": {
     "test": "vitest",

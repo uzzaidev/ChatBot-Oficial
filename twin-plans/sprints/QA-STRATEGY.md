@@ -366,29 +366,31 @@ export const seedTwoClients = async () => {
 
 ## 8. CI/CD integration
 
-### 8.1 Pipelines
+> ⚠️ **ALVO — não ativo hoje (2026-04-21).** Nenhum workflow de CI está configurado. A seção abaixo descreve o estado final esperado ao término do Sprint 6. Implementar progressivamente: `ci.yml` (lint+typecheck) antes do Sprint 2; gates de teste conforme vitest for instalado; eval-gate no Sprint 6.
 
-| Trigger | Pipeline | SLA |
-|---|---|---|
-| `push` em branch | lint + typecheck + unit | <3 min |
-| `pull_request` | + integration + contract + security | <8 min |
-| `pull_request` | + eval suite gate | <15 min |
-| `pre-merge` | + E2E smoke (5 testes) | <5 min |
-| nightly em main | + E2E full + perf + load | <30 min |
-| weekly | + chaos + load com escala 2× | <60 min |
+### 8.1 Pipelines (alvo Sprint 6)
 
-### 8.2 Workflow files
+| Trigger | Pipeline | SLA | Status |
+|---|---|---|---|
+| `push` em branch | lint + typecheck + unit | <3 min | ❌ não criado |
+| `pull_request` | + integration + contract + security | <8 min | ❌ não criado |
+| `pull_request` | + eval suite gate | <15 min | ❌ não criado |
+| `pre-merge` | + E2E smoke (5 testes) | <5 min | ❌ não criado |
+| nightly em main | + E2E full + perf + load | <30 min | ❌ não criado |
+| weekly | + chaos + load com escala 2× | <60 min | ❌ não criado |
+
+### 8.2 Workflow files (alvo)
 
 `.github/workflows/`:
-- `ci.yml` — lint, typecheck, unit, integration, contract, security
+- `ci.yml` — lint, typecheck, unit, integration, contract, security *(criar antes do Sprint 2)*
 - `eval-gate.yml` — eval suite (Sprint 6)
-- `e2e.yml` — Playwright nightly
-- `perf.yml` — k6 nightly
-- `chaos.yml` — chaos weekly
+- `e2e.yml` — Playwright nightly *(Sprint 4)*
+- `perf.yml` — k6 nightly *(Sprint 6)*
+- `chaos.yml` — chaos weekly *(Sprint 6)*
 
-### 8.3 Branch protection
+### 8.3 Branch protection (alvo)
 
-- `main` requer:
+- `main` requer (quando CI estiver ativo):
   - ✅ ci.yml verde
   - ✅ eval-gate.yml verde
   - ✅ 1 review aprovado
@@ -465,38 +467,41 @@ Acompanhamos:
 3. Use builder existente em `tests/helpers/` ou crie um novo se necessário.
 4. Mock APIs externas via MSW (§ 5.1).
 5. AAA structure (§ 4.3).
-6. Rode local: `npm run test -- path/to/your.test.ts --watch`.
-7. Verifique cobertura: `npm run test:coverage -- path/to/your.test.ts`.
+6. Rode local: `pnpm test -- path/to/your.test.ts --watch`.
+7. Verifique cobertura: `pnpm test:coverage -- path/to/your.test.ts`.
 8. Commit + PR — CI valida.
 
 ---
 
 ## 13. Cheat sheet — comandos
 
+> **Gerenciador de pacotes:** o projeto usa **pnpm** (`pnpm-lock.yaml`). Use `pnpm` em vez de `npm run`.
+> ⚠️ **ALVO** — scripts abaixo serão adicionados ao `package.json` conforme vitest for instalado (Sprint 2+).
+
 ```bash
 # Executar suite completa
-npm run test                       # vitest run all
-npm run test:watch                 # vitest watch mode
-npm run test:coverage              # com c8
+pnpm test                          # vitest run all
+pnpm test:watch                    # vitest watch mode
+pnpm test:coverage                 # com c8
 
 # Por tipo
-npm run test:unit
-npm run test:integration
-npm run test:e2e                   # playwright
-npm run test:perf
-npm run test:chaos
+pnpm test:unit
+pnpm test:integration
+pnpm test:e2e                      # playwright
+pnpm test:perf
+pnpm test:chaos
 
 # Eval
-npm run eval                       # roda golden set local
-npm run eval:ci -- --threshold=-0.05
+pnpm eval                          # roda golden set local
+pnpm eval:ci -- --threshold=-0.05
 
 # Load
-npm run load:steady                # k6 50 RPS 30 min
-npm run load:burst                 # k6 burst test
+pnpm load:steady                   # k6 50 RPS 30 min
+pnpm load:burst                    # k6 burst test
 
 # Debug
-npm run test -- --reporter=verbose --no-coverage
-npm run test -- -t "nome do teste"  # roda apenas casos com match
+pnpm test -- --reporter=verbose --no-coverage
+pnpm test -- -t "nome do teste"    # roda apenas casos com match
 ```
 
 ---
