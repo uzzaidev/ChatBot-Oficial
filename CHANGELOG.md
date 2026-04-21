@@ -4,6 +4,16 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+```
+## 2026-04-21
+
+### fix
+- Ajustado fluxo do chatbot para evitar término silencioso quando a IA retorna conteúdo vazio, inserindo mensagem fallback com sugestão de ajuda sobre aulas de Yoga
+  - Arquivos: `src/flows/chatbotFlow.ts`
+  - Evidência: código adiciona fallback e log de aviso em caso de conteúdo vazio da IA
+  - Confiança: alta
+```
+
 ## 2026-04-21
 
 ### fix
