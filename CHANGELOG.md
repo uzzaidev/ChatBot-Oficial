@@ -7,6 +7,28 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-21
 
 ### feat
+- Finalizado hardening e diagnósticos das APIs de traces, incluindo autenticação multi-tenant via clientId e tratamento robusto de erros.
+- Adicionado endpoint `/api/traces/health` para diagnóstico do estado das tabelas de traces e sugestões de ações.
+- Implementado testes de integração completos para as APIs de traces (`GET /api/traces` e `GET /api/traces/[id]`).
+- Adicionada funcionalidade no dashboard para promover traces para Ground Truth com confirmação do usuário.
+- Ampliado suporte a campos cadastrais no fluxo e UI, incluindo `telefone_alternativo` e `profissao`.
+- Melhorias no widget de traces: tratamento de erros exibido, novos links para API e diagnóstico, e ajustes visuais.
+- Refatoração para usar helpers de sessão e clientId compartilhados em todas as APIs de traces.
+- Criado módulo `trace-logger` com sanitização de PII, persistência de traces e logs detalhados, com cobertura de testes ≥80%.
+- Ajuste na configuração `supabase/config.toml` para compatibilidade com CLI local (corrigido `refresh_token_reuse_interval` e removido `gcp_jwt_audience`).
+- Correção no envio de e-mails via Resend para instanciar cliente sob demanda e validar chave de API.
+  - Arquivos: `src/app/api/traces/route.ts`, `src/app/api/traces/[id]/route.ts`, `src/app/api/traces/health/route.ts`, `src/lib/trace-logger.ts`, `src/components/TracesClient.tsx`, `src/components/TracesWidget.tsx`, `src/lib/flows/flowExecutor.ts`, `src/lib/resend.ts`, `supabase/config.toml`, `src/__tests__/integration/traces-api.test.ts`
+  - Confiança: alta
+
+### chore
+- Atualizado plano de sprint e documentação interna com status e pendências do módulo de traces.
+- Pequenos ajustes de labels e ordenação em campos de perfil no frontend.
+  - Arquivos: `twin-plans/sprints/01-traces-fundacao.md`, `src/components/ContactsClient.tsx`
+  - Confiança: alta
+
+## 2026-04-21
+
+### feat
 - Implementado fluxo completo de revisão humana para avaliações com feedback atômico e promoção opcional para ground truth.
 - Criada tabela `human_feedback` com RLS para armazenar feedbacks manuais de operadores, incluindo veredito, correção, motivo, categoria de erro e vínculo com ground truth.
 - Adicionada API RESTful para envio (`POST /api/evaluations/[traceId]/human-feedback`) e consulta (`GET /api/evaluations/[traceId]`) de feedback humano, com tratamento atômico via função RPC `submit_human_feedback_atomic`.
