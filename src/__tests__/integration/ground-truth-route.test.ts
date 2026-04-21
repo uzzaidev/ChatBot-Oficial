@@ -1,14 +1,15 @@
 import { NextRequest } from "next/server";
 import { GET, POST } from "@/app/api/ground-truth/route";
-import {
-  createRouteHandlerClient,
-  getClientIdFromSession,
-} from "@/lib/supabase-server";
+import { getClientIdFromSession } from "@/lib/supabase-server";
+import { createServiceRoleClient } from "@/lib/supabase";
 import { generateEmbedding } from "@/lib/openai";
 
 jest.mock("@/lib/supabase-server", () => ({
-  createRouteHandlerClient: jest.fn(),
   getClientIdFromSession: jest.fn(),
+}));
+
+jest.mock("@/lib/supabase", () => ({
+  createServiceRoleClient: jest.fn(),
 }));
 
 jest.mock("@/lib/openai", () => ({
@@ -32,6 +33,17 @@ const createAwaitableQuery = (result: QueryResult) => {
   return query;
 };
 
+const mockServiceClient = (opts: { user?: any; fromQuery?: any } = {}) => {
+  (createServiceRoleClient as jest.Mock).mockReturnValue({
+    auth: {
+      getUser: jest.fn().mockResolvedValue({
+        data: { user: opts.user ?? null },
+      }),
+    },
+    from: opts.fromQuery ? jest.fn(() => opts.fromQuery) : jest.fn(),
+  });
+};
+
 describe("Ground Truth API - /api/ground-truth", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -39,7 +51,7 @@ describe("Ground Truth API - /api/ground-truth", () => {
 
   it("GET retorna 401 sem sessão", async () => {
     (getClientIdFromSession as jest.Mock).mockResolvedValue(null);
-    (createRouteHandlerClient as jest.Mock).mockResolvedValue({});
+    mockServiceClient();
 
     const request = new NextRequest("http://localhost/api/ground-truth");
     const response = await GET(request);
@@ -56,7 +68,7 @@ describe("Ground Truth API - /api/ground-truth", () => {
       count: 1,
       error: null,
     });
-    (createRouteHandlerClient as jest.Mock).mockResolvedValue({
+    (createServiceRoleClient as jest.Mock).mockReturnValue({
       from: jest.fn(() => query),
     });
 
@@ -80,7 +92,7 @@ describe("Ground Truth API - /api/ground-truth", () => {
       count: 1,
       error: null,
     });
-    (createRouteHandlerClient as jest.Mock).mockResolvedValue({
+    (createServiceRoleClient as jest.Mock).mockReturnValue({
       from: jest.fn(() => query),
     });
 
@@ -95,9 +107,7 @@ describe("Ground Truth API - /api/ground-truth", () => {
 
   it("GET retorna 400 para query params inválidos", async () => {
     (getClientIdFromSession as jest.Mock).mockResolvedValue("client-1");
-    (createRouteHandlerClient as jest.Mock).mockResolvedValue({
-      from: jest.fn(),
-    });
+    (createServiceRoleClient as jest.Mock).mockReturnValue({ from: jest.fn() });
 
     const request = new NextRequest(
       "http://localhost/api/ground-truth?limit=9999",
@@ -117,7 +127,7 @@ describe("Ground Truth API - /api/ground-truth", () => {
       count: 0,
       error: { message: "db down" },
     });
-    (createRouteHandlerClient as jest.Mock).mockResolvedValue({
+    (createServiceRoleClient as jest.Mock).mockReturnValue({
       from: jest.fn(() => query),
     });
 
@@ -135,10 +145,7 @@ describe("Ground Truth API - /api/ground-truth", () => {
 
     const request = new NextRequest("http://localhost/api/ground-truth", {
       method: "POST",
-      body: JSON.stringify({
-        user_query: "Q",
-        expected_response: "R",
-      }),
+      body: JSON.stringify({ user_query: "Q", expected_response: "R" }),
     });
     const response = await POST(request);
 
@@ -147,16 +154,11 @@ describe("Ground Truth API - /api/ground-truth", () => {
 
   it("POST retorna 401 sem usuário autenticado", async () => {
     (getClientIdFromSession as jest.Mock).mockResolvedValue("client-1");
-    (createRouteHandlerClient as jest.Mock).mockResolvedValue({
-      auth: { getUser: jest.fn().mockResolvedValue({ data: { user: null } }) },
-    });
+    mockServiceClient({ user: null });
 
     const request = new NextRequest("http://localhost/api/ground-truth", {
       method: "POST",
-      body: JSON.stringify({
-        user_query: "Q",
-        expected_response: "R",
-      }),
+      body: JSON.stringify({ user_query: "Q", expected_response: "R" }),
     });
     const response = await POST(request);
 
@@ -165,9 +167,7 @@ describe("Ground Truth API - /api/ground-truth", () => {
 
   it("POST retorna 400 para payload inválido", async () => {
     (getClientIdFromSession as jest.Mock).mockResolvedValue("client-1");
-    (createRouteHandlerClient as jest.Mock).mockResolvedValue({
-      auth: { getUser: jest.fn().mockResolvedValue({ data: { user: { id: "u1" } } }) },
-    });
+    mockServiceClient({ user: { id: "u1" } });
 
     const request = new NextRequest("http://localhost/api/ground-truth", {
       method: "POST",
@@ -184,12 +184,9 @@ describe("Ground Truth API - /api/ground-truth", () => {
       embedding: new Array(1536).fill(0.2),
     });
 
-    const insertQuery = createAwaitableQuery({
-      data: { id: "gt-1" },
-      error: null,
-    });
+    const insertQuery = createAwaitableQuery({ data: { id: "gt-1" }, error: null });
 
-    (createRouteHandlerClient as jest.Mock).mockResolvedValue({
+    (createServiceRoleClient as jest.Mock).mockReturnValue({
       auth: { getUser: jest.fn().mockResolvedValue({ data: { user: { id: "u1" } } }) },
       from: jest.fn(() => insertQuery),
     });
@@ -208,11 +205,7 @@ describe("Ground Truth API - /api/ground-truth", () => {
     expect(response.status).toBe(201);
     expect(body.data.id).toBe("gt-1");
     expect(insertQuery.insert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        client_id: "client-1",
-        created_by: "u1",
-        version: 1,
-      }),
+      expect.objectContaining({ client_id: "client-1", created_by: "u1", version: 1 }),
     );
   });
 
@@ -221,17 +214,11 @@ describe("Ground Truth API - /api/ground-truth", () => {
     (generateEmbedding as jest.Mock).mockResolvedValue({
       embedding: new Array(8).fill(0.2),
     });
-
-    (createRouteHandlerClient as jest.Mock).mockResolvedValue({
-      auth: { getUser: jest.fn().mockResolvedValue({ data: { user: { id: "u1" } } }) },
-    });
+    mockServiceClient({ user: { id: "u1" } });
 
     const request = new NextRequest("http://localhost/api/ground-truth", {
       method: "POST",
-      body: JSON.stringify({
-        user_query: "Q",
-        expected_response: "R",
-      }),
+      body: JSON.stringify({ user_query: "Q", expected_response: "R" }),
     });
     const response = await POST(request);
     const body = await response.json();
@@ -247,22 +234,16 @@ describe("Ground Truth API - /api/ground-truth", () => {
       embedding: new Array(1536).fill(0.2),
     });
 
-    const insertQuery = createAwaitableQuery({
-      data: null,
-      error: { message: "insert failed" },
-    });
+    const insertQuery = createAwaitableQuery({ data: null, error: { message: "insert failed" } });
 
-    (createRouteHandlerClient as jest.Mock).mockResolvedValue({
+    (createServiceRoleClient as jest.Mock).mockReturnValue({
       auth: { getUser: jest.fn().mockResolvedValue({ data: { user: { id: "u1" } } }) },
       from: jest.fn(() => insertQuery),
     });
 
     const request = new NextRequest("http://localhost/api/ground-truth", {
       method: "POST",
-      body: JSON.stringify({
-        user_query: "Q",
-        expected_response: "R",
-      }),
+      body: JSON.stringify({ user_query: "Q", expected_response: "R" }),
     });
     const response = await POST(request);
     const body = await response.json();

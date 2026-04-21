@@ -1,13 +1,14 @@
 import { GET as getTraces } from "@/app/api/traces/route";
 import { GET as getTraceDetail } from "@/app/api/traces/[id]/route";
-import {
-  createRouteHandlerClient,
-  getClientIdFromSession,
-} from "@/lib/supabase-server";
+import { getClientIdFromSession } from "@/lib/supabase-server";
+import { createServiceRoleClient } from "@/lib/supabase";
 
 jest.mock("@/lib/supabase-server", () => ({
-  createRouteHandlerClient: jest.fn(),
   getClientIdFromSession: jest.fn(),
+}));
+
+jest.mock("@/lib/supabase", () => ({
+  createServiceRoleClient: jest.fn(),
 }));
 
 type QueryResult = { data?: any; error?: { message?: string } | null };
@@ -35,7 +36,7 @@ describe("Traces APIs", () => {
   });
 
   it("GET /api/traces should return 401 when unauthenticated", async () => {
-    (createRouteHandlerClient as jest.Mock).mockResolvedValue({});
+    (createServiceRoleClient as jest.Mock).mockReturnValue({});
     (getClientIdFromSession as jest.Mock).mockResolvedValue(null);
 
     const request = {
@@ -63,7 +64,7 @@ describe("Traces APIs", () => {
     });
 
     let fromCalls = 0;
-    (createRouteHandlerClient as jest.Mock).mockResolvedValue({
+    (createServiceRoleClient as jest.Mock).mockReturnValue({
       from: jest.fn(() => {
         fromCalls += 1;
         return fromCalls === 1 ? mainQuery : costQuery;
@@ -93,7 +94,7 @@ describe("Traces APIs", () => {
       error: { message: 'relation "message_traces" does not exist' },
     });
 
-    (createRouteHandlerClient as jest.Mock).mockResolvedValue({
+    (createServiceRoleClient as jest.Mock).mockReturnValue({
       from: jest.fn(() => mainQuery),
     });
 
@@ -118,7 +119,7 @@ describe("Traces APIs", () => {
       error: { message: "permission denied" },
     });
 
-    (createRouteHandlerClient as jest.Mock).mockResolvedValue({
+    (createServiceRoleClient as jest.Mock).mockReturnValue({
       from: jest.fn(() => mainQuery),
     });
 
@@ -131,13 +132,13 @@ describe("Traces APIs", () => {
     const body = await response.json();
 
     expect(response.status).toBe(500);
-    expect(body.error).toBe("internal_server_error");
+    expect(body.error).toBe("db_error");
 
     errorSpy.mockRestore();
   });
 
   it("GET /api/traces/[id] should return 401 when unauthenticated", async () => {
-    (createRouteHandlerClient as jest.Mock).mockResolvedValue({});
+    (createServiceRoleClient as jest.Mock).mockReturnValue({});
     (getClientIdFromSession as jest.Mock).mockResolvedValue(null);
 
     const request = { headers: new Headers() } as any;
@@ -167,7 +168,7 @@ describe("Traces APIs", () => {
     });
 
     let fromCalls = 0;
-    (createRouteHandlerClient as jest.Mock).mockResolvedValue({
+    (createServiceRoleClient as jest.Mock).mockReturnValue({
       from: jest.fn(() => {
         fromCalls += 1;
         if (fromCalls === 1) return traceQuery;
@@ -196,7 +197,7 @@ describe("Traces APIs", () => {
       error: { message: "not found" },
     });
 
-    (createRouteHandlerClient as jest.Mock).mockResolvedValue({
+    (createServiceRoleClient as jest.Mock).mockReturnValue({
       from: jest.fn(() => traceQuery),
     });
 
@@ -212,9 +213,8 @@ describe("Traces APIs", () => {
 
   it("GET /api/traces/[id] should return 500 on unexpected exceptions", async () => {
     const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-    (createRouteHandlerClient as jest.Mock).mockRejectedValue(
-      new Error("db unavailable"),
-    );
+    (getClientIdFromSession as jest.Mock).mockResolvedValue("client-1");
+    (createServiceRoleClient as jest.Mock).mockImplementation(() => { throw new Error("db unavailable"); });
 
     const request = { headers: new Headers() } as any;
     const response = await getTraceDetail(request, {
