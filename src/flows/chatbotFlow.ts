@@ -2130,6 +2130,37 @@ export const processChatbotMessage = async (
       }
     }
 
+    // After registrar_dado_cadastral: if no text response was generated, do a follow-up
+    // call so the user always receives a message (data was saved, but agent stayed silent).
+    if (metadataToolTriggered && (!aiResponse.content || aiResponse.content.trim().length === 0)) {
+      logger.logNodeStart("15.77. Follow-up After Metadata Tool", {
+        phone: parsedMessage.phone,
+        reason: "metadata_only_no_text",
+      });
+      try {
+        const followUp = await generateAIResponse({
+          message: batchedContent,
+          chatHistory: chatHistory2,
+          ragContext,
+          customerName: parsedMessage.name,
+          contactMetadata: customer.metadata,
+          config,
+          greetingInstruction: continuityInfo.greetingInstruction,
+          enableTools: false,
+        });
+        aiResponse.content = followUp.content;
+        aiResponse.toolCalls = undefined;
+        logger.logNodeSuccess("15.77. Follow-up After Metadata Tool", {
+          contentLength: followUp.content?.length || 0,
+        });
+      } catch (followUpErr) {
+        logger.logNodeWarning("15.77. Follow-up After Metadata Tool", {
+          warning: "follow_up_failed",
+          error: followUpErr instanceof Error ? followUpErr.message : "unknown",
+        });
+      }
+    }
+
     if (!metadataToolTriggered) {
       try {
         const {
