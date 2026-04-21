@@ -8,6 +8,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-21
 
+### fix
+- Ajustado para popular dados de geração (modelo, tokens, resposta) em saídas antecipadas de chamadas de ferramentas, garantindo que o status seja definido como "success" quando apropriado
+  - Arquivos: `src/flows/chatbotFlow.ts`, `src/lib/trace-logger.ts`
+  - Evidência: inserção de `traceLogger.setGenerationData` em múltiplos retornos antecipados e alteração da lógica de status para considerar estágio "sent"
+  - Confiança: alta
+
+## 2026-04-21
+
 ### feat
 - Adicionado workflow de CI no GitHub Actions para rodar testes unitários e de integração automaticamente em pushes e pull requests na branch main (`.github/workflows/ci.yml`).
 - Refatorados testes de integração das APIs `/api/ground-truth` e `/api/traces` para substituir o mock de `createRouteHandlerClient` pelo novo mock de `createServiceRoleClient`, alinhando com mudanças na camada de acesso ao Supabase.
