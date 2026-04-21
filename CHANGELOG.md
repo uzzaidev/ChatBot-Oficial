@@ -8,6 +8,15 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-21
 
+### feat
+- Adicionado workflow de CI no GitHub Actions para rodar testes unitários e de integração automaticamente em pushes e pull requests na branch main (`.github/workflows/ci.yml`).
+- Refatorados testes de integração das APIs `/api/ground-truth` e `/api/traces` para substituir o mock de `createRouteHandlerClient` pelo novo mock de `createServiceRoleClient`, alinhando com mudanças na camada de acesso ao Supabase.
+- Ajustados testes para manter consistência na serialização JSON e mensagens de erro esperadas.
+  - Arquivos: `src/__tests__/integration/ground-truth-route.test.ts`, `src/__tests__/integration/traces-api.test.ts`, `.github/workflows/ci.yml`
+  - Confiança: alta
+
+## 2026-04-21
+
 ### fix
 - Ajustado uso dos clientes Supabase nas APIs para utilizar `createServiceRoleClient` em vez de `createRouteHandlerClient`, corrigindo problemas de autenticação e sessão nas rotas de avaliações, ground-truth e traces.
 - Melhorada a captura e retorno de detalhes de erro nas respostas JSON das APIs para facilitar diagnóstico.
