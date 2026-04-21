@@ -19,7 +19,7 @@
 - [ ] Migrations fatiadas planejadas (uma por sprint).
 - [ ] Spike `getRAGContext` retorna `chunkIds`/`scores` em PR aprovado (mas ainda não merged se quiser esperar S1).
 - [ ] `vitest`, `msw`, `playwright`, `supertest`, `autocannon` instalados; scripts no `package.json`.
-- [ ] CI (GitHub Actions) executa `npm run test` em PR.
+- [ ] CI (GitHub Actions) executa `npm run test` em PR. *(vitest ainda não instalado — pendente)*
 - [ ] Documento de pré-requisitos commitado ([`./00-stack-e-arquitetura.md`](./00-stack-e-arquitetura.md) atualizado se necessário).
 
 ---
@@ -417,6 +417,19 @@ describe('getRAGContext (com metadata)', () => {
 - ADRs aprovados.
 - Tooling rodando em CI.
 - Backlog do Sprint 1 destrancado.
-- Risco anotado: uso de `pg` em hot path (não introduzir em código novo, mitigar em S6).
+- Risco anotado: uso de `pg` em hot path — **mitigação antecipada em 2026-04-20**: `saveChatMessage`, `getChatHistory` e `checkDuplicateMessage` migrados para Supabase client antes do S6 (incidente em produção acelerou prioridade). Ver FIX-001 em `00-stack-e-arquitetura.md`.
+
+## 9. Estado atual (atualizado 2026-04-21)
+
+| Item | Status | Observação |
+|------|--------|-----------|
+| `ANTHROPIC_API_KEY` provisionada | ⏳ Pendente | Necessária a partir do Sprint 3 |
+| Sampling rate | ✅ Decisão tomada (20%) | Parametrizável via `bot_configurations` |
+| RLS template | ✅ Aplicado | Migrations de S1 já incluem RLS correto |
+| Spike `getRAGContext` | ✅ Entregue | `getRAGContextWithTrace` exportado e em uso no flow |
+| `vitest` instalado | ❌ Não iniciado | Prioridade antes do Sprint 2 |
+| `msw`, `playwright` | ❌ Não iniciado | Prioridade antes do Sprint 3 |
+| CI GitHub Actions | ❌ Não iniciado | — |
+| `@anthropic-ai/sdk` instalado | ❌ Pendente | Necessário no Sprint 3 |
 
 **Próximo:** [`01-traces-fundacao.md`](./01-traces-fundacao.md)

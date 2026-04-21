@@ -46,7 +46,7 @@ Instrumentar o pipeline `chatbotFlow.ts` para que **toda mensagem** que entra pe
 
 ### 3.1 Novos arquivos
 
-#### `supabase/migrations/20260422120000_create_message_traces.sql` *(NOVO)*
+#### `supabase/migrations/20260422130000_create_observability_traces.sql` *(ENTREGUE — aplicado em prod)*
 
 ```sql
 -- ═══════════════════════════════════════════════
@@ -816,7 +816,7 @@ export const TraceDetailSchema = z.object({
 
 ### Migrations e banco
 - [ ] Backup completo antes (`db/backup-complete.bat`)
-- [x] Criar `supabase/migrations/20260422130000_create_observability_traces.sql` (message_traces + retrieval_traces + tool_call_traces)
+- [x] Criar `supabase/migrations/20260422130000_create_observability_traces.sql` (message_traces + retrieval_traces + tool_call_traces) *(nome correto — `120000` no template era rascunho)*
 - [ ] Aplicar em staging: `supabase db push`
 - [ ] Validar manualmente: `INSERT` + `SELECT` com `service_role` funcionam
 - [ ] Validar RLS: operador de cliente A não vê traces de cliente B
@@ -856,8 +856,8 @@ export const TraceDetailSchema = z.object({
 ### Integração no chatbotFlow
 - [x] Adicionar `createTraceLogger` no início de `processChatbotMessage`
 - [ ] Adicionar `markStage` em todos os 11 estágios mapeados
-- [ ] Adicionar `setRetrievalData` após RAG
-- [ ] Adicionar `setGenerationData` após geração
+- [x] Adicionar `setRetrievalData` ap�s RAG
+- [x] Adicionar `setGenerationData` ap�s gera��o
 - [x] Adicionar `markStage('sent')` após `sendWhatsAppMessage`
 - [x] Adicionar `await traceLogger.finish()` ao final (try)
 - [x] Adicionar `setError` + `finish()` no catch
@@ -1491,6 +1491,50 @@ test('envia bloco com 4 dados cadastrais e todos aparecem no card', async ({ req
 
 ---
 
+---
+
+## 8. Hotfixes entregues fora do plano original (2026-04-20/21)
+
+> Incidentes em produção que produziram código já mergeado na `main`.
+
+### 8.1 Migração `pg` → Supabase client (FIX-001)
+
+**Problema:** `pg.Pool` mantém conexão TCP persistente; Vercel congela a função antes do pool liberar a conexão → node 8.5 travava → flow morria antes da IA responder.
+
+**Arquivos corrigidos:**
+- `src/nodes/saveChatMessage.ts` — removido `import { query } from '@/lib/postgres'`, substituído por `createServiceRoleClient()` + `.insert()`
+- `src/nodes/getChatHistory.ts` — idem, substituído por `.select().eq().order().limit()`
+- `src/nodes/checkDuplicateMessage.ts` — idem; ganhou também checagem por `wamid` (ver 8.2)
+
+**Regra permanente:** nenhum node no caminho crítico do webhook pode usar `pg` ou `new Pool()`. Sempre `createServiceRoleClient()`.
+
+### 8.2 Dedupe de webhooks por `wamid` (FIX-002)
+
+**Problema:** Meta entrega o mesmo webhook 2× frequentemente. O check de duplicata usava similaridade de conteúdo em janela de 15s via `pg` (que travava) → retornava `isDuplicate: false` → duas execuções avançavam → node 8.5 da segunda falhava com erro no INSERT → "às vezes não recebia resposta".
+
+**Solução:** `checkDuplicateMessage` agora verifica primeiro se o `wamid` já existe em `n8n_chat_histories` via Supabase client. Se existir → `isDuplicate: true, reason: 'wamid_match'` → flow para limpo (success, não error).
+
+**Item pendente registrado:**
+- [ ] Avaliar mover a checagem de `wamid` para **antes do push ao Redis** (atualmente ocorre após) — buffer Redis pode acumular mensagens duplicadas durante race condition de <300ms entre entregas gêmeas do Meta.
+
+### 8.3 `setImmediate` → `void promise.catch()` (FIX-003)
+
+**Problema:** `setImmediate(() => { traceLogger.finish() })` é deferido para depois do event loop; Vercel pode congelar a função após retornar HTTP 200, nunca executando o callback → traces não eram gravados em produção.
+
+**Solução:** substituído por `void traceLogger.finish().catch(() => {})` (6 ocorrências em `chatbotFlow.ts`). Roda no mesmo tick, antes do possível freeze.
+
+### 8.4 Condição de supressão de erros do trace-logger (FIX-004)
+
+**Problema:** condição estava invertida — suprimia todos os erros que mencionavam "message_traces" (incluindo erros reais de INSERT). Traces silenciosamente falhavam sem log.
+
+**Solução:** condição corrigida para suprimir apenas `"does not exist" || "relation" || "undefined"` (erros de "tabela ainda não existe").
+
+### 8.5 `params` como Promise em Next.js 16 (FIX-005)
+
+**Problema:** `src/app/api/traces/[id]/route.ts` falhou no build do Vercel porque Next.js 15+ requer `params` como `Promise<{ id: string }>` com `await params`.
+
+**Solução:** assinatura corrigida; todos os novos route handlers com params dinâmicos devem usar esse padrão.
+
+---
+
 **Próximo:** [`02-ground-truth.md`](./02-ground-truth.md)
-
-

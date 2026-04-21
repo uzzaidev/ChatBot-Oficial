@@ -2,6 +2,8 @@
 
 Documento transversal que define **como** testamos, **quanto** testamos e **quando** testamos cada camada do sistema. Aplica-se às Sprints 1 a 6 e ao código que sobreviver ao produto.
 
+> **Estado atual (2026-04-21):** `vitest`, `msw` e `playwright` **ainda não estão instalados** no projeto. O plano abaixo é o alvo — a instalação é pré-requisito do Sprint 2. Até lá, a validação é manual (smoke tests descritos em §5.7 de `01-traces-fundacao.md`).
+
 ---
 
 ## 1. Princípios

@@ -10,7 +10,7 @@
 
 | Camada | Tecnologia | Versão | Uso |
 |--------|-----------|--------|-----|
-| Runtime | Next.js | 14 (App Router) | Webhook, APIs, Dashboard |
+| Runtime | Next.js | 16 (App Router) | Webhook, APIs, Dashboard |
 | Lang | TypeScript | 5.x | Toda codebase |
 | Hospedagem | Vercel (serverless) | — | Functions com timeout 60s (Pro) |
 | Banco | Supabase PostgreSQL | 15+ | Tabelas + Vault + pgvector |
@@ -505,4 +505,18 @@ npm run eval-suite     # script custom
 
 ---
 
-*Documento de stack v1.0 — atualizar quando libs ou versões mudarem.*
+---
+
+## 11. Decisões técnicas registradas em produção (pós-incidente)
+
+> Incidentes ocorridos durante a implementação do Sprint 1 que produziram decisões permanentes.
+
+| # | Decisão | Data | Contexto |
+|---|---------|------|---------|
+| FIX-001 | **Nunca usar `pg.Pool` em nodes do flow** | 2026-04-20 | `saveChatMessage`, `getChatHistory`, `checkDuplicateMessage` causavam hang no Vercel serverless. Migrados para Supabase client (HTTP stateless). Todos os novos nodes devem usar `createServiceRoleClient()`. |
+| FIX-002 | **Dedupe de webhooks por `wamid` antes de qualquer processamento** | 2026-04-21 | Meta entrega o mesmo webhook 2× frequentemente. Checar `wamid` no banco no início do flow (node 8) evita duplicate AI responses e errors desnecessários. |
+| FIX-003 | **`void promise.catch()` em vez de `setImmediate()`** | 2026-04-20 | `setImmediate` pode nunca disparar se Vercel congela a função após retornar HTTP 200. `void traceLogger.finish().catch()` roda no mesmo tick antes do freeze. |
+| FIX-004 | **Condição de supressão de erros do trace-logger deve ser específica** | 2026-04-20 | Condição invertida estava suprimindo todos os erros de insert em `message_traces`. Corrigida: suprimir apenas "relation does not exist" (tabela ainda não criada). |
+| FIX-005 | **`params` em route handlers do Next.js 15+ é Promise** | 2026-04-20 | `{ params }: { params: Promise<{ id: string }> }` + `await params` obrigatório em todos os novos route handlers com params dinâmicos. |
+
+*Documento de stack v1.1 — atualizado em 2026-04-21.*
