@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.submit_human_feedback_atomic(UUID,UUID,UUID,TEXT,TEXT,TEXT,TEXT,BOOLEAN,TEXT,TEXT,JSONB) TO authenticated;

@@ -1,23 +1,26 @@
-import { createRouteHandlerClient, getClientIdFromSession } from "@/lib/supabase-server";
+import { createServiceRoleClient } from "@/lib/supabase";
+import { getClientIdFromSession } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
 // GET /api/traces/[id] — full trace detail with retrieval + tool_calls
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let clientId: string | null = null;
+
   try {
-    const supabase = await createRouteHandlerClient(_request);
     const { id } = await params;
 
-    const clientId = await getClientIdFromSession(_request);
+    clientId = await getClientIdFromSession(request);
     if (!clientId) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
 
-    // Fetch trace (RLS will restrict to tenant)
+    const supabase = createServiceRoleClient();
+
     const { data: trace, error: traceError } = await (supabase as any)
       .from("message_traces")
       .select("*")
@@ -25,11 +28,18 @@ export async function GET(
       .eq("client_id", clientId)
       .single();
 
-    if (traceError || !trace) {
+    if (traceError) {
+      const msg = String(traceError.message ?? "").toLowerCase();
+      if (msg.includes("does not exist") || msg.includes("relation")) {
+        return NextResponse.json({ error: "traces_tables_missing" }, { status: 503 });
+      }
       return NextResponse.json({ error: "not_found" }, { status: 404 });
     }
 
-    // Fetch retrieval trace
+    if (!trace) {
+      return NextResponse.json({ error: "not_found" }, { status: 404 });
+    }
+
     const { data: retrieval } = await (supabase as any)
       .from("retrieval_traces")
       .select(
@@ -38,7 +48,6 @@ export async function GET(
       .eq("trace_id", id)
       .maybeSingle();
 
-    // Fetch tool calls (ordered by sequence)
     const { data: toolCalls } = await (supabase as any)
       .from("tool_call_traces")
       .select(
@@ -57,9 +66,10 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error("[GET /api/traces/[id]]", error);
+    const detail = error instanceof Error ? error.message : String(error);
+    console.error("[GET /api/traces/[id]] (clientId=%s):", clientId, error);
     return NextResponse.json(
-      { error: "internal_server_error" },
+      { error: "internal_server_error", detail },
       { status: 500 }
     );
   }

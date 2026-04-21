@@ -1,12 +1,14 @@
-import { createRouteHandlerClient, getClientIdFromSession } from "@/lib/supabase-server";
+import { createServiceRoleClient } from "@/lib/supabase";
+import { getClientIdFromSession } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
 // GET /api/traces?from=ISO&to=ISO&phone=X&status=Y&limit=50&offset=0
 export async function GET(request: NextRequest) {
+  let clientId: string | null = null;
+
   try {
-    const supabase = await createRouteHandlerClient(request);
     const { searchParams } = request.nextUrl;
 
     const from = searchParams.get("from");
@@ -16,11 +18,14 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(Number(searchParams.get("limit") ?? "50"), 200);
     const offset = Number(searchParams.get("offset") ?? "0");
 
-    // Resolve client_id using shared auth helper (supports cookie + bearer token)
-    const clientId = await getClientIdFromSession(request);
+    // Auth: resolve client_id (supports cookie + bearer token)
+    clientId = await getClientIdFromSession(request);
     if (!clientId) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
+
+    // Use service-role client to avoid RLS + session-refresh issues on the read path
+    const supabase = createServiceRoleClient();
 
     let query = (supabase as any)
       .from("message_traces")
@@ -42,16 +47,24 @@ export async function GET(request: NextRequest) {
     const { data, error } = await query;
     if (error) {
       const message = String(error.message ?? "").toLowerCase();
-      if (message.includes("does not exist") || message.includes("relation")) {
+      if (
+        message.includes("does not exist") ||
+        message.includes("relation") ||
+        message.includes("undefined")
+      ) {
         return NextResponse.json(
           {
             error: "traces_tables_missing",
-            hint: "Apply migration 20260422130000_create_observability_traces.sql",
+            hint: "Run: supabase db push (migration 20260422130000_create_observability_traces.sql not applied)",
           },
           { status: 503 },
         );
       }
-      throw error;
+      console.error("[GET /api/traces] DB error:", error);
+      return NextResponse.json(
+        { error: "db_error", detail: error.message },
+        { status: 500 }
+      );
     }
 
     // Cost aggregation for the current day
@@ -79,9 +92,10 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("[GET /api/traces]", error);
+    const detail = error instanceof Error ? error.message : String(error);
+    console.error("[GET /api/traces] Unexpected error (clientId=%s):", clientId, error);
     return NextResponse.json(
-      { error: "internal_server_error" },
+      { error: "internal_server_error", detail },
       { status: 500 }
     );
   }

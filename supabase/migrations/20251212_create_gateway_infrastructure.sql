@@ -42,8 +42,8 @@ CREATE TABLE IF NOT EXISTS gateway_configurations (
 );
 
 -- Indexes
-CREATE INDEX idx_gateway_configurations_client_id ON gateway_configurations(client_id);
-CREATE INDEX idx_gateway_configurations_use_gateway ON gateway_configurations(use_gateway) WHERE use_gateway = true;
+CREATE INDEX IF NOT EXISTS idx_gateway_configurations_client_id ON gateway_configurations(client_id);
+CREATE INDEX IF NOT EXISTS idx_gateway_configurations_use_gateway ON gateway_configurations(use_gateway) WHERE use_gateway = true;
 
 -- Updated trigger
 CREATE OR REPLACE FUNCTION update_gateway_configurations_updated_at()
@@ -122,9 +122,9 @@ CREATE TABLE IF NOT EXISTS ai_models_registry (
 );
 
 -- Indexes
-CREATE INDEX idx_ai_models_registry_provider ON ai_models_registry(provider);
-CREATE INDEX idx_ai_models_registry_is_active ON ai_models_registry(is_active) WHERE is_active = true;
-CREATE INDEX idx_ai_models_registry_gateway_identifier ON ai_models_registry(gateway_identifier);
+CREATE INDEX IF NOT EXISTS idx_ai_models_registry_provider ON ai_models_registry(provider);
+CREATE INDEX IF NOT EXISTS idx_ai_models_registry_is_active ON ai_models_registry(is_active) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_ai_models_registry_gateway_identifier ON ai_models_registry(gateway_identifier);
 
 -- Updated trigger
 CREATE TRIGGER ai_models_registry_updated_at
@@ -196,13 +196,13 @@ CREATE TABLE IF NOT EXISTS gateway_usage_logs (
 );
 
 -- Indexes
-CREATE INDEX idx_gateway_usage_logs_client_id ON gateway_usage_logs(client_id);
-CREATE INDEX idx_gateway_usage_logs_conversation_id ON gateway_usage_logs(conversation_id);
-CREATE INDEX idx_gateway_usage_logs_created_at ON gateway_usage_logs(created_at DESC);
-CREATE INDEX idx_gateway_usage_logs_provider ON gateway_usage_logs(provider);
-CREATE INDEX idx_gateway_usage_logs_model_name ON gateway_usage_logs(model_name);
-CREATE INDEX idx_gateway_usage_logs_was_cached ON gateway_usage_logs(was_cached);
-CREATE INDEX idx_gateway_usage_logs_was_fallback ON gateway_usage_logs(was_fallback);
+CREATE INDEX IF NOT EXISTS idx_gateway_usage_logs_client_id ON gateway_usage_logs(client_id);
+CREATE INDEX IF NOT EXISTS idx_gateway_usage_logs_conversation_id ON gateway_usage_logs(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_gateway_usage_logs_created_at ON gateway_usage_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_gateway_usage_logs_provider ON gateway_usage_logs(provider);
+CREATE INDEX IF NOT EXISTS idx_gateway_usage_logs_model_name ON gateway_usage_logs(model_name);
+CREATE INDEX IF NOT EXISTS idx_gateway_usage_logs_was_cached ON gateway_usage_logs(was_cached);
+CREATE INDEX IF NOT EXISTS idx_gateway_usage_logs_was_fallback ON gateway_usage_logs(was_fallback);
 
 -- RLS Policies
 ALTER TABLE gateway_usage_logs ENABLE ROW LEVEL SECURITY;
@@ -271,9 +271,9 @@ CREATE TABLE IF NOT EXISTS gateway_cache_performance (
 );
 
 -- Indexes
-CREATE INDEX idx_gateway_cache_performance_client_id ON gateway_cache_performance(client_id);
-CREATE INDEX idx_gateway_cache_performance_date ON gateway_cache_performance(date DESC);
-CREATE INDEX idx_gateway_cache_performance_client_date ON gateway_cache_performance(client_id, date DESC);
+CREATE INDEX IF NOT EXISTS idx_gateway_cache_performance_client_id ON gateway_cache_performance(client_id);
+CREATE INDEX IF NOT EXISTS idx_gateway_cache_performance_date ON gateway_cache_performance(date DESC);
+CREATE INDEX IF NOT EXISTS idx_gateway_cache_performance_client_date ON gateway_cache_performance(client_id, date DESC);
 
 -- Updated trigger
 CREATE TRIGGER gateway_cache_performance_updated_at

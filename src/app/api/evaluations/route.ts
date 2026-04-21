@@ -1,4 +1,5 @@
-﻿import { createRouteHandlerClient, getClientIdFromSession } from "@/lib/supabase-server";
+﻿import { createServiceRoleClient } from "@/lib/supabase";
+import { getClientIdFromSession } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +12,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
 
-    const supabase = await createRouteHandlerClient(request);
+    const supabase = createServiceRoleClient();
     const params = request.nextUrl.searchParams;
 
     const verdict = params.get("verdict");
@@ -82,8 +83,9 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
     console.error("[GET /api/evaluations]", error);
-    return NextResponse.json({ error: "internal_server_error" }, { status: 500 });
+    return NextResponse.json({ error: "internal_server_error", detail }, { status: 500 });
   }
 }
 

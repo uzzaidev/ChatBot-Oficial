@@ -114,7 +114,7 @@ $$ LANGUAGE plpgsql;
 DROP TABLE IF EXISTS clients CASCADE;
 
 -- 2.3: Criar tabela clients
-CREATE TABLE clients (
+CREATE TABLE IF NOT EXISTS clients (
   -- Identificação
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
@@ -184,8 +184,8 @@ COMMENT ON COLUMN clients.meta_app_secret_secret_id IS
 DIFFERENT from meta_verify_token_secret_id (used for webhook verification).';
 
 -- 2.5: Índices
-CREATE UNIQUE INDEX idx_clients_slug ON clients(slug);
-CREATE INDEX idx_clients_status ON clients(status) WHERE status = 'active';
+CREATE UNIQUE INDEX IF NOT EXISTS idx_clients_slug ON clients(slug);
+CREATE INDEX IF NOT EXISTS idx_clients_status ON clients(status) WHERE status = 'active';
 
 -- 2.6: Trigger para updated_at
 DROP TRIGGER IF EXISTS update_clients_updated_at ON clients;

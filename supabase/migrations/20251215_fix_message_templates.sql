@@ -30,7 +30,7 @@ COMMENT ON COLUMN public.clients.whatsapp_business_account_id IS
 DROP TABLE IF EXISTS public.message_templates CASCADE;
 
 -- Recreate with proper configuration
-CREATE TABLE public.message_templates (
+CREATE TABLE IF NOT EXISTS public.message_templates (
   -- Primary Key (using gen_random_uuid, no sequence needed)
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   
@@ -68,16 +68,16 @@ CREATE TABLE public.message_templates (
 -- 3. CREATE INDEXES
 -- =====================================================
 
-CREATE INDEX idx_templates_client_id 
+CREATE INDEX IF NOT EXISTS idx_templates_client_id 
   ON public.message_templates(client_id);
 
-CREATE INDEX idx_templates_status 
+CREATE INDEX IF NOT EXISTS idx_templates_status 
   ON public.message_templates(status);
 
-CREATE INDEX idx_templates_client_status 
+CREATE INDEX IF NOT EXISTS idx_templates_client_status 
   ON public.message_templates(client_id, status);
 
-CREATE INDEX idx_templates_name 
+CREATE INDEX IF NOT EXISTS idx_templates_name 
   ON public.message_templates(name);
 
 -- =====================================================

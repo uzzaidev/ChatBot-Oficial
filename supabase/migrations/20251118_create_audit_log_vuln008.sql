@@ -57,34 +57,34 @@ CREATE TABLE IF NOT EXISTS public.audit_logs (
 -- ================================================================
 
 -- Índice principal: buscar por timestamp (queries mais comuns)
-CREATE INDEX idx_audit_logs_created_at 
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at 
   ON public.audit_logs(created_at DESC);
 
 -- Índice para filtrar por usuário
-CREATE INDEX idx_audit_logs_user_id 
+CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id 
   ON public.audit_logs(user_id) 
   WHERE user_id IS NOT NULL;
 
 -- Índice para filtrar por cliente (tenant isolation)
-CREATE INDEX idx_audit_logs_client_id 
+CREATE INDEX IF NOT EXISTS idx_audit_logs_client_id 
   ON public.audit_logs(client_id) 
   WHERE client_id IS NOT NULL;
 
 -- Índice para buscar por tipo de recurso
-CREATE INDEX idx_audit_logs_resource 
+CREATE INDEX IF NOT EXISTS idx_audit_logs_resource 
   ON public.audit_logs(resource_type, resource_id);
 
 -- Índice para buscar por ação
-CREATE INDEX idx_audit_logs_action 
+CREATE INDEX IF NOT EXISTS idx_audit_logs_action 
   ON public.audit_logs(action);
 
 -- Índice composto: usuário + timestamp (para user activity timeline)
-CREATE INDEX idx_audit_logs_user_activity 
+CREATE INDEX IF NOT EXISTS idx_audit_logs_user_activity 
   ON public.audit_logs(user_id, created_at DESC) 
   WHERE user_id IS NOT NULL;
 
 -- Índice composto: cliente + timestamp (para client activity timeline)
-CREATE INDEX idx_audit_logs_client_activity 
+CREATE INDEX IF NOT EXISTS idx_audit_logs_client_activity 
   ON public.audit_logs(client_id, created_at DESC) 
   WHERE client_id IS NOT NULL;
 

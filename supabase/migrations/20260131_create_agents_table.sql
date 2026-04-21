@@ -60,13 +60,13 @@ CREATE TABLE IF NOT EXISTS agents (
 );
 
 -- Only ONE active agent per client (when is_active = true)
-CREATE UNIQUE INDEX idx_agents_active_per_client
+CREATE UNIQUE INDEX IF NOT EXISTS idx_agents_active_per_client
 ON agents(client_id) WHERE is_active = true AND is_archived = false;
 
 -- Standard indexes
-CREATE INDEX idx_agents_client_id ON agents(client_id);
-CREATE INDEX idx_agents_slug ON agents(client_id, slug);
-CREATE INDEX idx_agents_is_active ON agents(is_active) WHERE is_archived = false;
+CREATE INDEX IF NOT EXISTS idx_agents_client_id ON agents(client_id);
+CREATE INDEX IF NOT EXISTS idx_agents_slug ON agents(client_id, slug);
+CREATE INDEX IF NOT EXISTS idx_agents_is_active ON agents(is_active) WHERE is_archived = false;
 
 -- Trigger for updated_at
 CREATE OR REPLACE FUNCTION update_agents_updated_at()
@@ -155,8 +155,8 @@ CREATE TABLE IF NOT EXISTS agent_versions (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_agent_versions_agent ON agent_versions(agent_id);
-CREATE INDEX idx_agent_versions_number ON agent_versions(agent_id, version_number DESC);
+CREATE INDEX IF NOT EXISTS idx_agent_versions_agent ON agent_versions(agent_id);
+CREATE INDEX IF NOT EXISTS idx_agent_versions_number ON agent_versions(agent_id, version_number DESC);
 
 -- RLS for agent_versions
 ALTER TABLE agent_versions ENABLE ROW LEVEL SECURITY;
@@ -267,10 +267,10 @@ CREATE TABLE IF NOT EXISTS agent_experiments (
 );
 
 -- Only ONE active experiment per client
-CREATE UNIQUE INDEX idx_experiments_active_per_client
+CREATE UNIQUE INDEX IF NOT EXISTS idx_experiments_active_per_client
 ON agent_experiments(client_id) WHERE is_active = true;
 
-CREATE INDEX idx_experiments_client ON agent_experiments(client_id);
+CREATE INDEX IF NOT EXISTS idx_experiments_client ON agent_experiments(client_id);
 
 -- RLS for agent_experiments
 ALTER TABLE agent_experiments ENABLE ROW LEVEL SECURITY;
@@ -311,8 +311,8 @@ CREATE TABLE IF NOT EXISTS experiment_assignments (
   UNIQUE(experiment_id, phone)
 );
 
-CREATE INDEX idx_assignments_experiment ON experiment_assignments(experiment_id);
-CREATE INDEX idx_assignments_phone ON experiment_assignments(experiment_id, phone);
+CREATE INDEX IF NOT EXISTS idx_assignments_experiment ON experiment_assignments(experiment_id);
+CREATE INDEX IF NOT EXISTS idx_assignments_phone ON experiment_assignments(experiment_id, phone);
 
 -- RLS for experiment_assignments
 ALTER TABLE experiment_assignments ENABLE ROW LEVEL SECURITY;

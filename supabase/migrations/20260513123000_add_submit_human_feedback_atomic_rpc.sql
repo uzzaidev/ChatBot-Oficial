@@ -226,45 +226,4 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.submit_human_feedback_atomic(
-  UUID,
-  UUID,
-  UUID,
-  TEXT,
-  TEXT,
-  TEXT,
-  TEXT,
-  BOOLEAN,
-  TEXT,
-  TEXT,
-  JSONB
-) TO authenticated;
-
-GRANT EXECUTE ON FUNCTION public.submit_human_feedback_atomic(
-  UUID,
-  UUID,
-  UUID,
-  TEXT,
-  TEXT,
-  TEXT,
-  TEXT,
-  BOOLEAN,
-  TEXT,
-  TEXT,
-  JSONB
-) TO service_role;
-
-COMMENT ON FUNCTION public.submit_human_feedback_atomic(
-  UUID,
-  UUID,
-  UUID,
-  TEXT,
-  TEXT,
-  TEXT,
-  TEXT,
-  BOOLEAN,
-  TEXT,
-  TEXT,
-  JSONB
-) IS
-  'Atomically upserts human feedback and optionally promotes correction to ground_truth in a single transaction.';
+-- GRANTs are applied in 20260513124000_grant_submit_human_feedback_rpc.sql

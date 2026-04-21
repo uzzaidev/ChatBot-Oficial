@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS shared_gateway_config (
 );
 
 -- Only ONE record allowed in this table
-CREATE UNIQUE INDEX idx_shared_gateway_config_singleton ON shared_gateway_config ((true));
+CREATE UNIQUE INDEX IF NOT EXISTS idx_shared_gateway_config_singleton ON shared_gateway_config ((true));
 
 -- Updated trigger
 CREATE OR REPLACE FUNCTION update_shared_gateway_config_updated_at()

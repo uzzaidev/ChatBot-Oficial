@@ -35,15 +35,15 @@ CREATE TABLE IF NOT EXISTS public.webhook_dedup (
 -- ================================================================
 
 -- Índice principal: busca rápida por dedup_key
-CREATE INDEX idx_webhook_dedup_key 
+CREATE INDEX IF NOT EXISTS idx_webhook_dedup_key 
   ON public.webhook_dedup(dedup_key);
 
 -- Índice para cleanup por timestamp
-CREATE INDEX idx_webhook_dedup_processed_at 
+CREATE INDEX IF NOT EXISTS idx_webhook_dedup_processed_at 
   ON public.webhook_dedup(processed_at);
 
 -- Índice composto para lookup por client_id + message_id
-CREATE INDEX idx_webhook_dedup_composite 
+CREATE INDEX IF NOT EXISTS idx_webhook_dedup_composite 
   ON public.webhook_dedup(client_id, message_id);
 
 -- ================================================================

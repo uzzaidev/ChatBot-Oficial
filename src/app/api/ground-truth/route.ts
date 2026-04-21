@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import {
-  createRouteHandlerClient,
-  getClientIdFromSession,
-} from "@/lib/supabase-server";
+import { createServiceRoleClient } from "@/lib/supabase";
+import { getClientIdFromSession } from "@/lib/supabase-server";
 import { generateEmbedding } from "@/lib/openai";
 
 export const dynamic = "force-dynamic";
@@ -31,7 +29,7 @@ const CreateSchema = z.object({
 });
 
 const getUserIdFromRequest = async (request: NextRequest) => {
-  const supabase = await createRouteHandlerClient(request);
+  const supabase = createServiceRoleClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -45,7 +43,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
 
-    const supabase = await createRouteHandlerClient(request);
+    const supabase = createServiceRoleClient();
     const params = ListSchema.parse(Object.fromEntries(request.nextUrl.searchParams));
 
     let query = (supabase as any)
@@ -113,7 +111,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createRouteHandlerClient(request);
+    const supabase = createServiceRoleClient();
     const { data, error } = await (supabase as any)
       .from("ground_truth")
       .insert({

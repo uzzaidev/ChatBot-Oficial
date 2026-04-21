@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS public.openai_usage_cache (
 );
 
 -- Index for fast queries by client + date range
-CREATE INDEX idx_openai_usage_cache_client_date 
+CREATE INDEX IF NOT EXISTS idx_openai_usage_cache_client_date 
   ON public.openai_usage_cache(client_id, usage_date DESC);
 
 -- Enable RLS
