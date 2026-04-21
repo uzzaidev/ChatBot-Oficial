@@ -6,6 +6,39 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-21
 
+### feat
+- Implementado módulo Ground Truth para criação e manutenção de gabarito de perguntas e respostas por cliente, com versionamento imutável e busca semântica via pgvector.
+- Criadas APIs REST para gerenciamento de Ground Truth, incluindo listagem, criação, edição (nova versão), exclusão lógica, validação e promoção de message trace para ground truth.
+- Desenvolvido dashboard de qualidade com páginas e componentes React para gerenciar Ground Truth e visualizar métricas e avaliações do juiz automático.
+- Adicionadas integrações para avaliação automática de respostas do agente via novo worker, com armazenamento de avaliações e estatísticas.
+- Implementadas migrações SQL para criação das tabelas `ground_truth` e `agent_evaluations`.
+- Adicionado controle de acesso via RLS e isolamento por tenant nas APIs.
+- Criado testes de integração e unitários para APIs, hooks, avaliação e matcher de Ground Truth.
+- Incluído verificação antecipada de mensagens duplicadas no fluxo do chatbot para evitar processamento e inserção redundante.
+- Atualizado navegação do dashboard para incluir links para as novas páginas de Qualidade e Ground Truth com badges "new".
+
+  - Arquivos principais:  
+    `src/app/api/ground-truth/*.ts`,  
+    `src/app/api/evaluations/*.ts`,  
+    `src/components/quality/*`,  
+    `src/hooks/useGroundTruth.ts`,  
+    `src/hooks/useEvaluations.ts`,  
+    `src/lib/evaluation-engine.ts`,  
+    `src/lib/evaluation-worker.ts`,  
+    `src/lib/ground-truth-matcher.ts`,  
+    `src/flows/chatbotFlow.ts`,  
+    `src/components/DashboardNavigation.tsx`,  
+    `docs/features/ground-truth.md`,  
+    `docs/tables/tabelas.md`,  
+    `twin-plans/sprints/02-ground-truth.md`,  
+    `twin-plans/sprints/03-juiz-automatico.md`,  
+    `supabase/migrations/20260429120000_create_ground_truth.sql`,  
+    `supabase/migrations/20260506120000_create_agent_evaluations.sql`
+
+  - Confiança: alta
+
+## 2026-04-21
+
 ### docs
 - Atualizado guia de setup local para uso do gerenciador de pacotes pnpm em vez de npm, com comandos ajustados no arquivo `twin-plans/sprints/00-stack-e-arquitetura.md`.
 - Documentada estratégia e metas para pipelines de CI/CD futuras, incluindo status e cronogramas esperados para criação dos workflows no GitHub Actions, em `twin-plans/sprints/QA-STRATEGY.md`.
