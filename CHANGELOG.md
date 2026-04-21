@@ -6,6 +6,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-21
 
+### fix
+- Ajustado fluxo para realizar chamada de follow-up à IA após registrar dado cadastral quando a resposta inicial estiver vazia, garantindo que o usuário sempre receba uma mensagem
+  - Arquivos: `src/flows/chatbotFlow.ts`
+  - Evidência: implementação de lógica condicional para gerar resposta adicional se conteúdo estiver vazio após ferramenta de metadata
+  - Confiança: alta
+
+## 2026-04-21
+
 ### feat
 - Finalizado hardening e diagnósticos das APIs de traces, incluindo autenticação multi-tenant via clientId e tratamento robusto de erros.
 - Adicionado endpoint `/api/traces/health` para diagnóstico do estado das tabelas de traces e sugestões de ações.
