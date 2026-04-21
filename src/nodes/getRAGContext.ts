@@ -17,21 +17,30 @@ export interface GetRAGContextInput {
   maxResults?: number;
 }
 
-export const getRAGContext = async (
+export interface RAGTraceData {
+  chunkIds: string[];
+  similarityScores: number[];
+  topK: number;
+  threshold: number;
+  strategy: string;
+}
+
+export interface GetRAGContextOutput {
+  context: string;
+  traceData: RAGTraceData | null;
+}
+
+export const getRAGContextWithTrace = async (
   input: GetRAGContextInput,
-): Promise<string> => {
+): Promise<GetRAGContextOutput> => {
   const { query, clientId, openaiApiKey } = input;
 
   try {
-    // 🔧 Get configuration from bot_configurations table
     let similarityThreshold = input.similarityThreshold;
     let maxResults = input.maxResults;
 
     if (similarityThreshold === undefined) {
-      const configValue = await getBotConfig(
-        clientId,
-        "rag:similarity_threshold",
-      );
+      const configValue = await getBotConfig(clientId, "rag:similarity_threshold");
       similarityThreshold = configValue !== null ? Number(configValue) : 0.7;
     }
 
@@ -40,15 +49,9 @@ export const getRAGContext = async (
       maxResults = configValue !== null ? Number(configValue) : 5;
     }
 
-    // Gerar embedding da query
-    const embeddingResult = await generateEmbedding(
-      query,
-      openaiApiKey,
-      clientId,
-    );
+    const embeddingResult = await generateEmbedding(query, openaiApiKey, clientId);
     const supabase = await createServerClient();
 
-    // Buscar documentos similares (multi-tenant)
     const { data, error } = await supabase.rpc("match_documents", {
       query_embedding: embeddingResult.embedding,
       match_threshold: similarityThreshold,
@@ -61,25 +64,48 @@ export const getRAGContext = async (
     }
 
     if (!data || data.length === 0) {
-      return "";
+      return {
+        context: "",
+        traceData: {
+          chunkIds: [],
+          similarityScores: [],
+          topK: maxResults,
+          threshold: similarityThreshold,
+          strategy: "cosine_top_k",
+        },
+      };
     }
 
     const documents = data as MatchedDocument[];
-    documents.forEach((doc, i) => {
-      const preview = doc.content.substring(0, 80);
-    });
-
-    const concatenatedContent = documents
-      .map((doc, i) =>
-        `[Documento ${i + 1} - Relevância: ${
-          (doc.similarity * 100).toFixed(1)
-        }%]\n${doc.content}`
+    const context = documents
+      .map(
+        (doc, i) =>
+          `[Documento ${i + 1} - Relevancia: ${(doc.similarity * 100).toFixed(1)}%]\n${doc.content}`,
       )
       .join("\n\n---\n\n");
 
-    return concatenatedContent;
-  } catch (error) {
-    // Se der erro, retorna vazio ao invés de quebrar o fluxo
-    return "";
+    return {
+      context,
+      traceData: {
+        chunkIds: documents.map((doc) => doc.id),
+        similarityScores: documents.map((doc) => doc.similarity),
+        topK: maxResults,
+        threshold: similarityThreshold,
+        strategy: "cosine_top_k",
+      },
+    };
+  } catch {
+    return {
+      context: "",
+      traceData: null,
+    };
   }
 };
+
+export const getRAGContext = async (
+  input: GetRAGContextInput,
+): Promise<string> => {
+  const result = await getRAGContextWithTrace(input);
+  return result.context;
+};
+
