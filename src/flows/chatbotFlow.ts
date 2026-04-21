@@ -2217,8 +2217,26 @@ export const processChatbotMessage = async (
     });
 
     if (!aiResponse.content || aiResponse.content.trim().length === 0) {
-      logger.finishExecution("success");
-      return { success: true, messagesSent: 0 };
+      const firstName = (parsedMessage.name || "").trim().split(/\s+/)[0] || "";
+      const fallbackPrefix = firstName ? `Perfeito, ${firstName}.` : "Perfeito.";
+      aiResponse.content =
+        `${fallbackPrefix} Posso te ajudar com informacoes sobre as aulas de Yoga, ` +
+        "horarios e como comecar. Voce prefere manha, tarde ou noite?";
+
+      traceLogger.setGenerationData({
+        model: aiResponse.model || "unknown",
+        tokensInput: aiResponse.usage?.prompt_tokens ?? 0,
+        tokensOutput: aiResponse.usage?.completion_tokens ?? 0,
+        costUsd: 0,
+        response: aiResponse.content,
+      });
+
+      logger.logNodeWarning("15.99. Empty AI Content Safeguard", {
+        warning: "empty_content_after_generation",
+        toolCallCount: aiResponse.toolCalls?.length || 0,
+        metadataToolTriggered,
+        fallbackInjected: true,
+      });
     }
 
     // NODE 13: Format Response (configurável)
