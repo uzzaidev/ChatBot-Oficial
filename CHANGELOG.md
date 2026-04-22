@@ -8,6 +8,16 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-22
 
+### fix
+- Reforçado fallback seguro para tenants sem prompt customizado, evitando vieses de domínio e melhorando rastreamento de telemetria com estimativa de custo por token para respostas de IA.
+- Ajustado fallback de resposta padrão para mensagem genérica e neutra, com marcação explícita de fallback e motivo.
+- Adicionados marcadores de estágios de embedding e retrieval para rastreamento detalhado no fluxo de chatbot.
+  - Arquivos: `src/flows/chatbotFlow.ts`, `src/nodes/generateAIResponse.ts`
+  - Evidência: implementação de função `estimateTraceCostUsd`, uso do fallback neutro no prompt padrão, e logs de trace em pontos-chave do fluxo.
+  - Confiança: alta
+
+## 2026-04-22
+
 ### chore
 - Migrado CI para usar pnpm em vez de npm, ajustando cache e comandos no workflow `.github/workflows/ci.yml`.
 - Adicionado suporte a Vitest, MSW e Playwright com novas dependências no `package.json` e arquivos de configuração.
