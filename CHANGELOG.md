@@ -8,6 +8,18 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-22
 
+### feat
+- Atualizado o modelo OpenAI padrão para `gpt-5-nano` em múltiplos componentes, incluindo autenticação Meta, onboarding e cliente AI direto
+  - Arquivos: `src/app/api/auth/meta/callback/route.ts`, `src/app/api/auth/meta/embedded-signup/route.ts`, `src/app/onboarding/page.tsx`, `src/lib/direct-ai-client.ts`
+  - Confiança: alta
+
+### test
+- Adicionado script de teste para validação do modelo `gpt-5-nano` via Vault e chamada direta à API OpenAI
+  - Arquivos: `tmp/test-gpt5-nano.mjs`
+  - Confiança: alta
+
+## 2026-04-22
+
 ### refactor
 - Refatorado código para melhorar legibilidade e observabilidade em `chatbotFlow.ts` e `crm-automation-engine.ts`.
 - Adicionada invalidação de cache WABA após restauração de versão do agente e atualização de configurações para efeito imediato (`src/app/api/agents/[id]/versions/[versionId]/restore/route.ts` e `src/app/api/flow/nodes/[nodeId]/route.ts`).
