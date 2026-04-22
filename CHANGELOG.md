@@ -6,6 +6,16 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-04-22
+
+### fix
+- Ajustado para preservar registros de traces com status `success` em esquemas antigos que não suportam esse valor, aplicando fallback para `pending` e mantendo metadados de compatibilidade.
+- Atualizado componente de traces para incluir status `success` em filtros e legendas.
+- Adicionada migração para permitir o status `success` na tabela `message_traces`, atualizando restrição CHECK para compatibilidade retroativa.
+  - Arquivos: `src/lib/trace-logger.ts`, `src/components/TracesClient.tsx`, `supabase/migrations/20260421211000_fix_message_traces_status_success.sql`, `supabase/migrations/20260422130000_create_observability_traces.sql`
+  - Evidência: retry com status `pending` em caso de erro de restrição, alteração da constraint no banco e inclusão do status na UI
+  - Confiança: alta
+
 ## 2026-04-21
 
 ### fix
