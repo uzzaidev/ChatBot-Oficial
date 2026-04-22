@@ -8,6 +8,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-22
 
+### chore
+- Removido script de teste depreciado para o modelo gpt-5-nano
+  - Arquivos: `tmp/test-gpt5-nano.mjs`
+  - Confiança: alta
+
+## 2026-04-22
+
 ### feat
 - Atualizado o modelo OpenAI padrão para `gpt-5-nano` em múltiplos componentes, incluindo autenticação Meta, onboarding e cliente AI direto
   - Arquivos: `src/app/api/auth/meta/callback/route.ts`, `src/app/api/auth/meta/embedded-signup/route.ts`, `src/app/onboarding/page.tsx`, `src/lib/direct-ai-client.ts`
