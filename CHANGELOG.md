@@ -8,6 +8,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-22
 
+### refactor
+- Removidos logs de console desnecessários e melhorado o formato de logs em módulos relacionados à IA para maior clareza e limpeza do código.
+- Ajustado timeout do LLM de 2000ms para 5000ms em `crm-intent-classifier.ts`.
+  - Arquivos: `src/lib/crm-automation-engine.ts`, `src/lib/crm-intent-classifier.ts`, `src/lib/direct-ai-client.ts`, `src/lib/direct-ai-tracking.ts`
+  - Confiança: alta
+
+## 2026-04-22
+
 ### chore
 - Removido script de teste depreciado para o modelo gpt-5-nano
   - Arquivos: `tmp/test-gpt5-nano.mjs`
