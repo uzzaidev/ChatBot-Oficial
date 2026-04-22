@@ -8,6 +8,15 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-22
 
+### feat
+- Adicionado prompt Umana v2 focado em atendimento consultivo com regras claras de gating para agendamento e uso prioritário de RAG (Recuperação de Informação) para respostas factuais.
+- Criado pacote de conhecimento RAG para Umana Rio Branco com documentos separados para identidade, horários, planos, equipe, localização e FAQ, visando reduzir o tamanho do prompt e aumentar a consistência das respostas.
+- Implementada sanitização de markdown para mensagens WhatsApp, removendo cabeçalhos, negrito, itálico, código e outros elementos para garantir texto simples e legível no canal.
+  - Arquivos: `docs/prompts/Umana Rio Branco/prompt.2umana.md`, `docs/prompts/Umana Rio Branco/rag/00_MAPA_RAG_UMANA.md`, `docs/prompts/Umana Rio Branco/rag/01_UMANA_IDENTIDADE_E_FILOSOFIA.md`, `docs/prompts/Umana Rio Branco/rag/02_UMANA_HORARIOS_E_AULAS_RIO_BRANCO.md`, `docs/prompts/Umana Rio Branco/rag/03_UMANA_PLANOS_E_VALORES.md`, `docs/prompts/Umana Rio Branco/rag/04_UMANA_PROFESSORES_EQUIPE.md`, `docs/prompts/Umana Rio Branco/rag/05_UMANA_LOCALIZACAO_E_CONTATO.md`, `docs/prompts/Umana Rio Branco/rag/06_UMANA_FAQ_ATENDIMENTO.md`, `src/nodes/formatResponse.ts`
+  - Confiança: alta
+
+## 2026-04-22
+
 ### fix
 - Reforçado fallback seguro para tenants sem prompt customizado, evitando vieses de domínio e melhorando rastreamento de telemetria com estimativa de custo por token para respostas de IA.
 - Ajustado fallback de resposta padrão para mensagem genérica e neutra, com marcação explícita de fallback e motivo.
