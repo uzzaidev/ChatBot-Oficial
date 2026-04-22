@@ -9,6 +9,28 @@ const removeToolCalls = (text: string): string => {
   return text.replace(/<function=[^>]+>[\s\S]*?<\/function>/g, '').trim()
 }
 
+/**
+ * Remove markdown comum que aparece cru no WhatsApp.
+ * Exemplo: "### Titulo", "**negrito**", "__underline__" -> texto simples.
+ */
+const sanitizeMarkdownForWhatsApp = (text: string): string => {
+  return text
+    // Remover headers markdown no inicio da linha
+    .replace(/^\s{0,3}#{1,6}\s+/gm, '')
+    // Remover blocos de código markdown
+    .replace(/```[\s\S]*?```/g, (block) =>
+      block.replace(/```/g, '').trim(),
+    )
+    // Remover inline code
+    .replace(/`([^`]+)`/g, '$1')
+    // Remover negrito/itálico markdown
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/__([^_]+)__/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/_([^_]+)_/g, '$1')
+    .trim()
+}
+
 const splitIntoParagraphs = (text: string): string[] => {
   const paragraphs = text.split('\n\n').filter((p) => p.trim().length > 0)
 
@@ -65,7 +87,8 @@ export const formatResponse = (aiResponseContent: string): string[] => {
     }
 
     // Remove tool calls antes de formatar
-    const cleanedContent = removeToolCalls(aiResponseContent)
+    const contentWithoutToolCalls = removeToolCalls(aiResponseContent)
+    const cleanedContent = sanitizeMarkdownForWhatsApp(contentWithoutToolCalls)
 
     if (!cleanedContent || cleanedContent.trim().length === 0) {
       return []
