@@ -207,7 +207,7 @@ export const callDirectAI = async (
     } else {
       // Default to OpenAI
       apiKey = credentials.openaiApiKey;
-      model = config.clientConfig.openaiModel || "gpt-4.1-nano";
+      model = config.clientConfig.openaiModel || "gpt-5-nano";
     }
 
     // Validate API key exists
@@ -244,8 +244,8 @@ export const callDirectAI = async (
     };
 
     // Add optional parameters only if defined
-    // gpt-4.1-nano uses reasoning — temperature is not a supported parameter
-    const isNanoReasoning = provider === "openai" && model === "gpt-4.1-nano";
+    // gpt-5-nano uses reasoning — temperature is not a supported parameter
+    const isNanoReasoning = provider === "openai" && model === "gpt-5-nano";
     if (config.settings?.temperature !== undefined && !isNanoReasoning) {
       generateParams.temperature = config.settings.temperature;
     }

@@ -32,7 +32,7 @@ interface BotConfigFormState {
 }
 
 const OPENAI_MODELS = [
-  "gpt-4.1-nano",
+  "gpt-5-nano",
   "gpt-4.1-mini",
   "gpt-4o-mini",
   "gpt-4o",
@@ -276,7 +276,7 @@ const AIConfigStep = ({
     openaiKey: "",
     groqKey: "",
     provider: "openai",
-    openaiModel: "gpt-4.1-nano",
+    openaiModel: "gpt-5-nano",
     groqModel: "llama-3.3-70b-versatile",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
