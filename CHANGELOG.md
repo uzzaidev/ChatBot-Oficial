@@ -8,6 +8,15 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-22
 
+### feat
+- Adicionadas páginas de listagem e detalhe de traces no dashboard de qualidade, com navegação integrada e carregamento assíncrono usando Suspense
+- Implementado badge de custo diário atualizado a cada minuto no dashboard de qualidade
+- Atualizado componente de navegação para incluir link para o módulo de traces com badge "new"
+  - Arquivos: `src/app/dashboard/quality/traces/page.tsx`, `src/app/dashboard/quality/traces/[id]/page.tsx`, `src/components/TracesClient.tsx`, `src/components/quality/CostTodayBadge.tsx`, `src/components/QualityDashboard.tsx`, `src/components/DashboardNavigation.tsx`
+  - Confiança: alta
+
+## 2026-04-22
+
 ### fix
 - Ajustado para preservar registros de traces com status `success` em esquemas antigos que não suportam esse valor, aplicando fallback para `pending` e mantendo metadados de compatibilidade.
 - Atualizado componente de traces para incluir status `success` em filtros e legendas.
