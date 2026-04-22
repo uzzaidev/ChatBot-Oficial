@@ -152,7 +152,7 @@ Gate em PRs: `npm run test:coverage` + `npx tsc --noEmit`.
 
 **Pré-requisitos obrigatórios antes de iniciar:**
 - [ ] A1 concluído (dados reais validados)
-- [ ] B1+B2 concluídos (vitest rodando com ≥6 testes)
+- [x] B1+B2 concluídos (vitest rodando com ≥6 testes)
 - [ ] `agent_evaluations` tem ≥100 registros reais
 
 **Sequência interna de S5:**
@@ -268,11 +268,11 @@ Verificar se a linha `key='quality:sampling_rate', value='0.20'` existe na tabel
 - [x] Criar `src/components/quality/CostTodayBadge.tsx`
 
 ### Próxima semana (Fase B — tooling)
-- [ ] Instalar vitest + msw + playwright
-- [ ] Criar `vitest.config.ts`
-- [ ] Criar `tests/setup.ts` + `tests/mocks/server.ts`
-- [ ] Criar os 6 testes prioritários (Fase B2)
-- [ ] Criar CI `.github/workflows/test.yml`
+- [x] Instalar vitest + msw + playwright
+- [x] Criar `vitest.config.ts`
+- [x] Criar `tests/setup.ts` + `tests/mocks/server.ts`
+- [x] Criar os 6 testes prioritários (Fase B2)
+- [x] Criar/atualizar CI `.github/workflows/ci.yml`
 
 ### Após Fase B (Fase C — S5)
 - [ ] Iniciar Sprint 5 somente após B1+B2+A1 concluídos

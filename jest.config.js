@@ -45,6 +45,7 @@ const customJestConfig = {
   testPathIgnorePatterns: [
     '/node_modules/',
     '/.next/',
+    '/tests/',
   ],
 
   // Module file extensions

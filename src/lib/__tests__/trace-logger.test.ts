@@ -105,7 +105,7 @@ describe("trace-logger", () => {
         tokens_input: 100,
         tokens_output: 30,
         cost_usd: 0.0012,
-        status: "pending",
+        status: "success",
       }),
       { onConflict: "id" },
     );
