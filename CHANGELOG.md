@@ -8,6 +8,28 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-22
 
+### chore
+- Migrado CI para usar pnpm em vez de npm, ajustando cache e comandos no workflow `.github/workflows/ci.yml`.
+- Adicionado suporte a Vitest, MSW e Playwright com novas dependências no `package.json` e arquivos de configuração.
+- Criados arquivos de configuração e setup para Vitest (`vitest.config.ts`, `tests/setup.ts`, `tests/mocks/server.ts`).
+- Atualizadas dependências para incluir Vitest, Playwright, MSW e outras bibliotecas relacionadas.
+  - Arquivos: `.github/workflows/ci.yml`, `package.json`, `pnpm-lock.yaml`, `vitest.config.ts`, `tests/setup.ts`, `tests/mocks/server.ts`
+
+### test
+- Implementados testes unitários e de integração usando Vitest para múltiplos módulos:
+  - Testes unitários para `evaluation-engine`, `evaluation-worker`, `ground-truth-matcher`, `trace-logger`.
+  - Testes de integração para APIs `/api/ground-truth` e `/api/traces`.
+  - Teste smoke básico para garantir funcionamento do Vitest.
+  - Arquivos: `tests/unit/evaluation-engine.test.ts`, `tests/unit/evaluation-worker.test.ts`, `tests/unit/ground-truth-matcher.test.ts`, `tests/unit/trace-logger.test.ts`, `tests/integration/ground-truth-api.test.ts`, `tests/integration/traces-api.test.ts`, `tests/smoke.test.ts`
+
+### fix
+- Ajustada saída de status no teste de trace-logger de `"pending"` para `"success"` para refletir estado correto.
+  - Arquivo: `src/lib/__tests__/trace-logger.test.ts`
+  - Evidência: alteração direta da string de status no teste
+  - Confiança: alta
+
+## 2026-04-22
+
 ### feat
 - Adicionadas páginas de listagem e detalhe de traces no dashboard de qualidade, com navegação integrada e carregamento assíncrono usando Suspense
 - Implementado badge de custo diário atualizado a cada minuto no dashboard de qualidade
