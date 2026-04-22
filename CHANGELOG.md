@@ -9,6 +9,13 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-22
 
 ### refactor
+- Padronizada formatação do código e aprimorada sanitização de markdown na formatação de respostas para WhatsApp, incluindo remoção de imagens, links e linhas vazias após limpeza. Adicionado filtro para eliminar mensagens duplicadas consecutivas.
+- Arquivos: `src/nodes/formatResponse.ts`
+- Confiança: alta
+
+## 2026-04-22
+
+### refactor
 - Removidos logs de console desnecessários e melhorado o formato de logs em módulos relacionados à IA para maior clareza e limpeza do código.
 - Ajustado timeout do LLM de 2000ms para 5000ms em `crm-intent-classifier.ts`.
   - Arquivos: `src/lib/crm-automation-engine.ts`, `src/lib/crm-intent-classifier.ts`, `src/lib/direct-ai-client.ts`, `src/lib/direct-ai-tracking.ts`
