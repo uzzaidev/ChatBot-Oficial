@@ -12,13 +12,13 @@
  * - Tool call normalization (compatible with existing flows)
  */
 
-import { generateText } from "ai";
-import { createOpenAI } from "@ai-sdk/openai";
 import { createGroq } from "@ai-sdk/groq";
-import { getClientVaultCredentials } from "./vault";
-import { checkBudgetAvailable } from "./unified-tracking";
-import { logDirectAIUsage } from "./direct-ai-tracking";
+import { createOpenAI } from "@ai-sdk/openai";
 import type { CoreMessage } from "ai";
+import { generateText } from "ai";
+import { logDirectAIUsage } from "./direct-ai-tracking";
+import { checkBudgetAvailable } from "./unified-tracking";
+import { getClientVaultCredentials } from "./vault";
 
 // =====================================================
 // TYPES
@@ -90,8 +90,8 @@ const normalizeToolsForAISDK = (
       }
 
       // AI SDK v5 expects `inputSchema`. Older code may still use `parameters`.
-      const inputSchema = (toolDef as any).inputSchema ??
-        (toolDef as any).parameters;
+      const inputSchema =
+        (toolDef as any).inputSchema ?? (toolDef as any).parameters;
 
       if (!inputSchema) {
         return null;
@@ -121,7 +121,8 @@ const normalizeToolCalls = (
 
   return toolCalls
     .map((toolCall: any, index: number) => {
-      const name = toolCall?.toolName ||
+      const name =
+        toolCall?.toolName ||
         toolCall?.name ||
         toolCall?.function?.name ||
         toolCall?.functionName;
@@ -130,14 +131,14 @@ const normalizeToolCalls = (
         return null;
       }
 
-      const rawArgs = toolCall?.args ??
+      const rawArgs =
+        toolCall?.args ??
         toolCall?.arguments ??
         toolCall?.function?.arguments ??
         toolCall?.input;
 
-      const argsString = typeof rawArgs === "string"
-        ? rawArgs
-        : JSON.stringify(rawArgs ?? {});
+      const argsString =
+        typeof rawArgs === "string" ? rawArgs : JSON.stringify(rawArgs ?? {});
 
       const id = toolCall?.toolCallId || toolCall?.id || `${name}-${index}`;
 
@@ -189,7 +190,10 @@ export const callDirectAI = async (
     }
 
     // 2. Get Vault credentials
-    console.log("[Direct AI] Getting Vault credentials for client:", config.clientId);
+    console.log(
+      "[Direct AI] Getting Vault credentials for client:",
+      config.clientId,
+    );
     const credentials = await getClientVaultCredentials(config.clientId);
 
     // 3. Select provider and model
@@ -203,14 +207,15 @@ export const callDirectAI = async (
     } else {
       // Default to OpenAI
       apiKey = credentials.openaiApiKey;
-      model = config.clientConfig.openaiModel || "gpt-4o-mini";
+      model = config.clientConfig.openaiModel || "gpt-4.1-nano";
     }
 
     // Validate API key exists
     if (!apiKey) {
       throw new Error(
-        `❌ No ${provider.toUpperCase()} API key configured in Vault for client ${config.clientId}. ` +
-        `Please configure in Settings: /dashboard/settings`,
+        `❌ No ${provider.toUpperCase()} API key configured in Vault for client ${
+          config.clientId
+        }. ` + `Please configure in Settings: /dashboard/settings`,
       );
     }
 
@@ -218,9 +223,8 @@ export const callDirectAI = async (
     console.log("[Direct AI] API key prefix:", apiKey.substring(0, 10) + "...");
 
     // 4. Create provider instance
-    const providerInstance = provider === "groq"
-      ? createGroq({ apiKey })
-      : createOpenAI({ apiKey });
+    const providerInstance =
+      provider === "groq" ? createGroq({ apiKey }) : createOpenAI({ apiKey });
 
     const modelInstance = providerInstance(model);
 
@@ -228,7 +232,11 @@ export const callDirectAI = async (
     const normalizedTools = normalizeToolsForAISDK(config.tools);
 
     // 6. Build generate params (only include defined parameters)
-    console.log("[Direct AI] Calling AI with", config.messages.length, "messages");
+    console.log(
+      "[Direct AI] Calling AI with",
+      config.messages.length,
+      "messages",
+    );
     const generateParams: any = {
       model: modelInstance,
       messages: config.messages,
@@ -236,8 +244,13 @@ export const callDirectAI = async (
     };
 
     // Add optional parameters only if defined
-    if (config.settings?.temperature !== undefined) {
+    // gpt-4.1-nano uses reasoning — temperature is not a supported parameter
+    const isNanoReasoning = provider === "openai" && model === "gpt-4.1-nano";
+    if (config.settings?.temperature !== undefined && !isNanoReasoning) {
       generateParams.temperature = config.settings.temperature;
+    }
+    if (isNanoReasoning) {
+      generateParams.providerOptions = { openai: { reasoningEffort: "low" } };
     }
     if (config.settings?.maxTokens !== undefined) {
       generateParams.maxTokens = config.settings.maxTokens;
@@ -269,7 +282,7 @@ export const callDirectAI = async (
 
     const promptTokens = usage.promptTokens || 0;
     const completionTokens = usage.completionTokens || 0;
-    const totalTokens = usage.totalTokens || (promptTokens + completionTokens);
+    const totalTokens = usage.totalTokens || promptTokens + completionTokens;
 
     // 10. Log usage (async, non-blocking)
     if (!config.skipUsageLogging) {

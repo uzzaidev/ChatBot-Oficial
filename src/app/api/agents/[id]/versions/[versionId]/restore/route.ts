@@ -5,6 +5,7 @@
  */
 
 import { createServerClient } from "@/lib/supabase";
+import { invalidateWABACache } from "@/lib/waba-lookup";
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -158,6 +159,17 @@ export const POST = async (
         { error: "Erro ao restaurar versão" },
         { status: 500 },
       );
+    }
+
+    // Invalidate WABA cache so the restored prompt takes effect immediately
+    const { data: clientRow } = await supabase
+      .from("clients")
+      .select("meta_waba_id")
+      .eq("id", profile.client_id)
+      .maybeSingle();
+
+    if (clientRow?.meta_waba_id) {
+      await invalidateWABACache(clientRow.meta_waba_id);
     }
 
     return NextResponse.json({

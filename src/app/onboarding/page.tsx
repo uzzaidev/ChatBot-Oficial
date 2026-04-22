@@ -31,7 +31,12 @@ interface BotConfigFormState {
   systemPrompt: string;
 }
 
-const OPENAI_MODELS = ["gpt-4o-mini", "gpt-4o"] as const;
+const OPENAI_MODELS = [
+  "gpt-4.1-nano",
+  "gpt-4.1-mini",
+  "gpt-4o-mini",
+  "gpt-4o",
+] as const;
 const GROQ_MODELS = ["llama-3.3-70b-versatile"] as const;
 
 const DEFAULT_SYSTEM_PROMPT =
@@ -271,7 +276,7 @@ const AIConfigStep = ({
     openaiKey: "",
     groqKey: "",
     provider: "openai",
-    openaiModel: "gpt-4o-mini",
+    openaiModel: "gpt-4.1-nano",
     groqModel: "llama-3.3-70b-versatile",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);

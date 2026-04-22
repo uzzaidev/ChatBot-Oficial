@@ -51,8 +51,8 @@ import { getAllNodeStates, shouldExecuteNode } from "@/lib/flowHelpers";
 // 📎 Media storage for displaying real files in conversations
 import { uploadFileToStorage } from "@/lib/storage";
 // 📊 Observability: trace logger (Sprint 1)
-import { createTraceLogger, MessageTraceLogger } from "@/lib/trace-logger";
 import { enqueueEvaluation } from "@/lib/evaluation-worker";
+import { createTraceLogger, MessageTraceLogger } from "@/lib/trace-logger";
 
 export interface ChatbotFlowResult {
   success: boolean;
@@ -124,11 +124,15 @@ const estimateTraceCostUsd = (aiResponse: AIResponse): number => {
   }
 
   if (provider === "anthropic") {
-    return (promptTokens / 1_000_000) * 3.0 + (completionTokens / 1_000_000) * 15.0;
+    return (
+      (promptTokens / 1_000_000) * 3.0 + (completionTokens / 1_000_000) * 15.0
+    );
   }
 
   if (provider === "openai") {
-    return (promptTokens / 1_000_000) * 2.5 + (completionTokens / 1_000_000) * 10.0;
+    return (
+      (promptTokens / 1_000_000) * 2.5 + (completionTokens / 1_000_000) * 10.0
+    );
   }
 
   return 0;
@@ -186,9 +190,7 @@ export const processChatbotMessage = async (
     payload.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from ?? "";
   const rawMsg = payload.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
   const rawMessage =
-    (rawMsg as { text?: { body?: string } })?.text?.body ??
-    rawMsg?.type ??
-    "";
+    (rawMsg as { text?: { body?: string } })?.text?.body ?? rawMsg?.type ?? "";
   const whatsappMsgId =
     payload.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.id;
 
@@ -1362,9 +1364,37 @@ export const processChatbotMessage = async (
       console.log("[PolicyEngine V2]", JSON.stringify(v2PolicyResolution));
     }
 
+    // Capture system prompt and history for LLM observability
+    const activeSystemPrompt =
+      config.activeAgent?.compiled_system_prompt ??
+      config.prompts.systemPrompt ??
+      "";
+    const historyForTrace = chatHistory2.slice(-15).map((m: any) => ({
+      role: m.role ?? m.type ?? "unknown",
+      content:
+        typeof m.content === "string"
+          ? m.content.substring(0, 1_000)
+          : Array.isArray(m.content)
+          ? m.content
+              .map((c: any) =>
+                c?.type === "text"
+                  ? c.text?.substring(0, 500)
+                  : `[${c?.type ?? "block"}]`,
+              )
+              .join(" ")
+          : JSON.stringify(m.content).substring(0, 500),
+    }));
+
     traceLogger.markStage("generation_started", {
       fastTrack: isFastTrack,
       toolsEnabled: !isFastTrack || !fastTrackResult?.catalogSize,
+      systemPrompt: activeSystemPrompt,
+      systemPromptLength: activeSystemPrompt.length,
+      historyCount: chatHistory2.length,
+      historyMessages: historyForTrace,
+      ragContext: ragContext.substring(0, 3_000),
+      ragContextLength: ragContext.length,
+      userMessage: messageForAI.substring(0, 2_000),
     });
 
     let aiResponse: Awaited<ReturnType<typeof generateAIResponse>>;
@@ -1936,7 +1966,8 @@ export const processChatbotMessage = async (
               completedAt: new Date(),
             });
             logger.logNodeWarning("15.7. Handle Audio Tool Call (TTS)", {
-              warning: "No text provided in texto_para_audio argument, skipping",
+              warning:
+                "No text provided in texto_para_audio argument, skipping",
               args,
             });
             continue;
@@ -1953,7 +1984,10 @@ export const processChatbotMessage = async (
             toolName: "enviar_resposta_em_audio",
             toolCallId: toolCall.id,
             arguments: { texto_para_audio: textoParaAudio.slice(0, 200) },
-            result: { sentAsAudio: audioResult.sentAsAudio, messageId: audioResult.messageId },
+            result: {
+              sentAsAudio: audioResult.sentAsAudio,
+              messageId: audioResult.messageId,
+            },
             status: audioResult.success ? "success" : "error",
             source: "agent",
             startedAt: tcStart3,
@@ -2058,7 +2092,10 @@ export const processChatbotMessage = async (
                 toolName: "registrar_dado_cadastral",
                 toolCallId: toolCall.id,
                 arguments: fieldsToSave,
-                result: { saved: metadataResult.saved, rejected: metadataResult.rejected },
+                result: {
+                  saved: metadataResult.saved,
+                  rejected: metadataResult.rejected,
+                },
                 status: metadataResult.persisted ? "success" : "error",
                 errorMessage: metadataResult.error ?? undefined,
                 source: "agent",
@@ -2095,7 +2132,10 @@ export const processChatbotMessage = async (
               toolCallId: toolCall.id,
               arguments: {},
               status: "error",
-              errorMessage: metadataError instanceof Error ? metadataError.message : "unknown",
+              errorMessage:
+                metadataError instanceof Error
+                  ? metadataError.message
+                  : "unknown",
               source: "agent",
               startedAt: tcStartedAt,
               completedAt: new Date(),
@@ -2127,7 +2167,10 @@ export const processChatbotMessage = async (
             "verificar_agenda",
             args5,
             config.id,
-            { contactName: parsedMessage.name, contactPhone: parsedMessage.phone },
+            {
+              contactName: parsedMessage.name,
+              contactPhone: parsedMessage.phone,
+            },
           );
 
           traceLogger.logToolCall({
@@ -2166,7 +2209,10 @@ export const processChatbotMessage = async (
             "criar_evento_agenda",
             args6,
             config.id,
-            { contactName: parsedMessage.name, contactPhone: parsedMessage.phone },
+            {
+              contactName: parsedMessage.name,
+              contactPhone: parsedMessage.phone,
+            },
           );
 
           traceLogger.logToolCall({
@@ -2205,7 +2251,10 @@ export const processChatbotMessage = async (
             "cancelar_evento_agenda",
             args7,
             config.id,
-            { contactName: parsedMessage.name, contactPhone: parsedMessage.phone },
+            {
+              contactName: parsedMessage.name,
+              contactPhone: parsedMessage.phone,
+            },
           );
 
           traceLogger.logToolCall({
@@ -2231,7 +2280,10 @@ export const processChatbotMessage = async (
 
     // After registrar_dado_cadastral: if no text response was generated, do a follow-up
     // call so the user always receives a message (data was saved, but agent stayed silent).
-    if (metadataToolTriggered && (!aiResponse.content || aiResponse.content.trim().length === 0)) {
+    if (
+      metadataToolTriggered &&
+      (!aiResponse.content || aiResponse.content.trim().length === 0)
+    ) {
       logger.logNodeStart("15.77. Follow-up After Metadata Tool", {
         phone: parsedMessage.phone,
         reason: "metadata_only_no_text",
@@ -2262,10 +2314,8 @@ export const processChatbotMessage = async (
 
     if (!metadataToolTriggered) {
       try {
-        const {
-          hasLikelyContactData,
-          scheduleExtractContactDataFallback,
-        } = await import("@/nodes/extractContactDataFallback");
+        const { hasLikelyContactData, scheduleExtractContactDataFallback } =
+          await import("@/nodes/extractContactDataFallback");
 
         if (hasLikelyContactData(batchedContent)) {
           logger.logNodeStart("15.76. Contact Metadata Fallback", {
@@ -2317,7 +2367,9 @@ export const processChatbotMessage = async (
 
     if (!aiResponse.content || aiResponse.content.trim().length === 0) {
       const firstName = (parsedMessage.name || "").trim().split(/\s+/)[0] || "";
-      const fallbackPrefix = firstName ? `Perfeito, ${firstName}.` : "Perfeito.";
+      const fallbackPrefix = firstName
+        ? `Perfeito, ${firstName}.`
+        : "Perfeito.";
       aiResponse.wasFallback = true;
       aiResponse.fallbackReason = "empty_ai_content";
       aiResponse.content =

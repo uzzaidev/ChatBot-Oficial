@@ -88,8 +88,12 @@ export async function GET(request: NextRequest) {
     );
 
     // 5. Exchange code for access token (server-side redirect flow needs redirect_uri)
-    const baseUrl = process.env.NEXT_PUBLIC_URL || "https://uzzapp.uzzai.com.br";
-    const accessToken = await exchangeCodeForToken(code, `${baseUrl}/api/auth/meta/callback`);
+    const baseUrl =
+      process.env.NEXT_PUBLIC_URL || "https://uzzapp.uzzai.com.br";
+    const accessToken = await exchangeCodeForToken(
+      code,
+      `${baseUrl}/api/auth/meta/callback`,
+    );
 
     console.log(
       "[Meta OAuth Callback] ✅ Token received, fetching WABA details",
@@ -212,7 +216,7 @@ export async function GET(request: NextRequest) {
           openai_api_key_secret_id: openaiKeySecretId,
           groq_api_key_secret_id: groqKeySecretId,
           primary_model_provider: "openai",
-          openai_model: "gpt-4o-mini",
+          openai_model: "gpt-4.1-nano",
           groq_model: "llama-3.3-70b-versatile",
           system_prompt: DEFAULT_SYSTEM_PROMPT,
           meta_user_id: metaUserId,

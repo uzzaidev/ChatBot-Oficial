@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
 import { createRouteHandlerClient } from "@/lib/supabase-server";
+import { invalidateWABACache } from "@/lib/waba-lookup";
+import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,10 @@ export async function GET(
     const supabase = await createRouteHandlerClient(request as any);
 
     // Authenticate user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -102,8 +106,8 @@ export async function GET(
         config.formatter_prompt = clientData.formatter_prompt || "";
         config.openai_model = clientData.openai_model || "gpt-4o";
         config.groq_model = clientData.groq_model || "llama-3.3-70b-versatile";
-        config.primary_model_provider = clientData.primary_model_provider ||
-          "groq";
+        config.primary_model_provider =
+          clientData.primary_model_provider || "groq";
 
         // Also extract temperature and max_tokens from settings if available
         if (clientData.settings) {
@@ -232,7 +236,10 @@ export async function PATCH(
     const supabase = await createRouteHandlerClient(request as any);
 
     // Authenticate user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -292,9 +299,12 @@ export async function PATCH(
         );
 
       if (enabledError) {
-        return NextResponse.json({ error: enabledError.message }, {
-          status: 500,
-        });
+        return NextResponse.json(
+          { error: enabledError.message },
+          {
+            status: 500,
+          },
+        );
       }
     }
 
@@ -322,7 +332,8 @@ export async function PATCH(
 
         // Update settings object with temperature and max_tokens
         if (
-          config.temperature !== undefined || config.max_tokens !== undefined
+          config.temperature !== undefined ||
+          config.max_tokens !== undefined
         ) {
           // First fetch current settings
           const { data: currentClient } = await supabase
@@ -350,9 +361,22 @@ export async function PATCH(
           .eq("id", clientId);
 
         if (clientError) {
-          return NextResponse.json({ error: clientError.message }, {
-            status: 500,
-          });
+          return NextResponse.json(
+            { error: clientError.message },
+            {
+              status: 500,
+            },
+          );
+        }
+
+        // Invalidate WABA cache so config changes take effect immediately
+        const { data: clientRow } = await supabase
+          .from("clients")
+          .select("meta_waba_id")
+          .eq("id", clientId)
+          .maybeSingle();
+        if (clientRow?.meta_waba_id) {
+          await invalidateWABACache(clientRow.meta_waba_id);
         }
       } else if (nodeId === "handle_audio_tool") {
         // Special handling for TTS - save to clients table columns (same as /settings/tts)
@@ -375,9 +399,22 @@ export async function PATCH(
             .eq("id", clientId);
 
           if (clientError) {
-            return NextResponse.json({ error: clientError.message }, {
-              status: 500,
-            });
+            return NextResponse.json(
+              { error: clientError.message },
+              {
+                status: 500,
+              },
+            );
+          }
+
+          // Invalidate WABA cache so TTS config changes take effect immediately
+          const { data: clientRow } = await supabase
+            .from("clients")
+            .select("meta_waba_id")
+            .eq("id", clientId)
+            .maybeSingle();
+          if (clientRow?.meta_waba_id) {
+            await invalidateWABACache(clientRow.meta_waba_id);
           }
         }
       } else {
@@ -421,18 +458,22 @@ export async function PATCH(
         const errors = results.filter((r) => r.error).map((r) => r.error);
 
         if (errors.length > 0) {
-          return NextResponse.json({ error: errors[0]?.message }, {
-            status: 500,
-          });
+          return NextResponse.json(
+            { error: errors[0]?.message },
+            {
+              status: 500,
+            },
+          );
         }
       }
     }
 
     return NextResponse.json({
       success: true,
-      message: enabled !== undefined
-        ? `Node ${enabled ? "enabled" : "disabled"}`
-        : "Configuration updated",
+      message:
+        enabled !== undefined
+          ? `Node ${enabled ? "enabled" : "disabled"}`
+          : "Configuration updated",
     });
   } catch (error: any) {
     return NextResponse.json(
@@ -475,23 +516,14 @@ function getRelatedConfigKeys(nodeId: string): string[] {
       "continuity:greeting_for_returning_customer",
       "continuity:enabled",
     ],
-    get_chat_history: [
-      "chat_history:max_messages",
-      "chat_history:enabled",
-    ],
+    get_chat_history: ["chat_history:max_messages", "chat_history:enabled"],
     get_rag_context: [
       "rag:enabled",
       "rag:similarity_threshold",
       "rag:max_results",
     ],
-    process_media: [
-      "media_processing:config",
-      "media_processing:enabled",
-    ],
-    batch_messages: [
-      "batching:delay_seconds",
-      "batching:enabled",
-    ],
+    process_media: ["media_processing:config", "media_processing:enabled"],
+    batch_messages: ["batching:delay_seconds", "batching:enabled"],
     search_document: [
       "doc_search:config",
       "doc_search:enabled",
@@ -589,7 +621,7 @@ function getDefaultConfig(nodeId: string): Record<string, any> {
       ],
     },
     detect_repetition: {
-      similarity_threshold: 0.70,
+      similarity_threshold: 0.7,
       check_last_n_responses: 3,
       use_embeddings: false,
     },
@@ -623,7 +655,7 @@ function getDefaultConfig(nodeId: string): Record<string, any> {
     fast_track_router: {
       enabled: false, // Disabled by default - tenant must opt-in
       router_model: "gpt-4o-mini", // Default model (from AI Gateway models registry)
-      similarity_threshold: 0.80, // High threshold to avoid false positives
+      similarity_threshold: 0.8, // High threshold to avoid false positives
       catalog: [
         // Example catalog (tenant should customize this)
         {
@@ -649,9 +681,11 @@ function getDefaultConfig(nodeId: string): Record<string, any> {
 function getCategoryFromKey(configKey: string): string {
   if (configKey.includes("prompt")) return "prompts";
   if (
-    configKey.includes("threshold") || configKey.includes("max_") ||
+    configKey.includes("threshold") ||
+    configKey.includes("max_") ||
     configKey.includes("delay")
-  ) return "thresholds";
+  )
+    return "thresholds";
   if (configKey.includes("personality")) return "personality";
   if (configKey.includes("model")) return "personality";
   if (configKey.includes("use_") || configKey.includes("enabled")) {

@@ -314,11 +314,11 @@ const matchesTriggerConditions = (
             )
             .filter(Boolean)
         : typeof keywordsRaw === "string"
-          ? keywordsRaw
-              .split(",")
-              .map((item) => item.trim().toLowerCase())
-              .filter(Boolean)
-          : [];
+        ? keywordsRaw
+            .split(",")
+            .map((item) => item.trim().toLowerCase())
+            .filter(Boolean)
+        : [];
 
       if (keywords.length === 0) return false;
 
@@ -428,8 +428,8 @@ const getActionSteps = (rule: AutomationRuleRow): ActionStep[] => {
           step.on_error === "continue"
             ? "continue"
             : step.on_error === "compensate"
-              ? "compensate"
-              : "stop",
+            ? "compensate"
+            : "stop",
       }));
   }
 
@@ -505,6 +505,7 @@ const calcNextRetryAt = (actionType: string, attempts: number): Date | null => {
 
 const getCardContext = async (
   cardId: string,
+  clientId: string,
   db: DBExecutor,
 ): Promise<{
   phone: string;
@@ -522,8 +523,9 @@ const getCardContext = async (
     `SELECT phone, assigned_to, last_message_at, last_message_direction
      FROM crm_cards
      WHERE id = $1
+       AND client_id = $2
      LIMIT 1`,
-    [cardId],
+    [cardId, clientId],
   );
 
   const card = cardResult.rows[0];
@@ -569,8 +571,8 @@ const resolveActivityLogBackend = async (
   const backend: ActivityLogBackend = row?.has_activity_log
     ? "crm_activity_log"
     : row?.has_card_activities
-      ? "crm_card_activities"
-      : null;
+    ? "crm_card_activities"
+    : null;
 
   activityLogBackendCache = {
     backend,
@@ -858,7 +860,7 @@ const executeSendMessageAction = async (params: {
   db: DBExecutor;
 }): Promise<JsonRecord> => {
   const { clientId, cardId, actionParams, variables, db } = params;
-  const cardContext = await getCardContext(cardId, db);
+  const cardContext = await getCardContext(cardId, clientId, db);
   const config = await getClientConfig(clientId);
 
   if (
@@ -949,8 +951,8 @@ const executeSendMessageAction = async (params: {
     typeof actionParams.content === "string"
       ? actionParams.content
       : typeof actionParams.message === "string"
-        ? actionParams.message
-        : "";
+      ? actionParams.message
+      : "";
 
   const textBody = interpolateTemplate(rawText, variables).trim();
   if (!textBody) {
@@ -995,7 +997,7 @@ const resolveNotifyTargets = async (
       : "assigned_to";
 
   if (target === "assigned_to") {
-    const card = await getCardContext(cardId, db);
+    const card = await getCardContext(cardId, clientId, db);
     if (!card.assignedTo) {
       throw new ActionSkipError(
         "notify_user_no_assignee",
@@ -1053,8 +1055,8 @@ const executeNotifyUserAction = async (params: {
     typeof actionParams.body === "string"
       ? actionParams.body
       : typeof actionParams.content === "string"
-        ? actionParams.content
-        : "Uma automacao do CRM foi acionada.";
+      ? actionParams.content
+      : "Uma automacao do CRM foi acionada.";
 
   const title = interpolateTemplate(titleTemplate, variables).slice(0, 120);
   const body = interpolateTemplate(bodyTemplate, variables).slice(0, 240);
@@ -1339,8 +1341,8 @@ const executeActionStep = async (
         typeof actionParams.note_content === "string"
           ? actionParams.note_content
           : typeof actionParams.content === "string"
-            ? actionParams.content
-            : "";
+          ? actionParams.content
+          : "";
       if (!noteRaw) {
         throw new Error("add_note requires action_params.note_content");
       }
@@ -1614,13 +1616,14 @@ const updateDlqAfterFailure = async (
 
 const buildAutomationStepVariables = async (
   cardId: string,
+  clientId: string,
   db: DBExecutor,
   triggerData?: JsonRecord,
 ): Promise<JsonRecord> => {
   let stepVariables: JsonRecord = { ...(triggerData ?? {}) };
 
   try {
-    const cardContext = await getCardContext(cardId, db);
+    const cardContext = await getCardContext(cardId, clientId, db);
     stepVariables = {
       ...stepVariables,
       phone: cardContext.phone,
@@ -1671,7 +1674,11 @@ export const retryCrmAutomationDlqBatch = async (
           on_error: "stop",
         };
 
-        const vars = await buildAutomationStepVariables(item.card_id, db);
+        const vars = await buildAutomationStepVariables(
+          item.card_id,
+          item.client_id,
+          db,
+        );
         await executeActionStep(item.client_id, item.card_id, step, vars, db);
       });
 
@@ -1747,6 +1754,7 @@ export const runDueScheduledCrmActions = async (
 
         const stepVariables = await buildAutomationStepVariables(
           item.card_id,
+          item.client_id,
           db,
         );
         await executeActionStep(
@@ -1996,7 +2004,11 @@ export const emitCrmAutomationEvent = async (
       if (!matches) {
         const conditions = (rule.trigger_conditions ?? {}) as JsonRecord;
         console.log(
-          `[crm-automation] ⏭️ Rule SKIPPED: "${rule.name}" (id=${rule.id}) triggerType=${input.triggerType} | conditions=${JSON.stringify(conditions)} vs triggerData=${JSON.stringify(triggerData)}`,
+          `[crm-automation] ⏭️ Rule SKIPPED: "${rule.name}" (id=${
+            rule.id
+          }) triggerType=${input.triggerType} | conditions=${JSON.stringify(
+            conditions,
+          )} vs triggerData=${JSON.stringify(triggerData)}`,
         );
         skippedRules++;
         await logRuleExecution({
@@ -2085,6 +2097,7 @@ export const emitCrmAutomationEvent = async (
 
       const stepVariables = await buildAutomationStepVariables(
         input.cardId,
+        input.clientId,
         db,
         triggerData,
       );
@@ -2278,7 +2291,11 @@ export const emitCrmAutomationEvent = async (
       } else {
         executedRules++;
         console.log(
-          `[crm-automation] ✅ Rule EXECUTED: "${rule.name}" (id=${rule.id}) triggerType=${input.triggerType} steps=${JSON.stringify(stepResults)}`,
+          `[crm-automation] ✅ Rule EXECUTED: "${rule.name}" (id=${
+            rule.id
+          }) triggerType=${input.triggerType} steps=${JSON.stringify(
+            stepResults,
+          )}`,
         );
         await logRuleExecution({
           clientId: input.clientId,

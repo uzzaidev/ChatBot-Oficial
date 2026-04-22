@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
           openai_api_key_secret_id: openaiKeySecretId,
           groq_api_key_secret_id: groqKeySecretId,
           primary_model_provider: "openai",
-          openai_model: "gpt-4o-mini",
+          openai_model: "gpt-4.1-nano",
           groq_model: "llama-3.3-70b-versatile",
           system_prompt: DEFAULT_SYSTEM_PROMPT,
           meta_user_id: metaUserId,
