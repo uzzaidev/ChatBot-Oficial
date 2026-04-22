@@ -1,5 +1,6 @@
 import { resolvePolicy } from "@/lib/policy-engine";
 import {
+  AIResponse,
   ClientConfig,
   StoredMediaMetadata,
   WhatsAppWebhookPayload,
@@ -112,6 +113,26 @@ const VALID_EXTENSIONS = new Set([
   "avi",
   "mov",
 ]);
+
+const estimateTraceCostUsd = (aiResponse: AIResponse): number => {
+  const promptTokens = aiResponse.usage?.prompt_tokens ?? 0;
+  const completionTokens = aiResponse.usage?.completion_tokens ?? 0;
+  const provider = aiResponse.provider ?? "openai";
+
+  if (provider === "groq") {
+    return 0;
+  }
+
+  if (provider === "anthropic") {
+    return (promptTokens / 1_000_000) * 3.0 + (completionTokens / 1_000_000) * 15.0;
+  }
+
+  if (provider === "openai") {
+    return (promptTokens / 1_000_000) * 2.5 + (completionTokens / 1_000_000) * 10.0;
+  }
+
+  return 0;
+};
 
 const getExtensionFromMimeType = (
   mimeType: string,
@@ -1130,6 +1151,9 @@ export const processChatbotMessage = async (
       !isFastTrack; // Skip if fast track
 
     if (shouldGetRAG) {
+      traceLogger.markStage("embedding_started", {
+        queryLength: batchedContent.length,
+      });
       traceLogger.markStage("retrieval_started", {
         queryLength: batchedContent.length,
       });
@@ -1229,6 +1253,9 @@ export const processChatbotMessage = async (
     }
 
     if (shouldGetRAG) {
+      traceLogger.markStage("embedding_completed", {
+        chunkCount: ragTraceData?.chunkIds.length ?? 0,
+      });
       traceLogger.markStage("retrieval_completed", {
         contextLength: ragContext.length,
         chunkCount: ragTraceData?.chunkIds.length ?? 0,
@@ -1741,7 +1768,7 @@ export const processChatbotMessage = async (
             model: aiResponse.model || "unknown",
             tokensInput: aiResponse.usage?.prompt_tokens ?? 0,
             tokensOutput: aiResponse.usage?.completion_tokens ?? 0,
-            costUsd: 0,
+            costUsd: estimateTraceCostUsd(aiResponse),
             response: aiResponse.content || "",
           });
           traceLogger.markStage("sent");
@@ -1809,7 +1836,7 @@ export const processChatbotMessage = async (
               model: aiResponse.model || "unknown",
               tokensInput: aiResponse.usage?.prompt_tokens ?? 0,
               tokensOutput: aiResponse.usage?.completion_tokens ?? 0,
-              costUsd: 0,
+              costUsd: estimateTraceCostUsd(aiResponse),
               response: aiResponse.content || "",
             });
             traceLogger.markStage("sent");
@@ -1945,7 +1972,7 @@ export const processChatbotMessage = async (
               model: aiResponse.model || "unknown",
               tokensInput: aiResponse.usage?.prompt_tokens ?? 0,
               tokensOutput: aiResponse.usage?.completion_tokens ?? 0,
-              costUsd: 0,
+              costUsd: estimateTraceCostUsd(aiResponse),
               response: aiResponse.content || "",
             });
             traceLogger.markStage("sent");
@@ -1964,7 +1991,7 @@ export const processChatbotMessage = async (
               model: aiResponse.model || "unknown",
               tokensInput: aiResponse.usage?.prompt_tokens ?? 0,
               tokensOutput: aiResponse.usage?.completion_tokens ?? 0,
-              costUsd: 0,
+              costUsd: estimateTraceCostUsd(aiResponse),
               response: aiResponse.content || "",
             });
             traceLogger.markStage("sent");
@@ -2284,22 +2311,24 @@ export const processChatbotMessage = async (
       model: aiResponse.model || "unknown",
       tokensInput: aiResponse.usage?.prompt_tokens ?? 0,
       tokensOutput: aiResponse.usage?.completion_tokens ?? 0,
-      costUsd: 0,
+      costUsd: estimateTraceCostUsd(aiResponse),
       response: aiResponse.content || "",
     });
 
     if (!aiResponse.content || aiResponse.content.trim().length === 0) {
       const firstName = (parsedMessage.name || "").trim().split(/\s+/)[0] || "";
       const fallbackPrefix = firstName ? `Perfeito, ${firstName}.` : "Perfeito.";
+      aiResponse.wasFallback = true;
+      aiResponse.fallbackReason = "empty_ai_content";
       aiResponse.content =
-        `${fallbackPrefix} Posso te ajudar com informacoes sobre as aulas de Yoga, ` +
-        "horarios e como comecar. Voce prefere manha, tarde ou noite?";
+        `${fallbackPrefix} Posso te ajudar com informacoes sobre os servicos, ` +
+        "horarios e atendimento da empresa. Se quiser, eu tambem posso te encaminhar para um atendente humano.";
 
       traceLogger.setGenerationData({
         model: aiResponse.model || "unknown",
         tokensInput: aiResponse.usage?.prompt_tokens ?? 0,
         tokensOutput: aiResponse.usage?.completion_tokens ?? 0,
-        costUsd: 0,
+        costUsd: estimateTraceCostUsd(aiResponse),
         response: aiResponse.content,
       });
 
