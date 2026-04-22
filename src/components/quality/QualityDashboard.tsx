@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useEvaluations } from "@/hooks/useEvaluations";
 import Link from "next/link";
+import { CostTodayBadge } from "./CostTodayBadge";
 
 const verdictColor = (verdict: "PASS" | "REVIEW" | "FAIL") => {
   if (verdict === "PASS") return "text-green-600";
@@ -19,11 +20,15 @@ export function QualityDashboard() {
     <div className="flex flex-col gap-4 p-4 md:p-6">
       <div className="flex flex-wrap items-center gap-2">
         <h1 className="text-2xl font-bold">Qualidade</h1>
+        <CostTodayBadge />
         <Button size="sm" variant="outline" onClick={() => refetch()}>
           Atualizar
         </Button>
         <Button size="sm" asChild>
           <Link href="/dashboard/quality/evaluations">Abrir Revisões</Link>
+        </Button>
+        <Button size="sm" variant="outline" asChild>
+          <Link href="/dashboard/quality/traces">Abrir Traces</Link>
         </Button>
       </div>
 

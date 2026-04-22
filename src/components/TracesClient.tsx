@@ -536,7 +536,11 @@ const STATUS_FILTERS = [
   { key: 'evaluated',     label: 'Avaliadas' },
 ] as const
 
-export function TracesClient() {
+interface TracesClientProps {
+  initialTraceId?: string
+}
+
+export function TracesClient({ initialTraceId }: TracesClientProps = {}) {
   const [traces, setTraces] = useState<TraceRow[]>([])
   const [meta, setMeta] = useState<TracesMeta | null>(null)
   const [selected, setSelected] = useState<TraceDetail | null>(null)
@@ -550,6 +554,7 @@ export function TracesClient() {
   const [refreshing, setRefreshing] = useState(false)
   const [promotingTraceId, setPromotingTraceId] = useState<string | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
+  const initialTraceFetchedRef = useRef(false)
 
   const fetchTraces = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
@@ -576,6 +581,12 @@ export function TracesClient() {
   }, [])
 
   useEffect(() => { fetchTraces() }, [fetchTraces])
+
+  useEffect(() => {
+    if (!initialTraceId || initialTraceFetchedRef.current) return
+    initialTraceFetchedRef.current = true
+    void fetchDetail(initialTraceId)
+  }, [initialTraceId])
 
   const fetchDetail = async (id: string) => {
     setDetailLoading(true)
@@ -901,4 +912,3 @@ function TraceListItem({
     </button>
   )
 }
-

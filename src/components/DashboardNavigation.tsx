@@ -295,6 +295,15 @@ export function DashboardNavigation({
           tooltip="Dashboard com score médio, distribuição PASS/REVIEW/FAIL e custo do juiz automático"
         />
         <NavItem
+          href="/dashboard/quality/traces"
+          icon={<Activity className="h-5 w-5 flex-shrink-0" />}
+          label="Traces Qualidade"
+          isCollapsed={isCollapsed}
+          onClick={onLinkClick}
+          badge="new"
+          tooltip="Lista e detalhe de traces dentro do módulo de qualidade"
+        />
+        <NavItem
           href="/dashboard/quality/ground-truth"
           icon={<CheckCircle className="h-5 w-5 flex-shrink-0" />}
           label="Ground Truth"

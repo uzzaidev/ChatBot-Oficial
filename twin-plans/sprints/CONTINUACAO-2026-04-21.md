@@ -263,9 +263,9 @@ Verificar se a linha `key='quality:sampling_rate', value='0.20'` existe na tabel
 - [ ] Verificar se `quality:sampling_rate = 0.20` está em `bot_configurations`
 
 ### Esta semana (Fase A2 — frontend S1)
-- [ ] Criar `src/app/dashboard/quality/traces/page.tsx`
-- [ ] Criar `src/app/dashboard/quality/traces/[id]/page.tsx`
-- [ ] Criar `src/components/quality/CostTodayBadge.tsx`
+- [x] Criar `src/app/dashboard/quality/traces/page.tsx`
+- [x] Criar `src/app/dashboard/quality/traces/[id]/page.tsx`
+- [x] Criar `src/components/quality/CostTodayBadge.tsx`
 
 ### Próxima semana (Fase B — tooling)
 - [ ] Instalar vitest + msw + playwright
@@ -297,3 +297,4 @@ Se você está retomando este plano, siga estas prioridades:
 ---
 
 *Documento gerado em 2026-04-21 por análise de: git status, glob de src/, migrations aplicadas, package.json e arquivos de sprint.*
+
