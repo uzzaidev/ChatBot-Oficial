@@ -95,6 +95,13 @@ const isMissingRelationError = (message: string): boolean => {
   );
 };
 
+const isStatusCheckViolation = (error: { message?: string; code?: string } | null): boolean => {
+  if (!error) return false;
+  const code = String(error.code ?? "");
+  const message = String(error.message ?? "").toLowerCase();
+  return code === "23514" || message.includes("check constraint");
+};
+
 const warnMissingTraceTablesOnce = (tableName: string): void => {
   if (missingTraceTablesWarned) return;
   missingTraceTablesWarned = true;
@@ -223,9 +230,34 @@ export const createTraceLogger = (
     };
 
     // Insert message_traces
-    const { error: traceError } = await (supabase as any)
+    let { error: traceError } = await (supabase as any)
       .from("message_traces")
       .upsert(traceRow, { onConflict: "id" });
+
+    // Backward compatibility: older schemas may reject status='success'
+    // with a CHECK constraint. In that case, retry with status='pending'
+    // so we never lose observability rows in production.
+    if (traceError && traceRow.status === "success" && isStatusCheckViolation(traceError)) {
+      const retryRow = {
+        ...traceRow,
+        status: "pending",
+        metadata: {
+          ...(traceRow.metadata ?? {}),
+          status_compat_fallback: true,
+          original_status: "success",
+        },
+      };
+
+      const retryResult = await (supabase as any)
+        .from("message_traces")
+        .upsert(retryRow, { onConflict: "id" });
+
+      if (!retryResult.error) {
+        traceError = null;
+      } else {
+        traceError = retryResult.error;
+      }
+    }
 
     if (traceError) {
       const message = String(traceError.message ?? "");

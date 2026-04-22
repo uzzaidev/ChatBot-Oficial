@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS public.message_traces (
 
   -- Status
   status TEXT NOT NULL DEFAULT 'pending'
-    CHECK (status IN ('pending', 'evaluated', 'human_reviewed', 'needs_review', 'failed')),
+    CHECK (status IN ('pending', 'success', 'evaluated', 'human_reviewed', 'needs_review', 'failed')),
 
   -- Flexible extra data (stage metadata, error info, etc.)
   metadata JSONB DEFAULT '{}'::jsonb,

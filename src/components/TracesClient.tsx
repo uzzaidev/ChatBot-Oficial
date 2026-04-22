@@ -115,6 +115,7 @@ const formatFullDate = (iso: string | null) => {
 
 const STATUS = {
   pending:        { label: 'Pendente',  color: 'bg-yellow-500/15 text-yellow-600 border-yellow-500/30',  dot: 'bg-yellow-500',  icon: AlertCircle },
+  success:        { label: 'Concluido', color: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30',dot: 'bg-emerald-500', icon: CheckCircle2 },
   evaluated:      { label: 'Avaliado',  color: 'bg-green-500/15 text-green-600 border-green-500/30',     dot: 'bg-green-500',   icon: CheckCircle2 },
   failed:         { label: 'Falhou',    color: 'bg-red-500/15 text-red-600 border-red-500/30',           dot: 'bg-red-500',     icon: XCircle },
   needs_review:   { label: 'Revisão',   color: 'bg-orange-500/15 text-orange-600 border-orange-500/30',  dot: 'bg-orange-500',  icon: AlertTriangle },
@@ -529,6 +530,7 @@ function RagTab({ retrieval }: { retrieval: Retrieval | null }) {
 const STATUS_FILTERS = [
   { key: 'all',           label: 'Todas' },
   { key: 'pending',       label: 'Pendentes' },
+  { key: 'success',       label: 'Concluidas' },
   { key: 'failed',        label: 'Falhas' },
   { key: 'needs_review',  label: 'Revisão' },
   { key: 'evaluated',     label: 'Avaliadas' },
