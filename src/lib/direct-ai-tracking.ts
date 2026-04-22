@@ -11,8 +11,8 @@
  * - Async, non-blocking (errors logged, not thrown)
  */
 
-import { trackUnifiedUsage } from "./unified-tracking";
 import type { Provider } from "./unified-tracking";
+import { trackUnifiedUsage } from "./unified-tracking";
 
 // =====================================================
 // TYPES
@@ -50,13 +50,6 @@ export const logDirectAIUsage = async (
   params: DirectAIUsageParams,
 ): Promise<void> => {
   try {
-    console.log("[Direct AI Tracking] Logging usage:", {
-      clientId: params.clientId,
-      provider: params.provider,
-      model: params.modelName,
-      tokens: params.inputTokens + params.outputTokens,
-    });
-
     // Delegate to unified tracking system
     await trackUnifiedUsage({
       clientId: params.clientId,
@@ -76,8 +69,6 @@ export const logDirectAIUsage = async (
         ...params.metadata,
       },
     });
-
-    console.log("[Direct AI Tracking] Usage logged successfully");
   } catch (error) {
     // Never throw - tracking failures should not break AI responses
     const errorMessage = error instanceof Error ? error.message : String(error);

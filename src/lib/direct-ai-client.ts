@@ -181,7 +181,6 @@ export const callDirectAI = async (
 
   try {
     // 1. Budget check - throws if exceeded
-    console.log("[Direct AI] Checking budget for client:", config.clientId);
     const budgetAvailable = await checkBudgetAvailable(config.clientId);
     if (!budgetAvailable) {
       throw new Error(
@@ -190,10 +189,6 @@ export const callDirectAI = async (
     }
 
     // 2. Get Vault credentials
-    console.log(
-      "[Direct AI] Getting Vault credentials for client:",
-      config.clientId,
-    );
     const credentials = await getClientVaultCredentials(config.clientId);
 
     // 3. Select provider and model
@@ -219,8 +214,12 @@ export const callDirectAI = async (
       );
     }
 
-    console.log("[Direct AI] Using provider:", provider, "model:", model);
-    console.log("[Direct AI] API key prefix:", apiKey.substring(0, 10) + "...");
+    console.log(
+      `[Direct AI] ${provider}/${model} | client=${config.clientId.slice(
+        0,
+        8,
+      )}`,
+    );
 
     // 4. Create provider instance
     const providerInstance =
@@ -232,11 +231,6 @@ export const callDirectAI = async (
     const normalizedTools = normalizeToolsForAISDK(config.tools);
 
     // 6. Build generate params (only include defined parameters)
-    console.log(
-      "[Direct AI] Calling AI with",
-      config.messages.length,
-      "messages",
-    );
     const generateParams: any = {
       model: modelInstance,
       messages: config.messages,
@@ -276,9 +270,6 @@ export const callDirectAI = async (
 
     // 9. Extract usage (cast to any for compatibility)
     const usage = result.usage as any;
-
-    // Debug: Log full usage object to see structure
-    console.log("[Direct AI] Usage object:", JSON.stringify(usage, null, 2));
 
     const promptTokens = usage.promptTokens || 0;
     const completionTokens = usage.completionTokens || 0;

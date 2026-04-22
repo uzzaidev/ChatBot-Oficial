@@ -4,7 +4,7 @@ import { callDirectAI } from "@/lib/direct-ai-client";
 import { query } from "@/lib/postgres";
 import { z } from "zod";
 
-const LLM_TIMEOUT_MS = 2000;
+const LLM_TIMEOUT_MS = 5000;
 const DEFAULT_THRESHOLD = 0.85;
 const DEFAULT_DAILY_BUDGET_USD = 2;
 
@@ -201,7 +201,9 @@ export const classifyCRMIntent = async (params: {
   const todayCost = await getTodayClassifierCost(params.clientId);
   if (Number.isFinite(budgetLimit) && todayCost >= budgetLimit) {
     console.log(
-      `[crm-intent] 💰 Budget exceeded for client=${params.clientId} (today=$${todayCost.toFixed(4)} limit=$${budgetLimit}), using fallback`,
+      `[crm-intent] 💰 Budget exceeded for client=${
+        params.clientId
+      } (today=$${todayCost.toFixed(4)} limit=$${budgetLimit}), using fallback`,
     );
     const fallback = deterministicFallback(params.message);
     return {
@@ -260,7 +262,11 @@ Regras:
     const parsed = IntentSchema.parse(parseJsonObject(llm.text));
 
     console.log(
-      `[crm-intent] ✅ LLM classified intent=${parsed.intent} urgency=${parsed.urgency_level ?? "none"} confidence=${parsed.confidence} threshold=${settings.threshold} client=${params.clientId}`,
+      `[crm-intent] ✅ LLM classified intent=${parsed.intent} urgency=${
+        parsed.urgency_level ?? "none"
+      } confidence=${parsed.confidence} threshold=${
+        settings.threshold
+      } client=${params.clientId}`,
     );
 
     return {
@@ -281,7 +287,11 @@ Regras:
         : "llm_error_fallback";
 
     console.warn(
-      `[crm-intent] ⚠️ LLM failed for client=${params.clientId}, using fallback. reason=${reason} intent=${fallback.intent} error=${error instanceof Error ? error.message : String(error)}`,
+      `[crm-intent] ⚠️ LLM failed for client=${
+        params.clientId
+      }, using fallback. reason=${reason} intent=${fallback.intent} error=${
+        error instanceof Error ? error.message : String(error)
+      }`,
     );
 
     return {
