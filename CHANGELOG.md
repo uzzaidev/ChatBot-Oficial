@@ -8,6 +8,22 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-22
 
+### refactor
+- Refatorado código para melhorar legibilidade e observabilidade em `chatbotFlow.ts` e `crm-automation-engine.ts`.
+- Adicionada invalidação de cache WABA após restauração de versão do agente e atualização de configurações para efeito imediato (`src/app/api/agents/[id]/versions/[versionId]/restore/route.ts` e `src/app/api/flow/nodes/[nodeId]/route.ts`).
+- Atualizados imports e formatação geral para consistência em múltiplos arquivos.
+- Ajustada tipagem TypeScript e padronização de strings e espaçamentos em `TracesClient.tsx`.
+- Adicionada nova aba "Prompt & Histórico" no painel de detalhes de traces para exibir dados de prompt, histórico de conversa e contexto RAG (`TracesClient.tsx`).
+- Atualizado modelo padrão OpenAI para `gpt-4.1-nano` em onboarding e chamadas de API.
+- Melhorias na exibição e filtros da interface de traces, incluindo contagem dinâmica e mensagens de erro mais claras.
+- Ajustes no tratamento de tool calls e exibição de status com ícones e cores padronizados.
+- Ajustes no cálculo de custos e latências para maior precisão.
+- Melhorias no código de chamadas diretas à AI, incluindo uso do modelo `gpt-4.1-nano` e parâmetros específicos para esse modelo.
+  - Arquivos principais: `src/flows/chatbotFlow.ts`, `src/lib/crm-automation-engine.ts`, `src/components/TracesClient.tsx`, `src/app/api/agents/[id]/versions/[versionId]/restore/route.ts`, `src/app/api/flow/nodes/[nodeId]/route.ts`, `src/lib/direct-ai-client.ts`
+- Confiança: alta
+
+## 2026-04-22
+
 ### feat
 - Adicionado prompt Umana v2 focado em atendimento consultivo com regras claras de gating para agendamento e uso prioritário de RAG (Recuperação de Informação) para respostas factuais.
 - Criado pacote de conhecimento RAG para Umana Rio Branco com documentos separados para identidade, horários, planos, equipe, localização e FAQ, visando reduzir o tamanho do prompt e aumentar a consistência das respostas.
