@@ -9,6 +9,24 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-23
 
 ### feat
+- Adicionado endpoint para promoção em lote de Ground Truth a partir de traces (`POST /api/ground-truth/from-trace/bulk`) com validação e geração de embeddings
+- Implementada UI no `GroundTruthManager` para carregar candidatos a bootstrap e promover múltiplos itens em lote com seleção via checkboxes
+- Criado painel `ReviewQueuePanel` exibindo fila S4 com itens FAIL/REVIEW sem feedback humano, integrado ao workspace de avaliações
+- Adicionados cards no dashboard de qualidade: `QualityDailyTrendCard` para tendência diária dos últimos 7 dias e `QualityCronHealthCard` para monitoramento da saúde dos crons
+- Implementado endpoint `GET /api/quality/cron-health` que retorna status e detalhes dos crons de reconciliacão e relatório diário
+- Documentado runbook operacional para qualidade com checklist diário, endpoints, comandos cron manuais, SQL para checkpoint e playbook de incidentes
+  - Arquivos: `src/app/api/ground-truth/from-trace/bulk/route.ts`, `src/components/quality/GroundTruthManager.tsx`, `src/components/quality/ReviewQueuePanel.tsx`, `src/components/quality/EvaluationsWorkspace.tsx`, `src/components/quality/QualityDashboard.tsx`, `src/components/quality/QualityDailyTrendCard.tsx`, `src/components/quality/QualityCronHealthCard.tsx`, `src/app/api/quality/cron-health/route.ts`, `docs/runbooks/quality-operations.md`
+- Confiança: alta
+
+### test
+- Criados testes de integração para o endpoint de promoção em lote de Ground Truth a partir de traces, cobrindo casos de autorização e sucesso na criação
+- Criados testes de integração para o endpoint de saúde dos crons, validando respostas autorizadas e payload esperado
+  - Arquivos: `tests/integration/ground-truth-bulk-from-trace-api.test.ts`, `tests/integration/quality-cron-health-api.test.ts`
+- Confiança: alta
+
+## 2026-04-23
+
+### feat
 - Automatizado o monitoramento de prontidão do checkpoint de qualidade para iniciar Sprint 5 no tenant piloto, incluindo API (`GET /api/quality/checkpoint-readiness`), componente visual no dashboard, e script SQL para análise manual.
 - Adicionada API para fila de revisões de avaliações com filtros configuráveis por dias, limite e tipo de veredito (`GET /api/evaluations/review-queue`).
 - Criado componente React `QualityCheckpointReadinessCard` para exibir status e critérios do checkpoint no dashboard de qualidade.
