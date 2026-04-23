@@ -1833,6 +1833,8 @@ export const processChatbotMessage = async (
             phone: parsedMessage.phone,
             clientId: config.id,
             config,
+            userMessage: batchedContent,
+            contactMetadata: customer.metadata as Record<string, unknown> | null,
           });
 
           traceLogger.logToolCall({
@@ -1843,6 +1845,11 @@ export const processChatbotMessage = async (
               success: documentSearchResult.success,
               documentsFound: documentSearchResult.documentsFound,
               documentsSent: documentSearchResult.documentsSent,
+              gateDecision: documentSearchResult.documentGateDecision,
+              gateReason: documentSearchResult.documentGateReason,
+              selectedDocument: documentSearchResult.selectedDocument,
+              suppressedDocumentsCount:
+                documentSearchResult.suppressedDocumentsCount,
             },
             status: documentSearchResult.success ? "success" : "error",
             source: "agent",
@@ -1855,7 +1862,20 @@ export const processChatbotMessage = async (
             documentsFound: documentSearchResult.documentsFound,
             documentsSent: documentSearchResult.documentsSent,
             filesSent: documentSearchResult.filesSent,
+            gateDecision: documentSearchResult.documentGateDecision,
+            gateReason: documentSearchResult.documentGateReason,
+            selectedDocument: documentSearchResult.selectedDocument,
+            suppressedDocumentsCount:
+              documentSearchResult.suppressedDocumentsCount,
           });
+
+          if (
+            documentSearchResult.useMessageAsReply &&
+            documentSearchResult.message?.trim().length
+          ) {
+            aiResponse.content = documentSearchResult.message.trim();
+            aiResponse.toolCalls = undefined;
+          }
 
           // Se enviou documentos, finalizar (mensagens já foram salvas em handleDocumentSearchToolCall)
           if (

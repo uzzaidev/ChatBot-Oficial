@@ -1,0 +1,260 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { handleDocumentSearchToolCall } from "@/nodes/handleDocumentSearchToolCall";
+import { searchDocumentInKnowledge } from "@/nodes/searchDocumentInKnowledge";
+import { sendDocumentMessage, sendImageMessage } from "@/lib/meta";
+import { saveChatMessage } from "@/nodes/saveChatMessage";
+import { createServiceRoleClient } from "@/lib/supabase";
+
+vi.mock("@/nodes/searchDocumentInKnowledge", () => ({
+  searchDocumentInKnowledge: vi.fn(),
+}));
+
+vi.mock("@/lib/meta", () => ({
+  sendDocumentMessage: vi.fn(),
+  sendImageMessage: vi.fn(),
+}));
+
+vi.mock("@/nodes/saveChatMessage", () => ({
+  saveChatMessage: vi.fn(),
+}));
+
+vi.mock("@/lib/supabase", () => ({
+  createServiceRoleClient: vi.fn(),
+}));
+
+const baseConfig: any = {
+  id: "client-1",
+  apiKeys: {
+    openaiApiKey: "test-openai-key",
+  },
+};
+
+const buildSearchResult = (filename: string, mimeType = "image/jpeg") => ({
+  id: "doc-1",
+  filename,
+  documentType: "image",
+  originalFileUrl: "https://example.com/file.jpg",
+  originalFilePath: "docs/file.jpg",
+  originalMimeType: mimeType,
+  originalFileSize: 1234,
+  similarity: 0.91,
+  preview: "preview",
+});
+
+const createSupabaseMock = (options?: {
+  conversationRows?: any[];
+  mediaRows?: any[];
+}) => {
+  const conversationRows = options?.conversationRows ?? [];
+  const mediaRows = options?.mediaRows ?? [];
+
+  const from = vi.fn((table: string) => {
+    const state: { hasNot: boolean } = { hasNot: false };
+    const chain: any = {
+      select: vi.fn(() => chain),
+      eq: vi.fn(() => chain),
+      gte: vi.fn(() => chain),
+      lte: vi.fn(() => chain),
+      not: vi.fn(() => {
+        state.hasNot = true;
+        return chain;
+      }),
+      order: vi.fn(() => chain),
+      limit: vi.fn(async () => {
+        if (table === "n8n_chat_histories") {
+          return { data: state.hasNot ? mediaRows : conversationRows, error: null };
+        }
+        return { data: [], error: null };
+      }),
+    };
+    return chain;
+  });
+
+  return { from };
+};
+
+describe("handleDocumentSearchToolCall gating", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(createServiceRoleClient).mockReturnValue(
+      createSupabaseMock() as any,
+    );
+    vi.mocked(sendImageMessage).mockResolvedValue({
+      messageId: "wamid-image-1",
+    } as any);
+    vi.mocked(sendDocumentMessage).mockResolvedValue({
+      messageId: "wamid-doc-1",
+    } as any);
+    vi.mocked(saveChatMessage).mockResolvedValue(undefined);
+  });
+
+  it("blocks when there is no explicit document intent", async () => {
+    const result = await handleDocumentSearchToolCall({
+      toolCall: {
+        id: "call-1",
+        function: {
+          name: "buscar_documento",
+          arguments: JSON.stringify({
+            query: "quais horarios voces tem",
+            document_type: "any",
+          }),
+        },
+      },
+      phone: "5551999999999",
+      clientId: "client-1",
+      config: baseConfig,
+      userMessage: "quais horarios voces tem hoje?",
+      contactMetadata: null,
+    });
+
+    expect(result.documentGateDecision).toBe("blocked");
+    expect(result.documentGateReason).toBe("no_explicit_intent");
+    expect(result.useMessageAsReply).toBe(true);
+    expect(searchDocumentInKnowledge).not.toHaveBeenCalled();
+    expect(sendImageMessage).not.toHaveBeenCalled();
+    expect(sendDocumentMessage).not.toHaveBeenCalled();
+  });
+
+  it("blocks plan attachment when conversation is still in discovery stage", async () => {
+    vi.mocked(searchDocumentInKnowledge).mockResolvedValue({
+      results: [buildSearchResult("Planos Umana.jpeg")],
+      metadata: {
+        totalDocumentsInBase: 3,
+        chunksFound: 1,
+        uniqueDocumentsFound: 1,
+        threshold: 0.3,
+      },
+    } as any);
+
+    vi.mocked(createServiceRoleClient).mockReturnValue(
+      createSupabaseMock({
+        conversationRows: [
+          {
+            message: { type: "human", content: "oi" },
+            created_at: new Date().toISOString(),
+          },
+        ],
+        mediaRows: [],
+      }) as any,
+    );
+
+    const result = await handleDocumentSearchToolCall({
+      toolCall: {
+        id: "call-2",
+        function: {
+          name: "buscar_documento",
+          arguments: JSON.stringify({
+            query: "me envia a tabela de planos",
+            document_type: "any",
+          }),
+        },
+      },
+      phone: "5551888888888",
+      clientId: "client-1",
+      config: baseConfig,
+      userMessage: "quero saber valores",
+      contactMetadata: null,
+    });
+
+    expect(result.documentGateDecision).toBe("blocked");
+    expect(result.documentGateReason).toBe("wrong_stage");
+    expect(result.useMessageAsReply).toBe(true);
+    expect(result.selectedDocument).toBe("Planos Umana.jpeg");
+    expect(sendImageMessage).not.toHaveBeenCalled();
+    expect(sendDocumentMessage).not.toHaveBeenCalled();
+  });
+
+  it("blocks duplicated attachment inside cooldown window", async () => {
+    vi.mocked(searchDocumentInKnowledge).mockResolvedValue({
+      results: [buildSearchResult("Planos Umana.jpeg")],
+      metadata: {
+        totalDocumentsInBase: 3,
+        chunksFound: 1,
+        uniqueDocumentsFound: 1,
+        threshold: 0.3,
+      },
+    } as any);
+
+    vi.mocked(createServiceRoleClient).mockReturnValue(
+      createSupabaseMock({
+        conversationRows: [],
+        mediaRows: [
+          {
+            media_metadata: {
+              filename: "Planos Umana.jpeg",
+            },
+            created_at: new Date().toISOString(),
+          },
+        ],
+      }) as any,
+    );
+
+    const result = await handleDocumentSearchToolCall({
+      toolCall: {
+        id: "call-3",
+        function: {
+          name: "buscar_documento",
+          arguments: JSON.stringify({
+            query: "me envia a tabela de planos",
+            document_type: "any",
+          }),
+        },
+      },
+      phone: "5551777777777",
+      clientId: "client-1",
+      config: baseConfig,
+      userMessage: "manda os planos de novo",
+      contactMetadata: { objetivo: "autoconhecimento" },
+    });
+
+    expect(result.documentGateDecision).toBe("blocked");
+    expect(result.documentGateReason).toBe("cooldown_duplicate");
+    expect(result.useMessageAsReply).toBe(true);
+    expect(sendImageMessage).not.toHaveBeenCalled();
+    expect(sendDocumentMessage).not.toHaveBeenCalled();
+  });
+
+  it("allows and sends exactly one media when gates pass", async () => {
+    vi.mocked(searchDocumentInKnowledge).mockResolvedValue({
+      results: [buildSearchResult("Horarios Umana.jpeg")],
+      metadata: {
+        totalDocumentsInBase: 3,
+        chunksFound: 1,
+        uniqueDocumentsFound: 1,
+        threshold: 0.3,
+      },
+    } as any);
+
+    vi.mocked(createServiceRoleClient).mockReturnValue(
+      createSupabaseMock({
+        conversationRows: [],
+        mediaRows: [],
+      }) as any,
+    );
+
+    const result = await handleDocumentSearchToolCall({
+      toolCall: {
+        id: "call-4",
+        function: {
+          name: "buscar_documento",
+          arguments: JSON.stringify({
+            query: "me envia a grade completa",
+            document_type: "any",
+          }),
+        },
+      },
+      phone: "5551666666666",
+      clientId: "client-1",
+      config: baseConfig,
+      userMessage: "pode mandar a imagem da grade",
+      contactMetadata: { objetivo: "iniciar pratica" },
+    });
+
+    expect(result.documentGateDecision).toBe("allowed");
+    expect(result.documentGateReason).toBe("allowed");
+    expect(result.documentsSent).toBe(1);
+    expect(result.filesSent).toEqual(["Horarios Umana.jpeg"]);
+    expect(sendImageMessage).toHaveBeenCalledTimes(1);
+  });
+});
+
