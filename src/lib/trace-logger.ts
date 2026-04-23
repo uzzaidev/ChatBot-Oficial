@@ -1,4 +1,8 @@
 import { createServiceRoleClient } from "@/lib/supabase";
+import {
+  classifyAiFailureCategory,
+  classifyPendingBucket,
+} from "@/lib/trace-status";
 
 // ─── Stage types ────────────────────────────────────────────────────────────
 
@@ -169,6 +173,21 @@ export const createTraceLogger = (
     >;
 
     // ── Build message_traces row ──────────────────────────────────────────
+    const finalStatus = errorMsg ? "failed" : (stageTimes.sent ? "success" : "pending");
+    const pendingBucket =
+      finalStatus === "pending" || finalStatus === "failed"
+        ? classifyPendingBucket({
+            status: finalStatus,
+            generation_started_at: stageTimes.generation_started?.toISOString() ?? null,
+            generation_completed_at:
+              stageTimes.generation_completed?.toISOString() ?? null,
+            sent_at: stageTimes.sent?.toISOString() ?? null,
+            metadata: {
+              error: errorMsg ?? null,
+            },
+          })
+        : null;
+
     const traceRow = {
       id: traceId,
       client_id: input.clientId,
@@ -220,12 +239,14 @@ export const createTraceLogger = (
       cost_usd: generationData?.costUsd ?? null,
 
       // Status
-      status: errorMsg ? "failed" : (stageTimes.sent ? "success" : "pending"),
+      status: finalStatus,
 
       // Flexible metadata
       metadata: {
         stages: stageMetadata,
         error: errorMsg ?? null,
+        ai_failure_category: classifyAiFailureCategory(errorMsg),
+        pending_bucket: pendingBucket,
       },
     };
 

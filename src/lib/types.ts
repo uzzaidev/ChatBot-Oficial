@@ -722,6 +722,10 @@ export interface ContactMetadata {
   como_conheceu?: string;
   indicado_por?: string;
   objetivo?: string;
+  experiencia?: string;
+  experiencia_yoga?: string;
+  periodo_preferido?: string;
+  dia_preferido?: string;
   [key: string]: string | number | boolean | null | undefined;
 }
 

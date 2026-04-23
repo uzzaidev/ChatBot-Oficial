@@ -1,4 +1,5 @@
 import { query } from "@/lib/postgres";
+import { reconcileTraceForWhatsAppStatus } from "@/lib/trace-reconciliation";
 import { createServiceRoleClient } from "@/lib/supabase";
 import { sendBatchCategorizedPush } from "@/lib/push-dispatch";
 
@@ -220,6 +221,30 @@ export const processStatusUpdate = async (
     errorDetails,
     clientId,
   });
+
+  try {
+    const parsedTimestamp = Number(statusUpdate.timestamp);
+    const timestampIso = Number.isFinite(parsedTimestamp)
+      ? new Date(parsedTimestamp * 1000).toISOString()
+      : new Date().toISOString();
+
+    await reconcileTraceForWhatsAppStatus({
+      clientId,
+      wamid,
+      whatsappStatus: status,
+      timestampIso,
+    });
+  } catch (reconcileError) {
+    console.warn("⚠️ Failed to reconcile message_traces from status update", {
+      clientId,
+      wamid,
+      status,
+      error:
+        reconcileError instanceof Error
+          ? reconcileError.message
+          : "unknown_error",
+    });
+  }
 
   if (!result.updated) {
     // ✨ GRACEFUL HANDLING: Status updates are not critical

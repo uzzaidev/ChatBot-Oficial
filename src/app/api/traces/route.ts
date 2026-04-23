@@ -1,8 +1,19 @@
+import { query as pgQuery } from "@/lib/postgres";
 import { createServiceRoleClient } from "@/lib/supabase";
 import { getClientIdFromSession } from "@/lib/supabase-server";
+import { classifyPendingBucket, normalizePhoneDigits, type PendingBucket } from "@/lib/trace-status";
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
+
+const emptyPendingBuckets = (): Record<PendingBucket, number> => ({
+  nao_chegou_na_geracao: 0,
+  geracao_iniciada_nao_concluida: 0,
+  geracao_concluida_sem_envio: 0,
+  enviado_sem_status: 0,
+  erro_ia: 0,
+  outro_pending: 0,
+});
 
 // GET /api/traces?from=ISO&to=ISO&phone=X&status=Y&limit=50&offset=0
 export async function GET(request: NextRequest) {
@@ -33,7 +44,7 @@ export async function GET(request: NextRequest) {
         `id, phone, status, user_message, agent_response, model_used,
          tokens_input, tokens_output, cost_usd,
          latency_total_ms, latency_generation_ms, latency_retrieval_ms, latency_embedding_ms,
-         webhook_received_at, sent_at, created_at`
+         webhook_received_at, generation_started_at, generation_completed_at, sent_at, metadata, created_at`
       )
       .eq("client_id", clientId)
       .order("created_at", { ascending: false })
@@ -83,12 +94,102 @@ export async function GET(request: NextRequest) {
       0
     );
 
+    const pendingBuckets = emptyPendingBuckets();
+    for (const row of data ?? []) {
+      if (row.status !== "pending") continue;
+      const bucket = classifyPendingBucket({
+        status: row.status,
+        generation_started_at: row.generation_started_at,
+        generation_completed_at: row.generation_completed_at,
+        sent_at: row.sent_at,
+        metadata: row.metadata,
+      });
+      pendingBuckets[bucket] += 1;
+    }
+
+    const statusCounts = (data ?? []).reduce(
+      (acc: Record<string, number>, row: { status: string }) => {
+        acc[row.status] = (acc[row.status] ?? 0) + 1;
+        return acc;
+      },
+      {},
+    );
+
+    const normalizedPhones = Array.from(
+      new Set(
+        (data ?? [])
+          .map((row: { phone: string }) => normalizePhoneDigits(row.phone))
+          .filter((phone: string) => phone.length > 0),
+      ),
+    );
+
+    let metadataCoverage: {
+      contatos_no_periodo: number;
+      com_email: number;
+      com_cpf: number;
+      com_objetivo: number;
+      com_experiencia: number;
+      com_periodo_ou_dia: number;
+    } | null = null;
+
+    if (normalizedPhones.length > 0) {
+      try {
+        const coverage = await pgQuery<{
+          contatos_no_periodo: number;
+          com_email: number;
+          com_cpf: number;
+          com_objetivo: number;
+          com_experiencia: number;
+          com_periodo_ou_dia: number;
+        }>(
+          `
+          WITH phones AS (
+            SELECT UNNEST($1::text[]) AS phone
+          ),
+          contacts AS (
+            SELECT
+              regexp_replace(telefone::text, '\\D', '', 'g') AS phone,
+              metadata
+            FROM clientes_whatsapp
+            WHERE client_id = $2
+          )
+          SELECT
+            COUNT(*)::int AS contatos_no_periodo,
+            COUNT(*) FILTER (WHERE NULLIF(COALESCE(c.metadata->>'email', ''), '') IS NOT NULL)::int AS com_email,
+            COUNT(*) FILTER (WHERE NULLIF(COALESCE(c.metadata->>'cpf', ''), '') IS NOT NULL)::int AS com_cpf,
+            COUNT(*) FILTER (WHERE NULLIF(COALESCE(c.metadata->>'objetivo', ''), '') IS NOT NULL)::int AS com_objetivo,
+            COUNT(*) FILTER (
+              WHERE NULLIF(COALESCE(c.metadata->>'experiencia', c.metadata->>'experiencia_yoga', ''), '') IS NOT NULL
+            )::int AS com_experiencia,
+            COUNT(*) FILTER (
+              WHERE NULLIF(COALESCE(c.metadata->>'periodo_preferido', c.metadata->>'dia_preferido', ''), '') IS NOT NULL
+            )::int AS com_periodo_ou_dia
+          FROM phones p
+          LEFT JOIN contacts c ON c.phone = p.phone
+          `,
+          [normalizedPhones, clientId],
+        );
+        metadataCoverage = coverage.rows[0] ?? null;
+      } catch (coverageError) {
+        console.warn("[GET /api/traces] metadata coverage query failed", {
+          clientId,
+          error:
+            coverageError instanceof Error
+              ? coverageError.message
+              : String(coverageError),
+        });
+      }
+    }
+
     return NextResponse.json({
       data: data ?? [],
       meta: {
         limit,
         offset,
         costTodayUsd: Number(costToday.toFixed(6)),
+        statusCounts,
+        pendingBuckets,
+        metadataCoverage,
       },
     });
   } catch (error) {

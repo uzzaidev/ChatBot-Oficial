@@ -1433,18 +1433,46 @@ export const processChatbotMessage = async (
 
       const firstName = (parsedMessage.name || "").trim().split(/\s+/)[0] || "";
       const greeting = firstName ? `Oi, ${firstName}.` : "Oi.";
+      const errorMessage =
+        aiError instanceof Error ? aiError.message : "ai_generation_failed";
+      const normalizedError = errorMessage.toLowerCase();
+
+      let fallbackCategory:
+        | "quota"
+        | "rate_limit"
+        | "timeout"
+        | "provider_unavailable"
+        | "generic" = "generic";
+
+      if (
+        /(quota|insufficient_quota|billing|exceeded your current quota)/i.test(
+          normalizedError,
+        )
+      ) {
+        fallbackCategory = "quota";
+      } else if (/(rate limit|429|too many requests)/i.test(normalizedError)) {
+        fallbackCategory = "rate_limit";
+      } else if (/(timeout|timed out|etimedout|aborted|deadline)/i.test(normalizedError)) {
+        fallbackCategory = "timeout";
+      } else if (
+        /(service unavailable|temporarily unavailable|overloaded|provider)/i.test(
+          normalizedError,
+        )
+      ) {
+        fallbackCategory = "provider_unavailable";
+      }
+
       const fallbackText =
-        `${greeting} Estou com uma instabilidade momentanea para gerar a resposta completa, ` +
-        "mas posso te ajudar agora com informacoes de horarios, planos e como iniciar. " +
-        "Voce prefere que eu te passe os horarios primeiro ou os valores?";
+        fallbackCategory === "quota"
+          ? `${greeting} Estou com indisponibilidade temporaria no provedor principal de IA agora. Posso seguir seu atendimento por fluxo de contingencia com informacoes de horarios, planos e como iniciar. Voce prefere horarios ou valores primeiro?`
+          : `${greeting} Estou com uma instabilidade momentanea para gerar a resposta completa, mas posso te ajudar agora com informacoes de horarios, planos e como iniciar. Voce prefere que eu te passe os horarios primeiro ou os valores?`;
 
       aiResponse = {
         content: fallbackText,
         finished: true,
         model: "fallback_local",
         wasFallback: true,
-        fallbackReason:
-          aiError instanceof Error ? aiError.message : "ai_generation_failed",
+        fallbackReason: `${fallbackCategory}:${errorMessage}`,
         primaryAttemptedProvider: config.primaryProvider,
         primaryAttemptedModel:
           config.primaryProvider === "groq"
@@ -1454,7 +1482,8 @@ export const processChatbotMessage = async (
 
       logger.logNodeWarning("12. Generate AI Response", {
         warning: "ai_generation_failed_using_local_fallback",
-        error: aiError instanceof Error ? aiError.message : "unknown_error",
+        error: errorMessage,
+        fallbackCategory,
         fallbackLength: fallbackText.length,
       });
     }

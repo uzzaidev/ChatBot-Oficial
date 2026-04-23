@@ -43,6 +43,8 @@ interface TraceRow {
   latency_retrieval_ms: number | null;
   latency_embedding_ms: number | null;
   webhook_received_at: string | null;
+  generation_started_at: string | null;
+  generation_completed_at: string | null;
   sent_at: string | null;
   metadata: Record<string, unknown> | null;
   created_at: string;
@@ -78,6 +80,36 @@ interface TraceDetail extends TraceRow {
 
 interface TracesMeta {
   costTodayUsd: number;
+  statusCounts?: Record<string, number>;
+  pendingBuckets?: Record<string, number>;
+  metadataCoverage?: {
+    contatos_no_periodo: number;
+    com_email: number;
+    com_cpf: number;
+    com_objetivo: number;
+    com_experiencia: number;
+    com_periodo_ou_dia: number;
+  } | null;
+}
+
+interface QualityAlertsResponse {
+  data?: {
+    alerts?: Array<{
+      code: string;
+      severity: "critical" | "warning" | "info";
+      message: string;
+      value: number;
+      threshold: number;
+    }>;
+    window15m?: {
+      total: number;
+      pending: number;
+      failed: number;
+      pendingRatioPct: number;
+      failedRatioPct: number;
+      avgLatencyMs: number;
+    };
+  };
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -879,6 +911,8 @@ export function TracesClient({ initialTraceId }: TracesClientProps = {}) {
   const [tab, setTab] = useState<DetailTab>("overview");
   const [refreshing, setRefreshing] = useState(false);
   const [promotingTraceId, setPromotingTraceId] = useState<string | null>(null);
+  const [alertCount, setAlertCount] = useState(0);
+  const [criticalAlertCount, setCriticalAlertCount] = useState(0);
   const searchRef = useRef<HTMLInputElement>(null);
   const initialTraceFetchedRef = useRef(false);
 
@@ -887,24 +921,42 @@ export function TracesClient({ initialTraceId }: TracesClientProps = {}) {
     else setRefreshing(true);
     setListError(null);
     try {
-      const res = await fetch("/api/traces?limit=100");
-      if (!res.ok) {
-        const reason = await res.text().catch(() => "");
+      const [tracesRes, alertsRes] = await Promise.all([
+        fetch("/api/traces?limit=100"),
+        fetch("/api/quality/alerts"),
+      ]);
+
+      if (!tracesRes.ok) {
+        const reason = await tracesRes.text().catch(() => "");
         throw new Error(
-          `Falha ao carregar traces (${res.status})${
+          `Falha ao carregar traces (${tracesRes.status})${
             reason ? `: ${reason.slice(0, 180)}` : ""
           }`,
         );
       }
-      const json = await res.json();
+      const json = await tracesRes.json();
       setTraces(json.data ?? []);
       setMeta(json.meta ?? null);
+
+      if (alertsRes.ok) {
+        const alertsJson = (await alertsRes.json()) as QualityAlertsResponse;
+        const alerts = alertsJson.data?.alerts ?? [];
+        setAlertCount(alerts.length);
+        setCriticalAlertCount(
+          alerts.filter((alert) => alert.severity === "critical").length,
+        );
+      } else {
+        setAlertCount(0);
+        setCriticalAlertCount(0);
+      }
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Erro ao carregar traces";
       setListError(message);
       setTraces([]);
       setMeta(null);
+      setAlertCount(0);
+      setCriticalAlertCount(0);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -1010,6 +1062,20 @@ export function TracesClient({ initialTraceId }: TracesClientProps = {}) {
       )
     : 0;
   const costToday = meta?.costTodayUsd ?? 0;
+  const coverage = meta?.metadataCoverage ?? null;
+  const experienciaPct =
+    coverage && coverage.contatos_no_periodo > 0
+      ? Math.round((coverage.com_experiencia / coverage.contatos_no_periodo) * 100)
+      : 0;
+  const periodoDiaPct =
+    coverage && coverage.contatos_no_periodo > 0
+      ? Math.round(
+          (coverage.com_periodo_ou_dia / coverage.contatos_no_periodo) * 100,
+        )
+      : 0;
+  const pendingBucketMain =
+    meta?.pendingBuckets &&
+    Object.entries(meta.pendingBuckets).sort((a, b) => b[1] - a[1])[0];
 
   return (
     <div className="flex flex-col flex-1 h-full overflow-hidden bg-background">
@@ -1037,7 +1103,7 @@ export function TracesClient({ initialTraceId }: TracesClientProps = {}) {
             </Button>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-7">
           <StatCard
             icon={MessageSquare}
             label="Mensagens hoje"
@@ -1065,7 +1131,45 @@ export function TracesClient({ initialTraceId }: TracesClientProps = {}) {
             }% do total`}
             accent={failedToday > 0 ? "bg-red-500/10" : undefined}
           />
+          <StatCard
+            icon={Sparkles}
+            label="Cobertura Experiência"
+            value={`${experienciaPct}%`}
+            sub={
+              coverage
+                ? `${coverage.com_experiencia}/${coverage.contatos_no_periodo} contatos`
+                : "sem dados"
+            }
+          />
+          <StatCard
+            icon={Clock}
+            label="Cobertura Período/Dia"
+            value={`${periodoDiaPct}%`}
+            sub={
+              coverage
+                ? `${coverage.com_periodo_ou_dia}/${coverage.contatos_no_periodo} contatos`
+                : "sem dados"
+            }
+          />
+          <StatCard
+            icon={AlertTriangle}
+            label="Alertas 15m"
+            value={String(alertCount)}
+            sub={
+              criticalAlertCount > 0
+                ? `${criticalAlertCount} crítico(s)`
+                : "sem críticos"
+            }
+            accent={criticalAlertCount > 0 ? "bg-red-500/10" : undefined}
+          />
         </div>
+        {pendingBucketMain && pendingBucketMain[1] > 0 && (
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Principal bucket de pending:{" "}
+            <span className="font-mono">{pendingBucketMain[0]}</span> (
+            {pendingBucketMain[1]})
+          </p>
+        )}
       </div>
 
       {/* ── Body: list + detail ────────────────────────────────────────── */}

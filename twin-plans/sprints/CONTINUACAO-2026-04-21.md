@@ -6,6 +6,32 @@
 
 ---
 
+## 0. Atualizacao 2026-04-23 (checks)
+
+### Concluido desde a versao original
+- [x] Fase A2 concluida: paginas de traces + detalhe + custo diario no dashboard.
+- [x] Fase B1/B2 concluida: vitest/msw/playwright instalados e baseline de testes ativo.
+- [x] CI atualizado e funcional para os testes atuais.
+- [x] Mitigacao de anexos em producao (commit b7322da):
+  - gate de intencao explicita para buscar_documento
+  - cooldown anti-duplicidade de anexo
+  - stage-gate para evitar anexo comercial precoce
+  - telemetria de decisao de gate em trace/tool-call
+- [x] Testes unitarios da mitigacao adicionados e passando.
+
+### Pendente para fechamento operacional (A1)
+- [ ] Validacao real de 20 conversas com captura cadastral (meta >= 95%).
+- [ ] Validacao real de traces/retrieval/tool_calls em WhatsApp.
+- [ ] Bootstrap do cliente piloto com >=30 entradas em ground truth.
+- [ ] Confirmar agent_evaluations com volume real (>=100) para liberar S5.
+- [ ] Dogfooding S4 com revisao de FAILs e promocoes para ground truth.
+
+### Estado atual do plano
+- [x] Nao iniciar S5 sem pre-requisitos.
+- [ ] S5 (RAG Insights) ainda nao iniciado.
+- [ ] S6 (Hardening Go-Live) ainda nao iniciado.
+
+---
 ## 1. Diagnóstico: O que realmente existe
 
 ### ✅ Código implementado e confirmado no repositório
@@ -298,3 +324,66 @@ Se você está retomando este plano, siga estas prioridades:
 
 *Documento gerado em 2026-04-21 por análise de: git status, glob de src/, migrations aplicadas, package.json e arquivos de sprint.*
 
+
+
+
+## Atualizacao 2026-04-23 - Ajuste de captura cadastral (execucao)
+
+Contexto medido em producao:
+- `contatos_no_periodo=19`
+- `com_email=3`, `com_cpf=4`, `com_objetivo=8`
+- `com_experiencia=0`, `com_periodo_ou_dia=0`
+
+Plano executado:
+- [x] Expandir schema da tool `registrar_dado_cadastral` para aceitar:
+  - `experiencia`, `experiencia_yoga`, `periodo_preferido`, `dia_preferido`
+- [x] Atualizar `updateContactMetadata` com aliases:
+  - `experiencia_previa`, `yoga_experience`, `periodo`, `turno`, `dia`
+- [x] Atualizar fallback extractor para os novos campos
+- [x] Reforcar detector `hasLikelyContactData` para linguagem natural sem formato `campo:valor`
+- [x] Expor novos campos nos dados ja coletados do prompt de geracao (evita perguntar de novo)
+- [x] Cobertura de testes unitarios:
+  - `tests/unit/extract-contact-data-fallback.test.ts`
+  - `tests/unit/update-contact-metadata.test.ts`
+- [x] Validacao tecnica:
+  - `pnpm exec tsc --noEmit`
+  - `pnpm test:vitest -- tests/unit/extract-contact-data-fallback.test.ts tests/unit/update-contact-metadata.test.ts`
+
+Proximo checkpoint operacional:
+- [ ] Recoletar os mesmos KPIs por 24h no tenant piloto
+- [ ] Meta minima: `com_experiencia >= 40%` e `com_periodo_ou_dia >= 40%` dos contatos novos
+- [ ] Se ficar abaixo da meta, ajustar prompt de tenant + pesos de deteccao de fallback
+
+## Atualizacao 2026-04-23 - Implementacoes paralelas enquanto rodam iteracoes
+
+- [x] Reconciliação de traces implementada (serviço + cron):
+  - `src/lib/trace-reconciliation.ts`
+  - `src/app/api/cron/traces-reconcile/route.ts`
+- [x] Classificação de pending por bucket implementada:
+  - `src/lib/trace-status.ts`
+  - `src/lib/trace-logger.ts` (persistência em metadata)
+  - `src/app/api/traces/route.ts` (meta.pendingBuckets)
+- [x] Alertas operacionais implementados:
+  - `src/app/api/quality/alerts/route.ts`
+- [x] Fallback resiliente para falha de IA atualizado:
+  - `src/flows/chatbotFlow.ts` (categoria de fallback + mensagem de contingencia)
+- [x] Testes adicionados (unit + integration):
+  - `tests/unit/trace-status.test.ts`
+  - `tests/unit/trace-reconciliation.test.ts`
+  - `tests/integration/quality-alerts-api.test.ts`
+  - `tests/integration/traces-reconcile-cron-api.test.ts`
+- [x] Painel de traces atualizado com sinais de operacao:
+  - cards de cobertura cadastral
+  - card de alertas 15m
+  - bucket principal de pending
+
+## Atualizacao 2026-04-23 - Fechamento operacional de observabilidade
+
+- [x] Cron de reconciliacao agendado no deploy:
+  - `vercel.json` com `/api/cron/traces-reconcile` a cada 10 minutos.
+- [x] Reconciliacao por webhook de status endurecida:
+  - `src/lib/trace-reconciliation.ts` agora faz merge seguro de `metadata` via SQL (`jsonb ||`), sem sobrescrever campos existentes.
+- [x] SQL oficial de validacao por tenant criado:
+  - `scripts/quality-trace-validation.sql`
+  - inclui: trace health, pending buckets, reconciliacao trace x chat history, cobertura cadastral (com cast-safe `telefone::text`) e cobertura de evaluations.
+- [ ] Rodar o SQL do tenant piloto apos 24h para validar melhora de `pending` e cobertura de cadastro.

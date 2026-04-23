@@ -35,6 +35,10 @@ const ALLOWED_FIELDS = new Set([
   "como_conheceu",
   "indicado_por",
   "objetivo",
+  "experiencia",
+  "experiencia_yoga",
+  "periodo_preferido",
+  "dia_preferido",
   "nome_completo",
   "data_nascimento",
   "rg",
@@ -61,6 +65,11 @@ const FIELD_ALIASES: Record<string, string> = {
   zip_code: "cep",
   zipcode: "cep",
   address: "endereco",
+  experiencia_previa: "experiencia",
+  yoga_experience: "experiencia",
+  periodo: "periodo_preferido",
+  turno: "periodo_preferido",
+  dia: "dia_preferido",
 };
 
 const normalizeFieldKey = (key: string): string => {

@@ -20,6 +20,10 @@
     {
       "path": "/api/cron/enforce-grace-period",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/traces-reconcile",
+      "schedule": "*/10 * * * *"
     }
   ]
 }

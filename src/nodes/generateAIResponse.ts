@@ -196,6 +196,10 @@ const CONTACT_METADATA_FIELDS = [
   "como_conheceu",
   "indicado_por",
   "objetivo",
+  "experiencia",
+  "experiencia_yoga",
+  "periodo_preferido",
+  "dia_preferido",
   "nome_completo",
   "data_nascimento",
   "rg",
@@ -412,6 +416,8 @@ export const generateAIResponse = async (
           "Sempre que o usuario informar dados cadastrais, chame a tool registrar_dado_cadastral.",
           `Campos permitidos: ${CONTACT_METADATA_FIELDS.join(", ")}.`,
           "Use preferencialmente `nome_completo` para nome do cliente (se vier `nome`, ele sera convertido internamente).",
+          "Para vivencia com yoga, use `experiencia` (ou `experiencia_yoga`, que sera normalizado).",
+          "Para disponibilidade, use `periodo_preferido` (manha/tarde/noite) e `dia_preferido` quando houver dia especifico.",
           "Quando houver varios dados na mesma mensagem, faca UMA unica chamada usando `campos` com todos eles.",
           "Nao responda apenas em texto confirmando cadastro sem antes chamar a tool.",
         ].join("\n"),
@@ -453,6 +459,22 @@ export const generateAIResponse = async (
       }
       if (contactMetadata.objetivo) {
         metaLines.push(`Objetivo declarado: ${contactMetadata.objetivo}`);
+      }
+      if (contactMetadata.experiencia) {
+        metaLines.push(`Experiencia com yoga: ${contactMetadata.experiencia}`);
+      }
+      if (contactMetadata.experiencia_yoga) {
+        metaLines.push(
+          `Experiencia com yoga (legado): ${contactMetadata.experiencia_yoga}`,
+        );
+      }
+      if (contactMetadata.periodo_preferido) {
+        metaLines.push(
+          `Periodo preferido: ${contactMetadata.periodo_preferido}`,
+        );
+      }
+      if (contactMetadata.dia_preferido) {
+        metaLines.push(`Dia preferido: ${contactMetadata.dia_preferido}`);
       }
 
       if (metaLines.length > 0) {

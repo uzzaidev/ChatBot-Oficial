@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GET as getTraces } from "@/app/api/traces/route";
 import { getClientIdFromSession } from "@/lib/supabase-server";
 import { createServiceRoleClient } from "@/lib/supabase";
+import { query } from "@/lib/postgres";
 
 vi.mock("@/lib/supabase-server", () => ({
   getClientIdFromSession: vi.fn(),
@@ -9,6 +10,10 @@ vi.mock("@/lib/supabase-server", () => ({
 
 vi.mock("@/lib/supabase", () => ({
   createServiceRoleClient: vi.fn(),
+}));
+
+vi.mock("@/lib/postgres", () => ({
+  query: vi.fn(),
 }));
 
 type QueryResult = { data?: any; error?: { message?: string } | null };
@@ -30,6 +35,7 @@ const createAwaitableQuery = (result: QueryResult) => {
 describe("GET /api/traces (vitest)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(query).mockResolvedValue({ rows: [] } as any);
   });
 
   it("returns 401 when session is missing", async () => {
@@ -77,6 +83,7 @@ describe("GET /api/traces (vitest)", () => {
     expect(response.status).toBe(200);
     expect(body.data).toHaveLength(1);
     expect(body.meta.costTodayUsd).toBe(0.2);
+    expect(body.meta.pendingBuckets).toBeDefined();
   });
 });
 

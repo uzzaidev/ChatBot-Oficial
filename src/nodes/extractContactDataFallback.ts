@@ -17,6 +17,9 @@ const FALLBACK_FIELDS = [
   "como_conheceu",
   "indicado_por",
   "objetivo",
+  "experiencia",
+  "periodo_preferido",
+  "dia_preferido",
   "bairro",
 ] as const;
 
@@ -38,6 +41,11 @@ const FIELD_ALIASES: Record<string, FallbackField> = {
   zip_code: "cep",
   zipcode: "cep",
   address: "endereco",
+  experiencia_previa: "experiencia",
+  yoga_experience: "experiencia",
+  periodo: "periodo_preferido",
+  turno: "periodo_preferido",
+  dia: "dia_preferido",
 };
 
 export interface ExtractContactDataFallbackInput {
@@ -100,6 +108,9 @@ const buildSystemPrompt = (): string =>
     `Use apenas estes campos: ${FALLBACK_FIELDS.join(", ")}.`,
     "Formato obrigatorio:",
     '{"dados":{"campo":"valor"},"confidence":0.0}',
+    "Use 'experiencia' para experiencia com yoga (ex: nunca praticou, ja praticou, pratica atualmente).",
+    "Use 'periodo_preferido' para manha/tarde/noite.",
+    "Use 'dia_preferido' para dia especifico (segunda, terca, sexta etc).",
     "Se nao houver dados cadastrais, retorne exatamente:",
     '{"dados":{},"confidence":0.0}',
   ].join("\n");
@@ -159,6 +170,10 @@ export const hasLikelyContactData = (message: string): boolean => {
   if (!text) return false;
 
   const lowered = text.toLowerCase();
+  const normalized = lowered
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
   const hasDirectPattern =
     /\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/.test(text) ||
     /\b[^\s@]+@[^\s@]+\.[^\s@]{2,}\b/.test(text) ||
@@ -167,11 +182,20 @@ export const hasLikelyContactData = (message: string): boolean => {
 
   if (hasDirectPattern) return true;
 
-  const hasKeyword = /(cpf|email|e-mail|cep|endereco|endereço|rg|nascimento|bairro|cidade|estado|indicado|como conheceu|objetivo|profissao|profissão|telefone alternativo)/i
-    .test(lowered);
+  const hasKeyword =
+    /(cpf|email|e-mail|cep|endereco|rg|nascimento|bairro|cidade|estado|indicado|como conheceu|objetivo|profissao|telefone alternativo|experiencia|iniciante|periodo|turno|manha|tarde|noite|segunda|terca|quarta|quinta|sexta|sabado|domingo)/i.test(
+      normalized,
+    );
   const hasStructuredShape = /[:=]/.test(text);
 
-  return hasKeyword && hasStructuredShape;
+  const hasNaturalSignals =
+    /(nunca pratiquei|ja pratiquei|pratico atualmente|sou iniciante|iniciante|estou comecando)/i.test(
+      normalized,
+    ) ||
+    /\b(manha|tarde|noite)\b/i.test(normalized) ||
+    /\b(segunda|terca|quarta|quinta|sexta|sabado|domingo)\b/i.test(normalized);
+
+  return hasKeyword && (hasStructuredShape || hasNaturalSignals);
 };
 
 export const extractContactDataFallback = async (
@@ -298,3 +322,5 @@ export const scheduleExtractContactDataFallback = (
       });
   });
 };
+
+
