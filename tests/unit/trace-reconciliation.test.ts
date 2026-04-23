@@ -49,6 +49,7 @@ describe("trace-reconciliation", () => {
         "wamid.123",
         "delivered",
         "2026-04-23T10:00:00.000Z",
+        "success",
       ]),
     );
   });

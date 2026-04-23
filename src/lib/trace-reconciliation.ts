@@ -40,6 +40,12 @@ type HistoryMatch = {
   history: HistoryRow;
 };
 
+const isStatusConstraintViolation = (errorMessage: string): boolean =>
+  errorMessage.includes("message_traces_status_check") ||
+  errorMessage.includes("violates check constraint");
+
+const FALLBACK_SUCCESS_STATUS = "needs_review";
+
 export interface ReconcileTracesOptions {
   clientId?: string;
   lookbackHours?: number;
@@ -299,11 +305,30 @@ export async function reconcileTraces(
 
     if (options.dryRun) continue;
 
-    const { error: updateError } = await supabase
+    let { error: updateError } = await supabase
       .from("message_traces")
       .update(patch)
       .eq("id", trace.id)
       .eq("client_id", trace.client_id);
+
+    if (
+      updateError &&
+      patch.status === "success" &&
+      isStatusConstraintViolation(updateError.message)
+    ) {
+      const fallbackPatch = { ...patch, status: FALLBACK_SUCCESS_STATUS };
+      const { error: retryError } = await supabase
+        .from("message_traces")
+        .update(fallbackPatch)
+        .eq("id", trace.id)
+        .eq("client_id", trace.client_id);
+
+      if (!retryError) {
+        updateError = null;
+      } else {
+        updateError = retryError;
+      }
+    }
 
     if (updateError) {
       result.errors += 1;
@@ -330,13 +355,13 @@ export async function reconcileTraceForWhatsAppStatus(input: {
   if (!isSuccess && !isFailure) return;
 
   const nowIso = input.timestampIso ?? new Date().toISOString();
-  try {
+  const runStatusUpdate = async (successStatus: string) => {
     await query(
       `
       UPDATE message_traces
       SET
         status = CASE
-          WHEN $3::text IN ('sent', 'delivered', 'read') THEN 'success'
+          WHEN $3::text IN ('sent', 'delivered', 'read') THEN $5::text
           WHEN $3::text = 'failed' THEN 'failed'
           ELSE status
         END,
@@ -352,16 +377,37 @@ export async function reconcileTraceForWhatsAppStatus(input: {
           )
       WHERE client_id = $1::uuid
         AND whatsapp_message_id = $2
-        AND status IN ('pending', 'success', 'failed')
+        AND status IN ('pending', 'success', 'needs_review', 'failed')
       `,
-      [input.clientId, input.wamid, statusLower, nowIso],
+      [input.clientId, input.wamid, statusLower, nowIso, successStatus],
     );
+  };
+
+  try {
+    await runStatusUpdate("success");
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (isStatusConstraintViolation(errorMessage)) {
+      try {
+        await runStatusUpdate(FALLBACK_SUCCESS_STATUS);
+        return;
+      } catch (retryError) {
+        console.warn("[trace-reconciliation] wamid reconcile failed", {
+          clientId: input.clientId,
+          wamid: input.wamid,
+          status: statusLower,
+          error:
+            retryError instanceof Error ? retryError.message : String(retryError),
+        });
+        return;
+      }
+    }
+
     console.warn("[trace-reconciliation] wamid reconcile failed", {
       clientId: input.clientId,
       wamid: input.wamid,
       status: statusLower,
-      error: error instanceof Error ? error.message : String(error),
+      error: errorMessage,
     });
   }
 }
