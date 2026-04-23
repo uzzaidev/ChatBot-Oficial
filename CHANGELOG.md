@@ -9,6 +9,17 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-23
 
 ### feat
+- Automatizado o monitoramento de prontidão do checkpoint de qualidade para iniciar Sprint 5 no tenant piloto, incluindo API (`GET /api/quality/checkpoint-readiness`), componente visual no dashboard, e script SQL para análise manual.
+- Adicionada API para fila de revisões de avaliações com filtros configuráveis por dias, limite e tipo de veredito (`GET /api/evaluations/review-queue`).
+- Criado componente React `QualityCheckpointReadinessCard` para exibir status e critérios do checkpoint no dashboard de qualidade.
+- Implementada lógica de avaliação detalhada dos critérios de qualidade com mensagens de próximos passos para ajustes antes do avanço para Sprint 5.
+- Incluídos testes unitários e de integração para as novas APIs e lógica de avaliação de checkpoint.
+  - Arquivos: `scripts/quality-checkpoint-readiness.sql`, `src/app/api/quality/checkpoint-readiness/route.ts`, `src/app/api/evaluations/review-queue/route.ts`, `src/components/quality/QualityCheckpointReadinessCard.tsx`, `src/components/quality/QualityDashboard.tsx`, `src/lib/quality-checkpoint-readiness.ts`, `tests/unit/quality-checkpoint-readiness.test.ts`, `tests/integration/quality-checkpoint-readiness-api.test.ts`, `tests/integration/evaluations-review-queue-api.test.ts`
+- Confiança: alta
+
+## 2026-04-23
+
+### feat
 - Implementado relatório diário automatizado de KPIs de qualidade por tenant, com cálculo, snapshot e listagem via API REST; inclui endpoint cron para execução automática diária.
 - Adicionados scripts SQL e API para apoio operacional S2 (bootstrap de candidatos Ground Truth) e S4 (fila priorizada de revisões FAIL/REVIEW).
 - Criada tabela `quality_daily_reports` no banco para persistência dos relatórios diários, com políticas de segurança e índices otimizados.
