@@ -6,6 +6,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-04-23
+
+### feat
+- Implementado controle de envio de anexos baseado em intenção explícita do usuário e estágio comercial, com bloqueios para envios duplicados em cooldown e para usuários sem dados mínimos de descoberta comercial. Adicionado filtro para envio de apenas um arquivo de mídia por chamada e uso de mensagem textual alternativa quando o envio é bloqueado.
+- Incluído testes unitários para validar as regras de gate de documentos, cobrindo bloqueios por ausência de intenção explícita, estágio comercial inadequado e cooldown de duplicatas, além da permissão de envio quando critérios são atendidos.
+- Alterações principais nos arquivos `src/nodes/handleDocumentSearchToolCall.ts`, `src/flows/chatbotFlow.ts` e testes em `tests/unit/handle-document-search-tool-call.test.ts`.
+- Confiança: alta
+
 ## 2026-04-22
 
 ### refactor
