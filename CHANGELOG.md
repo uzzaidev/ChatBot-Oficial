@@ -9,6 +9,45 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-23
 
 ### feat
+- Implementada reconciliação de traces pendentes e falhados com histórico de chat para correção automática de status e preenchimento de respostas de IA, incluindo classificação detalhada de buckets de pending.
+  - Arquivos: `src/lib/trace-reconciliation.ts`, `src/lib/trace-status.ts`, `src/app/api/cron/traces-reconcile/route.ts`, `src/app/api/traces/route.ts`, `src/lib/trace-logger.ts`
+  - Confiança: alta
+
+- Adicionados alertas operacionais para qualidade de traces, com monitoramento de taxas de pending, falhas e latência, além de cobertura cadastral de contatos, expostos via API e painel.
+  - Arquivos: `src/app/api/quality/alerts/route.ts`, `src/components/TracesClient.tsx`
+  - Confiança: alta
+
+- Atualizado fallback do chatbot para categorizar falhas de IA (quota, rate limit, timeout, indisponibilidade do provedor) e adaptar mensagem de contingência conforme categoria.
+  - Arquivos: `src/flows/chatbotFlow.ts`
+  - Confiança: alta
+
+- Expandido esquema de captura cadastral para incluir campos de experiência com yoga e preferências de período/dia, com normalização e aliases para esses campos em ferramentas de extração e atualização de metadados.
+  - Arquivos: `src/nodes/extractContactDataFallback.ts`, `src/nodes/updateContactMetadata.ts`, `src/nodes/generateAIResponse.ts`, `src/lib/types.ts`
+  - Confiança: alta
+
+- Adicionada consulta SQL oficial para validação de qualidade e observabilidade de traces por tenant, incluindo resumo de saúde, buckets de pending, reconciliação com histórico, cobertura cadastral e avaliações.
+  - Arquivos: `scripts/quality-trace-validation.sql`
+  - Confiança: alta
+
+- Atualizado painel de traces para exibir cobertura cadastral (experiência e período/dia preferido), alertas recentes e bucket principal de pending.
+  - Arquivos: `src/components/TracesClient.tsx`
+  - Confiança: alta
+
+- Endurecida reconciliação de status via webhook com merge seguro de metadados JSONB para evitar sobrescrita e garantir atualização correta dos campos.
+  - Arquivos: `src/lib/trace-reconciliation.ts`, `src/nodes/updateMessageStatus.ts`
+  - Confiança: alta
+
+- Adicionado cron job agendado a cada 10 minutos para execução automática da reconciliação de traces pendentes e falhados.
+  - Arquivos: `src/app/api/cron/traces-reconcile/route.ts`, `vercel.json`
+  - Confiança: alta
+
+- Incluídos testes unitários e de integração para novas funcionalidades de reconciliação, alertas de qualidade, classificação de status e captura cadastral.
+  - Arquivos: `tests/unit/trace-status.test.ts`, `tests/unit/trace-reconciliation.test.ts`, `tests/unit/extract-contact-data-fallback.test.ts`, `tests/unit/update-contact-metadata.test.ts`, `tests/integration/quality-alerts-api.test.ts`, `tests/integration/traces-reconcile-cron-api.test.ts`, `tests/integration/traces-api.test.ts`
+  - Confiança: alta
+
+## 2026-04-23
+
+### feat
 - Implementado controle de envio de anexos baseado em intenção explícita do usuário e estágio comercial, com bloqueios para envios duplicados em cooldown e para usuários sem dados mínimos de descoberta comercial. Adicionado filtro para envio de apenas um arquivo de mídia por chamada e uso de mensagem textual alternativa quando o envio é bloqueado.
 - Incluído testes unitários para validar as regras de gate de documentos, cobrindo bloqueios por ausência de intenção explícita, estágio comercial inadequado e cooldown de duplicatas, além da permissão de envio quando critérios são atendidos.
 - Alterações principais nos arquivos `src/nodes/handleDocumentSearchToolCall.ts`, `src/flows/chatbotFlow.ts` e testes em `tests/unit/handle-document-search-tool-call.test.ts`.
