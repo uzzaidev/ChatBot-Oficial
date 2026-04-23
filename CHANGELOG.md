@@ -8,6 +8,17 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-23
 
+### feat
+- Implementado relatório diário automatizado de KPIs de qualidade por tenant, com cálculo, snapshot e listagem via API REST; inclui endpoint cron para execução automática diária.
+- Adicionados scripts SQL e API para apoio operacional S2 (bootstrap de candidatos Ground Truth) e S4 (fila priorizada de revisões FAIL/REVIEW).
+- Criada tabela `quality_daily_reports` no banco para persistência dos relatórios diários, com políticas de segurança e índices otimizados.
+- Adicionada cobertura de testes para APIs de relatório diário e cron.
+- Configurado cron no Vercel para execução diária do relatório de qualidade às 07:10 UTC.
+  - Arquivos: `src/lib/quality-daily-report.ts`, `src/app/api/quality/daily-report/route.ts`, `src/app/api/cron/quality-daily-report/route.ts`, `src/app/api/ground-truth/bootstrap-candidates/route.ts`, `scripts/s2-bootstrap-ground-truth-candidates.sql`, `scripts/s4-fail-review-queue.sql`, `supabase/migrations/20260520121000_create_quality_daily_reports.sql`, `tests/integration/quality-daily-report-api.test.ts`, `tests/integration/quality-daily-report-cron-api.test.ts`, `vercel.json`
+- Confiança: alta
+
+## 2026-04-23
+
 ### fix
 - Ajustado script SQL para permitir o status 'success' na tabela `message_traces`, corrigindo restrição CHECK que bloqueava reconciliação de traces.
 - Implementado fallback para atualizar status como 'needs_review' quando atualização com status 'success' violar restrição de banco, evitando falhas na reconciliação.
