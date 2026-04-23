@@ -410,7 +410,53 @@ Proximo checkpoint operacional:
   - `tests/integration/quality-daily-report-cron-api.test.ts`
 - [x] Apoio operacional S4 (review de FAILs) adicionado:
   - `scripts/s4-fail-review-queue.sql`
+  - `GET /api/evaluations/review-queue`
 - [x] Apoio operacional S2 (bootstrap Ground Truth) adicionado:
   - `scripts/s2-bootstrap-ground-truth-candidates.sql`
   - `src/app/api/ground-truth/bootstrap-candidates/route.ts`
 - [ ] Proximo passo operacional: usar os candidatos para fechar as 30 entradas iniciais de GT no tenant piloto.
+
+## Checkpoint 24h - 2026-04-24 (tenant piloto)
+
+Status atual registrado em 2026-04-23:
+- [x] Migration `quality_daily_reports` aplicada.
+- [x] Cron/manual de KPI diario executado com sucesso (`stored=1`, `failed=0`).
+- [x] Reconciliacao de traces estabilizada (execucao real sem erros para o tenant piloto).
+
+Coleta obrigatoria no checkpoint (D+1):
+- [ ] Reexecutar `scripts/quality-trace-validation.sql` para `client_id=0c17ca30-ad42-48c9-8e40-8c83e3e11da2`.
+- [ ] Confirmar em `quality_daily_reports` o snapshot do dia:
+  - `total_traces`, `success_count`, `pending_count`, `success_rate_pct`
+  - `metadata_capture.com_experiencia`
+  - `metadata_capture.com_periodo_ou_dia`
+  - `evaluation_coverage.eval_coverage_pct`
+- [ ] Verificar alertas (`alerts_snapshot`) e classificar se houve regressao operacional.
+
+Criterio para seguir para S5 sem retrabalho:
+- [ ] Pending sob controle (sem nova onda de `pending` com erro de status).
+- [ ] Captura cadastral minima: experiencia >= 40% e periodo/dia >= 40%.
+- [ ] Pipeline de quality estavel (cron diario + reconciliacao sem erros).
+
+Decisao no checkpoint:
+- Se todos os criterios passarem: iniciar execucao de S5.
+- Se algum criterio falhar: iterar prompt/extractor e repetir checkpoint em +24h.
+
+## Atualizacao 2026-04-23 - Readiness automatizado para checkpoint D+1
+
+- [x] API de prontidao do checkpoint criada:
+  - `GET /api/quality/checkpoint-readiness`
+  - `src/lib/quality-checkpoint-readiness.ts`
+  - `src/app/api/quality/checkpoint-readiness/route.ts`
+- [x] Card operacional no dashboard de Qualidade:
+  - `src/components/quality/QualityCheckpointReadinessCard.tsx`
+  - integrado em `src/components/quality/QualityDashboard.tsx`
+- [x] Script SQL unico para checkpoint manual no Supabase:
+  - `scripts/quality-checkpoint-readiness.sql`
+- [x] Testes adicionados:
+  - `tests/unit/quality-checkpoint-readiness.test.ts`
+  - `tests/integration/quality-checkpoint-readiness-api.test.ts`
+
+Com isso, o que depende de implementacao ficou adiantado.
+O que ainda depende de espera real:
+- [ ] Rodar checkpoint apos 24h de novos dados no tenant piloto.
+- [ ] Confirmar criterios e decidir inicio de S5.

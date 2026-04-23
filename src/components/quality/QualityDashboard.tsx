@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useEvaluations } from "@/hooks/useEvaluations";
 import Link from "next/link";
 import { CostTodayBadge } from "./CostTodayBadge";
+import { QualityCheckpointReadinessCard } from "./QualityCheckpointReadinessCard";
 
 const verdictColor = (verdict: "PASS" | "REVIEW" | "FAIL") => {
   if (verdict === "PASS") return "text-green-600";
@@ -132,6 +133,8 @@ export function QualityDashboard() {
           </div>
         </div>
       )}
+
+      <QualityCheckpointReadinessCard />
 
       <div className="rounded-lg border p-4">
         <p className="text-sm font-medium mb-3">Últimas avaliações</p>
