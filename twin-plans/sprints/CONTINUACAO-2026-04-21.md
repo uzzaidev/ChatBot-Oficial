@@ -387,3 +387,30 @@ Proximo checkpoint operacional:
   - `scripts/quality-trace-validation.sql`
   - inclui: trace health, pending buckets, reconciliacao trace x chat history, cobertura cadastral (com cast-safe `telefone::text`) e cobertura de evaluations.
 - [ ] Rodar o SQL do tenant piloto apos 24h para validar melhora de `pending` e cobertura de cadastro.
+
+## Atualizacao 2026-04-23 - Reconciliacao em producao (checkpoint)
+
+- [x] Deploy de hotfix aplicado (`21e96a6`) com fallback de status para ambientes com constraint antigo.
+- [x] Execucao manual da reconciliacao no tenant piloto (`0c17ca30-ad42-48c9-8e40-8c83e3e11da2`) concluida.
+- [x] Resultado real (`dryRun=false`): `scanned=4`, `changed=4`, `statusToSuccess=4`, `errors=0`.
+- [x] Verificacao imediata (`dryRun=true`): `scanned=0`, `changed=0`, `errors=0`.
+- [ ] Proximo checkpoint: aguardar 24h e reexecutar validacao completa por SQL (`scripts/quality-trace-validation.sql`).
+- [ ] Seguranca operacional pendente: rotacionar `CRON_SECRET` apos os testes.
+
+## Atualizacao 2026-04-23 - Avanco paralelo (S2/S4 + automacao de KPI diario)
+
+- [x] Relatorio diario automatizado implementado (item 4):
+  - `src/lib/quality-daily-report.ts` (calculo + snapshot + listagem)
+  - `src/app/api/quality/daily-report/route.ts` (GET historico / POST gerar+persistir)
+  - `src/app/api/cron/quality-daily-report/route.ts` (execucao automatica por cron)
+  - `supabase/migrations/20260520121000_create_quality_daily_reports.sql`
+  - `vercel.json` com cron diario `/api/cron/quality-daily-report` (`10 7 * * *`)
+- [x] Cobertura de testes para o novo fluxo:
+  - `tests/integration/quality-daily-report-api.test.ts`
+  - `tests/integration/quality-daily-report-cron-api.test.ts`
+- [x] Apoio operacional S4 (review de FAILs) adicionado:
+  - `scripts/s4-fail-review-queue.sql`
+- [x] Apoio operacional S2 (bootstrap Ground Truth) adicionado:
+  - `scripts/s2-bootstrap-ground-truth-candidates.sql`
+  - `src/app/api/ground-truth/bootstrap-candidates/route.ts`
+- [ ] Proximo passo operacional: usar os candidatos para fechar as 30 entradas iniciais de GT no tenant piloto.
