@@ -3,9 +3,14 @@
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { GroundTruthFormModal } from "@/components/quality/GroundTruthFormModal";
-import { useGroundTruth, type GroundTruthEntry } from "@/hooks/useGroundTruth";
+import {
+  useGroundTruth,
+  type GroundTruthBootstrapCandidate,
+  type GroundTruthEntry,
+} from "@/hooks/useGroundTruth";
 
 export function GroundTruthManager() {
   const {
@@ -19,6 +24,8 @@ export function GroundTruthManager() {
     updateItem,
     deactivateItem,
     validateItem,
+    createFromTraceBulk,
+    fetchBootstrapCandidates,
     refetch,
   } = useGroundTruth();
 
@@ -27,11 +34,24 @@ export function GroundTruthManager() {
   const [editing, setEditing] = useState<GroundTruthEntry | null>(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [candidates, setCandidates] = useState<GroundTruthBootstrapCandidate[]>([]);
+  const [loadingCandidates, setLoadingCandidates] = useState(false);
+  const [promotingCandidates, setPromotingCandidates] = useState(false);
+  const [selectedCandidates, setSelectedCandidates] = useState<Record<string, boolean>>({});
 
   const activeCount = useMemo(
     () => items.filter((item) => item.is_active).length,
     [items],
   );
+  const selectedCandidateIds = useMemo(
+    () =>
+      Object.entries(selectedCandidates)
+        .filter(([, checked]) => checked)
+        .map(([traceId]) => traceId),
+    [selectedCandidates],
+  );
+  const allCandidatesSelected =
+    candidates.length > 0 && selectedCandidateIds.length === candidates.length;
 
   const openCreate = () => {
     setModalMode("create");
@@ -76,6 +96,65 @@ export function GroundTruthManager() {
     }
   };
 
+  const loadCandidates = async () => {
+    setLoadingCandidates(true);
+    setMessage(null);
+    try {
+      const data = await fetchBootstrapCandidates({ limit: 30, lookbackDays: 30 });
+      setCandidates(data);
+      setSelectedCandidates({});
+      setMessage(
+        data.length > 0
+          ? `${data.length} candidatos carregados para bootstrap de GT.`
+          : "Nenhum candidato novo encontrado no periodo.",
+      );
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "Erro ao buscar candidatos.");
+    } finally {
+      setLoadingCandidates(false);
+    }
+  };
+
+  const promoteSelectedCandidates = async () => {
+    if (selectedCandidateIds.length === 0) {
+      setMessage("Selecione ao menos 1 candidato para promover.");
+      return;
+    }
+
+    setPromotingCandidates(true);
+    setMessage(null);
+    try {
+      const selectedSet = new Set(selectedCandidateIds);
+      const payload = candidates
+        .filter((candidate) => selectedSet.has(candidate.trace_id))
+        .map((candidate) => ({
+          trace_id: candidate.trace_id,
+          expected_response: candidate.expected_response,
+        }));
+
+      const result = await createFromTraceBulk(payload);
+      const createdSet = new Set(result.created.map((item) => item.trace_id));
+
+      setCandidates((prev) =>
+        prev.filter((candidate) => !createdSet.has(candidate.trace_id)),
+      );
+      setSelectedCandidates((prev) => {
+        const next = { ...prev };
+        for (const traceId of selectedCandidateIds) delete next[traceId];
+        return next;
+      });
+      setMessage(
+        `Lote concluido: ${result.summary.created} criados, ${result.summary.skipped} pulados, ${result.summary.failed} falhas.`,
+      );
+    } catch (e) {
+      setMessage(
+        e instanceof Error ? e.message : "Erro ao promover candidatos em lote.",
+      );
+    } finally {
+      setPromotingCandidates(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-4 p-4 md:p-6">
       <div className="flex flex-wrap items-center gap-2">
@@ -95,6 +174,77 @@ export function GroundTruthManager() {
       )}
 
       <div className="rounded-lg border p-4 space-y-3">
+        <div className="rounded-md border border-border/70 p-3 space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-medium">Bootstrap S2 (candidatos de traces)</p>
+            <Badge variant="outline">Disponiveis: {candidates.length}</Badge>
+            <Badge variant="outline">Selecionados: {selectedCandidateIds.length}</Badge>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={loadCandidates}
+              disabled={loadingCandidates}
+            >
+              {loadingCandidates ? "Carregando..." : "Carregar candidatos"}
+            </Button>
+            <Button
+              size="sm"
+              onClick={promoteSelectedCandidates}
+              disabled={promotingCandidates || selectedCandidateIds.length === 0}
+            >
+              {promotingCandidates ? "Promovendo..." : "Promover selecionados"}
+            </Button>
+            {candidates.length > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  setSelectedCandidates(
+                    allCandidatesSelected
+                      ? {}
+                      : Object.fromEntries(
+                          candidates.map((candidate) => [candidate.trace_id, true]),
+                        ),
+                  )
+                }
+              >
+                {allCandidatesSelected ? "Limpar selecao" : "Selecionar todos"}
+              </Button>
+            )}
+          </div>
+
+          {candidates.length > 0 && (
+            <div className="space-y-2 max-h-64 overflow-auto pr-1">
+              {candidates.map((candidate) => (
+                <div
+                  key={candidate.trace_id}
+                  className="rounded border border-border/60 p-2 flex gap-2"
+                >
+                  <Checkbox
+                    checked={Boolean(selectedCandidates[candidate.trace_id])}
+                    onCheckedChange={(checked) =>
+                      setSelectedCandidates((prev) => ({
+                        ...prev,
+                        [candidate.trace_id]: Boolean(checked),
+                      }))
+                    }
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium truncate">{candidate.user_query}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {candidate.expected_response}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      trace {candidate.trace_id.slice(0, 8)}... •{" "}
+                      {new Date(candidate.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="flex flex-wrap gap-2">
           <Input
             className="max-w-sm"

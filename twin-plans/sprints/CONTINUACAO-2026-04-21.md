@@ -460,3 +460,19 @@ Com isso, o que depende de implementacao ficou adiantado.
 O que ainda depende de espera real:
 - [ ] Rodar checkpoint apos 24h de novos dados no tenant piloto.
 - [ ] Confirmar criterios e decidir inicio de S5.
+
+## Atualizacao 2026-04-23 - Bloco adicional implementado (sem depender de 24h)
+
+- [x] Bootstrap em lote de Ground Truth:
+  - `POST /api/ground-truth/from-trace/bulk`
+  - UI de selecao/promocao em lote em `GroundTruthManager`
+- [x] Painel de fila S4 no workspace de revisao:
+  - `GET /api/evaluations/review-queue`
+  - `ReviewQueuePanel` integrado em `EvaluationsWorkspace`
+- [x] Widget de tendencia diaria no dashboard de qualidade:
+  - `QualityDailyTrendCard` (7 dias de `quality_daily_reports`)
+- [x] Health-check de crons:
+  - `GET /api/quality/cron-health`
+  - `QualityCronHealthCard` no dashboard
+- [x] Runbook operacional:
+  - `docs/runbooks/quality-operations.md`

@@ -8,6 +8,7 @@ import { ConversationReview } from "./ConversationReview";
 import { EvaluationDetails, EvaluationDetailPayload } from "./EvaluationDetails";
 import { EvaluationList } from "./EvaluationList";
 import { HumanFeedbackModal } from "./HumanFeedbackModal";
+import { ReviewQueuePanel } from "./ReviewQueuePanel";
 
 interface EvaluationDetailResponse {
   data?: EvaluationDetailPayload;
@@ -74,6 +75,15 @@ export function EvaluationsWorkspace() {
       setSelectedTraceId(item.trace_id);
       clearError();
       void fetchDetail(item.trace_id);
+    },
+    [clearError, fetchDetail],
+  );
+
+  const openTraceFromQueue = useCallback(
+    (traceId: string) => {
+      setSelectedTraceId(traceId);
+      clearError();
+      void fetchDetail(traceId);
     },
     [clearError, fetchDetail],
   );
@@ -159,6 +169,8 @@ export function EvaluationsWorkspace() {
       {(feedbackError || detailError) && (
         <p className="text-sm text-red-500">{feedbackError ?? detailError}</p>
       )}
+
+      <ReviewQueuePanel onOpenTrace={openTraceFromQueue} />
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 min-h-[70vh]">
         <div className="xl:col-span-4">

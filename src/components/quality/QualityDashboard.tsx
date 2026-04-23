@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useEvaluations } from "@/hooks/useEvaluations";
 import Link from "next/link";
+import { QualityCronHealthCard } from "./QualityCronHealthCard";
+import { QualityDailyTrendCard } from "./QualityDailyTrendCard";
 import { CostTodayBadge } from "./CostTodayBadge";
 import { QualityCheckpointReadinessCard } from "./QualityCheckpointReadinessCard";
 
@@ -135,6 +137,10 @@ export function QualityDashboard() {
       )}
 
       <QualityCheckpointReadinessCard />
+      <div className="grid gap-3 xl:grid-cols-2">
+        <QualityDailyTrendCard />
+        <QualityCronHealthCard />
+      </div>
 
       <div className="rounded-lg border p-4">
         <p className="text-sm font-medium mb-3">Últimas avaliações</p>
