@@ -8,6 +8,17 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-23
 
+### fix
+- Ajustado script SQL para permitir o status 'success' na tabela `message_traces`, corrigindo restrição CHECK que bloqueava reconciliação de traces.
+- Implementado fallback para atualizar status como 'needs_review' quando atualização com status 'success' violar restrição de banco, evitando falhas na reconciliação.
+- Atualizada função de reconciliação para tentar atualização com status alternativo em caso de erro de restrição, melhorando robustez.
+- Adicionado teste para contemplar status 'success' no fluxo de reconciliação.
+  - Arquivos: `scripts/fix-message-traces-status-check.sql`, `src/lib/trace-reconciliation.ts`, `tests/unit/trace-reconciliation.test.ts`
+  - Evidência: script SQL altera constraint; código trata erro específico de constraint e tenta fallback; teste inclui status 'success'
+  - Confiança: alta
+
+## 2026-04-23
+
 ### feat
 - Implementada reconciliação de traces pendentes e falhados com histórico de chat para correção automática de status e preenchimento de respostas de IA, incluindo classificação detalhada de buckets de pending.
   - Arquivos: `src/lib/trace-reconciliation.ts`, `src/lib/trace-status.ts`, `src/app/api/cron/traces-reconcile/route.ts`, `src/app/api/traces/route.ts`, `src/lib/trace-logger.ts`
