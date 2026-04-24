@@ -120,4 +120,84 @@ describe("trace-reconciliation", () => {
     expect(result.errors).toBe(0);
     expect(result.buckets.geracao_concluida_sem_envio).toBe(1);
   });
+
+  it("ignores non-AI wamid matches and falls back to AI message by phone", async () => {
+    const tracesQuery = createThenableQuery({
+      data: [
+        {
+          id: "trace-2",
+          client_id: "client-1",
+          phone: "555496232432",
+          status: "pending",
+          whatsapp_message_id: "wamid.user.msg",
+          webhook_received_at: "2026-04-23T19:59:52.000Z",
+          generation_started_at: "2026-04-23T19:59:53.000Z",
+          generation_completed_at: "2026-04-23T19:59:58.000Z",
+          sent_at: null,
+          agent_response: null,
+          metadata: {},
+          created_at: "2026-04-23T19:59:52.000Z",
+        },
+      ],
+      error: null,
+    });
+
+    const historyByPhoneQuery = createThenableQuery({
+      data: [
+        {
+          id: "hist-ai-phone-1",
+          session_id: "555496232432",
+          wamid: "wamid.ai.reply",
+          status: "read",
+          message: { type: "ai", content: "Resposta AI correta" },
+          created_at: "2026-04-23T19:59:59.000Z",
+        },
+      ],
+      error: null,
+    });
+
+    const historyByWamidQuery = createThenableQuery({
+      data: [
+        {
+          id: "hist-human-1",
+          session_id: "555496232432",
+          wamid: "wamid.user.msg",
+          status: "read",
+          message: { type: "human", content: "Qual seria o valor" },
+          created_at: "2026-04-23T19:59:52.000Z",
+        },
+      ],
+      error: null,
+    });
+
+    const from = vi.fn((table: string) => {
+      if (table === "message_traces") return tracesQuery;
+      if (table === "n8n_chat_histories") {
+        const n8nCallCount = from.mock.calls.filter(
+          ([name]) => name === "n8n_chat_histories",
+        ).length;
+        return n8nCallCount === 1 ? historyByPhoneQuery : historyByWamidQuery;
+      }
+      return createThenableQuery({ data: [], error: null });
+    });
+
+    vi.mocked(createServiceRoleClient).mockReturnValue({ from } as any);
+
+    const result = await reconcileTraces({
+      clientId: "client-1",
+      dryRun: false,
+      lookbackHours: 24,
+      limit: 50,
+    });
+
+    expect(result.changed).toBe(1);
+    expect(result.statusToSuccess).toBe(1);
+    expect(result.errors).toBe(0);
+    expect(tracesQuery.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "success",
+        agent_response: "Resposta AI correta",
+      }),
+    );
+  });
 });

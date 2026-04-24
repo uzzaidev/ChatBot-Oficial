@@ -142,7 +142,9 @@ const buildPatch = (
 
   const historyStatus = (historyMatch.history.status ?? "").toLowerCase();
   const historyCreatedAt = historyMatch.history.created_at;
-  const historyContent = getMessageContent(historyMatch.history);
+  const historyContent = isAiMessage(historyMatch.history)
+    ? getMessageContent(historyMatch.history)
+    : null;
 
   if (trace.status === "pending") {
     if (isSuccessfulWhatsAppStatus(historyStatus) || trace.sent_at) {
@@ -269,7 +271,7 @@ export async function reconcileTraces(
     }
 
     for (const row of (byWamidRaw ?? []) as HistoryRow[]) {
-      if (row.wamid) historyByWamid.set(row.wamid, row);
+      if (row.wamid && isAiMessage(row)) historyByWamid.set(row.wamid, row);
     }
   }
 

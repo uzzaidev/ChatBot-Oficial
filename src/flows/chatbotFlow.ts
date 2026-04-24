@@ -36,6 +36,7 @@ import { createExecutionLogger } from "@/lib/logger";
 import { query } from "@/lib/postgres";
 import { setWithExpiry } from "@/lib/redis";
 import { createServiceRoleClient } from "@/lib/supabase";
+import { dedupeToolCalls } from "@/lib/tool-call-dedup";
 import {
   logGroqUsage,
   logOpenAIUsage,
@@ -1762,7 +1763,18 @@ export const processChatbotMessage = async (
     let metadataToolTriggered = false;
 
     if (aiResponse.toolCalls && aiResponse.toolCalls.length > 0) {
-      for (const toolCall of aiResponse.toolCalls) {
+      const uniqueToolCalls = dedupeToolCalls(aiResponse.toolCalls);
+      if (uniqueToolCalls.length !== aiResponse.toolCalls.length) {
+        console.warn("[chatbotFlow] Duplicate tool calls ignored", {
+          originalCount: aiResponse.toolCalls.length,
+          dedupedCount: uniqueToolCalls.length,
+          toolNames: uniqueToolCalls.map((toolCall) => toolCall.function.name),
+        });
+      }
+
+      aiResponse.toolCalls = uniqueToolCalls;
+
+      for (const toolCall of uniqueToolCalls) {
         // Tool 1: transferir_atendimento
         if (
           toolCall.function.name === "transferir_atendimento" &&
