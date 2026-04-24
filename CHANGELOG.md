@@ -6,6 +6,20 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-04-24
+
+### feat
+- Adicionado workflow e dashboard para triagem de casos de suporte e bugs, incluindo API para criação, listagem, atualização e conversão de casos em tarefas de correção.
+- Implementado captura automática de sinais de suporte/bugs a partir das mensagens do chatbot, com classificação da causa provável, severidade e ação recomendada.
+- Criado nova tabela `support_cases` no banco para armazenar casos de suporte com isolamento por cliente e políticas de segurança.
+- Incluído opção de ativar/desativar modo suporte no dashboard de configurações, que habilita a captura e triagem de casos.
+- Adicionada nova página e componente React para visualização e gerenciamento dos casos de suporte, com filtros por status, severidade, causa e busca por texto.
+- Atualizado fluxo do chatbot para enviar mensagens ao modo suporte quando ativado, orientando coleta objetiva de informações para bugs e falhas.
+- Criado hook React `useSupportCases` para consumir API de suporte e facilitar manipulação dos casos no frontend.
+- Incluído testes de integração para as APIs de suporte, cobrindo autenticação, criação, atualização e conversão de casos.
+  - Arquivos principais: `src/app/api/support/cases/route.ts`, `src/app/api/support/cases/[id]/route.ts`, `src/app/api/support/cases/[id]/convert-task/route.ts`, `src/lib/support-cases.ts`, `src/hooks/useSupportCases.ts`, `src/components/support/SupportBugsDashboard.tsx`, `src/app/dashboard/support-bugs/page.tsx`, `src/app/dashboard/settings/page.tsx`, `src/flows/chatbotFlow.ts`, `supabase/migrations/20260520132000_create_support_cases.sql`, `tests/integration/support-cases-api.test.ts`
+  - Confiança: alta
+
 ## 2026-04-23
 
 ### feat
