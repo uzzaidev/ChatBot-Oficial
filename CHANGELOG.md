@@ -8,6 +8,24 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-24
 
+### feat
+- Implementado plano completo para melhoria do ecossistema UzzAI, focando em detecção ampliada de suporte implícito, redução de duplicidade em casos de suporte e aprimoramento da busca e recuperação de documentos multimodais, especialmente apresentações.
+- Criado prompt principal enxuto (RAG-first) com regras claras para uso de ferramentas e política anti-ambiguidade na chamada de ferramentas, além de protocolo robusto para triagem de suporte com gatilhos explícitos e implícitos, incluindo análise de prints/imagens.
+- Adicionado sistema híbrido de ranking para busca de documentos que combina similaridade vetorial, sobreposição de tokens no nome do arquivo, tipo de documento e reforço para arquivos de apresentação (PDFs, slides, decks).
+- Reforçada classificação de casos de suporte para identificar causas operacionais (duplicidade, ordenação) como `system/high` e ampliar sinais implícitos para maior recall, incluindo frases como "cliente falou X e respondeu Y", "mandou duas vezes", "respondeu atrasado", entre outras.
+- Ajustado fluxo do chatbot para garantir persistência única de casos de suporte por mensagem processada, associando o `trace_id` quando disponível, e tratamento consistente de erros na persistência.
+- Documentação extensiva criada para governança comercial, políticas de preços, FAQ, playbook de respostas padrão para suporte, runbook de homologação E2E e detalhamento dos produtos e serviços UzzAI.
+- Inclusão de testes unitários e de integração cobrindo detecção de suporte implícito, classificação de casos, e ranking híbrido na busca de documentos, garantindo maior confiabilidade e cobertura dos cenários críticos.
+
+  - Arquivos principais:  
+    `src/lib/support-cases.ts`, `src/flows/chatbotFlow.ts`, `src/nodes/searchDocumentInKnowledge.ts`, `src/nodes/handleDocumentSearchToolCall.ts`,  
+    `docs/plans/PLANO_COMPLETO_MUDANCA_UZZAI.md`, `docs/prompt UZZAI/prompt.2uzzai.md`, `docs/prompt UZZAI/rag/*.md`, `docs/runbooks/UZZAI_E2E_HOMOLOGACAO_RAG_SUPORTE.md`,  
+    `tests/unit/support-cases-detection.test.ts`, `tests/unit/search-document-in-knowledge.test.ts`, `tests/unit/handle-document-search-tool-call.test.ts`, `tests/integration/support-cases-api.test.ts`
+
+  - Confiança: alta
+
+## 2026-04-24
+
 ### fix
 - Prevenção de chamadas duplicadas a ferramentas em respostas de IA para evitar contaminação de rastros e execuções repetidas. Implementada função de deduplicação baseada em nome e argumentos das chamadas.
   - Arquivos: `src/flows/chatbotFlow.ts`, `src/lib/tool-call-dedup.ts`, `tests/unit/tool-call-dedup.test.ts`
