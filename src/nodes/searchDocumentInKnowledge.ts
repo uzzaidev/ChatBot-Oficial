@@ -20,6 +20,76 @@ import { getBotConfig } from "@/lib/config";
 import { generateEmbedding } from "@/lib/openai";
 import { createServiceRoleClient } from "@/lib/supabase";
 
+const normalizeText = (value?: string | null): string =>
+  (value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+const tokenizeQuery = (query: string): string[] =>
+  normalizeText(query)
+    .replace(/[^\w\s]/g, " ")
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 3);
+
+const isPresentationIntent = (tokens: string[]): boolean =>
+  tokens.some((token) =>
+    [
+      "apresentacao",
+      "apresentacoes",
+      "deck",
+      "slides",
+      "slide",
+      "pitch",
+      "onepager",
+      "pdf",
+    ].includes(token),
+  );
+
+const getDocumentTypeBoost = (
+  originalMimeType: string,
+  requestedType?: string,
+): number => {
+  if (!requestedType || requestedType === "any") return 0;
+  const normalizedMime = normalizeText(originalMimeType);
+  if (requestedType === "image" && normalizedMime.startsWith("image/")) return 0.08;
+  if (
+    (requestedType === "manual" || requestedType === "catalog") &&
+    normalizedMime.includes("pdf")
+  ) {
+    return 0.04;
+  }
+  return 0;
+};
+
+const getFilenameOverlapBoost = (filename: string, tokens: string[]): number => {
+  if (tokens.length === 0) return 0;
+  const normalizedFilename = normalizeText(filename);
+  const overlaps = tokens.filter((token) => normalizedFilename.includes(token)).length;
+  return Math.min(0.18, overlaps * 0.04);
+};
+
+const getPresentationBoost = (
+  filename: string,
+  originalMimeType: string,
+  tokens: string[],
+): number => {
+  if (!isPresentationIntent(tokens)) return 0;
+  const normalizedFilename = normalizeText(filename);
+  const normalizedMime = normalizeText(originalMimeType);
+  const isPresentationLikeName =
+    normalizedFilename.includes("apresent") ||
+    normalizedFilename.includes("deck") ||
+    normalizedFilename.includes("slide") ||
+    normalizedFilename.includes("pitch");
+  const isPdf = normalizedMime.includes("pdf");
+  if (isPresentationLikeName && isPdf) return 0.2;
+  if (isPresentationLikeName) return 0.12;
+  if (isPdf) return 0.06;
+  return 0;
+};
+
 export interface SearchDocumentInput {
   /** Termo de busca (nome do arquivo, assunto, etc.) */
   query: string;
@@ -141,6 +211,7 @@ export const searchDocumentInKnowledge = async (
   let totalDocumentsInBase = 0;
   let threshold = searchThreshold ?? 0.7; // Use ?? instead of || to handle 0 correctly
   let max = maxResults ?? 5; // Use ?? instead of || to handle 0 correctly
+  const queryTokens = tokenizeQuery(query);
 
   try {
     // 1. Buscar configurações (se não fornecidas)
@@ -214,11 +285,7 @@ export const searchDocumentInKnowledge = async (
     // or where the property name does not appear in the Vision-AI description.
     // e.g. searching "Facchin" finds files whose metadata.filename contains "Facchin".
     if (!data || data.length === 0) {
-      const queryWords = query
-        .toLowerCase()
-        .replace(/[^\w\s]/g, " ")
-        .split(/\s+/)
-        .filter((w) => w.length > 3);
+      const queryWords = queryTokens.filter((w) => w.length > 3);
 
       if (queryWords.length > 0) {
         const ilikeConditions = queryWords
@@ -293,9 +360,24 @@ export const searchDocumentInKnowledge = async (
       // A busca semântica já encontra o documento mais relevante pela similaridade
       // Filtrar por tipo estava causando falsos negativos (ex: imagem marcada como "catalog" não era encontrada ao buscar "image")
 
-      // Se já existe, pega o de maior similarity
+      // Ranking hibrido: similaridade vetorial + filename overlap + tipo + apresentacao
       const existing = groupedByFile.get(filename);
-      if (!existing || doc.similarity > existing.similarity) {
+      const filenameBoost = getFilenameOverlapBoost(filename, queryTokens);
+      const typeBoost = getDocumentTypeBoost(
+        doc.original_mime_type || "",
+        documentType,
+      );
+      const presentationBoost = getPresentationBoost(
+        filename,
+        doc.original_mime_type || "",
+        queryTokens,
+      );
+      const hybridSimilarity = Math.min(
+        0.999,
+        (doc.similarity || 0) + filenameBoost + typeBoost + presentationBoost,
+      );
+
+      if (!existing || hybridSimilarity > existing.similarity) {
         groupedByFile.set(filename, {
           id: doc.id,
           filename: doc.metadata.filename,
@@ -304,7 +386,7 @@ export const searchDocumentInKnowledge = async (
           originalFilePath: doc.original_file_path,
           originalMimeType: doc.original_mime_type,
           originalFileSize: doc.original_file_size,
-          similarity: doc.similarity,
+          similarity: hybridSimilarity,
           preview: doc.content.substring(0, 200),
         });
       }

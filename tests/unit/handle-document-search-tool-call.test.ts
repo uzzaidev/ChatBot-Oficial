@@ -256,5 +256,54 @@ describe("handleDocumentSearchToolCall gating", () => {
     expect(result.filesSent).toEqual(["Horarios Umana.jpeg"]);
     expect(sendImageMessage).toHaveBeenCalledTimes(1);
   });
+
+  it("treats presentation request as explicit and prefers presentation pdf", async () => {
+    vi.mocked(searchDocumentInKnowledge).mockResolvedValue({
+      results: [
+        buildSearchResult("Catalogo Geral.png", "image/png"),
+        buildSearchResult(
+          "UzzApp_Apresentacao_Comercial.pdf",
+          "application/pdf",
+        ),
+      ],
+      metadata: {
+        totalDocumentsInBase: 5,
+        chunksFound: 2,
+        uniqueDocumentsFound: 2,
+        threshold: 0.3,
+      },
+    } as any);
+
+    vi.mocked(createServiceRoleClient).mockReturnValue(
+      createSupabaseMock({
+        conversationRows: [],
+        mediaRows: [],
+      }) as any,
+    );
+
+    const result = await handleDocumentSearchToolCall({
+      toolCall: {
+        id: "call-5",
+        function: {
+          name: "buscar_documento",
+          arguments: JSON.stringify({
+            query: "apresentacao uzzapp",
+            document_type: "any",
+          }),
+        },
+      },
+      phone: "5551555555555",
+      clientId: "client-1",
+      config: baseConfig,
+      userMessage: "tem apresentação do uzzapp?",
+      contactMetadata: { objetivo: "entender produto" },
+    });
+
+    expect(result.documentGateDecision).toBe("allowed");
+    expect(result.documentsSent).toBe(1);
+    expect(result.selectedDocument).toBe("UzzApp_Apresentacao_Comercial.pdf");
+    expect(sendDocumentMessage).toHaveBeenCalledTimes(1);
+    expect(sendImageMessage).not.toHaveBeenCalled();
+  });
 });
 

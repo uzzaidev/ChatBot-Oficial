@@ -73,6 +73,60 @@ describe("API /api/support/cases", () => {
     expect(body.created).toBe(true);
   });
 
+  it("creates case for implicit support signal without explicit keyword", async () => {
+    vi.mocked(getClientIdFromSession).mockResolvedValue("client-1");
+    vi.mocked(createServiceRoleClient).mockReturnValue({
+      from: () => ({
+        upsert: () => ({
+          select: () => ({
+            single: async () => ({ data: { id: "case-implicit" }, error: null }),
+          }),
+        }),
+      }),
+    } as any);
+
+    const request = {
+      json: async () => ({
+        phone: "555499999999",
+        user_message: "cliente falou sobre plano e respondeu outra coisa",
+        detected_intent: "outro",
+      }),
+    } as any;
+
+    const response = await createSupportCase(request);
+    const body = await response.json();
+    expect(response.status).toBe(200);
+    expect(body.created).toBe(true);
+  });
+
+  it("does not create case for neutral message", async () => {
+    vi.mocked(getClientIdFromSession).mockResolvedValue("client-1");
+    const fromMock = vi.fn(() => ({
+      upsert: () => ({
+        select: () => ({
+          single: async () => ({ data: { id: "should-not-create" }, error: null }),
+        }),
+      }),
+    }));
+    vi.mocked(createServiceRoleClient).mockReturnValue({
+      from: fromMock,
+    } as any);
+
+    const request = {
+      json: async () => ({
+        phone: "555499999999",
+        user_message: "obrigado, era isso mesmo",
+        detected_intent: "outro",
+      }),
+    } as any;
+
+    const response = await createSupportCase(request);
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.created).toBe(false);
+  });
+
   it("updates support case status", async () => {
     vi.mocked(getClientIdFromSession).mockResolvedValue("client-1");
     vi.mocked(createServiceRoleClient).mockReturnValue({

@@ -40,13 +40,104 @@ const SUPPORT_KEYWORDS = [
   "nao abre",
 ];
 
+const SUPPORT_IMPLICIT_SIGNALS = [
+  "sumiu botao",
+  "sumiu botão",
+  "nao aparece",
+  "não aparece",
+  "nao envia",
+  "não envia",
+  "nao salva",
+  "não salva",
+  "nao chegou mensagem",
+  "não chegou mensagem",
+  "cliente falou",
+  "respondeu outra coisa",
+  "nao respondeu o que perguntei",
+  "não respondeu o que perguntei",
+  "respondeu nada a ver",
+  "misturou conversa",
+  "fora de contexto",
+  "fora de ordem",
+  "respondeu atrasado",
+  "parou de responder",
+];
+
+const SUPPORT_OPERATIONAL_SIGNALS = [
+  "mandou duas vezes",
+  "mensagem duplicada",
+  "respondeu duplicado",
+  "duplicou",
+  "duplicidade",
+  "mandou duas imagens",
+  "imagem repetida",
+  "precisei mandar duas vezes",
+  "retry",
+  "reprocessamento",
+];
+
+const SUPPORT_VISUAL_SIGNALS = [
+  "print",
+  "screenshot",
+  "imagem",
+  "foto",
+  "[imagem recebida]",
+];
+
+const normalizeSupportText = (value?: string | null): string =>
+  (value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
 export const isLikelySupportMessage = (
   message: string,
   intent?: string,
+  agentResponse?: string | null,
 ): boolean => {
-  const normalizedMessage = message.toLowerCase();
-  if (intent === "reclamacao") return true;
-  return SUPPORT_KEYWORDS.some((keyword) => normalizedMessage.includes(keyword));
+  const normalizedMessage = normalizeSupportText(message);
+  const normalizedIntent = normalizeSupportText(intent);
+  const normalizedAgentResponse = normalizeSupportText(agentResponse);
+
+  const hasIntentSignal =
+    normalizedIntent === "reclamacao" ||
+    normalizedIntent === "suporte" ||
+    normalizedIntent === "problema_tecnico";
+
+  if (hasIntentSignal) return true;
+
+  const hasExplicitKeyword = SUPPORT_KEYWORDS.some((keyword) =>
+    normalizedMessage.includes(normalizeSupportText(keyword)),
+  );
+  if (hasExplicitKeyword) return true;
+
+  const hasImplicitSignal = SUPPORT_IMPLICIT_SIGNALS.some((signal) =>
+    normalizedMessage.includes(normalizeSupportText(signal)),
+  );
+  if (hasImplicitSignal) return true;
+
+  const hasOperationalSignal = SUPPORT_OPERATIONAL_SIGNALS.some((signal) =>
+    normalizedMessage.includes(normalizeSupportText(signal)),
+  );
+  if (hasOperationalSignal) return true;
+
+  const hasVisualSignal = SUPPORT_VISUAL_SIGNALS.some((signal) =>
+    normalizedMessage.includes(normalizeSupportText(signal)),
+  );
+  if (hasVisualSignal && normalizedMessage.includes("erro")) return true;
+
+  const hasResponseMismatchSignal =
+    normalizedMessage.includes("respondeu") &&
+    (normalizedMessage.includes("outra coisa") ||
+      normalizedMessage.includes("nada a ver"));
+
+  if (hasResponseMismatchSignal) return true;
+
+  return (
+    normalizedAgentResponse.includes("nao consegui") ||
+    normalizedAgentResponse.includes("não consegui") ||
+    normalizedAgentResponse.includes("instabilidade")
+  );
 };
 
 export const classifySupportCase = (params: {
@@ -60,10 +151,14 @@ export const classifySupportCase = (params: {
   confidence: number;
   recommendedAction: string;
 } => {
-  const userMessage = params.userMessage.toLowerCase();
-  const agentResponse = (params.agentResponse || "").toLowerCase();
-  const flowError = String(params.flowMetadata?.["flow_error"] || "").toLowerCase();
-  const aiError = String(params.flowMetadata?.["ai_error"] || "").toLowerCase();
+  const userMessage = normalizeSupportText(params.userMessage);
+  const agentResponse = normalizeSupportText(params.agentResponse);
+  const flowError = normalizeSupportText(
+    String(params.flowMetadata?.["flow_error"] || ""),
+  );
+  const aiError = normalizeSupportText(
+    String(params.flowMetadata?.["ai_error"] || ""),
+  );
 
   const hasInfraError =
     flowError.includes("timeout") ||
@@ -79,6 +174,23 @@ export const classifySupportCase = (params: {
       confidence: 0.9,
       recommendedAction:
         "Investigar logs de infraestrutura e integrações externas; validar timeout, webhook e credenciais.",
+    };
+  }
+
+  const hasOperationalDuplicateSignal =
+    userMessage.includes("duplic") ||
+    userMessage.includes("mandou duas vezes") ||
+    userMessage.includes("imagem repetida") ||
+    userMessage.includes("fora de ordem") ||
+    userMessage.includes("respondeu atrasado");
+
+  if (hasOperationalDuplicateSignal) {
+    return {
+      severity: "high",
+      rootCause: "system",
+      confidence: 0.82,
+      recommendedAction:
+        "Investigar deduplicacao, retries e ordenacao de eventos para evitar repeticao ou envio fora de sequencia.",
     };
   }
 
@@ -100,9 +212,12 @@ export const classifySupportCase = (params: {
 
   const hasPromptSignal =
     userMessage.includes("resposta errada") ||
-    userMessage.includes("não entendeu") ||
     userMessage.includes("nao entendeu") ||
-    userMessage.includes("resposta sem sentido");
+    userMessage.includes("nao entendeu") ||
+    userMessage.includes("resposta sem sentido") ||
+    userMessage.includes("respondeu outra coisa") ||
+    userMessage.includes("nada a ver") ||
+    userMessage.includes("fora de contexto");
 
   if (hasPromptSignal) {
     return {

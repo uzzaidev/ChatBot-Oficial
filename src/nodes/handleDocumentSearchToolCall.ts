@@ -125,6 +125,14 @@ const EXPLICIT_DOCUMENT_TERMS = [
   "grade",
   "catalogo",
   "catálogo",
+  "apresentacao",
+  "apresentação",
+  "apresentacoes",
+  "apresentações",
+  "deck",
+  "slides",
+  "slide",
+  "pdf",
 ];
 
 const detectDocumentIntent = (query: string): DocumentIntent => {
@@ -155,6 +163,15 @@ const detectDocumentIntent = (query: string): DocumentIntent => {
     q.includes("mensal")
   ) {
     return "planos";
+  }
+
+  if (
+    q.includes("apresent") ||
+    q.includes("deck") ||
+    q.includes("slide") ||
+    q.includes("pdf")
+  ) {
+    return "generic";
   }
 
   return "generic";
@@ -215,6 +232,16 @@ const scoreDocumentByIntent = (
   if (intent === "planos" && name.includes("plano")) score += 100;
   if (intent === "planos_online" && name.includes("online")) score += 120;
   if (intent === "planos_online" && name.includes("plano")) score += 60;
+  if (
+    name.includes("apresent") ||
+    name.includes("deck") ||
+    name.includes("slide")
+  ) {
+    score += 40;
+  }
+  if (name.endsWith(".pdf")) {
+    score += 20;
+  }
 
   return score;
 };

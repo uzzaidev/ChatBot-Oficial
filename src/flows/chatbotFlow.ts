@@ -2444,40 +2444,6 @@ export const processChatbotMessage = async (
       response: aiResponse.content || "",
     });
 
-    if (shouldCaptureSupportCase) {
-      try {
-        const supportClassification = classifySupportCase({
-          userMessage: batchedContent,
-          agentResponse: aiResponse.content,
-          intent: intentInfo.intent,
-          flowMetadata: {
-            node_states_loaded: true,
-            ai_provider: aiResponse.provider ?? "unknown",
-            ai_model: aiResponse.model ?? "unknown",
-          },
-        });
-
-        await upsertSupportCase({
-          client_id: config.id,
-          conversation_id: conversation?.id ?? null,
-          phone: parsedMessage.phone,
-          user_message: batchedContent,
-          agent_response: aiResponse.content,
-          detected_intent: intentInfo.intent,
-          severity: supportClassification.severity,
-          root_cause_type: supportClassification.rootCause,
-          confidence: supportClassification.confidence,
-          recommended_action: supportClassification.recommendedAction,
-          metadata: {
-            source: "chatbot_flow_detection",
-            support_mode_enabled: true,
-          },
-        });
-      } catch (supportCaseError) {
-        console.warn("[chatbotFlow] Failed to persist support case:", supportCaseError);
-      }
-    }
-
     if (!aiResponse.content || aiResponse.content.trim().length === 0) {
       const firstName = (parsedMessage.name || "").trim().split(/\s+/)[0] || "";
       const fallbackPrefix = firstName
@@ -2681,17 +2647,22 @@ export const processChatbotMessage = async (
     });
     const traceId = await flushTrace();
 
-    if (shouldCaptureSupportCase && traceId) {
+    if (shouldCaptureSupportCase) {
       try {
         const supportClassification = classifySupportCase({
           userMessage: batchedContent,
           agentResponse: aiResponse.content,
           intent: intentInfo.intent,
+          flowMetadata: {
+            node_states_loaded: true,
+            ai_provider: aiResponse.provider ?? "unknown",
+            ai_model: aiResponse.model ?? "unknown",
+          },
         });
 
         await upsertSupportCase({
           client_id: config.id,
-          trace_id: traceId,
+          trace_id: traceId ?? null,
           conversation_id: conversation?.id ?? null,
           phone: parsedMessage.phone,
           user_message: batchedContent,
@@ -2704,11 +2675,11 @@ export const processChatbotMessage = async (
           metadata: {
             source: "chatbot_flow_detection",
             support_mode_enabled: true,
-            trace_linked: true,
+            trace_linked: Boolean(traceId),
           },
         });
       } catch (supportCaseError) {
-        console.warn("[chatbotFlow] Failed to link support case to trace:", supportCaseError);
+        console.warn("[chatbotFlow] Failed to persist support case:", supportCaseError);
       }
     }
 
