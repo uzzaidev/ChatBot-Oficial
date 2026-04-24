@@ -8,6 +8,20 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-24
 
+### fix
+- Prevenção de chamadas duplicadas a ferramentas em respostas de IA para evitar contaminação de rastros e execuções repetidas. Implementada função de deduplicação baseada em nome e argumentos das chamadas.
+  - Arquivos: `src/flows/chatbotFlow.ts`, `src/lib/tool-call-dedup.ts`, `tests/unit/tool-call-dedup.test.ts`
+  - Evidência: uso da função `dedupeToolCalls` para filtrar chamadas repetidas e log de aviso em `chatbotFlow.ts`
+  - Confiança: alta
+
+### fix
+- Ajustado filtro para considerar apenas mensagens de IA ao reconciliar rastros, ignorando mensagens humanas para evitar associação incorreta.
+  - Arquivos: `src/lib/trace-reconciliation.ts`, `tests/unit/trace-reconciliation.test.ts`
+  - Evidência: alteração em `trace-reconciliation.ts` para validar tipo de mensagem com `isAiMessage` antes de mapear por `wamid`
+  - Confiança: alta
+
+## 2026-04-24
+
 ### feat
 - Adicionado workflow e dashboard para triagem de casos de suporte e bugs, incluindo API para criação, listagem, atualização e conversão de casos em tarefas de correção.
 - Implementado captura automática de sinais de suporte/bugs a partir das mensagens do chatbot, com classificação da causa provável, severidade e ação recomendada.
