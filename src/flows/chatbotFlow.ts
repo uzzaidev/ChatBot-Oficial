@@ -53,6 +53,11 @@ import { uploadFileToStorage } from "@/lib/storage";
 // 📊 Observability: trace logger (Sprint 1)
 import { enqueueEvaluation } from "@/lib/evaluation-worker";
 import { createTraceLogger, MessageTraceLogger } from "@/lib/trace-logger";
+import {
+  classifySupportCase,
+  isLikelySupportMessage,
+  upsertSupportCase,
+} from "@/lib/support-cases";
 
 export interface ChatbotFlowResult {
   success: boolean;
@@ -1334,6 +1339,18 @@ export const processChatbotMessage = async (
       };
     }
 
+    const { data: supportModeConfig } = await supabase
+      .from("bot_configurations")
+      .select("config_value")
+      .eq("client_id", config.id)
+      .eq("config_key", "support_mode:enabled")
+      .maybeSingle();
+
+    const supportModeEnabled = supportModeConfig?.config_value === true;
+    const shouldCaptureSupportCase =
+      supportModeEnabled &&
+      isLikelySupportMessage(batchedContent, intentInfo.intent);
+
     // NODE 12: Generate AI Response (com config do cliente + greeting instruction)
     // 🚀 Fast Track: Disable datetime and tools if in fast track mode
     // 🚀 Fast Track: Use canonical question for cache-friendly prompts
@@ -1411,6 +1428,7 @@ export const processChatbotMessage = async (
         enableTools: !isFastTrack || !fastTrackResult?.catalogSize, // 🚀 Fast Track: Disable tools for cache
         conversationId: conversation?.id, // ✨ FASE 8: Conversation ID for unified tracking
         phone: parsedMessage.phone, // ✨ FASE 8: Phone number for analytics
+        supportModeEnabled,
       });
 
       logger.logNodeSuccess("12. Generate AI Response", {
@@ -2414,6 +2432,40 @@ export const processChatbotMessage = async (
       response: aiResponse.content || "",
     });
 
+    if (shouldCaptureSupportCase) {
+      try {
+        const supportClassification = classifySupportCase({
+          userMessage: batchedContent,
+          agentResponse: aiResponse.content,
+          intent: intentInfo.intent,
+          flowMetadata: {
+            node_states_loaded: true,
+            ai_provider: aiResponse.provider ?? "unknown",
+            ai_model: aiResponse.model ?? "unknown",
+          },
+        });
+
+        await upsertSupportCase({
+          client_id: config.id,
+          conversation_id: conversation?.id ?? null,
+          phone: parsedMessage.phone,
+          user_message: batchedContent,
+          agent_response: aiResponse.content,
+          detected_intent: intentInfo.intent,
+          severity: supportClassification.severity,
+          root_cause_type: supportClassification.rootCause,
+          confidence: supportClassification.confidence,
+          recommended_action: supportClassification.recommendedAction,
+          metadata: {
+            source: "chatbot_flow_detection",
+            support_mode_enabled: true,
+          },
+        });
+      } catch (supportCaseError) {
+        console.warn("[chatbotFlow] Failed to persist support case:", supportCaseError);
+      }
+    }
+
     if (!aiResponse.content || aiResponse.content.trim().length === 0) {
       const firstName = (parsedMessage.name || "").trim().split(/\s+/)[0] || "";
       const fallbackPrefix = firstName
@@ -2616,6 +2668,37 @@ export const processChatbotMessage = async (
       hasRag: !!ragTraceData,
     });
     const traceId = await flushTrace();
+
+    if (shouldCaptureSupportCase && traceId) {
+      try {
+        const supportClassification = classifySupportCase({
+          userMessage: batchedContent,
+          agentResponse: aiResponse.content,
+          intent: intentInfo.intent,
+        });
+
+        await upsertSupportCase({
+          client_id: config.id,
+          trace_id: traceId,
+          conversation_id: conversation?.id ?? null,
+          phone: parsedMessage.phone,
+          user_message: batchedContent,
+          agent_response: aiResponse.content,
+          detected_intent: intentInfo.intent,
+          severity: supportClassification.severity,
+          root_cause_type: supportClassification.rootCause,
+          confidence: supportClassification.confidence,
+          recommended_action: supportClassification.recommendedAction,
+          metadata: {
+            source: "chatbot_flow_detection",
+            support_mode_enabled: true,
+            trace_linked: true,
+          },
+        });
+      } catch (supportCaseError) {
+        console.warn("[chatbotFlow] Failed to link support case to trace:", supportCaseError);
+      }
+    }
 
     if (traceId) {
       enqueueEvaluation({

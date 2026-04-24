@@ -333,6 +333,7 @@ export interface GenerateAIResponseInput {
   enableTools?: boolean; // 🚀 Fast Track: Whether to enable tools (default: true)
   conversationId?: string; // ✨ FASE 8: Conversation ID for unified tracking
   phone?: string; // ✨ FASE 8: Phone number for analytics
+  supportModeEnabled?: boolean;
 }
 
 /**
@@ -356,6 +357,7 @@ export const generateAIResponse = async (
       greetingInstruction,
       includeDateTimeInfo = true, // 🚀 Fast Track: default to true for backward compatibility
       enableTools = true, // 🚀 Fast Track: default to true for backward compatibility
+      supportModeEnabled = false,
     } = input;
 
     // Usar systemPrompt do cliente quando valido; fallback neutro quando ausente/vazio
@@ -420,6 +422,18 @@ export const generateAIResponse = async (
           "Para disponibilidade, use `periodo_preferido` (manha/tarde/noite) e `dia_preferido` quando houver dia especifico.",
           "Quando houver varios dados na mesma mensagem, faca UMA unica chamada usando `campos` com todos eles.",
           "Nao responda apenas em texto confirmando cadastro sem antes chamar a tool.",
+        ].join("\n"),
+      });
+    }
+
+    if (supportModeEnabled) {
+      messages.push({
+        role: "system",
+        content: [
+          "MODO SUPORTE ATIVO:",
+          "- Quando o cliente reportar bug/erro/falha, priorize coleta objetiva de contexto (o que tentou, quando falhou, impacto).",
+          "- Não invente causa técnica sem evidência.",
+          "- Se necessário, diga que o caso será triado pelo time técnico.",
         ].join("\n"),
       });
     }

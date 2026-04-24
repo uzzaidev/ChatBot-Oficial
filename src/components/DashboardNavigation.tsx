@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import {
+  AlertTriangle,
   Activity,
   BarChart3,
   BookOpen,
@@ -286,6 +287,15 @@ export function DashboardNavigation({
           tooltip="Rastreio completo de cada mensagem — pipeline, tool calls e RAG"
         />
 <NavItem
+          href="/dashboard/support-bugs"
+          icon={<AlertTriangle className="h-5 w-5 flex-shrink-0" />}
+          label="Suporte/Bugs"
+          isCollapsed={isCollapsed}
+          onClick={onLinkClick}
+          badge="new"
+          tooltip="Fila de casos detectados de suporte com causa provável e ação recomendada"
+        />
+        <NavItem
           href="/dashboard/quality"
           icon={<CheckCircle className="h-5 w-5 flex-shrink-0" />}
           label="Qualidade"

@@ -113,6 +113,8 @@ export default function SettingsPage() {
   const [aiKeysMode, setAiKeysMode] = useState<
     "platform_only" | "byok_allowed"
   >("platform_only");
+  const [supportModeEnabled, setSupportModeEnabled] = useState(false);
+  const [loadingSupportMode, setLoadingSupportMode] = useState(false);
 
   // Auto-provisioned clients (Embedded Signup) don't need manual Meta config
   const [isAutoProvisioned, setIsAutoProvisioned] = useState(false);
@@ -265,6 +267,72 @@ export default function SettingsPage() {
 
     fetchClientConfig();
   }, []);
+
+  useEffect(() => {
+    const fetchSupportMode = async () => {
+      try {
+        const { apiFetch } = await import("@/lib/api");
+        const response = await apiFetch("/api/config");
+        const data = await response.json();
+        if (!response.ok) return;
+
+        const supportConfig = (data.configs || []).find(
+          (item: { config_key?: string }) =>
+            item.config_key === "support_mode:enabled",
+        );
+
+        if (supportConfig) {
+          setSupportModeEnabled(Boolean(supportConfig.config_value));
+        }
+      } catch (error) {}
+    };
+
+    fetchSupportMode();
+  }, []);
+
+  const handleToggleSupportMode = async () => {
+    setLoadingSupportMode(true);
+    setNotification(null);
+
+    try {
+      const nextValue = !supportModeEnabled;
+      const { apiFetch } = await import("@/lib/api");
+      const response = await apiFetch("/api/config", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          config_key: "support_mode:enabled",
+          config_value: nextValue,
+          description:
+            "Enable support mode to capture support/bug signals from conversations.",
+          category: "rules",
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Erro ao atualizar modo de suporte");
+      }
+
+      setSupportModeEnabled(nextValue);
+      setNotification({
+        type: "success",
+        message: nextValue
+          ? "Modo Suporte/Bugs ativado com sucesso."
+          : "Modo Suporte/Bugs desativado com sucesso.",
+      });
+    } catch (error) {
+      setNotification({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Erro ao atualizar modo de suporte",
+      });
+    } finally {
+      setLoadingSupportMode(false);
+    }
+  };
 
   // Atualizar nome do usuário
   const handleUpdateProfile = async () => {
@@ -2005,6 +2073,43 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
         </div>
+
+        <Card className="bg-card border-border">
+          <CardHeader className="border-b border-border">
+            <CardTitle className="text-xl font-poppins text-foreground flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-primary" />
+              Modo Suporte/Bugs
+            </CardTitle>
+            <CardDescription className="text-muted-foreground">
+              Quando ativo, o sistema passa a registrar sinais de suporte para
+              triagem e melhoria contínua.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm text-muted-foreground">
+                Status atual:{" "}
+                <span className="font-semibold text-foreground">
+                  {supportModeEnabled ? "Ativo" : "Inativo"}
+                </span>
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Casos detectados ficam na aba dedicada de Suporte/Bugs.
+              </p>
+            </div>
+            <Button
+              onClick={handleToggleSupportMode}
+              disabled={loadingSupportMode}
+              variant={supportModeEnabled ? "destructive" : "default"}
+            >
+              {loadingSupportMode
+                ? "Salvando..."
+                : supportModeEnabled
+                  ? "Desativar"
+                  : "Ativar"}
+            </Button>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Modal de Revalidação de Senha */}
