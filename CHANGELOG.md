@@ -6,6 +6,28 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-04-25
+
+### feat
+- Adicionada gestão aprimorada de configuração e contexto do agente, incluindo novos campos para seções de prompt, controle de tokens e esforço de raciocínio.
+- Implementada lógica para controle de ferramentas permitidas por agente, com validação e rejeição de chamadas a ferramentas não autorizadas.
+- Adicionado suporte a deduplicação de mensagens recebidas no webhook para evitar processamento repetido.
+- Introduzidos novos controles UI no editor de agentes para edição de seções de prompt (contexto de negócio, regras, limites, escalonamento, exemplos) e sliders para ajuste de tokens de contexto.
+- Atualizados endpoints API para suportar os novos campos de configuração do agente, como prompt_sections, max_input_tokens, max_history_tokens, max_knowledge_tokens e reasoning_effort.
+- Incluída biblioteca e lógica para definição e validação das ferramentas disponíveis para agentes, condicionadas à configuração e metadados do contato.
+- Atualizadas dependências de desenvolvimento para incluir ferramentas de teste e cobertura (Vitest, Playwright, MSW) e outras melhorias no ecossistema.
+
+- Arquivos principais:  
+  `src/app/api/agents/[id]/route.ts`,  
+  `src/app/api/agents/route.ts`,  
+  `src/app/api/agents/[id]/versions/[versionId]/restore/route.ts`,  
+  `src/app/api/webhook/route.ts`,  
+  `src/components/agents/AgentEditor.tsx`,  
+  `src/components/agents/AgentEditorModal.tsx`,  
+  `src/flows/chatbotFlow.ts`,  
+  `src/lib/agent-tools.ts`  
+- Confiança: alta
+
 ## 2026-04-24
 
 ### feat
