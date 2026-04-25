@@ -252,10 +252,16 @@ export const getClientConfig = async (
     const baseSettings = {
       batchingDelaySeconds: client.settings?.batching_delay_seconds ?? 10,
       maxTokens: client.settings?.max_tokens ?? 2048,
+      maxInputTokens: client.settings?.max_input_tokens ?? 24000,
+      maxHistoryTokens: client.settings?.max_history_tokens ?? 6000,
+      maxKnowledgeTokens: client.settings?.max_knowledge_tokens ?? 6000,
+      reasoningEffort: client.settings?.reasoning_effort ?? "low",
       temperature: client.settings?.temperature ?? 0.7,
       enableRAG: client.settings?.enable_rag ?? false,
       enableTools: client.settings?.enable_tools ?? false,
       enableHumanHandoff: client.settings?.enable_human_handoff ?? true,
+      enableDocumentSearch: client.settings?.enable_document_search ?? false,
+      enableAudioResponse: client.tts_enabled ?? false,
       messageSplitEnabled: client.settings?.message_split_enabled ?? false,
       maxChatHistory: client.settings?.max_chat_history ?? 15,
       messageDelayMs: client.settings?.message_delay_ms ?? 2000,
@@ -287,8 +293,20 @@ export const getClientConfig = async (
           enableRAG: activeAgent.enable_rag ?? baseSettings.enableRAG,
           enableHumanHandoff:
             activeAgent.enable_human_handoff ?? baseSettings.enableHumanHandoff,
+          enableDocumentSearch:
+            activeAgent.enable_document_search ?? baseSettings.enableDocumentSearch,
+          enableAudioResponse:
+            activeAgent.enable_audio_response ?? baseSettings.enableAudioResponse,
           // Model settings from Agent
           maxTokens: activeAgent.max_tokens ?? baseSettings.maxTokens,
+          maxInputTokens:
+            activeAgent.max_input_tokens ?? baseSettings.maxInputTokens,
+          maxHistoryTokens:
+            activeAgent.max_history_tokens ?? baseSettings.maxHistoryTokens,
+          maxKnowledgeTokens:
+            activeAgent.max_knowledge_tokens ?? baseSettings.maxKnowledgeTokens,
+          reasoningEffort:
+            activeAgent.reasoning_effort ?? baseSettings.reasoningEffort,
           temperature: activeAgent.temperature ?? baseSettings.temperature,
           // TTS from agent (enable_audio_response)
           tts_enabled:
@@ -413,9 +431,15 @@ export const getClientConfig = async (
           maxChatHistory: config.settings.maxChatHistory,
           temperature: config.settings.temperature,
           maxTokens: config.settings.maxTokens,
+          maxInputTokens: config.settings.maxInputTokens,
+          maxHistoryTokens: config.settings.maxHistoryTokens,
+          maxKnowledgeTokens: config.settings.maxKnowledgeTokens,
+          reasoningEffort: config.settings.reasoningEffort,
           enableRAG: config.settings.enableRAG,
           enableTools: config.settings.enableTools,
           enableHumanHandoff: config.settings.enableHumanHandoff,
+          enableDocumentSearch: config.settings.enableDocumentSearch,
+          enableAudioResponse: config.settings.enableAudioResponse,
         },
       },
     );

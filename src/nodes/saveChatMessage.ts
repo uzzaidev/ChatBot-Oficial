@@ -19,7 +19,12 @@ export interface SaveChatMessageInput {
   errorDetails?: ErrorDetails
 }
 
-export const saveChatMessage = async (input: SaveChatMessageInput): Promise<void> => {
+export interface SaveChatMessageResult {
+  inserted: boolean
+  skippedDuplicate: boolean
+}
+
+export const saveChatMessage = async (input: SaveChatMessageInput): Promise<SaveChatMessageResult> => {
   const { phone, message, type, clientId, mediaMetadata, wamid, status, errorDetails } = input
 
   // LangChain-compatible message format stored in JSONB column
@@ -35,9 +40,7 @@ export const saveChatMessage = async (input: SaveChatMessageInput): Promise<void
   const now = new Date().toISOString()
 
   const supabase = createServiceRoleClient()
-  const { error } = await (supabase as any)
-    .from('n8n_chat_histories')
-    .insert({
+  const row = {
       session_id: phone,
       message: messageJson,            // Supabase client auto-serializes JSONB
       client_id: clientId,
@@ -47,9 +50,27 @@ export const saveChatMessage = async (input: SaveChatMessageInput): Promise<void
       error_details: errorDetails ?? null,
       created_at: now,
       updated_at: now,
-    })
+    }
+
+  const query = wamid
+    ? (supabase as any)
+        .from('n8n_chat_histories')
+        .upsert(row, {
+          onConflict: 'client_id,wamid',
+          ignoreDuplicates: true,
+        })
+    : (supabase as any)
+        .from('n8n_chat_histories')
+        .insert(row)
+
+  const { error } = await query
 
   if (error) {
     throw new Error(`Failed to save chat message: ${error.message}`)
+  }
+
+  return {
+    inserted: true,
+    skippedDuplicate: false,
   }
 }

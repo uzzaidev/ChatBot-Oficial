@@ -37,6 +37,7 @@ import { query } from "@/lib/postgres";
 import { setWithExpiry } from "@/lib/redis";
 import { createServiceRoleClient } from "@/lib/supabase";
 import { dedupeToolCalls } from "@/lib/tool-call-dedup";
+import { getAllowedToolNames } from "@/lib/agent-tools";
 import {
   logGroqUsage,
   logOpenAIUsage,
@@ -1043,10 +1044,11 @@ export const processChatbotMessage = async (
     // NODE 9: Batch Messages (configurable - can be disabled)
     let batchedContent: string;
 
-    if (
+    const batchingEnabled =
       shouldExecuteNode("batch_messages", nodeStates) &&
-      config.settings.messageSplitEnabled
-    ) {
+      (config.settings.batchingDelaySeconds ?? 0) > 0;
+
+    if (batchingEnabled) {
       logger.logNodeStart("9. Batch Messages", { phone: parsedMessage.phone });
       batchedContent = await batchMessages(
         parsedMessage.phone,
@@ -1059,12 +1061,25 @@ export const processChatbotMessage = async (
     } else {
       const reason = !shouldExecuteNode("batch_messages", nodeStates)
         ? "node disabled"
-        : "config disabled";
+        : "batching_delay_zero";
       logger.logNodeSuccess("9. Batch Messages", { skipped: true, reason });
       batchedContent = normalizedMessage.content;
     }
 
     if (!batchedContent || batchedContent.trim().length === 0) {
+      if (batchingEnabled) {
+        logger.logNodeSuccess("9. Batch Messages", {
+          skipped: true,
+          reason: "another_execution_is_collecting_batch",
+        });
+        logger.finishExecution("success");
+        return {
+          success: true,
+          skipped: true,
+          reason: "batch_collector_active",
+        };
+      }
+
       logger.logNodeWarning("9. Batch Messages", {
         warning: "empty_batch_content",
         fallbackToNormalized: true,
@@ -1153,9 +1168,12 @@ export const processChatbotMessage = async (
     }
 
     // Check if we should fetch RAG context
+    const shouldUseKnowledgeTool =
+      config.settings.enableTools && config.settings.enableRAG && !isFastTrack;
     const shouldGetRAG =
       shouldExecuteNode("get_rag_context", nodeStates) &&
       config.settings.enableRAG &&
+      !shouldUseKnowledgeTool &&
       !isFastTrack; // Skip if fast track
 
     if (shouldGetRAG) {
@@ -1186,11 +1204,14 @@ export const processChatbotMessage = async (
             phone: parsedMessage.phone,
             clientId: config.id,
             maxHistory: config.settings.maxChatHistory,
+            maxHistoryTokens: config.settings.maxHistoryTokens,
           }),
           getRAGContextWithTrace({
             query: batchedContent,
             clientId: config.id,
             openaiApiKey: config.apiKeys.openaiApiKey,
+            similarityThreshold: config.activeAgent?.rag_threshold,
+            maxResults: config.activeAgent?.rag_max_results,
           }),
         ]);
 
@@ -1214,6 +1235,7 @@ export const processChatbotMessage = async (
           phone: parsedMessage.phone,
           clientId: config.id,
           maxHistory: config.settings.maxChatHistory,
+          maxHistoryTokens: config.settings.maxHistoryTokens,
         });
         chatHistory2 = historyResult.messages;
 
@@ -1237,6 +1259,8 @@ export const processChatbotMessage = async (
           query: batchedContent,
           clientId: config.id,
           openaiApiKey: config.apiKeys.openaiApiKey,
+          similarityThreshold: config.activeAgent?.rag_threshold,
+          maxResults: config.activeAgent?.rag_max_results,
         });
         ragContext = ragResult.context;
         ragTraceData = ragResult.traceData;
@@ -1773,8 +1797,33 @@ export const processChatbotMessage = async (
       }
 
       aiResponse.toolCalls = uniqueToolCalls;
+      const allowedToolNames = getAllowedToolNames({
+        config,
+        contactMetadata: customer.metadata,
+        enableTools: !isFastTrack || !fastTrackResult?.catalogSize,
+      });
 
       for (const toolCall of uniqueToolCalls) {
+        if (!allowedToolNames.has(toolCall.function.name)) {
+          const tcRejectedAt = new Date();
+          traceLogger.logToolCall({
+            toolName: toolCall.function.name,
+            toolCallId: toolCall.id,
+            arguments: {},
+            status: "rejected",
+            errorMessage: "tool_not_allowed_for_agent",
+            source: "agent",
+            startedAt: tcRejectedAt,
+            completedAt: new Date(),
+          });
+          logger.logNodeWarning("15. Tool Call Rejected", {
+            toolName: toolCall.function.name,
+            reason: "tool_not_allowed_for_agent",
+            allowedTools: Array.from(allowedToolNames),
+          });
+          continue;
+        }
+
         // Tool 1: transferir_atendimento
         if (
           toolCall.function.name === "transferir_atendimento" &&
@@ -1872,6 +1921,67 @@ export const processChatbotMessage = async (
           });
           logger.finishExecution("success");
           return { success: true, handedOff: true };
+        }
+
+        if (toolCall.function.name === "buscar_conhecimento") {
+          const tcKnowledgeStart = new Date();
+          logger.logNodeStart("15.4. Handle Knowledge Search", {
+            phone: parsedMessage.phone,
+            toolCallId: toolCall.id,
+          });
+
+          const args = JSON.parse(toolCall.function.arguments || "{}");
+          const queryText =
+            typeof args.query === "string" && args.query.trim().length > 0
+              ? args.query.trim()
+              : batchedContent;
+
+          const knowledgeResult = await getRAGContextWithTrace({
+            query: queryText,
+            clientId: config.id,
+            openaiApiKey: config.apiKeys.openaiApiKey,
+            similarityThreshold: config.activeAgent?.rag_threshold,
+            maxResults: config.activeAgent?.rag_max_results,
+          });
+
+          ragTraceData = knowledgeResult.traceData;
+
+          traceLogger.logToolCall({
+            toolName: "buscar_conhecimento",
+            toolCallId: toolCall.id,
+            arguments: { query: queryText },
+            result: {
+              contextLength: knowledgeResult.context.length,
+              chunks: knowledgeResult.traceData?.chunkIds.length ?? 0,
+            },
+            status: "success",
+            source: "agent",
+            startedAt: tcKnowledgeStart,
+            completedAt: new Date(),
+          });
+
+          logger.logNodeSuccess("15.4. Handle Knowledge Search", {
+            contextLength: knowledgeResult.context.length,
+            chunks: knowledgeResult.traceData?.chunkIds.length ?? 0,
+          });
+
+          const followUpResponse = await generateAIResponse({
+            message: batchedContent,
+            chatHistory: chatHistory2,
+            ragContext: knowledgeResult.context,
+            customerName: parsedMessage.name,
+            contactMetadata: customer.metadata,
+            config,
+            greetingInstruction: continuityInfo.greetingInstruction,
+            enableTools: false,
+            conversationId: conversation?.id,
+            phone: parsedMessage.phone,
+            supportModeEnabled,
+          });
+
+          aiResponse.content = followUpResponse.content;
+          aiResponse.toolCalls = undefined;
+          continue;
         }
 
         // Tool 2: buscar_documento (NEW)

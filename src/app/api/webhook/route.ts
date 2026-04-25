@@ -1,6 +1,7 @@
 import { processChatbotMessage } from "@/flows/chatbotFlow";
 import { handleUnknownWABA } from "@/lib/auto-provision";
 import { updateClientProvisioningStatus } from "@/lib/coexistence-sync";
+import { checkDuplicateMessage, markMessageAsProcessed } from "@/lib/dedup";
 import { query } from "@/lib/postgres";
 import { uploadFileToStorage } from "@/lib/storage";
 import type { ClientConfig, StoredMediaMetadata } from "@/lib/types";
@@ -417,6 +418,50 @@ export async function POST(request: NextRequest) {
       console.error("[Webhook POST] Error processing reaction", reactionError);
     }
 
+    const incomingMessageId = extractIncomingMessageId(body);
+    if (incomingMessageId) {
+      try {
+        const dedupResult = await checkDuplicateMessage(
+          config.id,
+          incomingMessageId,
+        );
+
+        if (dedupResult.alreadyProcessed) {
+          console.log("[Webhook POST] Duplicate message ignored", {
+            clientId: config.id,
+            messageId: incomingMessageId,
+            source: dedupResult.source,
+          });
+          await updateArchivedMetaWebhook(archiveId, {
+            clientId: config.id,
+            processingStatus: "processed",
+            metadata: {
+              field: field || "messages",
+              duplicate: true,
+              duplicate_source: dedupResult.source,
+            },
+          });
+          return NextResponse.json(
+            { status: "DUPLICATE_MESSAGE_IGNORED" },
+            { status: 200 },
+          );
+        }
+
+        await markMessageAsProcessed(config.id, incomingMessageId, {
+          timestamp,
+          from: value?.messages?.[0]?.from,
+          route: "global_waba_webhook",
+        });
+      } catch (dedupError) {
+        console.warn("[Webhook POST] Dedup failed, continuing", {
+          clientId: config.id,
+          messageId: incomingMessageId,
+          error:
+            dedupError instanceof Error ? dedupError.message : String(dedupError),
+        });
+      }
+    }
+
     try {
       await processChatbotMessage(body, config);
       console.log("[Webhook POST] Message processed successfully");
@@ -488,6 +533,17 @@ function validateHMAC(rawBody: string, signature: string): boolean {
 function extractWABAId(payload: any): string | null {
   try {
     return payload?.entry?.[0]?.id || null;
+  } catch {
+    return null;
+  }
+}
+
+function extractIncomingMessageId(payload: any): string | null {
+  try {
+    const message = payload?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
+    return typeof message?.id === "string" && message.id.trim()
+      ? message.id
+      : null;
   } catch {
     return null;
   }

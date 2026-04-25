@@ -449,6 +449,18 @@ export interface ToolCall {
   };
 }
 
+export type ReasoningEffort = "low" | "medium" | "high";
+
+export interface AgentPromptSections {
+  identity?: string;
+  business_context?: string;
+  response_rules?: string;
+  boundaries?: string;
+  escalation_policy?: string;
+  examples?: string;
+  custom_instructions?: string;
+}
+
 /**
  * 🔐 Configuração Multi-Tenant de Cliente (com Vault)
  *
@@ -494,10 +506,16 @@ export interface ClientConfig {
   settings: {
     batchingDelaySeconds: number;
     maxTokens: number;
+    maxInputTokens: number;
+    maxHistoryTokens: number;
+    maxKnowledgeTokens: number;
+    reasoningEffort: ReasoningEffort;
     temperature: number;
     enableRAG: boolean;
     enableTools: boolean;
     enableHumanHandoff: boolean;
+    enableDocumentSearch: boolean;
+    enableAudioResponse: boolean;
     messageSplitEnabled: boolean;
     maxChatHistory: number;
     messageDelayMs: number; // Delay between split messages (in milliseconds)
@@ -572,6 +590,7 @@ export interface Agent {
   // === O QUE FAZER (Behavior) ===
   role_description: string | null;
   primary_goal: string | null;
+  prompt_sections?: AgentPromptSections | null;
   forbidden_topics: string[] | null;
   always_mention: string[] | null;
   greeting_message: string | null;
@@ -594,9 +613,13 @@ export interface Agent {
   groq_model: string;
   temperature: number;
   max_tokens: number;
+  reasoning_effort?: ReasoningEffort;
 
   // === MEMÓRIA & CONTEXTO ===
   max_chat_history: number; // Quantas mensagens manter no contexto
+  max_input_tokens?: number;
+  max_history_tokens?: number;
+  max_knowledge_tokens?: number;
 
   // === TIMING & BATCHING ===
   batching_delay_seconds: number; // Tempo para agrupar mensagens (debounce)

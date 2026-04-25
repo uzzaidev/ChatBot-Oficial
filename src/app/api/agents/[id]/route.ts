@@ -192,6 +192,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       updateData.role_description = body.role_description;
     if (body.primary_goal !== undefined)
       updateData.primary_goal = body.primary_goal;
+    if (body.prompt_sections !== undefined)
+      updateData.prompt_sections = body.prompt_sections;
     if (body.forbidden_topics !== undefined)
       updateData.forbidden_topics = body.forbidden_topics;
     if (body.always_mention !== undefined)
@@ -221,6 +223,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       updateData.enable_tools = body.enable_tools;
     if (body.max_chat_history !== undefined)
       updateData.max_chat_history = body.max_chat_history;
+    if (body.max_input_tokens !== undefined)
+      updateData.max_input_tokens = body.max_input_tokens;
+    if (body.max_history_tokens !== undefined)
+      updateData.max_history_tokens = body.max_history_tokens;
+    if (body.max_knowledge_tokens !== undefined)
+      updateData.max_knowledge_tokens = body.max_knowledge_tokens;
     if (body.batching_delay_seconds !== undefined)
       updateData.batching_delay_seconds = body.batching_delay_seconds;
     if (body.message_delay_ms !== undefined)
@@ -237,6 +245,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (body.temperature !== undefined)
       updateData.temperature = body.temperature;
     if (body.max_tokens !== undefined) updateData.max_tokens = body.max_tokens;
+    if (body.reasoning_effort !== undefined)
+      updateData.reasoning_effort = body.reasoning_effort;
 
     // Business Hours
     if (body.business_hours_enabled !== undefined)
@@ -253,6 +263,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       "name",
       "role_description",
       "primary_goal",
+      "prompt_sections",
       "response_tone",
       "response_style",
       "language",

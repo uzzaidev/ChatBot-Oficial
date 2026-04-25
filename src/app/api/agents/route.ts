@@ -294,6 +294,7 @@ export async function POST(request: NextRequest) {
       // Behavior
       role_description: body.role_description || null,
       primary_goal: body.primary_goal || null,
+      prompt_sections: body.prompt_sections || {},
       forbidden_topics: body.forbidden_topics || [],
       always_mention: body.always_mention || [],
       greeting_message: body.greeting_message || null,
@@ -303,6 +304,7 @@ export async function POST(request: NextRequest) {
       enable_human_handoff: body.enable_human_handoff ?? true,
       enable_document_search: body.enable_document_search ?? false,
       enable_audio_response: body.enable_audio_response ?? false,
+      enable_tools: body.enable_tools ?? false,
 
       // RAG
       enable_rag: body.enable_rag ?? false,
@@ -315,6 +317,18 @@ export async function POST(request: NextRequest) {
       groq_model: body.groq_model || "llama-3.3-70b-versatile",
       temperature: body.temperature ?? 0.7,
       max_tokens: body.max_tokens ?? 2000,
+      reasoning_effort: body.reasoning_effort ?? "low",
+
+      // Context budgets
+      max_chat_history: body.max_chat_history ?? 15,
+      max_input_tokens: body.max_input_tokens ?? 24000,
+      max_history_tokens: body.max_history_tokens ?? 6000,
+      max_knowledge_tokens: body.max_knowledge_tokens ?? 6000,
+
+      // Timing
+      batching_delay_seconds: body.batching_delay_seconds ?? 10,
+      message_delay_ms: body.message_delay_ms ?? 2000,
+      message_split_enabled: body.message_split_enabled ?? false,
     };
 
     // Compile prompts

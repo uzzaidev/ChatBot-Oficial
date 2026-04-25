@@ -173,6 +173,12 @@ export const batchMessages = async (
       .filter((msg): msg is RedisMessage => msg !== null);
 
     const consolidatedContent = parsedMessages
+      .sort((a, b) => {
+        const aTime = Date.parse(a.timestamp);
+        const bTime = Date.parse(b.timestamp);
+        return (Number.isFinite(aTime) ? aTime : 0) -
+          (Number.isFinite(bTime) ? bTime : 0);
+      })
       .map((msg) => msg.content)
       .join("\n\n");
 

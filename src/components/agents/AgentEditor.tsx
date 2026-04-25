@@ -118,6 +118,15 @@ const DEFAULT_AGENT: Partial<Agent> = {
   max_response_length: "medium",
   role_description: "",
   primary_goal: "",
+  prompt_sections: {
+    identity: "",
+    business_context: "",
+    response_rules: "",
+    boundaries: "",
+    escalation_policy: "",
+    examples: "",
+    custom_instructions: "",
+  },
   forbidden_topics: [],
   always_mention: [],
   greeting_message: "",
@@ -133,6 +142,10 @@ const DEFAULT_AGENT: Partial<Agent> = {
   groq_model: "llama-3.3-70b-versatile",
   temperature: 0.7,
   max_tokens: 2000,
+  reasoning_effort: "low",
+  max_input_tokens: 24000,
+  max_history_tokens: 6000,
+  max_knowledge_tokens: 6000,
 };
 
 // =====================================================

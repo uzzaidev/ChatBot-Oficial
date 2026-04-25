@@ -35,12 +35,14 @@ export interface DirectAICallConfig {
   };
   messages: CoreMessage[];
   tools?: Record<string, any>;
+  legacyToolDefinitions?: unknown;
   settings?: {
     temperature?: number;
     maxTokens?: number;
     topP?: number;
     frequencyPenalty?: number;
     presencePenalty?: number;
+    reasoningEffort?: "low" | "medium" | "high";
   };
   // For tracking
   conversationId?: string;
@@ -154,6 +156,19 @@ const normalizeToolCalls = (
     .filter(Boolean) as any;
 };
 
+const supportsReasoningEffort = (provider: string, model: string): boolean => {
+  if (provider !== "openai") {
+    return false;
+  }
+  const normalized = model.toLowerCase();
+  return (
+    normalized.startsWith("gpt-5") ||
+    normalized.startsWith("o1") ||
+    normalized.startsWith("o3") ||
+    normalized.startsWith("o4")
+  );
+};
+
 // =====================================================
 // MAIN FUNCTION: callDirectAI
 // =====================================================
@@ -239,12 +254,16 @@ export const callDirectAI = async (
 
     // Add optional parameters only if defined
     // gpt-5-nano uses reasoning — temperature is not a supported parameter
-    const isNanoReasoning = provider === "openai" && model === "gpt-5-nano";
-    if (config.settings?.temperature !== undefined && !isNanoReasoning) {
+    const isReasoningModel = supportsReasoningEffort(provider, model);
+    if (config.settings?.temperature !== undefined && !isReasoningModel) {
       generateParams.temperature = config.settings.temperature;
     }
-    if (isNanoReasoning) {
-      generateParams.providerOptions = { openai: { reasoningEffort: "low" } };
+    if (isReasoningModel) {
+      generateParams.providerOptions = {
+        openai: {
+          reasoningEffort: config.settings?.reasoningEffort || "low",
+        },
+      };
     }
     if (config.settings?.maxTokens !== undefined) {
       generateParams.maxTokens = config.settings.maxTokens;

@@ -219,6 +219,20 @@ export const classifyCRMIntent = async (params: {
   }
 
   const config = await getClientConfig(params.clientId);
+  if (!config) {
+    const fallback = deterministicFallback(params.message);
+    return {
+      enabled: true,
+      llmUsed: false,
+      fallbackUsed: true,
+      confidence: fallback.confidence,
+      threshold: settings.threshold,
+      intent: normalizeCommercialIntent(fallback.intent),
+      urgencyLevel: fallback.urgencyLevel,
+      reason: "missing_client_config_fallback",
+    };
+  }
+
   const provider = config.primaryProvider === "groq" ? "groq" : "openai";
 
   const prompt = `Classifique a mensagem do lead para CRM.

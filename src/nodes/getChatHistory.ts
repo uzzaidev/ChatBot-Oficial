@@ -1,16 +1,21 @@
 import { ChatMessage } from '@/lib/types'
 import { createServiceRoleClient } from '@/lib/supabase'
 import { getBotConfig } from '@/lib/config'
+import { trimMessagesToTokenBudget, estimateMessagesTokens } from '@/lib/token-budget'
 
 export interface GetChatHistoryInput {
   phone: string
   clientId: string
   maxHistory?: number
+  maxHistoryTokens?: number
 }
 
 export interface ChatHistoryStats {
   messageCount: number
   totalPromptSize: number
+  estimatedTokens: number
+  removedByTokenBudget: number
+  maxHistoryTokensRequested: number
   maxHistoryRequested: number
   durationMs: number
 }
@@ -23,6 +28,7 @@ export interface GetChatHistoryResult {
 export const getChatHistory = async (input: GetChatHistoryInput): Promise<GetChatHistoryResult> => {
   const startTime = Date.now()
   const defaultMaxHistory = input.maxHistory ?? 30
+  const defaultMaxHistoryTokens = input.maxHistoryTokens ?? 6000
 
   try {
     const { phone, clientId } = input
@@ -31,6 +37,12 @@ export const getChatHistory = async (input: GetChatHistoryInput): Promise<GetCha
     if (maxHistory === undefined) {
       const configValue = await getBotConfig(clientId, 'chat_history:max_messages')
       maxHistory = configValue !== null ? Number(configValue) : 30
+    }
+
+    let maxHistoryTokens = input.maxHistoryTokens
+    if (maxHistoryTokens === undefined) {
+      const configValue = await getBotConfig(clientId, 'chat_history:max_tokens')
+      maxHistoryTokens = configValue !== null ? Number(configValue) : 6000
     }
 
     const supabase = createServiceRoleClient()
@@ -50,6 +62,9 @@ export const getChatHistory = async (input: GetChatHistoryInput): Promise<GetCha
         stats: {
           messageCount: 0,
           totalPromptSize: 0,
+          estimatedTokens: 0,
+          removedByTokenBudget: 0,
+          maxHistoryTokensRequested: maxHistoryTokens,
           maxHistoryRequested: maxHistory,
           durationMs: duration,
         },
@@ -81,16 +96,23 @@ export const getChatHistory = async (input: GetChatHistoryInput): Promise<GetCha
         }
       })
 
-    const totalPromptSize = chatMessages.reduce(
+    const trimmed = trimMessagesToTokenBudget(chatMessages, maxHistoryTokens)
+    const finalMessages = trimmed.messages
+
+    const totalPromptSize = finalMessages.reduce(
       (acc, msg) => acc + (msg.content?.length || 0),
       0
     )
+    const estimatedTokens = estimateMessagesTokens(finalMessages)
 
     return {
-      messages: chatMessages,
+      messages: finalMessages,
       stats: {
-        messageCount: chatMessages.length,
+        messageCount: finalMessages.length,
         totalPromptSize,
+        estimatedTokens,
+        removedByTokenBudget: trimmed.removed,
+        maxHistoryTokensRequested: maxHistoryTokens,
         maxHistoryRequested: maxHistory,
         durationMs: duration,
       },
@@ -102,6 +124,9 @@ export const getChatHistory = async (input: GetChatHistoryInput): Promise<GetCha
       stats: {
         messageCount: 0,
         totalPromptSize: 0,
+        estimatedTokens: 0,
+        removedByTokenBudget: 0,
+        maxHistoryTokensRequested: defaultMaxHistoryTokens,
         maxHistoryRequested: defaultMaxHistory,
         durationMs: duration,
       },

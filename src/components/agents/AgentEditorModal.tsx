@@ -209,6 +209,15 @@ const DEFAULT_AGENT: Partial<Agent> = {
   max_response_length: "medium",
   role_description: "",
   primary_goal: "",
+  prompt_sections: {
+    identity: "",
+    business_context: "",
+    response_rules: "",
+    boundaries: "",
+    escalation_policy: "",
+    examples: "",
+    custom_instructions: "",
+  },
   forbidden_topics: [],
   always_mention: [],
   greeting_message: "",
@@ -225,7 +234,11 @@ const DEFAULT_AGENT: Partial<Agent> = {
   groq_model: "llama-3.3-70b-versatile",
   temperature: 0.7,
   max_tokens: 2000,
+  reasoning_effort: "low",
   max_chat_history: 15,
+  max_input_tokens: 24000,
+  max_history_tokens: 6000,
+  max_knowledge_tokens: 6000,
   batching_delay_seconds: 10,
   message_delay_ms: 2000,
   message_split_enabled: false,
@@ -315,6 +328,19 @@ export const AgentEditorModal = ({
   // Update form field
   const updateField = <K extends keyof Agent>(field: K, value: Agent[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const updatePromptSection = (
+    field: keyof NonNullable<Agent["prompt_sections"]>,
+    value: string,
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      prompt_sections: {
+        ...(prev.prompt_sections || {}),
+        [field]: value,
+      },
+    }));
   };
 
   // Handle save
@@ -833,6 +859,77 @@ export const AgentEditorModal = ({
                       className="resize-y"
                     />
                   </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Contexto do Negocio</Label>
+                      <Textarea
+                        value={formData.prompt_sections?.business_context || ""}
+                        onChange={(e) =>
+                          updatePromptSection("business_context", e.target.value)
+                        }
+                        placeholder="Fatos fixos sobre empresa, produtos, publico e limites comerciais."
+                        rows={4}
+                        className="resize-y"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Regras de Resposta</Label>
+                      <Textarea
+                        value={formData.prompt_sections?.response_rules || ""}
+                        onChange={(e) =>
+                          updatePromptSection("response_rules", e.target.value)
+                        }
+                        placeholder="Passos que o agente deve seguir antes de responder."
+                        rows={4}
+                        className="resize-y"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Limites e Assuntos Proibidos</Label>
+                      <Textarea
+                        value={formData.prompt_sections?.boundaries || ""}
+                        onChange={(e) =>
+                          updatePromptSection("boundaries", e.target.value)
+                        }
+                        placeholder="O que o agente nao deve prometer, inventar ou responder."
+                        rows={4}
+                        className="resize-y"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Politica de Escalacao</Label>
+                      <Textarea
+                        value={formData.prompt_sections?.escalation_policy || ""}
+                        onChange={(e) =>
+                          updatePromptSection("escalation_policy", e.target.value)
+                        }
+                        placeholder="Quando transferir para humano ou dizer que vai confirmar."
+                        rows={4}
+                        className="resize-y"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Exemplos e Instrucoes Avancadas</Label>
+                    <Textarea
+                      value={
+                        formData.prompt_sections?.examples ||
+                        formData.prompt_sections?.custom_instructions ||
+                        ""
+                      }
+                      onChange={(e) =>
+                        updatePromptSection("examples", e.target.value)
+                      }
+                      placeholder="Exemplos curtos de boas respostas ou regras avancadas."
+                      rows={5}
+                      className="font-mono text-sm resize-y"
+                    />
+                  </div>
                 </div>
 
                 <Separator />
@@ -1129,6 +1226,28 @@ export const AgentEditorModal = ({
                         step={256}
                       />
                     </div>
+
+                    <div className="space-y-2">
+                      <Label>Reasoning</Label>
+                      <Select
+                        value={formData.reasoning_effort || "low"}
+                        onValueChange={(v) =>
+                          updateField(
+                            "reasoning_effort",
+                            v as Agent["reasoning_effort"],
+                          )
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="low">Low</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="high">High</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
               </TabsContent>
@@ -1243,6 +1362,59 @@ export const AgentEditorModal = ({
                         onCheckedChange={(v) =>
                           updateField("message_split_enabled", v)
                         }
+                      />
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <Label>
+                          Tokens de Historico:{" "}
+                          {formData.max_history_tokens || 6000}
+                        </Label>
+                      </div>
+                      <Slider
+                        value={[formData.max_history_tokens || 6000]}
+                        onValueChange={([v]) =>
+                          updateField("max_history_tokens", v)
+                        }
+                        min={0}
+                        max={32000}
+                        step={500}
+                      />
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <Label>
+                          Tokens da Base:{" "}
+                          {formData.max_knowledge_tokens || 6000}
+                        </Label>
+                      </div>
+                      <Slider
+                        value={[formData.max_knowledge_tokens || 6000]}
+                        onValueChange={([v]) =>
+                          updateField("max_knowledge_tokens", v)
+                        }
+                        min={0}
+                        max={32000}
+                        step={500}
+                      />
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <Label>
+                          Contexto Total: {formData.max_input_tokens || 24000}
+                        </Label>
+                      </div>
+                      <Slider
+                        value={[formData.max_input_tokens || 24000]}
+                        onValueChange={([v]) =>
+                          updateField("max_input_tokens", v)
+                        }
+                        min={4000}
+                        max={128000}
+                        step={1000}
                       />
                     </div>
                   </div>
