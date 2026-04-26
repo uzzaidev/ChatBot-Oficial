@@ -98,7 +98,21 @@ describe("handleDocumentSearchToolCall gating", () => {
     vi.mocked(saveChatMessage).mockResolvedValue(undefined);
   });
 
-  it("blocks when there is no explicit document intent", async () => {
+  it("does not block based on user phrasing (no_explicit_intent gate removed)", async () => {
+    vi.mocked(searchDocumentInKnowledge).mockResolvedValue({
+      results: [buildSearchResult("Horarios.jpeg")],
+      metadata: {
+        totalDocumentsInBase: 3,
+        chunksFound: 1,
+        uniqueDocumentsFound: 1,
+        threshold: 0.3,
+      },
+    } as any);
+
+    vi.mocked(createServiceRoleClient).mockReturnValue(
+      createSupabaseMock({ conversationRows: [], mediaRows: [] }) as any,
+    );
+
     const result = await handleDocumentSearchToolCall({
       toolCall: {
         id: "call-1",
@@ -117,13 +131,8 @@ describe("handleDocumentSearchToolCall gating", () => {
       contactMetadata: null,
     });
 
-    expect(result.documentGateDecision).toBe("blocked");
-    expect(result.documentGateReason).toBe("no_explicit_intent");
-    expect(result.useMessageAsReply).toBe(true);
-    expect(result.message).not.toContain("em seguida");
-    expect(searchDocumentInKnowledge).not.toHaveBeenCalled();
-    expect(sendImageMessage).not.toHaveBeenCalled();
-    expect(sendDocumentMessage).not.toHaveBeenCalled();
+    expect(result.documentGateReason).not.toBe("no_explicit_intent");
+    expect(searchDocumentInKnowledge).toHaveBeenCalled();
   });
 
   it("treats missing links complaint as explicit document intent", async () => {

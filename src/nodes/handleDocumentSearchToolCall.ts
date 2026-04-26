@@ -110,58 +110,6 @@ type DocumentIntent = "horarios" | "planos" | "planos_online" | "generic";
 
 const DOCUMENT_COOLDOWN_MS = 90_000;
 
-const EXPLICIT_DOCUMENT_TERMS = [
-  "me envia",
-  "envia",
-  "enviar",
-  "manda",
-  "mandar",
-  "arquivo",
-  "anexo",
-  "anexos",
-  "documento",
-  "imagem",
-  "foto",
-  "fotos",
-  "jpg",
-  "jpeg",
-  "png",
-  "webp",
-  "link",
-  "links",
-  "url",
-  "material",
-  "pdf",
-  "tabela",
-  "grade",
-  "catalogo",
-  "catálogo",
-  "apresentacao",
-  "apresentação",
-  "apresentacoes",
-  "apresentações",
-  "deck",
-  "slides",
-  "slide",
-  "pdf",
-];
-
-const DOCUMENT_RETRY_TERMS = [
-  "nao enviou",
-  "não enviou",
-  "nao mandou",
-  "não mandou",
-  "nao chegou",
-  "não chegou",
-  "faltou",
-  "cade",
-  "cadê",
-  "manda de novo",
-  "envia de novo",
-  "reenvia",
-  "reenviar",
-];
-
 const detectDocumentIntent = (query: string): DocumentIntent => {
   const q = query.toLowerCase();
 
@@ -202,14 +150,6 @@ const detectDocumentIntent = (query: string): DocumentIntent => {
   }
 
   return "generic";
-};
-
-const hasExplicitDocumentIntent = (text: string): boolean => {
-  const normalized = text.toLowerCase();
-  return (
-    EXPLICIT_DOCUMENT_TERMS.some((term) => normalized.includes(term)) ||
-    DOCUMENT_RETRY_TERMS.some((term) => normalized.includes(term))
-  );
 };
 
 const normalizeSearchText = (value: string): string =>
