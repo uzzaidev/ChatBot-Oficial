@@ -1,5 +1,5 @@
-import type { ClientConfig, ContactMetadata } from "./types";
 import { z } from "zod";
+import type { ClientConfig, ContactMetadata } from "./types";
 
 export const CONTACT_METADATA_FIELDS = [
   "nome",
@@ -9,7 +9,6 @@ export const CONTACT_METADATA_FIELDS = [
   "indicado_por",
   "objetivo",
   "experiencia",
-  "experiencia_yoga",
   "periodo_preferido",
   "dia_preferido",
   "nome_completo",
@@ -24,7 +23,9 @@ export const CONTACT_METADATA_FIELDS = [
   "profissao",
 ] as const;
 
-export const CONTACT_METADATA_FIELD_SET = new Set<string>(CONTACT_METADATA_FIELDS);
+export const CONTACT_METADATA_FIELD_SET = new Set<string>(
+  CONTACT_METADATA_FIELDS,
+);
 
 export type AgentToolName =
   | "transferir_atendimento"
@@ -44,7 +45,10 @@ const checkSlotsAreFilled = (
   if (!requiredSlots || requiredSlots.length === 0) return true;
   if (!metadata) return false;
   return requiredSlots.every(
-    (slot) => metadata[slot] !== undefined && metadata[slot] !== null && metadata[slot] !== "",
+    (slot) =>
+      metadata[slot] !== undefined &&
+      metadata[slot] !== null &&
+      metadata[slot] !== "",
   );
 };
 
@@ -54,7 +58,10 @@ export const shouldExposeCalendarTools = (
 ): boolean => {
   const calendarSlotsOk =
     !config.agentV2?.requireSlotsForCalendar ||
-    checkSlotsAreFilled(contactMetadata, config.agentV2?.calendarRequiredSlots ?? []);
+    checkSlotsAreFilled(
+      contactMetadata,
+      config.agentV2?.calendarRequiredSlots ?? [],
+    );
 
   return (
     config.calendar?.botEnabled !== false &&
@@ -81,7 +88,9 @@ export const buildAllowedTools = (input: {
       description:
         "Use somente quando o usuario pedir explicitamente para falar com humano, atendente ou pessoa.",
       inputSchema: z.object({
-        motivo: z.string().describe("Motivo da transferencia solicitada pelo usuario."),
+        motivo: z
+          .string()
+          .describe("Motivo da transferencia solicitada pelo usuario."),
       }),
     };
   }
@@ -91,7 +100,9 @@ export const buildAllowedTools = (input: {
       description:
         "Busca trechos textuais na base de conhecimento do cliente. Use quando precisar de informacao factual da base antes de responder.",
       inputSchema: z.object({
-        query: z.string().describe("Pergunta ou termo de busca para a base de conhecimento."),
+        query: z
+          .string()
+          .describe("Pergunta ou termo de busca para a base de conhecimento."),
       }),
     };
   }
@@ -101,7 +112,11 @@ export const buildAllowedTools = (input: {
       description:
         "Busca e envia documentos, imagens, fotos, links ou materiais da base. Use quando o usuario solicitar explicitamente arquivo, documento, PDF, catalogo, tabela, imagem, foto, link, material, anexo, ou reclamar que algo nao foi enviado. Nao prometa nem liste Foto 1/2/3, links ou arquivos sem chamar esta ferramenta.",
       inputSchema: z.object({
-        query: z.string().describe("Termo de busca extraido da solicitacao do usuario, incluindo nome do material, foto, local, produto ou documento."),
+        query: z
+          .string()
+          .describe(
+            "Termo de busca extraido da solicitacao do usuario, incluindo nome do material, foto, local, produto ou documento.",
+          ),
         document_type: z
           .enum(["any", "catalog", "manual", "faq", "image"])
           .default("any")
@@ -115,7 +130,9 @@ export const buildAllowedTools = (input: {
       description:
         "Converte a resposta final em audio. Use apenas quando a politica do agente ou o usuario pedirem audio.",
       inputSchema: z.object({
-        texto_para_audio: z.string().describe("Texto completo que sera convertido em audio."),
+        texto_para_audio: z
+          .string()
+          .describe("Texto completo que sera convertido em audio."),
       }),
     };
   }

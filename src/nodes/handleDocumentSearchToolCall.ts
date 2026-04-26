@@ -18,11 +18,11 @@
  * - Retorna mensagem descritiva para o agente
  */
 
-import { searchDocumentInKnowledge } from "./searchDocumentInKnowledge";
 import { sendDocumentMessage, sendImageMessage } from "@/lib/meta";
-import { saveChatMessage, ErrorDetails } from "@/nodes/saveChatMessage";
-import type { ClientConfig, StoredMediaMetadata } from "@/lib/types";
 import { createServiceRoleClient } from "@/lib/supabase";
+import type { ClientConfig, StoredMediaMetadata } from "@/lib/types";
+import { ErrorDetails, saveChatMessage } from "@/nodes/saveChatMessage";
+import { searchDocumentInKnowledge } from "./searchDocumentInKnowledge";
 
 export interface HandleDocumentSearchInput {
   /** Tool call object do AI response */
@@ -52,8 +52,8 @@ export interface HandleDocumentSearchInput {
 
 export interface HandleDocumentSearchOutput {
   /** Sucesso ou falha */
-  success: boolean
-  
+  success: boolean;
+
   /** Quantidade de arquivos de texto (.txt/.md) encontrados (não enviados como anexo) */
   textFilesFound?: number;
 
@@ -273,40 +273,10 @@ const findImageDocumentsByFilename = async (input: {
 const inferIntentFromFilename = (filename: string): DocumentIntent => {
   const lower = filename.toLowerCase();
   if (lower.includes("horario")) return "horarios";
-  if (lower.includes("online") && lower.includes("plano")) return "planos_online";
+  if (lower.includes("online") && lower.includes("plano"))
+    return "planos_online";
   if (lower.includes("plano")) return "planos";
   return "generic";
-};
-
-const extractHumanContent = (rowMessage: unknown): string => {
-  try {
-    const msg =
-      typeof rowMessage === "string" ? JSON.parse(rowMessage) : rowMessage;
-    if (!msg || typeof msg !== "object") return "";
-    const typed = msg as any;
-    if (typed.type !== "human") return "";
-    return typed.content || typed.data?.content || "";
-  } catch {
-    return "";
-  }
-};
-
-const hasMinimumCommercialDiscovery = (
-  contactMetadata: Record<string, unknown> | null | undefined,
-): boolean => {
-  if (!contactMetadata) return false;
-  const keys = [
-    "objetivo",
-    "objetivo_principal",
-    "experiencia",
-    "experiencia_yoga",
-    "periodo_preferido",
-    "dia_preferido",
-  ];
-  return keys.some((key) => {
-    const value = (contactMetadata as any)[key];
-    return typeof value === "string" ? value.trim().length > 0 : Boolean(value);
-  });
 };
 
 const scoreDocumentByIntent = (
@@ -363,8 +333,7 @@ const scoreDocumentByIntent = (
 export const handleDocumentSearchToolCall = async (
   input: HandleDocumentSearchInput,
 ): Promise<HandleDocumentSearchOutput> => {
-  const { toolCall, phone, clientId, config, userMessage, contactMetadata } =
-    input;
+  const { toolCall, phone, clientId, config, userMessage } = input;
 
   try {
     // 1. Parse arguments
@@ -376,7 +345,8 @@ export const handleDocumentSearchToolCall = async (
       const errorDetails: ErrorDetails = {
         code: "PARSE_ERROR",
         title: "Erro de Processamento",
-        message: "Não foi possível processar a solicitação de busca de documento.",
+        message:
+          "Não foi possível processar a solicitação de busca de documento.",
       };
 
       await saveChatMessage({
@@ -398,13 +368,14 @@ export const handleDocumentSearchToolCall = async (
 
     const { query, document_type } = args;
     const explicitIntentSource = `${query || ""} ${userMessage || ""}`.trim();
-    const explicitDocumentIntent = hasExplicitDocumentIntent(explicitIntentSource);
+    const explicitDocumentIntent =
+      hasExplicitDocumentIntent(explicitIntentSource);
 
     if (!explicitDocumentIntent) {
       return {
         success: true,
         message:
-          "Consigo te explicar por texto por aqui. Para eu enviar um arquivo, imagem ou link da base, me diga exatamente qual material voce quer receber.",
+          "Posso te ajudar com a informacao por texto agora. Se quiser que eu envie um arquivo ou imagem especifica, me diga qual material exatamente.",
         documentsFound: 0,
         documentsSent: 0,
         documentGateDecision: "blocked",
@@ -468,9 +439,12 @@ export const handleDocumentSearchToolCall = async (
     const textFilesNames: string[] = []; // Nomes dos arquivos de texto encontrados
     const textFilesContent: string[] = []; // Conteúdo dos arquivos de texto (para o agente usar)
     const filesSent: string[] = [];
-    const filesMetadata: Array<
-      { url: string; filename: string; mimeType: string; size: number }
-    > = [];
+    const filesMetadata: Array<{
+      url: string;
+      filename: string;
+      mimeType: string;
+      size: number;
+    }> = [];
     const errors: string[] = [];
 
     // Buscar conteúdo dos arquivos de texto encontrados
@@ -493,11 +467,12 @@ export const handleDocumentSearchToolCall = async (
     const intent = detectDocumentIntent(query);
     const mediaCandidates = results.filter((doc) => {
       const fileName = doc.filename.toLowerCase();
-      const isTextFile = fileName.endsWith('.txt') ||
-        fileName.endsWith('.md') ||
-        fileName.endsWith('.markdown') ||
-        doc.originalMimeType === 'text/plain' ||
-        doc.originalMimeType === 'text/markdown';
+      const isTextFile =
+        fileName.endsWith(".txt") ||
+        fileName.endsWith(".md") ||
+        fileName.endsWith(".markdown") ||
+        doc.originalMimeType === "text/plain" ||
+        doc.originalMimeType === "text/markdown";
       return !isTextFile;
     });
 
@@ -518,54 +493,21 @@ export const handleDocumentSearchToolCall = async (
       : intent;
 
     const nowIso = new Date().toISOString();
-    const cooldownSinceIso = new Date(Date.now() - DOCUMENT_COOLDOWN_MS).toISOString();
-    const [recentConversationResult, recentMediaResult] = await Promise.all([
-      supabaseAny
-        .from("n8n_chat_histories")
-        .select("message, created_at")
-        .eq("session_id", phone)
-        .eq("client_id", clientId)
-        .order("created_at", { ascending: false })
-        .limit(20),
-      supabaseAny
-        .from("n8n_chat_histories")
-        .select("message, media_metadata, created_at")
-        .eq("session_id", phone)
-        .eq("client_id", clientId)
-        .gte("created_at", cooldownSinceIso)
-        .lte("created_at", nowIso)
-        .not("media_metadata", "is", null)
-        .order("created_at", { ascending: false })
-        .limit(20),
-    ]);
+    const cooldownSinceIso = new Date(
+      Date.now() - DOCUMENT_COOLDOWN_MS,
+    ).toISOString();
+    const { data: recentMediaData } = await supabaseAny
+      .from("n8n_chat_histories")
+      .select("message, media_metadata, created_at")
+      .eq("session_id", phone)
+      .eq("client_id", clientId)
+      .gte("created_at", cooldownSinceIso)
+      .lte("created_at", nowIso)
+      .not("media_metadata", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(20);
 
-    const recentConversationRows = recentConversationResult?.data || [];
-    const recentMediaRows = recentMediaResult?.data || [];
-    const recentHumanMessages = recentConversationRows.filter((row: any) => {
-      const content = extractHumanContent(row.message);
-      return content.trim().length > 0;
-    });
-
-    const commercialIntent =
-      selectedMediaIntent === "planos" || selectedMediaIntent === "planos_online";
-    const hasDiscoveryData = hasMinimumCommercialDiscovery(contactMetadata);
-    const hasMinimumHistory = recentHumanMessages.length >= 2;
-
-    if (commercialIntent && !hasDiscoveryData && !hasMinimumHistory) {
-      return {
-        success: true,
-        message:
-          "Antes de te enviar os planos completos, me conta rapidinho o que voce busca com a pratica para eu te orientar melhor.",
-        documentsFound: results.length,
-        documentsSent: 0,
-        searchMetadata: metadata,
-        documentGateDecision: "blocked",
-        documentGateReason: "wrong_stage",
-        selectedDocument: selectedMediaDoc?.filename,
-        suppressedDocumentsCount: mediaCandidates.length,
-        useMessageAsReply: true,
-      };
-    }
+    const recentMediaRows = recentMediaData || [];
 
     const hasDuplicateMediaInCooldown = recentMediaRows.some((row: any) => {
       try {
@@ -586,7 +528,7 @@ export const handleDocumentSearchToolCall = async (
       return {
         success: true,
         message:
-          "Acabei de te enviar esse material. Se quiser, eu te explico os principais pontos por aqui enquanto voce confere.",
+          "Acabei de te enviar esse material. Me diz se voce ja conseguiu abrir ou se quer que eu explique algum ponto especifico.",
         documentsFound: results.length,
         documentsSent: 0,
         searchMetadata: metadata,
@@ -602,18 +544,21 @@ export const handleDocumentSearchToolCall = async (
       // ✅ FILTRO: Arquivos .txt e .md NUNCA são enviados como anexo
       // Eles são usados apenas para RAG (busca semântica de informações)
       const fileName = doc.filename.toLowerCase();
-      const isTextFile = fileName.endsWith('.txt') || 
-                        fileName.endsWith('.md') || 
-                        fileName.endsWith('.markdown') ||
-                        doc.originalMimeType === 'text/plain' ||
-                        doc.originalMimeType === 'text/markdown';
-      
+      const isTextFile =
+        fileName.endsWith(".txt") ||
+        fileName.endsWith(".md") ||
+        fileName.endsWith(".markdown") ||
+        doc.originalMimeType === "text/plain" ||
+        doc.originalMimeType === "text/markdown";
+
       if (isTextFile) {
         // Arquivo de texto - buscar TODOS os chunks para retornar conteúdo ao agente
-        console.log(`ℹ️ [handleDocumentSearchToolCall] Found text file, fetching content: ${doc.filename}`);
+        console.log(
+          `ℹ️ [handleDocumentSearchToolCall] Found text file, fetching content: ${doc.filename}`,
+        );
         textFilesFound++;
         textFilesNames.push(doc.filename);
-        
+
         try {
           // Buscar todos os chunks deste arquivo
           const { data: chunks, error: chunksError } = await supabaseAny
@@ -628,16 +573,25 @@ export const handleDocumentSearchToolCall = async (
             const fullContent = chunks
               .map((chunk: any) => chunk.content)
               .join("\n\n");
-            
-            textFilesContent.push(`\n\n---\n📄 ${doc.filename}\n---\n${fullContent}`);
-            console.log(`✅ [handleDocumentSearchToolCall] Retrieved ${chunks.length} chunks from ${doc.filename}`);
+
+            textFilesContent.push(
+              `\n\n---\n📄 ${doc.filename}\n---\n${fullContent}`,
+            );
+            console.log(
+              `✅ [handleDocumentSearchToolCall] Retrieved ${chunks.length} chunks from ${doc.filename}`,
+            );
           } else {
-            console.warn(`⚠️ [handleDocumentSearchToolCall] No chunks found for ${doc.filename}`);
+            console.warn(
+              `⚠️ [handleDocumentSearchToolCall] No chunks found for ${doc.filename}`,
+            );
           }
         } catch (fetchError) {
-          console.error(`❌ [handleDocumentSearchToolCall] Error fetching chunks for ${doc.filename}:`, fetchError);
+          console.error(
+            `❌ [handleDocumentSearchToolCall] Error fetching chunks for ${doc.filename}:`,
+            fetchError,
+          );
         }
-        
+
         continue; // Pula para o próximo documento (não envia como anexo)
       }
 
@@ -693,7 +647,9 @@ export const handleDocumentSearchToolCall = async (
           status: "sent", // ✅ Marcar como enviado (já foi para o WhatsApp)
         });
 
-        console.log(`✅ [handleDocumentSearchToolCall] Saved media message with wamid: ${messageId}`);
+        console.log(
+          `✅ [handleDocumentSearchToolCall] Saved media message with wamid: ${messageId}`,
+        );
 
         sentCount++;
         filesSent.push(doc.filename);
@@ -711,9 +667,8 @@ export const handleDocumentSearchToolCall = async (
           await new Promise((resolve) => setTimeout(resolve, 300));
         }
       } catch (sendError) {
-        const errorMessage = sendError instanceof Error
-          ? sendError.message
-          : "Unknown error";
+        const errorMessage =
+          sendError instanceof Error ? sendError.message : "Unknown error";
         errors.push(`${doc.filename}: ${errorMessage}`);
 
         // ❌ FIX: Save send error as failed message in conversation
@@ -752,13 +707,17 @@ export const handleDocumentSearchToolCall = async (
     // ✅ FIX: Errors are now saved as failed messages in the conversation
     // No need to return error messages - they're visible in the chat
     let message = "";
-    
+
     // Informar sobre arquivos de texto encontrados e incluir o CONTEÚDO para o agente usar
     if (textFilesFound > 0) {
-      message += `Info: Encontrei ${textFilesFound} arquivo(s) de texto (${textFilesNames.join(", ")}). `;
-      message += "Estes arquivos sao usados apenas para busca de informacoes (RAG) e nao sao enviados como anexo.\n\n";
+      message += `Info: Encontrei ${textFilesFound} arquivo(s) de texto (${textFilesNames.join(
+        ", ",
+      )}). `;
+      message +=
+        "Estes arquivos sao usados apenas para busca de informacoes (RAG) e nao sao enviados como anexo.\n\n";
       message += "**CONTEUDO DOS ARQUIVOS DE TEXTO ENCONTRADOS:**\n";
-      message += "Use as informacoes abaixo para responder ao usuario com precisao:\n";
+      message +=
+        "Use as informacoes abaixo para responder ao usuario com precisao:\n";
       message += textFilesContent.join("\n\n");
       message += "\n\n---\n";
       message += [
@@ -768,10 +727,12 @@ export const handleDocumentSearchToolCall = async (
       ].join(" ");
       message += "\n";
     }
-    
-      if (sentCount > 0) {
+
+    if (sentCount > 0) {
       if (message) message += "\n\n";
-      message += `✅ Enviei ${sentCount} documento(s) via WhatsApp: ${filesSent.join(', ')}.`;
+      message += `✅ Enviei ${sentCount} documento(s) via WhatsApp: ${filesSent.join(
+        ", ",
+      )}.`;
     } else if (textFilesFound === 0) {
       message = "Nenhum documento encontrado para enviar.";
     }
@@ -791,9 +752,8 @@ export const handleDocumentSearchToolCall = async (
       suppressedDocumentsCount: Math.max(0, mediaCandidates.length - sentCount),
     };
   } catch (error) {
-    const errorMessage = error instanceof Error
-      ? error.message
-      : "Unknown error";
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
 
     // ❌ FIX: Save general error as failed message in conversation
     const generalErrorDetails: ErrorDetails = {

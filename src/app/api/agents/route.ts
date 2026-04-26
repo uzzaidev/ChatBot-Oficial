@@ -300,14 +300,14 @@ export async function POST(request: NextRequest) {
       greeting_message: body.greeting_message || null,
       fallback_message: body.fallback_message || null,
 
-      // Tools
+      // Tools (default ON: SaaS clients expect doc/handoff/RAG ready out of the box)
       enable_human_handoff: body.enable_human_handoff ?? true,
-      enable_document_search: body.enable_document_search ?? false,
+      enable_document_search: body.enable_document_search ?? true,
       enable_audio_response: body.enable_audio_response ?? false,
-      enable_tools: body.enable_tools ?? false,
+      enable_tools: body.enable_tools ?? true,
 
       // RAG
-      enable_rag: body.enable_rag ?? false,
+      enable_rag: body.enable_rag ?? true,
       rag_threshold: body.rag_threshold ?? 0.7,
       rag_max_results: body.rag_max_results ?? 5,
 

@@ -417,14 +417,14 @@ export const createLegacyAgentFromClientConfig = (
     greeting_message: null,
     fallback_message: null,
 
-    // Ferramentas - preserva configurações do cliente
+    // Ferramentas - habilitadas por padrao (default ON)
     enable_human_handoff: clientConfig.settings.enableHumanHandoff,
-    enable_document_search: clientConfig.settings.enableRAG,
+    enable_document_search: true,
     enable_audio_response: clientConfig.settings.tts_enabled || false,
-    enable_tools: clientConfig.settings.enableTools || false,
+    enable_tools: true,
 
-    // RAG - preserva configurações
-    enable_rag: clientConfig.settings.enableRAG,
+    // RAG - habilitado por padrao
+    enable_rag: true,
     rag_threshold: 0.7,
     rag_max_results: 3,
 
