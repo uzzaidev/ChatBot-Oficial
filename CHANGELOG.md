@@ -8,6 +8,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-26
 
+### refactor
+- Reorganizado imports e melhorada a legibilidade dos testes em `handleDocumentSearchToolCall`
+- Ajustada formatação e comentários para refletir remoção da lógica de bloqueio por estágio de descoberta no fluxo de documentos
+  - Arquivos: `tests/unit/handle-document-search-tool-call.test.ts`
+  - Confiança: alta
+
+## 2026-04-26
+
 ### feat
 - Habilitado por padrão as ferramentas, RAG e busca de documentos para novos agentes e agentes existentes não arquivados, alinhando o comportamento esperado para clientes SaaS sem necessidade de configuração manual.
 - Atualizadas as configurações padrão no banco e no fallback JSON dos clientes para `enable_tools`, `enable_rag` e `enable_document_search` como `true`.
