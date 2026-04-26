@@ -53,7 +53,8 @@ const getDocumentTypeBoost = (
 ): number => {
   if (!requestedType || requestedType === "any") return 0;
   const normalizedMime = normalizeText(originalMimeType);
-  if (requestedType === "image" && normalizedMime.startsWith("image/")) return 0.08;
+  if (requestedType === "image" && normalizedMime.startsWith("image/"))
+    return 0.08;
   if (
     (requestedType === "manual" || requestedType === "catalog") &&
     normalizedMime.includes("pdf")
@@ -63,10 +64,15 @@ const getDocumentTypeBoost = (
   return 0;
 };
 
-const getFilenameOverlapBoost = (filename: string, tokens: string[]): number => {
+const getFilenameOverlapBoost = (
+  filename: string,
+  tokens: string[],
+): number => {
   if (tokens.length === 0) return 0;
   const normalizedFilename = normalizeText(filename);
-  const overlaps = tokens.filter((token) => normalizedFilename.includes(token)).length;
+  const overlaps = tokens.filter((token) =>
+    normalizedFilename.includes(token),
+  ).length;
   return Math.min(0.18, overlaps * 0.04);
 };
 
