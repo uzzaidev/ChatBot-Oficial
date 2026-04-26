@@ -1,7 +1,6 @@
 ﻿"use client";
 
 import { LogoutButton } from "@/components/LogoutButton";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -11,19 +10,21 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import {
-  AlertTriangle,
   Activity,
+  AlertTriangle,
   BarChart3,
   BookOpen,
   Bot,
   Calendar,
   CheckCircle,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   CreditCard,
   FileText,
   Kanban,
   LayoutDashboard,
+  LineChart,
   MessageSquare,
   Receipt,
   Settings,
@@ -34,6 +35,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 
 interface DashboardNavigationProps {
   userName?: string;
@@ -51,9 +53,8 @@ interface NavItemProps {
   label: string;
   isCollapsed?: boolean;
   onClick?: () => void;
-  badge?: "new" | "beta" | "admin" | "dev";
-  badgeCount?: number;
   tooltip?: string;
+  isSubItem?: boolean;
 }
 
 const NavItem = ({
@@ -62,12 +63,10 @@ const NavItem = ({
   label,
   isCollapsed,
   onClick,
-  badge,
-  badgeCount,
   tooltip,
+  isSubItem,
 }: NavItemProps) => {
   const pathname = usePathname();
-  // Check if current route matches this nav item
   const isActive =
     pathname === href || (pathname.startsWith(href) && href !== "/dashboard");
 
@@ -76,7 +75,8 @@ const NavItem = ({
       href={href}
       onClick={onClick}
       className={cn(
-        "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 text-sm font-medium",
+        "flex items-center gap-3 rounded-lg transition-all duration-200 text-sm font-medium",
+        isSubItem ? "px-3 py-2" : "px-3 py-3",
         isActive
           ? "bg-uzz-mint/15 text-uzz-mint border-l-[3px] border-uzz-mint font-semibold"
           : "text-muted-foreground hover:bg-primary/10 hover:text-uzz-mint hover:translate-x-1",
@@ -84,45 +84,15 @@ const NavItem = ({
       )}
       title={isCollapsed ? label : undefined}
     >
-      <div className="w-5 h-5 flex-shrink-0 flex items-center justify-center">
+      <div
+        className={cn(
+          "flex-shrink-0 flex items-center justify-center",
+          isSubItem ? "w-4 h-4" : "w-5 h-5",
+        )}
+      >
         {icon}
       </div>
-      {!isCollapsed && (
-        <>
-          <span className="flex-1">{label}</span>
-          {typeof badgeCount === "number" && badgeCount > 0 && (
-            <Badge
-              className="text-[10px] px-2 py-0.5 font-bold bg-red-500/15 text-red-600 border-red-500/30"
-            >
-              {badgeCount}
-            </Badge>
-          )}
-          {badge && (
-            <Badge
-              variant={badge}
-              className={cn(
-                "text-[10px] px-2 py-0.5 font-bold uppercase tracking-wider",
-                badge === "new" &&
-                  "bg-gradient-to-r from-uzz-mint to-uzz-gold text-uzz-black",
-                badge === "beta" &&
-                  "bg-uzz-blue/20 text-uzz-blue border-uzz-blue/30",
-                badge === "admin" &&
-                  "bg-uzz-gold/15 text-uzz-gold border-uzz-gold/30",
-                badge === "dev" &&
-                  "bg-uzz-silver/15 text-uzz-silver border-uzz-silver/30",
-              )}
-            >
-              {badge === "new"
-                ? "Novo"
-                : badge === "beta"
-                ? "Beta"
-                : badge === "admin"
-                ? "Admin"
-                : "Dev"}
-            </Badge>
-          )}
-        </>
-      )}
+      {!isCollapsed && <span className="flex-1">{label}</span>}
     </Link>
   );
 
@@ -149,10 +119,63 @@ interface NavSectionProps {
 
 const NavSection = ({ title, isCollapsed }: NavSectionProps) => {
   if (isCollapsed) return null;
-
   return (
     <div className="nav-section-header">
       <span>{title}</span>
+    </div>
+  );
+};
+
+interface NavGroupProps {
+  icon: React.ReactNode;
+  label: string;
+  isCollapsed?: boolean;
+  matchPaths: string[];
+  children: React.ReactNode;
+}
+
+const NavGroup = ({
+  icon,
+  label,
+  isCollapsed,
+  matchPaths,
+  children,
+}: NavGroupProps) => {
+  const pathname = usePathname();
+  const isAnyActive = matchPaths.some((p) => pathname.startsWith(p));
+  const [open, setOpen] = useState(isAnyActive);
+
+  if (isCollapsed) {
+    return <>{children}</>;
+  }
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={cn(
+          "w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 text-sm font-medium",
+          isAnyActive
+            ? "text-uzz-mint"
+            : "text-muted-foreground hover:bg-primary/10 hover:text-uzz-mint",
+        )}
+      >
+        <div className="w-5 h-5 flex-shrink-0 flex items-center justify-center">
+          {icon}
+        </div>
+        <span className="flex-1 text-left">{label}</span>
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 transition-transform duration-200",
+            open && "rotate-180",
+          )}
+        />
+      </button>
+      {open && (
+        <div className="ml-4 pl-3 border-l border-border/40 space-y-0.5 mt-0.5">
+          {children}
+        </div>
+      )}
     </div>
   );
 };
@@ -183,14 +206,14 @@ export function DashboardNavigation({
               </h1>
             </div>
             <p className="text-xs text-muted-foreground mt-2 ml-0.5">
-              AutomaÃ§Ã£o Criativa, Realizada
+              Automação Criativa, Realizada
             </p>
           </>
         )}
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-        {/* SEÃ‡ÃƒO: PRINCIPAL */}
+        {/* SEÇÃO: PRINCIPAL */}
         <NavSection title="Principal" isCollapsed={isCollapsed} />
         <NavItem
           href="/dashboard"
@@ -198,7 +221,7 @@ export function DashboardNavigation({
           label="Dashboard"
           isCollapsed={isCollapsed}
           onClick={onLinkClick}
-          tooltip="VisÃ£o geral com mÃ©tricas principais e grÃ¡ficos customizÃ¡veis"
+          tooltip="Visão geral com métricas principais e gráficos customizáveis"
         />
 
         <NavItem
@@ -210,8 +233,8 @@ export function DashboardNavigation({
           tooltip="Gerenciar conversas do WhatsApp em tempo real"
         />
 
-        {/* SEÃ‡ÃƒO: GESTÃƒO */}
-        <NavSection title="GestÃ£o" isCollapsed={isCollapsed} />
+        {/* SEÇÃO: GESTÃO */}
+        <NavSection title="Gestão" isCollapsed={isCollapsed} />
         <NavItem
           href="/dashboard/contacts"
           icon={<Users className="h-5 w-5 flex-shrink-0" />}
@@ -245,7 +268,7 @@ export function DashboardNavigation({
           label="Base de Conhecimento"
           isCollapsed={isCollapsed}
           onClick={onLinkClick}
-          tooltip="Upload de documentos (PDF, TXT) para RAG com busca semÃ¢ntica"
+          tooltip="Upload de documentos (PDF, TXT) para RAG com busca semântica"
         />
 
         <NavItem
@@ -254,7 +277,7 @@ export function DashboardNavigation({
           label="Agentes IA"
           isCollapsed={isCollapsed}
           onClick={onLinkClick}
-          tooltip="Configure mÃºltiplos agentes com diferentes personalidades"
+          tooltip="Configure múltiplos agentes com diferentes personalidades"
         />
 
         <NavItem
@@ -269,113 +292,123 @@ export function DashboardNavigation({
         <NavItem
           href="/dashboard/calendar"
           icon={<Calendar className="h-5 w-5 flex-shrink-0" />}
-          label="CalendÃ¡rio"
+          label="Calendário"
           isCollapsed={isCollapsed}
           onClick={onLinkClick}
           tooltip="Conecte Google Calendar ou Microsoft Outlook para o agente gerenciar sua agenda"
         />
 
-        {/* SEÃ‡ÃƒO: ANÃLISE */}
-        <NavSection title="AnÃ¡lise" isCollapsed={isCollapsed} />
-        
-                <NavItem
-          href="/dashboard/traces"
-          icon={<Activity className="h-5 w-5 flex-shrink-0" />}
-          label="Traces"
+        {/* SEÇÃO: ANÁLISE */}
+        <NavGroup
+          icon={<LineChart className="h-5 w-5 flex-shrink-0" />}
+          label="Análise"
           isCollapsed={isCollapsed}
-          onClick={onLinkClick}
-          tooltip="Rastreio completo de cada mensagem — pipeline, tool calls e RAG"
-        />
-<NavItem
-          href="/dashboard/support-bugs"
-          icon={<AlertTriangle className="h-5 w-5 flex-shrink-0" />}
-          label="Suporte/Bugs"
-          isCollapsed={isCollapsed}
-          onClick={onLinkClick}
-          badge="new"
-          tooltip="Fila de casos detectados de suporte com causa provável e ação recomendada"
-        />
-        <NavItem
-          href="/dashboard/quality"
-          icon={<CheckCircle className="h-5 w-5 flex-shrink-0" />}
-          label="Qualidade"
-          isCollapsed={isCollapsed}
-          onClick={onLinkClick}
-          badge="new"
-          tooltip="Dashboard com score médio, distribuição PASS/REVIEW/FAIL e custo do juiz automático"
-        />
-        <NavItem
-          href="/dashboard/quality/traces"
-          icon={<Activity className="h-5 w-5 flex-shrink-0" />}
-          label="Traces Qualidade"
-          isCollapsed={isCollapsed}
-          onClick={onLinkClick}
-          badge="new"
-          tooltip="Lista e detalhe de traces dentro do módulo de qualidade"
-        />
-        <NavItem
-          href="/dashboard/quality/ground-truth"
-          icon={<CheckCircle className="h-5 w-5 flex-shrink-0" />}
-          label="Ground Truth"
-          isCollapsed={isCollapsed}
-          onClick={onLinkClick}
-          badge="new"
-          tooltip="Gerencie o gabarito por cliente para avaliar e melhorar respostas"
-        />
-        <NavItem
-          href="/dashboard/quality/evaluations"
-          icon={<CheckCircle className="h-5 w-5 flex-shrink-0" />}
-          label="Revisões"
-          isCollapsed={isCollapsed}
-          onClick={onLinkClick}
-          badge="new"
-          badgeCount={pendingQualityCount}
-          tooltip="Triagem operacional (lista, conversa e detalhe) para feedback humano"
-        />
-        <NavItem
-          href="/dashboard/analytics-comparison"
-          icon={<BarChart3 className="h-5 w-5 flex-shrink-0" />}
-          label="Analytics"
-          isCollapsed={isCollapsed}
-          onClick={onLinkClick}
-          tooltip="ComparaÃ§Ã£o de dados OpenAI oficial vs nosso tracking"
-        />
-
-        <NavItem
-          href="/dashboard/meta-ads"
-          icon={<TrendingUp className="h-5 w-5 flex-shrink-0" />}
-          label="Meta Ads"
-          isCollapsed={isCollapsed}
-          onClick={onLinkClick}
-          tooltip="Performance de campanhas, ROI e conversÃµes CAPI"
-        />
-        {/* SEÃ‡ÃƒO: ADMINISTRAÃ‡ÃƒO (admin only) */}
+          matchPaths={[
+            "/dashboard/traces",
+            "/dashboard/support-bugs",
+            "/dashboard/quality",
+            "/dashboard/analytics-comparison",
+            "/dashboard/meta-ads",
+          ]}
+        >
+          <NavItem
+            href="/dashboard/traces"
+            icon={<Activity className="h-4 w-4 flex-shrink-0" />}
+            label="Traces"
+            isCollapsed={false}
+            isSubItem
+            onClick={onLinkClick}
+            tooltip="Rastreio completo de cada mensagem — pipeline, tool calls e RAG"
+          />
+          <NavItem
+            href="/dashboard/support-bugs"
+            icon={<AlertTriangle className="h-4 w-4 flex-shrink-0" />}
+            label="Suporte/Bugs"
+            isCollapsed={false}
+            isSubItem
+            onClick={onLinkClick}
+            tooltip="Fila de casos detectados de suporte com causa provável e ação recomendada"
+          />
+          <NavItem
+            href="/dashboard/quality"
+            icon={<CheckCircle className="h-4 w-4 flex-shrink-0" />}
+            label="Qualidade"
+            isCollapsed={false}
+            isSubItem
+            onClick={onLinkClick}
+            tooltip="Dashboard com score médio, distribuição PASS/REVIEW/FAIL e custo do juiz automático"
+          />
+          <NavItem
+            href="/dashboard/quality/traces"
+            icon={<Activity className="h-4 w-4 flex-shrink-0" />}
+            label="Traces Qualidade"
+            isCollapsed={false}
+            isSubItem
+            onClick={onLinkClick}
+            tooltip="Lista e detalhe de traces dentro do módulo de qualidade"
+          />
+          <NavItem
+            href="/dashboard/quality/ground-truth"
+            icon={<CheckCircle className="h-4 w-4 flex-shrink-0" />}
+            label="Ground Truth"
+            isCollapsed={false}
+            isSubItem
+            onClick={onLinkClick}
+            tooltip="Gerencie o gabarito por cliente para avaliar e melhorar respostas"
+          />
+          <NavItem
+            href="/dashboard/quality/evaluations"
+            icon={<CheckCircle className="h-4 w-4 flex-shrink-0" />}
+            label="Revisões"
+            isCollapsed={false}
+            isSubItem
+            onClick={onLinkClick}
+            tooltip="Triagem operacional (lista, conversa e detalhe) para feedback humano"
+          />
+          <NavItem
+            href="/dashboard/analytics-comparison"
+            icon={<BarChart3 className="h-4 w-4 flex-shrink-0" />}
+            label="Analytics"
+            isCollapsed={false}
+            isSubItem
+            onClick={onLinkClick}
+            tooltip="Comparação de dados OpenAI oficial vs nosso tracking"
+          />
+          <NavItem
+            href="/dashboard/meta-ads"
+            icon={<TrendingUp className="h-4 w-4 flex-shrink-0" />}
+            label="Meta Ads"
+            isCollapsed={false}
+            isSubItem
+            onClick={onLinkClick}
+            tooltip="Performance de campanhas, ROI e conversões CAPI"
+          />
+        </NavGroup>
+        {/* SEÇÃO: ADMINISTRAÇÃO (admin only) */}
         {userRole === "admin" && (
           <>
-            <NavSection title="AdministraÃ§Ã£o" isCollapsed={isCollapsed} />
+            <NavSection title="Administração" isCollapsed={isCollapsed} />
             <NavItem
               href="/dashboard/payments"
               icon={<CreditCard className="h-5 w-5 flex-shrink-0" />}
               label="Pagamentos"
               isCollapsed={isCollapsed}
               onClick={onLinkClick}
-              badge="admin"
               tooltip="Stripe Connect - produtos, checkout e assinaturas"
             />
             <NavItem
               href="/dashboard/admin/billing"
               icon={<Shield className="h-5 w-5 flex-shrink-0" />}
-              label="GestÃ£o de Clientes"
+              label="Gestão de Clientes"
               isCollapsed={isCollapsed}
               onClick={onLinkClick}
-              badge="admin"
               tooltip="Todos os clientes, assinaturas, planos e cupons"
             />
           </>
         )}
 
-        {/* SEÃ‡ÃƒO: CONFIGURAÃ‡ÃƒO */}
-        <NavSection title="ConfiguraÃ§Ã£o" isCollapsed={isCollapsed} />
+        {/* SEÇÃO: CONFIGURAÇÃO */}
+        <NavSection title="Configuração" isCollapsed={isCollapsed} />
         <NavItem
           href="/dashboard/billing"
           icon={<Receipt className="h-5 w-5 flex-shrink-0" />}
@@ -387,10 +420,10 @@ export function DashboardNavigation({
         <NavItem
           href="/dashboard/settings"
           icon={<Settings className="h-5 w-5 flex-shrink-0" />}
-          label="ConfiguraÃ§Ãµes"
+          label="Configurações"
           isCollapsed={isCollapsed}
           onClick={onLinkClick}
-          tooltip="ConfiguraÃ§Ãµes do sistema, perfil e preferÃªncias"
+          tooltip="Configurações do sistema, perfil e preferências"
         />
       </nav>
 
@@ -423,10 +456,10 @@ export function DashboardNavigation({
         {/* Version Info */}
         {!isCollapsed && (
           <div className="text-xs text-muted-foreground/60 px-3">
-            <p>VersÃ£o 2.0.0</p>
+            <p>Versão 2.0.0</p>
             <p className="mt-1 flex items-center gap-1">
               <CheckCircle className="h-3 w-3 text-status-success" />
-              <span>AutenticaÃ§Ã£o Ativa</span>
+              <span>Autenticação Ativa</span>
             </p>
           </div>
         )}
@@ -456,5 +489,3 @@ export function DashboardNavigation({
     </div>
   );
 }
-
-
