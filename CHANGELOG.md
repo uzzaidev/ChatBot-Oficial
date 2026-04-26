@@ -9,6 +9,16 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-26
 
 ### feat
+- Habilitado por padrão as ferramentas, RAG e busca de documentos para novos agentes e agentes existentes não arquivados, alinhando o comportamento esperado para clientes SaaS sem necessidade de configuração manual.
+- Atualizadas as configurações padrão no banco e no fallback JSON dos clientes para `enable_tools`, `enable_rag` e `enable_document_search` como `true`.
+- Ajustada a criação de agentes legados para ativar essas funcionalidades por padrão.
+- Refatorado o código de manipulação da busca de documentos para simplificar consultas recentes, melhorar logs e mensagens, e remover lógica de bloqueio baseada em dados comerciais e histórico.
+  - Arquivos: `src/app/api/agents/route.ts`, `src/lib/agent-templates.ts`, `src/lib/agent-tools.ts`, `src/nodes/handleDocumentSearchToolCall.ts`, `supabase/migrations/20260426193000_default_tools_enabled.sql`
+  - Confiança: alta
+
+## 2026-04-26
+
+### feat
 - Melhorada a ferramenta de busca e envio de documentos, imagens, fotos, links e materiais na base de conhecimento, incluindo reconhecimento de termos para reenvio e busca por nomes de arquivos de imagens.
 - Implementada busca fallback por nome de arquivo para documentos de imagem quando a busca semântica retorna apenas arquivos de texto.
 - Atualizado prompt do sistema para orientar o agente a usar a ferramenta de documentos ao receber pedidos de fotos, imagens, links, anexos, PDFs, catálogos, tabelas ou materiais, evitando inventar placeholders ou links falsos.
