@@ -367,23 +367,9 @@ export const handleDocumentSearchToolCall = async (
     }
 
     const { query, document_type } = args;
-    const explicitIntentSource = `${query || ""} ${userMessage || ""}`.trim();
-    const explicitDocumentIntent =
-      hasExplicitDocumentIntent(explicitIntentSource);
 
-    if (!explicitDocumentIntent) {
-      return {
-        success: true,
-        message:
-          "Posso te ajudar com a informacao por texto agora. Se quiser que eu envie um arquivo ou imagem especifica, me diga qual material exatamente.",
-        documentsFound: 0,
-        documentsSent: 0,
-        documentGateDecision: "blocked",
-        documentGateReason: "no_explicit_intent",
-        suppressedDocumentsCount: 0,
-        useMessageAsReply: true,
-      };
-    }
+    // Gate `no_explicit_intent` removido: se o LLM decidiu chamar `buscar_documento`,
+    // ele ja avaliou contexto. Mantemos apenas o gate de cooldown/dedup mais abaixo.
 
     // 2. Buscar documentos na base de conhecimento
     const searchResult = await searchDocumentInKnowledge({
