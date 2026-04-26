@@ -8,6 +8,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-26
 
+### refactor
+- Removidos termos explícitos e de retry para detecção de intenção de documentos, simplificando a lógica de análise de texto em `handleDocumentSearchToolCall.ts`.
+- Atualizados testes para refletir remoção da restrição que bloqueava chamadas sem intenção explícita, permitindo buscas e respostas mesmo sem termos específicos.
+  - Arquivos: `src/nodes/handleDocumentSearchToolCall.ts`, `tests/unit/handle-document-search-tool-call.test.ts`
+  - Confiança: alta
+
+## 2026-04-26
+
 ### feat
 - Adicionados scripts de diagnóstico para rastreamento de clientes, detalhes de chamadas de ferramenta e buscas de documentos, facilitando análise de logs e estado de agentes e clientes
   - Arquivos: `scripts/list-clients.mjs`, `scripts/trace-detail.mjs`, `scripts/trace-doc-search.mjs`, `scripts/trace-doc-search-v2.mjs`
