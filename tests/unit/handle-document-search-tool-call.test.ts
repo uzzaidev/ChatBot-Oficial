@@ -1,9 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { handleDocumentSearchToolCall } from "@/nodes/handleDocumentSearchToolCall";
-import { searchDocumentInKnowledge } from "@/nodes/searchDocumentInKnowledge";
 import { sendDocumentMessage, sendImageMessage } from "@/lib/meta";
-import { saveChatMessage } from "@/nodes/saveChatMessage";
 import { createServiceRoleClient } from "@/lib/supabase";
+import { handleDocumentSearchToolCall } from "@/nodes/handleDocumentSearchToolCall";
+import { saveChatMessage } from "@/nodes/saveChatMessage";
+import { searchDocumentInKnowledge } from "@/nodes/searchDocumentInKnowledge";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/nodes/searchDocumentInKnowledge", () => ({
   searchDocumentInKnowledge: vi.fn(),
@@ -66,7 +66,10 @@ const createSupabaseMock = (options?: {
       order: vi.fn(() => chain),
       limit: vi.fn(async () => {
         if (table === "n8n_chat_histories") {
-          return { data: state.hasNot ? mediaRows : conversationRows, error: null };
+          return {
+            data: state.hasNot ? mediaRows : conversationRows,
+            error: null,
+          };
         }
         if (table === "documents") {
           return { data: documentRows, error: null };
@@ -239,8 +242,14 @@ describe("handleDocumentSearchToolCall gating", () => {
     vi.mocked(createServiceRoleClient).mockReturnValue(
       createSupabaseMock({
         conversationRows: [
-          { message: { type: "human", content: "oi" }, created_at: new Date().toISOString() },
-          { message: { type: "human", content: "quais valores?" }, created_at: new Date().toISOString() },
+          {
+            message: { type: "human", content: "oi" },
+            created_at: new Date().toISOString(),
+          },
+          {
+            message: { type: "human", content: "quais valores?" },
+            created_at: new Date().toISOString(),
+          },
         ],
         mediaRows: [],
       }) as any,
@@ -269,7 +278,7 @@ describe("handleDocumentSearchToolCall gating", () => {
     expect(sendImageMessage).toHaveBeenCalledTimes(1);
   });
 
-  it("blocks plan attachment when conversation is still in discovery stage", async () => {
+  it("does not block plan attachment based on discovery stage (gate removed)", async () => {
     vi.mocked(searchDocumentInKnowledge).mockResolvedValue({
       results: [buildSearchResult("Planos Umana.jpeg")],
       metadata: {
@@ -310,12 +319,9 @@ describe("handleDocumentSearchToolCall gating", () => {
       contactMetadata: null,
     });
 
-    expect(result.documentGateDecision).toBe("blocked");
-    expect(result.documentGateReason).toBe("wrong_stage");
-    expect(result.useMessageAsReply).toBe(true);
-    expect(result.selectedDocument).toBe("Planos Umana.jpeg");
-    expect(sendImageMessage).not.toHaveBeenCalled();
-    expect(sendDocumentMessage).not.toHaveBeenCalled();
+    // Stage-gate removido (era yoga-specific); discovery e responsabilidade do prompt do agente.
+    expect(result.documentGateReason).not.toBe("wrong_stage");
+    expect(result.documentsSent).toBeGreaterThanOrEqual(1);
   });
 
   it("blocks duplicated attachment inside cooldown window", async () => {
@@ -460,4 +466,3 @@ describe("handleDocumentSearchToolCall gating", () => {
     expect(sendImageMessage).not.toHaveBeenCalled();
   });
 });
-
