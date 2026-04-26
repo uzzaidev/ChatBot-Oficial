@@ -8,6 +8,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-26
 
+### feat
+- Adicionado componente `NavGroup` para agrupar itens de navegação no dashboard com controle de expansão e destaque de rota ativa. Melhorias na UI dos itens de navegação, incluindo suporte a subitens com ícones menores e ajustes de espaçamento.
+- Corrigidas várias strings com caracteres acentuados no componente `DashboardNavigation` para exibição correta.
+  - Arquivos: `src/components/DashboardNavigation.tsx`
+  - Confiança: alta
+
+## 2026-04-26
+
 ### refactor
 - Removidos termos explícitos e de retry para detecção de intenção de documentos, simplificando a lógica de análise de texto em `handleDocumentSearchToolCall.ts`.
 - Atualizados testes para refletir remoção da restrição que bloqueava chamadas sem intenção explícita, permitindo buscas e respostas mesmo sem termos específicos.
