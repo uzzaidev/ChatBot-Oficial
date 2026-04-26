@@ -41,7 +41,6 @@ interface DashboardNavigationProps {
   userName?: string;
   userEmail?: string;
   userRole?: string | null;
-  pendingQualityCount?: number;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
   onLinkClick?: () => void;
@@ -184,7 +183,6 @@ export function DashboardNavigation({
   userName,
   userEmail,
   userRole,
-  pendingQualityCount = 0,
   isCollapsed = false,
   onToggleCollapse,
   onLinkClick,

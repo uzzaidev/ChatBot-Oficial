@@ -7,7 +7,6 @@ import Link from "next/link";
 import { QualityCronHealthCard } from "./QualityCronHealthCard";
 import { QualityDailyTrendCard } from "./QualityDailyTrendCard";
 import { CostTodayBadge } from "./CostTodayBadge";
-import { QualityCheckpointReadinessCard } from "./QualityCheckpointReadinessCard";
 
 const verdictColor = (verdict: "PASS" | "REVIEW" | "FAIL") => {
   if (verdict === "PASS") return "text-green-600";
@@ -39,7 +38,9 @@ export function QualityDashboard() {
         <Button
           size="sm"
           variant={!filters.verdict ? "default" : "outline"}
-          onClick={() => setFilters((prev) => ({ ...prev, verdict: undefined }))}
+          onClick={() =>
+            setFilters((prev) => ({ ...prev, verdict: undefined }))
+          }
         >
           Todos
         </Button>
@@ -75,7 +76,8 @@ export function QualityDashboard() {
           onChange={(e) =>
             setFilters((prev) => ({
               ...prev,
-              minScore: e.target.value === "" ? undefined : Number(e.target.value),
+              minScore:
+                e.target.value === "" ? undefined : Number(e.target.value),
             }))
           }
         />
@@ -90,7 +92,8 @@ export function QualityDashboard() {
           onChange={(e) =>
             setFilters((prev) => ({
               ...prev,
-              maxScore: e.target.value === "" ? undefined : Number(e.target.value),
+              maxScore:
+                e.target.value === "" ? undefined : Number(e.target.value),
             }))
           }
         />
@@ -102,7 +105,9 @@ export function QualityDashboard() {
         <div className="grid gap-3 md:grid-cols-4">
           <div className="rounded-lg border p-4">
             <p className="text-xs text-muted-foreground">Média de score</p>
-            <p className="text-2xl font-semibold">{stats.averageScore.toFixed(2)}</p>
+            <p className="text-2xl font-semibold">
+              {stats.averageScore.toFixed(2)}
+            </p>
           </div>
           <div className="rounded-lg border p-4">
             <p className="text-xs text-muted-foreground">Total de avaliações</p>
@@ -110,11 +115,15 @@ export function QualityDashboard() {
           </div>
           <div className="rounded-lg border p-4">
             <p className="text-xs text-muted-foreground">Custo total (USD)</p>
-            <p className="text-2xl font-semibold">${stats.totalCostUsd.toFixed(4)}</p>
+            <p className="text-2xl font-semibold">
+              ${stats.totalCostUsd.toFixed(4)}
+            </p>
           </div>
           <div className="rounded-lg border p-4">
             <p className="text-xs text-muted-foreground">Duração média</p>
-            <p className="text-2xl font-semibold">{stats.averageDurationMs.toFixed(0)}ms</p>
+            <p className="text-2xl font-semibold">
+              {stats.averageDurationMs.toFixed(0)}ms
+            </p>
           </div>
         </div>
       )}
@@ -123,20 +132,25 @@ export function QualityDashboard() {
         <div className="rounded-lg border p-4 grid gap-2 md:grid-cols-3">
           <div>
             <p className="text-xs text-muted-foreground">PASS</p>
-            <p className="text-xl font-semibold text-green-600">{stats.verdicts.PASS}</p>
+            <p className="text-xl font-semibold text-green-600">
+              {stats.verdicts.PASS}
+            </p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">REVIEW</p>
-            <p className="text-xl font-semibold text-amber-600">{stats.verdicts.REVIEW}</p>
+            <p className="text-xl font-semibold text-amber-600">
+              {stats.verdicts.REVIEW}
+            </p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">FAIL</p>
-            <p className="text-xl font-semibold text-red-600">{stats.verdicts.FAIL}</p>
+            <p className="text-xl font-semibold text-red-600">
+              {stats.verdicts.FAIL}
+            </p>
           </div>
         </div>
       )}
 
-      <QualityCheckpointReadinessCard />
       <div className="grid gap-3 xl:grid-cols-2">
         <QualityDailyTrendCard />
         <QualityCronHealthCard />
@@ -147,17 +161,28 @@ export function QualityDashboard() {
         {loading ? (
           <p className="text-sm text-muted-foreground">Carregando...</p>
         ) : items.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhuma avaliação encontrada.</p>
+          <p className="text-sm text-muted-foreground">
+            Nenhuma avaliação encontrada.
+          </p>
         ) : (
           <div className="space-y-2">
             {items.map((item) => (
-              <div key={item.id} className="flex flex-wrap items-center gap-2 text-sm border-b pb-2">
+              <div
+                key={item.id}
+                className="flex flex-wrap items-center gap-2 text-sm border-b pb-2"
+              >
                 <span className={`font-semibold ${verdictColor(item.verdict)}`}>
                   {item.verdict}
                 </span>
-                <span className="text-muted-foreground">score {item.composite_score.toFixed(2)}</span>
-                <span className="text-muted-foreground">trace {item.trace_id.slice(0, 8)}...</span>
-                <span className="text-muted-foreground">{new Date(item.evaluated_at).toLocaleString()}</span>
+                <span className="text-muted-foreground">
+                  score {item.composite_score.toFixed(2)}
+                </span>
+                <span className="text-muted-foreground">
+                  trace {item.trace_id.slice(0, 8)}...
+                </span>
+                <span className="text-muted-foreground">
+                  {new Date(item.evaluated_at).toLocaleString()}
+                </span>
               </div>
             ))}
           </div>
@@ -166,4 +191,3 @@ export function QualityDashboard() {
     </div>
   );
 }
-

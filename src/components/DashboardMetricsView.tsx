@@ -1,177 +1,198 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Plus, LayoutGrid, List, MessageSquare, Send, TrendingUp, DollarSign } from 'lucide-react'
-import { CustomizableChart } from '@/components/CustomizableChart'
-import { ChartConfigModal } from '@/components/ChartConfigModal'
-import { MetricCard, MetricCardSkeleton } from '@/components/MetricCard'
-import { DateRangeSelector, type DateRange } from '@/components/DateRangeSelector'
-import { ExportDialog } from '@/components/ExportDialog'
-import { useDashboardMetrics } from '@/hooks/useDashboardMetrics'
-import type { ChartConfig, MetricDataPoint } from '@/lib/types/dashboard-metrics'
-import { cn } from '@/lib/utils'
-import { TracesWidget } from '@/components/TracesWidget'
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Plus,
+  LayoutGrid,
+  List,
+  MessageSquare,
+  Send,
+  TrendingUp,
+  DollarSign,
+} from "lucide-react";
+import { CustomizableChart } from "@/components/CustomizableChart";
+import { ChartConfigModal } from "@/components/ChartConfigModal";
+import { MetricCard, MetricCardSkeleton } from "@/components/MetricCard";
+import {
+  DateRangeSelector,
+  type DateRange,
+} from "@/components/DateRangeSelector";
+import { ExportDialog } from "@/components/ExportDialog";
+import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
+import type {
+  ChartConfig,
+  MetricDataPoint,
+} from "@/lib/types/dashboard-metrics";
+import { cn } from "@/lib/utils";
 
 interface DashboardMetricsViewProps {
-  clientId: string
+  clientId: string;
 }
 
 const DEFAULT_CHARTS: ChartConfig[] = [
   {
-    id: 'chart_conversations',
-    type: 'composed',
-    metricType: 'conversations_per_day',
-    title: 'Conversas por Dia',
-    description: 'Total de conversas iniciadas diariamente',
-    colors: { primary: '#2563eb', secondary: '#14b8a6' },
+    id: "chart_conversations",
+    type: "composed",
+    metricType: "conversations_per_day",
+    title: "Conversas por Dia",
+    description: "Total de conversas iniciadas diariamente",
+    colors: { primary: "#2563eb", secondary: "#14b8a6" },
     showGrid: true,
     showLegend: true,
     height: 320,
     position: { x: 0, y: 0, w: 7, h: 2 },
   },
   {
-    id: 'chart_messages',
-    type: 'composed',
-    metricType: 'messages_per_day',
-    title: 'Mensagens por Dia',
-    description: 'Mensagens enviadas e recebidas',
-    colors: { primary: '#2563eb', secondary: '#10b981' },
+    id: "chart_messages",
+    type: "composed",
+    metricType: "messages_per_day",
+    title: "Mensagens por Dia",
+    description: "Mensagens enviadas e recebidas",
+    colors: { primary: "#2563eb", secondary: "#10b981" },
     showGrid: true,
     showLegend: true,
     height: 320,
     position: { x: 7, y: 0, w: 5, h: 2 },
   },
   {
-    id: 'chart_clients',
-    type: 'composed',
-    metricType: 'new_clients_per_day',
-    title: 'Novos Clientes',
-    description: 'Clientes cadastrados por dia',
-    colors: { primary: '#2563eb', secondary: '#a855f7' },
+    id: "chart_clients",
+    type: "composed",
+    metricType: "new_clients_per_day",
+    title: "Novos Clientes",
+    description: "Clientes cadastrados por dia",
+    colors: { primary: "#2563eb", secondary: "#a855f7" },
     showGrid: true,
     showLegend: true,
     height: 320,
     position: { x: 0, y: 2, w: 5, h: 2 },
   },
   {
-    id: 'chart_tokens',
-    type: 'composed',
-    metricType: 'tokens_per_day',
-    title: 'Consumo de Tokens',
-    description: 'Tokens utilizados por provider',
-    colors: { primary: '#2563eb', secondary: '#10b981' },
+    id: "chart_tokens",
+    type: "composed",
+    metricType: "tokens_per_day",
+    title: "Consumo de Tokens",
+    description: "Tokens utilizados por provider",
+    colors: { primary: "#2563eb", secondary: "#10b981" },
     showGrid: true,
     showLegend: true,
     height: 320,
     position: { x: 5, y: 2, w: 7, h: 2 },
   },
-]
+];
 
 export function DashboardMetricsView({ clientId }: DashboardMetricsViewProps) {
   const [dateRange, setDateRange] = useState<DateRange>({
     start: (() => {
-      const d = new Date()
-      d.setDate(d.getDate() - 30)
-      d.setHours(0, 0, 0, 0)
-      return d
+      const d = new Date();
+      d.setDate(d.getDate() - 30);
+      d.setHours(0, 0, 0, 0);
+      return d;
     })(),
     end: (() => {
-      const d = new Date()
-      d.setHours(23, 59, 59, 999)
-      return d
+      const d = new Date();
+      d.setHours(23, 59, 59, 999);
+      return d;
     })(),
-    preset: 'last30Days',
-  })
+    preset: "last30Days",
+  });
 
-  const [charts, setCharts] = useState<ChartConfig[]>([])
-  const [configModalOpen, setConfigModalOpen] = useState(false)
-  const [editingChart, setEditingChart] = useState<ChartConfig | undefined>()
-  const [layout, setLayout] = useState<'grid' | 'list'>('grid')
+  const [charts, setCharts] = useState<ChartConfig[]>([]);
+  const [configModalOpen, setConfigModalOpen] = useState(false);
+  const [editingChart, setEditingChart] = useState<ChartConfig | undefined>();
+  const [layout, setLayout] = useState<"grid" | "list">("grid");
 
   const hookParams = {
     startDate: dateRange.start,
     endDate: dateRange.end,
-  }
+  };
 
-  const { metrics, loading, error, refetch, getMetricData } = useDashboardMetrics(hookParams)
+  const { metrics, loading, error, refetch, getMetricData } =
+    useDashboardMetrics(hookParams);
 
-  const isHeroChart = (chart: ChartConfig) => (chart.position?.w || 6) >= 7
+  const isHeroChart = (chart: ChartConfig) => (chart.position?.w || 6) >= 7;
 
   const getChartSpanClass = (chart: ChartConfig) => {
-    return isHeroChart(chart) ? 'md:col-span-2 lg:col-span-2' : 'md:col-span-1 lg:col-span-1'
-  }
+    return isHeroChart(chart)
+      ? "md:col-span-2 lg:col-span-2"
+      : "md:col-span-1 lg:col-span-1";
+  };
 
   useEffect(() => {
-    const CONFIG_VERSION = '1.4'
-    const savedConfig = localStorage.getItem(`dashboard_config_${clientId}`)
+    const CONFIG_VERSION = "1.4";
+    const savedConfig = localStorage.getItem(`dashboard_config_${clientId}`);
 
     if (savedConfig) {
       try {
-        const config = JSON.parse(savedConfig)
+        const config = JSON.parse(savedConfig);
 
         if (config.version !== CONFIG_VERSION) {
-          setCharts(DEFAULT_CHARTS)
-          setLayout('grid')
+          setCharts(DEFAULT_CHARTS);
+          setLayout("grid");
         } else {
-          setCharts(config.charts || DEFAULT_CHARTS)
-          setLayout(config.layout || 'grid')
+          setCharts(config.charts || DEFAULT_CHARTS);
+          setLayout(config.layout || "grid");
         }
       } catch {
-        setCharts(DEFAULT_CHARTS)
+        setCharts(DEFAULT_CHARTS);
       }
     } else {
-      setCharts(DEFAULT_CHARTS)
+      setCharts(DEFAULT_CHARTS);
     }
-  }, [clientId])
+  }, [clientId]);
 
   useEffect(() => {
     if (charts.length > 0) {
-      const CONFIG_VERSION = '1.4'
+      const CONFIG_VERSION = "1.4";
       const config = {
         version: CONFIG_VERSION,
         charts,
         layout,
         updatedAt: new Date().toISOString(),
-      }
-      localStorage.setItem(`dashboard_config_${clientId}`, JSON.stringify(config))
+      };
+      localStorage.setItem(
+        `dashboard_config_${clientId}`,
+        JSON.stringify(config),
+      );
     }
-  }, [charts, layout, clientId])
+  }, [charts, layout, clientId]);
 
   const handleAddChart = () => {
-    setEditingChart(undefined)
-    setConfigModalOpen(true)
-  }
+    setEditingChart(undefined);
+    setConfigModalOpen(true);
+  };
 
   const handleEditChart = (id: string) => {
-    const chart = charts.find((item) => item.id === id)
-    if (!chart) return
+    const chart = charts.find((item) => item.id === id);
+    if (!chart) return;
 
-    setEditingChart(chart)
-    setConfigModalOpen(true)
-  }
+    setEditingChart(chart);
+    setConfigModalOpen(true);
+  };
 
   const handleRemoveChart = (id: string) => {
-    setCharts(charts.filter((chart) => chart.id !== id))
-  }
+    setCharts(charts.filter((chart) => chart.id !== id));
+  };
 
   const handleSaveChart = (config: ChartConfig) => {
     if (editingChart) {
-      setCharts(charts.map((chart) => (chart.id === config.id ? config : chart)))
+      setCharts(
+        charts.map((chart) => (chart.id === config.id ? config : chart)),
+      );
     } else {
-      setCharts([...charts, config])
+      setCharts([...charts, config]);
     }
 
-    setConfigModalOpen(false)
-    setEditingChart(undefined)
-  }
+    setConfigModalOpen(false);
+    setEditingChart(undefined);
+  };
 
   const handleResetToDefault = () => {
-    if (confirm('Deseja restaurar o dashboard para a configuração padrão?')) {
-      setCharts(DEFAULT_CHARTS)
-      setLayout('grid')
+    if (confirm("Deseja restaurar o dashboard para a configuração padrão?")) {
+      setCharts(DEFAULT_CHARTS);
+      setLayout("grid");
     }
-  }
+  };
 
   if (error) {
     return (
@@ -182,15 +203,22 @@ export function DashboardMetricsView({ clientId }: DashboardMetricsViewProps) {
           <Button onClick={refetch}>Tentar novamente</Button>
         </div>
       </div>
-    )
+    );
   }
 
-  const totalConversations = metrics?.conversations.reduce((sum, day) => sum + day.total, 0) || 0
-  const totalMessages = metrics?.messages.reduce((sum, day) => sum + day.total, 0) || 0
-  const totalCost = metrics?.cost.reduce((sum, day) => sum + day.total, 0) || 0
+  const totalConversations =
+    metrics?.conversations.reduce((sum, day) => sum + day.total, 0) || 0;
+  const totalMessages =
+    metrics?.messages.reduce((sum, day) => sum + day.total, 0) || 0;
+  const totalCost = metrics?.cost.reduce((sum, day) => sum + day.total, 0) || 0;
   const avgResolutionRate = metrics?.conversations.length
-    ? (metrics.conversations.reduce((sum, day) => sum + (day.active / (day.total || 1)), 0) / metrics.conversations.length) * 100
-    : 0
+    ? (metrics.conversations.reduce(
+        (sum, day) => sum + day.active / (day.total || 1),
+        0,
+      ) /
+        metrics.conversations.length) *
+      100
+    : 0;
 
   return (
     <div className="space-y-6 sm:space-y-7">
@@ -206,37 +234,30 @@ export function DashboardMetricsView({ clientId }: DashboardMetricsViewProps) {
           <>
             <MetricCard
               title="Total de Conversas"
-              value={totalConversations.toLocaleString('pt-BR')}
+              value={totalConversations.toLocaleString("pt-BR")}
               icon={MessageSquare}
-              trend={{ value: 12, label: 'esta semana', direction: 'up' }}
+              trend={{ value: 12, label: "esta semana", direction: "up" }}
             />
             <MetricCard
               title="Mensagens Enviadas"
-              value={totalMessages.toLocaleString('pt-BR')}
+              value={totalMessages.toLocaleString("pt-BR")}
               icon={Send}
-              trend={{ value: 18, label: 'esta semana', direction: 'up' }}
+              trend={{ value: 18, label: "esta semana", direction: "up" }}
             />
             <MetricCard
               title="Taxa de Resolução"
               value={`${avgResolutionRate.toFixed(0)}%`}
               icon={TrendingUp}
-              trend={{ value: 3, label: 'esta semana', direction: 'up' }}
+              trend={{ value: 3, label: "esta semana", direction: "up" }}
             />
             <MetricCard
               title="Custo Total (USD)"
               value={`$${totalCost.toFixed(2)}`}
               icon={DollarSign}
-              trend={{ value: 8, label: 'esta semana', direction: 'up' }}
+              trend={{ value: 8, label: "esta semana", direction: "up" }}
             />
           </>
         )}
-      </div>
-
-      {/* Observability traces widget */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-1">
-          <TracesWidget />
-        </div>
       </div>
 
       <div className="analytics-shell px-4 py-4 sm:px-5 sm:py-5 lg:px-6 lg:py-6">
@@ -247,17 +268,19 @@ export function DashboardMetricsView({ clientId }: DashboardMetricsViewProps) {
               Métricas do Dashboard
             </h2>
             <p className="max-w-3xl text-sm text-muted-foreground sm:text-[15px]">
-              Visualização com mais área útil no gráfico, menos ruído estrutural e uma composição
-              mais editorial para mobile e desktop.
+              Visualização com mais área útil no gráfico, menos ruído estrutural
+              e uma composição mais editorial para mobile e desktop.
             </p>
           </div>
 
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-wrap items-center gap-2">
               <span className="analytics-inline-chip">mobile-first</span>
-              <span className="analytics-inline-chip">{charts.length} gráficos ativos</span>
               <span className="analytics-inline-chip">
-                {layout === 'grid' ? 'layout editorial' : 'layout empilhado'}
+                {charts.length} gráficos ativos
+              </span>
+              <span className="analytics-inline-chip">
+                {layout === "grid" ? "layout editorial" : "layout empilhado"}
               </span>
             </div>
 
@@ -266,35 +289,35 @@ export function DashboardMetricsView({ clientId }: DashboardMetricsViewProps) {
                 <ExportDialog
                   charts={charts}
                   chartData={charts.reduce((acc, chart) => {
-                    acc[chart.id] = getMetricData(chart.metricType)
-                    return acc
+                    acc[chart.id] = getMetricData(chart.metricType);
+                    return acc;
                   }, {} as Record<string, MetricDataPoint[]>)}
                   dashboardTitle="Dashboard UZZ.AI"
                 />
 
                 <div className="flex items-center gap-1 rounded-full border border-border/70 bg-background/30 p-1">
                   <Button
-                    variant={layout === 'grid' ? 'default' : 'ghost'}
+                    variant={layout === "grid" ? "default" : "ghost"}
                     size="icon"
-                    onClick={() => setLayout('grid')}
+                    onClick={() => setLayout("grid")}
                     className={cn(
-                      'h-8 w-8 rounded-full',
-                      layout === 'grid'
-                        ? 'bg-gradient-to-r from-primary to-secondary text-white'
-                        : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                      "h-8 w-8 rounded-full",
+                      layout === "grid"
+                        ? "bg-gradient-to-r from-primary to-secondary text-white"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
                     <LayoutGrid className="h-4 w-4" />
                   </Button>
                   <Button
-                    variant={layout === 'list' ? 'default' : 'ghost'}
+                    variant={layout === "list" ? "default" : "ghost"}
                     size="icon"
-                    onClick={() => setLayout('list')}
+                    onClick={() => setLayout("list")}
                     className={cn(
-                      'h-8 w-8 rounded-full',
-                      layout === 'list'
-                        ? 'bg-gradient-to-r from-primary to-secondary text-white'
-                        : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                      "h-8 w-8 rounded-full",
+                      layout === "list"
+                        ? "bg-gradient-to-r from-primary to-secondary text-white"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
                     <List className="h-4 w-4" />
@@ -302,7 +325,10 @@ export function DashboardMetricsView({ clientId }: DashboardMetricsViewProps) {
                 </div>
 
                 <div className="w-full sm:w-auto">
-                  <DateRangeSelector value={dateRange} onChange={setDateRange} />
+                  <DateRangeSelector
+                    value={dateRange}
+                    onChange={setDateRange}
+                  />
                 </div>
               </div>
 
@@ -332,13 +358,21 @@ export function DashboardMetricsView({ clientId }: DashboardMetricsViewProps) {
 
       <div
         id="dashboard-metrics-view"
-        className={layout === 'grid' ? 'analytics-grid-hero md:grid-cols-2 lg:grid-cols-3' : 'flex flex-col gap-6'}
+        className={
+          layout === "grid"
+            ? "analytics-grid-hero md:grid-cols-2 lg:grid-cols-3"
+            : "flex flex-col gap-6"
+        }
       >
         {charts.map((chart) => (
           <div
             key={chart.id}
             id={`chart-${chart.id}`}
-            className={layout === 'grid' ? cn('min-w-0', getChartSpanClass(chart)) : 'min-w-0'}
+            className={
+              layout === "grid"
+                ? cn("min-w-0", getChartSpanClass(chart))
+                : "min-w-0"
+            }
           >
             <CustomizableChart
               config={chart}
@@ -374,5 +408,5 @@ export function DashboardMetricsView({ clientId }: DashboardMetricsViewProps) {
         onSave={handleSaveChart}
       />
     </div>
-  )
+  );
 }
