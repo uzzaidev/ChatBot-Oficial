@@ -99,9 +99,9 @@ export const buildAllowedTools = (input: {
   if (config.settings.enableDocumentSearch) {
     tools.buscar_documento = {
       description:
-        "Busca e envia documentos ou imagens. Use apenas quando o usuario solicitar explicitamente arquivo, documento, PDF, catalogo, tabela, imagem ou foto.",
+        "Busca e envia documentos, imagens, fotos, links ou materiais da base. Use quando o usuario solicitar explicitamente arquivo, documento, PDF, catalogo, tabela, imagem, foto, link, material, anexo, ou reclamar que algo nao foi enviado. Nao prometa nem liste Foto 1/2/3, links ou arquivos sem chamar esta ferramenta.",
       inputSchema: z.object({
-        query: z.string().describe("Termo de busca extraido da solicitacao do usuario."),
+        query: z.string().describe("Termo de busca extraido da solicitacao do usuario, incluindo nome do material, foto, local, produto ou documento."),
         document_type: z
           .enum(["any", "catalog", "manual", "faq", "image"])
           .default("any")

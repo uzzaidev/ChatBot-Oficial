@@ -117,9 +117,20 @@ const EXPLICIT_DOCUMENT_TERMS = [
   "manda",
   "mandar",
   "arquivo",
+  "anexo",
+  "anexos",
   "documento",
   "imagem",
   "foto",
+  "fotos",
+  "jpg",
+  "jpeg",
+  "png",
+  "webp",
+  "link",
+  "links",
+  "url",
+  "material",
   "pdf",
   "tabela",
   "grade",
@@ -133,6 +144,22 @@ const EXPLICIT_DOCUMENT_TERMS = [
   "slides",
   "slide",
   "pdf",
+];
+
+const DOCUMENT_RETRY_TERMS = [
+  "nao enviou",
+  "não enviou",
+  "nao mandou",
+  "não mandou",
+  "nao chegou",
+  "não chegou",
+  "faltou",
+  "cade",
+  "cadê",
+  "manda de novo",
+  "envia de novo",
+  "reenvia",
+  "reenviar",
 ];
 
 const detectDocumentIntent = (query: string): DocumentIntent => {
@@ -179,7 +206,68 @@ const detectDocumentIntent = (query: string): DocumentIntent => {
 
 const hasExplicitDocumentIntent = (text: string): boolean => {
   const normalized = text.toLowerCase();
-  return EXPLICIT_DOCUMENT_TERMS.some((term) => normalized.includes(term));
+  return (
+    EXPLICIT_DOCUMENT_TERMS.some((term) => normalized.includes(term)) ||
+    DOCUMENT_RETRY_TERMS.some((term) => normalized.includes(term))
+  );
+};
+
+const normalizeSearchText = (value: string): string =>
+  value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+const getFilenameSearchTokens = (query: string): string[] =>
+  normalizeSearchText(query)
+    .replace(/[^\w\s]/g, " ")
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length > 3);
+
+const isImageDocument = (doc: { originalMimeType?: string | null }): boolean =>
+  typeof doc.originalMimeType === "string" &&
+  doc.originalMimeType.toLowerCase().startsWith("image/");
+
+const findImageDocumentsByFilename = async (input: {
+  supabaseAny: any;
+  clientId: string;
+  query: string;
+  maxResults: number;
+}) => {
+  const tokens = getFilenameSearchTokens(input.query);
+  if (tokens.length === 0) {
+    return [];
+  }
+
+  const ilikeConditions = tokens
+    .map((token) => `metadata->>filename.ilike.%${token}%`)
+    .join(",");
+
+  const { data } = await input.supabaseAny
+    .from("documents")
+    .select(
+      "id, content, metadata, original_file_url, original_file_path, original_mime_type, original_file_size",
+    )
+    .eq("client_id", input.clientId)
+    .not("original_file_url", "is", null)
+    .ilike("original_mime_type", "image/%")
+    .or(ilikeConditions)
+    .limit(input.maxResults);
+
+  return (data ?? [])
+    .filter((doc: any) => doc.metadata?.filename && doc.original_file_url)
+    .map((doc: any) => ({
+      id: doc.id,
+      filename: doc.metadata.filename,
+      documentType: doc.metadata?.documentType || "image",
+      originalFileUrl: doc.original_file_url,
+      originalFilePath: doc.original_file_path,
+      originalMimeType: doc.original_mime_type,
+      originalFileSize: doc.original_file_size,
+      similarity: 0.49,
+      preview: String(doc.content || "").substring(0, 200),
+    }));
 };
 
 const inferIntentFromFilename = (filename: string): DocumentIntent => {
@@ -316,7 +404,7 @@ export const handleDocumentSearchToolCall = async (
       return {
         success: true,
         message:
-          "Posso te explicar isso por texto agora. Se voce quiser, eu te envio a imagem ou tabela em seguida.",
+          "Consigo te explicar por texto por aqui. Para eu enviar um arquivo, imagem ou link da base, me diga exatamente qual material voce quer receber.",
         documentsFound: 0,
         documentsSent: 0,
         documentGateDecision: "blocked",
@@ -336,7 +424,8 @@ export const handleDocumentSearchToolCall = async (
       maxResults: 5,
     });
 
-    const { results, metadata } = searchResult;
+    let { results } = searchResult;
+    const { metadata } = searchResult;
 
     // 3. Se não encontrou documentos
     if (results.length === 0) {
@@ -387,6 +476,19 @@ export const handleDocumentSearchToolCall = async (
     // Buscar conteúdo dos arquivos de texto encontrados
     const supabaseServiceRole = createServiceRoleClient();
     const supabaseAny = supabaseServiceRole as any;
+
+    if (document_type === "image" && !results.some(isImageDocument)) {
+      const filenameImageResults = await findImageDocumentsByFilename({
+        supabaseAny,
+        clientId,
+        query,
+        maxResults: 5,
+      });
+
+      if (filenameImageResults.length > 0) {
+        results = filenameImageResults;
+      }
+    }
 
     const intent = detectDocumentIntent(query);
     const mediaCandidates = results.filter((doc) => {
@@ -653,13 +755,18 @@ export const handleDocumentSearchToolCall = async (
     
     // Informar sobre arquivos de texto encontrados e incluir o CONTEÚDO para o agente usar
     if (textFilesFound > 0) {
-      message += `ℹ️ Encontrei ${textFilesFound} arquivo(s) de texto (${textFilesNames.join(', ')}). `;
-      message += "Estes arquivos são usados apenas para busca de informações (RAG) e não são enviados como anexo.\n\n";
-      message += "**CONTEÚDO DOS ARQUIVOS DE TEXTO ENCONTRADOS:**\n";
-      message += "Use as informações abaixo para responder ao usuário com precisão:\n";
+      message += `Info: Encontrei ${textFilesFound} arquivo(s) de texto (${textFilesNames.join(", ")}). `;
+      message += "Estes arquivos sao usados apenas para busca de informacoes (RAG) e nao sao enviados como anexo.\n\n";
+      message += "**CONTEUDO DOS ARQUIVOS DE TEXTO ENCONTRADOS:**\n";
+      message += "Use as informacoes abaixo para responder ao usuario com precisao:\n";
       message += textFilesContent.join("\n\n");
       message += "\n\n---\n";
-      message += "**IMPORTANTE:** Use essas informações para responder ao usuário. Cite que a informação vem da base de conhecimento.\n";
+      message += [
+        "**IMPORTANTE:** Use essas informacoes para responder ao usuario.",
+        "Se o usuario pediu foto, imagem, link ou anexo, mas este conteudo nao tiver uma URL real ou arquivo de midia enviado, diga claramente que nao encontrou anexo/imagem disponivel na base.",
+        "Nunca invente links, nem placeholders como Foto 1, Foto 2 ou Foto 3.",
+      ].join(" ");
+      message += "\n";
     }
     
       if (sentCount > 0) {

@@ -44,9 +44,11 @@ const buildSearchResult = (filename: string, mimeType = "image/jpeg") => ({
 const createSupabaseMock = (options?: {
   conversationRows?: any[];
   mediaRows?: any[];
+  documentRows?: any[];
 }) => {
   const conversationRows = options?.conversationRows ?? [];
   const mediaRows = options?.mediaRows ?? [];
+  const documentRows = options?.documentRows ?? [];
 
   const from = vi.fn((table: string) => {
     const state: { hasNot: boolean } = { hasNot: false };
@@ -55,6 +57,8 @@ const createSupabaseMock = (options?: {
       eq: vi.fn(() => chain),
       gte: vi.fn(() => chain),
       lte: vi.fn(() => chain),
+      ilike: vi.fn(() => chain),
+      or: vi.fn(() => chain),
       not: vi.fn(() => {
         state.hasNot = true;
         return chain;
@@ -63,6 +67,9 @@ const createSupabaseMock = (options?: {
       limit: vi.fn(async () => {
         if (table === "n8n_chat_histories") {
           return { data: state.hasNot ? mediaRows : conversationRows, error: null };
+        }
+        if (table === "documents") {
+          return { data: documentRows, error: null };
         }
         return { data: [], error: null };
       }),
@@ -110,9 +117,156 @@ describe("handleDocumentSearchToolCall gating", () => {
     expect(result.documentGateDecision).toBe("blocked");
     expect(result.documentGateReason).toBe("no_explicit_intent");
     expect(result.useMessageAsReply).toBe(true);
+    expect(result.message).not.toContain("em seguida");
     expect(searchDocumentInKnowledge).not.toHaveBeenCalled();
     expect(sendImageMessage).not.toHaveBeenCalled();
     expect(sendDocumentMessage).not.toHaveBeenCalled();
+  });
+
+  it("treats missing links complaint as explicit document intent", async () => {
+    vi.mocked(searchDocumentInKnowledge).mockResolvedValue({
+      results: [buildSearchResult("Fotos Segunda Legua.jpeg")],
+      metadata: {
+        totalDocumentsInBase: 3,
+        chunksFound: 1,
+        uniqueDocumentsFound: 1,
+        threshold: 0.3,
+      },
+    } as any);
+
+    vi.mocked(createServiceRoleClient).mockReturnValue(
+      createSupabaseMock({
+        conversationRows: [],
+        mediaRows: [],
+      }) as any,
+    );
+
+    const result = await handleDocumentSearchToolCall({
+      toolCall: {
+        id: "call-links",
+        function: {
+          name: "buscar_documento",
+          arguments: JSON.stringify({
+            query: "fotos segunda legua links",
+            document_type: "any",
+          }),
+        },
+      },
+      phone: "5551444444444",
+      clientId: "client-1",
+      config: baseConfig,
+      userMessage: "voce nao enviou nenhum link",
+      contactMetadata: null,
+    });
+
+    expect(result.documentGateDecision).toBe("allowed");
+    expect(result.documentsSent).toBe(1);
+    expect(sendImageMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it("falls back to image filename search when semantic search returns only text files for image request", async () => {
+    vi.mocked(searchDocumentInKnowledge).mockResolvedValue({
+      results: [
+        buildSearchResult("Colinas Segunda Legua.txt", "text/plain"),
+        buildSearchResult("Colinas Segunda Legua.md", "text/markdown"),
+      ],
+      metadata: {
+        totalDocumentsInBase: 4,
+        chunksFound: 2,
+        uniqueDocumentsFound: 2,
+        threshold: 0.3,
+      },
+    } as any);
+
+    vi.mocked(createServiceRoleClient).mockReturnValue(
+      createSupabaseMock({
+        conversationRows: [],
+        mediaRows: [],
+        documentRows: [
+          {
+            id: "doc-image-1",
+            content: "Foto da chácara Colinas Segunda Legua",
+            metadata: { filename: "Colinas Segunda Legua Foto 1.jpeg" },
+            original_file_url: "https://example.com/colinas.jpg",
+            original_file_path: "client/image/colinas.jpg",
+            original_mime_type: "image/jpeg",
+            original_file_size: 1234,
+          },
+        ],
+      }) as any,
+    );
+
+    const result = await handleDocumentSearchToolCall({
+      toolCall: {
+        id: "call-image-fallback",
+        function: {
+          name: "buscar_documento",
+          arguments: JSON.stringify({
+            query: "Colinas da Uva Segunda Legua",
+            document_type: "image",
+          }),
+        },
+      },
+      phone: "5551433333333",
+      clientId: "client-1",
+      config: baseConfig,
+      userMessage: "me envia as fotos da Colinas da Uva Segunda Legua",
+      contactMetadata: null,
+    });
+
+    expect(result.documentGateDecision).toBe("allowed");
+    expect(result.documentsSent).toBe(1);
+    expect(result.filesSent).toEqual(["Colinas Segunda Legua Foto 1.jpeg"]);
+    expect(sendImageMessage).toHaveBeenCalledWith(
+      "5551433333333",
+      "https://example.com/colinas.jpg",
+      undefined,
+      baseConfig,
+    );
+  });
+
+  it("treats image file extension in tool query as explicit document intent", async () => {
+    vi.mocked(searchDocumentInKnowledge).mockResolvedValue({
+      results: [buildSearchResult("VALORES 2026.jpeg")],
+      metadata: {
+        totalDocumentsInBase: 3,
+        chunksFound: 1,
+        uniqueDocumentsFound: 1,
+        threshold: 0.3,
+      },
+    } as any);
+
+    vi.mocked(createServiceRoleClient).mockReturnValue(
+      createSupabaseMock({
+        conversationRows: [
+          { message: { type: "human", content: "oi" }, created_at: new Date().toISOString() },
+          { message: { type: "human", content: "quais valores?" }, created_at: new Date().toISOString() },
+        ],
+        mediaRows: [],
+      }) as any,
+    );
+
+    const result = await handleDocumentSearchToolCall({
+      toolCall: {
+        id: "call-extension",
+        function: {
+          name: "buscar_documento",
+          arguments: JSON.stringify({
+            query: "VALORES 2026.jpeg",
+            document_type: "image",
+          }),
+        },
+      },
+      phone: "5551422222222",
+      clientId: "client-1",
+      config: baseConfig,
+      userMessage: "valores",
+      contactMetadata: null,
+    });
+
+    expect(result.documentGateDecision).toBe("allowed");
+    expect(result.documentsSent).toBe(1);
+    expect(sendImageMessage).toHaveBeenCalledTimes(1);
   });
 
   it("blocks plan attachment when conversation is still in discovery stage", async () => {
