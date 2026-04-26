@@ -6,6 +6,20 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-04-26
+
+### feat
+- Melhorada a ferramenta de busca e envio de documentos, imagens, fotos, links e materiais na base de conhecimento, incluindo reconhecimento de termos para reenvio e busca por nomes de arquivos de imagens.
+- Implementada busca fallback por nome de arquivo para documentos de imagem quando a busca semântica retorna apenas arquivos de texto.
+- Atualizado prompt do sistema para orientar o agente a usar a ferramenta de documentos ao receber pedidos de fotos, imagens, links, anexos, PDFs, catálogos, tabelas ou materiais, evitando inventar placeholders ou links falsos.
+- Ajustada resposta do agente para explicar por texto quando não houver confirmação de envio de mídia ou links reais, deixando claro o limite da informação.
+- Restaurada configuração para ativar busca de documentos em agentes legados que já usam RAG e ferramentas, mas tinham esta opção desativada.
+- Removido o arquivo de documentação `docs/meta/META_APP_SETUP.md` do repositório.
+- Adicionados testes unitários para cobrir novos casos de uso da busca de documentos, incluindo detecção de intenção explícita por termos de reclamação de falta de envio, fallback para busca por nome de arquivo e reconhecimento de extensões de imagem na consulta.
+
+  - Arquivos: `src/lib/agent-tools.ts`, `src/lib/prompt-builder.ts`, `src/nodes/generateAIResponse.ts`, `src/nodes/handleDocumentSearchToolCall.ts`, `supabase/migrations/20260426183000_restore_legacy_document_search_agents.sql`, `tests/unit/handle-document-search-tool-call.test.ts`, `docs/meta/META_APP_SETUP.md`
+  - Confiança: alta
+
 ## 2026-04-25
 
 ### feat
