@@ -8,6 +8,18 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-26
 
+### feat
+- Adicionados scripts de diagnóstico para rastreamento de clientes, detalhes de chamadas de ferramenta e buscas de documentos, facilitando análise de logs e estado de agentes e clientes
+  - Arquivos: `scripts/list-clients.mjs`, `scripts/trace-detail.mjs`, `scripts/trace-doc-search.mjs`, `scripts/trace-doc-search-v2.mjs`
+  - Confiança: alta
+
+### refactor
+- Removido gate de bloqueio por ausência de intenção explícita no nó `handleDocumentSearchToolCall`, permitindo que chamadas para buscar documentos sejam feitas sempre que o modelo decidir, simplificando a lógica de filtragem
+  - Arquivos: `src/nodes/handleDocumentSearchToolCall.ts`
+  - Confiança: alta
+
+## 2026-04-26
+
 ### refactor
 - Reorganizado imports e melhorada a legibilidade dos testes em `handleDocumentSearchToolCall`
 - Ajustada formatação e comentários para refletir remoção da lógica de bloqueio por estágio de descoberta no fluxo de documentos
