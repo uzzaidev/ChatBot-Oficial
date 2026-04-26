@@ -8,6 +8,21 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-26
 
+### refactor
+- Removidos `QualityAlertBadge` e `pendingQualityCount` do layout do dashboard por não serem mais utilizados.
+- Atualizado componente `DashboardMetricsView` para melhorar legibilidade, consistência e experiência mobile-first, incluindo ajustes em hooks, estado, renderização e estilização.
+- Refatorado endpoint da API de métricas do dashboard para padronizar formatação, melhorar controle de datas, limites, consultas e processamento dos dados agregados.
+- Melhorias gerais de código e estilo em `QualityDashboard` para maior clareza e consistência visual.
+  - Arquivos: `src/app/api/dashboard/metrics/route.ts`, `src/components/DashboardLayoutClient.tsx`, `src/components/DashboardMetricsView.tsx`, `src/components/DashboardNavigation.tsx`, `src/components/quality/QualityDashboard.tsx`
+  - Confiança: alta
+
+### feat
+- Adicionado novo prompt de atendimento personalizado para o agente "Danilo" do cliente SPORTS TRAINING, com orientações detalhadas para interação humanizada, respostas naturais, uso de emojis, regras para tratamento de dúvidas, agendamentos e transferência para atendimento humano.
+  - Arquivo: `tmp/fix-sports-prompt.js`
+  - Confiança: alta
+
+## 2026-04-26
+
 ### feat
 - Adicionado componente `NavGroup` para agrupar itens de navegação no dashboard com controle de expansão e destaque de rota ativa. Melhorias na UI dos itens de navegação, incluindo suporte a subitens com ícones menores e ajustes de espaçamento.
 - Corrigidas várias strings com caracteres acentuados no componente `DashboardNavigation` para exibição correta.
