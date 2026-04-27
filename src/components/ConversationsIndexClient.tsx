@@ -484,7 +484,7 @@ export function ConversationsIndexClient({
       {/* Conteúdo Principal - Sidebar + Área de Conversas */}
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar Desktop - Oculta em mobile (< lg) */}
-        <div className="hidden lg:flex w-80 flex-col border-r border-border/50 bg-card/95">
+        <div className="hidden lg:flex w-64 flex-col border-r border-border/50 bg-card/95">
           {/* Header da Sidebar */}
           <div className="p-4 border-b border-border/50">
             <div className="flex items-center justify-between mb-4">
@@ -590,34 +590,34 @@ export function ConversationsIndexClient({
                   showUnreadOnly
                     ? MessageCircle
                     : statusFilter === "all"
-                      ? MessageCircle
-                      : statusFilter === "bot"
-                        ? Bot
-                        : statusFilter === "humano"
-                          ? User
-                          : statusFilter === "fluxo_inicial"
-                            ? Workflow
-                            : statusFilter === "transferido"
-                              ? ArrowRight
-                              : MessageCircle
+                    ? MessageCircle
+                    : statusFilter === "bot"
+                    ? Bot
+                    : statusFilter === "humano"
+                    ? User
+                    : statusFilter === "fluxo_inicial"
+                    ? Workflow
+                    : statusFilter === "transferido"
+                    ? ArrowRight
+                    : MessageCircle
                 }
                 title={
                   showUnreadOnly
                     ? "Nenhuma conversa não lida"
                     : statusFilter === "all"
-                      ? "Nenhuma conversa encontrada"
-                      : `Nenhuma conversa com status "${getStatusLabel(
-                          statusFilter,
-                        )}"`
+                    ? "Nenhuma conversa encontrada"
+                    : `Nenhuma conversa com status "${getStatusLabel(
+                        statusFilter,
+                      )}"`
                 }
                 description={
                   showUnreadOnly
                     ? 'Todas as conversas já foram lidas. Clique em "Todas" para ver todas as conversas.'
                     : statusFilter === "all"
-                      ? "Quando você receber mensagens no WhatsApp, elas aparecerão aqui"
-                      : `Não há conversas com status "${getStatusLabel(
-                          statusFilter,
-                        )}" no momento. Tente mudar o filtro ou aguarde novas conversas.`
+                    ? "Quando você receber mensagens no WhatsApp, elas aparecerão aqui"
+                    : `Não há conversas com status "${getStatusLabel(
+                        statusFilter,
+                      )}" no momento. Tente mudar o filtro ou aguarde novas conversas.`
                 }
               />
             ) : (
@@ -644,7 +644,11 @@ export function ConversationsIndexClient({
               <div className="p-4 border-b border-border/50">
                 <div className="flex items-center gap-3 mb-4">
                   <Link href="/dashboard">
-                    <Button variant="outline" size="sm" className="h-8 gap-1.5 border-border/60">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 gap-1.5 border-border/60"
+                    >
                       <ArrowLeft className="h-3.5 w-3.5" />
                       <span className="text-xs">Voltar</span>
                     </Button>
@@ -724,34 +728,34 @@ export function ConversationsIndexClient({
                       showUnreadOnly
                         ? MessageCircle
                         : statusFilter === "all"
-                          ? MessageCircle
-                          : statusFilter === "bot"
-                            ? Bot
-                            : statusFilter === "humano"
-                              ? User
-                              : statusFilter === "fluxo_inicial"
-                                ? Workflow
-                                : statusFilter === "transferido"
-                                  ? ArrowRight
-                                  : MessageCircle
+                        ? MessageCircle
+                        : statusFilter === "bot"
+                        ? Bot
+                        : statusFilter === "humano"
+                        ? User
+                        : statusFilter === "fluxo_inicial"
+                        ? Workflow
+                        : statusFilter === "transferido"
+                        ? ArrowRight
+                        : MessageCircle
                     }
                     title={
                       showUnreadOnly
                         ? "Nenhuma conversa não lida"
                         : statusFilter === "all"
-                          ? "Nenhuma conversa encontrada"
-                          : `Nenhuma conversa com status "${getStatusLabel(
-                              statusFilter,
-                            )}"`
+                        ? "Nenhuma conversa encontrada"
+                        : `Nenhuma conversa com status "${getStatusLabel(
+                            statusFilter,
+                          )}"`
                     }
                     description={
                       showUnreadOnly
                         ? 'Todas as conversas já foram lidas. Clique em "Todas" para ver todas as conversas.'
                         : statusFilter === "all"
-                          ? "Quando você receber mensagens no WhatsApp, elas aparecerão aqui"
-                          : `Não há conversas com status "${getStatusLabel(
-                              statusFilter,
-                            )}" no momento. Tente mudar o filtro ou aguarde novas conversas.`
+                        ? "Quando você receber mensagens no WhatsApp, elas aparecerão aqui"
+                        : `Não há conversas com status "${getStatusLabel(
+                            statusFilter,
+                          )}" no momento. Tente mudar o filtro ou aguarde novas conversas.`
                     }
                   />
                 ) : (
@@ -784,7 +788,7 @@ export function ConversationsIndexClient({
             <>
               {/* Header do Chat */}
               <div className="bg-card p-3 border-b border-border">
-                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
                   {/* Botão Menu (Mobile) */}
                   <Button
                     variant="ghost"
@@ -828,7 +832,7 @@ export function ConversationsIndexClient({
                   </div>
 
                   {/* Status Toggle */}
-                  <div className="w-full sm:w-auto">
+                  <div className="flex-shrink-0 ml-auto">
                     <StatusToggle
                       phone={selectedPhone}
                       currentStatus={selectedConversation.status}

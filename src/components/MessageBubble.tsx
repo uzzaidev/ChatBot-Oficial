@@ -232,7 +232,7 @@ export const MessageBubble = ({
     if (!mediaMetadata || imageError) return null;
 
     return (
-      <div className="relative mb-2 rounded-lg overflow-hidden max-w-[280px]">
+      <div className="relative mb-2 rounded-lg overflow-hidden max-w-[240px] w-full">
         <Image
           src={mediaMetadata.url}
           alt={mediaMetadata.filename || "Imagem"}
@@ -726,7 +726,7 @@ export const MessageBubble = ({
       }
     >
       <div
-        className={`relative group max-w-[85%] sm:max-w-[75%] md:max-w-[70%] rounded-lg p-3 break-words ${bubbleStyles}`}
+        className={`relative group max-w-[85%] sm:max-w-[75%] md:max-w-[70%] rounded-lg p-3 break-words overflow-hidden ${bubbleStyles}`}
         style={bubbleColorStyle}
       >
         {/* Action menu - WhatsApp style dropdown */}

@@ -1,22 +1,32 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { MessageCircle, Bot, User, Workflow, ArrowRight, Settings, Tag, Loader2 } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { FilterEditorModal } from '@/components/FilterEditorModal'
-import { useFilterPreferences } from '@/hooks/useFilterPreferences'
+import { FilterEditorModal } from "@/components/FilterEditorModal";
+import { useFilterPreferences } from "@/hooks/useFilterPreferences";
+import { cn } from "@/lib/utils";
+import {
+  ArrowRight,
+  Bot,
+  MessageCircle,
+  Settings,
+  Tag,
+  User,
+  Workflow,
+} from "lucide-react";
+import { useState } from "react";
 
 interface ConversationsHeaderProps {
   metrics: {
-    total: number
-    bot: number
-    humano: number
-    emFlow: number
-    transferido: number
-  }
-  statusFilter: 'all' | 'bot' | 'humano' | 'transferido' | 'fluxo_inicial'
-  onStatusChange: (status: 'all' | 'bot' | 'humano' | 'transferido' | 'fluxo_inicial') => void
-  clientId: string | null
+    total: number;
+    bot: number;
+    humano: number;
+    emFlow: number;
+    transferido: number;
+  };
+  statusFilter: "all" | "bot" | "humano" | "transferido" | "fluxo_inicial";
+  onStatusChange: (
+    status: "all" | "bot" | "humano" | "transferido" | "fluxo_inicial",
+  ) => void;
+  clientId: string | null;
 }
 
 // Mapeamento de ícones
@@ -27,33 +37,33 @@ const ICON_MAP: Record<string, any> = {
   Workflow,
   ArrowRight,
   Tag,
-}
+};
 
 // Mapeamento de cores Tailwind para classes
 const COLOR_MAP: Record<string, string> = {
-  'primary': 'text-primary border-primary',
-  'secondary': 'text-secondary border-secondary',
-  'blue': 'text-blue-500 border-blue-500',
-  'green': 'text-green-500 border-green-500',
-  'red': 'text-red-500 border-red-500',
-  'yellow': 'text-yellow-500 border-yellow-500',
-  'purple': 'text-purple-500 border-purple-500',
-  'pink': 'text-pink-500 border-pink-500',
-  'orange': 'text-orange-500 border-orange-500',
-  'orange-400': 'text-orange-400 border-orange-400',
-  'cyan': 'text-cyan-500 border-cyan-500',
-  '#9b59b6': 'text-[#9b59b6] border-[#9b59b6]',
-}
+  primary: "text-primary border-primary",
+  secondary: "text-secondary border-secondary",
+  blue: "text-blue-500 border-blue-500",
+  green: "text-green-500 border-green-500",
+  red: "text-red-500 border-red-500",
+  yellow: "text-yellow-500 border-yellow-500",
+  purple: "text-purple-500 border-purple-500",
+  pink: "text-pink-500 border-pink-500",
+  orange: "text-orange-500 border-orange-500",
+  "orange-400": "text-orange-400 border-orange-400",
+  cyan: "text-cyan-500 border-cyan-500",
+  "#9b59b6": "text-[#9b59b6] border-[#9b59b6]",
+};
 
 // Helper para determinar se o filtro está ativo
 const getFilterValue = (filter: any): string | null => {
-  if (filter.filter_type === 'default') {
-    return filter.default_filter_value
+  if (filter.filter_type === "default") {
+    return filter.default_filter_value;
   }
   // Para tags e columns, por enquanto não suportamos filtro diretamente
   // (precisaria expandir a lógica de statusFilter)
-  return null
-}
+  return null;
+};
 
 export const ConversationsHeader = ({
   metrics,
@@ -61,116 +71,109 @@ export const ConversationsHeader = ({
   onStatusChange,
   clientId,
 }: ConversationsHeaderProps) => {
-  const [showFilterModal, setShowFilterModal] = useState(false)
-  const { filters, loading } = useFilterPreferences()
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const { filters, loading } = useFilterPreferences();
 
   // Pegar apenas filtros habilitados e ordenados por position
   const enabledFilters = filters
-    .filter(f => f.enabled)
-    .sort((a, b) => a.position - b.position)
+    .filter((f) => f.enabled)
+    .sort((a, b) => a.position - b.position);
 
   // Se ainda carregando, mostrar skeleton
   if (loading) {
     return (
-      <div className="w-full border-b border-border/50 px-4 md:px-6 py-2 md:py-2.5 relative bg-card/[0.98]">
-        <div className="flex items-center justify-between mb-2 md:mb-2.5 pl-8 lg:pl-0">
-          <div>
-            <h1 className="font-poppins font-bold text-base md:text-xl text-foreground mb-0.5">
-              Caixa de Entrada
-            </h1>
-            <p className="text-muted-foreground text-xs md:text-sm hidden md:block">
-              Gestão / <span className="text-foreground/70">Conversas</span>
-            </p>
+      <div className="w-full border-b border-border/50 px-4 md:px-6 py-2 relative bg-card/[0.98]">
+        <div className="flex items-center gap-3 pl-8 lg:pl-0">
+          <h1 className="font-poppins font-bold text-sm md:text-base text-foreground whitespace-nowrap">
+            Caixa de Entrada
+          </h1>
+          <div className="flex flex-wrap gap-2">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div
+                key={i}
+                className="h-[30px] w-[80px] rounded-lg border border-border bg-surface animate-pulse"
+              />
+            ))}
           </div>
         </div>
-        <div className="flex flex-wrap gap-2 md:gap-2.5">
-          {[1, 2, 3, 4, 5, 6].map(i => (
-            <div key={i} className="h-[36px] w-[100px] md:w-[120px] rounded-lg border border-border bg-surface animate-pulse" />
-          ))}
-        </div>
       </div>
-    )
+    );
   }
 
   return (
-    <div
-      className="w-full border-b border-border/50 px-4 md:px-6 py-2 md:py-2.5 relative bg-card/[0.98]"
-    >
-      {/* Header Top - Título e Status */}
-      <div className="flex items-center justify-between mb-2 md:mb-2.5 pl-8 lg:pl-0">
-        <div>
-          <h1 className="font-poppins font-bold text-base md:text-xl text-foreground mb-0.5">
-            Caixa de Entrada
-          </h1>
-          <p className="text-muted-foreground text-xs md:text-sm hidden md:block">
-            Gestão / <span className="text-foreground/70">Conversas</span>
-          </p>
-        </div>
-      </div>
+    <div className="w-full border-b border-border/50 px-4 md:px-6 py-2 relative bg-card/[0.98]">
+      {/* Single row: title + filter chips + editar */}
+      <div className="flex items-center gap-2 md:gap-3 pl-8 lg:pl-0 overflow-x-auto">
+        {/* Title */}
+        <h1 className="font-poppins font-bold text-sm md:text-base text-foreground whitespace-nowrap flex-shrink-0">
+          Caixa de Entrada
+        </h1>
 
-      {/* Cards KPI - Responsivo (Flex wrap) */}
-      <div className="overflow-x-auto pb-1.5 -mx-4 px-4 md:mx-0 md:px-0 md:pb-0 md:overflow-visible">
-        <div className="flex flex-wrap gap-2 md:gap-2.5">
+        <span className="text-border/80 flex-shrink-0 hidden md:inline">|</span>
+
+        {/* Filter chips */}
+        <div className="flex items-center gap-1.5 md:gap-2 overflow-x-auto pb-0.5 min-w-0 flex-1">
           {/* Renderizar filtros do banco */}
           {enabledFilters.map((filter) => {
-            const IconComponent = ICON_MAP[filter.icon] || Tag
-            const colorClass = COLOR_MAP[filter.color] || COLOR_MAP['primary']
-            const filterValue = getFilterValue(filter)
-            const isActive = filterValue && statusFilter === filterValue
+            const IconComponent = ICON_MAP[filter.icon] || Tag;
+            const colorClass = COLOR_MAP[filter.color] || COLOR_MAP["primary"];
+            const filterValue = getFilterValue(filter);
+            const isActive = filterValue && statusFilter === filterValue;
 
             return (
               <button
                 key={filter.id}
                 onClick={() => {
                   if (filterValue) {
-                    onStatusChange(filterValue as any)
+                    onStatusChange(filterValue as any);
                   }
                 }}
-                disabled={!filterValue}  // Desabilita tags e columns por enquanto
+                disabled={!filterValue}
                 className={cn(
-                  "relative px-2.5 md:px-3 py-1.5 md:py-2 rounded-lg border transition-all duration-200 group",
-                  "flex items-center gap-1.5 md:gap-2 min-w-fit",
+                  "relative px-2 py-1 rounded-md border transition-all duration-200 group",
+                  "flex items-center gap-1 min-w-fit flex-shrink-0",
                   isActive
                     ? `bg-gradient-to-br from-surface to-surface-alt ${colorClass} border-t-2`
-                    : "bg-surface border-border/50 hover:border-primary/50 hover:shadow-lg",
-                  !filterValue && "opacity-50 cursor-not-allowed"
+                    : "bg-surface border-border/50 hover:border-primary/50",
+                  !filterValue && "opacity-50 cursor-not-allowed",
                 )}
               >
-                {/* Ícone */}
-                <IconComponent className={cn(
-                  "h-3.5 w-3.5 md:h-4 md:w-4 opacity-50 group-hover:opacity-70 transition-opacity flex-shrink-0",
-                  colorClass.split(' ')[0]
-                )} />
-
-                {/* Número */}
-                <span className="font-exo2 text-sm md:text-base font-semibold text-foreground">
+                <IconComponent
+                  className={cn(
+                    "h-3 w-3 opacity-60 flex-shrink-0",
+                    colorClass.split(" ")[0],
+                  )}
+                />
+                <span className="font-exo2 text-xs font-semibold text-foreground">
                   {filter.count}
                 </span>
-
-                {/* Título */}
-                <div className={cn(
-                  "text-[9px] md:text-[10px] font-medium tracking-wide uppercase whitespace-nowrap",
-                  isActive ? colorClass.split(' ')[0] : "text-muted-foreground"
-                )}>
+                <span
+                  className={cn(
+                    "text-[9px] font-medium tracking-wide uppercase whitespace-nowrap",
+                    isActive
+                      ? colorClass.split(" ")[0]
+                      : "text-muted-foreground",
+                  )}
+                >
                   {filter.label}
-                </div>
+                </span>
               </button>
-            )
+            );
           })}
 
-          {/* Card + EDITAR */}
+          {/* Editar */}
           <button
             onClick={() => setShowFilterModal(true)}
             className={cn(
-              "relative px-2.5 md:px-3 py-1.5 md:py-2 rounded-lg border-2 border-dashed transition-all duration-200 group",
+              "relative px-2 py-1 rounded-md border border-dashed transition-all duration-200 group flex-shrink-0",
               "bg-surface border-border/50 hover:border-primary/50 hover:bg-primary/5",
-              "flex items-center justify-center gap-1.5 min-w-fit"
+              "flex items-center gap-1",
             )}
           >
-            <Settings className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-            <div className="text-[9px] md:text-[10px] font-medium text-muted-foreground group-hover:text-primary transition-colors uppercase tracking-wide">
+            <Settings className="h-3 w-3 text-muted-foreground group-hover:text-primary transition-colors" />
+            <span className="text-[9px] font-medium text-muted-foreground group-hover:text-primary transition-colors uppercase tracking-wide">
               Editar
-            </div>
+            </span>
           </button>
         </div>
       </div>
@@ -182,5 +185,5 @@ export const ConversationsHeader = ({
         clientId={clientId}
       />
     </div>
-  )
-}
+  );
+};
