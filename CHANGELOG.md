@@ -8,6 +8,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-27
 
+### feat
+- Adicionada funcionalidade de sidebar redimensionável nos componentes `ConversationsIndexClient` e `DashboardLayoutClient`, com persistência da largura no localStorage e limites configuráveis
+  - Arquivos: `src/components/ConversationsIndexClient.tsx`, `src/components/DashboardLayoutClient.tsx`, `src/hooks/useResizableSidebar.ts`
+  - Confiança: alta
+
+## 2026-04-27
+
 ### refactor
 - Removido header desktop com tema escuro e controles de tema e notificações do `DashboardLayoutClient` para simplificar layout; ajustado header mobile para manter funcionalidade principal.
 - Reorganizado `DashboardNavigation` para incluir `ThemeToggle` no cabeçalho e envolver botão de logout em container flexível, melhorando alinhamento e usabilidade.
