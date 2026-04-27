@@ -1,7 +1,12 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import type { ConversationStatus, CRMCard, CRMColumn, CRMTag } from "@/lib/types";
+import type {
+  ConversationStatus,
+  CRMCard,
+  CRMColumn,
+  CRMTag,
+} from "@/lib/types";
 import {
   DndContext,
   DragEndEvent,

@@ -264,7 +264,11 @@ export default function CRMPage() {
                   )}
                   data-active={hideEmptyColumns}
                   onClick={() => setHideEmptyColumns((v) => !v)}
-                  title={hideEmptyColumns ? "Mostrar colunas vazias" : "Ocultar colunas vazias"}
+                  title={
+                    hideEmptyColumns
+                      ? "Mostrar colunas vazias"
+                      : "Ocultar colunas vazias"
+                  }
                 >
                   <EyeOff className="h-3.5 w-3.5" />
                   Ocultar vazias
