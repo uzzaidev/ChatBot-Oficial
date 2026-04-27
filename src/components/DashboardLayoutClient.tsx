@@ -108,7 +108,7 @@ export function DashboardLayoutClient({
       <aside
         className={cn(
           "hidden md:flex flex-col fixed left-0 top-0 h-screen border-r border-primary/10 bg-sidebar-dark transition-all duration-300 overflow-y-auto z-50",
-          isCollapsed ? "w-20" : "w-[220px]",
+          isCollapsed ? "w-20" : "w-[190px]",
         )}
       >
         <DashboardNavigation
@@ -125,7 +125,7 @@ export function DashboardLayoutClient({
         ref={mainContentRef}
         className={cn(
           "flex-1 flex flex-col min-w-0 transition-all duration-300 bg-background",
-          "md:ml-[220px]",
+          "md:ml-[190px]",
           isCollapsed && "md:ml-20",
         )}
       >

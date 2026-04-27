@@ -203,9 +203,6 @@ export function DashboardNavigation({
                 <span className="font-exo2 text-secondary">Ai</span>
               </h1>
             </div>
-            <p className="text-xs text-muted-foreground mt-2 ml-0.5">
-              Automação Criativa, Realizada
-            </p>
           </>
         )}
       </div>
@@ -438,29 +435,10 @@ export function DashboardNavigation({
             >
               {userName}
             </p>
-            {userEmail && (
-              <p
-                className="text-xs text-muted-foreground/70 truncate mt-1"
-                title={userEmail}
-              >
-                {userEmail}
-              </p>
-            )}
           </div>
         )}
 
         <LogoutButton isCollapsed={isCollapsed} />
-
-        {/* Version Info */}
-        {!isCollapsed && (
-          <div className="text-xs text-muted-foreground/60 px-3">
-            <p>Versão 2.0.0</p>
-            <p className="mt-1 flex items-center gap-1">
-              <CheckCircle className="h-3 w-3 text-status-success" />
-              <span>Autenticação Ativa</span>
-            </p>
-          </div>
-        )}
       </div>
 
       {/* Toggle button for desktop */}
