@@ -1,12 +1,12 @@
 "use client";
 
-import { apiFetch } from "@/lib/api";
 import { DateSeparator } from "@/components/DateSeparator";
 import { MessageBubble } from "@/components/MessageBubble";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useMessages } from "@/hooks/useMessages";
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages";
+import { apiFetch } from "@/lib/api";
 import type { Message } from "@/lib/types";
 import { formatMessageDate, isSameDay, throttle } from "@/lib/utils";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -874,7 +874,7 @@ export const ConversationDetail = ({
               backgroundPosition: "center",
             }}
           >
-            <div className="py-3 md:py-4 space-y-2">
+            <div className="py-3 md:py-4 space-y-2 overflow-x-hidden">
               {messagesWithDates.map((item, index) => {
                 if (item.type === "date") {
                   return (

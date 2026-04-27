@@ -24,7 +24,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Bot,
-  Home,
   Menu,
   MessageCircle,
   Search,
@@ -456,183 +455,164 @@ export function ConversationsIndexClient({
     selectedConversationRawName || "Sem nome";
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden bg-background pt-[calc(var(--safe-area-inset-top)+8px)] pb-[calc(var(--safe-area-inset-bottom)+8px)] lg:pt-0 lg:pb-0">
-      {/* Header com Cards KPI - Esconde em mobile quando conversa selecionada */}
-      <div className={`relative ${selectedPhone ? "hidden lg:block" : ""}`}>
-        {/* Botão Hambúrguer Mobile - No topo do header */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="lg:hidden absolute top-2 left-2 z-30 text-foreground hover:bg-muted rounded-lg bg-card/90"
-          onClick={() => setSidebarOpen(true)}
-        >
-          <Menu className="h-5 w-5" />
-        </Button>
-        {/* Theme Buttons - Mobile */}
-        <div className="lg:hidden absolute top-2 right-2 z-30 flex items-center gap-1">
-          <ChatThemePaletteButton />
-          <ThemeToggle />
+    <div className="fixed inset-0 flex overflow-hidden bg-background">
+      {/* Sidebar Desktop - Full Height */}
+      <div className="hidden lg:flex w-64 flex-shrink-0 flex-col border-r border-border/50 bg-card/95">
+        {/* Header da Sidebar */}
+        <div className="p-4 border-b border-border/50">
+          {/* Campo de Pesquisa */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Pesquisar contatos..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-surface-sunken border border-border rounded-lg px-10 py-2.5 text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary transition-colors text-sm"
+              style={{ fontFamily: "Inter, sans-serif" }}
+            />
+            {searchTerm && (
+              <button
+                onClick={handleClearSearch}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground/70"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Indicador de pesquisa */}
+          {searchTerm.length >= 2 && (
+            <p className="text-xs text-muted-foreground mt-2">
+              {filteredConversations.length} resultado
+              {filteredConversations.length !== 1 ? "s" : ""} encontrado
+              {filteredConversations.length !== 1 ? "s" : ""}
+            </p>
+          )}
+          {searchTerm.length === 1 && (
+            <p className="text-xs text-muted-foreground/60 mt-2">
+              Digite mais 1 caractere para pesquisar...
+            </p>
+          )}
         </div>
-        <ConversationsHeader
-          metrics={metrics}
-          statusFilter={statusFilter}
-          onStatusChange={setStatusFilter}
-          clientId={clientId}
-        />
+
+        {/* Filtros Simples - Todas / Não Lidas */}
+        <div className="px-4 py-3 border-b border-border/50">
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowUnreadOnly(false)}
+              className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                !showUnreadOnly
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
+              }`}
+            >
+              Todas
+            </button>
+            <button
+              onClick={() => setShowUnreadOnly(true)}
+              className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                showUnreadOnly
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
+              }`}
+            >
+              Não lidas
+            </button>
+          </div>
+        </div>
+
+        {/* Lista de Conversas */}
+        <div
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto"
+        >
+          {filteredConversations.length === 0 && !loading ? (
+            <EmptyStateSimple
+              icon={
+                showUnreadOnly
+                  ? MessageCircle
+                  : statusFilter === "all"
+                  ? MessageCircle
+                  : statusFilter === "bot"
+                  ? Bot
+                  : statusFilter === "humano"
+                  ? User
+                  : statusFilter === "fluxo_inicial"
+                  ? Workflow
+                  : statusFilter === "transferido"
+                  ? ArrowRight
+                  : MessageCircle
+              }
+              title={
+                showUnreadOnly
+                  ? "Nenhuma conversa não lida"
+                  : statusFilter === "all"
+                  ? "Nenhuma conversa encontrada"
+                  : `Nenhuma conversa com status "${getStatusLabel(
+                      statusFilter,
+                    )}"`
+              }
+              description={
+                showUnreadOnly
+                  ? 'Todas as conversas já foram lidas. Clique em "Todas" para ver todas as conversas.'
+                  : statusFilter === "all"
+                  ? "Quando você receber mensagens no WhatsApp, elas aparecerão aqui"
+                  : `Não há conversas com status "${getStatusLabel(
+                      statusFilter,
+                    )}" no momento. Tente mudar o filtro ou aguarde novas conversas.`
+              }
+            />
+          ) : (
+            <ConversationList
+              conversations={filteredConversations}
+              loading={loading}
+              clientId={clientId}
+              currentPhone={selectedPhone || undefined}
+              lastUpdatePhone={lastUpdatePhone}
+              onConversationOpen={handleSelectConversation}
+              onMarkAsRead={handleMarkAsRead}
+              conversationItemsRef={conversationItemsRef}
+            />
+          )}
+        </div>
       </div>
 
-      {/* Conteúdo Principal - Sidebar + Área de Conversas */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar Desktop - Oculta em mobile (< lg) */}
-        <div className="hidden lg:flex w-64 flex-col border-r border-border/50 bg-card/95">
-          {/* Header da Sidebar */}
-          <div className="p-4 border-b border-border/50">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-poppins font-semibold text-sm text-foreground/90">
-                Conversas
-              </h3>
-              <div className="flex items-center gap-1">
+      {/* Coluna Direita - Header + Chat */}
+      <div className="flex-1 flex flex-col overflow-hidden pt-[calc(var(--safe-area-inset-top)+8px)] pb-[calc(var(--safe-area-inset-bottom)+8px)] lg:pt-0 lg:pb-0">
+        {/* Header - oculto em mobile quando conversa selecionada */}
+        <div className={`relative ${selectedPhone ? "hidden lg:block" : ""}`}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden absolute top-2 left-2 z-30 text-foreground hover:bg-muted rounded-lg bg-card/90"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+          <ConversationsHeader
+            metrics={metrics}
+            statusFilter={statusFilter}
+            onStatusChange={setStatusFilter}
+            clientId={clientId}
+            leftControls={
+              <div className="hidden lg:flex items-center gap-1 flex-shrink-0">
                 <Link href="/dashboard">
                   <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 gap-1.5 border-border/60 text-foreground hover:bg-muted/60"
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    aria-label="Voltar ao painel"
                   >
-                    <ArrowLeft className="h-3.5 w-3.5" />
-                    <span className="text-xs">Voltar</span>
+                    <ArrowLeft className="h-4 w-4" />
                   </Button>
                 </Link>
                 <ChatThemePaletteButton />
                 <ThemeToggle />
-                <Link href="/dashboard">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                  >
-                    <Home className="h-4 w-4" />
-                  </Button>
-                </Link>
               </div>
-            </div>
-
-            {/* Campo de Pesquisa */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Pesquisar contatos..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-surface-sunken border border-border rounded-lg px-10 py-2.5 text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary transition-colors text-sm"
-                style={{ fontFamily: "Inter, sans-serif" }}
-              />
-              {searchTerm && (
-                <button
-                  onClick={handleClearSearch}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground/70"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-
-            {/* Indicador de pesquisa */}
-            {searchTerm.length >= 2 && (
-              <p className="text-xs text-muted-foreground mt-2">
-                {filteredConversations.length} resultado
-                {filteredConversations.length !== 1 ? "s" : ""} encontrado
-                {filteredConversations.length !== 1 ? "s" : ""}
-              </p>
-            )}
-            {searchTerm.length === 1 && (
-              <p className="text-xs text-muted-foreground/60 mt-2">
-                Digite mais 1 caractere para pesquisar...
-              </p>
-            )}
-          </div>
-
-          {/* Filtros Simples - Todas / Não Lidas */}
-          <div className="px-4 py-3 border-b border-border/50">
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowUnreadOnly(false)}
-                className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
-                  !showUnreadOnly
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
-                }`}
-              >
-                Todas
-              </button>
-              <button
-                onClick={() => setShowUnreadOnly(true)}
-                className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
-                  showUnreadOnly
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
-                }`}
-              >
-                Não lidas
-              </button>
-            </div>
-          </div>
-
-          {/* Lista de Conversas */}
-          <div
-            ref={scrollContainerRef}
-            onScroll={handleScroll}
-            className="flex-1 overflow-y-auto"
-          >
-            {filteredConversations.length === 0 && !loading ? (
-              <EmptyStateSimple
-                icon={
-                  showUnreadOnly
-                    ? MessageCircle
-                    : statusFilter === "all"
-                    ? MessageCircle
-                    : statusFilter === "bot"
-                    ? Bot
-                    : statusFilter === "humano"
-                    ? User
-                    : statusFilter === "fluxo_inicial"
-                    ? Workflow
-                    : statusFilter === "transferido"
-                    ? ArrowRight
-                    : MessageCircle
-                }
-                title={
-                  showUnreadOnly
-                    ? "Nenhuma conversa não lida"
-                    : statusFilter === "all"
-                    ? "Nenhuma conversa encontrada"
-                    : `Nenhuma conversa com status "${getStatusLabel(
-                        statusFilter,
-                      )}"`
-                }
-                description={
-                  showUnreadOnly
-                    ? 'Todas as conversas já foram lidas. Clique em "Todas" para ver todas as conversas.'
-                    : statusFilter === "all"
-                    ? "Quando você receber mensagens no WhatsApp, elas aparecerão aqui"
-                    : `Não há conversas com status "${getStatusLabel(
-                        statusFilter,
-                      )}" no momento. Tente mudar o filtro ou aguarde novas conversas.`
-                }
-              />
-            ) : (
-              <ConversationList
-                conversations={filteredConversations}
-                loading={loading}
-                clientId={clientId}
-                currentPhone={selectedPhone || undefined}
-                lastUpdatePhone={lastUpdatePhone}
-                onConversationOpen={handleSelectConversation}
-                onMarkAsRead={handleMarkAsRead}
-                conversationItemsRef={conversationItemsRef}
-              />
-            )}
-          </div>
+            }
+          />
         </div>
 
         {/* Sidebar Mobile - Sheet drawer */}
@@ -643,16 +623,6 @@ export function ConversationsIndexClient({
               {/* Header da Sidebar */}
               <div className="p-4 border-b border-border/50">
                 <div className="flex items-center gap-3 mb-4">
-                  <Link href="/dashboard">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 gap-1.5 border-border/60"
-                    >
-                      <ArrowLeft className="h-3.5 w-3.5" />
-                      <span className="text-xs">Voltar</span>
-                    </Button>
-                  </Link>
                   <h3 className="font-poppins font-semibold text-sm text-foreground/90">
                     Conversas
                   </h3>
@@ -779,7 +749,7 @@ export function ConversationsIndexClient({
         </Sheet>
 
         {/* Área Principal - Chat ou Empty State */}
-        <div className="flex-1 flex flex-col bg-surface">
+        <div className="flex-1 flex flex-col bg-surface overflow-hidden">
           {loadingVirtualContact && selectedPhone ? (
             <div className="flex-1 flex items-center justify-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>

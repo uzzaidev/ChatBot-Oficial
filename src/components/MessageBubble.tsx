@@ -726,7 +726,7 @@ export const MessageBubble = ({
       }
     >
       <div
-        className={`relative group max-w-[85%] sm:max-w-[75%] md:max-w-[70%] rounded-lg p-3 break-words overflow-hidden ${bubbleStyles}`}
+        className={`relative group max-w-[85%] sm:max-w-[75%] md:max-w-[70%] rounded-lg p-3 overflow-hidden [overflow-wrap:anywhere] ${bubbleStyles}`}
         style={bubbleColorStyle}
       >
         {/* Action menu - WhatsApp style dropdown */}
@@ -742,7 +742,7 @@ export const MessageBubble = ({
         {renderMediaContent()}
         {textContent && (
           <p
-            className={`whitespace-pre-wrap ${
+            className={`whitespace-pre-wrap [overflow-wrap:anywhere] ${
               isEmojiOnly(textContent)
                 ? "text-4xl leading-tight" // Emoji-only: larger display like WhatsApp
                 : "text-sm md:text-base"

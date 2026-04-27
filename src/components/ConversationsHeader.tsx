@@ -12,7 +12,7 @@ import {
   User,
   Workflow,
 } from "lucide-react";
-import { useState } from "react";
+import { ReactNode, useState } from "react";
 
 interface ConversationsHeaderProps {
   metrics: {
@@ -27,6 +27,7 @@ interface ConversationsHeaderProps {
     status: "all" | "bot" | "humano" | "transferido" | "fluxo_inicial",
   ) => void;
   clientId: string | null;
+  leftControls?: ReactNode;
 }
 
 // Mapeamento de ícones
@@ -70,6 +71,7 @@ export const ConversationsHeader = ({
   statusFilter,
   onStatusChange,
   clientId,
+  leftControls,
 }: ConversationsHeaderProps) => {
   const [showFilterModal, setShowFilterModal] = useState(false);
   const { filters, loading } = useFilterPreferences();
@@ -104,6 +106,13 @@ export const ConversationsHeader = ({
     <div className="w-full border-b border-border/50 px-4 md:px-6 py-2 relative bg-card/[0.98]">
       {/* Single row: title + filter chips + editar */}
       <div className="flex items-center gap-2 md:gap-3 pl-8 lg:pl-0 overflow-x-auto">
+        {/* Left Controls */}
+        {leftControls}
+        {leftControls && (
+          <span className="text-border/80 flex-shrink-0 hidden lg:inline">
+            |
+          </span>
+        )}
         {/* Title */}
         <h1 className="font-poppins font-bold text-sm md:text-base text-foreground whitespace-nowrap flex-shrink-0">
           Caixa de Entrada
