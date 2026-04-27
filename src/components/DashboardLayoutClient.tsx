@@ -10,6 +10,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { useResizableSidebar } from "@/hooks/useResizableSidebar";
 import { cn } from "@/lib/utils";
 import { Menu } from "lucide-react";
 import { usePathname } from "next/navigation";
@@ -44,6 +45,14 @@ export function DashboardLayoutClient({
   const [lastScrollY, setLastScrollY] = useState(0);
   const mainContentRef = useRef<HTMLElement>(null);
   const pathname = usePathname();
+
+  const { width: sidebarWidth, handleMouseDown: handleSidebarResize } =
+    useResizableSidebar({
+      storageKey: "dashboard_sidebar_width",
+      defaultWidth: 190,
+      minWidth: 160,
+      maxWidth: 320,
+    });
 
   // Se estiver em qualquer rota de conversas, chat ou contatos, renderiza apenas children
   // (essas páginas têm seu próprio layout/sidebar full-screen)
@@ -104,10 +113,8 @@ export function DashboardLayoutClient({
     <div className="flex min-h-screen bg-background">
       {/* Desktop Sidebar - Fixed position, always visible - DARK THEME */}
       <aside
-        className={cn(
-          "hidden md:flex flex-col fixed left-0 top-0 h-screen border-r border-primary/10 bg-sidebar-dark transition-all duration-300 overflow-y-auto z-50",
-          isCollapsed ? "w-20" : "w-[190px]",
-        )}
+        className="hidden md:flex flex-col fixed left-0 top-0 h-screen border-r border-primary/10 bg-sidebar-dark overflow-y-auto z-50"
+        style={{ width: isCollapsed ? 80 : sidebarWidth }}
       >
         <DashboardNavigation
           userName={userName}
@@ -116,16 +123,21 @@ export function DashboardLayoutClient({
           isCollapsed={isCollapsed}
           onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
         />
+        {/* Drag handle */}
+        {!isCollapsed && (
+          <div
+            onMouseDown={handleSidebarResize}
+            className="absolute top-0 right-0 h-full w-1 cursor-col-resize group z-10 hover:bg-primary/30 transition-colors"
+            title="Arrastar para redimensionar"
+          />
+        )}
       </aside>
 
       {/* Main Content - Add left margin to account for fixed sidebar */}
       <main
         ref={mainContentRef}
-        className={cn(
-          "flex-1 flex flex-col min-w-0 transition-all duration-300 bg-background",
-          "md:ml-[190px]",
-          isCollapsed && "md:ml-20",
-        )}
+        className={cn("flex-1 flex flex-col min-w-0 bg-background")}
+        style={{ marginLeft: isCollapsed ? 80 : sidebarWidth }}
       >
         {/* Mobile Header */}
         <div className="md:hidden sticky top-0 z-10 border-b border-border/50 px-3 py-2 flex items-center justify-between bg-card">

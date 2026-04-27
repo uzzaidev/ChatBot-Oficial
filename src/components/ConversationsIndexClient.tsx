@@ -17,6 +17,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useChatTheme } from "@/hooks/useChatTheme";
 import { useConversations } from "@/hooks/useConversations";
 import { useGlobalRealtimeNotifications } from "@/hooks/useGlobalRealtimeNotifications";
+import { useResizableSidebar } from "@/hooks/useResizableSidebar";
 import { apiFetch, markConversationAsRead } from "@/lib/api";
 import type { Conversation, Message } from "@/lib/types";
 import { getInitials } from "@/lib/utils";
@@ -75,6 +76,13 @@ export function ConversationsIndexClient({
   >(null);
   const [attachments, setAttachments] = useState<MediaAttachment[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { width: convSidebarWidth, handleMouseDown: handleConvSidebarResize } =
+    useResizableSidebar({
+      storageKey: "conversations_sidebar_width",
+      defaultWidth: 256,
+      minWidth: 200,
+      maxWidth: 420,
+    });
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const scrollPositionRef = useRef(0);
   // Ref para armazenar referências aos elementos das conversas (para scroll automático)
@@ -457,7 +465,16 @@ export function ConversationsIndexClient({
   return (
     <div className="fixed inset-0 flex overflow-hidden bg-background">
       {/* Sidebar Desktop - Full Height */}
-      <div className="hidden lg:flex w-64 flex-shrink-0 flex-col border-r border-border/50 bg-card/95">
+      <div
+        className="hidden lg:flex flex-shrink-0 flex-col border-r border-border/50 bg-card/95 relative"
+        style={{ width: convSidebarWidth }}
+      >
+        {/* Drag handle */}
+        <div
+          onMouseDown={handleConvSidebarResize}
+          className="absolute top-0 right-0 h-full w-1 cursor-col-resize hover:bg-primary/30 transition-colors z-10"
+          title="Arrastar para redimensionar"
+        />
         {/* Header da Sidebar */}
         <div className="p-4 border-b border-border/50">
           {/* Campo de Pesquisa */}
