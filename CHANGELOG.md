@@ -8,6 +8,18 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-27
 
+### feat
+- Adicionado botão toggle para ocultar ou mostrar colunas vazias na página CRM, com estado padrão alterado para ocultar colunas vazias
+  - Arquivos: `src/app/dashboard/crm/page.tsx`
+  - Confiança: alta
+
+### refactor
+- Removido listener e função de tratamento de evento wheel para scroll horizontal no KanbanBoard, simplificando o código
+  - Arquivos: `src/components/crm/KanbanBoard.tsx`
+  - Confiança: alta
+
+## 2026-04-27
+
 ### refactor
 - Padronizado formatação de código e melhorada estrutura de componentes em múltiplos arquivos, incluindo ajustes em espaçamento, uso de ponto e vírgula, e organização de imports.
 - Ajustado layout e classes CSS para melhor responsividade e consistência visual em componentes como `ConversationList`, `ConversationsHeader`, `ConversationsIndexClient`, `MessageBubble` e `StatusToggle`.
