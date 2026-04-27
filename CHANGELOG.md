@@ -9,6 +9,14 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-27
 
 ### refactor
+- Removido header desktop com tema escuro e controles de tema e notificações do `DashboardLayoutClient` para simplificar layout; ajustado header mobile para manter funcionalidade principal.
+- Reorganizado `DashboardNavigation` para incluir `ThemeToggle` no cabeçalho e envolver botão de logout em container flexível, melhorando alinhamento e usabilidade.
+  - Arquivos: `src/components/DashboardLayoutClient.tsx`, `src/components/DashboardNavigation.tsx`
+  - Confiança: alta
+
+## 2026-04-27
+
+### refactor
 - Removida exibição do e-mail do usuário e informações de versão no componente `DashboardNavigation`. Ajustada largura da sidebar no `DashboardLayoutClient` de 220px para 190px para refletir a remoção dos elementos.
   - Arquivos: `src/components/DashboardNavigation.tsx`, `src/components/DashboardLayoutClient.tsx`
   - Confiança: alta
