@@ -9,6 +9,14 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-27
 
 ### feat
+- Adicionada funcionalidade para desativar agentes no dashboard, permitindo que nenhum agente fique ativo e pausando respostas do bot enquanto isso. Incluído item no menu para desativar agentes ativos.
+- Melhorado fluxo do chatbot para detectar ausência de agente ativo e pausar respostas automáticas, registrando essa condição no log de execução.
+  - Arquivos: `src/app/dashboard/agents/page.tsx`, `src/flows/chatbotFlow.ts`
+  - Confiança: alta
+
+## 2026-04-27
+
+### feat
 - Adicionada funcionalidade de sidebar redimensionável nos componentes `ConversationsIndexClient` e `DashboardLayoutClient`, com persistência da largura no localStorage e limites configuráveis
   - Arquivos: `src/components/ConversationsIndexClient.tsx`, `src/components/DashboardLayoutClient.tsx`, `src/hooks/useResizableSidebar.ts`
   - Confiança: alta
