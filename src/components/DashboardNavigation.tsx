@@ -75,7 +75,7 @@ const NavItem = ({
       onClick={onClick}
       className={cn(
         "flex items-center gap-3 rounded-lg transition-all duration-200 text-sm font-medium",
-        isSubItem ? "px-3 py-2" : "px-3 py-3",
+        isSubItem ? "px-3 py-1.5" : "px-3 py-2",
         isActive
           ? "bg-uzz-mint/15 text-uzz-mint border-l-[3px] border-uzz-mint font-semibold"
           : "text-muted-foreground hover:bg-primary/10 hover:text-uzz-mint hover:translate-x-1",
@@ -145,7 +145,7 @@ const NavGroup = ({
   const [open, setOpen] = useState(isAnyActive);
 
   if (isCollapsed) {
-    return <>{children}</>;
+    return null; // Hide grouped sub-items in collapsed mode — only top-level icons shown
   }
 
   return (
@@ -190,7 +190,7 @@ export function DashboardNavigation({
   return (
     <div className="flex flex-col h-full">
       {/* Logo Header */}
-      <div className="px-5 py-6 border-b border-border/50">
+      <div className="px-4 py-4 border-b border-border/50">
         {isCollapsed ? (
           <div className="flex justify-center">
             <MessageSquare className="h-7 w-7 text-uzz-mint" />
@@ -263,7 +263,7 @@ export function DashboardNavigation({
         <NavItem
           href="/dashboard/knowledge"
           icon={<BookOpen className="h-5 w-5 flex-shrink-0" />}
-          label="Base de Conhecimento"
+          label="Documentos"
           isCollapsed={isCollapsed}
           onClick={onLinkClick}
           tooltip="Upload de documentos (PDF, TXT) para RAG com busca semântica"

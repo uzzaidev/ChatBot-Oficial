@@ -222,14 +222,14 @@ export default function CRMPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-140px)]">
+      <div className="flex items-center justify-center flex-1">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="flex h-[calc(100vh-140px)] min-h-[720px] flex-col overflow-hidden">
+    <div className="flex flex-1 flex-col overflow-hidden min-h-0">
       <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
         {/* ── Compact header ────────────────────────────────────────── */}
         <div className="border-b border-border/60 px-4 py-3 md:px-6">

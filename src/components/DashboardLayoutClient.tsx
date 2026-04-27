@@ -55,7 +55,9 @@ export function DashboardLayoutClient({
     pathname.startsWith("/dashboard/contacts");
 
   // Rotas que usam layout fluid (sem padding/max-width) mas mantêm a sidebar
-  const isFluidRoute = pathname.startsWith("/dashboard/traces");
+  const isFluidRoute =
+    pathname.startsWith("/dashboard/traces") ||
+    pathname.startsWith("/dashboard/crm");
 
   // Detecta scroll para esconder/mostrar header (apenas desktop)
   useEffect(() => {
@@ -106,7 +108,7 @@ export function DashboardLayoutClient({
       <aside
         className={cn(
           "hidden md:flex flex-col fixed left-0 top-0 h-screen border-r border-primary/10 bg-sidebar-dark transition-all duration-300 overflow-y-auto z-50",
-          isCollapsed ? "w-20" : "w-[260px]",
+          isCollapsed ? "w-20" : "w-[220px]",
         )}
       >
         <DashboardNavigation
@@ -123,36 +125,36 @@ export function DashboardLayoutClient({
         ref={mainContentRef}
         className={cn(
           "flex-1 flex flex-col min-w-0 transition-all duration-300 bg-background",
-          "md:ml-[260px]",
+          "md:ml-[220px]",
           isCollapsed && "md:ml-20",
         )}
       >
         {/* Desktop Header - DARK THEME - Esconde ao rolar para baixo */}
         <header
           className={cn(
-            "hidden md:flex h-[70px] border-b border-border/50 px-8 items-center justify-between transition-transform duration-300",
+            "hidden md:flex h-[52px] border-b border-border/50 px-6 items-center justify-between transition-transform duration-300",
             "bg-card",
             // Transforma header para esconder/mostrar baseado no scroll
             isHeaderVisible ? "translate-y-0" : "-translate-y-full",
           )}
         >
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-poppins font-bold text-white">
+          <div className="flex items-center gap-3">
+            <h1 className="text-lg font-poppins font-bold text-white">
               <span className="text-uzz-mint">Uzz</span>
               <span className="text-uzz-blue font-exo2">.Ai</span>
             </h1>
-            <p className="text-sm text-uzz-silver/80 mt-1 hidden lg:block">
+            <p className="text-xs text-uzz-silver/70 hidden lg:block">
               Dashboard
             </p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <ThemeToggle />
             <NotificationBell />
           </div>
         </header>
 
         {/* Mobile Header */}
-        <div className="md:hidden sticky top-0 z-10 border-b border-border/50 p-4 flex items-center justify-between bg-card">
+        <div className="md:hidden sticky top-0 z-10 border-b border-border/50 px-3 py-2 flex items-center justify-between bg-card">
           <div className="flex items-center gap-3">
             <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
               <SheetTrigger asChild>
@@ -166,7 +168,7 @@ export function DashboardLayoutClient({
               </SheetTrigger>
               <SheetContent
                 side="left"
-                className="w-[280px] p-6 bg-sidebar-dark border-r border-primary/10"
+                className="w-[260px] p-4 bg-sidebar-dark border-r border-primary/10"
               >
                 <SheetTitle className="sr-only">Menu de Navegação</SheetTitle>
                 <DashboardNavigation
@@ -194,7 +196,7 @@ export function DashboardLayoutClient({
             <PaymentWall>{children}</PaymentWall>
           </div>
         ) : (
-          <div className="flex-1 overflow-auto bg-background px-2 py-3 sm:px-3 sm:py-4 md:px-6 md:py-6 xl:px-8 xl:py-8">
+          <div className="flex-1 overflow-auto bg-background px-2 py-2 sm:px-3 sm:py-2 md:px-4 md:py-3 xl:px-6 xl:py-4">
             <div className="max-w-[1600px] mx-auto w-full">
               <BillingStatusBanner />
               <PaymentWall>{children}</PaymentWall>

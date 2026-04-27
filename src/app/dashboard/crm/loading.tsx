@@ -1,8 +1,8 @@
-import { Skeleton } from "@/components/ui/skeleton"
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function CRMLoading() {
   return (
-    <div className="flex flex-col h-[calc(100vh-140px)]">
+    <div className="flex flex-col flex-1">
       {/* Header Skeleton */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border-b border-border">
         <div className="flex items-center gap-4">
@@ -36,7 +36,10 @@ export default function CRMLoading() {
       <div className="flex-1 p-4 overflow-hidden">
         <div className="flex gap-4 h-full">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="w-[320px] min-w-[320px] flex flex-col gap-3">
+            <div
+              key={i}
+              className="w-[320px] min-w-[320px] flex flex-col gap-3"
+            >
               {/* Column header */}
               <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                 <div className="flex items-center gap-2">
@@ -52,7 +55,7 @@ export default function CRMLoading() {
                   <div
                     key={j}
                     className="p-3 bg-card border border-border rounded-lg space-y-2"
-                    style={{ opacity: 1 - (j * 0.2) }}
+                    style={{ opacity: 1 - j * 0.2 }}
                   >
                     <div className="flex items-center gap-2">
                       <Skeleton className="h-8 w-8 rounded-full" />
@@ -74,5 +77,5 @@ export default function CRMLoading() {
         </div>
       </div>
     </div>
-  )
+  );
 }
