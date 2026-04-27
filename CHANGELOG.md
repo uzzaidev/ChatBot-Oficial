@@ -9,6 +9,14 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-27
 
 ### feat
+- Adicionada funcionalidade de busca na página CRM para filtrar contatos por nome ou telefone. Inclui campo de input com ícone de busca e botão para limpar o filtro.
+- Ajustado o filtro dos cards exibidos para considerar a busca, atualizando a lista exibida em tempo real.
+  - Arquivos: `src/app/dashboard/crm/page.tsx`
+  - Confiança: alta
+
+## 2026-04-27
+
+### feat
 - Adicionada funcionalidade para desativar agentes no dashboard, permitindo que nenhum agente fique ativo e pausando respostas do bot enquanto isso. Incluído item no menu para desativar agentes ativos.
 - Melhorado fluxo do chatbot para detectar ausência de agente ativo e pausar respostas automáticas, registrando essa condição no log de execução.
   - Arquivos: `src/app/dashboard/agents/page.tsx`, `src/flows/chatbotFlow.ts`
