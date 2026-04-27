@@ -6,6 +6,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-04-27
+
+### feat
+- Adicionado modal de configurações ao pipeline CRM com filtros, opções de exibição, gerenciamento de tags e painel de automações; aprimorada interface da página CRM com cabeçalho compacto, botões de alternância de visualização e botão de acesso rápido às configurações.
+- Refatorado layout do cabeçalho e removidos painéis de resumo antigos para simplificar a interface e melhorar usabilidade.
+  - Arquivos: `src/app/dashboard/crm/page.tsx`
+  - Confiança: alta
+
 ## 2026-04-26
 
 ### refactor
