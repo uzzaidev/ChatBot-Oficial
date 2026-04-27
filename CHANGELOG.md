@@ -9,6 +9,16 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-27
 
 ### refactor
+- Atualizadas importações e melhorada a organização visual dos componentes `ConversationDetail`, `ConversationsHeader`, `ConversationsIndexClient` e `MessageBubble`.
+- Reestruturada a sidebar e a área principal de conversas para desktop, incluindo campo de busca, filtros e indicadores de resultados no `ConversationsIndexClient`.
+- Adicionado suporte para controles à esquerda no cabeçalho de conversas (`ConversationsHeader`).
+- Ajustes em estilos CSS para melhor controle de overflow e quebra de texto em mensagens (`MessageBubble`).
+  - Arquivos: `src/components/ConversationDetail.tsx`, `src/components/ConversationsHeader.tsx`, `src/components/ConversationsIndexClient.tsx`, `src/components/MessageBubble.tsx`
+  - Confiança: alta
+
+## 2026-04-27
+
+### refactor
 - Melhorada a formatação do código e ajustada a lógica do título do botão para ocultar/mostrar colunas vazias na página CRM
   - Arquivos: `src/app/dashboard/crm/page.tsx`, `src/components/crm/KanbanBoard.tsx`
   - Confiança: alta
