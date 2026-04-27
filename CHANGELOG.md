@@ -9,6 +9,13 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-27
 
 ### refactor
+- Simplificada a estrutura do layout e apresentação das métricas no componente `DashboardMetricsView`, com reorganização da toolbar, controles e estatísticas para melhor usabilidade e visual mais limpo.
+- Arquivos: `src/components/DashboardMetricsView.tsx`
+- Confiança: alta
+
+## 2026-04-27
+
+### refactor
 - Atualizadas importações e melhorada a organização visual dos componentes `ConversationDetail`, `ConversationsHeader`, `ConversationsIndexClient` e `MessageBubble`.
 - Reestruturada a sidebar e a área principal de conversas para desktop, incluindo campo de busca, filtros e indicadores de resultados no `ConversationsIndexClient`.
 - Adicionado suporte para controles à esquerda no cabeçalho de conversas (`ConversationsHeader`).
