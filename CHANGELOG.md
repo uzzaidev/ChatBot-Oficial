@@ -9,6 +9,15 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-27
 
 ### refactor
+- Padronizado formatação de código e melhorada estrutura de componentes em múltiplos arquivos, incluindo ajustes em espaçamento, uso de ponto e vírgula, e organização de imports.
+- Ajustado layout e classes CSS para melhor responsividade e consistência visual em componentes como `ConversationList`, `ConversationsHeader`, `ConversationsIndexClient`, `MessageBubble` e `StatusToggle`.
+- Atualizado componentes para uso consistente de React e Next.js, como hooks e props, e refinado elementos de UI como botões, badges e filtros.
+  - Arquivos: `src/components/ConversationList.tsx`, `src/components/ConversationsHeader.tsx`, `src/components/ConversationsIndexClient.tsx`, `src/components/MessageBubble.tsx`, `src/components/StatusToggle.tsx`
+  - Confiança: alta
+
+## 2026-04-27
+
+### refactor
 - Melhorado layout e estilos nos componentes do CRM para maior responsividade e consistência, ajustando classes CSS e estrutura flexível
   - Arquivos: `src/app/dashboard/crm/loading.tsx`, `src/app/dashboard/crm/page.tsx`
   - Confiança: alta
