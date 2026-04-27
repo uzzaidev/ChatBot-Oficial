@@ -57,7 +57,7 @@ export default function CRMPage() {
   const [activeTab, setActiveTab] = useState<"pipeline" | "analytics">(
     "pipeline",
   );
-  const [hideEmptyColumns, setHideEmptyColumns] = useState(false);
+  const [hideEmptyColumns, setHideEmptyColumns] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [editingColumn, setEditingColumn] = useState<CRMColumn | null>(null);
   const [deletingColumn, setDeletingColumn] = useState<{
@@ -256,6 +256,20 @@ export default function CRMPage() {
                   Analytics
                 </button>
               </div>
+              {activeTab === "pipeline" && (
+                <button
+                  className={cn(
+                    "crm-pill-button gap-1.5 px-3 text-xs",
+                    hideEmptyColumns && "data-[active=true]",
+                  )}
+                  data-active={hideEmptyColumns}
+                  onClick={() => setHideEmptyColumns((v) => !v)}
+                  title={hideEmptyColumns ? "Mostrar colunas vazias" : "Ocultar colunas vazias"}
+                >
+                  <EyeOff className="h-3.5 w-3.5" />
+                  Ocultar vazias
+                </button>
+              )}
               {activeFiltersCount > 0 && (
                 <span className="crm-stat-chip">
                   <Filter className="h-3.5 w-3.5 text-primary" />
