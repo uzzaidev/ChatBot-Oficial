@@ -450,7 +450,7 @@ export default function CRMPage() {
                                       key={card.id}
                                       card={card}
                                       tags={tags}
-                                      columns={visibleColumns}
+                                      columns={columns}
                                       onClick={() => handleCardClick(card)}
                                       onMoveToColumn={(columnId) =>
                                         handleMoveCard(card.id, columnId)
@@ -481,6 +481,7 @@ export default function CRMPage() {
                     ) : viewMode === "kanban" ? (
                       <KanbanBoard
                         columns={visibleColumns}
+                        allColumns={columns}
                         orderedColumnIds={columns.map((c) => c.id)}
                         cards={filteredCards}
                         tags={tags}

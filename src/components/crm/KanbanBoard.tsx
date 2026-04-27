@@ -36,6 +36,7 @@ import { SortableColumn } from "./SortableColumn";
 
 interface KanbanBoardProps {
   columns: CRMColumn[];
+  allColumns?: CRMColumn[];
   orderedColumnIds?: string[];
   cards: CRMCard[];
   tags: CRMTag[];
@@ -74,6 +75,7 @@ const customCollisionDetection = (
 
 export const KanbanBoard = ({
   columns,
+  allColumns,
   orderedColumnIds,
   cards,
   tags,
@@ -318,7 +320,7 @@ export const KanbanBoard = ({
                       column={column}
                       cards={columnCards}
                       tags={tags}
-                      allColumns={columns}
+                      allColumns={allColumns ?? columns}
                       onCardClick={onCardClick}
                       onCardMove={onMoveCard}
                       onBulkUpdateColumnStatus={onBulkUpdateColumnStatus}
