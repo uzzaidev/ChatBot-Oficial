@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { LogoutButton } from "@/components/LogoutButton";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -197,11 +198,12 @@ export function DashboardNavigation({
           </div>
         ) : (
           <>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between">
               <h1 className="text-2xl font-bold leading-none">
                 <span className="font-poppins text-primary">Uzz</span>
                 <span className="font-exo2 text-secondary">Ai</span>
               </h1>
+              <ThemeToggle />
             </div>
           </>
         )}
@@ -438,7 +440,14 @@ export function DashboardNavigation({
           </div>
         )}
 
-        <LogoutButton isCollapsed={isCollapsed} />
+        <div
+          className={cn(
+            "flex items-center",
+            isCollapsed ? "justify-center" : "justify-start",
+          )}
+        >
+          <LogoutButton isCollapsed={isCollapsed} />
+        </div>
       </div>
 
       {/* Toggle button for desktop */}

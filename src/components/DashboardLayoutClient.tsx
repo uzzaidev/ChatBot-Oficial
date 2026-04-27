@@ -2,9 +2,7 @@
 
 import { BillingStatusBanner } from "@/components/BillingStatusBanner";
 import { DashboardNavigation } from "@/components/DashboardNavigation";
-import { NotificationBell } from "@/components/NotificationBell";
 import { PaymentWall } from "@/components/PaymentWall";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -129,30 +127,6 @@ export function DashboardLayoutClient({
           isCollapsed && "md:ml-20",
         )}
       >
-        {/* Desktop Header - DARK THEME - Esconde ao rolar para baixo */}
-        <header
-          className={cn(
-            "hidden md:flex h-[52px] border-b border-border/50 px-6 items-center justify-between transition-transform duration-300",
-            "bg-card",
-            // Transforma header para esconder/mostrar baseado no scroll
-            isHeaderVisible ? "translate-y-0" : "-translate-y-full",
-          )}
-        >
-          <div className="flex items-center gap-3">
-            <h1 className="text-lg font-poppins font-bold text-white">
-              <span className="text-uzz-mint">Uzz</span>
-              <span className="text-uzz-blue font-exo2">.Ai</span>
-            </h1>
-            <p className="text-xs text-uzz-silver/70 hidden lg:block">
-              Dashboard
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
-            <NotificationBell />
-          </div>
-        </header>
-
         {/* Mobile Header */}
         <div className="md:hidden sticky top-0 z-10 border-b border-border/50 px-3 py-2 flex items-center justify-between bg-card">
           <div className="flex items-center gap-3">
@@ -183,10 +157,6 @@ export function DashboardLayoutClient({
               <span className="text-uzz-mint font-poppins">Uzz</span>
               <span className="text-uzz-blue font-exo2">.Ai</span>
             </h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <NotificationBell />
           </div>
         </div>
 
