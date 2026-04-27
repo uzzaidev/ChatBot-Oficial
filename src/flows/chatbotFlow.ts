@@ -30,6 +30,7 @@ import { detectRepetition } from "@/nodes/detectRepetition";
 // 🔄 Phase 4: Interactive Flows
 import { checkInteractiveFlow } from "@/nodes/checkInteractiveFlow";
 // 🎯 CRM Automation: Lead source capture and status updates
+import { getAllowedToolNames } from "@/lib/agent-tools";
 import { emitCrmAutomationEvent } from "@/lib/crm-automation-engine";
 import { classifyCRMIntent } from "@/lib/crm-intent-classifier";
 import { createExecutionLogger } from "@/lib/logger";
@@ -37,7 +38,6 @@ import { query } from "@/lib/postgres";
 import { setWithExpiry } from "@/lib/redis";
 import { createServiceRoleClient } from "@/lib/supabase";
 import { dedupeToolCalls } from "@/lib/tool-call-dedup";
-import { getAllowedToolNames } from "@/lib/agent-tools";
 import {
   logGroqUsage,
   logOpenAIUsage,
@@ -54,12 +54,12 @@ import { getAllNodeStates, shouldExecuteNode } from "@/lib/flowHelpers";
 import { uploadFileToStorage } from "@/lib/storage";
 // 📊 Observability: trace logger (Sprint 1)
 import { enqueueEvaluation } from "@/lib/evaluation-worker";
-import { createTraceLogger, MessageTraceLogger } from "@/lib/trace-logger";
 import {
   classifySupportCase,
   isLikelySupportMessage,
   upsertSupportCase,
 } from "@/lib/support-cases";
+import { createTraceLogger, MessageTraceLogger } from "@/lib/trace-logger";
 
 export interface ChatbotFlowResult {
   success: boolean;
@@ -496,6 +496,20 @@ export const processChatbotMessage = async (
     // Note: This is now handled by checkHumanHandoffStatus (NODE 6)
     // but we keep this comment for clarity about the routing logic
     // Status 'humano' or 'transferido' will be caught by NODE 6
+
+    // ROUTE 2.5: No active agent — bot is paused, do not respond
+    if (!config.activeAgent) {
+      console.log(
+        "⏸️ [chatbotFlow] No active agent configured — bot is paused, skipping AI response.",
+      );
+      logger.logNodeSuccess("0. Guard: No Active Agent", {
+        reason: "no_active_agent",
+        action: "silent_skip",
+      });
+      logger.finishExecution("success");
+      await flushTrace();
+      return { success: true, skipped: true };
+    }
 
     // ROUTE 3: Bot/IA (status === 'bot' OR new contact)
     // Continue to normal pipeline below
@@ -1495,7 +1509,9 @@ export const processChatbotMessage = async (
         fallbackCategory = "quota";
       } else if (/(rate limit|429|too many requests)/i.test(normalizedError)) {
         fallbackCategory = "rate_limit";
-      } else if (/(timeout|timed out|etimedout|aborted|deadline)/i.test(normalizedError)) {
+      } else if (
+        /(timeout|timed out|etimedout|aborted|deadline)/i.test(normalizedError)
+      ) {
         fallbackCategory = "timeout";
       } else if (
         /(service unavailable|temporarily unavailable|overloaded|provider)/i.test(
@@ -2003,7 +2019,10 @@ export const processChatbotMessage = async (
             clientId: config.id,
             config,
             userMessage: batchedContent,
-            contactMetadata: customer.metadata as Record<string, unknown> | null,
+            contactMetadata: customer.metadata as Record<
+              string,
+              unknown
+            > | null,
           });
 
           traceLogger.logToolCall({
@@ -2789,7 +2808,10 @@ export const processChatbotMessage = async (
           },
         });
       } catch (supportCaseError) {
-        console.warn("[chatbotFlow] Failed to persist support case:", supportCaseError);
+        console.warn(
+          "[chatbotFlow] Failed to persist support case:",
+          supportCaseError,
+        );
       }
     }
 

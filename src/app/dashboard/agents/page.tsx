@@ -32,6 +32,7 @@ import {
   MoreVertical,
   Plus,
   Power,
+  PowerOff,
   Settings2,
   Sparkles,
   Zap,
@@ -131,6 +132,39 @@ const AgentsPage = () => {
       toast({
         title: "Erro",
         description: "Falha ao ativar agente",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle deactivating the active agent (no other agent becomes active)
+  const handleDeactivateAgent = async (agent: Agent) => {
+    try {
+      const response = await apiFetch(`/api/agents/${agent.id}/activate`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setAgents((prev) =>
+          prev.map((a) => (a.id === agent.id ? { ...a, is_active: false } : a)),
+        );
+        toast({
+          title: "Agente Desativado",
+          description: `${agent.name} foi desativado. O bot não responderá enquanto nenhum agente estiver ativo.`,
+        });
+      } else {
+        const data = await response.json();
+        toast({
+          title: "Erro",
+          description: data.error || "Falha ao desativar agente",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error deactivating agent:", error);
+      toast({
+        title: "Erro",
+        description: "Falha ao desativar agente",
         variant: "destructive",
       });
     }
@@ -279,7 +313,11 @@ const AgentsPage = () => {
             <FlaskConical className="w-4 h-4 sm:mr-2" />
             <span className="hidden sm:inline">Teste A/B</span>
           </Button>
-          <Button size="sm" className="flex-1 sm:flex-none" onClick={handleNewAgent}>
+          <Button
+            size="sm"
+            className="flex-1 sm:flex-none"
+            onClick={handleNewAgent}
+          >
             <Plus className="w-4 h-4 sm:mr-2" />
             <span className="hidden sm:inline">Novo Agente</span>
           </Button>
@@ -401,6 +439,15 @@ const AgentsPage = () => {
                           Ativar Agente
                         </DropdownMenuItem>
                       )}
+                      {agent.is_active && (
+                        <DropdownMenuItem
+                          onClick={() => handleDeactivateAgent(agent)}
+                          className="text-orange-600 focus:text-orange-600"
+                        >
+                          <PowerOff className="w-4 h-4 mr-2" />
+                          Desativar Agente
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem onClick={() => handleEditAgent(agent)}>
                         <Settings2 className="w-4 h-4 mr-2" />
                         Editar
@@ -464,7 +511,9 @@ const AgentsPage = () => {
                       ? agent.openai_model
                       : agent.groq_model}
                   </span>
-                  <span className="flex-shrink-0">Temp: {agent.temperature}</span>
+                  <span className="flex-shrink-0">
+                    Temp: {agent.temperature}
+                  </span>
                 </div>
               </CardContent>
             </Card>
