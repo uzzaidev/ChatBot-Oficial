@@ -9,6 +9,13 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-27
 
 ### refactor
+- Removida exibição do e-mail do usuário e informações de versão no componente `DashboardNavigation`. Ajustada largura da sidebar no `DashboardLayoutClient` de 220px para 190px para refletir a remoção dos elementos.
+  - Arquivos: `src/components/DashboardNavigation.tsx`, `src/components/DashboardLayoutClient.tsx`
+  - Confiança: alta
+
+## 2026-04-27
+
+### refactor
 - Simplificada a estrutura do layout e apresentação das métricas no componente `DashboardMetricsView`, com reorganização da toolbar, controles e estatísticas para melhor usabilidade e visual mais limpo.
 - Arquivos: `src/components/DashboardMetricsView.tsx`
 - Confiança: alta
