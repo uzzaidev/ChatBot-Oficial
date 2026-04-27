@@ -1,30 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Plus,
-  LayoutGrid,
-  List,
-  MessageSquare,
-  Send,
-  TrendingUp,
-  DollarSign,
-} from "lucide-react";
-import { CustomizableChart } from "@/components/CustomizableChart";
 import { ChartConfigModal } from "@/components/ChartConfigModal";
-import { MetricCard, MetricCardSkeleton } from "@/components/MetricCard";
+import { CustomizableChart } from "@/components/CustomizableChart";
 import {
   DateRangeSelector,
   type DateRange,
 } from "@/components/DateRangeSelector";
 import { ExportDialog } from "@/components/ExportDialog";
+import { Button } from "@/components/ui/button";
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
 import type {
   ChartConfig,
   MetricDataPoint,
 } from "@/lib/types/dashboard-metrics";
 import { cn } from "@/lib/utils";
+import { LayoutGrid, List, MessageSquare, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface DashboardMetricsViewProps {
   clientId: string;
@@ -208,152 +199,91 @@ export function DashboardMetricsView({ clientId }: DashboardMetricsViewProps) {
 
   const totalConversations =
     metrics?.conversations.reduce((sum, day) => sum + day.total, 0) || 0;
-  const totalMessages =
-    metrics?.messages.reduce((sum, day) => sum + day.total, 0) || 0;
-  const totalCost = metrics?.cost.reduce((sum, day) => sum + day.total, 0) || 0;
-  const avgResolutionRate = metrics?.conversations.length
-    ? (metrics.conversations.reduce(
-        (sum, day) => sum + day.active / (day.total || 1),
-        0,
-      ) /
-        metrics.conversations.length) *
-      100
-    : 0;
 
   return (
-    <div className="space-y-6 sm:space-y-7">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {loading ? (
-          <>
-            <MetricCardSkeleton />
-            <MetricCardSkeleton />
-            <MetricCardSkeleton />
-            <MetricCardSkeleton />
-          </>
-        ) : (
-          <>
-            <MetricCard
-              title="Total de Conversas"
-              value={totalConversations.toLocaleString("pt-BR")}
-              icon={MessageSquare}
-              trend={{ value: 12, label: "esta semana", direction: "up" }}
-            />
-            <MetricCard
-              title="Mensagens Enviadas"
-              value={totalMessages.toLocaleString("pt-BR")}
-              icon={Send}
-              trend={{ value: 18, label: "esta semana", direction: "up" }}
-            />
-            <MetricCard
-              title="Taxa de Resolução"
-              value={`${avgResolutionRate.toFixed(0)}%`}
-              icon={TrendingUp}
-              trend={{ value: 3, label: "esta semana", direction: "up" }}
-            />
-            <MetricCard
-              title="Custo Total (USD)"
-              value={`$${totalCost.toFixed(2)}`}
-              icon={DollarSign}
-              trend={{ value: 8, label: "esta semana", direction: "up" }}
-            />
-          </>
-        )}
-      </div>
-
-      <div className="analytics-shell px-4 py-4 sm:px-5 sm:py-5 lg:px-6 lg:py-6">
-        <div className="relative z-[1] space-y-4">
-          <div className="space-y-2">
-            <div className="analytics-shell-kicker">overview metrics</div>
-            <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-[2rem]">
-              Métricas do Dashboard
-            </h2>
-            <p className="max-w-3xl text-sm text-muted-foreground sm:text-[15px]">
-              Visualização com mais área útil no gráfico, menos ruído estrutural
-              e uma composição mais editorial para mobile e desktop.
-            </p>
+    <div className="space-y-4">
+      {/* Toolbar: stat + controles em linha */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-border/50 pb-4">
+        {/* Total de Conversas */}
+        <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-card px-3 py-2 mr-auto">
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10">
+            <MessageSquare className="h-4 w-4 text-primary" />
           </div>
-
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="analytics-inline-chip">mobile-first</span>
-              <span className="analytics-inline-chip">
-                {charts.length} gráficos ativos
-              </span>
-              <span className="analytics-inline-chip">
-                {layout === "grid" ? "layout editorial" : "layout empilhado"}
-              </span>
-            </div>
-
-            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-end">
-              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-                <ExportDialog
-                  charts={charts}
-                  chartData={charts.reduce((acc, chart) => {
-                    acc[chart.id] = getMetricData(chart.metricType);
-                    return acc;
-                  }, {} as Record<string, MetricDataPoint[]>)}
-                  dashboardTitle="Dashboard UZZ.AI"
-                />
-
-                <div className="flex items-center gap-1 rounded-full border border-border/70 bg-background/30 p-1">
-                  <Button
-                    variant={layout === "grid" ? "default" : "ghost"}
-                    size="icon"
-                    onClick={() => setLayout("grid")}
-                    className={cn(
-                      "h-8 w-8 rounded-full",
-                      layout === "grid"
-                        ? "bg-gradient-to-r from-primary to-secondary text-white"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                    )}
-                  >
-                    <LayoutGrid className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant={layout === "list" ? "default" : "ghost"}
-                    size="icon"
-                    onClick={() => setLayout("list")}
-                    className={cn(
-                      "h-8 w-8 rounded-full",
-                      layout === "list"
-                        ? "bg-gradient-to-r from-primary to-secondary text-white"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                    )}
-                  >
-                    <List className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                <div className="w-full sm:w-auto">
-                  <DateRangeSelector
-                    value={dateRange}
-                    onChange={setDateRange}
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <Button
-                  onClick={handleAddChart}
-                  size="sm"
-                  className="gap-2 border-transparent bg-gradient-to-r from-uzz-mint to-uzz-blue text-white hover:shadow-lg hover:shadow-uzz-mint/30"
-                >
-                  <Plus className="h-4 w-4" />
-                  Adicionar Gráfico
-                </Button>
-                <Button
-                  onClick={handleResetToDefault}
-                  variant="outline"
-                  size="sm"
-                  className="border-border text-muted-foreground hover:bg-muted hover:text-foreground"
-                  disabled={charts.length === 0}
-                >
-                  Restaurar Padrão
-                </Button>
-              </div>
-            </div>
+          <div>
+            <p className="text-[11px] text-muted-foreground leading-none mb-0.5">
+              Total de Conversas
+            </p>
+            {loading ? (
+              <div className="h-4 w-10 bg-muted rounded animate-pulse" />
+            ) : (
+              <p className="text-sm font-bold text-foreground">
+                {totalConversations.toLocaleString("pt-BR")}
+              </p>
+            )}
           </div>
         </div>
+
+        {/* Exportar */}
+        <ExportDialog
+          charts={charts}
+          chartData={charts.reduce((acc, chart) => {
+            acc[chart.id] = getMetricData(chart.metricType);
+            return acc;
+          }, {} as Record<string, MetricDataPoint[]>)}
+          dashboardTitle="Dashboard UZZ.AI"
+        />
+
+        {/* Layout toggle */}
+        <div className="flex items-center gap-1 rounded-full border border-border/70 bg-background/30 p-1">
+          <Button
+            variant={layout === "grid" ? "default" : "ghost"}
+            size="icon"
+            onClick={() => setLayout("grid")}
+            className={cn(
+              "h-7 w-7 rounded-full",
+              layout === "grid"
+                ? "bg-gradient-to-r from-primary to-secondary text-white"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+            )}
+          >
+            <LayoutGrid className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant={layout === "list" ? "default" : "ghost"}
+            size="icon"
+            onClick={() => setLayout("list")}
+            className={cn(
+              "h-7 w-7 rounded-full",
+              layout === "list"
+                ? "bg-gradient-to-r from-primary to-secondary text-white"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+            )}
+          >
+            <List className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+
+        {/* Seletor de período */}
+        <DateRangeSelector value={dateRange} onChange={setDateRange} />
+
+        {/* Adicionar + Restaurar */}
+        <Button
+          onClick={handleAddChart}
+          size="sm"
+          className="gap-1.5 border-transparent bg-gradient-to-r from-uzz-mint to-uzz-blue text-white hover:shadow-lg hover:shadow-uzz-mint/30"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          Adicionar Gráfico
+        </Button>
+        <Button
+          onClick={handleResetToDefault}
+          variant="outline"
+          size="sm"
+          className="border-border text-muted-foreground hover:bg-muted hover:text-foreground"
+          disabled={charts.length === 0}
+        >
+          Restaurar Padrão
+        </Button>
       </div>
 
       <div
