@@ -8,6 +8,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-27
 
+### refactor
+- Melhorada a formatação do código e ajustada a lógica do título do botão para ocultar/mostrar colunas vazias na página CRM
+  - Arquivos: `src/app/dashboard/crm/page.tsx`, `src/components/crm/KanbanBoard.tsx`
+  - Confiança: alta
+
+## 2026-04-27
+
 ### feat
 - Adicionado botão toggle para ocultar ou mostrar colunas vazias na página CRM, com estado padrão alterado para ocultar colunas vazias
   - Arquivos: `src/app/dashboard/crm/page.tsx`
