@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCRMCards } from "@/hooks/useCRMCards";
@@ -40,10 +41,12 @@ import {
   LayoutGrid,
   List,
   Loader2,
+  Search,
   Settings2,
+  X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 export default function CRMPage() {
   const router = useRouter();
@@ -58,6 +61,8 @@ export default function CRMPage() {
     "pipeline",
   );
   const [hideEmptyColumns, setHideEmptyColumns] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [editingColumn, setEditingColumn] = useState<CRMColumn | null>(null);
   const [deletingColumn, setDeletingColumn] = useState<{
@@ -204,14 +209,24 @@ export default function CRMPage() {
     filters.tagIds?.length ? "tags" : undefined,
   ].filter(Boolean).length;
 
+  const filteredCards = useMemo(() => {
+    if (!searchQuery.trim()) return cards;
+    const q = searchQuery.trim().toLowerCase();
+    return cards.filter((card) => {
+      const name = (card.contact?.name ?? "").toLowerCase();
+      const phone = String(card.phone ?? "").toLowerCase();
+      return name.includes(q) || phone.includes(q);
+    });
+  }, [cards, searchQuery]);
+
   const cardsByColumn = useMemo(() => {
     return new Map(
       columns.map((column) => [
         column.id,
-        cards.filter((card) => card.column_id === column.id),
+        filteredCards.filter((card) => card.column_id === column.id),
       ]),
     );
-  }, [columns, cards]);
+  }, [columns, filteredCards]);
 
   const visibleColumns = useMemo(() => {
     if (!hideEmptyColumns) return columns;
@@ -273,6 +288,26 @@ export default function CRMPage() {
                   <EyeOff className="h-3.5 w-3.5" />
                   Ocultar vazias
                 </button>
+              )}
+              {activeTab === "pipeline" && (
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                  <Input
+                    ref={searchInputRef}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Pesquisar contato..."
+                    className="h-8 w-44 rounded-full border-border/80 bg-background/50 pl-8 pr-7 text-xs focus-visible:ring-1 focus-visible:w-56 transition-all duration-200"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
               )}
               {activeFiltersCount > 0 && (
                 <span className="crm-stat-chip">
@@ -447,7 +482,7 @@ export default function CRMPage() {
                       <KanbanBoard
                         columns={visibleColumns}
                         orderedColumnIds={columns.map((c) => c.id)}
-                        cards={cards}
+                        cards={filteredCards}
                         tags={tags}
                         onMoveCard={handleMoveCard}
                         onBulkUpdateColumnStatus={handleBulkUpdateColumnStatus}
@@ -459,12 +494,12 @@ export default function CRMPage() {
                     ) : (
                       <div className="crm-board-scroll flex-1 overflow-auto pr-4">
                         <div className="space-y-3">
-                          {cards.length === 0 ? (
+                          {filteredCards.length === 0 ? (
                             <div className="crm-panel rounded-[24px] border-dashed px-6 py-10 text-center text-sm text-muted-foreground">
                               Nenhum card encontrado com os filtros atuais.
                             </div>
                           ) : (
-                            cards
+                            filteredCards
                               .slice()
                               .sort((a, b) => {
                                 if (a.column_id === b.column_id) {
