@@ -11,26 +11,36 @@ import { KanbanBoard } from "@/components/crm/KanbanBoard";
 import { KanbanCard } from "@/components/crm/KanbanCard";
 import { TagsManager } from "@/components/crm/TagsManager";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCRMCards } from "@/hooks/useCRMCards";
 import { useCRMColumns } from "@/hooks/useCRMColumns";
 import { useCRMTags } from "@/hooks/useCRMTags";
 import { createBrowserClient } from "@/lib/supabase-browser";
-import type { ConversationStatus, CRMCard, CRMColumn, CRMFilters } from "@/lib/types";
+import type {
+  ConversationStatus,
+  CRMCard,
+  CRMColumn,
+  CRMFilters,
+} from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   BarChart3,
   EyeOff,
+  Filter,
   Kanban,
   LayoutGrid,
   List,
   Loader2,
-  Sparkles,
-  Users,
-  Zap,
+  Settings2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -48,6 +58,7 @@ export default function CRMPage() {
     "pipeline",
   );
   const [hideEmptyColumns, setHideEmptyColumns] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [editingColumn, setEditingColumn] = useState<CRMColumn | null>(null);
   const [deletingColumn, setDeletingColumn] = useState<{
     column: CRMColumn;
@@ -209,24 +220,6 @@ export default function CRMPage() {
     );
   }, [cardsByColumn, columns, hideEmptyColumns]);
 
-  const pipelineSummary = useMemo(() => {
-    const resolvedCards = cards.filter(
-      (card) => card.auto_status === "resolved",
-    );
-    const hotCards = cards.filter(
-      (card) =>
-        card.auto_status === "awaiting_attendant" ||
-        card.auto_status === "in_progress",
-    );
-
-    return {
-      totalCards: cards.length,
-      columns: columns.length,
-      resolvedCards: resolvedCards.length,
-      hotCards: hotCards.length,
-    };
-  }, [cards, columns.length]);
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-140px)]">
@@ -238,113 +231,92 @@ export default function CRMPage() {
   return (
     <div className="flex h-[calc(100vh-140px)] min-h-[720px] flex-col overflow-hidden">
       <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
-        <div className="border-b border-border/60 px-4 py-4 md:px-6 md:py-5">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-            <div className="space-y-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="crm-stat-chip">
-                  <Sparkles className="h-3.5 w-3.5 text-primary" />
-                  Pipeline premium
-                </span>
-                <span className="crm-stat-chip">
-                  <Users className="h-3.5 w-3.5 text-secondary" />
-                  {pipelineSummary.totalCards} leads
-                </span>
-                <span className="crm-stat-chip">
-                  <Zap className="h-3.5 w-3.5 text-yellow-500" />
-                  {pipelineSummary.hotCards} em movimento
-                </span>
+        {/* ── Compact header ────────────────────────────────────────── */}
+        <div className="border-b border-border/60 px-4 py-3 md:px-6">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                CRM
+              </h1>
+              <div className="crm-tab-list">
+                <button
+                  className="crm-pill-button px-4"
+                  data-active={activeTab === "pipeline"}
+                  onClick={() => setActiveTab("pipeline")}
+                >
+                  <Kanban className="h-4 w-4" />
+                  Pipeline
+                </button>
+                <button
+                  className="crm-pill-button px-4"
+                  data-active={activeTab === "analytics"}
+                  onClick={() => setActiveTab("analytics")}
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  Analytics
+                </button>
               </div>
+              {activeFiltersCount > 0 && (
+                <span className="crm-stat-chip">
+                  <Filter className="h-3.5 w-3.5 text-primary" />
+                  {activeFiltersCount} filtro{activeFiltersCount > 1 ? "s" : ""}
+                </span>
+              )}
+            </div>
 
-              <div>
-                <div className="flex items-center gap-3">
-                  <h1 className="text-3xl font-bold tracking-tight text-foreground">
-                    CRM
-                  </h1>
-                  <div className="hidden md:flex crm-tab-list">
-                    <button
-                      className="crm-pill-button px-4"
-                      data-active={activeTab === "pipeline"}
-                      onClick={() => setActiveTab("pipeline")}
-                    >
-                      <Kanban className="h-4 w-4" />
-                      Pipeline
-                    </button>
-                    <button
-                      className="crm-pill-button px-4"
-                      data-active={activeTab === "analytics"}
-                      onClick={() => setActiveTab("analytics")}
-                    >
-                      <BarChart3 className="h-4 w-4" />
-                      Analytics
-                    </button>
-                  </div>
+            {activeTab === "pipeline" && (
+              <div className="flex items-center gap-2">
+                {/* Board / List toggle */}
+                <div className="flex items-center gap-1 rounded-full border border-border/80 bg-background/30 p-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "rounded-full px-3 text-xs",
+                      viewMode === "kanban" &&
+                        "bg-primary/15 text-primary hover:bg-primary/15",
+                    )}
+                    onClick={() => setViewMode("kanban")}
+                    title="Visualização em board"
+                  >
+                    <LayoutGrid className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "rounded-full px-3 text-xs",
+                      viewMode === "list" &&
+                        "bg-primary/15 text-primary hover:bg-primary/15",
+                    )}
+                    onClick={() => setViewMode("list")}
+                    title="Visualização em lista"
+                  >
+                    <List className="h-4 w-4" />
+                  </Button>
                 </div>
-                <p className="mt-2 max-w-3xl text-sm text-muted-foreground md:text-[15px]">
-                  Organize leads, acompanhe contexto das conversas e mova o
-                  pipeline com uma interface mais densa, clara e pronta para
-                  automação.
-                </p>
-              </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:min-w-[420px]">
-              <div className="crm-panel rounded-2xl px-4 py-3">
-                <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-                  Cards
-                </p>
-                <p className="mt-2 text-2xl font-semibold text-foreground">
-                  {pipelineSummary.totalCards}
-                </p>
-              </div>
-              <div className="crm-panel rounded-2xl px-4 py-3">
-                <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-                  Colunas
-                </p>
-                <p className="mt-2 text-2xl font-semibold text-foreground">
-                  {pipelineSummary.columns}
-                </p>
-              </div>
-              <div className="crm-panel rounded-2xl px-4 py-3">
-                <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-                  Resolvidos
-                </p>
-                <p className="mt-2 text-2xl font-semibold text-foreground">
-                  {pipelineSummary.resolvedCards}
-                </p>
-              </div>
-              <div className="crm-panel rounded-2xl px-4 py-3">
-                <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-                  Filtros
-                </p>
-                <p className="mt-2 text-2xl font-semibold text-foreground">
-                  {activeFiltersCount}
-                </p>
-              </div>
-            </div>
-          </div>
+                {/* Settings gear */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full gap-1.5 text-xs border-border/80"
+                  onClick={() => setShowSettings(true)}
+                  title="Configurações do pipeline"
+                >
+                  <Settings2 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Configurar</span>
+                </Button>
 
-          <div className="mt-4 flex items-center justify-between md:hidden">
-            <div className="crm-tab-list">
-              <button
-                className="crm-pill-button px-4"
-                data-active={activeTab === "pipeline"}
-                onClick={() => setActiveTab("pipeline")}
-              >
-                <Kanban className="h-4 w-4" />
-                Pipeline
-              </button>
-              <button
-                className="crm-pill-button px-4"
-                data-active={activeTab === "analytics"}
-                onClick={() => setActiveTab("analytics")}
-              >
-                <BarChart3 className="h-4 w-4" />
-                Analytics
-              </button>
-            </div>
+                <CreateColumnDialog
+                  onCreateColumn={createColumn}
+                  disabled={!clientId}
+                />
+              </div>
+            )}
           </div>
         </div>
+        {/* ── /Compact header ───────────────────────────────────────── */}
 
         {activeTab === "analytics" && clientId && (
           <div className="crm-board-scroll flex-1 min-h-0 overflow-auto px-4 py-4 md:px-6 md:py-6">
@@ -354,98 +326,7 @@ export default function CRMPage() {
 
         {activeTab === "pipeline" && (
           <>
-            <div className="sticky top-0 z-20 border-b border-border/60 bg-transparent px-4 py-4 backdrop-blur-sm md:px-6">
-              <div className="crm-toolbar-surface rounded-[24px] px-3 py-3 md:px-4">
-                <div className="flex flex-col gap-3">
-                  <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="crm-section-label">Pipeline</span>
-                      <span className="crm-stat-chip">
-                        {hideEmptyColumns
-                          ? `${visibleColumns.length}/${pipelineSummary.columns} colunas`
-                          : `${pipelineSummary.columns} colunas`}
-                      </span>
-                      <span className="crm-stat-chip">
-                        {pipelineSummary.totalCards} cards
-                      </span>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                      {clientId && (
-                        <AutomationRulesPanel
-                          clientId={clientId}
-                          columns={columns}
-                          tags={tags}
-                        />
-                      )}
-                      <TagsManager
-                        tags={tags}
-                        onCreateTag={createTag}
-                        onDeleteTag={deleteTag}
-                        loading={tagsLoading}
-                      />
-                      <div className="flex items-center gap-1 rounded-full border border-border/80 bg-background/30 p-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className={cn(
-                            "rounded-full px-3 text-xs",
-                            hideEmptyColumns &&
-                              "bg-primary/15 text-primary hover:bg-primary/15",
-                          )}
-                          onClick={() =>
-                            setHideEmptyColumns((current) => !current)
-                          }
-                          title="Ocultar colunas vazias"
-                        >
-                          <EyeOff className="h-4 w-4 mr-1.5" />
-                          Vazias
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className={cn(
-                            "rounded-full px-3 text-xs",
-                            viewMode === "kanban" &&
-                              "bg-primary/15 text-primary hover:bg-primary/15",
-                          )}
-                          onClick={() => setViewMode("kanban")}
-                        >
-                          <LayoutGrid className="h-4 w-4 mr-1.5" />
-                          Board
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className={cn(
-                            "rounded-full px-3 text-xs",
-                            viewMode === "list" &&
-                              "bg-primary/15 text-primary hover:bg-primary/15",
-                          )}
-                          onClick={() => setViewMode("list")}
-                          title="Visualização em lista"
-                        >
-                          <List className="h-4 w-4 mr-1.5" />
-                          Lista
-                        </Button>
-                      </div>
-                      <CreateColumnDialog
-                        onCreateColumn={createColumn}
-                        disabled={!clientId}
-                      />
-                    </div>
-                  </div>
-
-                  <CRMFiltersComponent
-                    filters={filters}
-                    tags={tags}
-                    onFiltersChange={setFilters}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex-1 min-h-0 overflow-hidden px-4 pb-4 md:px-6 md:pb-6">
+            <div className="flex-1 min-h-0 overflow-hidden px-4 pb-4 pt-4 md:px-6 md:pb-6">
               {loading ? (
                 <div className="h-full pt-4">
                   <div className="flex gap-4 h-full overflow-hidden">
@@ -466,7 +347,7 @@ export default function CRMPage() {
                 </div>
               ) : (
                 <>
-                  <div className="md:hidden flex-1 flex flex-col min-h-0 pt-4">
+                  <div className="md:hidden flex-1 flex flex-col min-h-0">
                     {visibleColumns.length === 0 ? (
                       <div className="crm-panel flex flex-1 items-center justify-center rounded-[24px] border-dashed p-8 text-center text-sm text-muted-foreground">
                         Nenhuma coluna encontrada. Crie a primeira etapa do
@@ -601,14 +482,14 @@ export default function CRMPage() {
                                             column?.color === "red"
                                               ? "linear-gradient(180deg,#ef4444,#7f1d1d)"
                                               : column?.color === "blue"
-                                                ? "linear-gradient(180deg,#3b82f6,#1d4ed8)"
-                                                : column?.color === "green" ||
-                                                    column?.color === "mint"
-                                                  ? "linear-gradient(180deg,#10b981,#047857)"
-                                                  : column?.color === "gold" ||
-                                                      column?.color === "yellow"
-                                                    ? "linear-gradient(180deg,#f59e0b,#b45309)"
-                                                    : "linear-gradient(180deg,#14b8a6,#2563eb)",
+                                              ? "linear-gradient(180deg,#3b82f6,#1d4ed8)"
+                                              : column?.color === "green" ||
+                                                column?.color === "mint"
+                                              ? "linear-gradient(180deg,#10b981,#047857)"
+                                              : column?.color === "gold" ||
+                                                column?.color === "yellow"
+                                              ? "linear-gradient(180deg,#f59e0b,#b45309)"
+                                              : "linear-gradient(180deg,#14b8a6,#2563eb)",
                                         }}
                                       />
 
@@ -648,47 +529,39 @@ export default function CRMPage() {
                                                   tag.color === "blue"
                                                     ? "#3b82f6"
                                                     : tag.color === "green"
-                                                      ? "#22c55e"
-                                                      : tag.color === "red"
-                                                        ? "#ef4444"
-                                                        : tag.color === "yellow"
-                                                          ? "#eab308"
-                                                          : tag.color ===
-                                                              "purple"
-                                                            ? "#a855f7"
-                                                            : tag.color ===
-                                                                "pink"
-                                                              ? "#ec4899"
-                                                              : tag.color ===
-                                                                  "orange"
-                                                                ? "#f97316"
-                                                                : tag.color ===
-                                                                    "cyan"
-                                                                  ? "#06b6d4"
-                                                                  : "#6b7280"
+                                                    ? "#22c55e"
+                                                    : tag.color === "red"
+                                                    ? "#ef4444"
+                                                    : tag.color === "yellow"
+                                                    ? "#eab308"
+                                                    : tag.color === "purple"
+                                                    ? "#a855f7"
+                                                    : tag.color === "pink"
+                                                    ? "#ec4899"
+                                                    : tag.color === "orange"
+                                                    ? "#f97316"
+                                                    : tag.color === "cyan"
+                                                    ? "#06b6d4"
+                                                    : "#6b7280"
                                                 }20`,
                                                 borderColor: `${
                                                   tag.color === "blue"
                                                     ? "#3b82f6"
                                                     : tag.color === "green"
-                                                      ? "#22c55e"
-                                                      : tag.color === "red"
-                                                        ? "#ef4444"
-                                                        : tag.color === "yellow"
-                                                          ? "#eab308"
-                                                          : tag.color ===
-                                                              "purple"
-                                                            ? "#a855f7"
-                                                            : tag.color ===
-                                                                "pink"
-                                                              ? "#ec4899"
-                                                              : tag.color ===
-                                                                  "orange"
-                                                                ? "#f97316"
-                                                                : tag.color ===
-                                                                    "cyan"
-                                                                  ? "#06b6d4"
-                                                                  : "#6b7280"
+                                                    ? "#22c55e"
+                                                    : tag.color === "red"
+                                                    ? "#ef4444"
+                                                    : tag.color === "yellow"
+                                                    ? "#eab308"
+                                                    : tag.color === "purple"
+                                                    ? "#a855f7"
+                                                    : tag.color === "pink"
+                                                    ? "#ec4899"
+                                                    : tag.color === "orange"
+                                                    ? "#f97316"
+                                                    : tag.color === "cyan"
+                                                    ? "#06b6d4"
+                                                    : "#6b7280"
                                                 }33`,
                                                 color:
                                                   tag.color === "yellow"
@@ -742,6 +615,82 @@ export default function CRMPage() {
         columnName={deletingColumn?.column.name || ""}
         cardCount={deletingColumn?.cardCount || 0}
       />
+
+      {/* ── Settings modal ──────────────────────────────────────────── */}
+      <Dialog open={showSettings} onOpenChange={setShowSettings}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings2 className="h-4 w-4" />
+              Configurações do Pipeline
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-5 pt-2">
+            {/* Filters */}
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Filtros
+              </p>
+              <CRMFiltersComponent
+                filters={filters}
+                tags={tags}
+                onFiltersChange={setFilters}
+              />
+            </div>
+
+            {/* Display options */}
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Exibição
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "w-full justify-start gap-2 rounded-xl",
+                  hideEmptyColumns &&
+                    "border-primary/40 bg-primary/10 text-primary",
+                )}
+                onClick={() => setHideEmptyColumns((current) => !current)}
+              >
+                <EyeOff className="h-4 w-4" />
+                {hideEmptyColumns
+                  ? "Mostrar colunas vazias"
+                  : "Ocultar colunas vazias"}
+              </Button>
+            </div>
+
+            {/* Tags */}
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Tags
+              </p>
+              <TagsManager
+                tags={tags}
+                onCreateTag={createTag}
+                onDeleteTag={deleteTag}
+                loading={tagsLoading}
+              />
+            </div>
+
+            {/* Automations */}
+            {clientId && (
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Automações
+                </p>
+                <AutomationRulesPanel
+                  clientId={clientId}
+                  columns={columns}
+                  tags={tags}
+                />
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+      {/* ── /Settings modal ─────────────────────────────────────────── */}
     </div>
   );
 }
