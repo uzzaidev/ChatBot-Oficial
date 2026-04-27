@@ -8,6 +8,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-27
 
+### fix
+- Atualizadas referências das colunas nos componentes `CRMPage` e `KanbanBoard` para corrigir inconsistências no uso das props `columns` e `allColumns`.
+  - Arquivos: `src/app/dashboard/crm/page.tsx`, `src/components/crm/KanbanBoard.tsx`
+  - Evidência: ajuste direto nas props passadas e uso condicional de `allColumns` no KanbanBoard
+  - Confiança: alta
+
+## 2026-04-27
+
 ### feat
 - Adicionada funcionalidade de busca na página CRM para filtrar contatos por nome ou telefone. Inclui campo de input com ícone de busca e botão para limpar o filtro.
 - Ajustado o filtro dos cards exibidos para considerar a busca, atualizando a lista exibida em tempo real.
