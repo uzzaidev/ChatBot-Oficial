@@ -8,6 +8,28 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-27
 
+### refactor
+- Melhorado layout e estilos nos componentes do CRM para maior responsividade e consistência, ajustando classes CSS e estrutura flexível
+  - Arquivos: `src/app/dashboard/crm/loading.tsx`, `src/app/dashboard/crm/page.tsx`
+  - Confiança: alta
+
+### refactor
+- Ajustada densidade e base de fonte global para 14px, refinando estilos CSS para melhor aparência e consistência visual
+  - Arquivos: `src/app/globals.css`
+  - Confiança: alta
+
+### refactor
+- Atualizado layout do Dashboard para compactar sidebar e header, reduzindo larguras e alturas, e ajustando espaçamentos e tipografia para melhor usabilidade e visual mais enxuto
+  - Arquivos: `src/components/DashboardLayoutClient.tsx`
+  - Confiança: alta
+
+### refactor
+- Refinado componente de navegação do dashboard: ajustado espaçamentos, ocultação de subitens em modo colapsado e renomeado item de menu "Base de Conhecimento" para "Documentos"
+  - Arquivos: `src/components/DashboardNavigation.tsx`
+  - Confiança: alta
+
+## 2026-04-27
+
 ### feat
 - Adicionado modal de configurações ao pipeline CRM com filtros, opções de exibição, gerenciamento de tags e painel de automações; aprimorada interface da página CRM com cabeçalho compacto, botões de alternância de visualização e botão de acesso rápido às configurações.
 - Refatorado layout do cabeçalho e removidos painéis de resumo antigos para simplificar a interface e melhorar usabilidade.
