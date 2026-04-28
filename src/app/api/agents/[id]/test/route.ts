@@ -130,8 +130,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         formatterPrompt: compiledFormatterPrompt || undefined,
       },
       models: {
-        openaiModel:
-          mergedAgent.openai_model || baseConfig.models.openaiModel,
+        openaiModel: mergedAgent.openai_model || baseConfig.models.openaiModel,
         groqModel: mergedAgent.groq_model || baseConfig.models.groqModel,
       },
       primaryProvider:
@@ -139,8 +138,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         baseConfig.primaryProvider,
       settings: {
         ...baseConfig.settings,
-        temperature:
-          mergedAgent.temperature ?? baseConfig.settings.temperature,
+        temperature: mergedAgent.temperature ?? baseConfig.settings.temperature,
         maxTokens: mergedAgent.max_tokens ?? baseConfig.settings.maxTokens,
         maxInputTokens:
           mergedAgent.max_input_tokens ?? baseConfig.settings.maxInputTokens,
@@ -151,8 +149,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           mergedAgent.max_knowledge_tokens ??
           baseConfig.settings.maxKnowledgeTokens,
         reasoningEffort:
-          mergedAgent.reasoning_effort ??
-          baseConfig.settings.reasoningEffort,
+          mergedAgent.reasoning_effort ?? baseConfig.settings.reasoningEffort,
         enableTools:
           mergedAgent.enable_tools ?? baseConfig.settings.enableTools,
         enableRAG: mergedAgent.enable_rag ?? baseConfig.settings.enableRAG,
@@ -172,7 +169,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     };
 
     // Load chat history (real conversation OR in-modal turns)
-    let chatHistory: Array<{ role: "user" | "assistant" | "system"; content: string; timestamp?: string }> = [];
+    let chatHistory: Array<{
+      role: "user" | "assistant" | "system";
+      content: string;
+      timestamp?: string;
+    }> = [];
     let historySource: "selected_conversation" | "in_modal" | "none" = "none";
     let historyMessageCount = 0;
 
@@ -206,6 +207,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // RAG context (only if enabled in agent config)
     let ragContext = "";
     let ragChunkCount = 0;
+    let ragChunks: Array<{ snippet: string; similarity: number | null }> = [];
     if (config.settings.enableRAG) {
       try {
         const ragResult = await getRAGContextWithTrace({
@@ -215,6 +217,21 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         });
         ragContext = ragResult.context;
         ragChunkCount = ragResult.traceData?.chunkIds.length || 0;
+
+        // Parse chunks from the context string for hover preview
+        if (ragContext) {
+          const blocks = ragContext.split("\n\n---\n\n");
+          const scores = ragResult.traceData?.similarityScores || [];
+          ragChunks = blocks.map((block, i) => {
+            // Strip the "[Documento N - Relevancia: X%]" header line
+            const stripped = block
+              .replace(/^\[Documento[^\]]+\]\s*/, "")
+              .trim();
+            const snippet =
+              stripped.length > 600 ? stripped.slice(0, 600) + "…" : stripped;
+            return { snippet, similarity: scores[i] ?? null };
+          });
+        }
       } catch (err) {
         console.warn("[test-agent] RAG lookup failed:", err);
       }
@@ -226,8 +243,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       message,
       chatHistory,
       ragContext,
-      customerName:
-        historyPhone || mergedAgent.name || "Cliente Teste",
+      customerName: historyPhone || mergedAgent.name || "Cliente Teste",
       contactMetadata: undefined,
       config,
       includeDateTimeInfo: true,
@@ -249,7 +265,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         historyMessageCount,
         ragEnabled: config.settings.enableRAG,
         ragChunkCount,
+        ragChunks,
         toolsEnabled: config.settings.enableTools,
+        toolCallNames: Array.isArray(aiResponse.toolCalls)
+          ? aiResponse.toolCalls
+              .map((tc: { function?: { name?: string } }) => tc?.function?.name)
+              .filter((n): n is string => Boolean(n))
+          : [],
         primaryProvider: config.primaryProvider,
         modelUsed:
           config.primaryProvider === "groq"
@@ -295,8 +317,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       ) {
         return NextResponse.json(
           {
-            error:
-              "Limite de requisições atingido. Aguarde alguns segundos.",
+            error: "Limite de requisições atingido. Aguarde alguns segundos.",
           },
           { status: 429 },
         );
@@ -310,10 +331,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           { status: 422 },
         );
       }
-      return NextResponse.json(
-        { error: msg },
-        { status: 500 },
-      );
+      return NextResponse.json({ error: msg }, { status: 500 });
     }
 
     return NextResponse.json(

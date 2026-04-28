@@ -529,10 +529,12 @@ export const AgentEditorModal = ({
     historyMessageCount?: number;
     ragEnabled?: boolean;
     ragChunkCount?: number;
+    ragChunks?: Array<{ snippet: string; similarity: number | null }>;
     toolsEnabled?: boolean;
     modelUsed?: string;
     primaryProvider?: string;
     toolCalls?: number;
+    toolCallNames?: string[];
     latencyMs?: number;
   } | null>(null);
 
@@ -813,6 +815,16 @@ export const AgentEditorModal = ({
         setTestLastMeta({
           ...(data.meta || {}),
           toolCalls: Array.isArray(data.toolCalls) ? data.toolCalls.length : 0,
+          toolCallNames:
+            data.meta?.toolCallNames ||
+            (Array.isArray(data.toolCalls)
+              ? data.toolCalls
+                  .map(
+                    (tc: { function?: { name?: string } }) =>
+                      tc?.function?.name,
+                  )
+                  .filter((n: string | undefined): n is string => Boolean(n))
+              : []),
           latencyMs: data.latencyMs,
         });
       } else {
@@ -2455,15 +2467,84 @@ export const AgentEditorModal = ({
                         </span>
                       )}
                     {testLastMeta.ragEnabled && (
-                      <span>
-                        <span className="text-muted-foreground">RAG:</span>{" "}
-                        {testLastMeta.ragChunkCount || 0} chunks
-                      </span>
+                      <TooltipProvider delayDuration={150}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span
+                              className={
+                                (testLastMeta.ragChunks?.length ?? 0) > 0
+                                  ? "cursor-help underline decoration-dotted"
+                                  : ""
+                              }
+                            >
+                              <span className="text-muted-foreground">
+                                RAG:
+                              </span>{" "}
+                              {testLastMeta.ragChunkCount || 0} chunks
+                            </span>
+                          </TooltipTrigger>
+                          {testLastMeta.ragChunks &&
+                            testLastMeta.ragChunks.length > 0 && (
+                              <TooltipContent
+                                side="bottom"
+                                className="max-w-md max-h-[400px] overflow-y-auto"
+                              >
+                                <div className="space-y-2 text-xs">
+                                  {testLastMeta.ragChunks.map((c, i) => (
+                                    <div
+                                      key={i}
+                                      className="border-b border-border/40 pb-2 last:border-0"
+                                    >
+                                      <div className="font-medium text-[11px] mb-1">
+                                        Chunk {i + 1}
+                                        {c.similarity !== null && (
+                                          <span className="ml-2 text-muted-foreground">
+                                            ({(c.similarity * 100).toFixed(1)}%)
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="whitespace-pre-wrap text-[11px] leading-relaxed">
+                                        {c.snippet}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </TooltipContent>
+                            )}
+                        </Tooltip>
+                      </TooltipProvider>
                     )}
                     {!!testLastMeta.toolCalls && testLastMeta.toolCalls > 0 && (
-                      <span className="text-amber-600 dark:text-amber-400">
-                        🔧 {testLastMeta.toolCalls} tool call(s)
-                      </span>
+                      <TooltipProvider delayDuration={150}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="text-amber-600 dark:text-amber-400 cursor-help">
+                              🔧 {testLastMeta.toolCalls} tool call(s)
+                              {testLastMeta.toolCallNames &&
+                                testLastMeta.toolCallNames.length > 0 && (
+                                  <span className="ml-1">
+                                    :{" "}
+                                    <code className="text-[11px]">
+                                      {testLastMeta.toolCallNames.join(", ")}
+                                    </code>
+                                  </span>
+                                )}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="max-w-xs">
+                            <p className="text-xs">
+                              {testLastMeta.toolCallNames?.join(", ") ||
+                                "tool call"}
+                              <br />
+                              <span className="text-muted-foreground">
+                                Tools são detectadas mas não executadas no modo
+                                teste (sem efeitos colaterais como envio de
+                                mídia ou transferência humana).
+                              </span>
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     )}
                   </div>
                 )}
