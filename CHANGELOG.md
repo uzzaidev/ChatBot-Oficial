@@ -9,6 +9,13 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-28
 
 ### feat
+- Melhorada a tipagem de `contactMetadata` na requisição POST para maior segurança de tipos
+  - Arquivos: `src/app/api/agents/[id]/test/route.ts`
+  - Confiança: alta
+
+## 2026-04-28
+
+### feat
 - Implementado suporte para exibição de anexos (imagens, PDFs e outros arquivos) nas mensagens do chat de teste do agente no modal AgentEditorModal.
 - No endpoint de teste do agente, adicionada execução segura de chamadas a ferramentas de leitura (ex: buscar_documento) para pré-visualização de documentos e anexos, incluindo coleta de metadados reais do cliente para contexto mais fiel.
 - Alterações incluem captura e retorno de anexos e resultados das ferramentas executadas no JSON de resposta da API de teste.
