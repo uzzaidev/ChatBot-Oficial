@@ -9,6 +9,17 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-28
 
 ### feat
+- Adicionados novos modelos OpenAI da série GPT-5.x e variantes ao sistema, incluindo GPT-5.5, GPT-5.4, GPT-5.2, GPT-5.1, e suas versões Pro, Mini e Nano, além do modelo legado "o3".
+- Atualizada a lógica de raciocínio (reasoning) no cliente Direct AI para suportar os novos modelos, com regras específicas para níveis de esforço de raciocínio aceitos por cada modelo.
+- Implementado controle de orçamento mínimo de tokens de saída para modelos com raciocínio, prevenindo respostas vazias ao ajustar automaticamente `maxTokens` quando necessário.
+- Adicionada detecção e tratamento de cenários onde o modelo consome todo o orçamento de tokens em raciocínio sem gerar saída visível, lançando erro para evitar respostas vazias.
+- Atualizadas interfaces de seleção de modelos no editor de agentes e propriedades de geração de resposta para incluir os novos modelos e suas descrições detalhadas.
+  - Arquivos: `src/lib/direct-ai-client.ts`, `src/components/agents/AgentEditor.tsx`, `src/components/agents/AgentEditorModal.tsx`, `src/components/flow-architecture/properties/GenerateResponseProperties.tsx`, `src/components/FlowArchitectureManager.tsx`
+  - Confiança: alta
+
+## 2026-04-28
+
+### feat
 - Adicionados novos modelos OpenAI ("gpt-5.4-nano", "gpt-5-nano") e expandidas opções de esforço de raciocínio para agentes (incluindo "none", "minimal" e "xhigh").
 - Atualizada interface e componentes para suportar seleção dos novos modelos e níveis de raciocínio no editor de agentes e propriedades de geração de resposta.
 - Melhorias no componente FlowArchitectureManager para visualização e edição dos nodes do fluxo, incluindo organização e ordenação aprimorada dos campos de configuração, suporte a múltiplos tipos de dados, e refinamento da renderização do diagrama Mermaid com rotas de bypass.
