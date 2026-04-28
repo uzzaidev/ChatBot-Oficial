@@ -758,17 +758,35 @@ export const AgentEditor = ({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="gpt-5.4-nano">
-                        GPT-5.4 Nano (Ultra rápido — novo)
+                      <SelectItem value="gpt-5.5">
+                        GPT-5.5 (Frontier)
                       </SelectItem>
-                      <SelectItem value="gpt-5-nano">
-                        GPT-5 Nano (Novo)
+                      <SelectItem value="gpt-5.5-pro">
+                        GPT-5.5 Pro (Responses API)
                       </SelectItem>
-                      <SelectItem value="gpt-4o">
-                        GPT-4o (Recomendado)
+                      <SelectItem value="gpt-5.4">GPT-5.4</SelectItem>
+                      <SelectItem value="gpt-5.4-pro">
+                        GPT-5.4 Pro (Responses API)
                       </SelectItem>
-                      <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
+                      <SelectItem value="gpt-5.4-mini">GPT-5.4 Mini</SelectItem>
+                      <SelectItem value="gpt-5.4-nano">GPT-5.4 Nano</SelectItem>
+                      <SelectItem value="gpt-5.2">GPT-5.2</SelectItem>
+                      <SelectItem value="gpt-5.1">GPT-5.1 (Coding)</SelectItem>
+                      <SelectItem value="gpt-5">GPT-5</SelectItem>
+                      <SelectItem value="gpt-5-mini">GPT-5 Mini</SelectItem>
+                      <SelectItem value="gpt-5-nano">GPT-5 Nano</SelectItem>
+                      <SelectItem value="gpt-4.1">
+                        GPT-4.1 (Sem reasoning)
+                      </SelectItem>
+                      <SelectItem value="gpt-4.1-mini">
+                        GPT-4.1 Mini (Sem reasoning)
+                      </SelectItem>
+                      <SelectItem value="gpt-4o">GPT-4o (Legado)</SelectItem>
+                      <SelectItem value="gpt-4o-mini">
+                        GPT-4o Mini (Legado)
+                      </SelectItem>
                       <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
+                      <SelectItem value="o3">o3 (Reasoning legado)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

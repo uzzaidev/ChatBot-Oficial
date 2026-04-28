@@ -156,17 +156,105 @@ const normalizeToolCalls = (
     .filter(Boolean) as any;
 };
 
+// Models that are explicitly NON-reasoning (must never receive reasoning_effort)
+const NON_REASONING_MODELS = new Set([
+  "gpt-4.1",
+  "gpt-4.1-mini",
+  "gpt-4o",
+  "gpt-4o-mini",
+  "gpt-4-turbo",
+  "gpt-4",
+  "gpt-3.5-turbo",
+]);
+
 const supportsReasoningEffort = (provider: string, model: string): boolean => {
-  if (provider !== "openai") {
-    return false;
+  if (provider !== "openai") return false;
+  const n = model.toLowerCase();
+  if (NON_REASONING_MODELS.has(n)) return false;
+  // All gpt-5.x and gpt-5-* models support reasoning
+  if (n.startsWith("gpt-5")) return true;
+  // Classic o-series reasoning models
+  if (n.startsWith("o1") || n.startsWith("o3") || n.startsWith("o4"))
+    return true;
+  return false;
+};
+
+/**
+ * Returns a reasoning_effort value that is valid for the given model.
+ * Some models only accept a subset of the 6 possible values.
+ *
+ * Per official docs:
+ * - gpt-5.4-pro / gpt-5.5-pro : medium, high, xhigh  (no none/minimal/low)
+ * - gpt-5.1                   : none, low, medium, high  (no minimal/xhigh)
+ * - gpt-5 / gpt-5-mini / gpt-5-nano : minimal, low, medium, high  (no none/xhigh)
+ * - gpt-5.5 / gpt-5.4 / gpt-5.2    : none, low, medium, high, xhigh  (all except minimal)
+ * - o1 / o3 / o4-*            : low, medium, high  (classic o-series)
+ */
+const getEffectiveReasoningEffort = (model: string, effort: string): string => {
+  const n = model.toLowerCase();
+
+  // gpt-5.4-pro / gpt-5.5-pro: medium, high, xhigh ONLY
+  if (n.startsWith("gpt-5.4-pro") || n.startsWith("gpt-5.5-pro")) {
+    if (["none", "minimal", "low"].includes(effort)) {
+      console.warn(
+        `[Direct AI] ${model} only supports medium/high/xhigh reasoning_effort. Clamping "${effort}" → "medium"`,
+      );
+      return "medium";
+    }
+    return effort;
   }
-  const normalized = model.toLowerCase();
-  return (
-    normalized.startsWith("gpt-5") ||
-    normalized.startsWith("o1") ||
-    normalized.startsWith("o3") ||
-    normalized.startsWith("o4")
-  );
+
+  // gpt-5.1: none (default), low, medium, high — no minimal, no xhigh
+  if (n.startsWith("gpt-5.1")) {
+    if (effort === "minimal") return "low";
+    if (effort === "xhigh") {
+      console.warn(
+        `[Direct AI] ${model} does not support "xhigh". Clamping → "high"`,
+      );
+      return "high";
+    }
+    return effort;
+  }
+
+  // gpt-5 base family (gpt-5, gpt-5-mini, gpt-5-nano): minimal, low, medium, high — no none, no xhigh
+  if (n === "gpt-5" || n.startsWith("gpt-5-")) {
+    if (effort === "none") return "minimal";
+    if (effort === "xhigh") {
+      console.warn(
+        `[Direct AI] ${model} does not support "xhigh". Clamping → "high"`,
+      );
+      return "high";
+    }
+    return effort;
+  }
+
+  // Classic o-series (o1, o3, o4-mini): low, medium, high
+  if (n.startsWith("o1") || n.startsWith("o3") || n.startsWith("o4")) {
+    if (effort === "none" || effort === "minimal") return "low";
+    if (effort === "xhigh") return "high";
+    return effort;
+  }
+
+  // gpt-5.5, gpt-5.4, gpt-5.2 and all others: full range except minimal
+  if (effort === "minimal") return "low";
+  return effort;
+};
+
+/**
+ * Minimum recommended output tokens per reasoning_effort level.
+ * Context window management: reasoning tokens count toward the output token budget.
+ * If maxTokens is too low, the model may exhaust the budget on reasoning alone,
+ * leaving no tokens for the actual visible response.
+ *
+ * Reference: https://developers.openai.com/api/docs/guides/reasoning
+ */
+const MIN_OUTPUT_TOKENS_FOR_REASONING: Record<string, number> = {
+  none: 0, // no reasoning tokens generated
+  minimal: 1_500, // a few hundred reasoning tokens expected
+  low: 4_000, // up to a few thousand reasoning tokens
+  medium: 10_000, // moderate reasoning — can be several thousand tokens
+  high: 20_000, // heavy reasoning — can reach tens of thousands
+  xhigh: 50_000, // maximum reasoning — may use 50k+ tokens
 };
 
 // =====================================================
@@ -253,20 +341,49 @@ export const callDirectAI = async (
     };
 
     // Add optional parameters only if defined
-    // gpt-5-nano uses reasoning — temperature is not a supported parameter
     const isReasoningModel = supportsReasoningEffort(provider, model);
+
+    // Temperature: reasoning models do not accept this parameter
     if (config.settings?.temperature !== undefined && !isReasoningModel) {
       generateParams.temperature = config.settings.temperature;
     }
+
     if (isReasoningModel) {
+      const rawEffort = config.settings?.reasoningEffort || "low";
+      const effectiveEffort = getEffectiveReasoningEffort(model, rawEffort);
+
       generateParams.providerOptions = {
         openai: {
-          reasoningEffort: config.settings?.reasoningEffort || "low",
+          reasoningEffort: effectiveEffort,
         },
       };
-    }
-    if (config.settings?.maxTokens !== undefined) {
-      generateParams.maxTokens = config.settings.maxTokens;
+
+      // Context window management: reasoning tokens count toward the output budget.
+      // If maxTokens is set too low, the model may spend the entire budget on
+      // reasoning tokens with nothing left for the visible response.
+      // Reference: https://developers.openai.com/api/docs/guides/reasoning
+      const minTokens =
+        MIN_OUTPUT_TOKENS_FOR_REASONING[effectiveEffort] ?? 4_000;
+
+      if (config.settings?.maxTokens !== undefined) {
+        if (config.settings.maxTokens < minTokens) {
+          console.warn(
+            `[Direct AI] maxTokens (${config.settings.maxTokens}) may be too low for ` +
+              `${model} with reasoning_effort="${effectiveEffort}". ` +
+              `Reasoning tokens alone can consume ${minTokens}+ tokens. ` +
+              `Setting maxTokens to ${minTokens} to avoid empty responses.`,
+          );
+          generateParams.maxTokens = minTokens;
+        } else {
+          generateParams.maxTokens = config.settings.maxTokens;
+        }
+      }
+      // If maxTokens is not set for reasoning models, do NOT default it —
+      // let the API decide based on the model's context window.
+    } else {
+      if (config.settings?.maxTokens !== undefined) {
+        generateParams.maxTokens = config.settings.maxTokens;
+      }
     }
     if (config.settings?.topP !== undefined) {
       generateParams.topP = config.settings.topP;
@@ -293,6 +410,63 @@ export const callDirectAI = async (
     const promptTokens = usage.promptTokens || 0;
     const completionTokens = usage.completionTokens || 0;
     const totalTokens = usage.totalTokens || promptTokens + completionTokens;
+
+    // Extract reasoning tokens if reported by the model (gpt-5.x / o-series)
+    const reasoningTokens: number =
+      usage?.reasoningTokens ||
+      usage?.output_tokens_details?.reasoning_tokens ||
+      (result as any)?.providerMetadata?.openai?.reasoningTokens ||
+      0;
+    if (reasoningTokens > 0) {
+      const visibleTokens = completionTokens - reasoningTokens;
+      console.log(
+        `[Direct AI] Reasoning tokens: ${reasoningTokens} | Visible output tokens: ${visibleTokens}`,
+      );
+    }
+
+    // Detect "reasoning consumed all tokens" scenario.
+    // Per OpenAI docs (reasoning-best-practices): when finishReason is "length"
+    // on a reasoning model, the model may have spent the entire output token
+    // budget on reasoning tokens before generating any visible text. The caller
+    // incurs costs for input + reasoning tokens with zero visible response.
+    // Reference: https://developers.openai.com/api/docs/guides/reasoning-best-practices
+    if (isReasoningModel && result.finishReason === "length") {
+      const visibleText = result.text?.trim() ?? "";
+      if (visibleText.length === 0) {
+        const currentMax =
+          generateParams.maxTokens ?? config.settings?.maxTokens ?? "not set";
+        const effectiveEffort =
+          generateParams.providerOptions?.openai?.reasoningEffort ?? "unknown";
+        const minSuggested =
+          MIN_OUTPUT_TOKENS_FOR_REASONING[effectiveEffort] ?? 4_000;
+
+        console.error(
+          `[Direct AI] REASONING BUDGET EXHAUSTED — ${model} (effort="${effectiveEffort}") ` +
+            `used all ${currentMax} output tokens on reasoning tokens before producing any visible output. ` +
+            `Reasoning tokens used: ${reasoningTokens}. ` +
+            `Suggestion: increase maxTokens to at least ${
+              minSuggested * 2
+            } for this effort level.`,
+        );
+
+        throw new Error(
+          `O modelo ${model} esgotou o orçamento de tokens (${currentMax}) gerando tokens de raciocínio ` +
+            `antes de produzir qualquer resposta visível. ` +
+            `Aumente max_tokens para pelo menos ${
+              minSuggested * 2
+            } ou reduza o reasoning_effort de "${effectiveEffort}".`,
+        );
+      }
+
+      // Partial visible output — warn but don't throw; caller receives what was generated
+      console.warn(
+        `[Direct AI] INCOMPLETE RESPONSE — ${model} hit maxTokens (${
+          generateParams.maxTokens ?? config.settings?.maxTokens ?? "not set"
+        }) ` +
+          `with ${result.text?.length ?? 0} chars of visible output. ` +
+          `Reasoning tokens: ${reasoningTokens}. Response may be truncated.`,
+      );
+    }
 
     // 10. Log usage (async, non-blocking)
     if (!config.skipUsageLogging) {

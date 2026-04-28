@@ -53,37 +53,101 @@ import { useEffect, useState } from "react";
 // =====================================================
 
 const OPENAI_MODELS = [
+  // ── GPT-5.x generation (reasoning) ──────────────────────────────────────
+  {
+    value: "gpt-5.5",
+    label: "GPT-5.5",
+    description: "Frontier — reasoning: none/low/medium/high/xhigh",
+  },
+  {
+    value: "gpt-5.5-pro",
+    label: "GPT-5.5 Pro",
+    description: "Frontier pro — reasoning: medium/high/xhigh (Responses API)",
+  },
+  {
+    value: "gpt-5.4",
+    label: "GPT-5.4",
+    description: "Alta capacidade — reasoning: none/low/medium/high/xhigh",
+  },
+  {
+    value: "gpt-5.4-pro",
+    label: "GPT-5.4 Pro",
+    description: "Pro — reasoning: medium/high/xhigh (Responses API)",
+  },
+  {
+    value: "gpt-5.4-mini",
+    label: "GPT-5.4 Mini",
+    description: "Mini rápido — reasoning tokens",
+  },
   {
     value: "gpt-5.4-nano",
     label: "GPT-5.4 Nano",
-    description: "Ultra rápido e econômico — novo",
+    description: "Ultra rápido — reasoning tokens",
+  },
+  {
+    value: "gpt-5.2",
+    label: "GPT-5.2",
+    description: "Anterior frontier — reasoning: none/low/medium/high/xhigh",
+  },
+  {
+    value: "gpt-5.1",
+    label: "GPT-5.1",
+    description: "Coding e agentes — reasoning: none/low/medium/high",
+  },
+  {
+    value: "gpt-5",
+    label: "GPT-5",
+    description: "Base GPT-5 — reasoning: minimal/low/medium/high",
+  },
+  {
+    value: "gpt-5-mini",
+    label: "GPT-5 Mini",
+    description: "Mini econômico — reasoning tokens",
   },
   {
     value: "gpt-5-nano",
     label: "GPT-5 Nano",
-    description: "Nano de nova geração — novo",
+    description: "Nano de nova geração — reasoning tokens",
+  },
+  // ── Non-reasoning models ─────────────────────────────────────────────────
+  {
+    value: "gpt-4.1",
+    label: "GPT-4.1",
+    description: "Sem reasoning — alta instrução, inteligência + custo",
+  },
+  {
+    value: "gpt-4.1-mini",
+    label: "GPT-4.1 Mini",
+    description: "Sem reasoning — baixo custo",
   },
   {
     value: "gpt-4o",
     label: "GPT-4o",
-    description: "Mais inteligente e rápido",
+    description: "Legado — sem reasoning",
   },
   {
     value: "gpt-4o-mini",
     label: "GPT-4o Mini",
-    description: "Econômico e eficiente",
+    description: "Legado mini — sem reasoning",
   },
   {
     value: "gpt-4-turbo",
     label: "GPT-4 Turbo",
-    description: "Alta capacidade",
+    description: "Legado — alta capacidade",
   },
-  { value: "gpt-4", label: "GPT-4", description: "Modelo clássico" },
+  { value: "gpt-4", label: "GPT-4", description: "Legado — modelo clássico" },
   {
     value: "gpt-3.5-turbo",
     label: "GPT-3.5 Turbo",
-    description: "Rápido e barato",
+    description: "Legado — rápido e barato",
   },
+  // ── o-series reasoning (Chat Completions) ───────────────────────────────
+  {
+    value: "o3",
+    label: "o3",
+    description: "Reasoning legado — math/ciência/código",
+  },
+  // o3-pro is Responses API only — excluded from Chat Completions
 ] as const;
 
 const GROQ_MODELS = [
