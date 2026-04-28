@@ -519,6 +519,22 @@ export const AgentEditorModal = ({
   const [testMessages, setTestMessages] = useState<TestChatMessage[]>([]);
   const [testInput, setTestInput] = useState("");
   const [testLoading, setTestLoading] = useState(false);
+  const [testHistoryPhone, setTestHistoryPhone] = useState<string>("");
+  const [testConversations, setTestConversations] = useState<
+    Array<{ phone: string; name: string | null; message_count: number }>
+  >([]);
+  const [testLoadingConvos, setTestLoadingConvos] = useState(false);
+  const [testLastMeta, setTestLastMeta] = useState<{
+    historySource?: string;
+    historyMessageCount?: number;
+    ragEnabled?: boolean;
+    ragChunkCount?: number;
+    toolsEnabled?: boolean;
+    modelUsed?: string;
+    primaryProvider?: string;
+    toolCalls?: number;
+    latencyMs?: number;
+  } | null>(null);
 
   // Version history state
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -736,16 +752,41 @@ export const AgentEditorModal = ({
     }
   };
 
+  // Load conversations for the test tab selector (one-shot, when modal opens)
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    const loadConvos = async () => {
+      setTestLoadingConvos(true);
+      try {
+        const res = await apiFetch("/api/conversations?limit=100");
+        const data = await res.json();
+        if (!cancelled && res.ok) {
+          setTestConversations(data.conversations || []);
+        }
+      } catch (err) {
+        console.warn("Failed to load conversations for test tab", err);
+      } finally {
+        if (!cancelled) setTestLoadingConvos(false);
+      }
+    };
+    loadConvos();
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
   // Handle test message
   const handleSendTest = async () => {
     if (!testInput.trim() || !agent?.id) return;
 
     const userMessage = testInput.trim();
     setTestInput("");
-    setTestMessages((prev) => [
-      ...prev,
+    const updatedMessages: TestChatMessage[] = [
+      ...testMessages,
       { role: "user", content: userMessage },
-    ]);
+    ];
+    setTestMessages(updatedMessages);
     setTestLoading(true);
 
     try {
@@ -754,6 +795,11 @@ export const AgentEditorModal = ({
         body: JSON.stringify({
           message: userMessage,
           liveConfig: formData,
+          historyPhone: testHistoryPhone || undefined,
+          // When no real-conversation history is selected, chain in-modal turns
+          clientHistory: testHistoryPhone
+            ? undefined
+            : testMessages.map((m) => ({ role: m.role, content: m.content })),
         }),
       });
 
@@ -764,6 +810,11 @@ export const AgentEditorModal = ({
           ...prev,
           { role: "assistant", content: data.response },
         ]);
+        setTestLastMeta({
+          ...(data.meta || {}),
+          toolCalls: Array.isArray(data.toolCalls) ? data.toolCalls.length : 0,
+          latencyMs: data.latencyMs,
+        });
       } else {
         toast({
           title: "Erro no teste",
@@ -786,6 +837,7 @@ export const AgentEditorModal = ({
   const handleClearTest = () => {
     setTestMessages([]);
     setTestInput("");
+    setTestLastMeta(null);
   };
 
   return (
@@ -2270,9 +2322,151 @@ export const AgentEditorModal = ({
               </TabsContent>
 
               {/* TEST TAB */}
-              <TabsContent value="test" className="p-6 mt-0">
-                {/* Height: 90vh modal - ~80px header - ~48px tabs - ~80px footer - ~48px padding */}
-                <div className="flex flex-col h-[calc(90vh-256px)] border rounded-lg overflow-hidden">
+              <TabsContent value="test" className="p-6 mt-0 space-y-3">
+                {/* History selector banner */}
+                <div className="border rounded-lg p-3 bg-muted/20 space-y-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <Label className="text-xs font-medium flex items-center gap-1.5">
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      Continuar conversa de
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-3 h-3 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p className="text-xs">
+                            Selecione uma conversa real para o agente responder
+                            com o histórico completo (igual produção). Deixe em
+                            &quot;Nenhuma&quot; para testar do zero. Tools e RAG
+                            seguem as configurações do agente.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </Label>
+                    <div className="flex items-center gap-2 flex-1 max-w-md">
+                      <Select
+                        value={testHistoryPhone || "__none__"}
+                        onValueChange={(v) =>
+                          setTestHistoryPhone(v === "__none__" ? "" : v)
+                        }
+                        disabled={testLoadingConvos}
+                      >
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue
+                            placeholder={
+                              testLoadingConvos
+                                ? "Carregando..."
+                                : "Nenhuma (chat novo)"
+                            }
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">
+                            Nenhuma (chat novo)
+                          </SelectItem>
+                          {testConversations.map((c) => (
+                            <SelectItem key={c.phone} value={c.phone}>
+                              {(c.name || "Sem nome") +
+                                " · " +
+                                c.phone +
+                                " (" +
+                                c.message_count +
+                                ")"}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
+                    <span className="flex items-center gap-1">
+                      <Zap className="w-3 h-3" />
+                      Tools:{" "}
+                      <Badge
+                        variant={formData.enable_tools ? "default" : "outline"}
+                        className="text-[10px] py-0 px-1.5"
+                      >
+                        {formData.enable_tools ? "ON" : "OFF"}
+                      </Badge>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <FileText className="w-3 h-3" />
+                      RAG:{" "}
+                      <Badge
+                        variant={formData.enable_rag ? "default" : "outline"}
+                        className="text-[10px] py-0 px-1.5"
+                      >
+                        {formData.enable_rag ? "ON" : "OFF"}
+                      </Badge>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Brain className="w-3 h-3" />
+                      Handoff:{" "}
+                      <Badge
+                        variant={
+                          formData.enable_human_handoff ? "default" : "outline"
+                        }
+                        className="text-[10px] py-0 px-1.5"
+                      >
+                        {formData.enable_human_handoff ? "ON" : "OFF"}
+                      </Badge>
+                    </span>
+                    <span className="ml-auto text-[11px] italic">
+                      Configure na aba &quot;Recursos&quot;
+                    </span>
+                  </div>
+                </div>
+
+                {/* Last response meta */}
+                {testLastMeta && (
+                  <div className="border rounded-lg px-3 py-2 bg-blue-500/5 border-blue-500/20 flex items-center gap-3 text-xs flex-wrap">
+                    <span className="font-medium text-blue-600 dark:text-blue-400">
+                      Última resposta:
+                    </span>
+                    {testLastMeta.modelUsed && (
+                      <span>
+                        <span className="text-muted-foreground">Modelo:</span>{" "}
+                        <code className="text-[11px]">
+                          {testLastMeta.modelUsed}
+                        </code>
+                      </span>
+                    )}
+                    {testLastMeta.latencyMs !== undefined && (
+                      <span>
+                        <span className="text-muted-foreground">Latência:</span>{" "}
+                        {testLastMeta.latencyMs}ms
+                      </span>
+                    )}
+                    {testLastMeta.historySource &&
+                      testLastMeta.historySource !== "none" && (
+                        <span>
+                          <span className="text-muted-foreground">
+                            Histórico:
+                          </span>{" "}
+                          {testLastMeta.historyMessageCount} msgs (
+                          {testLastMeta.historySource ===
+                          "selected_conversation"
+                            ? "conversa real"
+                            : "modal"}
+                          )
+                        </span>
+                      )}
+                    {testLastMeta.ragEnabled && (
+                      <span>
+                        <span className="text-muted-foreground">RAG:</span>{" "}
+                        {testLastMeta.ragChunkCount || 0} chunks
+                      </span>
+                    )}
+                    {!!testLastMeta.toolCalls && testLastMeta.toolCalls > 0 && (
+                      <span className="text-amber-600 dark:text-amber-400">
+                        🔧 {testLastMeta.toolCalls} tool call(s)
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Height: 90vh modal - ~80px header - ~48px tabs - ~80px footer - ~48px padding - history panel */}
+                <div className="flex flex-col h-[calc(90vh-380px)] border rounded-lg overflow-hidden">
                   {/* Chat header */}
                   <div className="px-4 py-3 border-b bg-muted/30 flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -2280,6 +2474,14 @@ export const AgentEditorModal = ({
                       <span className="font-medium">
                         {formData.name || "Agente"}
                       </span>
+                      {testHistoryPhone && (
+                        <Badge
+                          variant="secondary"
+                          className="text-[10px] py-0 px-1.5"
+                        >
+                          ↪ {testHistoryPhone}
+                        </Badge>
+                      )}
                     </div>
                     <Button
                       variant="ghost"

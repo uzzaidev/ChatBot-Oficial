@@ -1,17 +1,25 @@
 /**
  * API Route: /api/agents/[id]/test
  *
- * Tests an agent with a message without affecting production conversations.
- * Uses the agent's compiled prompts or live config to generate a response.
+ * Tests an agent with full production parity:
+ *  - Real ClientConfig from Vault (tools, RAG, calendar, handoff, etc)
+ *  - Compiled prompts from form (liveConfig) or saved agent
+ *  - Optional real chat history loaded from a selected conversation phone
+ *  - Real RAG context lookup against the client's knowledge base
+ *
+ * It does NOT save messages, log usage to billing, or trigger CRM/Redis side effects.
  */
 
-import { callDirectAI } from "@/lib/direct-ai-client";
+import { getClientConfig } from "@/lib/config";
 import {
   compileFormatterPrompt,
   compileSystemPrompt,
 } from "@/lib/prompt-builder";
 import { createServerClient } from "@/lib/supabase";
-import type { Agent } from "@/lib/types";
+import type { Agent, ClientConfig } from "@/lib/types";
+import { generateAIResponse } from "@/nodes/generateAIResponse";
+import { getChatHistory } from "@/nodes/getChatHistory";
+import { getRAGContextWithTrace } from "@/nodes/getRAGContext";
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -22,14 +30,20 @@ interface RouteParams {
 
 /**
  * POST /api/agents/[id]/test
- * Send a test message to the agent and get a response
+ * Send a test message to the agent and get a response with full prod-parity flow.
+ *
+ * Body:
+ *  - message: string (required)
+ *  - liveConfig?: Partial<Agent> (form values to override the saved agent)
+ *  - historyPhone?: string (optional phone to load real chat history)
+ *  - clientHistory?: Array<{ role: 'user'|'assistant'; content: string }> (in-modal chat turns to chain)
  */
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
     const supabase = await createServerClient();
 
-    // Get authenticated user
+    // Auth
     const {
       data: { user },
       error: authError,
@@ -39,7 +53,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get user's client_id
     const { data: profile } = await supabase
       .from("user_profiles")
       .select("client_id")
@@ -53,7 +66,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Get agent
+    // Saved agent
     const { data: agent, error: agentError } = await supabase
       .from("agents")
       .select("*")
@@ -65,20 +78,18 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Agent not found" }, { status: 404 });
     }
 
-    // Get client info for AI call
-    const { data: client } = await supabase
-      .from("clients")
-      .select("id, name, slug")
-      .eq("id", profile.client_id)
-      .single();
-
-    if (!client) {
-      return NextResponse.json({ error: "Client not found" }, { status: 404 });
-    }
-
-    // Parse request body
     const body = await request.json();
-    const { message, liveConfig } = body;
+    const {
+      message,
+      liveConfig,
+      historyPhone,
+      clientHistory,
+    }: {
+      message: string;
+      liveConfig?: Partial<Agent>;
+      historyPhone?: string;
+      clientHistory?: Array<{ role: "user" | "assistant"; content: string }>;
+    } = body;
 
     if (!message || typeof message !== "string") {
       return NextResponse.json(
@@ -87,126 +98,228 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Determine prompts to use
-    let systemPrompt: string;
-    let formatterPrompt: string;
-    let agentConfig: Partial<Agent>;
+    // Merge saved agent + liveConfig (form preview)
+    const mergedAgent: Agent = liveConfig
+      ? ({ ...agent, ...liveConfig } as Agent)
+      : (agent as Agent);
 
-    if (liveConfig) {
-      // Use live config from form (for preview before saving)
-      agentConfig = { ...agent, ...liveConfig };
-      systemPrompt = compileSystemPrompt(agentConfig as Agent);
-      formatterPrompt = compileFormatterPrompt(agentConfig as Agent);
-    } else {
-      // Use saved compiled prompts
-      systemPrompt = agent.compiled_system_prompt || compileSystemPrompt(agent);
-      formatterPrompt =
-        agent.compiled_formatter_prompt || compileFormatterPrompt(agent);
-      agentConfig = agent;
+    const compiledSystemPrompt = liveConfig
+      ? compileSystemPrompt(mergedAgent)
+      : agent.compiled_system_prompt || compileSystemPrompt(mergedAgent);
+    const compiledFormatterPrompt = liveConfig
+      ? compileFormatterPrompt(mergedAgent)
+      : agent.compiled_formatter_prompt || compileFormatterPrompt(mergedAgent);
+
+    // Load full ClientConfig (Vault credentials, RAG, tools, calendar, handoff, etc)
+    const baseConfig = await getClientConfig(profile.client_id);
+    if (!baseConfig) {
+      return NextResponse.json(
+        {
+          error:
+            "Configuração do cliente não encontrada. Verifique credenciais em Configurações.",
+        },
+        { status: 422 },
+      );
     }
 
-    // Build messages array with formatter instruction included in system prompt
-    const fullSystemPrompt = formatterPrompt
-      ? `${systemPrompt}\n\n${formatterPrompt}`
-      : systemPrompt;
-
-    const messages = [
-      { role: "system" as const, content: fullSystemPrompt },
-      { role: "user" as const, content: message },
-    ];
-
-    // Call AI using direct Vault credentials
-    const startTime = Date.now();
-    const result = await callDirectAI({
-      clientId: profile.client_id,
-      clientConfig: {
-        id: client.id,
-        name: client.name,
-        primaryModelProvider: agentConfig.primary_provider || "groq",
-        openaiModel: agentConfig.openai_model || "gpt-4o",
-        groqModel: agentConfig.groq_model || "llama-3.3-70b-versatile",
+    // Override the runtime config with the agent being tested (compiled prompts + settings + models)
+    const config: ClientConfig = {
+      ...baseConfig,
+      prompts: {
+        systemPrompt: compiledSystemPrompt,
+        formatterPrompt: compiledFormatterPrompt || undefined,
       },
-      messages,
+      models: {
+        openaiModel:
+          mergedAgent.openai_model || baseConfig.models.openaiModel,
+        groqModel: mergedAgent.groq_model || baseConfig.models.groqModel,
+      },
+      primaryProvider:
+        (mergedAgent.primary_provider as ClientConfig["primaryProvider"]) ||
+        baseConfig.primaryProvider,
       settings: {
-        temperature: agentConfig.temperature ?? 0.7,
-        maxTokens: agentConfig.max_tokens ?? 2000,
+        ...baseConfig.settings,
+        temperature:
+          mergedAgent.temperature ?? baseConfig.settings.temperature,
+        maxTokens: mergedAgent.max_tokens ?? baseConfig.settings.maxTokens,
+        maxInputTokens:
+          mergedAgent.max_input_tokens ?? baseConfig.settings.maxInputTokens,
+        maxHistoryTokens:
+          mergedAgent.max_history_tokens ??
+          baseConfig.settings.maxHistoryTokens,
+        maxKnowledgeTokens:
+          mergedAgent.max_knowledge_tokens ??
+          baseConfig.settings.maxKnowledgeTokens,
+        reasoningEffort:
+          mergedAgent.reasoning_effort ??
+          baseConfig.settings.reasoningEffort,
+        enableTools:
+          mergedAgent.enable_tools ?? baseConfig.settings.enableTools,
+        enableRAG: mergedAgent.enable_rag ?? baseConfig.settings.enableRAG,
+        enableHumanHandoff:
+          mergedAgent.enable_human_handoff ??
+          baseConfig.settings.enableHumanHandoff,
+        enableDocumentSearch:
+          mergedAgent.enable_document_search ??
+          baseConfig.settings.enableDocumentSearch,
+        enableAudioResponse:
+          mergedAgent.enable_audio_response ??
+          baseConfig.settings.enableAudioResponse,
+        maxChatHistory:
+          mergedAgent.max_chat_history ?? baseConfig.settings.maxChatHistory,
       },
-      skipUsageLogging: true, // Don't log test messages to usage
+      activeAgent: mergedAgent,
+    };
+
+    // Load chat history (real conversation OR in-modal turns)
+    let chatHistory: Array<{ role: "user" | "assistant" | "system"; content: string; timestamp?: string }> = [];
+    let historySource: "selected_conversation" | "in_modal" | "none" = "none";
+    let historyMessageCount = 0;
+
+    if (historyPhone) {
+      try {
+        const result = await getChatHistory({
+          phone: historyPhone,
+          clientId: profile.client_id,
+          maxHistory: config.settings.maxChatHistory,
+          maxHistoryTokens: config.settings.maxHistoryTokens,
+        });
+        chatHistory = result.messages;
+        historySource = "selected_conversation";
+        historyMessageCount = result.messages.length;
+      } catch (err) {
+        console.warn(
+          "[test-agent] Failed to load history for phone",
+          historyPhone,
+          err,
+        );
+      }
+    } else if (Array.isArray(clientHistory) && clientHistory.length > 0) {
+      chatHistory = clientHistory.map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
+      historySource = "in_modal";
+      historyMessageCount = clientHistory.length;
+    }
+
+    // RAG context (only if enabled in agent config)
+    let ragContext = "";
+    let ragChunkCount = 0;
+    if (config.settings.enableRAG) {
+      try {
+        const ragResult = await getRAGContextWithTrace({
+          query: message,
+          clientId: profile.client_id,
+          openaiApiKey: config.apiKeys.openaiApiKey,
+        });
+        ragContext = ragResult.context;
+        ragChunkCount = ragResult.traceData?.chunkIds.length || 0;
+      } catch (err) {
+        console.warn("[test-agent] RAG lookup failed:", err);
+      }
+    }
+
+    // Generate AI response with FULL production flow (tools, RAG, etc)
+    const startTime = Date.now();
+    const aiResponse = await generateAIResponse({
+      message,
+      chatHistory,
+      ragContext,
+      customerName:
+        historyPhone || mergedAgent.name || "Cliente Teste",
+      contactMetadata: undefined,
+      config,
+      includeDateTimeInfo: true,
+      enableTools: config.settings.enableTools,
+      phone: historyPhone,
     });
     const latencyMs = Date.now() - startTime;
 
     return NextResponse.json({
       success: true,
-      response: result.text,
+      response: aiResponse.content,
       latencyMs,
-      model: result.model,
-      provider: result.provider,
-      usage: result.usage,
+      model: aiResponse.model,
+      provider: aiResponse.provider,
+      usage: aiResponse.usage,
+      toolCalls: aiResponse.toolCalls || [],
+      meta: {
+        historySource,
+        historyMessageCount,
+        ragEnabled: config.settings.enableRAG,
+        ragChunkCount,
+        toolsEnabled: config.settings.enableTools,
+        primaryProvider: config.primaryProvider,
+        modelUsed:
+          config.primaryProvider === "groq"
+            ? config.models.groqModel
+            : config.models.openaiModel,
+      },
     });
   } catch (error) {
     console.error("[POST /api/agents/[id]/test] Error:", error);
 
-    // Handle specific error types with user-friendly Portuguese messages
     if (error instanceof Error) {
-      // Missing API key in Vault (most common cause)
+      const msg = error.message;
       if (
-        error.message.includes("API key configured in Vault") ||
-        error.message.includes("No GROQ") ||
-        error.message.includes("No OPENAI")
+        msg.includes("API key configured in Vault") ||
+        msg.includes("No GROQ") ||
+        msg.includes("No OPENAI")
       ) {
         return NextResponse.json(
           {
             error:
-              "Chave de API OpenAI não configurada. Acesse Configurações → Modelo IA e cadastre sua chave de API para continuar.",
+              "Chave de API não configurada. Acesse Configurações → Modelo IA e cadastre sua chave.",
           },
           { status: 422 },
         );
       }
-      // Invalid/wrong API key rejected by provider
       if (
-        error.message.includes("API key") ||
-        error.message.includes("Incorrect API key") ||
-        error.message.includes("invalid_api_key")
+        msg.includes("API key") ||
+        msg.includes("Incorrect API key") ||
+        msg.includes("invalid_api_key")
       ) {
         return NextResponse.json(
           {
             error:
-              "Chave de API inválida. Verifique a chave cadastrada em Configurações → Modelo IA.",
+              "Chave de API inválida. Verifique Configurações → Modelo IA.",
           },
           { status: 401 },
         );
       }
       if (
-        error.message.includes("rate limit") ||
-        error.message.includes("quota") ||
-        error.message.includes("429")
+        msg.includes("rate limit") ||
+        msg.includes("quota") ||
+        msg.includes("429")
       ) {
         return NextResponse.json(
           {
             error:
-              "Limite de requisições atingido. Aguarde alguns segundos e tente novamente.",
+              "Limite de requisições atingido. Aguarde alguns segundos.",
           },
           { status: 429 },
         );
       }
-      if (
-        error.message.includes("model") &&
-        error.message.includes("not found")
-      ) {
+      if (msg.includes("model") && msg.includes("not found")) {
         return NextResponse.json(
           {
             error:
-              "Modelo de IA não encontrado. Verifique o modelo selecionado em Configurações → Modelo IA.",
+              "Modelo não encontrado. Verifique o modelo selecionado no agente.",
           },
           { status: 422 },
         );
       }
+      return NextResponse.json(
+        { error: msg },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json(
       {
         error:
-          "Erro ao testar o agente. Tente novamente ou verifique as configurações de IA.",
+          "Erro ao testar o agente. Tente novamente ou verifique as configurações.",
       },
       { status: 500 },
     );
