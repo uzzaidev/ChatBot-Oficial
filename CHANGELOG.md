@@ -9,6 +9,14 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-28
 
 ### feat
+- Adicionada funcionalidade de teste de conectividade para modelos OpenAI e Groq no modal de edição de agentes, com feedback visual de sucesso, falha, latência e resposta.
+- Incluídos botões para disparar o teste e mensagens toast para informar o status da operação.
+  - Arquivos: `src/components/agents/AgentEditorModal.tsx`
+  - Confiança: alta
+
+## 2026-04-28
+
+### feat
 - Adicionada interface de preços dos modelos OpenAI no editor de agentes, exibindo valores de input, input em cache e output por 1M tokens com tooltip explicativo e links para tabela oficial
   - Arquivos: `src/components/agents/AgentEditorModal.tsx`, `src/lib/openai-pricing.ts`
   - Confiança: alta
