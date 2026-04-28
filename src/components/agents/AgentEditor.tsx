@@ -758,6 +758,12 @@ export const AgentEditor = ({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="gpt-5.4-nano">
+                        GPT-5.4 Nano (Ultra rápido — novo)
+                      </SelectItem>
+                      <SelectItem value="gpt-5-nano">
+                        GPT-5 Nano (Novo)
+                      </SelectItem>
                       <SelectItem value="gpt-4o">
                         GPT-4o (Recomendado)
                       </SelectItem>

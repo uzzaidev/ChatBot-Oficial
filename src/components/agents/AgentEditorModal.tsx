@@ -54,6 +54,16 @@ import { useEffect, useState } from "react";
 
 const OPENAI_MODELS = [
   {
+    value: "gpt-5.4-nano",
+    label: "GPT-5.4 Nano",
+    description: "Ultra rápido e econômico — novo",
+  },
+  {
+    value: "gpt-5-nano",
+    label: "GPT-5 Nano",
+    description: "Nano de nova geração — novo",
+  },
+  {
     value: "gpt-4o",
     label: "GPT-4o",
     description: "Mais inteligente e rápido",
@@ -866,7 +876,10 @@ export const AgentEditorModal = ({
                       <Textarea
                         value={formData.prompt_sections?.business_context || ""}
                         onChange={(e) =>
-                          updatePromptSection("business_context", e.target.value)
+                          updatePromptSection(
+                            "business_context",
+                            e.target.value,
+                          )
                         }
                         placeholder="Fatos fixos sobre empresa, produtos, publico e limites comerciais."
                         rows={4}
@@ -903,9 +916,14 @@ export const AgentEditorModal = ({
                     <div className="space-y-2">
                       <Label>Politica de Escalacao</Label>
                       <Textarea
-                        value={formData.prompt_sections?.escalation_policy || ""}
+                        value={
+                          formData.prompt_sections?.escalation_policy || ""
+                        }
                         onChange={(e) =>
-                          updatePromptSection("escalation_policy", e.target.value)
+                          updatePromptSection(
+                            "escalation_policy",
+                            e.target.value,
+                          )
                         }
                         placeholder="Quando transferir para humano ou dizer que vai confirmar."
                         rows={4}
@@ -1242,9 +1260,16 @@ export const AgentEditorModal = ({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="low">Low</SelectItem>
-                          <SelectItem value="medium">Medium</SelectItem>
-                          <SelectItem value="high">High</SelectItem>
+                          <SelectItem value="none">
+                            None — sem raciocínio
+                          </SelectItem>
+                          <SelectItem value="minimal">
+                            Minimal — mínimo
+                          </SelectItem>
+                          <SelectItem value="low">Low — baixo</SelectItem>
+                          <SelectItem value="medium">Medium — médio</SelectItem>
+                          <SelectItem value="high">High — alto</SelectItem>
+                          <SelectItem value="xhigh">XHigh — máximo</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1431,12 +1456,15 @@ export const AgentEditorModal = ({
                         Horario de Funcionamento
                       </h4>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Quando ativado, o bot so responde dentro do horario configurado
+                        Quando ativado, o bot so responde dentro do horario
+                        configurado
                       </p>
                     </div>
                     <Switch
                       checked={formData.business_hours_enabled || false}
-                      onCheckedChange={(v) => updateField("business_hours_enabled", v)}
+                      onCheckedChange={(v) =>
+                        updateField("business_hours_enabled", v)
+                      }
                     />
                   </div>
 
@@ -1446,25 +1474,54 @@ export const AgentEditorModal = ({
                       <div className="space-y-2">
                         <Label>Fuso Horario</Label>
                         <Select
-                          value={formData.business_hours_timezone || "America/Sao_Paulo"}
-                          onValueChange={(v) => updateField("business_hours_timezone", v)}
+                          value={
+                            formData.business_hours_timezone ||
+                            "America/Sao_Paulo"
+                          }
+                          onValueChange={(v) =>
+                            updateField("business_hours_timezone", v)
+                          }
                         >
                           <SelectTrigger className="w-full">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="America/Sao_Paulo">Brasilia (GMT-3)</SelectItem>
-                            <SelectItem value="America/Manaus">Manaus (GMT-4)</SelectItem>
-                            <SelectItem value="America/Rio_Branco">Rio Branco (GMT-5)</SelectItem>
-                            <SelectItem value="America/Noronha">Fernando de Noronha (GMT-2)</SelectItem>
-                            <SelectItem value="America/Belem">Belem (GMT-3)</SelectItem>
-                            <SelectItem value="America/Cuiaba">Cuiaba (GMT-4)</SelectItem>
-                            <SelectItem value="America/Recife">Recife (GMT-3)</SelectItem>
-                            <SelectItem value="America/Fortaleza">Fortaleza (GMT-3)</SelectItem>
-                            <SelectItem value="America/New_York">Nova York (GMT-5)</SelectItem>
-                            <SelectItem value="America/Los_Angeles">Los Angeles (GMT-8)</SelectItem>
-                            <SelectItem value="Europe/Lisbon">Lisboa (GMT+0)</SelectItem>
-                            <SelectItem value="Europe/London">Londres (GMT+0)</SelectItem>
+                            <SelectItem value="America/Sao_Paulo">
+                              Brasilia (GMT-3)
+                            </SelectItem>
+                            <SelectItem value="America/Manaus">
+                              Manaus (GMT-4)
+                            </SelectItem>
+                            <SelectItem value="America/Rio_Branco">
+                              Rio Branco (GMT-5)
+                            </SelectItem>
+                            <SelectItem value="America/Noronha">
+                              Fernando de Noronha (GMT-2)
+                            </SelectItem>
+                            <SelectItem value="America/Belem">
+                              Belem (GMT-3)
+                            </SelectItem>
+                            <SelectItem value="America/Cuiaba">
+                              Cuiaba (GMT-4)
+                            </SelectItem>
+                            <SelectItem value="America/Recife">
+                              Recife (GMT-3)
+                            </SelectItem>
+                            <SelectItem value="America/Fortaleza">
+                              Fortaleza (GMT-3)
+                            </SelectItem>
+                            <SelectItem value="America/New_York">
+                              Nova York (GMT-5)
+                            </SelectItem>
+                            <SelectItem value="America/Los_Angeles">
+                              Los Angeles (GMT-8)
+                            </SelectItem>
+                            <SelectItem value="Europe/Lisbon">
+                              Lisboa (GMT+0)
+                            </SelectItem>
+                            <SelectItem value="Europe/London">
+                              Londres (GMT+0)
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -1476,7 +1533,9 @@ export const AgentEditorModal = ({
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            const schedule = (formData.business_hours_schedule || []).map((d: DaySchedule) => ({ ...d, active: true }));
+                            const schedule = (
+                              formData.business_hours_schedule || []
+                            ).map((d: DaySchedule) => ({ ...d, active: true }));
                             updateField("business_hours_schedule", schedule);
                           }}
                         >
@@ -1487,7 +1546,12 @@ export const AgentEditorModal = ({
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            const schedule = (formData.business_hours_schedule || []).map((d: DaySchedule) => ({ ...d, active: false }));
+                            const schedule = (
+                              formData.business_hours_schedule || []
+                            ).map((d: DaySchedule) => ({
+                              ...d,
+                              active: false,
+                            }));
                             updateField("business_hours_schedule", schedule);
                           }}
                         >
@@ -1497,58 +1561,113 @@ export const AgentEditorModal = ({
 
                       {/* Day-by-day schedule */}
                       <div className="space-y-2">
-                        {(formData.business_hours_schedule || []).map((day: DaySchedule, idx: number) => {
-                          const dayNames = ["Domingo", "Segunda", "Terca", "Quarta", "Quinta", "Sexta", "Sabado"];
-                          const dayAbbr = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
-                          return (
-                            <div
-                              key={day.day}
-                              className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
-                                day.active ? "bg-background border-primary/30" : "bg-muted/30 border-border opacity-60"
-                              }`}
-                            >
-                              <Switch
-                                checked={day.active}
-                                onCheckedChange={(checked) => {
-                                  const schedule = [...(formData.business_hours_schedule || [])];
-                                  schedule[idx] = { ...schedule[idx], active: checked };
-                                  updateField("business_hours_schedule", schedule);
-                                }}
-                              />
-                              <span className="w-20 text-sm font-medium hidden sm:inline">{dayNames[day.day]}</span>
-                              <span className="w-10 text-sm font-medium sm:hidden">{dayAbbr[day.day]}</span>
+                        {(formData.business_hours_schedule || []).map(
+                          (day: DaySchedule, idx: number) => {
+                            const dayNames = [
+                              "Domingo",
+                              "Segunda",
+                              "Terca",
+                              "Quarta",
+                              "Quinta",
+                              "Sexta",
+                              "Sabado",
+                            ];
+                            const dayAbbr = [
+                              "Dom",
+                              "Seg",
+                              "Ter",
+                              "Qua",
+                              "Qui",
+                              "Sex",
+                              "Sab",
+                            ];
+                            return (
+                              <div
+                                key={day.day}
+                                className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+                                  day.active
+                                    ? "bg-background border-primary/30"
+                                    : "bg-muted/30 border-border opacity-60"
+                                }`}
+                              >
+                                <Switch
+                                  checked={day.active}
+                                  onCheckedChange={(checked) => {
+                                    const schedule = [
+                                      ...(formData.business_hours_schedule ||
+                                        []),
+                                    ];
+                                    schedule[idx] = {
+                                      ...schedule[idx],
+                                      active: checked,
+                                    };
+                                    updateField(
+                                      "business_hours_schedule",
+                                      schedule,
+                                    );
+                                  }}
+                                />
+                                <span className="w-20 text-sm font-medium hidden sm:inline">
+                                  {dayNames[day.day]}
+                                </span>
+                                <span className="w-10 text-sm font-medium sm:hidden">
+                                  {dayAbbr[day.day]}
+                                </span>
 
-                              {day.active && (
-                                <>
-                                  <Input
-                                    type="time"
-                                    value={day.start}
-                                    className="w-[110px] text-sm"
-                                    onChange={(e) => {
-                                      const schedule = [...(formData.business_hours_schedule || [])];
-                                      schedule[idx] = { ...schedule[idx], start: e.target.value };
-                                      updateField("business_hours_schedule", schedule);
-                                    }}
-                                  />
-                                  <span className="text-muted-foreground text-xs">ate</span>
-                                  <Input
-                                    type="time"
-                                    value={day.end}
-                                    className="w-[110px] text-sm"
-                                    onChange={(e) => {
-                                      const schedule = [...(formData.business_hours_schedule || [])];
-                                      schedule[idx] = { ...schedule[idx], end: e.target.value };
-                                      updateField("business_hours_schedule", schedule);
-                                    }}
-                                  />
-                                </>
-                              )}
-                              {!day.active && (
-                                <span className="text-xs text-muted-foreground italic">Indisponivel</span>
-                              )}
-                            </div>
-                          );
-                        })}
+                                {day.active && (
+                                  <>
+                                    <Input
+                                      type="time"
+                                      value={day.start}
+                                      className="w-[110px] text-sm"
+                                      onChange={(e) => {
+                                        const schedule = [
+                                          ...(formData.business_hours_schedule ||
+                                            []),
+                                        ];
+                                        schedule[idx] = {
+                                          ...schedule[idx],
+                                          start: e.target.value,
+                                        };
+                                        updateField(
+                                          "business_hours_schedule",
+                                          schedule,
+                                        );
+                                      }}
+                                    />
+                                    <span className="text-muted-foreground text-xs">
+                                      ate
+                                    </span>
+                                    <Input
+                                      type="time"
+                                      value={day.end}
+                                      className="w-[110px] text-sm"
+                                      onChange={(e) => {
+                                        const schedule = [
+                                          ...(formData.business_hours_schedule ||
+                                            []),
+                                        ];
+                                        schedule[idx] = {
+                                          ...schedule[idx],
+                                          end: e.target.value,
+                                        };
+                                        updateField(
+                                          "business_hours_schedule",
+                                          schedule,
+                                        );
+                                      }}
+                                    />
+                                  </>
+                                )}
+                                {!day.active && (
+                                  <span className="text-xs text-muted-foreground italic">
+                                    Indisponivel
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          },
+                        )}
                       </div>
 
                       {/* Off-hours message */}
@@ -1556,12 +1675,19 @@ export const AgentEditorModal = ({
                         <Label>Mensagem fora do horario (opcional)</Label>
                         <Textarea
                           value={formData.business_hours_off_message || ""}
-                          onChange={(e) => updateField("business_hours_off_message", e.target.value)}
+                          onChange={(e) =>
+                            updateField(
+                              "business_hours_off_message",
+                              e.target.value,
+                            )
+                          }
                           placeholder="Ex: Nosso horario de atendimento e de segunda a sexta, 9h as 18h. Retornaremos em breve!"
                           rows={3}
                         />
                         <p className="text-xs text-muted-foreground">
-                          Se preenchida, o bot envia esta mensagem quando alguem escreve fora do horario. Se vazia, o bot fica em silencio.
+                          Se preenchida, o bot envia esta mensagem quando alguem
+                          escreve fora do horario. Se vazia, o bot fica em
+                          silencio.
                         </p>
                       </div>
                     </div>

@@ -449,7 +449,13 @@ export interface ToolCall {
   };
 }
 
-export type ReasoningEffort = "low" | "medium" | "high";
+export type ReasoningEffort =
+  | "none"
+  | "minimal"
+  | "low"
+  | "medium"
+  | "high"
+  | "xhigh";
 
 export interface AgentPromptSections {
   identity?: string;
@@ -642,10 +648,10 @@ export interface Agent {
 }
 
 export interface DaySchedule {
-  day: number;     // 0=Dom, 1=Seg, 2=Ter, 3=Qua, 4=Qui, 5=Sex, 6=Sab
+  day: number; // 0=Dom, 1=Seg, 2=Ter, 3=Qua, 4=Qui, 5=Sex, 6=Sab
   active: boolean;
-  start: string;   // "HH:MM" ex: "09:00"
-  end: string;     // "HH:MM" ex: "18:00"
+  start: string; // "HH:MM" ex: "09:00"
+  end: string; // "HH:MM" ex: "18:00"
 }
 
 /**
@@ -1408,4 +1414,3 @@ export interface ScheduledMessage {
     name: string | null;
   };
 }
-

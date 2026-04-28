@@ -42,7 +42,7 @@ export interface DirectAICallConfig {
     topP?: number;
     frequencyPenalty?: number;
     presencePenalty?: number;
-    reasoningEffort?: "low" | "medium" | "high";
+    reasoningEffort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
   };
   // For tracking
   conversationId?: string;

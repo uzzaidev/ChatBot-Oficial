@@ -1054,7 +1054,9 @@ export default function SettingsPage() {
                   <div className="rounded-lg border border-border p-4 mb-4">
                     <div className="flex items-center justify-between gap-4 mb-3">
                       <div>
-                        <p className="text-sm font-medium">Sincronização Coexistence</p>
+                        <p className="text-sm font-medium">
+                          Sincronização Coexistence
+                        </p>
                         {provisionedAt && (
                           <p className="text-xs text-muted-foreground mt-0.5">
                             Janela até{" "}
@@ -1071,25 +1073,45 @@ export default function SettingsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          disabled={isSyncingContacts || isSyncLocked(coexistenceSync.contacts)}
-                          onClick={() => handleRequestCoexistenceSync("contacts")}
+                          disabled={
+                            isSyncingContacts ||
+                            isSyncLocked(coexistenceSync.contacts)
+                          }
+                          onClick={() =>
+                            handleRequestCoexistenceSync("contacts")
+                          }
                         >
-                          {isSyncingContacts ? <Loader2 className="h-3 w-3 animate-spin" /> : "Contatos"}
+                          {isSyncingContacts ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            "Contatos"
+                          )}
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          disabled={isSyncingHistory || isSyncLocked(coexistenceSync.history)}
-                          onClick={() => handleRequestCoexistenceSync("history")}
+                          disabled={
+                            isSyncingHistory ||
+                            isSyncLocked(coexistenceSync.history)
+                          }
+                          onClick={() =>
+                            handleRequestCoexistenceSync("history")
+                          }
                         >
-                          {isSyncingHistory ? <Loader2 className="h-3 w-3 animate-spin" /> : "Histórico"}
+                          {isSyncingHistory ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            "Histórico"
+                          )}
                         </Button>
                       </div>
                     </div>
                     <div className="grid gap-2 md:grid-cols-2">
                       <div className="flex items-center justify-between text-xs text-muted-foreground border border-border rounded px-3 py-2">
                         <span>Contatos</span>
-                        <span>{formatSyncStatus(coexistenceSync.contacts)}</span>
+                        <span>
+                          {formatSyncStatus(coexistenceSync.contacts)}
+                        </span>
                       </div>
                       <div className="flex items-center justify-between text-xs text-muted-foreground border border-border rounded px-3 py-2">
                         <span>Histórico</span>
@@ -1105,7 +1127,8 @@ export default function SettingsPage() {
                   clientId && (
                     <div className="rounded-lg border border-border p-4 mb-4 flex items-center justify-between gap-4">
                       <p className="text-sm text-muted-foreground">
-                        Conectado via configuração manual. Migre para Embedded Signup para gerenciamento automático.
+                        Conectado via configuração manual. Migre para Embedded
+                        Signup para gerenciamento automático.
                       </p>
                       <div className="flex gap-2 shrink-0">
                         <EmbeddedSignupButton
@@ -1128,14 +1151,27 @@ export default function SettingsPage() {
                           onClick={async () => {
                             setIsRollingBack(true);
                             try {
-                              const res = await fetch("/api/client/migrate/rollback", { method: "POST" });
+                              const res = await fetch(
+                                "/api/client/migrate/rollback",
+                                { method: "POST" },
+                              );
                               const data = await res.json();
-                              if (!res.ok) throw new Error(data.error || "Erro ao reverter");
-                              setNotification({ type: "success", message: "WhatsApp reconectado ao app anterior." });
+                              if (!res.ok)
+                                throw new Error(
+                                  data.error || "Erro ao reverter",
+                                );
+                              setNotification({
+                                type: "success",
+                                message:
+                                  "WhatsApp reconectado ao app anterior.",
+                              });
                             } catch (err) {
                               setNotification({
                                 type: "error",
-                                message: err instanceof Error ? err.message : "Erro ao reverter. Tente novamente.",
+                                message:
+                                  err instanceof Error
+                                    ? err.message
+                                    : "Erro ao reverter. Tente novamente.",
                               });
                             } finally {
                               setIsRollingBack(false);
@@ -1145,7 +1181,11 @@ export default function SettingsPage() {
                           variant="outline"
                           size="sm"
                         >
-                          {isRollingBack ? <Loader2 className="h-3 w-3 animate-spin" /> : "Reverter"}
+                          {isRollingBack ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            "Reverter"
+                          )}
                         </Button>
                       </div>
                     </div>
