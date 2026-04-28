@@ -9,6 +9,15 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-28
 
 ### feat
+- Adicionados os props `ragChunks` e `toolCallNames` no `AgentEditorModal` para melhorar a visualização dos testes de agentes, incluindo pré-visualização detalhada dos chunks RAG com similaridade e nomes das chamadas de ferramentas usadas.
+- Implementada extração e formatação dos chunks RAG e nomes das tool calls na API de teste de agentes para fornecer dados enriquecidos ao modal de edição.
+- Incluídos tooltips no modal para exibir detalhes dos chunks RAG e das ferramentas chamadas durante o teste, melhorando a usabilidade e transparência das informações.
+  - Arquivos: `src/app/api/agents/[id]/test/route.ts`, `src/components/agents/AgentEditorModal.tsx`
+  - Confiança: alta
+
+## 2026-04-28
+
+### feat
 - Atualizada a implementação do tooltip no `AgentEditorModal` para melhorar a orientação ao usuário, incluindo o uso de `TooltipProvider` com delay configurado
   - Arquivos: `src/components/agents/AgentEditorModal.tsx`
   - Confiança: alta
