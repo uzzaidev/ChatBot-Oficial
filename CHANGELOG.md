@@ -9,6 +9,13 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-28
 
 ### feat
+- Atualizada a implementação do tooltip no `AgentEditorModal` para melhorar a orientação ao usuário, incluindo o uso de `TooltipProvider` com delay configurado
+  - Arquivos: `src/components/agents/AgentEditorModal.tsx`
+  - Confiança: alta
+
+## 2026-04-28
+
+### feat
 - Aprimorada funcionalidade de teste de agentes para simular fluxo completo de produção, incluindo uso de configuração real do cliente, prompts compilados, histórico de conversa real ou em-modal, contexto RAG e ferramentas habilitadas.
 - Adicionado suporte para seleção de conversa real para carregar histórico completo no teste, além de exibir metadados detalhados da última resposta (modelo usado, latência, uso de RAG e ferramentas).
 - Interface do modal de edição de agentes atualizada com seletor de histórico de conversa, indicadores de recursos ativos (tools, RAG, handoff) e painel de metadados da resposta.
