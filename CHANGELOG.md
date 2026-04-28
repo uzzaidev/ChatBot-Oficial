@@ -9,6 +9,16 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-28
 
 ### feat
+- Aprimorada funcionalidade de teste de agentes para simular fluxo completo de produção, incluindo uso de configuração real do cliente, prompts compilados, histórico de conversa real ou em-modal, contexto RAG e ferramentas habilitadas.
+- Adicionado suporte para seleção de conversa real para carregar histórico completo no teste, além de exibir metadados detalhados da última resposta (modelo usado, latência, uso de RAG e ferramentas).
+- Interface do modal de edição de agentes atualizada com seletor de histórico de conversa, indicadores de recursos ativos (tools, RAG, handoff) e painel de metadados da resposta.
+- Implementado tratamento aprimorado de erros com mensagens específicas em português para falhas comuns de API key, limite de requisições e modelo não encontrado.
+  - Arquivos: `src/app/api/agents/[id]/test/route.ts`, `src/components/agents/AgentEditorModal.tsx`
+  - Confiança: alta
+
+## 2026-04-28
+
+### feat
 - Adicionado componente `ModelTestResultCard` para exibir feedback detalhado e categorizado dos testes de modelos no editor de agentes, com mensagens de erro explicativas e detalhes técnicos opcionais.
 - Melhorada a API de teste de modelos (`src/app/api/client/test-model/route.ts`) para identificar e categorizar erros comuns (credenciais ausentes, chave inválida, modelo não encontrado, acesso negado, parâmetros incompatíveis, limites de contexto, quota, rate limit, erros de rede e do provider), retornando respostas JSON mais informativas para o frontend.
 - Integrado o novo componente de resultado ao modal de edição de agentes para mostrar feedback visual aprimorado e mensagens de toast mais claras.
