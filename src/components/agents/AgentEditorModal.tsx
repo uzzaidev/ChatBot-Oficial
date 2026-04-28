@@ -44,6 +44,7 @@ import {
   Bot,
   Brain,
   Check,
+  CheckCircle2,
   Clock,
   FileText,
   History,
@@ -57,6 +58,8 @@ import {
   Settings2,
   Sparkles,
   X,
+  XCircle,
+  Zap,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -384,6 +387,70 @@ export const AgentEditorModal = ({
 
   // Version history state
   const [historyOpen, setHistoryOpen] = useState(false);
+
+  // Model connectivity test state
+  const [modelTestLoading, setModelTestLoading] = useState<
+    "openai" | "groq" | null
+  >(null);
+  const [modelTestResult, setModelTestResult] = useState<{
+    provider: "openai" | "groq";
+    success: boolean;
+    message: string;
+    latency_ms?: number;
+    response?: string;
+  } | null>(null);
+
+  const handleTestModel = async (provider: "openai" | "groq") => {
+    const model =
+      provider === "openai" ? formData.openai_model : formData.groq_model;
+    if (!model) {
+      toast({
+        title: "Selecione um modelo",
+        description: `Escolha um modelo ${provider.toUpperCase()} antes de testar.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    setModelTestLoading(provider);
+    setModelTestResult(null);
+    try {
+      const response = await apiFetch("/api/client/test-model", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider, model }),
+      });
+      const data = await response.json();
+      setModelTestResult({
+        provider,
+        success: !!data.success,
+        message:
+          data.message ||
+          data.error ||
+          (data.success ? "Modelo OK" : "Falha no teste"),
+        latency_ms: data.latency_ms,
+        response: data.response,
+      });
+      toast({
+        title: data.success ? "✅ Modelo OK" : "❌ Falha no teste",
+        description: data.message || data.error || "",
+        variant: data.success ? "default" : "destructive",
+      });
+    } catch (error: any) {
+      const msg = error?.message || "Erro inesperado";
+      setModelTestResult({
+        provider,
+        success: false,
+        message: msg,
+      });
+      toast({
+        title: "❌ Erro ao testar",
+        description: msg,
+        variant: "destructive",
+      });
+    } finally {
+      setModelTestLoading(null);
+    }
+  };
 
   // Initialize form when agent changes
   useEffect(() => {
@@ -1221,39 +1288,63 @@ export const AgentEditorModal = ({
                 <div className="grid grid-cols-2 gap-6">
                   {/* OpenAI Models */}
                   <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Label className="text-base font-semibold">
-                        Modelo OpenAI
-                      </Label>
-                      <TooltipProvider delayDuration={150}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              type="button"
-                              className="text-muted-foreground hover:text-foreground transition-colors"
-                              aria-label="Informações sobre preços"
-                            >
-                              <Info className="h-4 w-4" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-xs">
-                            <p className="text-xs">
-                              Modelos podem consumir mais reais por token.
-                              Modelos com <strong>reasoning</strong> (gpt-5.x,
-                              o-series) cobram também os tokens de raciocínio
-                              gerados internamente.
-                            </p>
-                            <a
-                              href={OPENAI_PRICING_URL}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-blue-400 hover:underline mt-1 inline-block"
-                            >
-                              Ver preços oficiais →
-                            </a>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Label className="text-base font-semibold">
+                          Modelo OpenAI
+                        </Label>
+                        <TooltipProvider delayDuration={150}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                type="button"
+                                className="text-muted-foreground hover:text-foreground transition-colors"
+                                aria-label="Informações sobre preços"
+                              >
+                                <Info className="h-4 w-4" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs">
+                              <p className="text-xs">
+                                Modelos podem consumir mais reais por token.
+                                Modelos com <strong>reasoning</strong> (gpt-5.x,
+                                o-series) cobram também os tokens de raciocínio
+                                gerados internamente.
+                              </p>
+                              <a
+                                href={OPENAI_PRICING_URL}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-blue-400 hover:underline mt-1 inline-block"
+                              >
+                                Ver preços oficiais →
+                              </a>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2 text-xs gap-1"
+                        disabled={
+                          modelTestLoading !== null || !formData.openai_model
+                        }
+                        onClick={() => handleTestModel("openai")}
+                      >
+                        {modelTestLoading === "openai" ? (
+                          <>
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Testando...
+                          </>
+                        ) : (
+                          <>
+                            <Zap className="h-3 w-3" />
+                            Testar modelo
+                          </>
+                        )}
+                      </Button>
                     </div>
                     <Select
                       value={formData.openai_model}
@@ -1334,13 +1425,70 @@ export const AgentEditorModal = ({
                         </div>
                       );
                     })()}
+                    {modelTestResult?.provider === "openai" && (
+                      <div
+                        className={`rounded-md border px-3 py-2 text-xs ${
+                          modelTestResult.success
+                            ? "border-green-500/40 bg-green-500/10 text-green-700 dark:text-green-300"
+                            : "border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300"
+                        }`}
+                      >
+                        <div className="flex items-start gap-2">
+                          {modelTestResult.success ? (
+                            <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
+                          ) : (
+                            <XCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium">
+                              {modelTestResult.message}
+                            </p>
+                            {modelTestResult.success &&
+                              modelTestResult.latency_ms !== undefined && (
+                                <p className="text-[10px] opacity-80 mt-0.5">
+                                  Latência: {modelTestResult.latency_ms}ms
+                                  {modelTestResult.response &&
+                                    ` · Resposta: "${modelTestResult.response.slice(
+                                      0,
+                                      60,
+                                    )}"`}
+                                </p>
+                              )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Groq Models */}
                   <div className="space-y-3">
-                    <Label className="text-base font-semibold">
-                      Modelo Groq
-                    </Label>
+                    <div className="flex items-center justify-between gap-2">
+                      <Label className="text-base font-semibold">
+                        Modelo Groq
+                      </Label>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2 text-xs gap-1"
+                        disabled={
+                          modelTestLoading !== null || !formData.groq_model
+                        }
+                        onClick={() => handleTestModel("groq")}
+                      >
+                        {modelTestLoading === "groq" ? (
+                          <>
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Testando...
+                          </>
+                        ) : (
+                          <>
+                            <Zap className="h-3 w-3" />
+                            Testar modelo
+                          </>
+                        )}
+                      </Button>
+                    </div>
                     <Select
                       value={formData.groq_model}
                       onValueChange={(v) => updateField("groq_model", v)}
@@ -1361,6 +1509,39 @@ export const AgentEditorModal = ({
                         ))}
                       </SelectContent>
                     </Select>
+                    {modelTestResult?.provider === "groq" && (
+                      <div
+                        className={`rounded-md border px-3 py-2 text-xs ${
+                          modelTestResult.success
+                            ? "border-green-500/40 bg-green-500/10 text-green-700 dark:text-green-300"
+                            : "border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300"
+                        }`}
+                      >
+                        <div className="flex items-start gap-2">
+                          {modelTestResult.success ? (
+                            <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
+                          ) : (
+                            <XCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium">
+                              {modelTestResult.message}
+                            </p>
+                            {modelTestResult.success &&
+                              modelTestResult.latency_ms !== undefined && (
+                                <p className="text-[10px] opacity-80 mt-0.5">
+                                  Latência: {modelTestResult.latency_ms}ms
+                                  {modelTestResult.response &&
+                                    ` · Resposta: "${modelTestResult.response.slice(
+                                      0,
+                                      60,
+                                    )}"`}
+                                </p>
+                              )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
