@@ -6,6 +6,20 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-04-28
+
+### feat
+- Implementada página de configurações com interface em abas para gerenciamento de perfil, WhatsApp, preferências, suporte e configurações avançadas.
+- Adicionado componente de busca com sugestão para navegação rápida entre abas.
+- Criados componentes React para sidebar, tabs, seções e campos de formulário com temas claro e escuro.
+- Incluída funcionalidade para edição de perfil, alteração de senha, gerenciamento de credenciais (Meta, OpenAI), e desconexão do WhatsApp.
+- Adicionado design canvas interativo para prototipagem visual e organização de seções e artboards com suporte a drag-and-drop, foco e zoom.
+- Incluído pacote de ícones customizados para uso na interface.
+- Adicionados estilos CSS para temas, botões, inputs, cards e elementos da interface.
+- Documentação inicial do projeto UzzApp com instruções para implementação do design.
+  - Arquivos: `src/app/dashboard/settings/page.tsx`, `docs/uzzapp/project/Settings.html`, `docs/uzzapp/project/design-canvas.jsx`, `docs/uzzapp/project/icons.jsx`, `docs/uzzapp/project/sections.jsx`, `docs/uzzapp/project/styles.css`, `docs/uzzapp/project/uzz-sidebar.jsx`, `docs/uzzapp/project/var-a-sidebar.jsx`, `docs/uzzapp/project/var-b-tabs.jsx`, `docs/uzzapp/README.md`
+- Confiança: alta
+
 ## 2026-04-27
 
 ### fix
