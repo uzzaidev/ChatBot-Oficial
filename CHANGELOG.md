@@ -9,6 +9,15 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-28
 
 ### feat
+- Implementado suporte para exibição de anexos (imagens, PDFs e outros arquivos) nas mensagens do chat de teste do agente no modal AgentEditorModal.
+- No endpoint de teste do agente, adicionada execução segura de chamadas a ferramentas de leitura (ex: buscar_documento) para pré-visualização de documentos e anexos, incluindo coleta de metadados reais do cliente para contexto mais fiel.
+- Alterações incluem captura e retorno de anexos e resultados das ferramentas executadas no JSON de resposta da API de teste.
+  - Arquivos: `src/app/api/agents/[id]/test/route.ts`, `src/components/agents/AgentEditorModal.tsx`
+  - Confiança: alta
+
+## 2026-04-28
+
+### feat
 - Adicionados os props `ragChunks` e `toolCallNames` no `AgentEditorModal` para melhorar a visualização dos testes de agentes, incluindo pré-visualização detalhada dos chunks RAG com similaridade e nomes das chamadas de ferramentas usadas.
 - Implementada extração e formatação dos chunks RAG e nomes das tool calls na API de teste de agentes para fornecer dados enriquecidos ao modal de edição.
 - Incluídos tooltips no modal para exibir detalhes dos chunks RAG e das ferramentas chamadas durante o teste, melhorando a usabilidade e transparência das informações.
