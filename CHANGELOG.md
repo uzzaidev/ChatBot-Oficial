@@ -9,6 +9,13 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-28
 
 ### feat
+- Adicionada interface de preços dos modelos OpenAI no editor de agentes, exibindo valores de input, input em cache e output por 1M tokens com tooltip explicativo e links para tabela oficial
+  - Arquivos: `src/components/agents/AgentEditorModal.tsx`, `src/lib/openai-pricing.ts`
+  - Confiança: alta
+
+## 2026-04-28
+
+### feat
 - Adicionados novos modelos OpenAI da série GPT-5.x e variantes ao sistema, incluindo GPT-5.5, GPT-5.4, GPT-5.2, GPT-5.1, e suas versões Pro, Mini e Nano, além do modelo legado "o3".
 - Atualizada a lógica de raciocínio (reasoning) no cliente Direct AI para suportar os novos modelos, com regras específicas para níveis de esforço de raciocínio aceitos por cada modelo.
 - Implementado controle de orçamento mínimo de tokens de saída para modelos com raciocínio, prevenindo respostas vazias ao ajustar automaticamente `maxTokens` quando necessário.
