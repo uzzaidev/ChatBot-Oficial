@@ -2329,19 +2329,22 @@ export const AgentEditorModal = ({
                     <Label className="text-xs font-medium flex items-center gap-1.5">
                       <MessageSquare className="w-3.5 h-3.5" />
                       Continuar conversa de
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="w-3 h-3 text-muted-foreground cursor-help" />
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
-                          <p className="text-xs">
-                            Selecione uma conversa real para o agente responder
-                            com o histórico completo (igual produção). Deixe em
-                            &quot;Nenhuma&quot; para testar do zero. Tools e RAG
-                            seguem as configurações do agente.
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
+                      <TooltipProvider delayDuration={150}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="w-3 h-3 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p className="text-xs">
+                              Selecione uma conversa real para o agente
+                              responder com o histórico completo (igual
+                              produção). Deixe em &quot;Nenhuma&quot; para
+                              testar do zero. Tools e RAG seguem as
+                              configurações do agente.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </Label>
                     <div className="flex items-center gap-2 flex-1 max-w-md">
                       <Select
