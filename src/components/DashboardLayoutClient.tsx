@@ -43,6 +43,7 @@ export function DashboardLayoutClient({
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [isDesktop, setIsDesktop] = useState(false);
   const mainContentRef = useRef<HTMLElement>(null);
   const pathname = usePathname();
 
@@ -65,6 +66,15 @@ export function DashboardLayoutClient({
   const isFluidRoute =
     pathname.startsWith("/dashboard/traces") ||
     pathname.startsWith("/dashboard/crm");
+
+  // Detecta se estamos em desktop (md+) para aplicar marginLeft corretamente
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    setIsDesktop(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   // Detecta scroll para esconder/mostrar header (apenas desktop)
   useEffect(() => {
@@ -137,7 +147,9 @@ export function DashboardLayoutClient({
       <main
         ref={mainContentRef}
         className={cn("flex-1 flex flex-col min-w-0 bg-background")}
-        style={{ marginLeft: isCollapsed ? 80 : sidebarWidth }}
+        style={{
+          marginLeft: isDesktop ? (isCollapsed ? 80 : sidebarWidth) : 0,
+        }}
       >
         {/* Mobile Header */}
         <div className="md:hidden sticky top-0 z-10 border-b border-border/50 px-3 py-2 flex items-center justify-between bg-card">

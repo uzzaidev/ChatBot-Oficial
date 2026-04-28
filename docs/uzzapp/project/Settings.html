@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Configurações · UzzApp</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="uzz-sidebar.jsx"></script>
+<script type="text/babel" src="sections.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+var { useState, useEffect, useMemo } = React;
+var I = window.UzzIcons;
+
+var TABS = [
+  { id: "perfil",       label: "Perfil",        icon: I.user },
+  { id: "whatsapp",     label: "WhatsApp",      icon: I.whatsapp },
+  { id: "preferencias", label: "Preferências",  icon: I.settings },
+  { id: "outras",       label: "Outras",        icon: I.sparkles },
+  { id: "suporte",      label: "Suporte/Bugs",  icon: I.alert },
+  { id: "avancado",     label: "Avançado",      icon: I.shield },
+];
+
+function App() {
+  const [theme, setTheme] = useState(() => localStorage.getItem("uzz-theme") || "dark");
+  const [tab, setTab] = useState(() => localStorage.getItem("uzz-tab") || "perfil");
+  const [q, setQ] = useState("");
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("uzz-theme", theme);
+  }, [theme]);
+  useEffect(() => { localStorage.setItem("uzz-tab", tab); }, [tab]);
+
+  const toggleTheme = () => setTheme(t => t === "dark" ? "light" : "dark");
+
+  // search index — flatten setting names so user can jump anywhere
+  const searchable = [
+    { tab: "perfil",       text: "perfil nome email telefone fuso horário senha alterar" },
+    { tab: "whatsapp",     text: "whatsapp meta business number quality reautenticar desconectar" },
+    { tab: "preferencias", text: "tema dark light claro escuro idioma densidade compacta" },
+    { tab: "outras",       text: "agentes ia text-to-speech tts notificações push" },
+    { tab: "suporte",      text: "suporte bugs modo triagem" },
+    { tab: "avancado",     text: "avançado credenciais meta token openai api key sessão segurança apagar conta" },
+  ];
+  const matchedTab = useMemo(() => {
+    if (!q.trim()) return null;
+    const lc = q.toLowerCase();
+    return searchable.find(s => s.text.includes(lc))?.tab || null;
+  }, [q]);
+
+  return (
+    <div data-screen-label="Settings" style={{
+      display: "flex", height: "100vh", width: "100vw",
+      background: "var(--app-bg)", color: "var(--app-text)", overflow: "hidden"
+    }}>
+      <UzzSidebar active="settings" theme={theme} onToggleTheme={toggleTheme}/>
+
+      <main className="scroll-mint" style={{ flex: 1, overflow: "auto" }}>
+        {/* Page header */}
+        <div style={{
+          position: "sticky", top: 0, zIndex: 10,
+          background: "var(--app-bg)", borderBottom: "1px solid var(--app-border)",
+          padding: "20px 36px 0",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 16, flexWrap: "wrap" }}>
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <h1 className="font-poppins" style={{ fontSize: 24, fontWeight: 700, margin: 0, letterSpacing: "-0.01em" }}>
+                Configurações
+              </h1>
+              <p style={{ fontSize: 13, color: "var(--app-text-muted)", margin: "3px 0 0" }}>
+                Conta, integrações e ajustes do sistema
+              </p>
+            </div>
+            <div style={{ position: "relative", width: 320 }}>
+              <span style={{ position: "absolute", left: 12, top: 10, color: "var(--app-text-dim)" }}>{I.search}</span>
+              <input className="uzz-input" placeholder="Buscar configuração…"
+                     value={q} onChange={e => setQ(e.target.value)}
+                     style={{ paddingLeft: 38, paddingRight: 60 }}/>
+              <kbd style={{ position: "absolute", right: 10, top: 9 }}>⌘K</kbd>
+              {matchedTab && q && (
+                <div style={{
+                  position: "absolute", top: 44, left: 0, right: 0,
+                  background: "var(--app-card)", border: "1px solid var(--app-border)",
+                  borderRadius: 10, padding: 6, boxShadow: "var(--shadow-card)", zIndex: 20
+                }}>
+                  <div onClick={() => { setTab(matchedTab); setQ(""); }}
+                       style={{ padding: "8px 10px", borderRadius: 6, cursor: "pointer",
+                                display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+                    <span style={{ color: "var(--uzz-mint)" }}>{TABS.find(t => t.id === matchedTab).icon}</span>
+                    Ir para <strong>{TABS.find(t => t.id === matchedTab).label}</strong>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          {/* Tabs */}
+          <div style={{ display: "flex", gap: 2, marginLeft: -8 }}>
+            {TABS.map(t => (
+              <button key={t.id} onClick={() => setTab(t.id)}
+                      style={{
+                        background: "transparent", border: "none", cursor: "pointer",
+                        padding: "10px 14px", display: "flex", alignItems: "center", gap: 7,
+                        fontSize: 13, fontWeight: 500, fontFamily: "inherit",
+                        color: tab === t.id ? "var(--uzz-mint)" : "var(--app-text-muted)",
+                        borderBottom: tab === t.id ? "2px solid var(--uzz-mint)" : "2px solid transparent",
+                        marginBottom: -1, transition: "all 0.15s"
+                      }}>
+                {t.icon}{t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div style={{ padding: "28px 36px 64px", maxWidth: 1100, display: "flex", flexDirection: "column", gap: 18 }}>
+          {tab === "perfil"       && <ProfileSection/>}
+          {tab === "whatsapp"     && <WhatsAppSection/>}
+          {tab === "preferencias" && <PreferencesSection theme={theme} setTheme={setTheme}/>}
+          {tab === "outras"       && <QuickLinks/>}
+          {tab === "suporte"      && <SupportSection/>}
+          {tab === "avancado"     && <AdvancedSection/>}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

@@ -1,22 +1,5 @@
 "use client";
 
-/**
- * Settings Page
- *
- * /dashboard/settings
- *
- * Client Component (Mobile Compatible)
- * Motivo: Static Export (Capacitor) não suporta Server Components
- *
- * Implementação completa do Settings com:
- * 1. Perfil do Usuário - visualizar/editar nome, email, telefone, alterar senha
- * 2. Variáveis de Ambiente - gerenciar credenciais do Vault (Meta, OpenAI, Groq)
- * 3. Bot Configurations - gerenciar configurações modulares do bot
- *
- * Baseado na implementação do desenvolvedor sênior
- * IMPORTANTE: Edição de variáveis requer revalidação de senha
- */
-
 import { EmbeddedSignupButton } from "@/components/EmbeddedSignupButton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -32,31 +15,73 @@ import { Label } from "@/components/ui/label";
 import {
   AlertTriangle,
   ArrowRight,
-  BarChart3,
+  Bell,
   BellRing,
   Bot,
-  Check,
   CheckCircle2,
-  Clock,
-  Copy,
   Eye,
   EyeOff,
   Key,
-  Lightbulb,
   Loader2,
   Lock,
-  LockKeyhole,
+  MessageCircle,
   Mic,
-  Phone,
   Save,
+  Search,
   Settings,
+  Shield,
   Sparkles,
-  Undo2,
   Unplug,
   User,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+type SettingsTab =
+  | "perfil"
+  | "whatsapp"
+  | "preferencias"
+  | "outras"
+  | "suporte"
+  | "avancado";
+
+const TABS: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
+  { id: "perfil", label: "Perfil", icon: <User className="w-4 h-4" /> },
+  {
+    id: "whatsapp",
+    label: "WhatsApp",
+    icon: <MessageCircle className="w-4 h-4" />,
+  },
+  {
+    id: "preferencias",
+    label: "Preferências",
+    icon: <Settings className="w-4 h-4" />,
+  },
+  { id: "outras", label: "Outras", icon: <Sparkles className="w-4 h-4" /> },
+  { id: "suporte", label: "Suporte/Bugs", icon: <Bell className="w-4 h-4" /> },
+  { id: "avancado", label: "Avançado", icon: <Shield className="w-4 h-4" /> },
+];
+
+const SEARCH_INDEX: { tab: SettingsTab; text: string }[] = [
+  {
+    tab: "perfil",
+    text: "perfil nome email telefone fuso horário senha alterar",
+  },
+  {
+    tab: "whatsapp",
+    text: "whatsapp meta business number quality reautenticar desconectar",
+  },
+  {
+    tab: "preferencias",
+    text: "tema dark light claro escuro idioma densidade compacta",
+  },
+  { tab: "outras", text: "agentes ia text-to-speech tts notificações push" },
+  { tab: "suporte", text: "suporte bugs modo triagem" },
+  {
+    tab: "avancado",
+    text: "avançado credenciais meta token openai api key sessão segurança apagar conta groq",
+  },
+];
 
 type CoexistenceSyncState = {
   status?: "requested" | "completed" | "declined" | "failed";
@@ -73,6 +98,15 @@ type CoexistenceSyncState = {
 };
 
 export default function SettingsPage() {
+  const [activeTab, setActiveTab] = useState<SettingsTab>("perfil");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const matchedTab = useMemo(() => {
+    if (!searchQuery.trim()) return null;
+    const lc = searchQuery.toLowerCase();
+    return SEARCH_INDEX.find((s) => s.text.includes(lc))?.tab ?? null;
+  }, [searchQuery]);
+
   // Estado do perfil
   const [profile, setProfile] = useState({
     full_name: "",
@@ -686,22 +720,77 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-5xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <Settings className="w-9 h-9 text-primary" />
-            <h1 className="text-4xl font-poppins font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent pb-1">
+    <div className="min-h-screen bg-background">
+      {/* Sticky page header */}
+      <div className="sticky top-0 z-10 bg-background border-b border-border px-6 pt-5 pb-0">
+        <div className="flex items-start gap-4 mb-4 flex-wrap max-w-5xl">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl font-poppins font-bold tracking-tight">
               Configurações
             </h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Conta, integrações e ajustes do sistema
+            </p>
           </div>
-          <p className="text-muted-foreground text-lg">
-            Gerencie seu perfil, credenciais e variáveis de ambiente
-          </p>
+          {/* Search */}
+          <div className="relative w-80">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar configuração…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-16"
+            />
+            <kbd className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground border border-border rounded px-1.5 py-0.5 font-mono">
+              ⌘K
+            </kbd>
+            {/* Search suggestion dropdown */}
+            {matchedTab && searchQuery && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-xl p-1.5 shadow-lg z-20">
+                <button
+                  onClick={() => {
+                    setActiveTab(matchedTab);
+                    setSearchQuery("");
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors text-left"
+                >
+                  <span className="text-primary">
+                    {TABS.find((t) => t.id === matchedTab)?.icon}
+                  </span>
+                  Ir para{" "}
+                  <strong>
+                    {TABS.find((t) => t.id === matchedTab)?.label}
+                  </strong>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Notification */}
+        {/* Tabs */}
+        <div className="flex gap-0.5 -mx-1 overflow-x-auto">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setActiveTab(t.id)}
+              className={[
+                "flex items-center gap-1.5 px-3.5 py-2.5 text-sm font-medium whitespace-nowrap transition-all",
+                "border-b-2 -mb-px",
+                activeTab === t.id
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground",
+              ].join(" ")}
+            >
+              {t.icon}
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Tab content */}
+      <div className="max-w-5xl mx-auto px-6 py-7 space-y-5">
+        {/* Notification banner */}
         {notification && (
           <Alert
             variant={notification.type === "error" ? "destructive" : "default"}
@@ -710,1406 +799,886 @@ export default function SettingsPage() {
           </Alert>
         )}
 
-        {/* Seção 1: Perfil do Usuário */}
-        <Card className="bg-card border-border">
-          <CardHeader className="border-b border-border">
-            <CardTitle className="text-xl font-poppins text-foreground flex items-center gap-2">
-              <User className="w-5 h-5 text-primary" />
-              Perfil do Usuário
-            </CardTitle>
-            <CardDescription className="text-muted-foreground">
-              Visualize e edite suas informações pessoais
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6 pt-6">
-            {/* Nome */}
-            <div>
-              <Label htmlFor="full_name">Nome Completo</Label>
-              <div className="flex gap-2 mt-2">
-                <Input
-                  id="full_name"
-                  value={profile.full_name}
-                  onChange={(e) =>
-                    setProfile({ ...profile, full_name: e.target.value })
-                  }
-                  disabled={!editingProfile || loadingProfile}
-                />
-                {!editingProfile ? (
-                  <Button onClick={() => setEditingProfile(true)}>
-                    Editar
+        {/* ── PERFIL ── */}
+        {activeTab === "perfil" && (
+          <>
+            {/* Seção 1: Perfil do Usuário */}
+            <Card className="bg-card border-border">
+              <CardHeader className="border-b border-border">
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <User className="w-4 h-4 text-primary" />
+                  Perfil do Usuário
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6 pt-6">
+                {/* Nome */}
+                <div>
+                  <Label htmlFor="full_name">Nome Completo</Label>
+                  <div className="flex gap-2 mt-2">
+                    <Input
+                      id="full_name"
+                      value={profile.full_name}
+                      onChange={(e) =>
+                        setProfile({ ...profile, full_name: e.target.value })
+                      }
+                      disabled={!editingProfile || loadingProfile}
+                    />
+                    {!editingProfile ? (
+                      <Button onClick={() => setEditingProfile(true)}>
+                        Editar
+                      </Button>
+                    ) : (
+                      <>
+                        <Button
+                          onClick={handleUpdateProfile}
+                          disabled={loadingProfile}
+                        >
+                          <Save className="w-4 h-4 mr-2" />
+                          Salvar
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => setEditingProfile(false)}
+                          disabled={loadingProfile}
+                        >
+                          Cancelar
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Email (readonly) */}
+                <div>
+                  <Label htmlFor="email" className="text-foreground">
+                    Email
+                  </Label>
+                  <Input
+                    id="email"
+                    value={profile.email}
+                    disabled
+                    className="mt-2 bg-muted/50 border-border text-foreground/70"
+                  />
+                </div>
+
+                {/* Telefone (readonly) */}
+                <div>
+                  <Label htmlFor="phone" className="text-foreground">
+                    Telefone
+                  </Label>
+                  <Input
+                    id="phone"
+                    value={profile.phone || "Não configurado"}
+                    disabled
+                    className="mt-2 bg-muted/50 border-border text-foreground/70"
+                  />
+                </div>
+
+                <div className="border-t border-border pt-5 space-y-4">
+                  <p className="text-sm font-medium text-foreground">
+                    Alterar Senha
+                  </p>
+                  <div>
+                    <Label htmlFor="current_password">Senha Atual</Label>
+                    <Input
+                      id="current_password"
+                      type="password"
+                      value={passwordForm.current_password}
+                      onChange={(e) =>
+                        setPasswordForm({
+                          ...passwordForm,
+                          current_password: e.target.value,
+                        })
+                      }
+                      disabled={loadingPassword}
+                      className="mt-2 bg-muted/50 border-border text-foreground"
+                      placeholder="Senha atual"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="new_password">Nova Senha</Label>
+                    <Input
+                      id="new_password"
+                      type="password"
+                      value={passwordForm.new_password}
+                      onChange={(e) =>
+                        setPasswordForm({
+                          ...passwordForm,
+                          new_password: e.target.value,
+                        })
+                      }
+                      disabled={loadingPassword}
+                      className="mt-2 bg-muted/50 border-border text-foreground"
+                      placeholder="Mínimo 8 caracteres"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="confirm_password">Confirmar Senha</Label>
+                    <Input
+                      id="confirm_password"
+                      type="password"
+                      value={passwordForm.confirm_password}
+                      onChange={(e) =>
+                        setPasswordForm({
+                          ...passwordForm,
+                          confirm_password: e.target.value,
+                        })
+                      }
+                      disabled={loadingPassword}
+                      className="mt-2 bg-muted/50 border-border text-foreground"
+                      placeholder="Repita a nova senha"
+                    />
+                  </div>
+
+                  <Button
+                    onClick={handleUpdatePassword}
+                    disabled={loadingPassword}
+                  >
+                    {loadingPassword ? "Atualizando..." : "Atualizar Senha"}
                   </Button>
-                ) : (
-                  <>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
+
+        {/* ── WHATSAPP ── */}
+        {activeTab === "whatsapp" && (
+          <>
+            {/* Seção 4: Variáveis de Ambiente */}
+            <Card className="bg-card border-border">
+              <CardHeader className="border-b border-border">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base font-semibold flex items-center gap-2">
+                      <Key className="w-4 h-4 text-primary" />
+                      Variáveis de Ambiente
+                    </CardTitle>
+                  </div>
+                  {!editingSecrets && (
                     <Button
-                      onClick={handleUpdateProfile}
-                      disabled={loadingProfile}
-                    >
-                      <Save className="w-4 h-4 mr-2" />
-                      Salvar
-                    </Button>
-                    <Button
+                      onClick={() => setShowRevalidationModal(true)}
                       variant="outline"
-                      onClick={() => setEditingProfile(false)}
-                      disabled={loadingProfile}
+                      className="gap-2"
                     >
-                      Cancelar
+                      <Lock className="w-4 h-4" />
+                      Editar
                     </Button>
+                  )}
+                  {editingSecrets && (
+                    <Button
+                      onClick={() => setEditingSecrets(false)}
+                      variant="outline"
+                    >
+                      Bloquear Edição
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-6">
+                {/* Auto-provisioned clients: show connected status instead of manual fields */}
+                {isAutoProvisioned && (
+                  <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-4 mb-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                        <CheckCircle2 className="w-5 h-5" />
+                        <span className="font-medium">
+                          WhatsApp conectado via Embedded Signup
+                        </span>
+                      </div>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        disabled={isDisconnectingWhatsApp}
+                        onClick={async () => {
+                          if (
+                            !confirm(
+                              "Tem certeza que deseja desconectar o WhatsApp? O bot parará de funcionar até reconectar.",
+                            )
+                          )
+                            return;
+                          setIsDisconnectingWhatsApp(true);
+                          try {
+                            const { apiFetch } = await import("@/lib/api");
+                            const res = await apiFetch(
+                              "/api/auth/meta/disconnect",
+                              { method: "DELETE" },
+                            );
+                            const data = await res.json();
+                            if (!res.ok)
+                              throw new Error(
+                                data.error || "Erro ao desconectar",
+                              );
+                            setIsAutoProvisioned(false);
+                            setNotification({
+                              type: "success",
+                              message: `WhatsApp ${
+                                data.disconnected?.phone || ""
+                              } desconectado com sucesso.`,
+                            });
+                          } catch (err) {
+                            setNotification({
+                              type: "error",
+                              message:
+                                err instanceof Error
+                                  ? err.message
+                                  : "Erro ao desconectar WhatsApp",
+                            });
+                          } finally {
+                            setIsDisconnectingWhatsApp(false);
+                          }
+                        }}
+                      >
+                        {isDisconnectingWhatsApp ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Desconectando...
+                          </>
+                        ) : (
+                          <>
+                            <Unplug className="mr-2 h-4 w-4" />
+                            Desconectar WhatsApp
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Gerenciado automaticamente pela plataforma.
+                    </p>
+                  </div>
+                )}
+
+                {canShowCoexistenceSyncCard && (
+                  <div className="rounded-lg border border-border p-4 mb-4">
+                    <div className="flex items-center justify-between gap-4 mb-3">
+                      <div>
+                        <p className="text-sm font-medium">Sincronização Coexistence</p>
+                        {provisionedAt && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Janela até{" "}
+                            {formatDateTime(
+                              new Date(
+                                new Date(provisionedAt).getTime() +
+                                  24 * 60 * 60 * 1000,
+                              ).toISOString(),
+                            )}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={isSyncingContacts || isSyncLocked(coexistenceSync.contacts)}
+                          onClick={() => handleRequestCoexistenceSync("contacts")}
+                        >
+                          {isSyncingContacts ? <Loader2 className="h-3 w-3 animate-spin" /> : "Contatos"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={isSyncingHistory || isSyncLocked(coexistenceSync.history)}
+                          onClick={() => handleRequestCoexistenceSync("history")}
+                        >
+                          {isSyncingHistory ? <Loader2 className="h-3 w-3 animate-spin" /> : "Histórico"}
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="grid gap-2 md:grid-cols-2">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground border border-border rounded px-3 py-2">
+                        <span>Contatos</span>
+                        <span>{formatSyncStatus(coexistenceSync.contacts)}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground border border-border rounded px-3 py-2">
+                        <span>Histórico</span>
+                        <span>{formatSyncStatus(coexistenceSync.history)}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Legacy clients: migration banner */}
+                {!isAutoProvisioned &&
+                  webhookRoutingMode !== "waba" &&
+                  clientId && (
+                    <div className="rounded-lg border border-border p-4 mb-4 flex items-center justify-between gap-4">
+                      <p className="text-sm text-muted-foreground">
+                        Conectado via configuração manual. Migre para Embedded Signup para gerenciamento automático.
+                      </p>
+                      <div className="flex gap-2 shrink-0">
+                        <EmbeddedSignupButton
+                          clientId={clientId || undefined}
+                          variant="default"
+                          size="sm"
+                          onSuccess={(data) => {
+                            setNotification({
+                              type: "success",
+                              message: `WhatsApp ${data.displayPhone} conectado com sucesso via Embedded Signup!`,
+                            });
+                          }}
+                          onError={(error) => {
+                            setNotification({ type: "error", message: error });
+                          }}
+                        >
+                          Migrar
+                        </EmbeddedSignupButton>
+                        <Button
+                          onClick={async () => {
+                            setIsRollingBack(true);
+                            try {
+                              const res = await fetch("/api/client/migrate/rollback", { method: "POST" });
+                              const data = await res.json();
+                              if (!res.ok) throw new Error(data.error || "Erro ao reverter");
+                              setNotification({ type: "success", message: "WhatsApp reconectado ao app anterior." });
+                            } catch (err) {
+                              setNotification({
+                                type: "error",
+                                message: err instanceof Error ? err.message : "Erro ao reverter. Tente novamente.",
+                              });
+                            } finally {
+                              setIsRollingBack(false);
+                            }
+                          }}
+                          disabled={isRollingBack || isMigrating}
+                          variant="outline"
+                          size="sm"
+                        >
+                          {isRollingBack ? <Loader2 className="h-3 w-3 animate-spin" /> : "Reverter"}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                {/* Legacy clients: manual Meta credential fields */}
+                {!isAutoProvisioned && (
+                  <>
+                    {/* Meta Access Token */}
+                    <div>
+                      <Label
+                        htmlFor="meta_access_token"
+                        className="text-foreground"
+                      >
+                        Meta Access Token
+                      </Label>
+                      <div className="flex gap-2 mt-2">
+                        <div className="relative flex-1">
+                          <Input
+                            id="meta_access_token"
+                            type={
+                              showPasswords["meta_access_token"]
+                                ? "text"
+                                : "password"
+                            }
+                            value={secrets.meta_access_token}
+                            onChange={(e) =>
+                              setSecrets({
+                                ...secrets,
+                                meta_access_token: e.target.value,
+                              })
+                            }
+                            disabled={!editingSecrets}
+                            className="bg-muted/50 border-border text-foreground font-mono text-sm"
+                            placeholder="EAABsbCS1iHgBO7ZC..."
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              togglePasswordVisibility("meta_access_token")
+                            }
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            {showPasswords["meta_access_token"] ? (
+                              <EyeOff className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                        {editingSecrets && (
+                          <Button
+                            onClick={() =>
+                              handleUpdateSecret(
+                                "meta_access_token",
+                                secrets.meta_access_token,
+                              )
+                            }
+                            disabled={loadingSecrets}
+                          >
+                            Salvar
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Meta Verify Token */}
+                    <div>
+                      <Label htmlFor="meta_verify_token">
+                        Meta Verify Token
+                      </Label>
+                      <div className="flex gap-2 mt-2">
+                        <div className="relative flex-1">
+                          <Input
+                            id="meta_verify_token"
+                            type={
+                              showPasswords["meta_verify_token"]
+                                ? "text"
+                                : "password"
+                            }
+                            value={secrets.meta_verify_token}
+                            onChange={(e) =>
+                              setSecrets({
+                                ...secrets,
+                                meta_verify_token: e.target.value,
+                              })
+                            }
+                            disabled={!editingSecrets}
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              togglePasswordVisibility("meta_verify_token")
+                            }
+                            className="absolute right-2 top-2"
+                          >
+                            {showPasswords["meta_verify_token"] ? (
+                              <EyeOff className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                        {editingSecrets && (
+                          <Button
+                            onClick={() =>
+                              handleUpdateSecret(
+                                "meta_verify_token",
+                                secrets.meta_verify_token,
+                              )
+                            }
+                            disabled={loadingSecrets}
+                          >
+                            Salvar
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Meta App Secret - SECURITY FIX (VULN-012) */}
+                    <div>
+                      <Label htmlFor="meta_app_secret">Meta App Secret</Label>
+                      <div className="flex gap-2 mt-2">
+                        <div className="relative flex-1">
+                          <Input
+                            id="meta_app_secret"
+                            type={
+                              showPasswords["meta_app_secret"]
+                                ? "text"
+                                : "password"
+                            }
+                            value={secrets.meta_app_secret}
+                            onChange={(e) =>
+                              setSecrets({
+                                ...secrets,
+                                meta_app_secret: e.target.value,
+                              })
+                            }
+                            disabled={!editingSecrets}
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              togglePasswordVisibility("meta_app_secret")
+                            }
+                            className="absolute right-2 top-2"
+                          >
+                            {showPasswords["meta_app_secret"] ? (
+                              <EyeOff className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                        {editingSecrets && (
+                          <Button
+                            onClick={() =>
+                              handleUpdateSecret(
+                                "meta_app_secret",
+                                secrets.meta_app_secret,
+                              )
+                            }
+                            disabled={loadingSecrets}
+                          >
+                            Salvar
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   </>
                 )}
-              </div>
-            </div>
 
-            {/* Email (readonly) */}
-            <div>
-              <Label htmlFor="email" className="text-foreground">
-                Email
-              </Label>
-              <Input
-                id="email"
-                value={profile.email}
-                disabled
-                className="mt-2 bg-muted/50 border-border text-foreground/70"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                O email não pode ser alterado
-              </p>
-            </div>
+                {/* Divisor */}
+                <div className="border-t my-6"></div>
 
-            {/* Telefone (readonly) */}
-            <div>
-              <Label htmlFor="phone" className="text-foreground">
-                Telefone
-              </Label>
-              <Input
-                id="phone"
-                value={profile.phone || "Não configurado"}
-                disabled
-                className="mt-2 bg-muted/50 border-border text-foreground/70"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Telefone do WhatsApp configurado nas variáveis de ambiente
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Seção 2: Alterar Senha */}
-        <Card className="bg-card border-border">
-          <CardHeader className="border-b border-border">
-            <CardTitle className="text-xl font-poppins text-foreground flex items-center gap-2">
-              <LockKeyhole className="w-5 h-5 text-primary" />
-              Alterar Senha
-            </CardTitle>
-            <CardDescription className="text-muted-foreground">
-              Atualize sua senha de acesso
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4 pt-6">
-            <div>
-              <Label htmlFor="current_password" className="text-foreground">
-                Senha Atual
-              </Label>
-              <Input
-                id="current_password"
-                type="password"
-                value={passwordForm.current_password}
-                onChange={(e) =>
-                  setPasswordForm({
-                    ...passwordForm,
-                    current_password: e.target.value,
-                  })
-                }
-                disabled={loadingPassword}
-                className="mt-2 bg-muted/50 border-border text-foreground"
-                placeholder="Digite sua senha atual"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="new_password" className="text-foreground">
-                Nova Senha
-              </Label>
-              <Input
-                id="new_password"
-                type="password"
-                value={passwordForm.new_password}
-                onChange={(e) =>
-                  setPasswordForm({
-                    ...passwordForm,
-                    new_password: e.target.value,
-                  })
-                }
-                disabled={loadingPassword}
-                className="mt-2 bg-muted/50 border-border text-foreground"
-                placeholder="Mínimo 8 caracteres"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Mínimo 8 caracteres
-              </p>
-            </div>
-
-            <div>
-              <Label htmlFor="confirm_password" className="text-foreground">
-                Confirmar Nova Senha
-              </Label>
-              <Input
-                id="confirm_password"
-                type="password"
-                value={passwordForm.confirm_password}
-                onChange={(e) =>
-                  setPasswordForm({
-                    ...passwordForm,
-                    confirm_password: e.target.value,
-                  })
-                }
-                disabled={loadingPassword}
-                className="mt-2 bg-muted/50 border-border text-foreground"
-                placeholder="Digite novamente"
-              />
-            </div>
-
-            <Button
-              onClick={handleUpdatePassword}
-              disabled={loadingPassword}
-              className="w-full bg-gradient-to-r from-uzz-mint to-uzz-blue text-foreground hover:from-uzz-blue hover:to-uzz-mint"
-            >
-              {loadingPassword ? "Atualizando..." : "Atualizar Senha"}
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Seção 3: Banner de Redirecionamento para Agentes IA */}
-        <Card className="bg-gradient-to-br from-uzz-purple/10 via-uzz-mint/10 to-uzz-blue/10 border-uzz-mint/30 relative overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-uzz-mint/5 via-transparent to-transparent" />
-          <CardHeader className="border-b border-uzz-mint/20 relative">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-uzz-mint/20">
-                  <Sparkles className="w-6 h-6 text-uzz-mint" />
-                </div>
-                <div>
-                  <CardTitle className="text-xl font-poppins text-foreground flex items-center gap-2">
-                    Configurações de IA
-                    <span className="text-xs bg-uzz-mint/20 text-uzz-mint px-2 py-0.5 rounded-full font-normal">
-                      Centralizado
-                    </span>
-                  </CardTitle>
-                  <CardDescription className="text-muted-foreground">
-                    Todas as configurações de IA, prompts, modelos e
-                    comportamentos foram centralizados na página de Agentes IA.
-                  </CardDescription>
-                </div>
-              </div>
-              <Link href="/dashboard/agents">
-                <Button className="gap-2 bg-uzz-mint hover:bg-uzz-mint/90 text-white">
-                  Ir para Agentes IA
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-6 relative">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="p-4 rounded-lg bg-background/50 border border-border">
-                <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
-                  <Bot className="w-4 h-4 text-uzz-mint" />O que você encontra
-                  lá:
-                </h4>
-                <ul className="text-sm text-muted-foreground space-y-1.5">
-                  <li className="flex items-start gap-2">
-                    <span className="text-uzz-mint">•</span>
-                    System Prompts personalizados
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-uzz-mint">•</span>
-                    Configuração de modelos (Groq, OpenAI)
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-uzz-mint">•</span>
-                    Temperatura e parâmetros de geração
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-uzz-mint">•</span>
-                    RAG e Function Calling
-                  </li>
-                </ul>
-              </div>
-              <div className="p-4 rounded-lg bg-background/50 border border-border">
-                <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-uzz-blue" />
-                  Timing & Comportamento:
-                </h4>
-                <ul className="text-sm text-muted-foreground space-y-1.5">
-                  <li className="flex items-start gap-2">
-                    <span className="text-uzz-blue">•</span>
-                    Delay de agrupamento de mensagens
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-uzz-blue">•</span>
-                    Delay entre mensagens divididas
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-uzz-blue">•</span>
-                    Memória de contexto (histórico)
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-uzz-blue">•</span>
-                    Divisão automática de mensagens longas
-                  </li>
-                </ul>
-              </div>
-            </div>
-            <Alert className="mt-4 bg-uzz-mint/10 border-uzz-mint/30">
-              <Lightbulb className="h-4 w-4 text-uzz-mint" />
-              <AlertDescription className="text-sm">
-                <strong className="text-uzz-mint">Dica:</strong> Na página de
-                Agentes IA você pode criar múltiplos agentes com diferentes
-                configurações e alternar entre eles facilmente.
-              </AlertDescription>
-            </Alert>
-          </CardContent>
-        </Card>
-        {/* Seção 4: Variáveis de Ambiente */}
-        <Card className="bg-card border-border">
-          <CardHeader className="border-b border-border">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-xl font-poppins text-foreground flex items-center gap-2">
-                  <Key className="w-5 h-5 text-primary" />
-                  Variáveis de Ambiente
-                </CardTitle>
-                <CardDescription className="text-muted-foreground">
-                  Gerencie as credenciais de API do seu cliente
-                </CardDescription>
-              </div>
-              {!editingSecrets && (
-                <Button
-                  onClick={() => setShowRevalidationModal(true)}
-                  variant="outline"
-                  className="gap-2"
-                >
-                  <Lock className="w-4 h-4" />
-                  Editar
-                </Button>
-              )}
-              {editingSecrets && (
-                <Button
-                  onClick={() => setEditingSecrets(false)}
-                  variant="outline"
-                >
-                  Bloquear Edição
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4 pt-6">
-            {/* Auto-provisioned clients: show connected status instead of manual fields */}
-            {isAutoProvisioned && (
-              <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-4 mb-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                    <CheckCircle2 className="w-5 h-5" />
-                    <span className="font-medium">
-                      WhatsApp conectado via Embedded Signup
-                    </span>
-                  </div>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    disabled={isDisconnectingWhatsApp}
-                    onClick={async () => {
-                      if (
-                        !confirm(
-                          "Tem certeza que deseja desconectar o WhatsApp? O bot parará de funcionar até reconectar.",
-                        )
-                      )
-                        return;
-                      setIsDisconnectingWhatsApp(true);
-                      try {
-                        const { apiFetch } = await import("@/lib/api");
-                        const res = await apiFetch(
-                          "/api/auth/meta/disconnect",
-                          { method: "DELETE" },
-                        );
-                        const data = await res.json();
-                        if (!res.ok)
-                          throw new Error(data.error || "Erro ao desconectar");
-                        setIsAutoProvisioned(false);
-                        setNotification({
-                          type: "success",
-                          message: `WhatsApp ${
-                            data.disconnected?.phone || ""
-                          } desconectado com sucesso.`,
-                        });
-                      } catch (err) {
-                        setNotification({
-                          type: "error",
-                          message:
-                            err instanceof Error
-                              ? err.message
-                              : "Erro ao desconectar WhatsApp",
-                        });
-                      } finally {
-                        setIsDisconnectingWhatsApp(false);
-                      }
-                    }}
-                  >
-                    {isDisconnectingWhatsApp ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Desconectando...
-                      </>
-                    ) : (
-                      <>
-                        <Unplug className="mr-2 h-4 w-4" />
-                        Desconectar WhatsApp
-                      </>
-                    )}
-                  </Button>
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Suas credenciais Meta são gerenciadas automaticamente pela
-                  plataforma UzzApp. Não é necessário configurar tokens
-                  manualmente.
-                </p>
-              </div>
-            )}
-
-            {canShowCoexistenceSyncCard && (
-              <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 mb-4">
-                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                {/* Seção de Credenciais de IA */}
+                <div className="space-y-4">
                   <div>
-                    <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300 mb-2">
-                      <Clock className="w-5 h-5" />
-                      <span className="font-medium">
-                        Sincronização inicial do Coexistence
-                      </span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Solicite manualmente o sync de contatos e histórico do
-                      WhatsApp Business App. A Meta aceita cada solicitação uma
-                      única vez por número.
-                    </p>
-                    {onboardingType && onboardingType !== "coexistence" && (
-                      <p className="text-xs text-amber-700 dark:text-amber-300 mt-2">
-                        Cliente atual marcado como <strong>{onboardingType}</strong>.
-                        Se não for coexistence, o backend vai recusar a solicitação
-                        e mostrar o erro real.
-                      </p>
-                    )}
-                    {!onboardingType && (
-                      <p className="text-xs text-amber-700 dark:text-amber-300 mt-2">
-                        Tipo de onboarding não identificado no banco. Você ainda
-                        pode testar; se não for coexistence, o backend retorna o erro.
-                      </p>
-                    )}
-                    {provisionedAt && (
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Onboarding em {formatDateTime(provisionedAt)}. Janela
-                        recomendada até{" "}
-                        {formatDateTime(
-                          new Date(
-                            new Date(provisionedAt).getTime() +
-                              24 * 60 * 60 * 1000,
-                          ).toISOString(),
-                        )}
-                        .
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={
-                        isSyncingContacts || isSyncLocked(coexistenceSync.contacts)
-                      }
-                      onClick={() => handleRequestCoexistenceSync("contacts")}
-                    >
-                      {isSyncingContacts ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Solicitando contatos...
-                        </>
-                      ) : (
-                        "Sincronizar contatos"
-                      )}
-                    </Button>
-                    <Button
-                      size="sm"
-                      disabled={
-                        isSyncingHistory || isSyncLocked(coexistenceSync.history)
-                      }
-                      onClick={() => handleRequestCoexistenceSync("history")}
-                    >
-                      {isSyncingHistory ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Solicitando histórico...
-                        </>
-                      ) : (
-                        "Sincronizar histórico"
-                      )}
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="grid gap-3 md:grid-cols-2 mt-4">
-                  <div className="rounded-lg border border-border bg-background/70 p-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium text-foreground">
-                        Contatos
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {formatSyncStatus(coexistenceSync.contacts)}
-                      </span>
-                    </div>
-                    {coexistenceSync.contacts?.request_id && (
-                      <p className="text-xs text-muted-foreground mt-2 break-all">
-                        Request ID: {coexistenceSync.contacts.request_id}
-                      </p>
-                    )}
-                    {coexistenceSync.contacts?.requested_at && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Solicitado em{" "}
-                        {formatDateTime(coexistenceSync.contacts.requested_at)}
-                      </p>
-                    )}
-                    {coexistenceSync.contacts?.completed_at && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Concluído em{" "}
-                        {formatDateTime(coexistenceSync.contacts.completed_at)}
-                      </p>
-                    )}
-                    {coexistenceSync.contacts?.error_message && (
-                      <p className="text-xs text-red-600 dark:text-red-400 mt-2">
-                        {coexistenceSync.contacts.error_message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="rounded-lg border border-border bg-background/70 p-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium text-foreground">
-                        Histórico
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {formatSyncStatus(coexistenceSync.history)}
-                      </span>
-                    </div>
-                    {coexistenceSync.history?.request_id && (
-                      <p className="text-xs text-muted-foreground mt-2 break-all">
-                        Request ID: {coexistenceSync.history.request_id}
-                      </p>
-                    )}
-                    {coexistenceSync.history?.requested_at && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Solicitado em{" "}
-                        {formatDateTime(coexistenceSync.history.requested_at)}
-                      </p>
-                    )}
-                    {typeof coexistenceSync.history?.progress === "number" && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Progresso: {coexistenceSync.history.progress}%
-                      </p>
-                    )}
-                    {typeof coexistenceSync.history?.phase === "number" && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Fase atual: {coexistenceSync.history.phase}
-                      </p>
-                    )}
-                    {coexistenceSync.history?.completed_at && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Concluído em{" "}
-                        {formatDateTime(coexistenceSync.history.completed_at)}
-                      </p>
-                    )}
-                    {coexistenceSync.history?.error_message && (
-                      <p className="text-xs text-red-600 dark:text-red-400 mt-2">
-                        {coexistenceSync.history.error_message}
-                      </p>
-                    )}
-                    {coexistenceSync.history?.error_details && (
-                      <p className="text-xs text-red-600 dark:text-red-400 mt-1">
-                        {coexistenceSync.history.error_details}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Legacy clients: migration banner */}
-            {!isAutoProvisioned &&
-              webhookRoutingMode !== "waba" &&
-              clientId && (
-                <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 mb-4">
-                  <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 mb-2">
-                    <AlertTriangle className="w-5 h-5" />
-                    <span className="font-medium">Migração disponível</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Seu WhatsApp está conectado via configuração manual
-                    (legado). Migre para o Embedded Signup para ter
-                    gerenciamento automático de credenciais e maior
-                    estabilidade.
-                  </p>
-                  <EmbeddedSignupButton
-                    clientId={clientId || undefined}
-                    variant="default"
-                    size="sm"
-                    onSuccess={(data) => {
-                      setNotification({
-                        type: "success",
-                        message: `WhatsApp ${data.displayPhone} conectado com sucesso via Embedded Signup!`,
-                      });
-                    }}
-                    onError={(error) => {
-                      setNotification({
-                        type: "error",
-                        message: error,
-                      });
-                    }}
-                  >
-                    Migrar WhatsApp para Embedded Signup
-                  </EmbeddedSignupButton>
-                  <Button
-                    onClick={async () => {
-                      setIsRollingBack(true);
-                      try {
-                        const res = await fetch(
-                          "/api/client/migrate/rollback",
-                          {
-                            method: "POST",
-                          },
-                        );
-                        const data = await res.json();
-                        if (!res.ok) {
-                          throw new Error(data.error || "Erro ao reverter");
-                        }
-                        setNotification({
-                          type: "success",
-                          message: "WhatsApp reconectado ao app anterior.",
-                        });
-                      } catch (err) {
-                        setNotification({
-                          type: "error",
-                          message:
-                            err instanceof Error
-                              ? err.message
-                              : "Erro ao reverter. Tente novamente.",
-                        });
-                      } finally {
-                        setIsRollingBack(false);
-                      }
-                    }}
-                    disabled={isRollingBack || isMigrating}
-                    variant="outline"
-                    size="sm"
-                    className="ml-2"
-                  >
-                    {isRollingBack ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Revertendo...
-                      </>
-                    ) : (
-                      <>
-                        <Undo2 className="mr-2 h-4 w-4" />
-                        Reverter (reconectar app antigo)
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
-
-            {/* Register phone button — appears when phone is configured but may be pending */}
-            {secrets.meta_phone_number_id && (
-              <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-4 mb-4">
-                <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 mb-2">
-                  <Phone className="w-5 h-5" />
-                  <span className="font-medium">Registro do Telefone</span>
-                </div>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Se o seu número aparece como &quot;Pendente&quot; no painel da
-                  Meta, clique abaixo para ativá-lo na API do WhatsApp Cloud.
-                </p>
-                <p className="text-xs text-amber-600 dark:text-amber-400 mb-3">
-                  ⚠️ A verificação em duas etapas (2FA) deve estar{" "}
-                  <strong>desativada</strong> no WhatsApp Business Manager antes
-                  de registrar.
-                </p>
-                <Button
-                  onClick={async () => {
-                    setIsRegisteringPhone(true);
-                    setNotification(null);
-                    try {
-                      const { apiFetch } = await import("@/lib/api");
-                      const res = await apiFetch("/api/client/register-phone", {
-                        method: "POST",
-                      });
-                      const data = await res.json();
-                      if (!res.ok) {
-                        throw new Error(
-                          data.error || "Erro ao registrar telefone",
-                        );
-                      }
-                      setNotification({
-                        type: "success",
-                        message:
-                          data.message || "Telefone registrado com sucesso!",
-                      });
-                    } catch (err) {
-                      setNotification({
-                        type: "error",
-                        message:
-                          err instanceof Error
-                            ? err.message
-                            : "Erro ao registrar telefone. Tente novamente.",
-                      });
-                    } finally {
-                      setIsRegisteringPhone(false);
-                    }
-                  }}
-                  disabled={isRegisteringPhone}
-                  variant="default"
-                  size="sm"
-                >
-                  {isRegisteringPhone ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Registrando telefone...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="mr-2 h-4 w-4" />
-                      Ativar / Registrar Telefone
-                    </>
-                  )}
-                </Button>
-              </div>
-            )}
-
-            {/* Legacy clients: manual Meta credential fields */}
-            {!isAutoProvisioned && (
-              <>
-                {/* Meta Access Token */}
-                <div>
-                  <Label
-                    htmlFor="meta_access_token"
-                    className="text-foreground"
-                  >
-                    Meta Access Token
-                  </Label>
-                  <div className="flex gap-2 mt-2">
-                    <div className="relative flex-1">
-                      <Input
-                        id="meta_access_token"
-                        type={
-                          showPasswords["meta_access_token"]
-                            ? "text"
-                            : "password"
-                        }
-                        value={secrets.meta_access_token}
-                        onChange={(e) =>
-                          setSecrets({
-                            ...secrets,
-                            meta_access_token: e.target.value,
-                          })
-                        }
-                        disabled={!editingSecrets}
-                        className="bg-muted/50 border-border text-foreground font-mono text-sm"
-                        placeholder="EAABsbCS1iHgBO7ZC..."
-                      />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          togglePasswordVisibility("meta_access_token")
-                        }
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {showPasswords["meta_access_token"] ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
-                      </button>
-                    </div>
-                    {editingSecrets && (
-                      <Button
-                        onClick={() =>
-                          handleUpdateSecret(
-                            "meta_access_token",
-                            secrets.meta_access_token,
-                          )
-                        }
-                        disabled={loadingSecrets}
-                        className="bg-gradient-to-r from-uzz-mint to-uzz-blue text-foreground hover:from-uzz-blue hover:to-uzz-mint"
-                      >
-                        Salvar
-                      </Button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Meta Verify Token */}
-                <div>
-                  <Label htmlFor="meta_verify_token">Meta Verify Token</Label>
-                  <div className="flex gap-2 mt-2">
-                    <div className="relative flex-1">
-                      <Input
-                        id="meta_verify_token"
-                        type={
-                          showPasswords["meta_verify_token"]
-                            ? "text"
-                            : "password"
-                        }
-                        value={secrets.meta_verify_token}
-                        onChange={(e) =>
-                          setSecrets({
-                            ...secrets,
-                            meta_verify_token: e.target.value,
-                          })
-                        }
-                        disabled={!editingSecrets}
-                      />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          togglePasswordVisibility("meta_verify_token")
-                        }
-                        className="absolute right-2 top-2"
-                      >
-                        {showPasswords["meta_verify_token"] ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
-                      </button>
-                    </div>
-                    {editingSecrets && (
-                      <Button
-                        onClick={() =>
-                          handleUpdateSecret(
-                            "meta_verify_token",
-                            secrets.meta_verify_token,
-                          )
-                        }
-                        disabled={loadingSecrets}
-                      >
-                        Salvar
-                      </Button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Meta App Secret - SECURITY FIX (VULN-012) */}
-                <div>
-                  <Label htmlFor="meta_app_secret">
-                    Meta App Secret
-                    <span className="text-xs text-muted-foreground ml-2">
-                      (HMAC validation - diferente do Verify Token)
-                    </span>
-                  </Label>
-                  <div className="flex gap-2 mt-2">
-                    <div className="relative flex-1">
-                      <Input
-                        id="meta_app_secret"
-                        type={
-                          showPasswords["meta_app_secret"] ? "text" : "password"
-                        }
-                        value={secrets.meta_app_secret}
-                        onChange={(e) =>
-                          setSecrets({
-                            ...secrets,
-                            meta_app_secret: e.target.value,
-                          })
-                        }
-                        disabled={!editingSecrets}
-                      />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          togglePasswordVisibility("meta_app_secret")
-                        }
-                        className="absolute right-2 top-2"
-                      >
-                        {showPasswords["meta_app_secret"] ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
-                      </button>
-                    </div>
-                    {editingSecrets && (
-                      <Button
-                        onClick={() =>
-                          handleUpdateSecret(
-                            "meta_app_secret",
-                            secrets.meta_app_secret,
-                          )
-                        }
-                        disabled={loadingSecrets}
-                      >
-                        Salvar
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Meta Phone Number ID */}
-            <div>
-              <Label htmlFor="meta_phone_number_id">Meta Phone Number ID</Label>
-              <div className="flex gap-2 mt-2">
-                <Input
-                  id="meta_phone_number_id"
-                  value={secrets.meta_phone_number_id}
-                  onChange={(e) =>
-                    setSecrets({
-                      ...secrets,
-                      meta_phone_number_id: e.target.value,
-                    })
-                  }
-                  disabled={!editingSecrets}
-                />
-                {editingSecrets && (
-                  <Button
-                    onClick={() =>
-                      handleUpdateSecret(
-                        "meta_phone_number_id",
-                        secrets.meta_phone_number_id,
-                      )
-                    }
-                    disabled={loadingSecrets}
-                  >
-                    Salvar
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            {/* WhatsApp Business Account ID */}
-            <div>
-              <Label htmlFor="whatsapp_business_account_id">
-                WhatsApp Business Account ID (WABA ID)
-              </Label>
-              <div className="flex gap-2 mt-2">
-                <Input
-                  id="whatsapp_business_account_id"
-                  value={secrets.whatsapp_business_account_id}
-                  onChange={(e) =>
-                    setSecrets({
-                      ...secrets,
-                      whatsapp_business_account_id: e.target.value,
-                    })
-                  }
-                  disabled={!editingSecrets}
-                  placeholder="123456789012345"
-                />
-                {editingSecrets && (
-                  <Button
-                    onClick={() =>
-                      handleUpdateSecret(
-                        "whatsapp_business_account_id",
-                        secrets.whatsapp_business_account_id,
-                      )
-                    }
-                    disabled={loadingSecrets}
-                  >
-                    Salvar
-                  </Button>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                ID da conta comercial do WhatsApp (usado para criar templates)
-              </p>
-            </div>
-
-            {/* Meta Ads Section */}
-            <div className="border-t pt-4 mt-4">
-              <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-muted-foreground" />
-                Meta Ads Integration
-                <span className="text-xs text-muted-foreground">
-                  (Conversions API & Marketing API)
-                </span>
-              </h4>
-            </div>
-
-            {/* Meta Dataset ID */}
-            <div>
-              <Label htmlFor="meta_dataset_id">
-                Meta Dataset ID (Conversions API)
-              </Label>
-              <div className="flex gap-2 mt-2">
-                <Input
-                  id="meta_dataset_id"
-                  value={secrets.meta_dataset_id}
-                  onChange={(e) =>
-                    setSecrets({ ...secrets, meta_dataset_id: e.target.value })
-                  }
-                  disabled={!editingSecrets}
-                  placeholder="1234567890123456"
-                />
-                {editingSecrets && (
-                  <Button
-                    onClick={() =>
-                      handleUpdateSecret(
-                        "meta_dataset_id",
-                        secrets.meta_dataset_id,
-                      )
-                    }
-                    disabled={loadingSecrets}
-                  >
-                    Salvar
-                  </Button>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Dataset ID criado no Events Manager para enviar eventos de
-                conversão
-              </p>
-            </div>
-
-            {/* Meta Ad Account ID */}
-            <div>
-              <Label htmlFor="meta_ad_account_id">
-                Meta Ad Account ID (Marketing API)
-              </Label>
-              <div className="flex gap-2 mt-2">
-                <Input
-                  id="meta_ad_account_id"
-                  value={secrets.meta_ad_account_id}
-                  onChange={(e) =>
-                    setSecrets({
-                      ...secrets,
-                      meta_ad_account_id: e.target.value,
-                    })
-                  }
-                  disabled={!editingSecrets}
-                  placeholder="9876543210"
-                />
-                {editingSecrets && (
-                  <Button
-                    onClick={() =>
-                      handleUpdateSecret(
-                        "meta_ad_account_id",
-                        secrets.meta_ad_account_id,
-                      )
-                    }
-                    disabled={loadingSecrets}
-                  >
-                    Salvar
-                  </Button>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                ID da conta de anúncios (sem o prefixo &quot;act_&quot;) para
-                buscar métricas de campanhas
-              </p>
-            </div>
-
-            {/* Divisor */}
-            <div className="border-t my-6"></div>
-
-            {/* Seção de Credenciais de IA */}
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-semibold text-base mb-2 flex items-center gap-2">
-                  <Key className="w-4 h-4 text-muted-foreground" />
-                  Credenciais de IA (Fallback)
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Configure suas chaves de API da OpenAI e Groq. Estas
-                  credenciais são usadas como{" "}
-                  <strong>fallback automático</strong> caso o AI Gateway falhe
-                  ou fique sem créditos.
-                </p>
-                <Alert className="mb-4">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription className="text-xs">
-                    <strong>Como funciona o fallback:</strong> Quando o AI
-                    Gateway não está disponível ou apresenta erro, o sistema
-                    automaticamente usa as credenciais abaixo (OpenAI como
-                    preferência). Isto garante que seu chatbot nunca pare de
-                    funcionar.
-                  </AlertDescription>
-                </Alert>
-              </div>
-
-              {/* OpenAI API Key */}
-              <div>
-                <Label htmlFor="openai_api_key">
-                  OpenAI API Key
-                  <span className="text-xs text-blue-600 ml-2">
-                    (Usado como fallback principal)
-                  </span>
-                </Label>
-                <div className="flex gap-2 mt-2">
-                  <div className="relative flex-1">
-                    <Input
-                      id="openai_api_key"
-                      type={
-                        showPasswords["openai_api_key"] ? "text" : "password"
-                      }
-                      value={secrets.openai_api_key}
-                      onChange={(e) =>
-                        setSecrets({
-                          ...secrets,
-                          openai_api_key: e.target.value,
-                        })
-                      }
-                      disabled={!editingSecrets}
-                      placeholder="sk-proj-..."
-                    />
-                    <button
-                      type="button"
-                      onClick={() => togglePasswordVisibility("openai_api_key")}
-                      className="absolute right-2 top-2"
-                    >
-                      {showPasswords["openai_api_key"] ? (
-                        <EyeOff className="w-4 h-4" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-                  {editingSecrets && (
-                    <Button
-                      onClick={() =>
-                        handleUpdateSecret(
-                          "openai_api_key",
-                          secrets.openai_api_key,
-                        )
-                      }
-                      disabled={loadingSecrets}
-                    >
-                      Salvar
-                    </Button>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Obtenha em:{" "}
-                  <a
-                    href="https://platform.openai.com/api-keys"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    platform.openai.com/api-keys
-                  </a>
-                </p>
-              </div>
-
-              {/* OpenAI Admin API Key */}
-              <div>
-                <Label htmlFor="openai_admin_key">
-                  OpenAI Admin API Key
-                  <span className="text-xs text-orange-600 ml-2">
-                    (Para analytics/billing - scope: api.usage.read)
-                  </span>
-                </Label>
-                <div className="flex gap-2 mt-2">
-                  <div className="relative flex-1">
-                    <Input
-                      id="openai_admin_key"
-                      type={
-                        showPasswords["openai_admin_key"] ? "text" : "password"
-                      }
-                      value={secrets.openai_admin_key}
-                      onChange={(e) =>
-                        setSecrets({
-                          ...secrets,
-                          openai_admin_key: e.target.value,
-                        })
-                      }
-                      disabled={!editingSecrets}
-                      placeholder="sk-proj-... (com permissão de usage)"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        togglePasswordVisibility("openai_admin_key")
-                      }
-                      className="absolute right-2 top-2"
-                    >
-                      {showPasswords["openai_admin_key"] ? (
-                        <EyeOff className="w-4 h-4" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-                  {editingSecrets && (
-                    <Button
-                      onClick={() =>
-                        handleUpdateSecret(
-                          "openai_admin_key",
-                          secrets.openai_admin_key,
-                        )
-                      }
-                      disabled={loadingSecrets}
-                    >
-                      Salvar
-                    </Button>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Crie uma key com permissão "api.usage.read" em:{" "}
-                  <a
-                    href="https://platform.openai.com/api-keys"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    platform.openai.com/api-keys
-                  </a>{" "}
-                  → Permissions → Enable "api.usage.read"
-                </p>
-              </div>
-
-              {/* Groq API Key */}
-              <div>
-                <Label htmlFor="groq_api_key">
-                  Groq API Key
-                  <span className="text-xs text-muted-foreground ml-2">
-                    (Opcional - secundário)
-                  </span>
-                </Label>
-                <div className="flex gap-2 mt-2">
-                  <div className="relative flex-1">
-                    <Input
-                      id="groq_api_key"
-                      type={showPasswords["groq_api_key"] ? "text" : "password"}
-                      value={secrets.groq_api_key}
-                      onChange={(e) =>
-                        setSecrets({ ...secrets, groq_api_key: e.target.value })
-                      }
-                      disabled={!editingSecrets}
-                      placeholder="gsk_..."
-                    />
-                    <button
-                      type="button"
-                      onClick={() => togglePasswordVisibility("groq_api_key")}
-                      className="absolute right-2 top-2"
-                    >
-                      {showPasswords["groq_api_key"] ? (
-                        <EyeOff className="w-4 h-4" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-                  {editingSecrets && (
-                    <Button
-                      onClick={() =>
-                        handleUpdateSecret("groq_api_key", secrets.groq_api_key)
-                      }
-                      disabled={loadingSecrets}
-                    >
-                      Salvar
-                    </Button>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Obtenha em:{" "}
-                  <a
-                    href="https://console.groq.com/keys"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    console.groq.com/keys
-                  </a>
-                </p>
-              </div>
-            </div>
-
-            {/* Webhook URL (readonly) */}
-            <div>
-              <Label htmlFor="webhook_url">Webhook URL</Label>
-              <div className="flex gap-2 mt-2">
-                <Input
-                  id="webhook_url"
-                  value={secrets.webhook_url}
-                  disabled
-                  className="font-mono text-sm"
-                />
-                <Button
-                  onClick={() => handleCopy(secrets.webhook_url, "webhook_url")}
-                  variant="outline"
-                  size="icon"
-                >
-                  {copied === "webhook_url" ? (
-                    <Check className="w-4 h-4" />
-                  ) : (
-                    <Copy className="w-4 h-4" />
-                  )}
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Use esta URL para configurar o webhook na Meta API
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Seção 4.5: Links Rápidos para Outras Configurações */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {/* Card TTS */}
-          <Card className="bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border-blue-500/30 hover:border-blue-500/50 transition-colors">
-            <CardContent className="pt-6">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-blue-500/20">
-                    <Mic className="w-5 h-5 text-blue-500" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground">
-                      Text-to-Speech
+                    <h3 className="font-medium text-sm mb-4 flex items-center gap-2 text-foreground">
+                      <Key className="w-4 h-4 text-muted-foreground" />
+                      Credenciais de IA
                     </h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Configure vozes, velocidade e qualidade de áudio
-                    </p>
-                    <div className="flex gap-2 mt-2">
-                      <span className="text-xs bg-blue-500/20 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded">
-                        6 vozes
-                      </span>
-                      <span className="text-xs bg-blue-500/20 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded">
-                        HD
-                      </span>
-                    </div>
                   </div>
-                </div>
-                <Link href="/dashboard/settings/tts">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-blue-500 hover:text-blue-600 hover:bg-blue-500/10"
-                  >
-                    <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
 
-          {/* Card Notificações */}
-          <Card className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-amber-500/30 hover:border-amber-500/50 transition-colors">
-            <CardContent className="pt-6">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-amber-500/20">
-                    <BellRing className="w-5 h-5 text-amber-500" />
-                  </div>
+                  {/* OpenAI API Key */}
                   <div>
-                    <h3 className="font-semibold text-foreground">
-                      Notificações Push
-                    </h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Categorias, som, vibração e modo Não Perturbe
-                    </p>
+                    <Label htmlFor="openai_api_key">OpenAI API Key</Label>
                     <div className="flex gap-2 mt-2">
-                      <span className="text-xs bg-amber-500/20 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded">
-                        5 categorias
-                      </span>
-                      <span className="text-xs bg-amber-500/20 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded">
-                        DND
-                      </span>
+                      <div className="relative flex-1">
+                        <Input
+                          id="openai_api_key"
+                          type={
+                            showPasswords["openai_api_key"]
+                              ? "text"
+                              : "password"
+                          }
+                          value={secrets.openai_api_key}
+                          onChange={(e) =>
+                            setSecrets({
+                              ...secrets,
+                              openai_api_key: e.target.value,
+                            })
+                          }
+                          disabled={!editingSecrets}
+                          placeholder="sk-proj-..."
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            togglePasswordVisibility("openai_api_key")
+                          }
+                          className="absolute right-2 top-2"
+                        >
+                          {showPasswords["openai_api_key"] ? (
+                            <EyeOff className="w-4 h-4" />
+                          ) : (
+                            <Eye className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
+                      {editingSecrets && (
+                        <Button
+                          onClick={() =>
+                            handleUpdateSecret(
+                              "openai_api_key",
+                              secrets.openai_api_key,
+                            )
+                          }
+                          disabled={loadingSecrets}
+                        >
+                          Salvar
+                        </Button>
+                      )}
                     </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Obtenha em:{" "}
+                      <a
+                        href="https://platform.openai.com/api-keys"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        platform.openai.com/api-keys
+                      </a>
+                    </p>
                   </div>
-                </div>
-                <Link href="/dashboard/settings/notifications">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-amber-500 hover:text-amber-600 hover:bg-amber-500/10"
-                  >
-                    <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
 
-          {/* Card Agentes IA - Centraliza todas configurações de comportamento */}
-          <Card className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/30 hover:border-purple-500/50 transition-colors">
-            <CardContent className="pt-6">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-purple-500/20">
-                    <Bot className="w-5 h-5 text-purple-500" />
-                  </div>
+                  {/* Groq API Key */}
                   <div>
-                    <h3 className="font-semibold text-foreground">
-                      Agentes IA
-                    </h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Comportamento, timing, prompts e modelo de IA
-                    </p>
+                    <Label htmlFor="groq_api_key">Groq API Key</Label>
                     <div className="flex gap-2 mt-2">
-                      <span className="text-xs bg-purple-500/20 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded">
-                        Multi-Agente
-                      </span>
-                      <span className="text-xs bg-purple-500/20 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded">
-                        Timing
-                      </span>
+                      <div className="relative flex-1">
+                        <Input
+                          id="groq_api_key"
+                          type={
+                            showPasswords["groq_api_key"] ? "text" : "password"
+                          }
+                          value={secrets.groq_api_key}
+                          onChange={(e) =>
+                            setSecrets({
+                              ...secrets,
+                              groq_api_key: e.target.value,
+                            })
+                          }
+                          disabled={!editingSecrets}
+                          placeholder="gsk_..."
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            togglePasswordVisibility("groq_api_key")
+                          }
+                          className="absolute right-2 top-2"
+                        >
+                          {showPasswords["groq_api_key"] ? (
+                            <EyeOff className="w-4 h-4" />
+                          ) : (
+                            <Eye className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
+                      {editingSecrets && (
+                        <Button
+                          onClick={() =>
+                            handleUpdateSecret(
+                              "groq_api_key",
+                              secrets.groq_api_key,
+                            )
+                          }
+                          disabled={loadingSecrets}
+                        >
+                          Salvar
+                        </Button>
+                      )}
                     </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Obtenha em:{" "}
+                      <a
+                        href="https://console.groq.com/keys"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        console.groq.com/keys
+                      </a>
+                    </p>
                   </div>
                 </div>
-                <Link href="/dashboard/agents">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-purple-500 hover:text-purple-600 hover:bg-purple-500/10"
-                  >
-                    <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
 
-        <Card className="bg-card border-border">
-          <CardHeader className="border-b border-border">
-            <CardTitle className="text-xl font-poppins text-foreground flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-primary" />
-              Modo Suporte/Bugs
-            </CardTitle>
-            <CardDescription className="text-muted-foreground">
-              Quando ativo, o sistema passa a registrar sinais de suporte para
-              triagem e melhoria contínua.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6 flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm text-muted-foreground">
-                Status atual:{" "}
-                <span className="font-semibold text-foreground">
-                  {supportModeEnabled ? "Ativo" : "Inativo"}
-                </span>
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Casos detectados ficam na aba dedicada de Suporte/Bugs.
-              </p>
+        {/* ── OUTRAS ── */}
+        {activeTab === "outras" && (
+          <>
+            {/* Seção 4.5: Links Rápidos para Outras Configurações */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {/* Card TTS */}
+              <Card className="bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border-blue-500/30 hover:border-blue-500/50 transition-colors">
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-lg bg-blue-500/20">
+                        <Mic className="w-5 h-5 text-blue-500" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-foreground">
+                          Text-to-Speech
+                        </h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Configure vozes, velocidade e qualidade de áudio
+                        </p>
+                        <div className="flex gap-2 mt-2">
+                          <span className="text-xs bg-blue-500/20 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded">
+                            6 vozes
+                          </span>
+                          <span className="text-xs bg-blue-500/20 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded">
+                            HD
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <Link href="/dashboard/settings/tts">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-blue-500 hover:text-blue-600 hover:bg-blue-500/10"
+                      >
+                        <ArrowRight className="w-4 h-4" />
+                      </Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Card Notificações */}
+              <Card className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-amber-500/30 hover:border-amber-500/50 transition-colors">
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-lg bg-amber-500/20">
+                        <BellRing className="w-5 h-5 text-amber-500" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-foreground">
+                          Notificações Push
+                        </h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Categorias, som, vibração e modo Não Perturbe
+                        </p>
+                        <div className="flex gap-2 mt-2">
+                          <span className="text-xs bg-amber-500/20 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded">
+                            5 categorias
+                          </span>
+                          <span className="text-xs bg-amber-500/20 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded">
+                            DND
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <Link href="/dashboard/settings/notifications">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-amber-500 hover:text-amber-600 hover:bg-amber-500/10"
+                      >
+                        <ArrowRight className="w-4 h-4" />
+                      </Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Card Agentes IA - Centraliza todas configurações de comportamento */}
+              <Card className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/30 hover:border-purple-500/50 transition-colors">
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-lg bg-purple-500/20">
+                        <Bot className="w-5 h-5 text-purple-500" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-foreground">
+                          Agentes IA
+                        </h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Comportamento, timing, prompts e modelo de IA
+                        </p>
+                        <div className="flex gap-2 mt-2">
+                          <span className="text-xs bg-purple-500/20 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded">
+                            Multi-Agente
+                          </span>
+                          <span className="text-xs bg-purple-500/20 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded">
+                            Timing
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <Link href="/dashboard/agents">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-purple-500 hover:text-purple-600 hover:bg-purple-500/10"
+                      >
+                        <ArrowRight className="w-4 h-4" />
+                      </Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-            <Button
-              onClick={handleToggleSupportMode}
-              disabled={loadingSupportMode}
-              variant={supportModeEnabled ? "destructive" : "default"}
-            >
-              {loadingSupportMode
-                ? "Salvando..."
-                : supportModeEnabled
+          </>
+        )}
+
+        {/* ── SUPORTE ── */}
+        {activeTab === "suporte" && (
+          <Card className="bg-card border-border">
+            <CardHeader className="border-b border-border">
+              <CardTitle className="text-xl font-poppins text-foreground flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-primary" />
+                Modo Suporte/Bugs
+              </CardTitle>
+              <CardDescription className="text-muted-foreground">
+                Quando ativo, o sistema passa a registrar sinais de suporte para
+                triagem e melhoria contínua.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Status atual:{" "}
+                  <span className="font-semibold text-foreground">
+                    {supportModeEnabled ? "Ativo" : "Inativo"}
+                  </span>
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Casos detectados ficam na aba dedicada de Suporte/Bugs.
+                </p>
+              </div>
+              <Button
+                onClick={handleToggleSupportMode}
+                disabled={loadingSupportMode}
+                variant={supportModeEnabled ? "destructive" : "default"}
+              >
+                {loadingSupportMode
+                  ? "Salvando..."
+                  : supportModeEnabled
                   ? "Desativar"
                   : "Ativar"}
-            </Button>
-          </CardContent>
-        </Card>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* ── PREFERÊNCIAS ── */}
+        {activeTab === "preferencias" && (
+          <Card className="bg-card border-border">
+            <CardHeader className="border-b border-border">
+              <CardTitle className="text-xl font-poppins text-foreground flex items-center gap-2">
+                <Settings className="w-5 h-5 text-primary" />
+                Preferências
+              </CardTitle>
+              <CardDescription className="text-muted-foreground">
+                Personalize a aparência e idioma do dashboard
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+              <div>
+                <p className="text-sm font-medium mb-2">Tema</p>
+                <div className="flex gap-2">
+                  <Link href="/dashboard/settings/notifications">
+                    <Button variant="outline" size="sm">
+                      Claro
+                    </Button>
+                  </Link>
+                  <Link href="/dashboard/settings/notifications">
+                    <Button variant="outline" size="sm">
+                      Escuro
+                    </Button>
+                  </Link>
+                  <Link href="/dashboard/settings/notifications">
+                    <Button variant="outline" size="sm">
+                      Sistema
+                    </Button>
+                  </Link>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  O tema é controlado pelo seletor no topo do dashboard.
+                </p>
+              </div>
+              <div>
+                <p className="text-sm font-medium mb-2">Idioma</p>
+                <p className="text-sm text-muted-foreground">
+                  Português (Brasil) — único idioma disponível no momento.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* ── AVANÇADO ── */}
+        {activeTab === "avancado" && (
+          <Card className="bg-amber-500/10 border-amber-500/30">
+            <CardContent className="pt-6">
+              <p className="text-sm text-muted-foreground flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-500" />
+                As configurações avançadas de credenciais ficam na aba{" "}
+                <strong>WhatsApp</strong>.
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Modal de Revalidação de Senha */}
