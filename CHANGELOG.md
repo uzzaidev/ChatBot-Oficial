@@ -9,6 +9,17 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-28
 
 ### feat
+- Adicionados novos modelos OpenAI ("gpt-5.4-nano", "gpt-5-nano") e expandidas opções de esforço de raciocínio para agentes (incluindo "none", "minimal" e "xhigh").
+- Atualizada interface e componentes para suportar seleção dos novos modelos e níveis de raciocínio no editor de agentes e propriedades de geração de resposta.
+- Melhorias no componente FlowArchitectureManager para visualização e edição dos nodes do fluxo, incluindo organização e ordenação aprimorada dos campos de configuração, suporte a múltiplos tipos de dados, e refinamento da renderização do diagrama Mermaid com rotas de bypass.
+- Ajustes no layout e usabilidade do editor de agentes, incluindo seleção de fuso horário e configuração de horário comercial.
+- Atualização da constraint no banco de dados para permitir os novos valores de esforço de raciocínio na tabela `agents`.
+  - Arquivos: `src/components/agents/AgentEditor.tsx`, `src/components/agents/AgentEditorModal.tsx`, `src/components/flow-architecture/properties/GenerateResponseProperties.tsx`, `src/components/FlowArchitectureManager.tsx`, `src/lib/direct-ai-client.ts`, `src/lib/types.ts`, `supabase/migrations/20260428000000_add_new_openai_models_reasoning.sql`
+  - Confiança: alta
+
+## 2026-04-28
+
+### feat
 - Implementada página de configurações com interface em abas para gerenciamento de perfil, WhatsApp, preferências, suporte e configurações avançadas.
 - Adicionado componente de busca com sugestão para navegação rápida entre abas.
 - Criados componentes React para sidebar, tabs, seções e campos de formulário com temas claro e escuro.
