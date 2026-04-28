@@ -286,7 +286,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       ragContext,
       customerName:
         realCustomerName || (historyPhone ? historyPhone : "Cliente Teste"),
-      contactMetadata: realCustomerMetadata || undefined,
+      contactMetadata:
+        (realCustomerMetadata as
+          | Record<string, string | number | boolean>
+          | undefined) || undefined,
       config,
       includeDateTimeInfo: true,
       enableTools: config.settings.enableTools,
