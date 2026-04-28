@@ -176,6 +176,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }> = [];
     let historySource: "selected_conversation" | "in_modal" | "none" = "none";
     let historyMessageCount = 0;
+    let realCustomerName: string | null = null;
+    let realCustomerMetadata: Record<string, unknown> | null = null;
 
     if (historyPhone) {
       try {
@@ -188,6 +190,45 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         chatHistory = result.messages;
         historySource = "selected_conversation";
         historyMessageCount = result.messages.length;
+
+        // Look up real customer name + metadata so the agent has the same
+        // context it would have in production.
+        try {
+          const supabaseAny = supabase as unknown as {
+            from: (t: string) => {
+              select: (cols: string) => {
+                eq: (
+                  k: string,
+                  v: string,
+                ) => {
+                  eq: (
+                    k: string,
+                    v: string,
+                  ) => {
+                    maybeSingle: () => Promise<{
+                      data: {
+                        nome?: string;
+                        metadata?: Record<string, unknown>;
+                      } | null;
+                    }>;
+                  };
+                };
+              };
+            };
+          };
+          const { data: customer } = await supabaseAny
+            .from("clientes_whatsapp")
+            .select("nome, metadata")
+            .eq("telefone", historyPhone)
+            .eq("client_id", profile.client_id)
+            .maybeSingle();
+          if (customer) {
+            realCustomerName = customer.nome || null;
+            realCustomerMetadata = customer.metadata || null;
+          }
+        } catch (err) {
+          console.warn("[test-agent] customer lookup failed:", err);
+        }
       } catch (err) {
         console.warn(
           "[test-agent] Failed to load history for phone",
@@ -243,14 +284,109 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       message,
       chatHistory,
       ragContext,
-      customerName: historyPhone || mergedAgent.name || "Cliente Teste",
-      contactMetadata: undefined,
+      customerName:
+        realCustomerName || (historyPhone ? historyPhone : "Cliente Teste"),
+      contactMetadata: realCustomerMetadata || undefined,
       config,
       includeDateTimeInfo: true,
       enableTools: config.settings.enableTools,
       phone: historyPhone,
     });
     const latencyMs = Date.now() - startTime;
+
+    // ===== Execute SAFE tool calls in test mode =====
+    // We run read-only tools (buscar_documento) so the test chat can preview
+    // documents/images inline. Side-effect tools (transferir_atendimento,
+    // enviar_resposta_em_audio, criar_evento_agenda, etc.) are NOT executed —
+    // we only report their args back so the user can verify the call.
+    const attachments: Array<{
+      url: string;
+      filename: string;
+      mimeType: string;
+      size: number;
+      similarity?: number;
+    }> = [];
+    const executedTools: Array<{
+      name: string;
+      arguments: Record<string, unknown>;
+      executed: boolean;
+      result?: unknown;
+    }> = [];
+
+    if (
+      Array.isArray(aiResponse.toolCalls) &&
+      aiResponse.toolCalls.length > 0
+    ) {
+      const { searchDocumentInKnowledge } = await import(
+        "@/nodes/searchDocumentInKnowledge"
+      );
+
+      for (const tc of aiResponse.toolCalls) {
+        const name = tc?.function?.name;
+        let args: Record<string, unknown> = {};
+        try {
+          args = JSON.parse(tc?.function?.arguments || "{}");
+        } catch {
+          args = {};
+        }
+
+        if (name === "buscar_documento") {
+          try {
+            const searchResult = await searchDocumentInKnowledge({
+              query: String(args.query || message),
+              clientId: profile.client_id,
+              documentType: args.document_type
+                ? String(args.document_type)
+                : undefined,
+              openaiApiKey: config.apiKeys.openaiApiKey,
+            });
+
+            for (const doc of searchResult.results.slice(0, 3)) {
+              if (doc.originalFileUrl) {
+                attachments.push({
+                  url: doc.originalFileUrl,
+                  filename: doc.filename,
+                  mimeType: doc.originalMimeType,
+                  size: doc.originalFileSize,
+                  similarity: doc.similarity,
+                });
+              }
+            }
+
+            executedTools.push({
+              name,
+              arguments: args,
+              executed: true,
+              result: {
+                documentsFound: searchResult.results.length,
+                files: searchResult.results.map((d) => ({
+                  filename: d.filename,
+                  mimeType: d.originalMimeType,
+                  similarity: d.similarity,
+                })),
+              },
+            });
+          } catch (err) {
+            console.warn("[test-agent] buscar_documento failed:", err);
+            executedTools.push({
+              name,
+              arguments: args,
+              executed: false,
+              result: {
+                error: err instanceof Error ? err.message : "search_failed",
+              },
+            });
+          }
+        } else {
+          // Side-effect tools — show args but DO NOT execute
+          executedTools.push({
+            name: name || "unknown",
+            arguments: args,
+            executed: false,
+          });
+        }
+      }
+    }
 
     return NextResponse.json({
       success: true,
@@ -260,6 +396,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       provider: aiResponse.provider,
       usage: aiResponse.usage,
       toolCalls: aiResponse.toolCalls || [],
+      attachments,
+      executedTools,
       meta: {
         historySource,
         historyMessageCount,

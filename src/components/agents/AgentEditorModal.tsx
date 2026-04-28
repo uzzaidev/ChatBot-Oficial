@@ -358,9 +358,18 @@ interface AgentEditorModalProps {
   onClose: () => void;
 }
 
+interface TestChatAttachment {
+  url: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+  similarity?: number;
+}
+
 interface TestChatMessage {
   role: "user" | "assistant";
   content: string;
+  attachments?: TestChatAttachment[];
 }
 
 // =====================================================
@@ -810,7 +819,13 @@ export const AgentEditorModal = ({
       if (response.ok) {
         setTestMessages((prev) => [
           ...prev,
-          { role: "assistant", content: data.response },
+          {
+            role: "assistant",
+            content: data.response,
+            attachments: Array.isArray(data.attachments)
+              ? data.attachments
+              : undefined,
+          },
         ]);
         setTestLastMeta({
           ...(data.meta || {}),
@@ -2612,9 +2627,72 @@ export const AgentEditorModal = ({
                               {formData.name || "Agente"}
                             </span>
                           )}
-                          <p className="text-sm whitespace-pre-wrap">
-                            {msg.content}
-                          </p>
+                          {msg.content && (
+                            <p className="text-sm whitespace-pre-wrap">
+                              {msg.content}
+                            </p>
+                          )}
+                          {msg.attachments && msg.attachments.length > 0 && (
+                            <div className="mt-2 space-y-2">
+                              {msg.attachments.map((att, ai) => {
+                                const isImage =
+                                  att.mimeType?.startsWith("image/");
+                                const isPdf =
+                                  att.mimeType === "application/pdf";
+                                const sizeKb = att.size
+                                  ? (att.size / 1024).toFixed(1)
+                                  : null;
+                                return (
+                                  <div
+                                    key={ai}
+                                    className="rounded-md border bg-background/40 overflow-hidden"
+                                  >
+                                    {isImage ? (
+                                      <a
+                                        href={att.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                      >
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img
+                                          src={att.url}
+                                          alt={att.filename}
+                                          className="max-w-full max-h-[260px] object-contain"
+                                        />
+                                      </a>
+                                    ) : (
+                                      <a
+                                        href={att.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-2 p-2 hover:bg-muted/40"
+                                      >
+                                        <span className="text-2xl">
+                                          {isPdf ? "📕" : "📎"}
+                                        </span>
+                                        <div className="flex-1 min-w-0">
+                                          <div className="text-xs font-medium truncate">
+                                            {att.filename}
+                                          </div>
+                                          <div className="text-[10px] text-muted-foreground">
+                                            {att.mimeType}
+                                            {sizeKb && ` · ${sizeKb} KB`}
+                                            {att.similarity !== undefined &&
+                                              ` · ${(
+                                                att.similarity * 100
+                                              ).toFixed(0)}%`}
+                                          </div>
+                                        </div>
+                                      </a>
+                                    )}
+                                    <div className="px-2 py-1 text-[10px] text-muted-foreground border-t bg-muted/20">
+                                      {att.filename}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
