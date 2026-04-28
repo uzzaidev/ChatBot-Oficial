@@ -25,9 +25,20 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { toast } from "@/hooks/use-toast";
 import { AGENT_TEMPLATES, getTemplateBySlug } from "@/lib/agent-templates";
 import { apiFetch } from "@/lib/api";
+import {
+  formatPrice,
+  getModelPricing,
+  OPENAI_PRICING_URL,
+} from "@/lib/openai-pricing";
 import type { Agent, DaySchedule } from "@/lib/types";
 import {
   Bot,
@@ -36,6 +47,7 @@ import {
   Clock,
   FileText,
   History,
+  Info,
   Loader2,
   MessageSquare,
   Power,
@@ -1209,9 +1221,40 @@ export const AgentEditorModal = ({
                 <div className="grid grid-cols-2 gap-6">
                   {/* OpenAI Models */}
                   <div className="space-y-3">
-                    <Label className="text-base font-semibold">
-                      Modelo OpenAI
-                    </Label>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-base font-semibold">
+                        Modelo OpenAI
+                      </Label>
+                      <TooltipProvider delayDuration={150}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              className="text-muted-foreground hover:text-foreground transition-colors"
+                              aria-label="Informações sobre preços"
+                            >
+                              <Info className="h-4 w-4" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs">
+                            <p className="text-xs">
+                              Modelos podem consumir mais reais por token.
+                              Modelos com <strong>reasoning</strong> (gpt-5.x,
+                              o-series) cobram também os tokens de raciocínio
+                              gerados internamente.
+                            </p>
+                            <a
+                              href={OPENAI_PRICING_URL}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-blue-400 hover:underline mt-1 inline-block"
+                            >
+                              Ver preços oficiais →
+                            </a>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
                     <Select
                       value={formData.openai_model}
                       onValueChange={(v) => updateField("openai_model", v)}
@@ -1232,6 +1275,65 @@ export const AgentEditorModal = ({
                         ))}
                       </SelectContent>
                     </Select>
+                    {(() => {
+                      const pricing = getModelPricing(
+                        formData.openai_model || "",
+                      );
+                      if (!pricing) {
+                        return (
+                          <p className="text-xs text-muted-foreground">
+                            Preço não disponível para este modelo.{" "}
+                            <a
+                              href={OPENAI_PRICING_URL}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-500 hover:underline"
+                            >
+                              Ver tabela
+                            </a>
+                          </p>
+                        );
+                      }
+                      return (
+                        <div className="rounded-md border bg-muted/30 px-3 py-2 text-xs space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">Input</span>
+                            <span className="font-mono font-medium">
+                              {formatPrice(pricing.input)} / 1M tokens
+                            </span>
+                          </div>
+                          {pricing.cachedInput !== null && (
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground">
+                                Input (cached)
+                              </span>
+                              <span className="font-mono font-medium">
+                                {formatPrice(pricing.cachedInput)} / 1M tokens
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">
+                              Output
+                            </span>
+                            <span className="font-mono font-medium">
+                              {formatPrice(pricing.output)} / 1M tokens
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground pt-1 border-t border-border/40">
+                            Preços da OpenAI (USD).{" "}
+                            <a
+                              href={OPENAI_PRICING_URL}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-500 hover:underline"
+                            >
+                              Tabela completa
+                            </a>
+                          </p>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Groq Models */}
