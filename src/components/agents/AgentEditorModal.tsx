@@ -364,6 +364,141 @@ interface TestChatMessage {
 }
 
 // =====================================================
+// MODEL TEST RESULT CARD
+// =====================================================
+
+interface ModelTestResultCardProps {
+  result: {
+    provider: "openai" | "groq";
+    success: boolean;
+    message: string;
+    latency_ms?: number;
+    response?: string;
+    category?: string;
+    errorTitle?: string;
+    details?: {
+      raw_error?: string;
+      error_code?: string;
+      error_status?: number;
+      error_type?: string;
+      provider?: string;
+      model?: string;
+    };
+  };
+}
+
+const CATEGORY_HINTS: Record<string, string> = {
+  credentials_missing:
+    "Configure a API Key em Configurações → Credenciais (Vault).",
+  invalid_api_key:
+    "Verifique a API Key na aba Credenciais. Pode ter sido revogada ou copiada com erro.",
+  model_not_found:
+    "Selecione outro modelo. Modelos podem ser descontinuados pelo provider.",
+  access_denied:
+    "Sua conta não tem acesso a este modelo. Pode requerer tier pago ou aprovação.",
+  incompatible_parameter:
+    "Vá em 'Parâmetros do Modelo' e ajuste/remova o parâmetro indicado. Modelos reasoning (o1, o3, o4) ignoram temperatura e usam max_completion_tokens.",
+  incompatible_reasoning_effort:
+    "Modelos não-reasoning não aceitam reasoning_effort. Use minimal/low/medium/high apenas em o1/o3/o4/gpt-5.",
+  context_length:
+    "Reduza o histórico de mensagens, o RAG context ou os max_tokens.",
+  reasoning_exhausted:
+    "Aumente max_tokens (≥ 4000 para reasoning) ou reduza reasoning_effort para 'minimal'.",
+  quota_exceeded:
+    "Adicione créditos ou verifique billing no console do provider.",
+  rate_limit: "Aguarde alguns segundos antes de testar novamente.",
+  network: "Verifique sua conexão e o status do provider.",
+  provider_error: "Erro temporário do provider. Tente novamente em instantes.",
+  unknown: "Veja os detalhes técnicos abaixo para diagnóstico.",
+};
+
+const ModelTestResultCard = ({ result }: ModelTestResultCardProps) => {
+  const hint = result.category ? CATEGORY_HINTS[result.category] : undefined;
+  return (
+    <div
+      className={`rounded-md border px-3 py-2 text-xs space-y-2 ${
+        result.success
+          ? "border-green-500/40 bg-green-500/10 text-green-700 dark:text-green-300"
+          : "border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300"
+      }`}
+    >
+      <div className="flex items-start gap-2">
+        {result.success ? (
+          <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
+        ) : (
+          <XCircle className="h-4 w-4 mt-0.5 shrink-0" />
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {!result.success && result.errorTitle && (
+              <span className="font-semibold">{result.errorTitle}</span>
+            )}
+            {!result.success && result.category && (
+              <span className="rounded bg-red-500/20 px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-wide">
+                {result.category}
+              </span>
+            )}
+          </div>
+          <p className={result.errorTitle ? "mt-0.5" : "font-medium"}>
+            {result.message}
+          </p>
+          {result.success && result.latency_ms !== undefined && (
+            <p className="text-[10px] opacity-80 mt-0.5">
+              Latência: {result.latency_ms}ms
+              {result.response &&
+                ` · Resposta: "${result.response.slice(0, 60)}"`}
+            </p>
+          )}
+          {!result.success && hint && (
+            <p className="text-[11px] opacity-90 mt-1 italic">💡 {hint}</p>
+          )}
+        </div>
+      </div>
+
+      {!result.success && result.details && (
+        <details className="text-[10px] opacity-80">
+          <summary className="cursor-pointer select-none hover:opacity-100">
+            Detalhes técnicos
+          </summary>
+          <div className="mt-1.5 space-y-0.5 font-mono pl-2 border-l border-current/20">
+            {result.details.error_status !== undefined && (
+              <div>
+                <span className="opacity-60">HTTP:</span>{" "}
+                {result.details.error_status}
+              </div>
+            )}
+            {result.details.error_code && (
+              <div>
+                <span className="opacity-60">code:</span>{" "}
+                {result.details.error_code}
+              </div>
+            )}
+            {result.details.error_type && (
+              <div>
+                <span className="opacity-60">type:</span>{" "}
+                {result.details.error_type}
+              </div>
+            )}
+            {result.details.provider && result.details.model && (
+              <div>
+                <span className="opacity-60">model:</span>{" "}
+                {result.details.provider}/{result.details.model}
+              </div>
+            )}
+            {result.details.raw_error && (
+              <div className="mt-1 whitespace-pre-wrap break-words">
+                <span className="opacity-60">raw:</span>{" "}
+                {result.details.raw_error}
+              </div>
+            )}
+          </div>
+        </details>
+      )}
+    </div>
+  );
+};
+
+// =====================================================
 // COMPONENT
 // =====================================================
 
@@ -398,6 +533,16 @@ export const AgentEditorModal = ({
     message: string;
     latency_ms?: number;
     response?: string;
+    category?: string;
+    errorTitle?: string;
+    details?: {
+      raw_error?: string;
+      error_code?: string;
+      error_status?: number;
+      error_type?: string;
+      provider?: string;
+      model?: string;
+    };
   } | null>(null);
 
   const handleTestModel = async (provider: "openai" | "groq") => {
@@ -429,10 +574,15 @@ export const AgentEditorModal = ({
           (data.success ? "Modelo OK" : "Falha no teste"),
         latency_ms: data.latency_ms,
         response: data.response,
+        category: data.category,
+        errorTitle: data.error,
+        details: data.details,
       });
       toast({
-        title: data.success ? "✅ Modelo OK" : "❌ Falha no teste",
-        description: data.message || data.error || "",
+        title: data.success
+          ? "✅ Modelo OK"
+          : `❌ ${data.error || "Falha no teste"}`,
+        description: data.message || "",
         variant: data.success ? "default" : "destructive",
       });
     } catch (error: any) {
@@ -441,6 +591,8 @@ export const AgentEditorModal = ({
         provider,
         success: false,
         message: msg,
+        errorTitle: "Erro de conexão",
+        category: "network",
       });
       toast({
         title: "❌ Erro ao testar",
@@ -1426,37 +1578,7 @@ export const AgentEditorModal = ({
                       );
                     })()}
                     {modelTestResult?.provider === "openai" && (
-                      <div
-                        className={`rounded-md border px-3 py-2 text-xs ${
-                          modelTestResult.success
-                            ? "border-green-500/40 bg-green-500/10 text-green-700 dark:text-green-300"
-                            : "border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300"
-                        }`}
-                      >
-                        <div className="flex items-start gap-2">
-                          {modelTestResult.success ? (
-                            <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
-                          ) : (
-                            <XCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium">
-                              {modelTestResult.message}
-                            </p>
-                            {modelTestResult.success &&
-                              modelTestResult.latency_ms !== undefined && (
-                                <p className="text-[10px] opacity-80 mt-0.5">
-                                  Latência: {modelTestResult.latency_ms}ms
-                                  {modelTestResult.response &&
-                                    ` · Resposta: "${modelTestResult.response.slice(
-                                      0,
-                                      60,
-                                    )}"`}
-                                </p>
-                              )}
-                          </div>
-                        </div>
-                      </div>
+                      <ModelTestResultCard result={modelTestResult} />
                     )}
                   </div>
 
@@ -1510,37 +1632,7 @@ export const AgentEditorModal = ({
                       </SelectContent>
                     </Select>
                     {modelTestResult?.provider === "groq" && (
-                      <div
-                        className={`rounded-md border px-3 py-2 text-xs ${
-                          modelTestResult.success
-                            ? "border-green-500/40 bg-green-500/10 text-green-700 dark:text-green-300"
-                            : "border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300"
-                        }`}
-                      >
-                        <div className="flex items-start gap-2">
-                          {modelTestResult.success ? (
-                            <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
-                          ) : (
-                            <XCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium">
-                              {modelTestResult.message}
-                            </p>
-                            {modelTestResult.success &&
-                              modelTestResult.latency_ms !== undefined && (
-                                <p className="text-[10px] opacity-80 mt-0.5">
-                                  Latência: {modelTestResult.latency_ms}ms
-                                  {modelTestResult.response &&
-                                    ` · Resposta: "${modelTestResult.response.slice(
-                                      0,
-                                      60,
-                                    )}"`}
-                                </p>
-                              )}
-                          </div>
-                        </div>
-                      </div>
+                      <ModelTestResultCard result={modelTestResult} />
                     )}
                   </div>
                 </div>
