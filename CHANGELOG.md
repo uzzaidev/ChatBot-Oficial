@@ -9,6 +9,15 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-28
 
 ### feat
+- Adicionado componente `ModelTestResultCard` para exibir feedback detalhado e categorizado dos testes de modelos no editor de agentes, com mensagens de erro explicativas e detalhes técnicos opcionais.
+- Melhorada a API de teste de modelos (`src/app/api/client/test-model/route.ts`) para identificar e categorizar erros comuns (credenciais ausentes, chave inválida, modelo não encontrado, acesso negado, parâmetros incompatíveis, limites de contexto, quota, rate limit, erros de rede e do provider), retornando respostas JSON mais informativas para o frontend.
+- Integrado o novo componente de resultado ao modal de edição de agentes para mostrar feedback visual aprimorado e mensagens de toast mais claras.
+  - Arquivos: `src/app/api/client/test-model/route.ts`, `src/components/agents/AgentEditorModal.tsx`
+  - Confiança: alta
+
+## 2026-04-28
+
+### feat
 - Adicionada funcionalidade de teste de conectividade para modelos OpenAI e Groq no modal de edição de agentes, com feedback visual de sucesso, falha, latência e resposta.
 - Incluídos botões para disparar o teste e mensagens toast para informar o status da operação.
   - Arquivos: `src/components/agents/AgentEditorModal.tsx`
