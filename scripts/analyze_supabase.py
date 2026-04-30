@@ -9,8 +9,8 @@ import re
 from collections import defaultdict
 from pathlib import Path
 
-# Root directory
-ROOT = Path(__file__).parent / "src"
+# Repository source directory. This script lives in scripts/.
+ROOT = Path(__file__).resolve().parents[1] / "src"
 
 # Patterns to match
 PATTERNS = {

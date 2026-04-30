@@ -97,7 +97,7 @@
 | Campo | Conteúdo |
 |-------|---------|
 | **Atividades** | Preparar CSV; importar contatos; criar colunas do funil; criar tags base; configurar regras de automação iniciais |
-| **Workflow** | 1. Converter Excel → CSV: `node xlsx-to-csv.js arquivo.xlsx` → 2. Verificar formato: telefone com 8–11 dígitos → 3. Importar via `/dashboard/contacts` → 4. Criar colunas e tags em `/dashboard/crm` → 5. Ativar 10 regras base do segmento |
+| **Workflow** | 1. Converter Excel → CSV: `node scripts/xlsx-to-csv.js arquivo.xlsx` → 2. Verificar formato: telefone com 8–11 dígitos → 3. Importar via `/dashboard/contacts` → 4. Criar colunas e tags em `/dashboard/crm` → 5. Ativar 10 regras base do segmento |
 | **Prazo** | 2–4 horas |
 | **Saída esperada** | Contatos importados + CRM configurado com funil e regras ativas |
 | **Responsável** | Pedro Vitor |
@@ -891,10 +891,10 @@ supabase db diff                 # Ver mudanças pendentes
 supabase db reset                # Reset local (cuidado!)
 
 # Conversão de arquivos
-node xlsx-to-csv.js arquivo.xlsx                         # Converter para CSV
-node xlsx-to-csv.js arquivo.xlsx --sheet "Aba"           # Aba específica
-node xlsx-to-csv.js arquivo.xlsx --delimiter ";"         # Delimitador ponto-e-vírgula
-node xlsx-to-csv.js arquivo.xlsx --list-sheets           # Listar abas
+node scripts/xlsx-to-csv.js arquivo.xlsx                         # Converter para CSV
+node scripts/xlsx-to-csv.js arquivo.xlsx --sheet "Aba"           # Aba específica
+node scripts/xlsx-to-csv.js arquivo.xlsx --delimiter ";"         # Delimitador ponto-e-vírgula
+node scripts/xlsx-to-csv.js arquivo.xlsx --list-sheets           # Listar abas
 
 # Backup do banco
 cd db && ./backup-complete.bat   # Backup completo (Windows)

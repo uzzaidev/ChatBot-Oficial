@@ -1355,6 +1355,41 @@ export default function SettingsPage() {
                         )}
                       </div>
                     </div>
+
+                    {/* Meta Phone Number ID */}
+                    <div>
+                      <Label htmlFor="meta_phone_number_id">
+                        Meta Phone Number ID (Meta ID)
+                      </Label>
+                      <div className="flex gap-2 mt-2">
+                        <Input
+                          id="meta_phone_number_id"
+                          value={secrets.meta_phone_number_id}
+                          onChange={(e) =>
+                            setSecrets({
+                              ...secrets,
+                              meta_phone_number_id: e.target.value,
+                            })
+                          }
+                          disabled={!editingSecrets}
+                          className="bg-muted/50 border-border text-foreground font-mono text-sm"
+                          placeholder="Phone Number ID da Meta"
+                        />
+                        {editingSecrets && (
+                          <Button
+                            onClick={() =>
+                              handleUpdateSecret(
+                                "meta_phone_number_id",
+                                secrets.meta_phone_number_id,
+                              )
+                            }
+                            disabled={loadingSecrets}
+                          >
+                            Salvar
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   </>
                 )}
 

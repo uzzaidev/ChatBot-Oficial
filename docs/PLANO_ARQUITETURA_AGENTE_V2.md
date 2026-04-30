@@ -1205,7 +1205,7 @@ WhatsApp / Canal de entrada
 - `src/nodes/generateAIResponse.ts` — ponto de integração principal (764 linhas)
 - `src/flows/chatbotFlow.ts:1169` — onde `generateAIResponse` é chamado
 - `src/lib/types.ts:516` — tipo `ClientConfig.calendar`
-- `CONTATOS UMANA/prommpt Umana/prompt.md` — prompt atual (780 linhas)
+- `data/contacts/umana/prommpt Umana/prompt.md` — prompt atual (780 linhas)
 - `docs/prompts/Umana Rio Branco/QA_TESTES_UMANA.md` — casos de teste
 - `checkpoints/2026-04-15_chatbot-oficial/03_NEW_NODES_AND_FLOWS.md` — estado atual
 - `twin-plans/PLANO_UMANA_MELHORIAS_2026-04.md` — plano anterior

@@ -40,9 +40,7 @@ const getInitials = (name: string): string => {
   if (!name) return "?";
   const parts = name.trim().split(" ");
   if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
-  return (
-    parts[0].charAt(0) + parts[parts.length - 1].charAt(0)
-  ).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 };
 
 const formatPhone = (phone: string | number): string => {
@@ -158,7 +156,10 @@ export const KanbanCard = ({
 
               {columns.length > 0 && (
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenuTrigger
+                    asChild
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <Button
                       variant="ghost"
                       size="icon"
@@ -169,7 +170,7 @@ export const KanbanCard = ({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
                     align="end"
-                    className="w-52 rounded-2xl border-border/80 bg-popover/95 backdrop-blur"
+                    className="w-52 max-h-72 overflow-y-auto rounded-2xl border-border/80 bg-popover/95 backdrop-blur"
                   >
                     {columns.map((col) => (
                       <DropdownMenuItem
@@ -218,7 +219,9 @@ export const KanbanCard = ({
                   return (
                     <span key={item.key} className="crm-stat-chip">
                       <Icon className="h-3 w-3" />
-                      <span className="max-w-[140px] truncate">{item.label}</span>
+                      <span className="max-w-[140px] truncate">
+                        {item.label}
+                      </span>
                     </span>
                   );
                 })}

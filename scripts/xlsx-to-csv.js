@@ -4,11 +4,11 @@
  * Converte arquivo XLSX para CSV sem perda de informações.
  *
  * Uso:
- *   node xlsx-to-csv.js <arquivo.xlsx>                    → gera um CSV por aba
- *   node xlsx-to-csv.js <arquivo.xlsx> --sheet "Aba1"    → exporta só a aba indicada
- *   node xlsx-to-csv.js <arquivo.xlsx> --all             → exporta todas as abas (padrão)
- *   node xlsx-to-csv.js <arquivo.xlsx> --out ./saida     → pasta de destino
- *   node xlsx-to-csv.js <arquivo.xlsx> --delimiter ";"   → delimitador (padrão: ,)
+ *   node scripts/xlsx-to-csv.js <arquivo.xlsx>                    → gera um CSV por aba
+ *   node scripts/xlsx-to-csv.js <arquivo.xlsx> --sheet "Aba1"    → exporta só a aba indicada
+ *   node scripts/xlsx-to-csv.js <arquivo.xlsx> --all             → exporta todas as abas (padrão)
+ *   node scripts/xlsx-to-csv.js <arquivo.xlsx> --out ./saida     → pasta de destino
+ *   node scripts/xlsx-to-csv.js <arquivo.xlsx> --delimiter ";"   → delimitador (padrão: ,)
  */
 
 const XLSX = require('xlsx')
@@ -21,7 +21,7 @@ const args = process.argv.slice(2)
 
 if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
   console.log(`
-Uso: node xlsx-to-csv.js <arquivo.xlsx> [opções]
+Uso: node scripts/xlsx-to-csv.js <arquivo.xlsx> [opções]
 
 Opções:
   --sheet "Nome"    Exporta somente a aba com esse nome

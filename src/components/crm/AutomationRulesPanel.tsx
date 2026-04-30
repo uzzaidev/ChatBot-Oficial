@@ -37,6 +37,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { apiFetch } from "@/lib/api";
 import { CRMColumn, CRMTag } from "@/lib/types";
 import {
   AlertCircle,
@@ -59,7 +60,6 @@ import {
   Zap,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api";
 
 // Types
 interface TriggerCondition {
@@ -445,7 +445,8 @@ export function AutomationRulesPanel({
   const moveRule = (ruleId: string, direction: "up" | "down") => {
     const currentIndex = rules.findIndex((rule) => rule.id === ruleId);
     if (currentIndex === -1) return;
-    const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    const targetIndex =
+      direction === "up" ? currentIndex - 1 : currentIndex + 1;
     if (targetIndex < 0 || targetIndex >= rules.length) return;
 
     const nextRules = [...rules];
@@ -484,7 +485,9 @@ export function AutomationRulesPanel({
       params.set("days", logsDays);
       params.set("limit", logsLimit);
 
-      const res = await apiFetch(`/api/crm/automation-executions?${params.toString()}`);
+      const res = await apiFetch(
+        `/api/crm/automation-executions?${params.toString()}`,
+      );
       if (!res.ok) return;
 
       const data = await res.json();
@@ -494,7 +497,13 @@ export function AutomationRulesPanel({
     } finally {
       setLogsLoading(false);
     }
-  }, [logsDays, logsLimit, logsRuleFilter, logsStatusFilter, logsTriggerFilter]);
+  }, [
+    logsDays,
+    logsLimit,
+    logsRuleFilter,
+    logsStatusFilter,
+    logsTriggerFilter,
+  ]);
 
   useEffect(() => {
     if (logsDialogOpen) {
@@ -910,379 +919,384 @@ export function AutomationRulesPanel({
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <ScrollArea className="mt-4 h-[calc(100vh-140px)]">
+            <ScrollArea type="always" className="mt-4 h-[calc(100dvh-160px)]">
               <div className="pr-4 pb-4">
-              {/* Configurações Gerais */}
-              <Card className="crm-analytics-card mb-4 border-border/80">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-purple-500" />
-                    Configurações Gerais
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label className="text-sm">Auto-Status</Label>
-                      <p className="text-xs text-muted-foreground">
-                        Atualizar status automaticamente com base em eventos
-                      </p>
-                    </div>
-                    <Switch
-                      checked={settings?.auto_status_enabled ?? true}
-                      onCheckedChange={(checked) =>
-                        updateSettings({ autoStatusEnabled: checked } as Record<
-                          string,
-                          unknown
-                        >)
-                      }
-                    />
-                  </div>
-
-                  <Separator />
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label className="text-sm">Rastrear Origem</Label>
-                      <p className="text-xs text-muted-foreground">
-                        Capturar origem dos leads (anúncios, direto, etc)
-                      </p>
-                    </div>
-                    <Switch
-                      checked={settings?.lead_tracking_enabled ?? true}
-                      onCheckedChange={(checked) =>
-                        updateSettings({
-                          leadTrackingEnabled: checked,
-                        } as Record<string, unknown>)
-                      }
-                    />
-                  </div>
-
-                  <Separator />
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label className="text-sm">Auto-Tag Anúncios</Label>
-                      <p className="text-xs text-muted-foreground">
-                        Criar tag automaticamente quando vem de anúncio
-                      </p>
-                    </div>
-                    <Switch
-                      checked={settings?.auto_tag_ads ?? true}
-                      onCheckedChange={(checked) =>
-                        updateSettings({ autoTagAds: checked } as Record<
-                          string,
-                          unknown
-                        >)
-                      }
-                    />
-                  </div>
-
-                  <Separator />
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label className="text-sm">
-                        Criar Cards Automaticamente
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        Criar card para novos contatos automaticamente
-                      </p>
-                    </div>
-                    <Switch
-                      checked={settings?.auto_create_cards ?? true}
-                      onCheckedChange={(checked) =>
-                        updateSettings({ autoCreateCards: checked } as Record<
-                          string,
-                          unknown
-                        >)
-                      }
-                    />
-                  </div>
-
-                  <Separator />
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label className="text-sm">Motor CRM V2</Label>
-                      <p className="text-xs text-muted-foreground">
-                        Ativa o novo motor de automacoes para este cliente
-                      </p>
-                    </div>
-                    <Switch
-                      checked={settings?.crm_engine_v2 ?? true}
-                      onCheckedChange={(checked) =>
-                        updateSettings({ crmEngineV2: checked } as Record<
-                          string,
-                          unknown
-                        >)
-                      }
-                    />
-                  </div>
-
-                  <Separator />
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label className="text-sm">LLM Assistido</Label>
-                      <p className="text-xs text-muted-foreground">
-                        Habilita trigger de intencao/urgencia detectada por IA
-                      </p>
-                    </div>
-                    <Switch
-                      checked={settings?.llm_intent_enabled ?? false}
-                      onCheckedChange={(checked) =>
-                        updateSettings({ llmIntentEnabled: checked } as Record<
-                          string,
-                          unknown
-                        >)
-                      }
-                    />
-                  </div>
-
-                  {(settings?.llm_intent_enabled ?? false) && (
-                    <div className="space-y-2">
-                      <Label className="text-xs">Confianca minima (LLM)</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        max="1"
-                        value={(settings?.llm_intent_threshold ?? 0.85).toString()}
-                        onChange={(e) => {
-                          const value = Number.parseFloat(e.target.value);
-                          if (!Number.isFinite(value)) return;
-                          const clamped = Math.max(0, Math.min(1, value));
-                          setSettings((prev) =>
-                            prev
-                              ? { ...prev, llm_intent_threshold: clamped }
-                              : prev,
-                          );
-                        }}
-                        onBlur={(e) => {
-                          const value = Number.parseFloat(e.target.value);
-                          const clamped = Number.isFinite(value)
-                            ? Math.max(0, Math.min(1, value))
-                            : 0.85;
+                {/* Configurações Gerais */}
+                <Card className="crm-analytics-card mb-4 border-border/80">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-purple-500" />
+                      Configurações Gerais
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label className="text-sm">Auto-Status</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Atualizar status automaticamente com base em eventos
+                        </p>
+                      </div>
+                      <Switch
+                        checked={settings?.auto_status_enabled ?? true}
+                        onCheckedChange={(checked) =>
                           updateSettings({
-                            llmIntentThreshold: clamped,
-                          } as Record<string, unknown>);
-                        }}
-                        className="w-28"
+                            autoStatusEnabled: checked,
+                          } as Record<string, unknown>)
+                        }
                       />
                     </div>
-                  )}
-                </CardContent>
-              </Card>
 
-              {/* Lista de Regras */}
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-medium">Regras Ativas</h3>
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      setLogsDialogOpen(true);
-                      setExpandedLogId(null);
-                    }}
-                  >
-                    <Clock className="h-4 w-4 mr-1" />
-                    Logs
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => openEditDialog()}
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Nova Regra
-                  </Button>
+                    <Separator />
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label className="text-sm">Rastrear Origem</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Capturar origem dos leads (anúncios, direto, etc)
+                        </p>
+                      </div>
+                      <Switch
+                        checked={settings?.lead_tracking_enabled ?? true}
+                        onCheckedChange={(checked) =>
+                          updateSettings({
+                            leadTrackingEnabled: checked,
+                          } as Record<string, unknown>)
+                        }
+                      />
+                    </div>
+
+                    <Separator />
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label className="text-sm">Auto-Tag Anúncios</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Criar tag automaticamente quando vem de anúncio
+                        </p>
+                      </div>
+                      <Switch
+                        checked={settings?.auto_tag_ads ?? true}
+                        onCheckedChange={(checked) =>
+                          updateSettings({ autoTagAds: checked } as Record<
+                            string,
+                            unknown
+                          >)
+                        }
+                      />
+                    </div>
+
+                    <Separator />
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label className="text-sm">
+                          Criar Cards Automaticamente
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Criar card para novos contatos automaticamente
+                        </p>
+                      </div>
+                      <Switch
+                        checked={settings?.auto_create_cards ?? true}
+                        onCheckedChange={(checked) =>
+                          updateSettings({ autoCreateCards: checked } as Record<
+                            string,
+                            unknown
+                          >)
+                        }
+                      />
+                    </div>
+
+                    <Separator />
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label className="text-sm">Motor CRM V2</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Ativa o novo motor de automacoes para este cliente
+                        </p>
+                      </div>
+                      <Switch
+                        checked={settings?.crm_engine_v2 ?? true}
+                        onCheckedChange={(checked) =>
+                          updateSettings({ crmEngineV2: checked } as Record<
+                            string,
+                            unknown
+                          >)
+                        }
+                      />
+                    </div>
+
+                    <Separator />
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label className="text-sm">LLM Assistido</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Habilita trigger de intencao/urgencia detectada por IA
+                        </p>
+                      </div>
+                      <Switch
+                        checked={settings?.llm_intent_enabled ?? false}
+                        onCheckedChange={(checked) =>
+                          updateSettings({
+                            llmIntentEnabled: checked,
+                          } as Record<string, unknown>)
+                        }
+                      />
+                    </div>
+
+                    {(settings?.llm_intent_enabled ?? false) && (
+                      <div className="space-y-2">
+                        <Label className="text-xs">
+                          Confianca minima (LLM)
+                        </Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="1"
+                          value={(
+                            settings?.llm_intent_threshold ?? 0.85
+                          ).toString()}
+                          onChange={(e) => {
+                            const value = Number.parseFloat(e.target.value);
+                            if (!Number.isFinite(value)) return;
+                            const clamped = Math.max(0, Math.min(1, value));
+                            setSettings((prev) =>
+                              prev
+                                ? { ...prev, llm_intent_threshold: clamped }
+                                : prev,
+                            );
+                          }}
+                          onBlur={(e) => {
+                            const value = Number.parseFloat(e.target.value);
+                            const clamped = Number.isFinite(value)
+                              ? Math.max(0, Math.min(1, value))
+                              : 0.85;
+                            updateSettings({
+                              llmIntentThreshold: clamped,
+                            } as Record<string, unknown>);
+                          }}
+                          className="w-28"
+                        />
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Lista de Regras */}
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-medium">Regras Ativas</h3>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setLogsDialogOpen(true);
+                        setExpandedLogId(null);
+                      }}
+                    >
+                      <Clock className="h-4 w-4 mr-1" />
+                      Logs
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openEditDialog()}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Nova Regra
+                    </Button>
+                  </div>
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                {rules.length === 0 ? (
-                  <Card className="crm-analytics-card p-6 text-center text-muted-foreground">
-                    <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">Nenhuma regra configurada</p>
-                    <p className="text-xs">
-                      Clique em &quot;Nova Regra&quot; para começar
-                    </p>
-                  </Card>
-                ) : (
-                  rules.map((rule, index) => {
-                    const triggerInfo = getTriggerInfo(rule.trigger_type);
-                    const actionInfo = getActionInfo(rule.action_type);
+                <div className="space-y-2">
+                  {rules.length === 0 ? (
+                    <Card className="crm-analytics-card p-6 text-center text-muted-foreground">
+                      <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">Nenhuma regra configurada</p>
+                      <p className="text-xs">
+                        Clique em &quot;Nova Regra&quot; para começar
+                      </p>
+                    </Card>
+                  ) : (
+                    rules.map((rule, index) => {
+                      const triggerInfo = getTriggerInfo(rule.trigger_type);
+                      const actionInfo = getActionInfo(rule.action_type);
 
-                    return (
-                      <Card
-                        key={rule.id}
-                        className={`transition-opacity ${
-                          !rule.is_active ? "opacity-50" : ""
-                        }`}
-                      >
-                        <CardContent className="p-3">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-medium text-sm truncate">
-                                  {rule.name}
-                                </span>
-                                {rule.is_system && (
-                                  <Badge
-                                    variant="secondary"
-                                    className="text-xs"
-                                  >
-                                    Sistema
-                                  </Badge>
+                      return (
+                        <Card
+                          key={rule.id}
+                          className={`transition-opacity ${
+                            !rule.is_active ? "opacity-50" : ""
+                          }`}
+                        >
+                          <CardContent className="p-3">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="font-medium text-sm truncate">
+                                    {rule.name}
+                                  </span>
+                                  {rule.is_system && (
+                                    <Badge
+                                      variant="secondary"
+                                      className="text-xs"
+                                    >
+                                      Sistema
+                                    </Badge>
+                                  )}
+                                </div>
+
+                                {rule.description && (
+                                  <p className="text-xs text-muted-foreground mb-2 line-clamp-1">
+                                    {rule.description}
+                                  </p>
+                                )}
+
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Badge
+                                          variant="outline"
+                                          className="gap-1 px-1.5"
+                                        >
+                                          {triggerIcons[rule.trigger_type]}
+                                          {triggerInfo?.name ||
+                                            rule.trigger_type}
+                                        </Badge>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        {triggerInfo?.description}
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+
+                                  <ChevronRight className="h-3 w-3" />
+
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Badge
+                                          variant="outline"
+                                          className="gap-1 px-1.5"
+                                        >
+                                          {actionIcons[rule.action_type]}
+                                          {actionInfo?.name || rule.action_type}
+                                        </Badge>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        {actionInfo?.description}
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-1">
+                                <Switch
+                                  checked={rule.is_active}
+                                  onCheckedChange={(checked) =>
+                                    toggleRuleActive(rule.id, checked)
+                                  }
+                                  disabled={rule.is_system}
+                                />
+
+                                {!rule.is_system && (
+                                  <>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => openHistoryDialog(rule)}
+                                    >
+                                      <Clock className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => moveRule(rule.id, "up")}
+                                      disabled={index === 0}
+                                    >
+                                      <ChevronRight className="h-4 w-4 rotate-[-90deg]" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => moveRule(rule.id, "down")}
+                                      disabled={index === rules.length - 1}
+                                    >
+                                      <ChevronRight className="h-4 w-4 rotate-90" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => openEditDialog(rule)}
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 text-destructive hover:text-destructive"
+                                      onClick={() => {
+                                        setRuleToDelete(rule.id);
+                                        setDeleteConfirmOpen(true);
+                                      }}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </>
                                 )}
                               </div>
-
-                              {rule.description && (
-                                <p className="text-xs text-muted-foreground mb-2 line-clamp-1">
-                                  {rule.description}
-                                </p>
-                              )}
-
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Badge
-                                        variant="outline"
-                                        className="gap-1 px-1.5"
-                                      >
-                                        {triggerIcons[rule.trigger_type]}
-                                        {triggerInfo?.name || rule.trigger_type}
-                                      </Badge>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      {triggerInfo?.description}
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-
-                                <ChevronRight className="h-3 w-3" />
-
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Badge
-                                        variant="outline"
-                                        className="gap-1 px-1.5"
-                                      >
-                                        {actionIcons[rule.action_type]}
-                                        {actionInfo?.name || rule.action_type}
-                                      </Badge>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      {actionInfo?.description}
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              </div>
                             </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })
+                  )}
+                </div>
 
-                            <div className="flex items-center gap-1">
-                              <Switch
-                                checked={rule.is_active}
-                                onCheckedChange={(checked) =>
-                                  toggleRuleActive(rule.id, checked)
-                                }
-                                disabled={rule.is_system}
-                              />
-
-                              {!rule.is_system && (
-                                <>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    onClick={() => openHistoryDialog(rule)}
-                                  >
-                                    <Clock className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    onClick={() => moveRule(rule.id, "up")}
-                                    disabled={index === 0}
-                                  >
-                                    <ChevronRight className="h-4 w-4 rotate-[-90deg]" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    onClick={() => moveRule(rule.id, "down")}
-                                    disabled={index === rules.length - 1}
-                                  >
-                                    <ChevronRight className="h-4 w-4 rotate-90" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    onClick={() => openEditDialog(rule)}
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-destructive hover:text-destructive"
-                                    onClick={() => {
-                                      setRuleToDelete(rule.id);
-                                      setDeleteConfirmOpen(true);
-                                    }}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })
-                )}
-              </div>
-
-              {/* Info sobre variáveis */}
-              <Card className="crm-analytics-card mt-4 border-border/80 bg-muted/30">
-                <CardContent className="p-3">
-                  <div className="flex items-start gap-2">
-                    <Info className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                    <div className="text-xs text-muted-foreground">
-                      <p className="font-medium mb-1">Variáveis disponíveis</p>
-                      <p>
-                        Use{" "}
-                        <code className="bg-muted px-1 rounded">
-                          {"{{variável}}"}
-                        </code>{" "}
-                        em textos:
-                      </p>
-                      <ul className="list-disc list-inside mt-1 space-y-0.5">
-                        <li>
-                          <code>campaign_name</code> - Nome da campanha
-                        </li>
-                        <li>
-                          <code>ad_name</code> - Nome do anúncio
-                        </li>
-                        <li>
-                          <code>contact_name</code> - Nome do contato
-                        </li>
-                        <li>
-                          <code>inactive_days</code> - Dias sem resposta
-                        </li>
-                      </ul>
+                {/* Info sobre variáveis */}
+                <Card className="crm-analytics-card mt-4 border-border/80 bg-muted/30">
+                  <CardContent className="p-3">
+                    <div className="flex items-start gap-2">
+                      <Info className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                      <div className="text-xs text-muted-foreground">
+                        <p className="font-medium mb-1">
+                          Variáveis disponíveis
+                        </p>
+                        <p>
+                          Use{" "}
+                          <code className="bg-muted px-1 rounded">
+                            {"{{variável}}"}
+                          </code>{" "}
+                          em textos:
+                        </p>
+                        <ul className="list-disc list-inside mt-1 space-y-0.5">
+                          <li>
+                            <code>campaign_name</code> - Nome da campanha
+                          </li>
+                          <li>
+                            <code>ad_name</code> - Nome do anúncio
+                          </li>
+                          <li>
+                            <code>contact_name</code> - Nome do contato
+                          </li>
+                          <li>
+                            <code>inactive_days</code> - Dias sem resposta
+                          </li>
+                        </ul>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
               </div>
             </ScrollArea>
           )}
@@ -1291,8 +1305,8 @@ export function AutomationRulesPanel({
 
       {/* Edit/Create Rule Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="crm-sheet-surface max-w-md border-border/80">
-          <DialogHeader>
+        <DialogContent className="crm-sheet-surface w-[min(94vw,860px)] max-w-3xl border-border/80 p-0">
+          <DialogHeader className="px-6 pt-6">
             <DialogTitle>
               {editingRule ? "Editar Regra" : "Nova Regra de Automação"}
             </DialogTitle>
@@ -1301,192 +1315,203 @@ export function AutomationRulesPanel({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            {/* Nome */}
-            <div className="space-y-2">
-              <Label htmlFor="rule-name">Nome da Regra</Label>
-              <Input
-                id="rule-name"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                placeholder="Ex: Mover inativos para follow-up"
-              />
-            </div>
+          <div className="max-h-[74dvh] overflow-y-auto px-6 pb-4">
+            <div className="space-y-4">
+              {/* Nome */}
+              <div className="space-y-2">
+                <Label htmlFor="rule-name">Nome da Regra</Label>
+                <Input
+                  id="rule-name"
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                  placeholder="Ex: Mover inativos para follow-up"
+                />
+              </div>
 
-            {/* Descrição */}
-            <div className="space-y-2">
-              <Label htmlFor="rule-desc">Descrição (opcional)</Label>
-              <Input
-                id="rule-desc"
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                placeholder="Descreva o que esta regra faz"
-              />
-            </div>
+              {/* Descrição */}
+              <div className="space-y-2">
+                <Label htmlFor="rule-desc">Descrição (opcional)</Label>
+                <Input
+                  id="rule-desc"
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  placeholder="Descreva o que esta regra faz"
+                />
+              </div>
 
-            <Separator />
+              <Separator />
 
-            {/* Trigger */}
-            <div className="space-y-2">
-              <Label>Quando (Trigger)</Label>
-              <Select
-                value={formData.triggerType}
-                onValueChange={(v) =>
-                  setFormData({
-                    ...formData,
-                    triggerType: v,
-                    triggerConditions: {},
-                  })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o gatilho" />
-                </SelectTrigger>
-                <SelectContent>
-                  {triggers.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      <div className="flex items-center gap-2">
-                        {triggerIcons[t.id]}
-                        <span>{t.name}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {/* Trigger Conditions */}
-              {formData.triggerType &&
-                getTriggerInfo(formData.triggerType)?.conditions && (
-                  <div className="pl-4 border-l-2 border-muted space-y-2">
-                    {getTriggerInfo(formData.triggerType)?.conditions?.map(
-                      (cond) => (
-                        <div
-                          key={cond.field}
-                          className="flex items-center gap-2"
-                        >
-                          <Label className="text-xs w-24">{cond.label}:</Label>
-                          {renderConditionField(cond)}
+              {/* Trigger */}
+              <div className="space-y-2">
+                <Label>Quando (Trigger)</Label>
+                <Select
+                  value={formData.triggerType}
+                  onValueChange={(v) =>
+                    setFormData({
+                      ...formData,
+                      triggerType: v,
+                      triggerConditions: {},
+                    })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o gatilho" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {triggers.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        <div className="flex items-center gap-2">
+                          {triggerIcons[t.id]}
+                          <span>{t.name}</span>
                         </div>
-                      ),
-                    )}
-                  </div>
-                )}
-            </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-            <Separator />
+                {/* Trigger Conditions */}
+                {formData.triggerType &&
+                  getTriggerInfo(formData.triggerType)?.conditions && (
+                    <div className="pl-4 border-l-2 border-muted space-y-2">
+                      {getTriggerInfo(formData.triggerType)?.conditions?.map(
+                        (cond) => (
+                          <div
+                            key={cond.field}
+                            className="flex items-center gap-2"
+                          >
+                            <Label className="text-xs w-24">
+                              {cond.label}:
+                            </Label>
+                            {renderConditionField(cond)}
+                          </div>
+                        ),
+                      )}
+                    </div>
+                  )}
+              </div>
 
-            {/* Action */}
-            <div className="space-y-2">
-              <Label>Então (Ação)</Label>
-              <Select
-                value={formData.actionType}
-                onValueChange={(v) =>
-                  setFormData({
-                    ...formData,
-                    actionType: v,
-                    actionParams: {},
-                  })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a ação" />
-                </SelectTrigger>
-                <SelectContent>
-                  {actions.map((a) => (
-                    <SelectItem key={a.id} value={a.id}>
-                      <div className="flex items-center gap-2">
-                        {actionIcons[a.id]}
-                        <span>{a.name}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Separator />
 
-              {/* Action Params */}
-              {formData.actionType &&
-                getActionInfo(formData.actionType)?.params && (
-                  <div className="pl-4 border-l-2 border-muted space-y-2">
-                    {getActionInfo(formData.actionType)?.params.map((param) => (
-                      <div key={param.field} className="space-y-1">
-                        <Label className="text-xs">
-                          {param.label}
-                          {param.required && " *"}
-                        </Label>
-                        {renderActionParamField(param)}
+              {/* Action */}
+              <div className="space-y-2">
+                <Label>Então (Ação)</Label>
+                <Select
+                  value={formData.actionType}
+                  onValueChange={(v) =>
+                    setFormData({
+                      ...formData,
+                      actionType: v,
+                      actionParams: {},
+                    })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a ação" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {actions.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        <div className="flex items-center gap-2">
+                          {actionIcons[a.id]}
+                          <span>{a.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* Action Params */}
+                {formData.actionType &&
+                  getActionInfo(formData.actionType)?.params && (
+                    <div className="pl-4 border-l-2 border-muted space-y-2">
+                      {getActionInfo(formData.actionType)?.params.map(
+                        (param) => (
+                          <div key={param.field} className="space-y-1">
+                            <Label className="text-xs">
+                              {param.label}
+                              {param.required && " *"}
+                            </Label>
+                            {renderActionParamField(param)}
+                          </div>
+                        ),
+                      )}
+                    </div>
+                  )}
+
+                <div className="flex items-center gap-2 pt-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addCurrentActionAsStep}
+                    disabled={!formData.actionType}
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1" />
+                    Adicionar Etapa
+                  </Button>
+                  <span className="text-xs text-muted-foreground">
+                    {formData.actionSteps.length} etapa(s)
+                  </span>
+                </div>
+
+                {formData.actionSteps.length > 0 && (
+                  <div className="space-y-2 rounded-md border border-border/70 p-2">
+                    {formData.actionSteps.map((step, index) => (
+                      <div
+                        key={`${step.action_type}-${index}`}
+                        className="rounded-md border border-border/60 p-2"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="text-xs font-medium">
+                            Etapa {index + 1}:{" "}
+                            {getActionInfo(step.action_type)?.name ||
+                              step.action_type}
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-destructive"
+                            onClick={() => removeStepAt(index)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                        <div className="mt-2 space-y-1">
+                          <Label className="text-[11px]">On error</Label>
+                          <Select
+                            value={step.on_error}
+                            onValueChange={(
+                              value: "continue" | "stop" | "compensate",
+                            ) => updateStepOnError(index, value)}
+                          >
+                            <SelectTrigger className="h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="stop">Parar cadeia</SelectItem>
+                              <SelectItem value="continue">
+                                Continuar
+                              </SelectItem>
+                              <SelectItem value="compensate">
+                                Compensar
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
                     ))}
                   </div>
                 )}
-
-              <div className="flex items-center gap-2 pt-1">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addCurrentActionAsStep}
-                  disabled={!formData.actionType}
-                >
-                  <Plus className="h-3.5 w-3.5 mr-1" />
-                  Adicionar Etapa
-                </Button>
-                <span className="text-xs text-muted-foreground">
-                  {formData.actionSteps.length} etapa(s)
-                </span>
               </div>
-
-              {formData.actionSteps.length > 0 && (
-                <div className="space-y-2 rounded-md border border-border/70 p-2">
-                  {formData.actionSteps.map((step, index) => (
-                    <div
-                      key={`${step.action_type}-${index}`}
-                      className="rounded-md border border-border/60 p-2"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="text-xs font-medium">
-                          Etapa {index + 1}:{" "}
-                          {getActionInfo(step.action_type)?.name || step.action_type}
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 text-destructive"
-                          onClick={() => removeStepAt(index)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                      <div className="mt-2 space-y-1">
-                        <Label className="text-[11px]">On error</Label>
-                        <Select
-                          value={step.on_error}
-                          onValueChange={(value: "continue" | "stop" | "compensate") =>
-                            updateStepOnError(index, value)
-                          }
-                        >
-                          <SelectTrigger className="h-8">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="stop">Parar cadeia</SelectItem>
-                            <SelectItem value="continue">Continuar</SelectItem>
-                            <SelectItem value="compensate">Compensar</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="border-t border-border/70 px-6 py-4">
             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
               Cancelar
             </Button>
@@ -1521,12 +1546,16 @@ export function AutomationRulesPanel({
           <DialogHeader>
             <DialogTitle>Logs de Automacao</DialogTitle>
             <DialogDescription>
-              Visualize eventos, regras executadas, skips e erros para diagnostico fino.
+              Visualize eventos, regras executadas, skips e erros para
+              diagnostico fino.
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-            <Select value={logsStatusFilter} onValueChange={setLogsStatusFilter}>
+            <Select
+              value={logsStatusFilter}
+              onValueChange={setLogsStatusFilter}
+            >
               <SelectTrigger className="h-8">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -1538,7 +1567,10 @@ export function AutomationRulesPanel({
               </SelectContent>
             </Select>
 
-            <Select value={logsTriggerFilter} onValueChange={setLogsTriggerFilter}>
+            <Select
+              value={logsTriggerFilter}
+              onValueChange={setLogsTriggerFilter}
+            >
               <SelectTrigger className="h-8">
                 <SelectValue placeholder="Trigger" />
               </SelectTrigger>
@@ -1666,16 +1698,24 @@ export function AutomationRulesPanel({
                         )
                       }
                     >
-                      {expandedLogId === row.id ? "Ocultar detalhes" : "Ver detalhes"}
+                      {expandedLogId === row.id
+                        ? "Ocultar detalhes"
+                        : "Ver detalhes"}
                     </Button>
                   </div>
 
                   {expandedLogId === row.id && (
                     <div className="grid gap-2 sm:grid-cols-3">
                       <div className="space-y-1">
-                        <p className="text-muted-foreground">trigger_conditions</p>
+                        <p className="text-muted-foreground">
+                          trigger_conditions
+                        </p>
                         <pre className="max-h-44 overflow-auto rounded bg-muted/30 p-2 text-[11px] leading-relaxed">
-                          {JSON.stringify(row.trigger_conditions || {}, null, 2)}
+                          {JSON.stringify(
+                            row.trigger_conditions || {},
+                            null,
+                            2,
+                          )}
                         </pre>
                       </div>
                       <div className="space-y-1">

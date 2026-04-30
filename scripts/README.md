@@ -1,114 +1,61 @@
-# Scripts de Migration e Testes
+# Scripts Operacionais
 
-## 🔄 Migration: Adicionar Valores Padrão
+Esta pasta concentra CLIs, migrações pontuais, exports e validações locais do projeto.
 
-O script `migrate-transfer-blocks.ts` atualiza flows existentes com os novos campos de configuração.
+## Comandos No `package.json`
 
-### Como Executar
+| Comando | Script |
+| --- | --- |
+| `npm run build:mobile` | `scripts/build-mobile.js` |
+| `npm run db:export` | `scripts/export-database-schema.js` |
+| `npm run db:map` | `scripts/analyze_supabase.py` |
+| `npm run contacts:xlsx-to-csv -- arquivo.xlsx` | `scripts/xlsx-to-csv.js` |
+| `npm run export:features-pdf` | `scripts/generate-pdf.js` |
+| `npm run export:uzzapp-commercial-pdf` | `scripts/export-uzzapp-commercial-pdf.js` |
+| `npm run ios:validate-urls` | `scripts/ios-validate-public-urls.mjs` |
 
-```bash
-# Instalar tsx se não tiver
-npm install -g tsx
+## Contatos
 
-# Rodar migration
-npx tsx scripts/migrate-transfer-blocks.ts
-```
-
-### O que a Migration Faz
-
-1. **Busca todos os flows** do banco de dados
-2. **Identifica blocos** ai_handoff e human_handoff
-3. **Adiciona valores padrão** se não existirem:
-   - AI Handoff:
-     - `autoRespond`: true
-     - `includeFlowContext`: true
-     - `contextFormat`: 'summary'
-     - `transitionMessage`: '' (vazio)
-   - Human Handoff:
-     - `notifyAgent`: true
-     - `transitionMessage`: 'Um atendente humano vai te responder em breve.'
-4. **Atualiza flows** no banco
-5. **Mostra relatório** de quantos foram atualizados
-
-### Segurança
-
-- ✅ Não sobrescreve valores existentes
-- ✅ Apenas adiciona campos ausentes
-- ✅ Pode ser executado múltiplas vezes (idempotente)
-- ✅ Mostra preview antes de executar
-
-### Output Esperado
-
-```
-🚀 Starting migration: Add default values to transfer blocks
-
-📊 Fetching all interactive flows...
-✅ Found 5 flows
-
-📝 Processing flow: Fluxo de Vendas (flow-123)
-  🤖 Migrating AI Handoff block: ai-block-1
-  💾 Updating flow in database...
-  ✅ Flow updated successfully
-
-...
-
-============================================================
-📊 MIGRATION SUMMARY
-============================================================
-Total flows processed: 5
-Flows updated: 3
-AI Handoff blocks migrated: 2
-Human Handoff blocks migrated: 1
-============================================================
-
-✅ Migration completed successfully!
-```
-
-## 🧪 Testes
-
-### Testes Unitários
+Converter XLSX para CSV:
 
 ```bash
-# Rodar testes
-npm test
-
-# Rodar apenas testes de FlowExecutor
-npm test flowExecutor
+npm run contacts:xlsx-to-csv -- data/contacts/umana/arquivo.xlsx --out data/contacts/umana/CSVs
 ```
 
-### Testes de Integração
+Também é possível chamar diretamente:
 
 ```bash
-# Rodar testes de integração
-npm test integration
+node scripts/xlsx-to-csv.js arquivo.xlsx --list-sheets
+node scripts/xlsx-to-csv.js arquivo.xlsx --sheet "Aba" --delimiter ";"
 ```
 
-### Testes Manuais
+## Banco
 
-Ver checklist em: `docs/flows/TRANSFER_TESTING_CHECKLIST.md`
+Exportar schema:
 
-## 📱 Android Release (Windows)
+```bash
+npm run db:export
+```
 
-Scripts adicionados para build de release Android:
+Mapear usos de Supabase no código:
 
-- `scripts/android-preflight-check.ps1`
-- `scripts/build-android-release.ps1`
+```bash
+npm run db:map
+```
 
-Uso rapido:
+## Android Release No Windows
 
 ```powershell
 .\scripts\android-preflight-check.ps1
 .\scripts\build-android-release.ps1
 ```
 
-Obs:
-- O script usa automaticamente o JDK 21 do Android Studio (`jbr`) quando disponivel.
-- O artefato final sai em `android/app/build/outputs/bundle/release/app-release.aab`.
+O artefato final é gerado em `android/app/build/outputs/bundle/release/app-release.aab`.
 
-## 📋 Ordem Recomendada
+## Migração De Blocos De Transferência
 
-1. **Rodar migration** (se tiver flows existentes)
-2. **Rodar testes unitários** para validar lógica
-3. **Seguir checklist** de testes manuais em staging
-4. **Deploy para produção**
+```bash
+npx tsx scripts/migrate-transfer-blocks.ts
+```
 
+A migração é idempotente e adiciona defaults ausentes em blocos `ai_handoff` e `human_handoff`.

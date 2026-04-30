@@ -672,75 +672,77 @@ export default function CRMPage() {
 
       {/* ── Settings modal ──────────────────────────────────────────── */}
       <Dialog open={showSettings} onOpenChange={setShowSettings}>
-        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="crm-sheet-surface w-[min(94vw,920px)] max-w-4xl border-border/80 p-0">
+          <DialogHeader className="border-b border-border/70 px-6 py-4">
             <DialogTitle className="flex items-center gap-2">
               <Settings2 className="h-4 w-4" />
               Configurações do Pipeline
             </DialogTitle>
           </DialogHeader>
 
-          <div className="flex flex-col gap-5 pt-2">
-            {/* Filters */}
-            <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Filtros
-              </p>
-              <CRMFiltersComponent
-                filters={filters}
-                tags={tags}
-                onFiltersChange={setFilters}
-              />
-            </div>
-
-            {/* Display options */}
-            <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Exibição
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                className={cn(
-                  "w-full justify-start gap-2 rounded-xl",
-                  hideEmptyColumns &&
-                    "border-primary/40 bg-primary/10 text-primary",
-                )}
-                onClick={() => setHideEmptyColumns((current) => !current)}
-              >
-                <EyeOff className="h-4 w-4" />
-                {hideEmptyColumns
-                  ? "Mostrar colunas vazias"
-                  : "Ocultar colunas vazias"}
-              </Button>
-            </div>
-
-            {/* Tags */}
-            <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Tags
-              </p>
-              <TagsManager
-                tags={tags}
-                onCreateTag={createTag}
-                onDeleteTag={deleteTag}
-                loading={tagsLoading}
-              />
-            </div>
-
-            {/* Automations */}
-            {clientId && (
+          <div className="max-h-[76dvh] overflow-y-auto px-6 py-5">
+            <div className="flex flex-col gap-5">
+              {/* Filters */}
               <div>
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Automações
+                  Filtros
                 </p>
-                <AutomationRulesPanel
-                  clientId={clientId}
-                  columns={columns}
+                <CRMFiltersComponent
+                  filters={filters}
                   tags={tags}
+                  onFiltersChange={setFilters}
                 />
               </div>
-            )}
+
+              {/* Display options */}
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Exibição
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    "w-full justify-start gap-2 rounded-xl",
+                    hideEmptyColumns &&
+                      "border-primary/40 bg-primary/10 text-primary",
+                  )}
+                  onClick={() => setHideEmptyColumns((current) => !current)}
+                >
+                  <EyeOff className="h-4 w-4" />
+                  {hideEmptyColumns
+                    ? "Mostrar colunas vazias"
+                    : "Ocultar colunas vazias"}
+                </Button>
+              </div>
+
+              {/* Tags */}
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Tags
+                </p>
+                <TagsManager
+                  tags={tags}
+                  onCreateTag={createTag}
+                  onDeleteTag={deleteTag}
+                  loading={tagsLoading}
+                />
+              </div>
+
+              {/* Automations */}
+              {clientId && (
+                <div>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Automações
+                  </p>
+                  <AutomationRulesPanel
+                    clientId={clientId}
+                    columns={columns}
+                    tags={tags}
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>

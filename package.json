@@ -10,6 +10,7 @@
     "build:mobile:stg": "doppler run --config stg -- cross-env CAPACITOR_BUILD=true next build",
     "build:mobile:prd": "doppler run --config prd -- cross-env CAPACITOR_BUILD=true next build",
     "export:uzzapp-commercial-pdf": "node scripts/export-uzzapp-commercial-pdf.js",
+    "export:features-pdf": "node scripts/generate-pdf.js",
     "export:uzzapp-luis-exportonly-hybrid-pdf": "node scripts/export-uzzapp-luis-exportonly-hybrid-pdf.js",
     "export:uzzapp-luis-image-pdf": "node scripts/export-uzzapp-luis-image-pdf.js",
     "export:uzzapp-luis-pdf": "node scripts/export-uzzapp-luis-pdf.js",
@@ -29,7 +30,9 @@
     "cap:sync": "npx cap sync",
     "cap:open:android": "npx cap open android",
     "cap:open:ios": "npx cap open ios",
-    "db:export": "node scripts/export-database-schema.js"
+    "contacts:xlsx-to-csv": "node scripts/xlsx-to-csv.js",
+    "db:export": "node scripts/export-database-schema.js",
+    "db:map": "python scripts/analyze_supabase.py"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.56",

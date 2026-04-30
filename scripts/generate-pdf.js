@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
  * generate-pdf.js
- * Converte UZZAPP_FEATURES_CLIENTE.html → UZZAPP_FEATURES_CLIENTE.pdf
+ * Converte docs/UZZAPP_FEATURES_CLIENTE.html em docs/UZZAPP_FEATURES_CLIENTE.pdf
  * usando Puppeteer (Chromium headless) para renderização fiel.
  *
  * Uso:
- *   node generate-pdf.js
- *   node generate-pdf.js --input outro-arquivo.html --output saida.pdf
+ *   node scripts/generate-pdf.js
+ *   node scripts/generate-pdf.js --input docs/outro-arquivo.html --output docs/saida.pdf
  */
 
 const puppeteer = require('puppeteer')
@@ -20,11 +20,13 @@ const getArg = (flag) => {
   return idx !== -1 ? args[idx + 1] : null
 }
 
-const inputFile  = getArg('--input')  || 'UZZAPP_FEATURES_CLIENTE.html'
+const repoRoot = path.resolve(__dirname, '..')
+
+const inputFile  = getArg('--input')  || 'docs/UZZAPP_FEATURES_CLIENTE.html'
 const outputFile = getArg('--output') || inputFile.replace(/\.html$/i, '.pdf')
 
-const inputPath  = path.resolve(__dirname, inputFile)
-const outputPath = path.resolve(__dirname, outputFile)
+const inputPath  = path.resolve(repoRoot, inputFile)
+const outputPath = path.resolve(repoRoot, outputFile)
 
 // ── Validação ──────────────────────────────────────────────────────────────
 if (!fs.existsSync(inputPath)) {
