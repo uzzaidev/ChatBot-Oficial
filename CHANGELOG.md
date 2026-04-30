@@ -9,6 +9,30 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-30
 
 ### feat
+- Adicionado campo de entrada para Meta Phone Number ID na página de configurações do dashboard, permitindo configurar este valor via UI.
+  - Arquivos: `src/app/dashboard/settings/page.tsx`
+  - Confiança: alta
+
+### docs
+- Atualizada documentação principal (`README.md`) com nova estrutura, detalhes do stack, arquitetura, quick start, operação, organização de pastas e scripts operacionais.
+- Adicionados arquivos de documentação e guias para scripts, apresentações comerciais, macroprocessos e migração.
+- Documentação de scripts operacionais atualizada para refletir comandos npm e localização correta dos scripts.
+- Criados arquivos README em pastas de assets de branding e dados de contatos explicando uso e organização.
+  - Arquivos: `README.md`, `docs/MACROPROCESSOS-UZZAPP.md`, `docs/presentations/README.md`, `assets/branding/README.md`, `data/contacts/README.md`, `scripts/README.md`
+  - Confiança: alta
+
+### refactor
+- Melhorias visuais e estruturais no painel de automações CRM:
+  - Ajustes no layout e scroll para melhor usabilidade e responsividade.
+  - Correção de espaçamentos, classes CSS e organização dos componentes.
+  - Ajustes em diálogos de edição/criação de regras, incluindo scroll interno e organização dos campos.
+  - Atualização do componente KanbanCard para melhor controle de overflow e usabilidade do menu dropdown.
+  - Arquivos: `src/components/crm/AutomationRulesPanel.tsx`, `src/components/crm/KanbanCard.tsx`, `src/app/dashboard/crm/page.tsx`
+  - Confiança: alta
+
+## 2026-04-30
+
+### feat
 - Migrado o formato dos prompts do agente para uso de tags XML em vez de markdown, seguindo práticas recomendadas para modelos GPT-5. Essa mudança melhora a fidelidade no seguimento das instruções e permite cache eficiente de prompts.
 - Atualizado prompt padrão do sistema para utilizar tags XML, alinhando com o novo formato.
 - Ajustes nos testes unitários para validar a presença das tags XML nos prompts gerados.
