@@ -9,6 +9,15 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-30
 
 ### feat
+- Adicionado sistema de diagnóstico com página interativa que executa testes automáticos de conectividade e autenticação, exibindo resultados e permitindo cópia do relatório em JSON.
+- Implementada API para receber e registrar logs dos relatórios de diagnóstico enviados pelo cliente.
+- Criado endpoint de health check simples para monitoramento do serviço.
+  - Arquivos: `src/app/diagnostico/page.tsx`, `src/app/api/diagnostico/log/route.ts`, `src/app/api/health/route.ts`
+  - Confiança: alta
+
+## 2026-04-30
+
+### feat
 - Implementada geração automática de slugs únicos para colunas do CRM, evitando conflitos por nomes semelhantes; aprimorada a exibição de erros no diálogo de criação de colunas com notificações toast.
 - Ajustado endpoint API para criar colunas com slug único baseado no nome, considerando colunas já existentes do cliente.
 - Melhorado feedback ao usuário no componente `CreateColumnDialog` para exibir mensagens claras em caso de falha na criação.
