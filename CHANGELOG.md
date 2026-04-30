@@ -6,6 +6,15 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-04-30
+
+### feat
+- Migrado o formato dos prompts do agente para uso de tags XML em vez de markdown, seguindo práticas recomendadas para modelos GPT-5. Essa mudança melhora a fidelidade no seguimento das instruções e permite cache eficiente de prompts.
+- Atualizado prompt padrão do sistema para utilizar tags XML, alinhando com o novo formato.
+- Ajustes nos testes unitários para validar a presença das tags XML nos prompts gerados.
+  - Arquivos: `src/lib/prompt-builder.ts`, `src/nodes/generateAIResponse.ts`, `tests/unit/prompt-builder.test.ts`
+  - Confiança: alta
+
 ## 2026-04-28
 
 ### feat
