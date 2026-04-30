@@ -9,6 +9,13 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-30
 
 ### chore
+- Atualizado `.gitignore` para ignorar diretórios `.data` e `tmp`, e removidos arquivos temporários não utilizados na pasta `tmp`
+  - Arquivos: `.gitignore`, `tmp/calendar_changes_before_pull.patch`, `tmp/fix-sports-prompt.js`, `tmp/pdfs/uzzapp-app-summary-preview.png`, `tmp/pdfs/uzzapp-app-summary.html`, `tmp/public_data_dump_2026_04_14.sql`
+  - Confiança: alta
+
+## 2026-04-30
+
+### chore
 - Removidos scripts e arquivos obsoletos relacionados a AI Gateway Fallback, verificação de webhook, rastreamento de documentos e conversão XLSX para CSV, incluindo PowerShell, Bash, TypeScript e JavaScript.
 - Excluída documentação e bases de dados antigas de componentes visuais e contatos, além de assets e scripts auxiliares que não são mais necessários para a arquitetura atual.
   - Arquivos removidos: múltiplos em `component-database/`, `data/contacts/umana/CSVs/`, `resources/`, `scripts/` (ex: `scripts/xlsx-to-csv.js`, `scripts/export-database-schema.js`, `scripts/analyze_supabase.py`, entre outros)
