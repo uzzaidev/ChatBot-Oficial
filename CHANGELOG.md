@@ -8,6 +8,15 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-04-30
 
+### chore
+- Removidos scripts e arquivos obsoletos relacionados a AI Gateway Fallback, verificação de webhook, rastreamento de documentos e conversão XLSX para CSV, incluindo PowerShell, Bash, TypeScript e JavaScript.
+- Excluída documentação e bases de dados antigas de componentes visuais e contatos, além de assets e scripts auxiliares que não são mais necessários para a arquitetura atual.
+  - Arquivos removidos: múltiplos em `component-database/`, `data/contacts/umana/CSVs/`, `resources/`, `scripts/` (ex: `scripts/xlsx-to-csv.js`, `scripts/export-database-schema.js`, `scripts/analyze_supabase.py`, entre outros)
+- Evidência: Exclusão massiva de arquivos e pastas indicam limpeza e descontinuação de funcionalidades antigas.
+- Confiança: alta
+
+## 2026-04-30
+
 ### feat
 - Adicionado sistema de diagnóstico com página interativa que executa testes automáticos de conectividade e autenticação, exibindo resultados e permitindo cópia do relatório em JSON.
 - Implementada API para receber e registrar logs dos relatórios de diagnóstico enviados pelo cliente.
