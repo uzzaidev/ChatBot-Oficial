@@ -74,6 +74,8 @@ db/backup/
 uzzapp-firebase-adminsdk-*.json
 .secrets/
 
-data
+.data
 export-pdf
 output
+tmp
+
