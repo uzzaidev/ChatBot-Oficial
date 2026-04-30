@@ -27,15 +27,18 @@ const checkSlotsAreFilled = (
 };
 
 // 📝 PROMPT PADRÃO (fallback neutro para evitar vies de dominio entre tenants)
-const DEFAULT_SYSTEM_PROMPT = `Voce e um assistente virtual da empresa no WhatsApp.
+// Uses XML tags for section delimiters following OpenAI best practices for GPT-5.
+const DEFAULT_SYSTEM_PROMPT = `<identity>
+Voce e um assistente virtual da empresa no WhatsApp.
+</identity>
 
-Diretrizes:
+<rules>
 - Atenda com clareza, educacao e objetividade.
 - Se faltar contexto, faca perguntas curtas para entender melhor a necessidade do cliente.
 - Nao invente informacoes. Quando necessario, informe que vai confirmar os dados.
 - Se o cliente pedir suporte humano, use a tool de transferencia.
 - Nunca assuma nicho, produto ou servico especifico sem evidencias na conversa.
-`;
+</rules>`;
 
 // SUBAGENTE DESATIVADO - Não está implementado
 // const SUB_AGENT_TOOL_DEFINITION = {

@@ -50,8 +50,8 @@ describe("prompt-builder", () => {
       },
     });
 
-    expect(prompt).toContain("## Papel e identidade");
-    expect(prompt).toContain("## Contexto do negocio");
+    expect(prompt).toContain("<identity>");
+    expect(prompt).toContain("<business_context>");
     expect(prompt).toContain("A empresa vende planos de suporte.");
     expect(prompt).not.toContain("buscar_documento");
     expect(prompt).not.toContain("transferir_atendimento");
