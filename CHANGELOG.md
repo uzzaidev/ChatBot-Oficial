@@ -9,6 +9,15 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-04-30
 
 ### feat
+- Implementada geração automática de slugs únicos para colunas do CRM, evitando conflitos por nomes semelhantes; aprimorada a exibição de erros no diálogo de criação de colunas com notificações toast.
+- Ajustado endpoint API para criar colunas com slug único baseado no nome, considerando colunas já existentes do cliente.
+- Melhorado feedback ao usuário no componente `CreateColumnDialog` para exibir mensagens claras em caso de falha na criação.
+  - Arquivos: `src/app/api/crm/columns/route.ts`, `src/components/crm/CreateColumnDialog.tsx`, `src/hooks/useCRMColumns.ts`
+  - Confiança: alta
+
+## 2026-04-30
+
+### feat
 - Adicionado campo de entrada para Meta Phone Number ID na página de configurações do dashboard, permitindo configurar este valor via UI.
   - Arquivos: `src/app/dashboard/settings/page.tsx`
   - Confiança: alta
