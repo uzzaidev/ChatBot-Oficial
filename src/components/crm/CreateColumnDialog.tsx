@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 
@@ -20,7 +21,7 @@ interface CreateColumnDialogProps {
     name: string;
     color?: string;
     icon?: string;
-  }) => Promise<any>;
+  }) => Promise<{ id: string }>;
   disabled?: boolean;
 }
 
@@ -52,6 +53,7 @@ export const CreateColumnDialog = ({
   onCreateColumn,
   disabled = false,
 }: CreateColumnDialogProps) => {
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [color, setColor] = useState(COLUMN_COLORS[0].value);
@@ -63,18 +65,27 @@ export const CreateColumnDialog = ({
 
     setLoading(true);
     try {
-      const result = await onCreateColumn({
+      await onCreateColumn({
         name: name.trim(),
         color,
         icon,
       });
 
-      if (result) {
-        setOpen(false);
-        setName("");
-        setColor(COLUMN_COLORS[0].value);
-        setIcon(COLUMN_ICONS[0].value);
-      }
+      setOpen(false);
+      setName("");
+      setColor(COLUMN_COLORS[0].value);
+      setIcon(COLUMN_ICONS[0].value);
+    } catch (error) {
+      const description =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível criar a coluna. Tente novamente.";
+
+      toast({
+        title: "Não foi possível criar a coluna",
+        description,
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -85,7 +96,7 @@ export const CreateColumnDialog = ({
       <DialogTrigger asChild>
         <Button
           size="sm"
-          className="hidden rounded-full bg-gradient-uzz px-4 text-white shadow-glow hover:opacity-95 md:flex"
+          className="inline-flex rounded-full bg-gradient-uzz px-4 text-white shadow-glow hover:opacity-95"
           disabled={disabled}
         >
           <Plus className="h-4 w-4 mr-1" />

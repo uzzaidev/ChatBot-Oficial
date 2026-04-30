@@ -12,7 +12,7 @@ interface UseCRMColumnsResult {
     name: string;
     color?: string;
     icon?: string;
-  }) => Promise<CRMColumn | null>;
+  }) => Promise<CRMColumn>;
   updateColumn: (
     id: string,
     data: { name?: string; color?: string; icon?: string },
@@ -81,7 +81,7 @@ export const useCRMColumns = (clientId: string | null): UseCRMColumnsResult => {
       } catch (err: any) {
         setError(err.message);
         console.error("Error creating column:", err);
-        return null;
+        throw err;
       }
     },
     [fetchColumns],
