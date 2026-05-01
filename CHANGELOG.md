@@ -9,6 +9,13 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-05-01
 
 ### feat
+- Melhorado o tratamento de erros nas APIs WABA e Phone ID, com logs detalhados e mensagens específicas para códigos de erro comuns como token expirado e falta de permissão
+  - Arquivos: `src/app/api/client/whatsapp-health/route.ts`
+  - Confiança: alta
+
+## 2026-05-01
+
+### feat
 - Passa a salvar mensagens recebidas mesmo quando o chatbot está pausado, garantindo que as mensagens apareçam na visualização da conversa
   - Arquivos: `src/flows/chatbotFlow.ts`
   - Confiança: alta
