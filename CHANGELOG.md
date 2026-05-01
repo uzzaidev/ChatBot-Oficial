@@ -6,6 +6,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-05-01
+
+### feat
+- Implementado endpoint API `/api/digest/whatsapp` para buscar conversas e mensagens filtradas por intervalo de datas, autenticado via token Bearer. O endpoint retorna dados compactos com mensagens truncadas e estatísticas resumidas por contato.
+  - Arquivos: `src/app/api/digest/whatsapp/route.ts`
+  - Confiança: alta
+
 ## 2026-04-30
 
 ### chore
