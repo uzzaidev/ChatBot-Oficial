@@ -9,6 +9,18 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-05-01
 
 ### feat
+- Passa a salvar mensagens recebidas mesmo quando o chatbot está pausado, garantindo que as mensagens apareçam na visualização da conversa
+  - Arquivos: `src/flows/chatbotFlow.ts`
+  - Confiança: alta
+
+### refactor
+- Pequeno ajuste na renderização da qualidade do status do telefone para melhorar legibilidade do código
+  - Arquivos: `src/app/dashboard/settings/page.tsx`
+  - Confiança: alta
+
+## 2026-05-01
+
+### feat
 - Melhorada a exibição do status do telefone no dashboard, incluindo tratamento para a qualidade "UNKNOWN" e ajuste das cores para diferentes ratings
   - Arquivos: `src/app/dashboard/settings/page.tsx`
   - Confiança: alta
