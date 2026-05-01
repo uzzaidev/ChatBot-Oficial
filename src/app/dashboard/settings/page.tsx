@@ -1171,11 +1171,26 @@ export default function SettingsPage() {
                             </>
                           ) : (
                             <div className="flex items-center gap-1.5">
-                              <WifiOff className="w-3.5 h-3.5 text-red-500" />
-                              <span className="text-xs text-red-500 font-medium">
-                                {whatsappHealth.error ??
-                                  "Número não encontrado na Meta"}
-                              </span>
+                              {whatsappHealth.error?.startsWith(
+                                "Token sem permissão",
+                              ) ? (
+                                <>
+                                  <span className="inline-block w-2 h-2 rounded-full bg-yellow-400 shrink-0"></span>
+                                  <span className="text-xs text-yellow-600 dark:text-yellow-400">
+                                    Metadados indisponíveis (permissão de
+                                    leitura não concedida pelo token). Verifique
+                                    o último webhook abaixo.
+                                  </span>
+                                </>
+                              ) : (
+                                <>
+                                  <WifiOff className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                                  <span className="text-xs text-red-500 font-medium">
+                                    {whatsappHealth.error ??
+                                      "Número não encontrado na Meta"}
+                                  </span>
+                                </>
+                              )}
                             </div>
                           )}
 

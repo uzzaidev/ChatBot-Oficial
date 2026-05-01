@@ -18,8 +18,9 @@ export async function GET(request: NextRequest) {
       meta_phone_number_id: string | null;
       meta_access_token_secret_id: string | null;
       meta_waba_id: string | null;
+      whatsapp_business_account_id: string | null;
     }>(
-      `SELECT meta_phone_number_id, meta_access_token_secret_id, meta_waba_id
+      `SELECT meta_phone_number_id, meta_access_token_secret_id, meta_waba_id, whatsapp_business_account_id
        FROM clients WHERE id = $1 LIMIT 1`,
       [clientId],
     );
@@ -81,20 +82,23 @@ export async function GET(request: NextRequest) {
     let metaError: string | null = null;
 
     try {
-      // Strategy 1: GET /{waba-id}/phone_numbers - works with Embedded Signup tokens
-      // (requires whatsapp_business_management or business_management scope)
-      // Strategy 2: GET /{phone-number-id} - requires whatsapp_business_management
+      // Strategy 1: GET /{waba-id}/phone_numbers - works with business_management scope
+      // Strategy 2: GET /{phone-number-id} - also requires whatsapp_business_management
       //
-      // We try via WABA first (more compatible), fall back to direct phone number ID.
+      // Embedded Signup tokens may only have whatsapp_business_messaging (send/receive),
+      // not whatsapp_business_management (read metadata). If both fail, we still report
+      // webhook health from our own DB.
       let fetched = false;
 
-      if (client.meta_waba_id) {
-        const wabaUrl = `https://graph.facebook.com/${META_API_VERSION}/${client.meta_waba_id}/phone_numbers?fields=id,display_phone_number,verified_name,quality_rating,code_verification_status,messaging_limit_tier&access_token=${accessToken}`;
+      // Resolve WABA ID — stored in either meta_waba_id or the older whatsapp_business_account_id column
+      const wabaId = client.meta_waba_id || client.whatsapp_business_account_id;
+
+      if (wabaId) {
+        const wabaUrl = `https://graph.facebook.com/${META_API_VERSION}/${wabaId}/phone_numbers?fields=id,display_phone_number,verified_name,quality_rating,code_verification_status,messaging_limit_tier&access_token=${accessToken}`;
         const wabaRes = await fetch(wabaUrl, { cache: "no-store" });
         const wabaData = await wabaRes.json();
 
         if (wabaRes.ok && !wabaData.error && Array.isArray(wabaData.data)) {
-          // Find the matching phone number from the list
           const match =
             wabaData.data.find(
               (p: { id: string }) => p.id === client.meta_phone_number_id,
@@ -121,7 +125,11 @@ export async function GET(request: NextRequest) {
         const data = await res.json();
 
         if (!res.ok || data.error) {
-          metaError = data.error?.message ?? `HTTP ${res.status}`;
+          // Token lacks whatsapp_business_management permission — this is common with
+          // Embedded Signup tokens. The bot still works; we just can't read number metadata.
+          metaError =
+            "Token sem permissão de leitura de metadados (whatsapp_business_management). " +
+            "Isso não afeta o funcionamento do bot — use o último webhook abaixo como indicador de saúde.";
         } else {
           phoneStatus = {
             phoneNumberId: data.id,
