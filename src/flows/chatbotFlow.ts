@@ -502,6 +502,39 @@ export const processChatbotMessage = async (
       console.log(
         "⏸️ [chatbotFlow] No active agent configured — bot is paused, skipping AI response.",
       );
+
+      // Still save the incoming message so it appears in the conversation view
+      try {
+        const rawContent =
+          parsedMessage.type === "image"
+            ? parsedMessage.content && parsedMessage.content.trim().length > 0
+              ? `[Imagem recebida] ${parsedMessage.content}`
+              : "[Imagem recebida]"
+            : parsedMessage.type === "audio"
+            ? "[Áudio recebido]"
+            : parsedMessage.type === "document"
+            ? "[Documento recebido]"
+            : parsedMessage.type === "sticker"
+            ? "[Figurinha recebida]"
+            : parsedMessage.content || "";
+
+        await saveChatMessage({
+          phone: parsedMessage.phone,
+          message: rawContent,
+          type: "user",
+          clientId: config.id,
+          wamid: parsedMessage.messageId,
+        });
+        console.log(
+          "💾 [chatbotFlow] Incoming message saved (no active agent).",
+        );
+      } catch (saveError) {
+        console.warn(
+          "[chatbotFlow] Failed to save message while bot is paused:",
+          saveError,
+        );
+      }
+
       logger.logNodeSuccess("0. Guard: No Active Agent", {
         reason: "no_active_agent",
         action: "silent_skip",

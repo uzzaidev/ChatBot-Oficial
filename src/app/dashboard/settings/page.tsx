@@ -1160,9 +1160,11 @@ export default function SettingsPage() {
                                         : "text-muted-foreground"
                                     }`}
                                   >
-                                    {whatsappHealth.phoneStatus.qualityRating === "UNKNOWN"
+                                    {whatsappHealth.phoneStatus
+                                      .qualityRating === "UNKNOWN"
                                       ? "Sem dados suficientes"
-                                      : whatsappHealth.phoneStatus.qualityRating}
+                                      : whatsappHealth.phoneStatus
+                                          .qualityRating}
                                   </strong>
                                 </span>
                                 <span>
