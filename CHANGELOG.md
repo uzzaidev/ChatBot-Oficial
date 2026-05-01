@@ -9,6 +9,14 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-05-01
 
 ### feat
+- Adicionado endpoint API para health check do WhatsApp que retorna status do número, último webhook recebido e erros relacionados à autenticação e Meta API.
+- Integrado health check do WhatsApp na página de configurações do dashboard, com botão para consulta em tempo real e exibição detalhada do status do número e último webhook.
+  - Arquivos: `src/app/api/client/whatsapp-health/route.ts`, `src/app/dashboard/settings/page.tsx`
+  - Confiança: alta
+
+## 2026-05-01
+
+### feat
 - Adicionado endpoint GET `/api/digest/whatsapp/contacts` para listar contatos de WhatsApp com interação recente, usado pelo app financeiro para exclusão no digest diário. Implementa autenticação via token e filtro por período (padrão 90 dias, máximo 365).
   - Arquivos: `src/app/api/digest/whatsapp/contacts/route.ts`
   - Confiança: alta
