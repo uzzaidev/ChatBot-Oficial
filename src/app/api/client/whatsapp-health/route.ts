@@ -81,21 +81,57 @@ export async function GET(request: NextRequest) {
     let metaError: string | null = null;
 
     try {
-      const url = `https://graph.facebook.com/${META_API_VERSION}/${client.meta_phone_number_id}?fields=id,display_phone_number,verified_name,quality_rating,code_verification_status,messaging_limit_tier&access_token=${accessToken}`;
-      const res = await fetch(url, { cache: "no-store" });
-      const data = await res.json();
+      // Strategy 1: GET /{waba-id}/phone_numbers - works with Embedded Signup tokens
+      // (requires whatsapp_business_management or business_management scope)
+      // Strategy 2: GET /{phone-number-id} - requires whatsapp_business_management
+      //
+      // We try via WABA first (more compatible), fall back to direct phone number ID.
+      let fetched = false;
 
-      if (!res.ok || data.error) {
-        metaError = data.error?.message ?? `HTTP ${res.status}`;
-      } else {
-        phoneStatus = {
-          phoneNumberId: data.id,
-          displayPhone: data.display_phone_number,
-          verifiedName: data.verified_name,
-          qualityRating: data.quality_rating,
-          verificationStatus: data.code_verification_status,
-          messagingLimitTier: data.messaging_limit_tier,
-        };
+      if (client.meta_waba_id) {
+        const wabaUrl = `https://graph.facebook.com/${META_API_VERSION}/${client.meta_waba_id}/phone_numbers?fields=id,display_phone_number,verified_name,quality_rating,code_verification_status,messaging_limit_tier&access_token=${accessToken}`;
+        const wabaRes = await fetch(wabaUrl, { cache: "no-store" });
+        const wabaData = await wabaRes.json();
+
+        if (wabaRes.ok && !wabaData.error && Array.isArray(wabaData.data)) {
+          // Find the matching phone number from the list
+          const match =
+            wabaData.data.find(
+              (p: { id: string }) => p.id === client.meta_phone_number_id,
+            ) ?? wabaData.data[0];
+
+          if (match) {
+            phoneStatus = {
+              phoneNumberId: match.id,
+              displayPhone: match.display_phone_number,
+              verifiedName: match.verified_name,
+              qualityRating: match.quality_rating,
+              verificationStatus: match.code_verification_status,
+              messagingLimitTier: match.messaging_limit_tier,
+            };
+            fetched = true;
+          }
+        }
+      }
+
+      // Fallback: direct phone number ID lookup
+      if (!fetched) {
+        const url = `https://graph.facebook.com/${META_API_VERSION}/${client.meta_phone_number_id}?fields=id,display_phone_number,verified_name,quality_rating,code_verification_status,messaging_limit_tier&access_token=${accessToken}`;
+        const res = await fetch(url, { cache: "no-store" });
+        const data = await res.json();
+
+        if (!res.ok || data.error) {
+          metaError = data.error?.message ?? `HTTP ${res.status}`;
+        } else {
+          phoneStatus = {
+            phoneNumberId: data.id,
+            displayPhone: data.display_phone_number,
+            verifiedName: data.verified_name,
+            qualityRating: data.quality_rating,
+            verificationStatus: data.code_verification_status,
+            messagingLimitTier: data.messaging_limit_tier,
+          };
+        }
       }
     } catch (fetchError) {
       metaError =
