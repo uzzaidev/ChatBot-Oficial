@@ -2024,13 +2024,19 @@ export const emitCrmAutomationEvent = async (
 
       let isDuplicate = false;
       try {
+        // For inactivity triggers, treat recent failures as duplicates too
+        // (prevents 50+ cards from spamming the Meta API every 30 min on each cron run)
+        const statusFilter =
+          input.triggerType === "inactivity"
+            ? `AND status IN ('success', 'failed')`
+            : `AND status = 'success'`;
         const duplicateCheck = await db.query<{ id: string }>(
           `SELECT id
            FROM crm_rule_executions
            WHERE client_id = $1
              AND rule_id = $2
              AND dedupe_key = $3
-             AND status = 'success'
+             ${statusFilter}
            LIMIT 1`,
           [input.clientId, rule.id, dedupeKey],
         );

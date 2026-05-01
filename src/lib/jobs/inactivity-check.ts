@@ -55,11 +55,12 @@ export const runInactivityCheck = async (
     result.scanned++;
 
     try {
+      const today = new Date().toISOString().slice(0, 10);
       const emitResult = await emitCrmAutomationEvent({
         clientId: card.client_id,
         cardId: card.card_id,
         triggerType: "inactivity",
-        dedupeKey: `inactivity:${card.card_id}:${card.inactive_days}`,
+        dedupeKey: `inactivity:${card.card_id}:${today}`,
         triggerData: {
           inactive_days: card.inactive_days,
           last_message_date: card.last_message_at,
