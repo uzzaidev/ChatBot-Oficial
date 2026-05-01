@@ -9,6 +9,13 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-05-01
 
 ### feat
+- Melhorada a detecção e tratamento de erros da API Meta WhatsApp com verificação adicional de subcódigo de erro para casos específicos de token e escopo
+  - Arquivos: `src/app/api/client/whatsapp-health/route.ts`
+  - Confiança: alta
+
+## 2026-05-01
+
+### feat
 - Melhorado o tratamento de erros nas APIs WABA e Phone ID, com logs detalhados e mensagens específicas para códigos de erro comuns como token expirado e falta de permissão
   - Arquivos: `src/app/api/client/whatsapp-health/route.ts`
   - Confiança: alta
