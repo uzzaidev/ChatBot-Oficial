@@ -9,6 +9,13 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-05-01
 
 ### feat
+- Adicionado endpoint GET `/api/digest/whatsapp/contacts` para listar contatos de WhatsApp com interação recente, usado pelo app financeiro para exclusão no digest diário. Implementa autenticação via token e filtro por período (padrão 90 dias, máximo 365).
+  - Arquivos: `src/app/api/digest/whatsapp/contacts/route.ts`
+  - Confiança: alta
+
+## 2026-05-01
+
+### feat
 - Implementado endpoint API `/api/digest/whatsapp` para buscar conversas e mensagens filtradas por intervalo de datas, autenticado via token Bearer. O endpoint retorna dados compactos com mensagens truncadas e estatísticas resumidas por contato.
   - Arquivos: `src/app/api/digest/whatsapp/route.ts`
   - Confiança: alta
