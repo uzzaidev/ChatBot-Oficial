@@ -139,14 +139,19 @@ export async function GET(request: NextRequest) {
             JSON.stringify(data.error),
           );
           const errCode = data.error?.code;
+          const errSubcode = data.error?.error_subcode;
           const errMsg = data.error?.message ?? "Erro desconhecido";
-          // Error code 190 = token expired, 10 = permission denied
           if (errCode === 190) {
             metaError = `Token Meta expirado — é necessário reconectar via Embedded Signup. (Meta: ${errMsg})`;
           } else if (errCode === 10 || errCode === 200) {
             metaError =
               "Token sem permissão de leitura de metadados (whatsapp_business_management). " +
               "Isso não afeta o funcionamento do bot — use o último webhook abaixo como indicador de saúde.";
+          } else if (errCode === 100 && errSubcode === 33) {
+            metaError =
+              "IDs de WABA/número salvos no banco não correspondem ao escopo do token atual. " +
+              "O bot pode estar funcionando normalmente — verifique o último webhook abaixo. " +
+              "Se o bot parou de responder, refaça o Embedded Signup para atualizar as credenciais.";
           } else {
             metaError = `Erro Meta API (código ${errCode ?? "?"}): ${errMsg}`;
           }
