@@ -9,6 +9,14 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-05-01
 
 ### feat
+- Atualizado o dedupeKey dos triggers de inatividade para incluir a data atual, evitando múltiplos eventos duplicados no mesmo dia.
+- Ajustado filtro de status para considerar falhas recentes como duplicatas em triggers de inatividade, reduzindo spam de chamadas à API Meta.
+  - Arquivos: `src/lib/crm-automation-engine.ts`, `src/lib/jobs/inactivity-check.ts`
+  - Confiança: alta
+
+## 2026-05-01
+
+### feat
 - Melhorada a detecção e tratamento de erros da API Meta WhatsApp com verificação adicional de subcódigo de erro para casos específicos de token e escopo
   - Arquivos: `src/app/api/client/whatsapp-health/route.ts`
   - Confiança: alta
