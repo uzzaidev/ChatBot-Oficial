@@ -98,6 +98,15 @@ export async function GET(request: NextRequest) {
         const wabaRes = await fetch(wabaUrl, { cache: "no-store" });
         const wabaData = await wabaRes.json();
 
+        if (wabaData.error) {
+          console.error(
+            "[WhatsApp Health] WABA API error:",
+            JSON.stringify(wabaData.error),
+          );
+          // Store for potential exposure in response
+          metaError = `Meta API: ${wabaData.error.message} (código ${wabaData.error.code})`;
+        }
+
         if (wabaRes.ok && !wabaData.error && Array.isArray(wabaData.data)) {
           const match =
             wabaData.data.find(
@@ -125,11 +134,22 @@ export async function GET(request: NextRequest) {
         const data = await res.json();
 
         if (!res.ok || data.error) {
-          // Token lacks whatsapp_business_management permission — this is common with
-          // Embedded Signup tokens. The bot still works; we just can't read number metadata.
-          metaError =
-            "Token sem permissão de leitura de metadados (whatsapp_business_management). " +
-            "Isso não afeta o funcionamento do bot — use o último webhook abaixo como indicador de saúde.";
+          console.error(
+            "[WhatsApp Health] Phone ID API error:",
+            JSON.stringify(data.error),
+          );
+          const errCode = data.error?.code;
+          const errMsg = data.error?.message ?? "Erro desconhecido";
+          // Error code 190 = token expired, 10 = permission denied
+          if (errCode === 190) {
+            metaError = `Token Meta expirado — é necessário reconectar via Embedded Signup. (Meta: ${errMsg})`;
+          } else if (errCode === 10 || errCode === 200) {
+            metaError =
+              "Token sem permissão de leitura de metadados (whatsapp_business_management). " +
+              "Isso não afeta o funcionamento do bot — use o último webhook abaixo como indicador de saúde.";
+          } else {
+            metaError = `Erro Meta API (código ${errCode ?? "?"}): ${errMsg}`;
+          }
         } else {
           phoneStatus = {
             phoneNumberId: data.id,
