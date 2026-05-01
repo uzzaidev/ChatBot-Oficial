@@ -9,6 +9,15 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-05-01
 
 ### feat
+- Melhorada a recuperação de metadados do WhatsApp para considerar o campo `whatsapp_business_account_id` além de `meta_waba_id`, ampliando a compatibilidade na consulta à API da Meta.
+- Ajustado o tratamento de erros para tokens sem permissão `whatsapp_business_management`, exibindo mensagem informativa no dashboard em vez de erro crítico.
+- Atualizada a interface do dashboard para diferenciar visualmente erros por falta de permissão de leitura de metadados, usando indicador amarelo e mensagem específica.
+  - Arquivos: `src/app/api/client/whatsapp-health/route.ts`, `src/app/dashboard/settings/page.tsx`
+  - Confiança: alta
+
+## 2026-05-01
+
+### feat
 - Melhorada a recuperação do status do telefone no endpoint de saúde do WhatsApp, adicionando suporte para consulta via WABA (WhatsApp Business Account) com fallback para consulta direta pelo ID do número
   - Arquivos: `src/app/api/client/whatsapp-health/route.ts`
   - Confiança: alta
