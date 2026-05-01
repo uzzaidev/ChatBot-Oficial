@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Activity,
   AlertTriangle,
   ArrowRight,
   Bell,
@@ -26,6 +27,7 @@ import {
   Lock,
   MessageCircle,
   Mic,
+  RefreshCw,
   Save,
   Search,
   Settings,
@@ -33,6 +35,8 @@ import {
   Sparkles,
   Unplug,
   User,
+  WifiOff,
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -172,6 +176,21 @@ export default function SettingsPage() {
   });
   const [isSyncingContacts, setIsSyncingContacts] = useState(false);
   const [isSyncingHistory, setIsSyncingHistory] = useState(false);
+
+  // Estado do health check WhatsApp
+  const [whatsappHealth, setWhatsappHealth] = useState<{
+    phoneStatus: {
+      phoneNumberId: string;
+      displayPhone: string;
+      verifiedName: string;
+      qualityRating: string;
+      verificationStatus: string;
+      messagingLimitTier: string;
+    } | null;
+    lastWebhook: { receivedAt: string; field: string | null } | null;
+    error: string | null;
+  } | null>(null);
+  const [loadingHealth, setLoadingHealth] = useState(false);
 
   // Estado de visibilidade de senhas
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>(
@@ -630,6 +649,24 @@ export default function SettingsPage() {
   const canShowCoexistenceSyncCard =
     isAutoProvisioned || Boolean(secrets.meta_phone_number_id);
 
+  const checkWhatsAppHealth = async () => {
+    setLoadingHealth(true);
+    try {
+      const { apiFetch } = await import("@/lib/api");
+      const res = await apiFetch("/api/client/whatsapp-health");
+      const data = await res.json();
+      setWhatsappHealth(data);
+    } catch {
+      setWhatsappHealth({
+        phoneStatus: null,
+        lastWebhook: null,
+        error: "Falha ao verificar status",
+      });
+    } finally {
+      setLoadingHealth(false);
+    }
+  };
+
   const isSyncLocked = (syncState: CoexistenceSyncState | null) => {
     if (!syncState) return false;
     if (syncState.request_id) return true;
@@ -1047,6 +1084,131 @@ export default function SettingsPage() {
                     <p className="text-xs text-muted-foreground mt-1">
                       Gerenciado automaticamente pela plataforma.
                     </p>
+
+                    {/* Health check inline */}
+                    <div className="mt-3 pt-3 border-t border-green-500/20">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-muted-foreground">
+                          Status em tempo real
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          disabled={loadingHealth}
+                          onClick={checkWhatsAppHealth}
+                        >
+                          {loadingHealth ? (
+                            <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                          ) : (
+                            <RefreshCw className="w-3 h-3 mr-1" />
+                          )}
+                          Verificar
+                        </Button>
+                      </div>
+
+                      {whatsappHealth === null && !loadingHealth && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Clique em &quot;Verificar&quot; para checar o status
+                          atual junto à Meta.
+                        </p>
+                      )}
+
+                      {loadingHealth && (
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                          <Loader2 className="w-3 h-3 animate-spin" />{" "}
+                          Consultando Meta API...
+                        </p>
+                      )}
+
+                      {whatsappHealth && !loadingHealth && (
+                        <div className="mt-2 space-y-1.5">
+                          {whatsappHealth.phoneStatus ? (
+                            <>
+                              <div className="flex items-center gap-1.5">
+                                <span className="inline-block w-2 h-2 rounded-full bg-green-500"></span>
+                                <span className="text-xs text-green-600 dark:text-green-400 font-medium">
+                                  Número ativo na Meta
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                                <span>
+                                  Número:{" "}
+                                  <strong className="text-foreground">
+                                    {whatsappHealth.phoneStatus.displayPhone}
+                                  </strong>
+                                </span>
+                                <span>
+                                  Nome:{" "}
+                                  <strong className="text-foreground">
+                                    {whatsappHealth.phoneStatus.verifiedName}
+                                  </strong>
+                                </span>
+                                <span>
+                                  Qualidade:{" "}
+                                  <strong
+                                    className={`${
+                                      whatsappHealth.phoneStatus
+                                        .qualityRating === "GREEN"
+                                        ? "text-green-500"
+                                        : whatsappHealth.phoneStatus
+                                            .qualityRating === "YELLOW"
+                                        ? "text-yellow-500"
+                                        : "text-red-500"
+                                    }`}
+                                  >
+                                    {whatsappHealth.phoneStatus.qualityRating}
+                                  </strong>
+                                </span>
+                                <span>
+                                  Limite:{" "}
+                                  <strong className="text-foreground">
+                                    {whatsappHealth.phoneStatus
+                                      .messagingLimitTier ?? "—"}
+                                  </strong>
+                                </span>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="flex items-center gap-1.5">
+                              <WifiOff className="w-3.5 h-3.5 text-red-500" />
+                              <span className="text-xs text-red-500 font-medium">
+                                {whatsappHealth.error ??
+                                  "Número não encontrado na Meta"}
+                              </span>
+                            </div>
+                          )}
+
+                          <div className="flex items-center gap-1.5 mt-1">
+                            {whatsappHealth.lastWebhook ? (
+                              <>
+                                <Activity className="w-3.5 h-3.5 text-blue-500" />
+                                <span className="text-xs text-muted-foreground">
+                                  Último webhook:{" "}
+                                  <strong className="text-foreground">
+                                    {formatDateTime(
+                                      whatsappHealth.lastWebhook.receivedAt,
+                                    )}
+                                  </strong>
+                                  {whatsappHealth.lastWebhook.field && (
+                                    <span className="ml-1 opacity-60">
+                                      ({whatsappHealth.lastWebhook.field})
+                                    </span>
+                                  )}
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="w-3.5 h-3.5 text-orange-500" />
+                                <span className="text-xs text-orange-500">
+                                  Nenhum webhook recebido ainda
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
