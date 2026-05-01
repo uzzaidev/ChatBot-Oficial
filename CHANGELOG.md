@@ -9,6 +9,13 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-05-01
 
 ### feat
+- Melhorada a exibição do status do telefone no dashboard, incluindo tratamento para a qualidade "UNKNOWN" e ajuste das cores para diferentes ratings
+  - Arquivos: `src/app/dashboard/settings/page.tsx`
+  - Confiança: alta
+
+## 2026-05-01
+
+### feat
 - Melhorada a recuperação de metadados do WhatsApp para considerar o campo `whatsapp_business_account_id` além de `meta_waba_id`, ampliando a compatibilidade na consulta à API da Meta.
 - Ajustado o tratamento de erros para tokens sem permissão `whatsapp_business_management`, exibindo mensagem informativa no dashboard em vez de erro crítico.
 - Atualizada a interface do dashboard para diferenciar visualmente erros por falta de permissão de leitura de metadados, usando indicador amarelo e mensagem específica.
