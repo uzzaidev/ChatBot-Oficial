@@ -1154,10 +1154,15 @@ export default function SettingsPage() {
                                         : whatsappHealth.phoneStatus
                                             .qualityRating === "YELLOW"
                                         ? "text-yellow-500"
-                                        : "text-red-500"
+                                        : whatsappHealth.phoneStatus
+                                            .qualityRating === "RED"
+                                        ? "text-red-500"
+                                        : "text-muted-foreground"
                                     }`}
                                   >
-                                    {whatsappHealth.phoneStatus.qualityRating}
+                                    {whatsappHealth.phoneStatus.qualityRating === "UNKNOWN"
+                                      ? "Sem dados suficientes"
+                                      : whatsappHealth.phoneStatus.qualityRating}
                                   </strong>
                                 </span>
                                 <span>
