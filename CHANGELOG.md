@@ -6,6 +6,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-05-06
+
+### feat
+- Adicionado estado `metaId` e lógica inicial para busca do ID do WABA no formulário de templates
+  - Arquivos: `src/components/templates/TemplateForm.tsx`
+  - Confiança: alta
+
 ## 2026-05-01
 
 ### feat
