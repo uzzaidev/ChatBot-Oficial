@@ -41,6 +41,8 @@ export const TemplateForm = ({ initialData, onSubmit, loading = false }: Templat
   const [language, setLanguage] = useState(initialData?.language || "pt_BR");
   const [wabaId, setWabaId] = useState(initialData?.waba_id || "");
   const [fetchingWabaId, setFetchingWabaId] = useState(!initialData?.waba_id);
+  const [metaId, setMetaId] = useState(initialData?.waba_id || "");
+  const [fetchingMetaId, setFetchingMetaId] = useState(!initialData?.waba_id);
   
   // Components state
   const [hasHeader, setHasHeader] = useState(
@@ -255,7 +257,7 @@ export const TemplateForm = ({ initialData, onSubmit, loading = false }: Templat
             Configure as informações básicas do template
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+          waba_id: metaId,
           <div>
             <Label htmlFor="name">Nome do Template *</Label>
             <Input
