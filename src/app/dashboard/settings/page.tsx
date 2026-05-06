@@ -1092,11 +1092,7 @@ export default function SettingsPage() {
                         Meta Phone Number ID (Meta ID)
                       </Label>
                       <Input
-                        value={
-                          secrets.meta_phone_number_id ||
-                          secrets.phone_number_id ||
-                          ""
-                        }
+                        value={secrets.meta_phone_number_id || ""}
                         readOnly
                         className="mt-1 font-mono bg-muted/50 border-border text-foreground/80"
                       />
@@ -1397,11 +1393,7 @@ export default function SettingsPage() {
                         Meta Phone Number ID (Meta ID)
                       </Label>
                       <Input
-                        value={
-                          secrets.meta_phone_number_id ||
-                          secrets.phone_number_id ||
-                          ""
-                        }
+                        value={secrets.meta_phone_number_id || ""}
                         readOnly
                         className="mt-1 font-mono bg-muted/50 border-border text-foreground/80"
                       />
