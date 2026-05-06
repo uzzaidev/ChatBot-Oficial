@@ -8,6 +8,16 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-05-06
 
+### feat
+- Adicionado widget de supervisão assistida no DashboardClient para análise de traces com sugestões automáticas de qualidade e interface para feedback humano.
+- Implementada lógica heurística para avaliação automática da qualidade das respostas do bot, incluindo status, latência, erros em tool calls e custo.
+- Incluído componente TracesWidget com controles para envio de feedback humano sobre a qualidade das respostas, permitindo marcação como correta, incorreta ou parcial, com opção de correção e promoção para ground truth.
+- Melhorado layout do DashboardClient para suportar a exibição do novo widget em grid responsivo.
+  - Arquivos: `src/components/DashboardClient.tsx`, `src/components/TracesClient.tsx`
+  - Confiança: alta
+
+## 2026-05-06
+
 ### fix
 - Atualizada a versão do pacote `baseline-browser-mapping` para 2.10.27 e simplificado o input do ID do número de telefone Meta para usar apenas `meta_phone_number_id`
   - Arquivos: `package.json`, `src/app/dashboard/settings/page.tsx`
