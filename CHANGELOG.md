@@ -8,6 +8,17 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-05-06
 
+### fix
+- Atualizada versão do pacote `baseline-browser-mapping` para 2.10.27 no lockfile para corrigir dependências.
+- Melhorias no componente `TemplateForm` para usar consistentemente o termo "Meta Phone Number ID (Meta ID)" em vez de "WABA ID", incluindo fetch automático do Meta ID, validação e exibição no formulário.
+- Ajustes na interface da página de configurações para sempre exibir o Meta Phone Number ID (Meta ID) de forma legível e acessível.
+- Simplificação e correção na exibição do status do número WhatsApp na Meta, removendo detalhes redundantes e mensagens de permissão.
+  - Arquivos: `pnpm-lock.yaml`, `src/components/templates/TemplateForm.tsx`, `src/app/dashboard/settings/page.tsx`
+  - Evidência: commit e diff indicam atualização de dependência e refatoração do formulário e página de configurações para uso correto do Meta ID.
+  - Confiança: alta
+
+## 2026-05-06
+
 ### feat
 - Adicionado estado `metaId` e lógica inicial para busca do ID do WABA no formulário de templates
   - Arquivos: `src/components/templates/TemplateForm.tsx`
