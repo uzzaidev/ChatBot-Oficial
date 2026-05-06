@@ -9,6 +9,14 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-05-06
 
 ### fix
+- Atualizada a versão do pacote `baseline-browser-mapping` para 2.10.27 e simplificado o input do ID do número de telefone Meta para usar apenas `meta_phone_number_id`
+  - Arquivos: `package.json`, `src/app/dashboard/settings/page.tsx`
+  - Evidência: atualização da dependência no `package.json` e remoção da fallback para `phone_number_id` no componente React
+  - Confiança: alta
+
+## 2026-05-06
+
+### fix
 - Atualizada versão do pacote `baseline-browser-mapping` para 2.10.27 no lockfile para corrigir dependências.
 - Melhorias no componente `TemplateForm` para usar consistentemente o termo "Meta Phone Number ID (Meta ID)" em vez de "WABA ID", incluindo fetch automático do Meta ID, validação e exibição no formulário.
 - Ajustes na interface da página de configurações para sempre exibir o Meta Phone Number ID (Meta ID) de forma legível e acessível.
