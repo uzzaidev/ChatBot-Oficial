@@ -8,6 +8,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-05-06
 
+### fix
+- Otimizado o formato do prompt do sistema para incluir instruções obrigatórias explícitas de saudação e fallback, garantindo que sejam usadas exatamente como configuradas. Ajustado o agrupamento e formatação das regras e estilo do prompt para maior clareza e consistência.
+- Arquivos: `src/lib/prompt-builder.ts`
+- Evidência: inclusão de tags XML específicas para greeting e fallback com texto obrigatório, remoção de regras duplicadas e reformatação do código.
+- Confiança: alta
+
+## 2026-05-06
+
 ### feat
 - Adicionado widget de supervisão assistida no DashboardClient para análise de traces com sugestões automáticas de qualidade e interface para feedback humano.
 - Implementada lógica heurística para avaliação automática da qualidade das respostas do bot, incluindo status, latência, erros em tool calls e custo.
