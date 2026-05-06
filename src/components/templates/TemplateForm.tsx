@@ -1,10 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -12,10 +17,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Trash2, FileText, Image as ImageIcon, Video, File } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { apiFetch } from "@/lib/api";
-import type { TemplateComponent, TemplateCategory, TemplateButton } from "@/lib/types";
+import type {
+  TemplateButton,
+  TemplateCategory,
+  TemplateComponent,
+} from "@/lib/types";
+import {
+  File,
+  FileText,
+  Image as ImageIcon,
+  Plus,
+  Trash2,
+  Video,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface TemplateFormProps {
   initialData?: {
@@ -35,69 +52,74 @@ interface TemplateFormProps {
   loading?: boolean;
 }
 
-export const TemplateForm = ({ initialData, onSubmit, loading = false }: TemplateFormProps) => {
+export const TemplateForm = ({
+  initialData,
+  onSubmit,
+  loading = false,
+}: TemplateFormProps) => {
   const [name, setName] = useState(initialData?.name || "");
-  const [category, setCategory] = useState<TemplateCategory>(initialData?.category || "UTILITY");
+  const [category, setCategory] = useState<TemplateCategory>(
+    initialData?.category || "UTILITY",
+  );
   const [language, setLanguage] = useState(initialData?.language || "pt_BR");
-  const [wabaId, setWabaId] = useState(initialData?.waba_id || "");
-  const [fetchingWabaId, setFetchingWabaId] = useState(!initialData?.waba_id);
   const [metaId, setMetaId] = useState(initialData?.waba_id || "");
   const [fetchingMetaId, setFetchingMetaId] = useState(!initialData?.waba_id);
-  
+
   // Components state
   const [hasHeader, setHasHeader] = useState(
-    initialData?.components.some(c => c.type === "HEADER") || false
+    initialData?.components.some((c) => c.type === "HEADER") || false,
   );
-  const [headerFormat, setHeaderFormat] = useState<"TEXT" | "IMAGE" | "VIDEO" | "DOCUMENT">("TEXT");
+  const [headerFormat, setHeaderFormat] = useState<
+    "TEXT" | "IMAGE" | "VIDEO" | "DOCUMENT"
+  >("TEXT");
   const [headerText, setHeaderText] = useState(
-    initialData?.components.find(c => c.type === "HEADER")?.text || ""
+    initialData?.components.find((c) => c.type === "HEADER")?.text || "",
   );
-  
+
   const [bodyText, setBodyText] = useState(
-    initialData?.components.find(c => c.type === "BODY")?.text || ""
+    initialData?.components.find((c) => c.type === "BODY")?.text || "",
   );
   const [bodyExample, setBodyExample] = useState("");
-  
+
   const [hasFooter, setHasFooter] = useState(
-    initialData?.components.some(c => c.type === "FOOTER") || false
+    initialData?.components.some((c) => c.type === "FOOTER") || false,
   );
   const [footerText, setFooterText] = useState(
-    initialData?.components.find(c => c.type === "FOOTER")?.text || ""
+    initialData?.components.find((c) => c.type === "FOOTER")?.text || "",
   );
-  
+
   const [hasButtons, setHasButtons] = useState(
-    initialData?.components.some(c => c.type === "BUTTONS") || false
+    initialData?.components.some((c) => c.type === "BUTTONS") || false,
   );
   const [buttons, setButtons] = useState<TemplateButton[]>(
-    initialData?.components.find(c => c.type === "BUTTONS")?.buttons || []
+    initialData?.components.find((c) => c.type === "BUTTONS")?.buttons || [],
   );
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Fetch WABA ID from client configuration
+  // Fetch Meta Phone Number ID (Meta ID) from client configuration
   useEffect(() => {
     if (!initialData?.waba_id) {
-      const fetchWabaId = async () => {
+      const fetchMetaId = async () => {
         try {
-          setFetchingWabaId(true);
+          setFetchingMetaId(true);
           const response = await apiFetch("/api/client/config");
           const data = await response.json();
-          
-          if (data.whatsapp_business_account_id) {
-            setWabaId(data.whatsapp_business_account_id);
+          if (data.phone_number_id) {
+            setMetaId(data.phone_number_id);
+          } else if (data.config && data.config.phone_number_id) {
+            setMetaId(data.config.phone_number_id);
           }
         } catch (error) {
-          console.error("Error fetching WABA ID:", error);
+          console.error("Error fetching Meta ID:", error);
           // Allow user to manually enter if fetch fails
         } finally {
-          setFetchingWabaId(false);
+          setFetchingMetaId(false);
         }
       };
-      
-      fetchWabaId();
+      fetchMetaId();
     }
   }, [initialData]);
-
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -106,12 +128,13 @@ export const TemplateForm = ({ initialData, onSubmit, loading = false }: Templat
     if (!name) {
       newErrors.name = "Nome é obrigatório";
     } else if (!/^[a-z0-9_]+$/.test(name)) {
-      newErrors.name = "Nome deve conter apenas letras minúsculas, números e underscores";
+      newErrors.name =
+        "Nome deve conter apenas letras minúsculas, números e underscores";
     }
 
-    // Validate WABA ID
-    if (!wabaId) {
-      newErrors.wabaId = "WhatsApp Business Account ID é obrigatório";
+    // Validate Meta ID
+    if (!metaId) {
+      newErrors.metaId = "Meta Phone Number ID é obrigatório";
     }
 
     // Validate body text
@@ -137,7 +160,10 @@ export const TemplateForm = ({ initialData, onSubmit, loading = false }: Templat
     // Validate body example if has variables
     const variableCount = (bodyText.match(/\{\{\d+\}\}/g) || []).length;
     if (variableCount > 0) {
-      const exampleValues = bodyExample.split(",").map(v => v.trim()).filter(v => v);
+      const exampleValues = bodyExample
+        .split(",")
+        .map((v) => v.trim())
+        .filter((v) => v);
       if (exampleValues.length !== variableCount) {
         newErrors.bodyExample = `Forneça ${variableCount} valor(es) de exemplo separados por vírgula`;
       }
@@ -174,7 +200,7 @@ export const TemplateForm = ({ initialData, onSubmit, loading = false }: Templat
     // Add example if has variables
     const variableCount = (bodyText.match(/\{\{\d+\}\}/g) || []).length;
     if (variableCount > 0 && bodyExample) {
-      const exampleValues = bodyExample.split(",").map(v => v.trim());
+      const exampleValues = bodyExample.split(",").map((v) => v.trim());
       bodyComponent.example = {
         body_text: [exampleValues],
       };
@@ -203,7 +229,7 @@ export const TemplateForm = ({ initialData, onSubmit, loading = false }: Templat
         name,
         category,
         language,
-        waba_id: wabaId,
+        waba_id: metaId,
         components,
       });
     } catch (error) {
@@ -229,10 +255,14 @@ export const TemplateForm = ({ initialData, onSubmit, loading = false }: Templat
     setButtons(buttons.filter((_, i) => i !== index));
   };
 
-  const updateButton = (index: number, field: keyof TemplateButton, value: string) => {
+  const updateButton = (
+    index: number,
+    field: keyof TemplateButton,
+    value: string,
+  ) => {
     const newButtons = [...buttons];
     const button = newButtons[index];
-    
+
     // Type-safe field assignment
     if (field === "type") {
       button.type = value as TemplateButton["type"];
@@ -243,7 +273,7 @@ export const TemplateForm = ({ initialData, onSubmit, loading = false }: Templat
     } else if (field === "phone_number") {
       button.phone_number = value;
     }
-    
+
     setButtons(newButtons);
   };
 
@@ -257,13 +287,15 @@ export const TemplateForm = ({ initialData, onSubmit, loading = false }: Templat
             Configure as informações básicas do template
           </CardDescription>
         </CardHeader>
-          waba_id: metaId,
+        <CardContent className="space-y-4">
           <div>
             <Label htmlFor="name">Nome do Template *</Label>
             <Input
               id="name"
               value={name}
-              onChange={(e) => setName(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
+              onChange={(e) =>
+                setName(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))
+              }
               placeholder="exemplo_template_nome"
               disabled={loading || !!initialData}
             />
@@ -277,7 +309,10 @@ export const TemplateForm = ({ initialData, onSubmit, loading = false }: Templat
 
           <div>
             <Label htmlFor="category">Categoria *</Label>
-            <Select value={category} onValueChange={(v) => setCategory(v as TemplateCategory)}>
+            <Select
+              value={category}
+              onValueChange={(v) => setCategory(v as TemplateCategory)}
+            >
               <SelectTrigger id="category">
                 <SelectValue />
               </SelectTrigger>
@@ -288,9 +323,12 @@ export const TemplateForm = ({ initialData, onSubmit, loading = false }: Templat
               </SelectContent>
             </Select>
             <p className="text-xs text-erie-black-500 mt-1">
-              {category === "UTILITY" && "Para atualizações, confirmações e notificações"}
-              {category === "AUTHENTICATION" && "Para códigos OTP e verificação"}
-              {category === "MARKETING" && "Para promoções (requer opt-in do usuário)"}
+              {category === "UTILITY" &&
+                "Para atualizações, confirmações e notificações"}
+              {category === "AUTHENTICATION" &&
+                "Para códigos OTP e verificação"}
+              {category === "MARKETING" &&
+                "Para promoções (requer opt-in do usuário)"}
             </p>
           </div>
 
@@ -309,21 +347,24 @@ export const TemplateForm = ({ initialData, onSubmit, loading = false }: Templat
           </div>
 
           <div>
-            <Label htmlFor="wabaId">WhatsApp Business Account ID *</Label>
+            <Label htmlFor="metaId">Meta Phone Number ID (Meta ID) *</Label>
             <Input
-              id="wabaId"
-              value={wabaId}
-              onChange={(e) => setWabaId(e.target.value)}
-              placeholder={fetchingWabaId ? "Carregando..." : "123456789012345"}
-              disabled={fetchingWabaId || loading || !!initialData}
+              id="metaId"
+              value={metaId}
+              onChange={(e) => setMetaId(e.target.value)}
+              placeholder={
+                fetchingMetaId ? "Carregando..." : "ex: 123456789012345"
+              }
+              disabled={fetchingMetaId || loading || !!initialData}
+              className="font-mono"
             />
-            {errors.wabaId && (
-              <p className="text-sm text-red-600 mt-1">{errors.wabaId}</p>
+            {errors.metaId && (
+              <p className="text-sm text-red-600 mt-1">{errors.metaId}</p>
             )}
             <p className="text-xs text-erie-black-500 mt-1">
-              {fetchingWabaId 
-                ? "Buscando WABA ID da configuração do cliente..." 
-                : "ID da conta comercial do WhatsApp configurada nas configurações"}
+              {fetchingMetaId
+                ? "Buscando Meta ID da configuração do cliente..."
+                : "ID do número de telefone da Meta configurado nas configurações"}
             </p>
           </div>
         </CardContent>
@@ -335,7 +376,9 @@ export const TemplateForm = ({ initialData, onSubmit, loading = false }: Templat
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Cabeçalho (Opcional)</CardTitle>
-              <CardDescription>Adicione um título ou mídia ao template</CardDescription>
+              <CardDescription>
+                Adicione um título ou mídia ao template
+              </CardDescription>
             </div>
             <Button
               type="button"
@@ -351,7 +394,10 @@ export const TemplateForm = ({ initialData, onSubmit, loading = false }: Templat
           <CardContent className="space-y-4">
             <div>
               <Label htmlFor="headerFormat">Formato</Label>
-              <Select value={headerFormat} onValueChange={(v: any) => setHeaderFormat(v)}>
+              <Select
+                value={headerFormat}
+                onValueChange={(v: any) => setHeaderFormat(v)}
+              >
                 <SelectTrigger id="headerFormat">
                   <SelectValue />
                 </SelectTrigger>
@@ -395,7 +441,9 @@ export const TemplateForm = ({ initialData, onSubmit, loading = false }: Templat
                   maxLength={60}
                 />
                 {errors.headerText && (
-                  <p className="text-sm text-red-600 mt-1">{errors.headerText}</p>
+                  <p className="text-sm text-red-600 mt-1">
+                    {errors.headerText}
+                  </p>
                 )}
                 <p className="text-xs text-erie-black-500 mt-1">
                   Máximo 60 caracteres
@@ -411,7 +459,8 @@ export const TemplateForm = ({ initialData, onSubmit, loading = false }: Templat
         <CardHeader>
           <CardTitle>Corpo da Mensagem *</CardTitle>
           <CardDescription>
-            O conteúdo principal do template. Use {`{{1}}`}, {`{{2}}`}, etc. para variáveis dinâmicas.
+            O conteúdo principal do template. Use {`{{1}}`}, {`{{2}}`}, etc.
+            para variáveis dinâmicas.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -429,7 +478,8 @@ export const TemplateForm = ({ initialData, onSubmit, loading = false }: Templat
               <p className="text-sm text-red-600 mt-1">{errors.bodyText}</p>
             )}
             <p className="text-xs text-erie-black-500 mt-1">
-              Máximo 1024 caracteres. Use {`{{1}}`}, {`{{2}}`}, etc. para variáveis.
+              Máximo 1024 caracteres. Use {`{{1}}`}, {`{{2}}`}, etc. para
+              variáveis.
             </p>
           </div>
 
@@ -443,10 +493,13 @@ export const TemplateForm = ({ initialData, onSubmit, loading = false }: Templat
                 placeholder="João, 12345, R$ 150,00"
               />
               {errors.bodyExample && (
-                <p className="text-sm text-red-600 mt-1">{errors.bodyExample}</p>
+                <p className="text-sm text-red-600 mt-1">
+                  {errors.bodyExample}
+                </p>
               )}
               <p className="text-xs text-erie-black-500 mt-1">
-                Forneça valores de exemplo separados por vírgula (um para cada variável)
+                Forneça valores de exemplo separados por vírgula (um para cada
+                variável)
               </p>
             </div>
           )}
@@ -459,7 +512,9 @@ export const TemplateForm = ({ initialData, onSubmit, loading = false }: Templat
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Rodapé (Opcional)</CardTitle>
-              <CardDescription>Adicione um texto curto no final do template</CardDescription>
+              <CardDescription>
+                Adicione um texto curto no final do template
+              </CardDescription>
             </div>
             <Button
               type="button"
@@ -515,7 +570,10 @@ export const TemplateForm = ({ initialData, onSubmit, loading = false }: Templat
         {hasButtons && (
           <CardContent className="space-y-4">
             {buttons.map((button, index) => (
-              <div key={index} className="flex gap-2 items-start p-4 border rounded-lg">
+              <div
+                key={index}
+                className="flex gap-2 items-start p-4 border rounded-lg"
+              >
                 <div className="flex-1 space-y-3">
                   <div>
                     <Label>Tipo de Botão</Label>
@@ -527,7 +585,9 @@ export const TemplateForm = ({ initialData, onSubmit, loading = false }: Templat
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="QUICK_REPLY">Resposta Rápida</SelectItem>
+                        <SelectItem value="QUICK_REPLY">
+                          Resposta Rápida
+                        </SelectItem>
                         <SelectItem value="URL">Link (URL)</SelectItem>
                         <SelectItem value="PHONE_NUMBER">Telefone</SelectItem>
                       </SelectContent>
@@ -538,7 +598,9 @@ export const TemplateForm = ({ initialData, onSubmit, loading = false }: Templat
                     <Label>Texto do Botão</Label>
                     <Input
                       value={button.text}
-                      onChange={(e) => updateButton(index, "text", e.target.value)}
+                      onChange={(e) =>
+                        updateButton(index, "text", e.target.value)
+                      }
                       placeholder="Clique aqui"
                       maxLength={20}
                     />
@@ -549,7 +611,9 @@ export const TemplateForm = ({ initialData, onSubmit, loading = false }: Templat
                       <Label>URL</Label>
                       <Input
                         value={button.url || ""}
-                        onChange={(e) => updateButton(index, "url", e.target.value)}
+                        onChange={(e) =>
+                          updateButton(index, "url", e.target.value)
+                        }
                         placeholder="https://example.com/{{1}}"
                       />
                       <p className="text-xs text-erie-black-500 mt-1">
@@ -563,7 +627,9 @@ export const TemplateForm = ({ initialData, onSubmit, loading = false }: Templat
                       <Label>Número de Telefone</Label>
                       <Input
                         value={button.phone_number || ""}
-                        onChange={(e) => updateButton(index, "phone_number", e.target.value)}
+                        onChange={(e) =>
+                          updateButton(index, "phone_number", e.target.value)
+                        }
                         placeholder="+5511999999999"
                       />
                     </div>
@@ -603,7 +669,11 @@ export const TemplateForm = ({ initialData, onSubmit, loading = false }: Templat
       {/* Submit Button */}
       <div className="flex justify-end gap-3">
         <Button type="submit" disabled={loading}>
-          {loading ? "Salvando..." : initialData ? "Atualizar Template" : "Criar Template"}
+          {loading
+            ? "Salvando..."
+            : initialData
+            ? "Atualizar Template"
+            : "Criar Template"}
         </Button>
       </div>
     </form>

@@ -1015,7 +1015,7 @@ export default function SettingsPage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4 pt-6">
-                {/* Auto-provisioned clients: show connected status instead of manual fields */}
+                {/* Sempre mostrar o Meta Phone Number ID (Meta ID) */}
                 {isAutoProvisioned && (
                   <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-4 mb-4">
                     <div className="flex items-center justify-between">
@@ -1034,8 +1034,9 @@ export default function SettingsPage() {
                             !confirm(
                               "Tem certeza que deseja desconectar o WhatsApp? O bot parará de funcionar até reconectar.",
                             )
-                          )
+                          ) {
                             return;
+                          }
                           setIsDisconnectingWhatsApp(true);
                           try {
                             const { apiFetch } = await import("@/lib/api");
@@ -1085,6 +1086,25 @@ export default function SettingsPage() {
                       Gerenciado automaticamente pela plataforma.
                     </p>
 
+                    {/* Exibir sempre o Meta ID */}
+                    <div className="mt-3">
+                      <Label className="text-xs text-muted-foreground">
+                        Meta Phone Number ID (Meta ID)
+                      </Label>
+                      <Input
+                        value={
+                          secrets.meta_phone_number_id ||
+                          secrets.phone_number_id ||
+                          ""
+                        }
+                        readOnly
+                        className="mt-1 font-mono bg-muted/50 border-border text-foreground/80"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Necessário para templates e integrações.
+                      </p>
+                    </div>
+
                     {/* Health check inline */}
                     <div className="mt-3 pt-3 border-t border-green-500/20">
                       <div className="flex items-center justify-between">
@@ -1124,80 +1144,20 @@ export default function SettingsPage() {
                       {whatsappHealth && !loadingHealth && (
                         <div className="mt-2 space-y-1.5">
                           {whatsappHealth.phoneStatus ? (
-                            <>
-                              <div className="flex items-center gap-1.5">
-                                <span className="inline-block w-2 h-2 rounded-full bg-green-500"></span>
-                                <span className="text-xs text-green-600 dark:text-green-400 font-medium">
-                                  Número ativo na Meta
-                                </span>
-                              </div>
-                              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                                <span>
-                                  Número:{" "}
-                                  <strong className="text-foreground">
-                                    {whatsappHealth.phoneStatus.displayPhone}
-                                  </strong>
-                                </span>
-                                <span>
-                                  Nome:{" "}
-                                  <strong className="text-foreground">
-                                    {whatsappHealth.phoneStatus.verifiedName}
-                                  </strong>
-                                </span>
-                                <span>
-                                  Qualidade:{" "}
-                                  <strong
-                                    className={`${
-                                      whatsappHealth.phoneStatus
-                                        .qualityRating === "GREEN"
-                                        ? "text-green-500"
-                                        : whatsappHealth.phoneStatus
-                                            .qualityRating === "YELLOW"
-                                        ? "text-yellow-500"
-                                        : whatsappHealth.phoneStatus
-                                            .qualityRating === "RED"
-                                        ? "text-red-500"
-                                        : "text-muted-foreground"
-                                    }`}
-                                  >
-                                    {whatsappHealth.phoneStatus
-                                      .qualityRating === "UNKNOWN"
-                                      ? "Sem dados suficientes"
-                                      : whatsappHealth.phoneStatus
-                                          .qualityRating}
-                                  </strong>
-                                </span>
-                                <span>
-                                  Limite:{" "}
-                                  <strong className="text-foreground">
-                                    {whatsappHealth.phoneStatus
-                                      .messagingLimitTier ?? "—"}
-                                  </strong>
-                                </span>
-                              </div>
-                            </>
+                            <div className="flex items-center gap-1.5">
+                              <span className="inline-block w-2 h-2 rounded-full bg-green-500"></span>
+                              <span className="text-xs text-green-600 dark:text-green-400 font-medium">
+                                Número ativo na Meta:{" "}
+                                {whatsappHealth.phoneStatus.displayPhone}
+                              </span>
+                            </div>
                           ) : (
                             <div className="flex items-center gap-1.5">
-                              {whatsappHealth.error?.startsWith(
-                                "Token sem permissão",
-                              ) ? (
-                                <>
-                                  <span className="inline-block w-2 h-2 rounded-full bg-yellow-400 shrink-0"></span>
-                                  <span className="text-xs text-yellow-600 dark:text-yellow-400">
-                                    Metadados indisponíveis (permissão de
-                                    leitura não concedida pelo token). Verifique
-                                    o último webhook abaixo.
-                                  </span>
-                                </>
-                              ) : (
-                                <>
-                                  <WifiOff className="w-3.5 h-3.5 text-red-500 shrink-0" />
-                                  <span className="text-xs text-red-500 font-medium">
-                                    {whatsappHealth.error ??
-                                      "Número não encontrado na Meta"}
-                                  </span>
-                                </>
-                              )}
+                              <WifiOff className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                              <span className="text-xs text-red-500 font-medium">
+                                {whatsappHealth.error ??
+                                  "Número não encontrado na Meta"}
+                              </span>
                             </div>
                           )}
 
@@ -1212,11 +1172,6 @@ export default function SettingsPage() {
                                       whatsappHealth.lastWebhook.receivedAt,
                                     )}
                                   </strong>
-                                  {whatsappHealth.lastWebhook.field && (
-                                    <span className="ml-1 opacity-60">
-                                      ({whatsappHealth.lastWebhook.field})
-                                    </span>
-                                  )}
                                 </span>
                               </>
                             ) : (
@@ -1434,6 +1389,25 @@ export default function SettingsPage() {
                           </Button>
                         )}
                       </div>
+                    </div>
+
+                    {/* Meta Phone Number ID (sempre visível) */}
+                    <div className="mt-2">
+                      <Label className="text-xs text-muted-foreground">
+                        Meta Phone Number ID (Meta ID)
+                      </Label>
+                      <Input
+                        value={
+                          secrets.meta_phone_number_id ||
+                          secrets.phone_number_id ||
+                          ""
+                        }
+                        readOnly
+                        className="mt-1 font-mono bg-muted/50 border-border text-foreground/80"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Necessário para templates e integrações.
+                      </p>
                     </div>
 
                     {/* Meta Verify Token */}
