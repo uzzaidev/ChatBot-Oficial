@@ -1,12 +1,75 @@
 const MAX_MESSAGE_LENGTH = 4096;
 
+// Chaves de argumentos de tools conhecidas — se um bloco JSON no texto contiver
+// qualquer uma delas, é tool call vazada (modelo descreveu a chamada em texto
+// em vez de usar o canal `tool_calls`). Modelos pequenos como gpt-5.4-nano
+// reincidem nisso sob prompts longos.
+const LEAKED_TOOL_ARG_KEYS = [
+  "motivo",
+  "texto_para_audio",
+  "query",
+  "document_type",
+  "campo",
+  "campos",
+  "valor",
+  "titulo",
+  "data_hora_inicio",
+  "data_hora_fim",
+  "data_inicio",
+  "data_fim",
+  "event_id",
+  "event_ids",
+  "novo_titulo",
+  "nova_data_hora_inicio",
+  "nova_data_hora_fim",
+  "tipo",
+  "descricao",
+  "email_participante",
+];
+
+// Frases inventadas que o modelo emite ao "narrar" a chamada de tool. A
+// confirmação real de handoff/transferência vem de outro caminho de código,
+// nunca do `content` da IA — então é seguro remover.
+const LEAKED_TOOL_NARRATION_PATTERNS: RegExp[] = [
+  /^\s*transferindo\s+para\s+atendimento\s+humano[.\s…]*$/i,
+  /^\s*aguarde[,.\s]+vou\s+transferir.*$/i,
+  /^\s*buscando\s+(o\s+)?documento[.\s…]*$/i,
+  /^\s*registrando\s+seus\s+dados[.\s…]*$/i,
+  /^\s*verificando\s+(a\s+)?agenda[.\s…]*$/i,
+  /^\s*criando\s+(o\s+)?evento[.\s…]*$/i,
+];
+
 /**
- * Remove tool calls (function calls) do texto da IA
- * Exemplo: "Olá! <function=foo>{...}</function>" → "Olá!"
+ * Remove tool calls (function calls) do texto da IA.
+ * Cobre três formatos:
+ *   1. Legado: `<function=nome>{...}</function>`
+ *   2. JSON cru contendo chaves de args de tools conhecidas
+ *   3. Frases narrativas inventadas ("Transferindo para atendimento humano...")
  */
 const removeToolCalls = (text: string): string => {
-  // Remove padrão: <function=nome_funcao>{...}</function>
-  return text.replace(/<function=[^>]+>[\s\S]*?<\/function>/g, "").trim();
+  // 1) Formato legado <function=...>{...}</function>
+  let cleaned = text.replace(/<function=[^>]+>[\s\S]*?<\/function>/g, "");
+
+  // 2) Blocos JSON brutos (uma ou múltiplas linhas) que contenham chaves de tools.
+  //    Regex casa `{...}` não-aninhado; suficiente para a forma como o modelo
+  //    vaza (objetos rasos com 1-3 chaves).
+  cleaned = cleaned.replace(/\{[^{}]*\}/g, (match) => {
+    const hasToolKey = LEAKED_TOOL_ARG_KEYS.some((key) =>
+      new RegExp(`"${key}"\\s*:`).test(match),
+    );
+    return hasToolKey ? "" : match;
+  });
+
+  // 3) Frases narrativas inventadas — descarta linha a linha
+  cleaned = cleaned
+    .split("\n")
+    .filter(
+      (line) =>
+        !LEAKED_TOOL_NARRATION_PATTERNS.some((pattern) => pattern.test(line)),
+    )
+    .join("\n");
+
+  return cleaned.trim();
 };
 
 /**

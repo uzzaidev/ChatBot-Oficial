@@ -1143,11 +1143,19 @@ export const processChatbotMessage = async (
     }
 
     // ═════════════════════════════════════════════════════════════════
-    // 🚀 NODE 9.5: FAST TRACK ROUTER (Optional - Cache-Friendly FAQ Detection)
+    // 🚀 NODE 9.5: FAST TRACK ROUTER — DESATIVADO GLOBALMENTE
     // ═════════════════════════════════════════════════════════════════
-    let fastTrackResult: any = null;
-    let isFastTrack = false;
+    // Bypass total: fluxo segue sempre pelo caminho padrão (history + RAG).
+    // Implementação dormente em src/nodes/fastTrackRouter.ts (preservada
+    // caso queira reativar; basta restaurar o bloco abaixo).
+    const fastTrackResult: any = null;
+    const isFastTrack = false;
+    logger.logNodeSuccess("9.5. Fast Track Router", {
+      skipped: true,
+      reason: "globally_disabled",
+    });
 
+    /* DESATIVADO — manter dormente até decisão de reativar
     if (shouldExecuteNode("fast_track_router", nodeStates)) {
       logger.logNodeStart("9.5. Fast Track Router", {
         messageLength: batchedContent.length,
@@ -1179,6 +1187,7 @@ export const processChatbotMessage = async (
         reason: "node disabled",
       });
     }
+    */
 
     // ═════════════════════════════════════════════════════════════════
     // 🚀 NODE 15: CHECK INTERACTIVE FLOW (Phase 4)
