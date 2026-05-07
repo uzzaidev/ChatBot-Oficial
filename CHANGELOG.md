@@ -11,6 +11,23 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-05-07
 
 ### feat
+- Atualizado o tratamento de tokens na integração com o SDK de IA para suportar formatos antigos e novos, garantindo compatibilidade retroativa
+  - Arquivos: `src/lib/direct-ai-client.ts`
+  - Confiança: alta
+
+### refactor
+- Ajustadas classes CSS para cores de fundo, borda e texto dos papéis nas mensagens, melhorando contraste e suporte a temas claro e escuro no componente `TracesClient`
+  - Arquivos: `src/components/TracesClient.tsx`
+  - Confiança: alta
+
+### chore
+- Atualizada dependência `caniuse-lite` para versão mais recente via override no `pnpm` para manter dados de compatibilidade atualizados
+  - Arquivos: `package.json`, `pnpm-lock.yaml`
+  - Confiança: alta
+
+## 2026-05-07
+
+### feat
 - Adicionado snapshot detalhado e fiel do payload enviado ao LLM, incluindo mensagens, ferramentas, configurações e totais, para melhorar a análise e reprodução das chamadas AI no dashboard de qualidade.
 - Implementado suporte para exibição do raciocínio (chain-of-thought) fornecido por alguns provedores AI, com contagem de tokens e visualização dedicada na aba de prompt.
 - Atualizada interface e tipos para incluir o snapshot da requisição e o raciocínio bruto na resposta AI.
