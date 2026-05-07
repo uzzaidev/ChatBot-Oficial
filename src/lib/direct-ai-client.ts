@@ -51,6 +51,36 @@ export interface DirectAICallConfig {
   skipUsageLogging?: boolean;
 }
 
+export interface DirectAIRequestSnapshot {
+  messages: Array<{
+    role: string;
+    content: string;
+    charCount: number;
+  }>;
+  tools: Array<{
+    name: string;
+    description: string;
+    descriptionCharCount: number;
+  }>;
+  settings: {
+    temperature?: number;
+    maxTokens?: number;
+    topP?: number;
+    frequencyPenalty?: number;
+    presencePenalty?: number;
+    reasoningEffort?: string;
+  };
+  totals: {
+    messageCount: number;
+    systemMessageCount: number;
+    historyMessageCount: number;
+    toolCount: number;
+    promptCharCount: number;
+    toolsCharCount: number;
+    estimatedInputTokens: number;
+  };
+}
+
 export interface DirectAIResponse {
   text: string;
   toolCalls?: Array<{
@@ -62,11 +92,16 @@ export interface DirectAIResponse {
     promptTokens: number;
     completionTokens: number;
     totalTokens: number;
+    reasoningTokens?: number;
   };
   model: string;
   provider: string;
   latencyMs: number;
   finishReason?: string;
+  /** Chain-of-thought bruto, quando o provider expoe. */
+  reasoning?: string;
+  /** Snapshot exato do que foi enviado ao LLM. */
+  requestSnapshot?: DirectAIRequestSnapshot;
 }
 
 // =====================================================
@@ -258,6 +293,106 @@ const MIN_OUTPUT_TOKENS_FOR_REASONING: Record<string, number> = {
 };
 
 // =====================================================
+// Request snapshot helper
+// =====================================================
+
+const stringifyMessageContent = (content: unknown): string => {
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    return content
+      .map((part: any) => {
+        if (typeof part === "string") return part;
+        if (part?.type === "text" && typeof part.text === "string") {
+          return part.text;
+        }
+        if (part?.type === "image") return "[image]";
+        if (part?.type === "tool-call") {
+          return `[tool-call:${part.toolName ?? "unknown"} ${JSON.stringify(
+            part.args ?? part.input ?? {},
+          )}]`;
+        }
+        if (part?.type === "tool-result") {
+          return `[tool-result:${part.toolName ?? "unknown"} ${JSON.stringify(
+            part.result ?? {},
+          )}]`;
+        }
+        return JSON.stringify(part);
+      })
+      .join("\n");
+  }
+  return JSON.stringify(content ?? "");
+};
+
+/**
+ * Build a faithful snapshot of the payload that is about to hit the LLM.
+ * Captures every message (including all dynamic system messages), every tool,
+ * settings, and totals. Token estimate uses the ~4 chars/token heuristic.
+ */
+const buildRequestSnapshot = (
+  generateParams: any,
+): DirectAIRequestSnapshot => {
+  const messages = (generateParams.messages ?? []) as Array<{
+    role: string;
+    content: unknown;
+  }>;
+
+  const messageRows = messages.map((m) => {
+    const content = stringifyMessageContent(m.content);
+    return {
+      role: String(m.role ?? "unknown"),
+      content,
+      charCount: content.length,
+    };
+  });
+
+  const toolsObject = (generateParams.tools ?? {}) as Record<
+    string,
+    { description?: string }
+  >;
+  const toolRows = Object.entries(toolsObject).map(([name, tool]) => {
+    const description = typeof tool?.description === "string" ? tool.description : "";
+    return {
+      name,
+      description,
+      descriptionCharCount: description.length,
+    };
+  });
+
+  const promptCharCount = messageRows.reduce((sum, m) => sum + m.charCount, 0);
+  const toolsCharCount = toolRows.reduce(
+    (sum, t) => sum + t.descriptionCharCount + t.name.length,
+    0,
+  );
+  const systemMessageCount = messageRows.filter((m) => m.role === "system").length;
+  const historyMessageCount = messageRows.filter(
+    (m) => m.role === "user" || m.role === "assistant",
+  ).length;
+
+  return {
+    messages: messageRows,
+    tools: toolRows,
+    settings: {
+      temperature: generateParams.temperature,
+      maxTokens: generateParams.maxTokens,
+      topP: generateParams.topP,
+      frequencyPenalty: generateParams.frequencyPenalty,
+      presencePenalty: generateParams.presencePenalty,
+      reasoningEffort:
+        generateParams.providerOptions?.openai?.reasoningEffort,
+    },
+    totals: {
+      messageCount: messageRows.length,
+      systemMessageCount,
+      historyMessageCount,
+      toolCount: toolRows.length,
+      promptCharCount,
+      toolsCharCount,
+      estimatedInputTokens: Math.ceil((promptCharCount + toolsCharCount) / 4),
+    },
+  };
+};
+
+// =====================================================
 // MAIN FUNCTION: callDirectAI
 // =====================================================
 
@@ -395,6 +530,10 @@ export const callDirectAI = async (
       generateParams.presencePenalty = config.settings.presencePenalty;
     }
 
+    // 6.5. Build request snapshot — capture EXACTLY what is going to the LLM.
+    // Done after generateParams is finalized; uses ~4 chars/token heuristic.
+    const requestSnapshot = buildRequestSnapshot(generateParams);
+
     // 7. Call AI
     const result = await generateText(generateParams);
 
@@ -485,6 +624,22 @@ export const callDirectAI = async (
       });
     }
 
+    // Capture reasoning text if exposed by the provider.
+    // Anthropic extended thinking returns it on `result.reasoning`; OpenAI
+    // reasoning models keep it server-side (only token count is exposed).
+    const reasoningText: string | undefined =
+      typeof (result as any).reasoning === "string"
+        ? (result as any).reasoning
+        : (result as any).reasoning?.text ??
+          (Array.isArray((result as any).reasoning)
+            ? (result as any).reasoning
+                .map((r: any) =>
+                  typeof r === "string" ? r : r?.text ?? "",
+                )
+                .filter(Boolean)
+                .join("\n\n")
+            : undefined);
+
     // 11. Return standardized response
     return {
       text: result.text,
@@ -493,11 +648,14 @@ export const callDirectAI = async (
         promptTokens,
         completionTokens,
         totalTokens,
+        reasoningTokens: reasoningTokens > 0 ? reasoningTokens : undefined,
       },
       model,
       provider,
       latencyMs,
       finishReason: result.finishReason,
+      reasoning: reasoningText && reasoningText.length > 0 ? reasoningText : undefined,
+      requestSnapshot,
     };
   } catch (error) {
     const latencyMs = Date.now() - startTime;

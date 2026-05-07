@@ -2606,6 +2606,21 @@ export const processChatbotMessage = async (
       contentLength: aiResponse.content?.length ?? 0,
       provider: aiResponse.provider ?? null,
       model: aiResponse.model ?? null,
+      // Full faithful snapshot of what was sent to the LLM (no truncation):
+      // every system message, history, tool definition, settings, totals.
+      // Used by /dashboard/quality/traces "Prompt" tab.
+      requestPayload: aiResponse.requestPayload ?? null,
+      // Chain-of-thought when provider exposes it (Anthropic/OpenAI reasoning).
+      reasoning: aiResponse.reasoning ?? null,
+      reasoningTokens: aiResponse.usage?.reasoning_tokens ?? null,
+      finalResponse: aiResponse.content ?? "",
+      finishReason:
+        aiResponse.finished ? "stop" : aiResponse.fallbackReason ?? null,
+      toolCalls:
+        aiResponse.toolCalls?.map((tc) => ({
+          name: tc.function.name,
+          arguments: tc.function.arguments,
+        })) ?? [],
     });
     traceLogger.setGenerationData({
       model: aiResponse.model || "unknown",

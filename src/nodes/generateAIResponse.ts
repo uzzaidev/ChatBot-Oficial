@@ -396,7 +396,10 @@ export const generateAIResponse = async (
         completion_tokens: result.usage.completionTokens,
         total_tokens: result.usage.totalTokens,
         cached_tokens: 0, // No caching for direct calls
+        reasoning_tokens: result.usage.reasoningTokens,
       },
+      reasoning: result.reasoning,
+      requestPayload: result.requestSnapshot,
     };
   } catch (error) {
     const errorMessage =

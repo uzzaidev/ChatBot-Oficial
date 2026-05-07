@@ -418,6 +418,41 @@ export interface MediaMetadata {
   filename?: string;
 }
 
+/**
+ * Snapshot exato do que foi enviado para o LLM.
+ * Capturado imediatamente antes de `generateText` em direct-ai-client.ts.
+ * Usado pela aba "Prompt" em /dashboard/quality/traces para reproducao fiel.
+ */
+export interface AIRequestPayload {
+  messages: Array<{
+    role: string;
+    content: string;
+    charCount: number;
+  }>;
+  tools: Array<{
+    name: string;
+    description: string;
+    descriptionCharCount: number;
+  }>;
+  settings: {
+    temperature?: number;
+    maxTokens?: number;
+    topP?: number;
+    frequencyPenalty?: number;
+    presencePenalty?: number;
+    reasoningEffort?: string;
+  };
+  totals: {
+    messageCount: number;
+    systemMessageCount: number;
+    historyMessageCount: number;
+    toolCount: number;
+    promptCharCount: number;
+    toolsCharCount: number;
+    estimatedInputTokens: number;
+  };
+}
+
 export interface AIResponse {
   content: string;
   toolCalls?: ToolCall[];
@@ -427,6 +462,7 @@ export interface AIResponse {
     completion_tokens: number;
     total_tokens: number;
     cached_tokens?: number;
+    reasoning_tokens?: number;
   };
   model?: string;
   provider?: "openai" | "groq" | "anthropic" | "google";
@@ -438,6 +474,10 @@ export interface AIResponse {
   primaryAttemptedModel?: string;
   fallbackUsedProvider?: "openai" | "groq" | "anthropic" | "google";
   fallbackUsedModel?: string;
+  /** Snapshot exato enviado ao LLM (apenas quando capture habilitado). */
+  requestPayload?: AIRequestPayload;
+  /** Chain-of-thought bruto, quando o provider expoe (Anthropic extended thinking, OpenAI reasoning models). */
+  reasoning?: string;
 }
 
 export interface ToolCall {

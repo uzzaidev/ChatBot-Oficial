@@ -896,28 +896,74 @@ function RagTab({ retrieval }: { retrieval: Retrieval | null }) {
 
 // ─── Prompt / LLM Context tab ─────────────────────────────────────────────────
 
-function PromptTab({ trace }: { trace: TraceDetail }) {
-  const stageData = (trace.metadata as Record<string, any>)?.stages
-    ?.generation_started as Record<string, any> | undefined;
-
-  const systemPrompt: string = stageData?.systemPrompt ?? "";
-  const historyMessages: Array<{ role: string; content: string }> =
-    stageData?.historyMessages ?? [];
-  const ragContext: string = stageData?.ragContext ?? "";
-  const userMessage: string =
-    stageData?.userMessage ?? trace.user_message ?? "";
-
-  const roleColor = (role: string) => {
-    if (role === "user" || role === "human")
-      return "bg-blue-500/10 border-blue-500/20 text-blue-400";
-    if (role === "assistant" || role === "ai")
-      return "bg-uzz-mint/10 border-uzz-mint/20 text-uzz-mint";
-    return "bg-muted/40 border-border text-muted-foreground";
+interface RequestPayloadShape {
+  messages: Array<{ role: string; content: string; charCount: number }>;
+  tools: Array<{
+    name: string;
+    description: string;
+    descriptionCharCount: number;
+  }>;
+  settings: {
+    temperature?: number;
+    maxTokens?: number;
+    topP?: number;
+    frequencyPenalty?: number;
+    presencePenalty?: number;
+    reasoningEffort?: string;
   };
+  totals: {
+    messageCount: number;
+    systemMessageCount: number;
+    historyMessageCount: number;
+    toolCount: number;
+    promptCharCount: number;
+    toolsCharCount: number;
+    estimatedInputTokens: number;
+  };
+}
 
-  const hasData = systemPrompt || historyMessages.length > 0 || ragContext;
+const roleColor = (role: string) => {
+  if (role === "user" || role === "human")
+    return "bg-blue-500/10 border-blue-500/30 text-blue-300";
+  if (role === "assistant" || role === "ai")
+    return "bg-uzz-mint/10 border-uzz-mint/30 text-uzz-mint";
+  if (role === "system")
+    return "bg-amber-500/10 border-amber-500/30 text-amber-300";
+  if (role === "tool")
+    return "bg-purple-500/10 border-purple-500/30 text-purple-300";
+  return "bg-muted/40 border-border text-muted-foreground";
+};
 
-  if (!hasData) {
+function PromptTab({ trace }: { trace: TraceDetail }) {
+  const stages = (trace.metadata as Record<string, any>)?.stages ?? {};
+  const completedStage = stages.generation_completed as
+    | Record<string, any>
+    | undefined;
+  const startedStage = stages.generation_started as
+    | Record<string, any>
+    | undefined;
+
+  const requestPayload: RequestPayloadShape | null =
+    (completedStage?.requestPayload as RequestPayloadShape | null) ?? null;
+  const reasoning: string | null = completedStage?.reasoning ?? null;
+  const reasoningTokens: number | null = completedStage?.reasoningTokens ?? null;
+  const finalResponse: string =
+    completedStage?.finalResponse ?? trace.agent_response ?? "";
+  const toolCallsList: Array<{ name: string; arguments: string }> =
+    completedStage?.toolCalls ?? [];
+
+  // Fallback for legacy traces (pre-2026-05-07) — still show what we can
+  const legacySystemPrompt: string = startedStage?.systemPrompt ?? "";
+  const legacyHistory: Array<{ role: string; content: string }> =
+    startedStage?.historyMessages ?? [];
+  const legacyRag: string = startedStage?.ragContext ?? "";
+  const legacyUser: string = startedStage?.userMessage ?? trace.user_message ?? "";
+
+  const isLegacy = !requestPayload;
+  const hasLegacyData =
+    legacySystemPrompt || legacyHistory.length > 0 || legacyRag;
+
+  if (isLegacy && !hasLegacyData) {
     return (
       <div className="flex flex-col items-center justify-center h-48 gap-3 p-6">
         <Bot className="h-8 w-8 text-muted-foreground/30" />
@@ -934,61 +980,265 @@ function PromptTab({ trace }: { trace: TraceDetail }) {
     );
   }
 
+  // Legacy fallback — render the old-style minimal panels
+  if (isLegacy) {
+    return (
+      <div className="p-5 space-y-5">
+        <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3">
+          <p className="text-xs text-amber-300/90">
+            Trace antigo (pré-snapshot completo). Mostrando apenas o prompt-base
+            do tenant + histórico truncado.
+          </p>
+        </div>
+
+        {legacySystemPrompt && (
+          <div className="rounded-xl border border-border/50 bg-card/60 overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2.5 bg-muted/30 border-b border-border/40">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                System Prompt (base do tenant)
+              </p>
+              <span className="text-[10px] font-mono text-muted-foreground">
+                {legacySystemPrompt.length} chars
+              </span>
+            </div>
+            <pre className="text-xs p-4 overflow-x-auto whitespace-pre-wrap break-words text-foreground/80 font-mono leading-relaxed max-h-72 overflow-y-auto">
+              {legacySystemPrompt}
+            </pre>
+          </div>
+        )}
+
+        {legacyUser && (
+          <div className="rounded-xl border border-border/50 bg-card/60 overflow-hidden">
+            <div className="px-4 py-2.5 bg-muted/30 border-b border-border/40">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Mensagem do usuário
+              </p>
+            </div>
+            <div className="p-4 text-xs whitespace-pre-wrap">{legacyUser}</div>
+          </div>
+        )}
+
+        {legacyHistory.length > 0 && (
+          <div className="rounded-xl border border-border/50 bg-card/60 overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2.5 bg-muted/30 border-b border-border/40">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Histórico
+              </p>
+              <span className="text-[10px] font-mono text-muted-foreground">
+                {legacyHistory.length} msgs
+              </span>
+            </div>
+            <div className="p-4 space-y-2 max-h-80 overflow-y-auto">
+              {legacyHistory.map((m, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "rounded-lg border px-3 py-2",
+                    roleColor(m.role),
+                  )}
+                >
+                  <p className="text-[10px] font-bold uppercase mb-1 opacity-70">
+                    {m.role}
+                  </p>
+                  <p className="text-xs whitespace-pre-wrap break-words">
+                    {m.content}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {legacyRag && (
+          <div className="rounded-xl border border-border/50 bg-card/60 overflow-hidden">
+            <div className="px-4 py-2.5 bg-muted/30 border-b border-border/40">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Contexto RAG (truncado a 3k chars)
+              </p>
+            </div>
+            <pre className="text-xs p-4 whitespace-pre-wrap break-words font-mono max-h-60 overflow-y-auto">
+              {legacyRag}
+            </pre>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Full snapshot mode
+  const totals = requestPayload.totals;
+  const settings = requestPayload.settings;
+  const actualPromptTokens = trace.tokens_input ?? null;
+  const tokenDelta =
+    actualPromptTokens != null
+      ? actualPromptTokens - totals.estimatedInputTokens
+      : null;
+
   return (
     <div className="p-5 space-y-5">
-      {/* System Prompt */}
-      {systemPrompt && (
-        <div className="rounded-xl border border-border/50 bg-card/60 overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-2.5 bg-muted/30 border-b border-border/40">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              System Prompt
-            </p>
-            <span className="text-[10px] font-mono text-muted-foreground">
-              {systemPrompt.length} chars
+      {/* Totals strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="rounded-lg border border-border/50 bg-card/60 px-3 py-2">
+          <p className="text-[10px] uppercase text-muted-foreground tracking-wider">
+            Mensagens
+          </p>
+          <p className="text-sm font-mono">
+            {totals.messageCount}
+            <span className="text-[10px] text-muted-foreground ml-1">
+              ({totals.systemMessageCount}sys+{totals.historyMessageCount}hist)
             </span>
-          </div>
-          <pre className="text-xs p-4 overflow-x-auto whitespace-pre-wrap break-words text-foreground/80 font-mono leading-relaxed max-h-72 overflow-y-auto">
-            {systemPrompt}
-          </pre>
+          </p>
         </div>
-      )}
-
-      {/* User Message */}
-      {userMessage && (
-        <div className="rounded-xl border border-border/50 bg-card/60 overflow-hidden">
-          <div className="px-4 py-2.5 bg-muted/30 border-b border-border/40">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Mensagem do usuário (enviada ao LLM)
-            </p>
-          </div>
-          <div className="p-4 text-xs text-foreground leading-relaxed whitespace-pre-wrap">
-            {userMessage}
-          </div>
-        </div>
-      )}
-
-      {/* Chat History */}
-      {historyMessages.length > 0 && (
-        <div className="rounded-xl border border-border/50 bg-card/60 overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-2.5 bg-muted/30 border-b border-border/40">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Histórico de Conversa
-            </p>
-            <span className="text-[10px] font-mono text-muted-foreground">
-              {historyMessages.length} mensagens
+        <div className="rounded-lg border border-border/50 bg-card/60 px-3 py-2">
+          <p className="text-[10px] uppercase text-muted-foreground tracking-wider">
+            Tools expostas
+          </p>
+          <p className="text-sm font-mono">
+            {totals.toolCount}
+            <span className="text-[10px] text-muted-foreground ml-1">
+              ({totals.toolsCharCount} chars)
             </span>
-          </div>
-          <div className="p-4 space-y-2 max-h-80 overflow-y-auto">
-            {historyMessages.map((m, i) => (
-              <div
-                key={i}
-                className={cn("rounded-lg border px-3 py-2", roleColor(m.role))}
+          </p>
+        </div>
+        <div className="rounded-lg border border-border/50 bg-card/60 px-3 py-2">
+          <p className="text-[10px] uppercase text-muted-foreground tracking-wider">
+            Prompt total
+          </p>
+          <p className="text-sm font-mono">
+            {totals.promptCharCount.toLocaleString("pt-BR")} chars
+          </p>
+        </div>
+        <div className="rounded-lg border border-border/50 bg-card/60 px-3 py-2">
+          <p className="text-[10px] uppercase text-muted-foreground tracking-wider">
+            Tokens (est. / real)
+          </p>
+          <p className="text-sm font-mono">
+            ~{totals.estimatedInputTokens.toLocaleString("pt-BR")} /{" "}
+            {actualPromptTokens != null
+              ? actualPromptTokens.toLocaleString("pt-BR")
+              : "—"}
+            {tokenDelta != null && (
+              <span
+                className={cn(
+                  "text-[10px] ml-1",
+                  Math.abs(tokenDelta) > totals.estimatedInputTokens * 0.3
+                    ? "text-amber-400"
+                    : "text-muted-foreground",
+                )}
               >
-                <p className="text-[10px] font-bold uppercase tracking-wide mb-1 opacity-70">
-                  {m.role}
+                ({tokenDelta >= 0 ? "+" : ""}
+                {tokenDelta})
+              </span>
+            )}
+          </p>
+        </div>
+      </div>
+
+      {/* Settings */}
+      <div className="rounded-xl border border-border/50 bg-card/60 overflow-hidden">
+        <div className="px-4 py-2 bg-muted/30 border-b border-border/40">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Settings da chamada
+          </p>
+        </div>
+        <div className="p-3 flex flex-wrap gap-x-4 gap-y-1 text-xs font-mono">
+          <span>
+            <span className="text-muted-foreground">model:</span>{" "}
+            {trace.model_used ?? "—"}
+          </span>
+          {settings.temperature != null && (
+            <span>
+              <span className="text-muted-foreground">temp:</span>{" "}
+              {settings.temperature}
+            </span>
+          )}
+          {settings.maxTokens != null && (
+            <span>
+              <span className="text-muted-foreground">maxTokens:</span>{" "}
+              {settings.maxTokens}
+            </span>
+          )}
+          {settings.reasoningEffort && (
+            <span>
+              <span className="text-muted-foreground">reasoningEffort:</span>{" "}
+              {settings.reasoningEffort}
+            </span>
+          )}
+          {settings.topP != null && (
+            <span>
+              <span className="text-muted-foreground">topP:</span>{" "}
+              {settings.topP}
+            </span>
+          )}
+          {reasoningTokens != null && reasoningTokens > 0 && (
+            <span>
+              <span className="text-muted-foreground">reasoningTokens:</span>{" "}
+              {reasoningTokens}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Full message stack */}
+      <div className="rounded-xl border border-border/50 bg-card/60 overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-2.5 bg-muted/30 border-b border-border/40">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Mensagens enviadas ao LLM (ordem real)
+          </p>
+          <span className="text-[10px] font-mono text-muted-foreground">
+            {requestPayload.messages.length} blocos
+          </span>
+        </div>
+        <div className="p-3 space-y-2 max-h-[600px] overflow-y-auto">
+          {requestPayload.messages.map((m, i) => (
+            <div
+              key={i}
+              className={cn(
+                "rounded-lg border px-3 py-2",
+                roleColor(m.role),
+              )}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-[10px] font-bold uppercase tracking-wide opacity-70">
+                  #{i + 1} · {m.role}
                 </p>
-                <p className="text-xs leading-relaxed whitespace-pre-wrap break-words">
-                  {m.content}
+                <p className="text-[10px] font-mono opacity-60">
+                  {m.charCount.toLocaleString("pt-BR")} chars
+                </p>
+              </div>
+              <pre className="text-xs whitespace-pre-wrap break-words font-mono leading-relaxed">
+                {m.content}
+              </pre>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Tools list */}
+      {requestPayload.tools.length > 0 && (
+        <div className="rounded-xl border border-border/50 bg-card/60 overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-2.5 bg-muted/30 border-b border-border/40">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Tools expostas ao LLM (descriptions)
+            </p>
+            <span className="text-[10px] font-mono text-muted-foreground">
+              {requestPayload.tools.length} tools
+            </span>
+          </div>
+          <div className="p-3 space-y-2 max-h-72 overflow-y-auto">
+            {requestPayload.tools.map((t) => (
+              <div
+                key={t.name}
+                className="rounded-lg border border-border/40 bg-muted/20 px-3 py-2"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-xs font-mono font-semibold">{t.name}</p>
+                  <p className="text-[10px] font-mono text-muted-foreground">
+                    {t.descriptionCharCount} chars
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground whitespace-pre-wrap break-words leading-relaxed">
+                  {t.description || "—"}
                 </p>
               </div>
             ))}
@@ -996,19 +1246,60 @@ function PromptTab({ trace }: { trace: TraceDetail }) {
         </div>
       )}
 
-      {/* RAG Context */}
-      {ragContext && (
-        <div className="rounded-xl border border-border/50 bg-card/60 overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-2.5 bg-muted/30 border-b border-border/40">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Contexto RAG injetado
+      {/* Reasoning */}
+      {reasoning && reasoning.length > 0 && (
+        <div className="rounded-xl border border-purple-500/30 bg-purple-500/5 overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-2.5 bg-purple-500/10 border-b border-purple-500/20">
+            <p className="text-xs font-semibold uppercase tracking-wider text-purple-300">
+              Chain-of-thought / Reasoning
             </p>
-            <span className="text-[10px] font-mono text-muted-foreground">
-              {ragContext.length} chars
+            <span className="text-[10px] font-mono text-purple-300/70">
+              {reasoning.length.toLocaleString("pt-BR")} chars
+              {reasoningTokens ? ` · ${reasoningTokens} tokens` : ""}
             </span>
           </div>
-          <pre className="text-xs p-4 overflow-x-auto whitespace-pre-wrap break-words text-foreground/80 font-mono leading-relaxed max-h-60 overflow-y-auto">
-            {ragContext}
+          <pre className="text-xs p-4 whitespace-pre-wrap break-words font-mono leading-relaxed max-h-72 overflow-y-auto text-purple-100/90">
+            {reasoning}
+          </pre>
+        </div>
+      )}
+
+      {/* Tool calls emitted */}
+      {toolCallsList.length > 0 && (
+        <div className="rounded-xl border border-border/50 bg-card/60 overflow-hidden">
+          <div className="px-4 py-2.5 bg-muted/30 border-b border-border/40">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Tool calls emitidas pelo LLM
+            </p>
+          </div>
+          <div className="p-3 space-y-2">
+            {toolCallsList.map((tc, i) => (
+              <div
+                key={i}
+                className="rounded-lg border border-border/40 bg-muted/20 px-3 py-2"
+              >
+                <p className="text-xs font-mono font-semibold mb-1">
+                  {tc.name}
+                </p>
+                <pre className="text-[11px] whitespace-pre-wrap break-words font-mono text-muted-foreground leading-relaxed">
+                  {tc.arguments}
+                </pre>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Final response */}
+      {finalResponse && (
+        <div className="rounded-xl border border-uzz-mint/30 bg-uzz-mint/5 overflow-hidden">
+          <div className="px-4 py-2.5 bg-uzz-mint/10 border-b border-uzz-mint/20">
+            <p className="text-xs font-semibold uppercase tracking-wider text-uzz-mint">
+              Resposta final do LLM
+            </p>
+          </div>
+          <pre className="text-xs p-4 whitespace-pre-wrap break-words font-mono leading-relaxed text-foreground">
+            {finalResponse}
           </pre>
         </div>
       )}
