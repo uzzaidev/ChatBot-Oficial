@@ -6,6 +6,17 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+```
+## 2026-05-07
+
+### fix
+- Removida regra obrigatória de cadastro do prompt do agente principal para otimizar o fluxo de mensagens e reduzir o tamanho do prompt
+- A orientação para coleta de dados cadastrais foi mantida apenas na descrição da tool `registrar_dado_cadastral` em `src/lib/agent-tools.ts`
+  - Arquivos: `src/nodes/generateAIResponse.ts`
+  - Evidência: remoção do bloco de instruções no system prompt e comentário explicativo no código
+  - Confiança: alta
+```
+
 ## 2026-05-07
 
 ### docs
