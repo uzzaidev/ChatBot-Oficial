@@ -1,7 +1,6 @@
 import { callDirectAI } from "@/lib/direct-ai-client";
 import {
   buildAllowedTools,
-  CONTACT_METADATA_FIELDS,
   shouldExposeCalendarTools,
 } from "@/lib/agent-tools";
 import {
@@ -133,19 +132,11 @@ export const generateAIResponse = async (
         ].join("\n"),
       });
 
-      messages.push({
-        role: "system",
-        content: [
-          "REGRA OBRIGATORIA DE CADASTRO:",
-          "Sempre que o usuario informar dados cadastrais, chame a tool registrar_dado_cadastral.",
-          `Campos permitidos: ${CONTACT_METADATA_FIELDS.join(", ")}.`,
-          "Use preferencialmente `nome_completo` para nome do cliente (se vier `nome`, ele sera convertido internamente).",
-          "Para vivencia com yoga, use `experiencia` (ou `experiencia_yoga`, que sera normalizado).",
-          "Para disponibilidade, use `periodo_preferido` (manha/tarde/noite) e `dia_preferido` quando houver dia especifico.",
-          "Quando houver varios dados na mesma mensagem, faca UMA unica chamada usando `campos` com todos eles.",
-          "Nao responda apenas em texto confirmando cadastro sem antes chamar a tool.",
-        ].join("\n"),
-      });
+      // 🚫 REGRA OBRIGATORIA DE CADASTRO removida do prompt do agente principal
+      // (encharcava o system prompt com 8 linhas + lista de 20 campos toda mensagem).
+      // A guidance de coleta agora vive APENAS na `description` da tool
+      // `registrar_dado_cadastral` em src/lib/agent-tools.ts — o LLM continua
+      // recebendo essa instrucao via canal de tools, sem inflar o prompt.
     }
 
     if (supportModeEnabled) {
