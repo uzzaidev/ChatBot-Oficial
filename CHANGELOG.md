@@ -6,6 +6,31 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-05-07
+
+### docs
+- Adicionada documentação completa do fluxo visual da arquitetura do chatbot, detalhando agentes LLM, nodes do pipeline, sistema de tools, conexões externas, tabelas do Supabase e sequência de processamento.
+  - Arquivos: `docs/ARQUITETURA_FLUXO_VISUAL.md`
+  - Confiança: alta
+
+### refactor
+- Desativado globalmente o node 9.5 Fast Track Router no fluxo principal, mantendo código comentado para possível reativação futura.
+  - Arquivos: `src/flows/chatbotFlow.ts`
+  - Confiança: alta
+
+### fix
+- Ajustado `formatResponse.ts` para remover vazamento de chamadas de tools no texto da IA, eliminando blocos JSON com chaves de argumentos de tools conhecidas e frases narrativas inventadas que indicam execução de tools.
+  - Arquivos: `src/nodes/formatResponse.ts`
+  - Evidência: regex para remover JSON com chaves específicas e filtro de linhas com frases típicas de narração de tool calls
+  - Confiança: alta
+
+### refactor
+- Simplificada função `generateAIResponse` removendo constantes legadas de definição de tools e código morto relacionado a tools no formato antigo; agora usa exclusivamente `buildAllowedTools` para montar tools ativas.
+- Adicionada regra crítica no prompt do sistema para impedir que o modelo escreva JSON ou descreva chamadas de tools no texto, evitando vazamentos.
+- Removida duplicação do helper `checkSlotsAreFilled` e constantes legadas, reduzindo complexidade e dívida técnica.
+  - Arquivos: `src/nodes/generateAIResponse.ts`
+  - Confiança: alta
+
 ## 2026-05-06
 
 ### fix
