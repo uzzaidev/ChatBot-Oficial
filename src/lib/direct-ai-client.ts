@@ -544,13 +544,20 @@ export const callDirectAI = async (
     const normalizedToolCalls = normalizeToolCalls(result.toolCalls);
 
     // 9. Extract usage (cast to any for compatibility)
+    // AI SDK v5 renamed promptTokens→inputTokens, completionTokens→outputTokens.
+    // We accept both shapes so older provider responses don't silently zero out.
     const usage = result.usage as any;
 
-    const promptTokens = usage.promptTokens || 0;
-    const completionTokens = usage.completionTokens || 0;
-    const totalTokens = usage.totalTokens || promptTokens + completionTokens;
+    const promptTokens =
+      usage?.inputTokens ?? usage?.promptTokens ?? 0;
+    const completionTokens =
+      usage?.outputTokens ?? usage?.completionTokens ?? 0;
+    const totalTokens =
+      usage?.totalTokens ?? promptTokens + completionTokens;
 
-    // Extract reasoning tokens if reported by the model (gpt-5.x / o-series)
+    // Extract reasoning tokens if reported by the model (gpt-5.x / o-series).
+    // AI SDK v5 puts it directly on usage.reasoningTokens; older shapes used
+    // output_tokens_details.reasoning_tokens or providerMetadata.openai.
     const reasoningTokens: number =
       usage?.reasoningTokens ||
       usage?.output_tokens_details?.reasoning_tokens ||

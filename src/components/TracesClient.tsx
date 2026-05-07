@@ -922,16 +922,30 @@ interface RequestPayloadShape {
   };
 }
 
-const roleColor = (role: string) => {
+// Block bg/border only — content text always uses text-foreground for contrast.
+const roleBlock = (role: string) => {
   if (role === "user" || role === "human")
-    return "bg-blue-500/10 border-blue-500/30 text-blue-300";
+    return "bg-blue-500/5 border-blue-500/30 dark:bg-blue-500/10";
   if (role === "assistant" || role === "ai")
-    return "bg-uzz-mint/10 border-uzz-mint/30 text-uzz-mint";
+    return "bg-uzz-mint/5 border-uzz-mint/30 dark:bg-uzz-mint/10";
   if (role === "system")
-    return "bg-amber-500/10 border-amber-500/30 text-amber-300";
+    return "bg-amber-500/5 border-amber-500/30 dark:bg-amber-500/10";
   if (role === "tool")
-    return "bg-purple-500/10 border-purple-500/30 text-purple-300";
-  return "bg-muted/40 border-border text-muted-foreground";
+    return "bg-purple-500/5 border-purple-500/30 dark:bg-purple-500/10";
+  return "bg-muted/40 border-border";
+};
+
+// Accent color for the small role label — works on both light and dark theme.
+const roleLabel = (role: string) => {
+  if (role === "user" || role === "human")
+    return "text-blue-700 dark:text-blue-300";
+  if (role === "assistant" || role === "ai")
+    return "text-emerald-700 dark:text-uzz-mint";
+  if (role === "system")
+    return "text-amber-700 dark:text-amber-300";
+  if (role === "tool")
+    return "text-purple-700 dark:text-purple-300";
+  return "text-muted-foreground";
 };
 
 function PromptTab({ trace }: { trace: TraceDetail }) {
@@ -1034,13 +1048,18 @@ function PromptTab({ trace }: { trace: TraceDetail }) {
                   key={i}
                   className={cn(
                     "rounded-lg border px-3 py-2",
-                    roleColor(m.role),
+                    roleBlock(m.role),
                   )}
                 >
-                  <p className="text-[10px] font-bold uppercase mb-1 opacity-70">
+                  <p
+                    className={cn(
+                      "text-[10px] font-bold uppercase mb-1",
+                      roleLabel(m.role),
+                    )}
+                  >
                     {m.role}
                   </p>
-                  <p className="text-xs whitespace-pre-wrap break-words">
+                  <p className="text-xs whitespace-pre-wrap break-words text-foreground">
                     {m.content}
                   </p>
                 </div>
@@ -1195,18 +1214,23 @@ function PromptTab({ trace }: { trace: TraceDetail }) {
               key={i}
               className={cn(
                 "rounded-lg border px-3 py-2",
-                roleColor(m.role),
+                roleBlock(m.role),
               )}
             >
               <div className="flex items-center justify-between mb-1">
-                <p className="text-[10px] font-bold uppercase tracking-wide opacity-70">
+                <p
+                  className={cn(
+                    "text-[10px] font-bold uppercase tracking-wide",
+                    roleLabel(m.role),
+                  )}
+                >
                   #{i + 1} · {m.role}
                 </p>
-                <p className="text-[10px] font-mono opacity-60">
+                <p className="text-[10px] font-mono text-muted-foreground">
                   {m.charCount.toLocaleString("pt-BR")} chars
                 </p>
               </div>
-              <pre className="text-xs whitespace-pre-wrap break-words font-mono leading-relaxed">
+              <pre className="text-xs whitespace-pre-wrap break-words font-mono leading-relaxed text-foreground">
                 {m.content}
               </pre>
             </div>
