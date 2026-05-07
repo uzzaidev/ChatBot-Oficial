@@ -7,6 +7,18 @@ Gerado automaticamente por IA a cada push no `main`.
 ```
 
 ```
+
+## 2026-05-07
+
+### feat
+- Adicionado snapshot detalhado e fiel do payload enviado ao LLM, incluindo mensagens, ferramentas, configurações e totais, para melhorar a análise e reprodução das chamadas AI no dashboard de qualidade.
+- Implementado suporte para exibição do raciocínio (chain-of-thought) fornecido por alguns provedores AI, com contagem de tokens e visualização dedicada na aba de prompt.
+- Atualizada interface e tipos para incluir o snapshot da requisição e o raciocínio bruto na resposta AI.
+- Adaptado componente `PromptTab` para suportar visualização do snapshot completo, raciocínio, chamadas de ferramentas e resposta final, mantendo fallback para traces legados.
+- Captura do snapshot e raciocínio integrada na função principal de chamada AI (`callDirectAI`) e no fluxo do chatbot.
+  - Arquivos: `src/components/TracesClient.tsx`, `src/flows/chatbotFlow.ts`, `src/lib/direct-ai-client.ts`, `src/lib/types.ts`, `src/nodes/generateAIResponse.ts`
+  - Confiança: alta
+
 ## 2026-05-07
 
 ### fix
