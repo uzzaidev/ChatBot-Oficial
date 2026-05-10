@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Contact, useContacts } from "@/hooks/useContacts";
 import { apiFetch } from "@/lib/api";
@@ -60,7 +61,9 @@ import {
   ArrowRight,
   Bot,
   CheckCircle,
+  CheckSquare,
   Download,
+  Eraser,
   LayoutDashboard,
   List,
   MessageCircle,
@@ -173,6 +176,13 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
+  const [contactToClearHistory, setContactToClearHistory] = useState<Contact | null>(null);
+  const [isClearingHistory, setIsClearingHistory] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedPhones, setSelectedPhones] = useState<Set<string>>(new Set());
+  const [isBulkHistoryDialogOpen, setIsBulkHistoryDialogOpen] = useState(false);
+  const [isBulkClearing, setIsBulkClearing] = useState(false);
   const { toast } = useToast();
 
   // Form states
@@ -212,6 +222,8 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
     addContact,
     updateContact,
     deleteContact,
+    deleteContactHistory,
+    bulkDeleteHistory,
     importContacts,
   } = useContacts({
     clientId,
@@ -362,6 +374,90 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
     }
     setIsDeleteDialogOpen(false);
     setContactToDelete(null);
+  };
+
+  const handleClearContactHistory = async () => {
+    if (!contactToClearHistory) return;
+
+    setIsClearingHistory(true);
+    const result = await deleteContactHistory(contactToClearHistory.phone);
+    setIsClearingHistory(false);
+
+    if (result) {
+      toast({
+        title: "Histórico excluído",
+        description: `${result.deleted.total} registros removidos do contato ${
+          contactToClearHistory.name || formatPhone(contactToClearHistory.phone)
+        }.`,
+      });
+    } else {
+      toast({
+        title: "Erro",
+        description: "Falha ao excluir histórico do contato",
+        variant: "destructive",
+      });
+    }
+
+    setIsHistoryDialogOpen(false);
+    setContactToClearHistory(null);
+  };
+
+  const toggleSelectionMode = () => {
+    setSelectionMode((prev) => {
+      if (prev) {
+        setSelectedPhones(new Set());
+      }
+      return !prev;
+    });
+  };
+
+  const toggleContactSelected = (phone: string) => {
+    setSelectedPhones((prev) => {
+      const next = new Set(prev);
+      if (next.has(phone)) next.delete(phone);
+      else next.add(phone);
+      return next;
+    });
+  };
+
+  const handleSelectAllVisible = () => {
+    setSelectedPhones((prev) => {
+      const allSelected = contacts.every((c) => prev.has(c.phone));
+      if (allSelected) {
+        const next = new Set(prev);
+        contacts.forEach((c) => next.delete(c.phone));
+        return next;
+      }
+      const next = new Set(prev);
+      contacts.forEach((c) => next.add(c.phone));
+      return next;
+    });
+  };
+
+  const handleBulkClearHistory = async () => {
+    const phones = Array.from(selectedPhones);
+    if (phones.length === 0) return;
+
+    setIsBulkClearing(true);
+    const result = await bulkDeleteHistory(phones);
+    setIsBulkClearing(false);
+
+    if (result) {
+      toast({
+        title: "Histórico excluído",
+        description: `${result.deleted.total} registros removidos de ${result.contacts} contato(s).`,
+      });
+      setSelectedPhones(new Set());
+      setSelectionMode(false);
+    } else {
+      toast({
+        title: "Erro",
+        description: "Falha ao excluir histórico em massa",
+        variant: "destructive",
+      });
+    }
+
+    setIsBulkHistoryDialogOpen(false);
   };
 
   const handleDownloadTemplate = async () => {
@@ -1068,9 +1164,52 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
               </DialogContent>
             </Dialog>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Mostrando {contacts.length} de {total} contatos
-          </p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs text-muted-foreground">
+              Mostrando {contacts.length} de {total} contatos
+            </p>
+            <Button
+              size="sm"
+              variant={selectionMode ? "default" : "ghost"}
+              className="h-7 gap-1 text-xs"
+              onClick={toggleSelectionMode}
+            >
+              <CheckSquare className="h-3.5 w-3.5" />
+              {selectionMode ? "Cancelar" : "Selecionar"}
+            </Button>
+          </div>
+
+          {selectionMode && (
+            <div className="rounded-md border border-border/60 bg-muted/30 p-2 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-muted-foreground">
+                  {selectedPhones.size} selecionado(s)
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={handleSelectAllVisible}
+                  disabled={contacts.length === 0}
+                >
+                  {contacts.length > 0 &&
+                  contacts.every((c) => selectedPhones.has(c.phone))
+                    ? "Desmarcar visíveis"
+                    : "Selecionar visíveis"}
+                </Button>
+              </div>
+              <Button
+                size="sm"
+                variant="destructive"
+                className="w-full gap-1 h-8"
+                disabled={selectedPhones.size === 0}
+                onClick={() => setIsBulkHistoryDialogOpen(true)}
+              >
+                <Eraser className="h-3.5 w-3.5" />
+                Excluir histórico ({selectedPhones.size})
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Status Filter Tabs */}
@@ -1151,12 +1290,28 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                 <div
                   key={contact.id}
                   className={`flex items-center gap-3 p-3 cursor-pointer transition-colors duration-200 border-b border-border/50 ${
-                    selectedContact?.id === contact.id
+                    selectionMode && selectedPhones.has(contact.phone)
+                      ? "bg-primary/10"
+                      : selectedContact?.id === contact.id
                       ? "bg-gradient-to-r from-primary/10 to-transparent border-l-2 border-l-primary"
                       : "hover:bg-muted/50"
                   }`}
-                  onClick={() => setSelectedContact(contact)}
+                  onClick={() => {
+                    if (selectionMode) {
+                      toggleContactSelected(contact.phone);
+                    } else {
+                      setSelectedContact(contact);
+                    }
+                  }}
                 >
+                  {selectionMode && (
+                    <Checkbox
+                      checked={selectedPhones.has(contact.phone)}
+                      onCheckedChange={() => toggleContactSelected(contact.phone)}
+                      onClick={(e) => e.stopPropagation()}
+                      aria-label={`Selecionar ${contact.name || contact.phone}`}
+                    />
+                  )}
                   <Avatar className="h-12 w-12 flex-shrink-0">
                     <AvatarFallback className="bg-gradient-to-br from-secondary to-primary text-white text-sm font-poppins font-semibold">
                       {getInitials(contact.name || "Sem nome")}
@@ -1330,25 +1485,39 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
               </div>
 
               {/* Actions */}
-              <div className="flex gap-2 pt-4">
-                <Link
-                  href={`/dashboard/conversations?phone=${selectedContact.phone}`}
-                  className="flex-1"
-                >
-                  <Button variant="outline" className="w-full">
-                    <MessageCircle className="h-4 w-4 mr-2" />
-                    Ver Conversas
+              <div className="space-y-2 pt-4">
+                <div className="flex gap-2">
+                  <Link
+                    href={`/dashboard/conversations?phone=${selectedContact.phone}`}
+                    className="flex-1"
+                  >
+                    <Button variant="outline" className="w-full">
+                      <MessageCircle className="h-4 w-4 mr-2" />
+                      Ver Conversas
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    title="Remover contato"
+                    onClick={() => {
+                      setContactToDelete(selectedContact);
+                      setIsDeleteDialogOpen(true);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
                   </Button>
-                </Link>
+                </div>
                 <Button
-                  variant="destructive"
-                  size="icon"
+                  variant="outline"
+                  className="w-full border-red-500/40 text-red-500 hover:bg-red-500/10 hover:text-red-500"
                   onClick={() => {
-                    setContactToDelete(selectedContact);
-                    setIsDeleteDialogOpen(true);
+                    setContactToClearHistory(selectedContact);
+                    setIsHistoryDialogOpen(true);
                   }}
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Eraser className="h-4 w-4 mr-2" />
+                  Excluir histórico
                 </Button>
               </div>
             </CardContent>
@@ -1396,6 +1565,95 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
               className="bg-red-500 hover:bg-red-600"
             >
               Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Clear History (single) Confirmation */}
+      <AlertDialog
+        open={isHistoryDialogOpen}
+        onOpenChange={(open) => {
+          setIsHistoryDialogOpen(open);
+          if (!open) setContactToClearHistory(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir histórico do contato</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>
+                  Você está prestes a apagar todo o histórico de mensagens do
+                  contato{" "}
+                  <strong>
+                    {contactToClearHistory?.name ||
+                      formatPhone(contactToClearHistory?.phone || "")}
+                  </strong>
+                  . O contato continuará cadastrado, apenas as mensagens serão
+                  removidas.
+                </p>
+                <p className="flex items-start gap-2 rounded-md border border-red-500/40 bg-red-500/10 p-2 text-red-600">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                  <span>
+                    Essa ação <strong>não pode ser desfeita</strong>.
+                  </span>
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isClearingHistory}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleClearContactHistory}
+              disabled={isClearingHistory}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              {isClearingHistory ? "Excluindo..." : "Excluir histórico"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Clear History (bulk) Confirmation */}
+      <AlertDialog
+        open={isBulkHistoryDialogOpen}
+        onOpenChange={setIsBulkHistoryDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir histórico em massa</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>
+                  Você está prestes a apagar todo o histórico de mensagens de{" "}
+                  <strong>{selectedPhones.size}</strong> contato(s)
+                  selecionado(s). Os contatos continuarão cadastrados, apenas as
+                  mensagens serão removidas.
+                </p>
+                <p className="flex items-start gap-2 rounded-md border border-red-500/40 bg-red-500/10 p-2 text-red-600">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                  <span>
+                    Essa ação <strong>não pode ser desfeita</strong>.
+                  </span>
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isBulkClearing}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkClearHistory}
+              disabled={isBulkClearing || selectedPhones.size === 0}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              {isBulkClearing
+                ? "Excluindo..."
+                : `Excluir histórico (${selectedPhones.size})`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

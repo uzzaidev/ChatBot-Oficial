@@ -31,10 +31,23 @@ interface UseContactsResult {
   addContact: (phone: string, name?: string, status?: ConversationStatus) => Promise<Contact | null>;
   updateContact: (phone: string, updates: { name?: string; status?: ConversationStatus }) => Promise<Contact | null>;
   deleteContact: (phone: string) => Promise<boolean>;
+  deleteContactHistory: (phone: string) => Promise<DeleteHistoryResult | null>;
+  bulkDeleteHistory: (phones: string[]) => Promise<BulkDeleteHistoryResult | null>;
   importContacts: (
     contacts: Array<{ phone: string; name?: string; status?: string }>,
     options?: { addToCrm?: boolean; columnId?: string }
   ) => Promise<ContactImportResult | null>;
+}
+
+export interface DeleteHistoryResult {
+  phone: string;
+  deleted: { histories: number; messages: number; total: number };
+}
+
+export interface BulkDeleteHistoryResult {
+  contacts: number;
+  phones: string[];
+  deleted: { histories: number; messages: number; total: number };
 }
 
 export const useContacts = ({
@@ -202,6 +215,58 @@ export const useContacts = ({
     [refetch]
   );
 
+  const deleteContactHistory = useCallback(
+    async (phone: string): Promise<DeleteHistoryResult | null> => {
+      try {
+        const response = await apiFetch(`/api/contacts/${phone}/history`, {
+          method: "DELETE",
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Erro ao excluir histórico");
+        }
+
+        const data = await response.json();
+        return { phone: data.phone, deleted: data.deleted };
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "Erro desconhecido";
+        setError(errorMessage);
+        return null;
+      }
+    },
+    []
+  );
+
+  const bulkDeleteHistory = useCallback(
+    async (phones: string[]): Promise<BulkDeleteHistoryResult | null> => {
+      try {
+        const response = await apiFetch("/api/contacts/history/bulk-delete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phones }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Erro ao excluir histórico em massa");
+        }
+
+        const data = await response.json();
+        return {
+          contacts: data.contacts,
+          phones: data.phones,
+          deleted: data.deleted,
+        };
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "Erro desconhecido";
+        setError(errorMessage);
+        return null;
+      }
+    },
+    []
+  );
+
   const importContacts = useCallback(
     async (
       contactsList: Array<{ phone: string; name?: string; status?: string }>,
@@ -253,6 +318,8 @@ export const useContacts = ({
     addContact,
     updateContact,
     deleteContact,
+    deleteContactHistory,
+    bulkDeleteHistory,
     importContacts,
   };
 };
