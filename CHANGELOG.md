@@ -8,6 +8,18 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-05-10
+
+### feat
+- Implementado recurso de silenciamento de contato para evitar persistência de mensagens, pausando o bot e bloqueando o salvamento do histórico quando `metadata.save_history` está falso.
+- Adicionada opção no frontend para ativar/desativar o salvamento de mensagens por contato com feedback visual e rollback em caso de erro.
+- Atualizado endpoint PATCH de contato para suportar campo `save_history` e armazenar essa preferência no banco.
+- Modificada lógica do chatbot para respeitar o silenciamento, evitando salvar mensagens e responder contatos silenciados.
+- Criada função utilitária `isContactSilenced` para verificar status de silenciamento no banco.
+- Ajustada tipagem para incluir `save_history` em metadata de contato.
+  - Arquivos: `src/app/api/contacts/[phone]/route.ts`, `src/app/api/webhook/route.ts`, `src/components/ContactsClient.tsx`, `src/flows/chatbotFlow.ts`, `src/hooks/useContacts.ts`, `src/lib/contact-privacy.ts`, `src/lib/types.ts`, `src/nodes/checkHumanHandoffStatus.ts`, `src/nodes/saveChatMessage.ts`
+  - Confiança: alta
+
 ## 2026-05-07
 
 ### feat
