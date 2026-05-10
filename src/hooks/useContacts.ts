@@ -29,7 +29,7 @@ interface UseContactsResult {
   refetch: () => Promise<void>;
   loadMore: () => Promise<void>;
   addContact: (phone: string, name?: string, status?: ConversationStatus) => Promise<Contact | null>;
-  updateContact: (phone: string, updates: { name?: string; status?: ConversationStatus }) => Promise<Contact | null>;
+  updateContact: (phone: string, updates: { name?: string; status?: ConversationStatus; save_history?: boolean }) => Promise<Contact | null>;
   deleteContact: (phone: string) => Promise<boolean>;
   deleteContactHistory: (phone: string) => Promise<DeleteHistoryResult | null>;
   bulkDeleteHistory: (phones: string[]) => Promise<BulkDeleteHistoryResult | null>;
@@ -165,7 +165,7 @@ export const useContacts = ({
   );
 
   const updateContact = useCallback(
-    async (phone: string, updates: { name?: string; status?: ConversationStatus }): Promise<Contact | null> => {
+    async (phone: string, updates: { name?: string; status?: ConversationStatus; save_history?: boolean }): Promise<Contact | null> => {
       try {
         const response = await apiFetch(`/api/contacts/${phone}`, {
           method: "PATCH",

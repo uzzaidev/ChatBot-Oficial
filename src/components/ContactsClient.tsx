@@ -434,6 +434,45 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
     });
   };
 
+  const handleToggleSaveHistory = async (next: boolean) => {
+    if (!selectedContact) return;
+
+    const previousMetadata = selectedContact.metadata || {};
+    const optimisticContact: Contact = {
+      ...selectedContact,
+      metadata: { ...previousMetadata, save_history: next },
+    };
+    setSelectedContact(optimisticContact);
+
+    const result = await updateContact(selectedContact.phone, {
+      save_history: next,
+    });
+
+    if (result) {
+      setSelectedContact((current) =>
+        current && current.phone === result.phone ? result : current,
+      );
+      toast({
+        title: next ? "Salvamento ativado" : "Salvamento desativado",
+        description: next
+          ? "As mensagens deste contato voltarão a ser salvas."
+          : "O bot foi pausado e as mensagens deste contato não serão mais salvas.",
+      });
+    } else {
+      // rollback
+      setSelectedContact((current) =>
+        current && current.phone === selectedContact.phone
+          ? { ...current, metadata: previousMetadata }
+          : current,
+      );
+      toast({
+        title: "Erro",
+        description: "Falha ao atualizar a preferência do contato",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleBulkClearHistory = async () => {
     const phones = Array.from(selectedPhones);
     if (phones.length === 0) return;
@@ -1453,6 +1492,36 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                     ? "Este contato foi transferido para atendimento humano"
                     : "Este contato está em um fluxo interativo"}
                 </p>
+              </div>
+
+              {/* Privacidade: salvar histórico */}
+              <div className="space-y-2 rounded-md border border-border/60 p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="save-history-switch">
+                      Salvar mensagens deste contato
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Ao desativar, o bot é pausado e nenhuma mensagem
+                      (recebida ou enviada) será gravada para este contato.
+                    </p>
+                  </div>
+                  <Switch
+                    id="save-history-switch"
+                    checked={selectedContact.metadata?.save_history !== false}
+                    onCheckedChange={handleToggleSaveHistory}
+                  />
+                </div>
+                {selectedContact.metadata?.save_history === false && (
+                  <p className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-600">
+                    <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+                    <span>
+                      Bot pausado e mensagens não estão sendo salvas. As
+                      mensagens já gravadas continuam disponíveis até você
+                      excluir o histórico.
+                    </span>
+                  </p>
+                )}
               </div>
 
               {/* Perfil coletado pelo bot */}

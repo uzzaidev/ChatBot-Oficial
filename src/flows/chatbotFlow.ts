@@ -965,31 +965,34 @@ export const processChatbotMessage = async (
       logger.logNodeSuccess("6.1. Bot Processing Skipped", {
         reason: handoffCheck.reason,
         status: handoffCheck.customerStatus,
-        messageWillBeSaved: true,
+        messageWillBeSaved: !handoffCheck.skipSave,
         messageHasTranscription: !!processedContent,
         botWillNotRespond: true,
+        silenced: !!handoffCheck.skipSave,
       });
 
-      // Para imagens, salvar uma versão simplificada no histórico
-      let messageForHistory = normalizedMessage.content;
-      if (parsedMessage.type === "image") {
-        messageForHistory =
-          parsedMessage.content && parsedMessage.content.trim().length > 0
-            ? `[Imagem recebida] ${parsedMessage.content}`
-            : "[Imagem recebida]";
+      if (!handoffCheck.skipSave) {
+        // Para imagens, salvar uma versão simplificada no histórico
+        let messageForHistory = normalizedMessage.content;
+        if (parsedMessage.type === "image") {
+          messageForHistory =
+            parsedMessage.content && parsedMessage.content.trim().length > 0
+              ? `[Imagem recebida] ${parsedMessage.content}`
+              : "[Imagem recebida]";
+        }
+
+        // Salvar mensagem do usuário no histórico (agora COM transcrição/descrição)
+        // 📎 Include media metadata for displaying real files in conversation
+        // 📱 Include wamid for WhatsApp message reactions
+        await saveChatMessage({
+          phone: parsedMessage.phone,
+          message: messageForHistory,
+          type: "user",
+          clientId: config.id,
+          mediaMetadata,
+          wamid: parsedMessage.messageId, // Store WhatsApp message ID for reactions
+        });
       }
-
-      // Salvar mensagem do usuário no histórico (agora COM transcrição/descrição)
-      // 📎 Include media metadata for displaying real files in conversation
-      // 📱 Include wamid for WhatsApp message reactions
-      await saveChatMessage({
-        phone: parsedMessage.phone,
-        message: messageForHistory,
-        type: "user",
-        clientId: config.id,
-        mediaMetadata,
-        wamid: parsedMessage.messageId, // Store WhatsApp message ID for reactions
-      });
 
       logger.finishExecution("success");
       return {

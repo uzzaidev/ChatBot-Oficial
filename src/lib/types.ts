@@ -795,6 +795,8 @@ export interface ContactMetadata {
   experiencia_yoga?: string;
   periodo_preferido?: string;
   dia_preferido?: string;
+  /** Quando false, o bot é pausado e nenhuma mensagem é persistida para o contato. */
+  save_history?: boolean;
   [key: string]: string | number | boolean | null | undefined;
 }
 
