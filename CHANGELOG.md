@@ -10,6 +10,15 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-05-10
 
+### feat
+- Implementada visualização detalhada de contato com edição de nome, status de atendimento e controle de privacidade para salvar histórico de mensagens. Adicionado diálogo modal para detalhes do contato com informações de criação e atualização, além de perfil coletado pelo bot.
+- Remodelada interface do componente `ContactsClient` com nova toolbar, filtro por status via abas, tabela de contatos com seleção múltipla, ações em lote para exclusão de histórico, e melhorias na usabilidade e layout responsivo.
+- Adicionados botões para alternar modo de seleção, importar contatos via CSV e adicionar novo contato diretamente na interface principal.
+- Arquivos: `src/components/ContactsClient.tsx`
+- Confiança: alta
+
+## 2026-05-10
+
 ### refactor
 - Simplificada a lógica de renderização do layout no `DashboardLayoutClient` para ajustar tratamento de rotas, removendo `contacts` das rotas full-screen e adicionando às rotas fluid com sidebar.
 - Ajustada estrutura e estilos do componente `ContactsClient` para remover botões redundantes e simplificar o header da lista de contatos.
