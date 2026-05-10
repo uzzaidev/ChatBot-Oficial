@@ -3,7 +3,6 @@
 import { EmptyState } from "@/components/EmptyState";
 import { ContactNameEditor } from "@/components/ContactNameEditor";
 import { StatusBadge } from "@/components/StatusBadge";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,14 +56,12 @@ import { formatDateTime, formatPhone, getInitials } from "@/lib/utils";
 import {
   AlertCircle,
   AlertTriangle,
-  ArrowLeft,
   ArrowRight,
   Bot,
   CheckCircle,
   CheckSquare,
   Download,
   Eraser,
-  LayoutDashboard,
   List,
   MessageCircle,
   Phone,
@@ -768,40 +765,16 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
     : [];
 
   return (
-    <div className="fixed inset-0 flex overflow-hidden bg-background">
+    <div className="flex flex-1 min-h-0 w-full overflow-hidden bg-background">
       {/* Sidebar com Lista de Contatos */}
-      <div className="w-full lg:w-96 border-r border-border/50 flex flex-col bg-card/95">
+      <div className="w-full lg:w-96 lg:flex-shrink-0 border-r border-border/50 flex flex-col bg-card/95">
         {/* Header */}
         <div className="p-4 border-b border-border/50">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-3">
-              <Users className="h-6 w-6 text-primary" />
-              <h2 className="font-poppins font-semibold text-lg text-primary">
-                Contatos
-              </h2>
-            </div>
-            <div className="flex items-center gap-1">
-              <Link href="/dashboard">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5 border-border/60 text-foreground hover:bg-muted/60"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  <span className="hidden sm:inline">Voltar</span>
-                </Button>
-              </Link>
-              <ThemeToggle />
-              <Link href="/dashboard">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                >
-                  <LayoutDashboard className="h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
+          <div className="flex items-center gap-3">
+            <Users className="h-6 w-6 text-primary" />
+            <h2 className="font-poppins font-semibold text-lg text-primary">
+              Contatos
+            </h2>
           </div>
         </div>
 
