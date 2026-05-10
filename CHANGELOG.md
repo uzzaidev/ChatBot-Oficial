@@ -10,6 +10,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-05-10
 
+### refactor
+- Simplificada a lógica de renderização do layout no `DashboardLayoutClient` para ajustar tratamento de rotas, removendo `contacts` das rotas full-screen e adicionando às rotas fluid com sidebar.
+- Ajustada estrutura e estilos do componente `ContactsClient` para remover botões redundantes e simplificar o header da lista de contatos.
+  - Arquivos: `src/components/DashboardLayoutClient.tsx`, `src/components/ContactsClient.tsx`
+  - Confiança: alta
+
+## 2026-05-10
+
 ### feat
 - Implementado recurso de silenciamento de contato para evitar persistência de mensagens, pausando o bot e bloqueando o salvamento do histórico quando `metadata.save_history` está falso.
 - Adicionada opção no frontend para ativar/desativar o salvamento de mensagens por contato com feedback visual e rollback em caso de erro.
