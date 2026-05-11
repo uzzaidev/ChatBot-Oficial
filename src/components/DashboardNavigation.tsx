@@ -11,14 +11,9 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import {
-  Activity,
-  AlertTriangle,
-  BarChart3,
   BookOpen,
   Bot,
   Calendar,
-  CheckCircle,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   CreditCard,
@@ -36,7 +31,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
 
 interface DashboardNavigationProps {
   userName?: string;
@@ -122,60 +116,6 @@ const NavSection = ({ title, isCollapsed }: NavSectionProps) => {
   return (
     <div className="nav-section-header">
       <span>{title}</span>
-    </div>
-  );
-};
-
-interface NavGroupProps {
-  icon: React.ReactNode;
-  label: string;
-  isCollapsed?: boolean;
-  matchPaths: string[];
-  children: React.ReactNode;
-}
-
-const NavGroup = ({
-  icon,
-  label,
-  isCollapsed,
-  matchPaths,
-  children,
-}: NavGroupProps) => {
-  const pathname = usePathname();
-  const isAnyActive = matchPaths.some((p) => pathname.startsWith(p));
-  const [open, setOpen] = useState(isAnyActive);
-
-  if (isCollapsed) {
-    return null; // Hide grouped sub-items in collapsed mode — only top-level icons shown
-  }
-
-  return (
-    <div>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className={cn(
-          "w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 text-sm font-medium",
-          isAnyActive
-            ? "text-uzz-mint"
-            : "text-muted-foreground hover:bg-primary/10 hover:text-uzz-mint",
-        )}
-      >
-        <div className="w-5 h-5 flex-shrink-0 flex items-center justify-center">
-          {icon}
-        </div>
-        <span className="flex-1 text-left">{label}</span>
-        <ChevronDown
-          className={cn(
-            "h-4 w-4 transition-transform duration-200",
-            open && "rotate-180",
-          )}
-        />
-      </button>
-      {open && (
-        <div className="ml-4 pl-3 border-l border-border/40 space-y-0.5 mt-0.5">
-          {children}
-        </div>
-      )}
     </div>
   );
 };
@@ -296,91 +236,23 @@ export function DashboardNavigation({
         />
 
         {/* SEÇÃO: ANÁLISE */}
-        <NavGroup
+        <NavSection title="Análise" isCollapsed={isCollapsed} />
+        <NavItem
+          href="/dashboard/observability"
           icon={<LineChart className="h-5 w-5 flex-shrink-0" />}
-          label="Análise"
+          label="Observabilidade"
           isCollapsed={isCollapsed}
-          matchPaths={[
-            "/dashboard/traces",
-            "/dashboard/support-bugs",
-            "/dashboard/quality",
-            "/dashboard/analytics-comparison",
-            "/dashboard/meta-ads",
-          ]}
-        >
-          <NavItem
-            href="/dashboard/traces"
-            icon={<Activity className="h-4 w-4 flex-shrink-0" />}
-            label="Traces"
-            isCollapsed={false}
-            isSubItem
-            onClick={onLinkClick}
-            tooltip="Rastreio completo de cada mensagem — pipeline, tool calls e RAG"
-          />
-          <NavItem
-            href="/dashboard/support-bugs"
-            icon={<AlertTriangle className="h-4 w-4 flex-shrink-0" />}
-            label="Suporte/Bugs"
-            isCollapsed={false}
-            isSubItem
-            onClick={onLinkClick}
-            tooltip="Fila de casos detectados de suporte com causa provável e ação recomendada"
-          />
-          <NavItem
-            href="/dashboard/quality"
-            icon={<CheckCircle className="h-4 w-4 flex-shrink-0" />}
-            label="Qualidade"
-            isCollapsed={false}
-            isSubItem
-            onClick={onLinkClick}
-            tooltip="Dashboard com score médio, distribuição PASS/REVIEW/FAIL e custo do juiz automático"
-          />
-          <NavItem
-            href="/dashboard/quality/traces"
-            icon={<Activity className="h-4 w-4 flex-shrink-0" />}
-            label="Traces Qualidade"
-            isCollapsed={false}
-            isSubItem
-            onClick={onLinkClick}
-            tooltip="Lista e detalhe de traces dentro do módulo de qualidade"
-          />
-          <NavItem
-            href="/dashboard/quality/ground-truth"
-            icon={<CheckCircle className="h-4 w-4 flex-shrink-0" />}
-            label="Ground Truth"
-            isCollapsed={false}
-            isSubItem
-            onClick={onLinkClick}
-            tooltip="Gerencie o gabarito por cliente para avaliar e melhorar respostas"
-          />
-          <NavItem
-            href="/dashboard/quality/evaluations"
-            icon={<CheckCircle className="h-4 w-4 flex-shrink-0" />}
-            label="Revisões"
-            isCollapsed={false}
-            isSubItem
-            onClick={onLinkClick}
-            tooltip="Triagem operacional (lista, conversa e detalhe) para feedback humano"
-          />
-          <NavItem
-            href="/dashboard/analytics-comparison"
-            icon={<BarChart3 className="h-4 w-4 flex-shrink-0" />}
-            label="Analytics"
-            isCollapsed={false}
-            isSubItem
-            onClick={onLinkClick}
-            tooltip="Comparação de dados OpenAI oficial vs nosso tracking"
-          />
-          <NavItem
-            href="/dashboard/meta-ads"
-            icon={<TrendingUp className="h-4 w-4 flex-shrink-0" />}
-            label="Meta Ads"
-            isCollapsed={false}
-            isSubItem
-            onClick={onLinkClick}
-            tooltip="Performance de campanhas, ROI e conversões CAPI"
-          />
-        </NavGroup>
+          onClick={onLinkClick}
+          tooltip="Traces, qualidade, ground truth, revisões e suporte/bugs unificados"
+        />
+        <NavItem
+          href="/dashboard/meta-ads"
+          icon={<TrendingUp className="h-5 w-5 flex-shrink-0" />}
+          label="Meta Ads"
+          isCollapsed={isCollapsed}
+          onClick={onLinkClick}
+          tooltip="Performance de campanhas, ROI e conversões CAPI"
+        />
         {/* SEÇÃO: ADMINISTRAÇÃO (admin only) */}
         {userRole === "admin" && (
           <>
