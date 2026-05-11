@@ -10,6 +10,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-05-11
 
+### feat
+- Adicionado script de verificação de tipos TypeScript (`typecheck`) e melhorado cache para build incremental no workflow de CI
+  - Arquivos: `.github/workflows/ci.yml`, `package.json`
+  - Confiança: alta
+
+## 2026-05-11
+
 ### fix
 - Adicionado variável de ambiente NODE_OPTIONS para aumentar memória no processo de checagem de tipos TypeScript no CI
   - Arquivos: `.github/workflows/ci.yml`
