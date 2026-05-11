@@ -26,8 +26,18 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Cache TypeScript incremental build info
+        uses: actions/cache@v4
+        with:
+          path: |
+            *.tsbuildinfo
+            .tsbuildinfo
+          key: tsc-${{ runner.os }}-${{ hashFiles('tsconfig.json', 'pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: |
+            tsc-${{ runner.os }}-${{ hashFiles('tsconfig.json', 'pnpm-lock.yaml') }}-
+
       - name: Type check
-        run: pnpm exec tsc --noEmit
+        run: pnpm typecheck
         env:
           NODE_OPTIONS: --max-old-space-size=6144
 

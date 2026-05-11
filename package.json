@@ -16,6 +16,7 @@
     "export:uzzapp-luis-pdf": "node scripts/export-uzzapp-luis-pdf.js",
     "start": "next start",
     "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
