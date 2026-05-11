@@ -11,6 +11,13 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-05-11
 
 ### feat
+- Melhorada a conversão de dados numéricos na função `listQualityDailyReports` para tratar valores nulos ou indefinidos como `null`, evitando conversões inválidas
+  - Arquivos: `src/lib/quality-daily-report.ts`
+  - Confiança: alta
+
+## 2026-05-11
+
+### feat
 - Adicionado script de verificação de tipos TypeScript (`typecheck`) e melhorado cache para build incremental no workflow de CI
   - Arquivos: `.github/workflows/ci.yml`, `package.json`
   - Confiança: alta
