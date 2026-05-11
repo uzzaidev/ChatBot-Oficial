@@ -10,6 +10,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-05-11
 
+### fix
+- Adicionado variável de ambiente NODE_OPTIONS para aumentar memória no processo de checagem de tipos TypeScript no CI
+  - Arquivos: `.github/workflows/ci.yml`
+  - Evidência: inclusão de `NODE_OPTIONS: --max-old-space-size=6144` na etapa de type check
+  - Confiança: alta
+
+## 2026-05-11
+
 ### feat
 - Adicionada página de Observabilidade com navegação por abas para visualização integrada de traces, avaliações, ground truth e suporte/bugs
   - Arquivos: `src/app/dashboard/observability/page.tsx`, `src/components/DashboardNavigation.tsx`
