@@ -28,6 +28,8 @@ jobs:
 
       - name: Type check
         run: pnpm exec tsc --noEmit
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
 
       - name: Run tests
         run: pnpm test --runInBand
