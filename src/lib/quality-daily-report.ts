@@ -457,8 +457,23 @@ export async function listQualityDailyReports(options: {
     [options.clientId, days],
   );
 
+  const toNullableNumber = (value: unknown): Numeric => {
+    if (value === null || value === undefined) return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+
   return (res.rows ?? []).map((row) => ({
     ...row,
+    totalTraces: toNumber(row.totalTraces),
+    successCount: toNumber(row.successCount),
+    needsReviewCount: toNumber(row.needsReviewCount),
+    failedCount: toNumber(row.failedCount),
+    pendingCount: toNumber(row.pendingCount),
+    successRatePct: toNumber(row.successRatePct),
+    semAgentResponse: toNumber(row.semAgentResponse),
+    avgLatencyMs: toNullableNumber(row.avgLatencyMs),
+    p95LatencyMs: toNullableNumber(row.p95LatencyMs),
     pendingBuckets: row.pending_buckets ?? {},
     metadataCapture:
       row.metadata_capture ??
