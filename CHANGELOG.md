@@ -8,6 +8,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-05-11
+
+### feat
+- Adicionada página de Observabilidade com navegação por abas para visualização integrada de traces, avaliações, ground truth e suporte/bugs
+  - Arquivos: `src/app/dashboard/observability/page.tsx`, `src/components/DashboardNavigation.tsx`
+  - Confiança: alta
+
 ## 2026-05-10
 
 ### feat
