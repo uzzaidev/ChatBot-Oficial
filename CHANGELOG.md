@@ -10,6 +10,16 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-05-14
 
+### feat
+- Adicionado proxy via Cloudflare Worker para Supabase, permitindo contornar problemas de resolução DNS em clientes finais ao usar o domínio `supabase.uzzai.com.br` em vez de `*.supabase.co`. O proxy suporta REST, Auth, Realtime (WebSocket) e Storage, mantendo transparência no tráfego e preservando headers e métodos.
+- Atualizado `next.config.js` para permitir carregamento de imagens do Storage via novo domínio customizado.
+- Configurada variável de ambiente `NEXT_PUBLIC_SUPABASE_URL` para apontar para o proxy em todos os ambientes, sem alteração nas chaves de autenticação.
+- Documentação detalhada adicionada em `docs/setup/CLOUDFLARE_SUPABASE_PROXY.md` explicando o problema, solução, arquitetura, setup e validação do proxy.
+  - Arquivos: `docs/setup/CLOUDFLARE_SUPABASE_PROXY.md`, `next.config.js`
+  - Confiança: alta
+
+## 2026-05-14
+
 ### refactor
 - Refatorada documentação e código para integração do UzzApp com Stripe e isolamento multi-tenant, incluindo atualização de URLs base para produção, padronização de formatação TypeScript, melhorias na segurança (HMAC, rate limiting), e detalhamento dos fluxos principais e integrações.
 - Atualizadas descrições, exemplos e tabelas em 36 arquivos de documentação e runbooks para refletir a arquitetura atualizada, reforçando práticas críticas como uso do Supabase client em serverless, tokens Vault por cliente, e workflows de webhooks Meta, Stripe e outros serviços.
