@@ -463,7 +463,16 @@ export const callDirectAI = async (
     const providerInstance =
       provider === "groq" ? createGroq({ apiKey }) : createOpenAI({ apiKey });
 
-    const modelInstance = providerInstance(model);
+    // For OpenAI, use the Responses API (POST /v1/responses) instead of the
+    // legacy Chat Completions API (POST /v1/chat/completions). Responses API
+    // returns structured output items (message / function_call / reasoning)
+    // separately, which prevents reasoning models (gpt-5.x, o-series) from
+    // leaking tool calls or reasoning into the visible text field.
+    // Groq does not implement Responses API yet — keep Chat Completions there.
+    const modelInstance =
+      provider === "openai"
+        ? (providerInstance as ReturnType<typeof createOpenAI>).responses(model)
+        : providerInstance(model);
 
     // 5. Normalize tools
     const normalizedTools = normalizeToolsForAISDK(config.tools);
