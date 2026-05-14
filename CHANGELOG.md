@@ -10,6 +10,18 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-05-14
 
+### refactor
+- Refatorada documentação e código para integração do UzzApp com Stripe e isolamento multi-tenant, incluindo atualização de URLs base para produção, padronização de formatação TypeScript, melhorias na segurança (HMAC, rate limiting), e detalhamento dos fluxos principais e integrações.
+- Atualizadas descrições, exemplos e tabelas em 36 arquivos de documentação e runbooks para refletir a arquitetura atualizada, reforçando práticas críticas como uso do Supabase client em serverless, tokens Vault por cliente, e workflows de webhooks Meta, Stripe e outros serviços.
+- Melhorias no código do webhook, handlers, integração com Meta WhatsApp API, Stripe Connect, Google/Microsoft Calendar OAuth, Firebase push, e sistema de notificações, com padronização de sintaxe, tratamento de erros e segurança.
+- Atualizados scripts, comandos, variáveis de ambiente e exemplos para uso correto do domínio `https://uzzap.uzzai.com` em vez do antigo `chat.luisfboff.com`.
+- Documentação detalhada sobre limites de rate limiting, deduplicação, segurança, fallback e monitoramento para webhooks e serviços externos.
+- Ajustes em exemplos de payloads JSON, diagramas de sequência, e workflows para refletir a nova arquitetura multi-tenant e integração Stripe Connect.
+  - Arquivos: `docs/*.md`, `checkpoints/2026-02-19_chatbot-oficial/*`, `checkpoints/2026-03-15_chatbot-oficial/*`, `src/app/api/webhook/[clientId]/route.ts`, `src/lib/meta.ts`, `src/nodes/*`, `src/handlers/*`
+  - Confiança: alta
+
+## 2026-05-14
+
 ### feat
 - Adicionado padrão remoto para imagens do domínio `supabase.uzzai.com.br` na configuração do Next.js
   - Arquivos: `next.config.js`
