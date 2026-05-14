@@ -20,6 +20,7 @@ https://app.supabase.com/project/_/sql
 ```
 
 **O que verificar**:
+
 - ✅ Cliente `59ed984e-85f4-4784-ae76-2569371296af` existe na tabela `clients`?
 - ✅ Campo `system_prompt` está preenchido corretamente?
 - ✅ Prompts dos dois clientes são **diferentes**?
@@ -61,23 +62,29 @@ npm run dev
 **Cenários possíveis**:
 
 #### ❌ Cenário 1: Client ID está ERRADO nos logs
+
 ```
 Client ID: b21b314f-c49a-467d-94b3-a21ed4412227  ← OUTRO CLIENTE!
 ```
+
 **Causa**: Webhook está sendo chamado com client_id errado na URL
 **Solução**: Verificar URL configurada no Meta Dashboard (deve ser `/api/webhook/59ed984e-85f4-4784-ae76-2569371296af`)
 
 #### ❌ Cenário 2: Prompt está IGUAL ao do outro cliente
+
 ```
 System Prompt Preview: ## Papel\nVocê é o assistente principal...  ← PROMPT DO LUIS BOFF!
 ```
+
 **Causa**: Prompt não foi customizado para o cliente SPORTS TRAINING
 **Solução**: Atualizar prompt via Settings (`/dashboard/settings`)
 
 #### ❌ Cenário 3: `Using DEFAULT_SYSTEM_PROMPT: true`
+
 ```
 Using DEFAULT_SYSTEM_PROMPT: true
 ```
+
 **Causa**: Campo `system_prompt` está NULL no banco
 **Solução**: Executar UPDATE no banco para preencher o prompt
 
@@ -89,26 +96,28 @@ Using DEFAULT_SYSTEM_PROMPT: true
 
 ```
 Cliente Default:
-https://chat.luisfboff.com/api/webhook/b21b314f-c49a-467d-94b3-a21ed4412227
+https://uzzap.uzzai.com/api/webhook/b21b314f-c49a-467d-94b3-a21ed4412227
 
 Cliente SPORTS TRAINING:
-https://chat.luisfboff.com/api/webhook/59ed984e-85f4-4784-ae76-2569371296af
+https://uzzap.uzzai.com/api/webhook/59ed984e-85f4-4784-ae76-2569371296af
                                           ↑
                                           DEVE SER DIFERENTE!
 ```
 
 **Como verificar**:
+
 1. Abrir Meta Developer Console: https://developers.facebook.com/apps/
 2. Selecionar App do cliente SPORTS TRAINING
 3. WhatsApp → Configuration
 4. Verificar "Callback URL"
 
 **Se URL estiver errada**:
+
 ```
-❌ https://chat.luisfboff.com/api/webhook/b21b314f-c49a-467d-94b3-a21ed4412227
+❌ https://uzzap.uzzai.com/api/webhook/b21b314f-c49a-467d-94b3-a21ed4412227
    (usando client_id do outro cliente!)
 
-✅ https://chat.luisfboff.com/api/webhook/59ed984e-85f4-4784-ae76-2569371296af
+✅ https://uzzap.uzzai.com/api/webhook/59ed984e-85f4-4784-ae76-2569371296af
    (client_id correto)
 ```
 
@@ -124,6 +133,7 @@ O sistema NÃO tem cache de `ClientConfig`, mas verificar:
 ```
 
 **Para forçar limpeza de cache de bot configs**:
+
 ```sql
 -- Não é possível limpar via SQL (cache é em memória Node.js)
 -- Solução: Reiniciar servidor
@@ -138,7 +148,7 @@ O sistema NÃO tem cache de `ClientConfig`, mas verificar:
 ```sql
 -- Executar no Supabase SQL Editor
 UPDATE public.clients
-SET 
+SET
   system_prompt = 'SEU_PROMPT_CUSTOMIZADO_AQUI',
   updated_at = NOW()
 WHERE id = '59ed984e-85f4-4784-ae76-2569371296af';
@@ -149,7 +159,7 @@ WHERE id = '59ed984e-85f4-4784-ae76-2569371296af';
 1. Meta Developer Console → WhatsApp → Configuration
 2. Atualizar "Callback URL" para:
    ```
-   https://chat.luisfboff.com/api/webhook/59ed984e-85f4-4784-ae76-2569371296af
+   https://uzzap.uzzai.com/api/webhook/59ed984e-85f4-4784-ae76-2569371296af
    ```
 3. Salvar e re-verificar webhook
 
@@ -157,7 +167,7 @@ WHERE id = '59ed984e-85f4-4784-ae76-2569371296af';
 
 ```sql
 -- Garantir que cada cliente tem dados únicos
-SELECT 
+SELECT
   id,
   name,
   LEFT(system_prompt, 50) as prompt_preview,
@@ -169,6 +179,7 @@ ORDER BY created_at DESC;
 ```
 
 **Cada cliente DEVE ter**:
+
 - ✅ `id` único (UUID diferente)
 - ✅ `system_prompt` diferente (ou pelo menos customizado)
 - ✅ `meta_phone_number_id` diferente
@@ -179,6 +190,7 @@ ORDER BY created_at DESC;
 ## Código Responsável pelo Isolamento
 
 ### 1. Webhook recebe clientId da URL
+
 ```typescript
 // src/app/api/webhook/[clientId]/route.ts
 export async function POST(
@@ -193,6 +205,7 @@ export async function POST(
 ```
 
 ### 2. Config é buscado do banco por client_id
+
 ```typescript
 // src/lib/config.ts
 export const getClientConfig = async (clientId: string) => {
@@ -202,18 +215,19 @@ export const getClientConfig = async (clientId: string) => {
     .eq('id', clientId)  ← Filtra por client_id
     .eq('status', 'active')
     .single()
-  
+
   // ...descriptografa secrets e retorna config
 }
 ```
 
 ### 3. Prompt é usado na geração da resposta
+
 ```typescript
 // src/nodes/generateAIResponse.ts
 export const generateAIResponse = async (input: GenerateAIResponseInput) => {
   const { config } = input
   const systemPrompt = config.prompts.systemPrompt  ← Usa prompt do config
-  
+
   const messages = [
     { role: 'system', content: systemPrompt }  ← Injeta no chat
   ]
@@ -226,12 +240,14 @@ export const generateAIResponse = async (input: GenerateAIResponseInput) => {
 ## Garantias de Isolamento
 
 **O sistema garante isolamento se**:
+
 1. ✅ Cada cliente tem webhook URL com `client_id` único
 2. ✅ Cada mensagem usa o `config` carregado do banco via `client_id`
 3. ✅ Não há cache compartilhado entre clientes
 4. ✅ Cada cliente tem `system_prompt` diferente no banco
 
 **Pontos de falha possíveis**:
+
 1. ❌ Webhook configurado com `client_id` errado no Meta Dashboard
 2. ❌ Prompt não foi customizado (todos os clientes têm o mesmo prompt)
 3. ❌ Erro no código que sobrescreve `config` (não deveria acontecer)

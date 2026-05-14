@@ -7,8 +7,9 @@ Guia prático para implementar deep linking (App Links e Custom URL Scheme) no a
 Permitir abrir o app mobile diretamente de URLs, sem passar pelo browser.
 
 **Exemplos:**
+
 - `chatbot://chat/123` → Abre chat específico
-- `https://chat.luisfboff.com/chat/123` → Abre chat específico (App Link)
+- `https://uzzap.uzzai.com/chat/123` → Abre chat específico (App Link)
 
 ## ⏱️ Tempo Estimado
 
@@ -19,19 +20,22 @@ Permitir abrir o app mobile diretamente de URLs, sem passar pelo browser.
 ## ✅ O Que Já Foi Implementado
 
 1. ✅ **Código TypeScript** (`src/lib/deepLinking.ts`)
+
    - Listeners de deep links
    - Processamento de URLs
    - Navegação automática
 
 2. ✅ **Provider React** (`src/components/DeepLinkingProvider.tsx`)
+
    - Inicialização automática no app startup
 
 3. ✅ **Integração no Layout** (`src/app/layout.tsx`)
+
    - Provider já adicionado
 
 4. ✅ **AndroidManifest.xml**
    - Intent-filters para Custom URL Scheme (`chatbot://`)
-   - Intent-filters para App Links (`https://chat.luisfboff.com`)
+   - Intent-filters para App Links (`https://uzzap.uzzai.com`)
 
 ---
 
@@ -68,11 +72,13 @@ adb shell am start -a android.intent.action.VIEW -d "chatbot://chat/123" com.cha
 ```
 
 **O que deve acontecer:**
+
 - App abre (se não estiver rodando)
 - Console mostra: `[Deep Linking] App opened with URL: chatbot://chat/123`
 - App navega para `/dashboard/chat/123`
 
 **Verificar no console:**
+
 ```bash
 # Abrir Chrome DevTools
 chrome://inspect
@@ -85,22 +91,25 @@ chrome://inspect
 
 ### Passo 4: Testar App Links (Opcional - Requer Servidor)
 
-**App Links** (`https://chat.luisfboff.com/chat/123`) requer:
+**App Links** (`https://uzzap.uzzai.com/chat/123`) requer:
 
 1. **Arquivo `assetlinks.json` no servidor:**
+
    ```
-   https://chat.luisfboff.com/.well-known/assetlinks.json
+   https://uzzap.uzzai.com/.well-known/assetlinks.json
    ```
 
 2. **SHA256 fingerprint do keystore:**
+
    ```bash
    # Debug keystore (desenvolvimento)
    keytool -list -v -keystore %USERPROFILE%\.android\debug.keystore -alias androiddebugkey -storepass android -keypass android
-   
+
    # Copiar SHA256 fingerprint
    ```
 
 3. **Criar `assetlinks.json`:**
+
    ```json
    [
      {
@@ -108,15 +117,14 @@ chrome://inspect
        "target": {
          "namespace": "android_app",
          "package_name": "com.chatbot.app",
-         "sha256_cert_fingerprints": [
-           "SEU_SHA256_AQUI"
-         ]
+         "sha256_cert_fingerprints": ["SEU_SHA256_AQUI"]
        }
      }
    ]
    ```
 
 4. **Upload para servidor:**
+
    - Colocar em `/.well-known/assetlinks.json`
    - HTTPS obrigatório
    - Content-Type: `application/json`
@@ -139,6 +147,7 @@ adb shell am start -a android.intent.action.VIEW -d "chatbot://chat/123" com.cha
 ```
 
 **Esperado:**
+
 - App abre
 - Navega para `/dashboard/chat/123`
 
@@ -149,16 +158,18 @@ adb shell am start -a android.intent.action.VIEW -d "chatbot://dashboard" com.ch
 ```
 
 **Esperado:**
+
 - App abre
 - Navega para `/dashboard`
 
 ### Teste 3: App Link (Se configurado)
 
 ```bash
-adb shell am start -a android.intent.action.VIEW -d "https://chat.luisfboff.com/chat/123" com.chatbot.app
+adb shell am start -a android.intent.action.VIEW -d "https://uzzap.uzzai.com/chat/123" com.chatbot.app
 ```
 
 **Esperado:**
+
 - App abre (se `assetlinks.json` configurado)
 - Navega para `/dashboard/chat/123`
 
@@ -168,12 +179,12 @@ adb shell am start -a android.intent.action.VIEW -d "https://chat.luisfboff.com/
 
 O código processa as seguintes rotas:
 
-| URL | Rota Interna | Descrição |
-|-----|--------------|-----------|
-| `chatbot://chat/123` | `/dashboard/chat/123` | Abre chat específico |
-| `chatbot://dashboard` | `/dashboard` | Abre dashboard |
-| `https://chat.luisfboff.com/chat/123` | `/dashboard/chat/123` | App Link (requer config) |
-| `https://chat.luisfboff.com/invite/abc` | `/invite/abc` | Convite (se implementado) |
+| URL                                  | Rota Interna          | Descrição                 |
+| ------------------------------------ | --------------------- | ------------------------- |
+| `chatbot://chat/123`                 | `/dashboard/chat/123` | Abre chat específico      |
+| `chatbot://dashboard`                | `/dashboard`          | Abre dashboard            |
+| `https://uzzap.uzzai.com/chat/123`   | `/dashboard/chat/123` | App Link (requer config)  |
+| `https://uzzap.uzzai.com/invite/abc` | `/invite/abc`         | Convite (se implementado) |
 
 ---
 
@@ -186,6 +197,7 @@ O código processa as seguintes rotas:
 **Soluções:**
 
 1. **Verificar logs:**
+
    ```bash
    # Chrome DevTools
    chrome://inspect
@@ -193,6 +205,7 @@ O código processa as seguintes rotas:
    ```
 
 2. **Verificar intent-filter:**
+
    ```bash
    adb shell dumpsys package com.chatbot.app | findstr -i "filter"
    # Deve mostrar intent-filters configurados
@@ -209,6 +222,7 @@ O código processa as seguintes rotas:
 **Causa:** Listener não está registrado ou URL não está sendo processada.
 
 **Solução:**
+
 - Verificar console: deve mostrar `[Deep Linking] Inicializando listeners...`
 - Verificar URL: deve estar no formato correto
 - Verificar rotas: devem existir no app
@@ -218,6 +232,7 @@ O código processa as seguintes rotas:
 **Causa:** `assetlinks.json` não configurado ou `android:autoVerify` não está no intent-filter.
 
 **Solução:**
+
 - Adicionar `android:autoVerify="true"` no intent-filter
 - Configurar `assetlinks.json` no servidor
 - Verificar SHA256 fingerprint correto
@@ -237,6 +252,7 @@ Após testar deep linking:
 ## 📚 Documentação Completa
 
 Para detalhes avançados, ver:
+
 - [DEEP_LINKING.md](./DEEP_LINKING.md) - Guia completo com iOS, troubleshooting, etc.
 
 ---
@@ -244,4 +260,3 @@ Para detalhes avançados, ver:
 **Status:** Código implementado ✅ | Configuração pendente ⏳
 
 **Path do Projeto**: `C:\Users\pedro\OneDrive\Área de Trabalho\ChatBot-Oficial\ChatBot-Oficial`
-

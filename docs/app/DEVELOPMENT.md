@@ -85,6 +85,7 @@ npx cap sync
 ```
 
 **Notas**:
+
 - `CAPACITOR_BUILD=true` ativa export estático via `next.config.js`
 - `doppler run --config <env>` injeta environment variables do Doppler
 - Três ambientes disponíveis: `dev`, `stg` (staging), `prd` (produção)
@@ -107,6 +108,7 @@ npm run dev
 ```
 
 **Vantagens:**
+
 - Hot reload instantâneo
 - DevTools completo
 - Sem rebuild mobile
@@ -121,28 +123,29 @@ Se a feature usa plugins Capacitor (câmera, geolocalização, etc.):
 
 ```typescript
 // src/components/ExampleFeature.tsx
-'use client'
+"use client";
 
-import { Capacitor } from '@capacitor/core'
-import { Camera } from '@capacitor/camera'
+import { Capacitor } from "@capacitor/core";
+import { Camera } from "@capacitor/camera";
 
 const takePhoto = async () => {
   if (!Capacitor.isNativePlatform()) {
-    alert('Funcionalidade disponível apenas no app mobile')
-    return
+    alert("Funcionalidade disponível apenas no app mobile");
+    return;
   }
 
   const image = await Camera.getPhoto({
     quality: 90,
     allowEditing: false,
-    resultType: 'uri'
-  })
+    resultType: "uri",
+  });
 
-  console.log('Photo URI:', image.webPath)
-}
+  console.log("Photo URI:", image.webPath);
+};
 ```
 
 **Checklist:**
+
 - [ ] Função funciona na web (com fallback)
 - [ ] Lógica mobile isolada com `Capacitor.isNativePlatform()`
 - [ ] Tratamento de erro implementado
@@ -157,6 +160,7 @@ npm run build:mobile && npm run cap:sync && npm run cap:open:android
 ```
 
 **O que acontece:**
+
 1. Next.js gera build estático em `out/`
 2. Capacitor copia arquivos para `android/app/src/main/assets/public/`
 3. Android Studio abre o projeto
@@ -175,11 +179,13 @@ No Android Studio:
 4. Teste a feature no app
 
 **Verificação:**
+
 - [ ] Feature aparece no app
 - [ ] Funciona como esperado
 - [ ] Sem crashes ou erros
 
 **Troubleshooting:**
+
 - Mudança não aparece → Rebuild + sync novamente
 - App crasha → Verifique Logcat (aba inferior Android Studio)
 
@@ -224,21 +230,21 @@ Anote o IP (ex: `192.168.1.100`)
 
 ```typescript
 // capacitor.config.ts
-import { CapacitorConfig } from '@capacitor/cli'
+import { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: 'com.chatbot.app',
-  appName: 'ChatBot Oficial',
-  webDir: 'out',
+  appId: "com.chatbot.app",
+  appName: "ChatBot Oficial",
+  webDir: "out",
 
   // ADICIONE ESTA SEÇÃO (apenas para desenvolvimento)
   server: {
-    url: 'http://192.168.1.100:3000',  // SEU IP:3000
-    cleartext: true  // Permite HTTP (não-HTTPS)
-  }
-}
+    url: "http://192.168.1.100:3000", // SEU IP:3000
+    cleartext: true, // Permite HTTP (não-HTTPS)
+  },
+};
 
-export default config
+export default config;
 ```
 
 **IMPORTANTE**: Remova `server` antes de buildar para produção!
@@ -264,16 +270,19 @@ npm run cap:open:android
 ```
 
 **O que acontece:**
+
 - App mobile conecta ao dev server via WiFi
 - Mudanças no código refletem instantaneamente (hot reload)
 - Sem necessidade de rebuild mobile
 
 **Requisitos:**
+
 - [ ] Computador e device/emulador na mesma rede WiFi
 - [ ] Firewall permite porta 3000
 - [ ] IP configurado corretamente
 
 **Verificação:**
+
 - Faça mudança em componente React
 - Salve arquivo
 - App mobile atualiza automaticamente (1-2s)
@@ -287,14 +296,15 @@ Antes de buildar para produção, **remova** a seção `server`:
 ```typescript
 // capacitor.config.ts (PRODUÇÃO)
 const config: CapacitorConfig = {
-  appId: 'com.chatbot.app',
-  appName: 'ChatBot Oficial',
-  webDir: 'out',
+  appId: "com.chatbot.app",
+  appName: "ChatBot Oficial",
+  webDir: "out",
   // NÃO INCLUIR server: {...} em produção!
-}
+};
 ```
 
 Rebuild:
+
 ```bash
 npm run build:mobile
 npm run cap:sync
@@ -307,23 +317,23 @@ npm run cap:sync
 ### Verificar se Está no Mobile
 
 ```typescript
-import { Capacitor } from '@capacitor/core'
+import { Capacitor } from "@capacitor/core";
 
 // Simples boolean
 if (Capacitor.isNativePlatform()) {
-  console.log('Rodando no mobile (Android/iOS)')
+  console.log("Rodando no mobile (Android/iOS)");
 } else {
-  console.log('Rodando no browser (web)')
+  console.log("Rodando no browser (web)");
 }
 
 // Plataforma específica
-const platform = Capacitor.getPlatform()
+const platform = Capacitor.getPlatform();
 // Retorna: 'web' | 'android' | 'ios'
 
-if (platform === 'android') {
-  console.log('Android')
-} else if (platform === 'ios') {
-  console.log('iOS')
+if (platform === "android") {
+  console.log("Android");
+} else if (platform === "ios") {
+  console.log("iOS");
 }
 ```
 
@@ -332,17 +342,17 @@ if (platform === 'android') {
 ### Exemplo: Feature com Fallback
 
 ```typescript
-'use client'
+"use client";
 
-import { Capacitor } from '@capacitor/core'
-import { Share } from '@capacitor/share'
+import { Capacitor } from "@capacitor/core";
+import { Share } from "@capacitor/share";
 
 const handleShare = async () => {
   const shareData = {
-    title: 'ChatBot Oficial',
-    text: 'Confira este chatbot incrível!',
-    url: 'https://chat.luisfboff.com'
-  }
+    title: "ChatBot Oficial",
+    text: "Confira este chatbot incrível!",
+    url: "https://uzzap.uzzai.com",
+  };
 
   if (Capacitor.isNativePlatform()) {
     // Mobile: Usar plugin nativo
@@ -350,19 +360,19 @@ const handleShare = async () => {
       title: shareData.title,
       text: shareData.text,
       url: shareData.url,
-      dialogTitle: 'Compartilhar'
-    })
+      dialogTitle: "Compartilhar",
+    });
   } else {
     // Web: Usar Web Share API ou fallback
     if (navigator.share) {
-      await navigator.share(shareData)
+      await navigator.share(shareData);
     } else {
       // Fallback: copiar link
-      navigator.clipboard.writeText(shareData.url)
-      alert('Link copiado para clipboard!')
+      navigator.clipboard.writeText(shareData.url);
+      alert("Link copiado para clipboard!");
     }
   }
-}
+};
 ```
 
 ---
@@ -370,42 +380,42 @@ const handleShare = async () => {
 ### Exemplo: Conditional Import
 
 ```typescript
-'use client'
+"use client";
 
-import { Capacitor } from '@capacitor/core'
-import { useState, useEffect } from 'react'
+import { Capacitor } from "@capacitor/core";
+import { useState, useEffect } from "react";
 
 const useDeviceInfo = () => {
-  const [deviceInfo, setDeviceInfo] = useState<any>(null)
+  const [deviceInfo, setDeviceInfo] = useState<any>(null);
 
   useEffect(() => {
     const loadDeviceInfo = async () => {
       if (Capacitor.isNativePlatform()) {
-        const { Device } = await import('@capacitor/device')
-        const info = await Device.getInfo()
-        setDeviceInfo(info)
+        const { Device } = await import("@capacitor/device");
+        const info = await Device.getInfo();
+        setDeviceInfo(info);
       } else {
-        setDeviceInfo({ platform: 'web' })
+        setDeviceInfo({ platform: "web" });
       }
-    }
+    };
 
-    loadDeviceInfo()
-  }, [])
+    loadDeviceInfo();
+  }, []);
 
-  return deviceInfo
-}
+  return deviceInfo;
+};
 
 // Uso
 const MyComponent = () => {
-  const deviceInfo = useDeviceInfo()
+  const deviceInfo = useDeviceInfo();
 
   return (
     <div>
       <p>Platform: {deviceInfo?.platform}</p>
-      <p>OS Version: {deviceInfo?.osVersion || 'N/A'}</p>
+      <p>OS Version: {deviceInfo?.osVersion || "N/A"}</p>
     </div>
-  )
-}
+  );
+};
 ```
 
 ---
@@ -449,42 +459,41 @@ src/
 
 ```typescript
 // src/hooks/usePlatform.ts
-'use client'
+"use client";
 
-import { Capacitor } from '@capacitor/core'
-import { useState, useEffect } from 'react'
+import { Capacitor } from "@capacitor/core";
+import { useState, useEffect } from "react";
 
 export const usePlatform = () => {
-  const [platform, setPlatform] = useState<'web' | 'android' | 'ios'>('web')
-  const [isNative, setIsNative] = useState(false)
+  const [platform, setPlatform] = useState<"web" | "android" | "ios">("web");
+  const [isNative, setIsNative] = useState(false);
 
   useEffect(() => {
-    const currentPlatform = Capacitor.getPlatform() as 'web' | 'android' | 'ios'
-    setPlatform(currentPlatform)
-    setIsNative(Capacitor.isNativePlatform())
-  }, [])
+    const currentPlatform = Capacitor.getPlatform() as
+      | "web"
+      | "android"
+      | "ios";
+    setPlatform(currentPlatform);
+    setIsNative(Capacitor.isNativePlatform());
+  }, []);
 
-  return { platform, isNative, isWeb: !isNative }
-}
+  return { platform, isNative, isWeb: !isNative };
+};
 
 // Uso
 const MyComponent = () => {
-  const { platform, isNative } = usePlatform()
+  const { platform, isNative } = usePlatform();
 
   return (
     <div>
       {isNative ? (
-        <button onClick={handleNativeFeature}>
-          Usar Câmera
-        </button>
+        <button onClick={handleNativeFeature}>Usar Câmera</button>
       ) : (
-        <button onClick={handleWebFeature}>
-          Upload de Arquivo
-        </button>
+        <button onClick={handleWebFeature}>Upload de Arquivo</button>
       )}
     </div>
-  )
-}
+  );
+};
 ```
 
 ---
@@ -493,30 +502,30 @@ const MyComponent = () => {
 
 ### ❌ NÃO Funciona (Static Export)
 
-| Feature | Razão | Solução |
-|---------|-------|---------|
-| `getServerSideProps` | Requer servidor Node.js | Usar `'use client'` + fetch no cliente |
-| `getStaticProps` com `revalidate` | ISR não suportado | Dados estáticos ou fetch dinâmico |
-| API Routes (`/api/*`) | Requer servidor | Mover para backend Vercel (separado) |
-| Middleware | Executa no servidor | Lógica no cliente ou backend |
-| Server Components | Requer servidor | Converter para `'use client'` |
-| Dynamic imports com SSR | Renderização server-side | Usar dynamic import client-side |
-| `rewrites`/`redirects` em `next.config.js` | Edge runtime | Implementar no cliente (Router) |
+| Feature                                    | Razão                    | Solução                                |
+| ------------------------------------------ | ------------------------ | -------------------------------------- |
+| `getServerSideProps`                       | Requer servidor Node.js  | Usar `'use client'` + fetch no cliente |
+| `getStaticProps` com `revalidate`          | ISR não suportado        | Dados estáticos ou fetch dinâmico      |
+| API Routes (`/api/*`)                      | Requer servidor          | Mover para backend Vercel (separado)   |
+| Middleware                                 | Executa no servidor      | Lógica no cliente ou backend           |
+| Server Components                          | Requer servidor          | Converter para `'use client'`          |
+| Dynamic imports com SSR                    | Renderização server-side | Usar dynamic import client-side        |
+| `rewrites`/`redirects` em `next.config.js` | Edge runtime             | Implementar no cliente (Router)        |
 
 ---
 
 ### ✅ Funciona
 
-| Feature | Status |
-|---------|--------|
-| Client Components (`'use client'`) | ✅ Totalmente suportado |
-| React Hooks | ✅ Funciona normalmente |
-| Client-side data fetching | ✅ `useEffect` + fetch/axios |
-| CSS Modules / Tailwind | ✅ Funciona normalmente |
-| Dynamic routing (`[id]`) | ✅ Gerado como HTML estático |
-| Environment variables `NEXT_PUBLIC_*` | ✅ Injetado em build-time |
-| Plugins Capacitor | ✅ Camera, Storage, Share, etc. |
-| Client-side navigation | ✅ `useRouter()` funciona |
+| Feature                               | Status                          |
+| ------------------------------------- | ------------------------------- |
+| Client Components (`'use client'`)    | ✅ Totalmente suportado         |
+| React Hooks                           | ✅ Funciona normalmente         |
+| Client-side data fetching             | ✅ `useEffect` + fetch/axios    |
+| CSS Modules / Tailwind                | ✅ Funciona normalmente         |
+| Dynamic routing (`[id]`)              | ✅ Gerado como HTML estático    |
+| Environment variables `NEXT_PUBLIC_*` | ✅ Injetado em build-time       |
+| Plugins Capacitor                     | ✅ Camera, Storage, Share, etc. |
+| Client-side navigation                | ✅ `useRouter()` funciona       |
 
 ---
 
@@ -526,13 +535,13 @@ const MyComponent = () => {
 
 ```typescript
 // app/dashboard/page.tsx
-import { createServerClient } from '@/lib/supabase/server'
+import { createServerClient } from "@/lib/supabase/server";
 
 export default async function Dashboard() {
-  const supabase = createServerClient()
-  const { data } = await supabase.from('clients').select('*')
+  const supabase = createServerClient();
+  const { data } = await supabase.from("clients").select("*");
 
-  return <div>{data.length} clients</div>
+  return <div>{data.length} clients</div>;
 }
 ```
 
@@ -540,24 +549,24 @@ export default async function Dashboard() {
 
 ```typescript
 // app/dashboard/page.tsx
-'use client'
+"use client";
 
-import { createClient } from '@/lib/supabase/client'
-import { useEffect, useState } from 'react'
+import { createClient } from "@/lib/supabase/client";
+import { useEffect, useState } from "react";
 
 export default function Dashboard() {
-  const [clientCount, setClientCount] = useState(0)
+  const [clientCount, setClientCount] = useState(0);
 
   useEffect(() => {
     const fetchClients = async () => {
-      const supabase = createClient()
-      const { data } = await supabase.from('clients').select('*')
-      setClientCount(data?.length || 0)
-    }
-    fetchClients()
-  }, [])
+      const supabase = createClient();
+      const { data } = await supabase.from("clients").select("*");
+      setClientCount(data?.length || 0);
+    };
+    fetchClients();
+  }, []);
 
-  return <div>{clientCount} clients</div>
+  return <div>{clientCount} clients</div>;
 }
 ```
 
@@ -574,6 +583,7 @@ export default function Dashboard() {
 5. Acesse console, network, elements, etc.
 
 **Verificação:**
+
 - [ ] App aparece na lista `chrome://inspect`
 - [ ] DevTools abre normalmente
 - [ ] Console mostra logs do app
@@ -594,6 +604,7 @@ adb logcat *:E | findstr "Capacitor"
 ```
 
 **Dicas:**
+
 - Procure por `WebView` para erros JavaScript
 - Procure por `Capacitor` para logs de plugins
 
@@ -613,15 +624,15 @@ adb logcat *:E | findstr "Capacitor"
 
 ```typescript
 // Log específico para mobile
-import { Capacitor } from '@capacitor/core'
+import { Capacitor } from "@capacitor/core";
 
 const logMobile = (...args: any[]) => {
   if (Capacitor.isNativePlatform()) {
-    console.log('[MOBILE]', ...args)
+    console.log("[MOBILE]", ...args);
   }
-}
+};
 
-logMobile('Feature executada')
+logMobile("Feature executada");
 ```
 
 **Produção**: Remova logs ou use biblioteca como `loglevel`.
@@ -662,24 +673,24 @@ npm install @capacitor/storage
 
 ```typescript
 // src/lib/config.ts
-'use client'
+"use client";
 
 const validateEnvVars = () => {
   const required = [
-    'NEXT_PUBLIC_SUPABASE_URL',
-    'NEXT_PUBLIC_SUPABASE_ANON_KEY'
-  ]
+    "NEXT_PUBLIC_SUPABASE_URL",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+  ];
 
-  const missing = required.filter(key => !process.env[key])
+  const missing = required.filter((key) => !process.env[key]);
 
   if (missing.length > 0) {
-    throw new Error(`Missing env vars: ${missing.join(', ')}`)
+    throw new Error(`Missing env vars: ${missing.join(", ")}`);
   }
-}
+};
 
 // Validar no app startup
-if (typeof window !== 'undefined') {
-  validateEnvVars()
+if (typeof window !== "undefined") {
+  validateEnvVars();
 }
 ```
 
@@ -696,7 +707,7 @@ const handleAction = async () => {
   } else {
     // Fallback web (API browser ou mensagem)
   }
-}
+};
 ```
 
 ---
@@ -716,6 +727,7 @@ npm run cap:sync
 ```
 
 **Quando fazer:**
+
 - Mudanças não aparecem no app
 - Comportamento estranho após várias iterações
 - Após atualizar Capacitor
@@ -724,15 +736,15 @@ npm run cap:sync
 
 ## Troubleshooting Rápido
 
-| Problema | Causa | Solução |
-|----------|-------|---------|
-| Mudanças não aparecem | Cache do build | Rebuild: `npm run build:mobile && npm run cap:sync` |
-| App crasha ao abrir | Env vars não configuradas | Verificar `.env.mobile` e rebuild |
-| Plugin não funciona | Permissões faltando | Adicionar em `AndroidManifest.xml` |
-| Live reload não conecta | IP errado ou firewall | Verificar IP com `ipconfig`, desabilitar firewall temporariamente |
-| Gradle sync falha | Internet lenta ou cache corrompido | Android Studio → File → Invalidate Caches |
-| Device não detectado | USB debugging desabilitado | Habilitar USB debugging em Developer Options |
-| Build web funciona, mobile não | Feature usa SSR | Converter para `'use client'` com fetch |
+| Problema                       | Causa                              | Solução                                                           |
+| ------------------------------ | ---------------------------------- | ----------------------------------------------------------------- |
+| Mudanças não aparecem          | Cache do build                     | Rebuild: `npm run build:mobile && npm run cap:sync`               |
+| App crasha ao abrir            | Env vars não configuradas          | Verificar `.env.mobile` e rebuild                                 |
+| Plugin não funciona            | Permissões faltando                | Adicionar em `AndroidManifest.xml`                                |
+| Live reload não conecta        | IP errado ou firewall              | Verificar IP com `ipconfig`, desabilitar firewall temporariamente |
+| Gradle sync falha              | Internet lenta ou cache corrompido | Android Studio → File → Invalidate Caches                         |
+| Device não detectado           | USB debugging desabilitado         | Habilitar USB debugging em Developer Options                      |
+| Build web funciona, mobile não | Feature usa SSR                    | Converter para `'use client'` com fetch                           |
 
 **Problemas detalhados**: Ver [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
 

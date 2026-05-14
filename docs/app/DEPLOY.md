@@ -67,16 +67,19 @@ keytool -genkey -v -keystore android\app\release.keystore -alias chatbot -keyalg
 ```
 
 **Resultado:**
+
 - Arquivo criado: `android/app/release.keystore`
 - Alias: `chatbot`
 
 **BACKUP:**
+
 ```bash
 # Copiar para local seguro (NÃO commitar no git!)
 Copy-Item android\app\release.keystore C:\Backup\chatbot-release.keystore
 ```
 
 **Adicionar ao .gitignore:**
+
 ```gitignore
 # android/.gitignore
 *.keystore
@@ -159,6 +162,7 @@ cd android
 ```
 
 **Verificação:**
+
 ```bash
 dir android\app\build\outputs\bundle\release\app-release.aab
 # Tamanho: ~10-30 MB
@@ -226,6 +230,7 @@ Tecnologias: Next.js, Supabase, OpenAI, Groq, Meta WhatsApp Business API
 #### Screenshots
 
 **Requisitos:**
+
 - Mínimo: 2 screenshots
 - Recomendado: 5-8 screenshots
 - Formato: PNG ou JPG
@@ -234,12 +239,14 @@ Tecnologias: Next.js, Supabase, OpenAI, Groq, Meta WhatsApp Business API
   - Tablet: 1200-7680px
 
 **Dicas:**
+
 - Mostre features principais
 - Use device frames (mockups)
 - Adicione captions explicativos
 - Primeira screenshot é a mais importante (aparece na busca)
 
 **Ferramentas:**
+
 - [Mockuphone](https://mockuphone.com/) - Device mockups
 - [Screely](https://www.screely.com/) - Browser mockups
 
@@ -255,7 +262,7 @@ Tecnologias: Next.js, Supabase, OpenAI, Groq, Meta WhatsApp Business API
 #### Informações de Contato
 
 - **Email**: seu-email@exemplo.com
-- **Website**: https://chat.luisfboff.com
+- **Website**: https://uzzap.uzzai.com
 - **Telefone**: (opcional)
 
 ---
@@ -267,15 +274,18 @@ Tecnologias: Next.js, Supabase, OpenAI, Groq, Meta WhatsApp Business API
 **Opções:**
 
 1. **Criar página no site:**
+
 ```
-https://chat.luisfboff.com/privacy-policy
+https://uzzap.uzzai.com/privacy-policy
 ```
 
 2. **Usar gerador:**
+
 - [TermsFeed Privacy Policy Generator](https://www.termsfeed.com/privacy-policy-generator/)
 - [App Privacy Policy Generator](https://app-privacy-policy-generator.nisrulz.com/)
 
 **Conteúdo mínimo:**
+
 - Quais dados coletamos (email, mensagens, metadados)
 - Como usamos (prover serviço, melhorias)
 - Como armazenamos (Supabase, criptografia)
@@ -284,6 +294,7 @@ https://chat.luisfboff.com/privacy-policy
 - Contato para questões de privacidade
 
 **URL no Play Console:**
+
 - Configurações do app → Política de Privacidade → Adicionar URL
 
 ---
@@ -315,6 +326,7 @@ Play Console → **Classificação de conteúdo** → **Iniciar questionário**
 **Categoria:** Utilitários ou Produtividade
 
 **Respostas típicas:**
+
 - Contém violência? Não
 - Conteúdo sexual? Não
 - Linguagem imprópria? Não
@@ -331,12 +343,15 @@ Concluir → Aplicar classificação
 Play Console → **Versão de produção** → **Criar nova versão**
 
 1. **Upload do AAB:**
+
    - Arraste `app-release.aab` ou clique para selecionar
    - Aguarde processamento (1-5min)
 
 2. **Detalhes da versão:**
+
    - **Nome da versão**: v1.0.0
    - **Notas da versão (pt-BR)**:
+
    ```
    Primeira versão do ChatBot Oficial
    • Integração com WhatsApp Business API
@@ -357,6 +372,7 @@ Play Console → **Versão de produção** → **Criar nova versão**
 - **Notificações:** Via email
 
 **Possíveis resultados:**
+
 - ✅ **Aprovado**: App publicado na loja
 - ⚠️ **Precisa de alterações**: Corrigir e reenviar
 - ❌ **Rejeitado**: Violação de políticas (raro se seguiu guia)
@@ -442,6 +458,7 @@ npx cap open ios
 ```
 
 Xcode:
+
 1. Selecione target **App**
 2. **Signing & Capabilities**:
    - **Automatically manage signing**: Desmarque
@@ -454,6 +471,7 @@ Xcode:
 ### 6. Build Release Archive
 
 Xcode:
+
 1. Selecione target: **Any iOS Device (arm64)**
 2. **Product** → **Scheme** → **Edit Scheme**
    - **Run** → Build Configuration: **Release**
@@ -463,6 +481,7 @@ Xcode:
 **Tempo:** 5-15 minutos
 
 **Verificação:**
+
 - Window → Organizer → Archives
 - Archive aparece com data/hora
 
@@ -486,6 +505,7 @@ Organizer → Selecione Archive → **Distribute App**
 **Tempo de upload:** 5-20 minutos (depende da internet)
 
 **Verificação:**
+
 - App Store Connect → Meus Apps → ChatBot Oficial
 - **Atividade** → Build deve aparecer (pode demorar 10-30min para processar)
 
@@ -531,13 +551,13 @@ chatbot,whatsapp,ia,atendimento,automação,assistente,virtual,negócios
 
 #### URLs de Suporte
 
-- **URL de suporte**: https://chat.luisfboff.com/support
-- **URL de marketing**: https://chat.luisfboff.com
+- **URL de suporte**: https://uzzap.uzzai.com/support
+- **URL de marketing**: https://uzzap.uzzai.com
 
 #### Política de Privacidade
 
 ```
-https://chat.luisfboff.com/privacy-policy
+https://uzzap.uzzai.com/privacy-policy
 ```
 
 ---
@@ -545,6 +565,7 @@ https://chat.luisfboff.com/privacy-policy
 ### 9. Screenshots (iOS)
 
 **Requisitos:**
+
 - iPhone 6.7" (iPhone 14 Pro Max): 1290x2796 px
 - iPhone 6.5" (iPhone 11 Pro Max): 1242x2688 px
 - iPhone 5.5" (iPhone 8 Plus): 1242x2208 px
@@ -553,10 +574,12 @@ https://chat.luisfboff.com/privacy-policy
 **Mínimo:** 3 screenshots para cada tamanho de tela
 
 **Ferramentas:**
+
 - Xcode Simulator → Captura (`Cmd + S`)
 - [Fastlane Snapshot](https://fastlane.tools/snapshot) - Automatizar
 
 **Upload:**
+
 - App Store Connect → Mídia → Arraste screenshots
 
 ---
@@ -572,6 +595,7 @@ https://chat.luisfboff.com/privacy-policy
 ### 11. Informações de Classificação
 
 **Questionário de conteúdo:**
+
 - Violência: Nenhuma
 - Conteúdo sexual: Nenhum
 - Linguagem imprópria: Nenhuma
@@ -586,6 +610,7 @@ https://chat.luisfboff.com/privacy-policy
 - **Versão**: 1.0.0
 - **Build**: 1
 - **Novidades desta versão (pt-BR)**:
+
 ```
 Primeira versão do ChatBot Oficial para iOS!
 
@@ -605,12 +630,14 @@ Primeira versão do ChatBot Oficial para iOS!
 3. **Enviar para revisão**
 
 **Status:**
+
 - Aguardando revisão
 - Em revisão (1-3 dias)
 - Pronto para venda (aprovado) ✅
 - Rejeitado (corrigir e reenviar) ⚠️
 
 **Acompanhar:**
+
 - App Store Connect → Meus Apps → ChatBot Oficial → Status
 
 ---
@@ -662,10 +689,12 @@ Primeira versão do ChatBot Oficial para iOS!
 ### Monitoramento
 
 1. **Crash Reporting:**
+
    - Google Play Console → Qualidade → Relatórios de falhas
    - App Store Connect → App Analytics → Crashes
 
 2. **Reviews:**
+
    - Responder reviews negativos
    - Agradecer reviews positivos
    - Identificar bugs reportados
@@ -680,11 +709,13 @@ Primeira versão do ChatBot Oficial para iOS!
 ### Atualizações
 
 **Quando atualizar:**
+
 - Bugs críticos (hotfix: v1.0.1)
 - Novas features (minor: v1.1.0)
 - Breaking changes (major: v2.0.0)
 
 **Processo:**
+
 1. Implementar mudanças
 2. Testar extensivamente
 3. Atualizar version/build number
@@ -700,25 +731,25 @@ Primeira versão do ChatBot Oficial para iOS!
 
 ### Google Play
 
-| Problema | Solução |
-|----------|---------|
-| "Upload failed: APK not signed" | Verificar signing config em build.gradle |
-| "Version code must be unique" | Incrementar versionCode em build.gradle |
-| "Icon doesn't meet requirements" | Gerar com @capacitor/assets, 512x512 PNG |
-| "Privacy policy URL not valid" | Verificar URL acessível via HTTPS |
+| Problema                           | Solução                                       |
+| ---------------------------------- | --------------------------------------------- |
+| "Upload failed: APK not signed"    | Verificar signing config em build.gradle      |
+| "Version code must be unique"      | Incrementar versionCode em build.gradle       |
+| "Icon doesn't meet requirements"   | Gerar com @capacitor/assets, 512x512 PNG      |
+| "Privacy policy URL not valid"     | Verificar URL acessível via HTTPS             |
 | "App rejected: deceptive behavior" | Revisar screenshots/descrição (não enganosos) |
 
 ---
 
 ### Apple App Store
 
-| Problema | Solução |
-|----------|---------|
-| "Invalid Bundle ID" | Verificar match entre Xcode e App Store Connect |
-| "Missing compliance" | Export Compliance: Encryption → App usa HTTPS padrão |
-| "Screenshots wrong size" | Usar tamanhos exatos (1290x2796, 1242x2688, etc.) |
-| "Build processing stuck" | Aguardar 30min, se persistir: contatar suporte |
-| "Guideline 4.3 - Spam" | App muito similar a outro (redesign UI/features) |
+| Problema                 | Solução                                              |
+| ------------------------ | ---------------------------------------------------- |
+| "Invalid Bundle ID"      | Verificar match entre Xcode e App Store Connect      |
+| "Missing compliance"     | Export Compliance: Encryption → App usa HTTPS padrão |
+| "Screenshots wrong size" | Usar tamanhos exatos (1290x2796, 1242x2688, etc.)    |
+| "Build processing stuck" | Aguardar 30min, se persistir: contatar suporte       |
+| "Guideline 4.3 - Spam"   | App muito similar a outro (redesign UI/features)     |
 
 ---
 
@@ -734,6 +765,7 @@ Primeira versão do ChatBot Oficial para iOS!
 **Status:** Pronto para deploy quando app estiver finalizado
 
 **Tempo estimado:**
+
 - Google Play: 1-3 dias após submission
 - Apple App Store: 2-5 dias após submission
 

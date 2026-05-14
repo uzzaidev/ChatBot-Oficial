@@ -9,8 +9,7 @@
 > Este documento mapeia os macroprocessos operacionais do **produto UzzApp**.
 > Para macroprocessos da empresa UzzAI, ver `MACROPROCESSOS-UZZAI.md`.
 >
-> **Legenda de automação:**
-> `[AUTO]` = totalmente automatizado (agente/cron) |
+> **Legenda de automação:** > `[AUTO]` = totalmente automatizado (agente/cron) |
 > `[SEMI]` = requer decisão humana pontual |
 > `[MANUAL]` = sem automação — execução manual |
 > `[⚠️ HUMANO]` = exige interação humana obrigatória (ex: WhatsApp real)
@@ -19,16 +18,16 @@
 
 ## Visão Geral
 
-| # | Macroprocesso | Processos | Automação | Prioridade |
-|---|---------------|-----------|-----------|-----------|
-| 1 | [Onboarding de Cliente](#1-onboarding-de-cliente) | 6 | Alta | 🔴 Alta |
-| 2 | [Operações do Chatbot](#2-operações-do-chatbot) | 4 | Total | 🔴 Alta |
-| 3 | [CRM Automation](#3-crm-automation) | 5 | Alta | 🔴 Alta |
-| 4 | [Desenvolvimento e Features](#4-desenvolvimento-e-features) | 4 | Alta | 🔴 Alta |
-| 5 | [QA e Validação](#5-qa-e-validação) | 4 | Parcial | 🔴 Alta |
-| 6 | [Monitoramento e Observabilidade](#6-monitoramento-e-observabilidade) | 3 | Alta | 🟡 Média |
-| 7 | [Gestão Multi-tenant](#7-gestão-multi-tenant) | 3 | Alta | 🟡 Média |
-| 8 | [Integrações Externas](#8-integrações-externas) | 4 | Parcial | 🟡 Média |
+| #   | Macroprocesso                                                         | Processos | Automação | Prioridade |
+| --- | --------------------------------------------------------------------- | --------- | --------- | ---------- |
+| 1   | [Onboarding de Cliente](#1-onboarding-de-cliente)                     | 6         | Alta      | 🔴 Alta    |
+| 2   | [Operações do Chatbot](#2-operações-do-chatbot)                       | 4         | Total     | 🔴 Alta    |
+| 3   | [CRM Automation](#3-crm-automation)                                   | 5         | Alta      | 🔴 Alta    |
+| 4   | [Desenvolvimento e Features](#4-desenvolvimento-e-features)           | 4         | Alta      | 🔴 Alta    |
+| 5   | [QA e Validação](#5-qa-e-validação)                                   | 4         | Parcial   | 🔴 Alta    |
+| 6   | [Monitoramento e Observabilidade](#6-monitoramento-e-observabilidade) | 3         | Alta      | 🟡 Média   |
+| 7   | [Gestão Multi-tenant](#7-gestão-multi-tenant)                         | 3         | Alta      | 🟡 Média   |
+| 8   | [Integrações Externas](#8-integrações-externas)                       | 4         | Parcial   | 🟡 Média   |
 
 ---
 
@@ -41,81 +40,81 @@
 
 ### 1.1 Coleta de Informações e Configuração Meta
 
-| Campo | Conteúdo |
-|-------|---------|
-| **Atividades** | Coletar WABA ID, número WhatsApp, Access Token Meta; configurar App Meta; obter Meta Verify Token; configurar telefone no Meta Business Suite |
-| **Workflow** | 1. Preencher formulário de dados do cliente → 2. Acessar Meta Business Manager → 3. Criar App ou acessar existente → 4. Obter `META_ACCESS_TOKEN` (System User, não personal) → 5. Configurar número de telefone → 6. Salvar tokens com segurança |
-| **Prazo** | Até 2 dias úteis |
-| **Saída esperada** | Token Meta válido + número de telefone ativo |
-| **Responsável** | Pedro Vitor + cliente |
-| **Automação** | `[MANUAL]` — requer acesso ao painel Meta do cliente |
-| **Referência** | `docs/GUIA_META_ADS_CONFIGURACAO.md` |
+| Campo              | Conteúdo                                                                                                                                                                                                                                          |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Atividades**     | Coletar WABA ID, número WhatsApp, Access Token Meta; configurar App Meta; obter Meta Verify Token; configurar telefone no Meta Business Suite                                                                                                     |
+| **Workflow**       | 1. Preencher formulário de dados do cliente → 2. Acessar Meta Business Manager → 3. Criar App ou acessar existente → 4. Obter `META_ACCESS_TOKEN` (System User, não personal) → 5. Configurar número de telefone → 6. Salvar tokens com segurança |
+| **Prazo**          | Até 2 dias úteis                                                                                                                                                                                                                                  |
+| **Saída esperada** | Token Meta válido + número de telefone ativo                                                                                                                                                                                                      |
+| **Responsável**    | Pedro Vitor + cliente                                                                                                                                                                                                                             |
+| **Automação**      | `[MANUAL]` — requer acesso ao painel Meta do cliente                                                                                                                                                                                              |
+| **Referência**     | `docs/GUIA_META_ADS_CONFIGURACAO.md`                                                                                                                                                                                                              |
 
 ---
 
 ### 1.2 Criação do Cliente na Plataforma
 
-| Campo | Conteúdo |
-|-------|---------|
-| **Atividades** | Criar registro em `clients`; configurar Vault com credenciais; definir `META_PHONE_NUMBER_ID`; configurar `WEBHOOK_BASE_URL` |
-| **Workflow** | 1. Acessar `/dashboard/admin/clients` → 2. Criar novo cliente → 3. Preencher nome, número, WABA ID → 4. Acessar Vault e adicionar `META_ACCESS_TOKEN`, chave OpenAI/Groq → 5. Testar: `GET /api/test/vault-config?clientId=X` |
-| **Prazo** | 30 minutos |
-| **Saída esperada** | Cliente ativo com credenciais no Vault |
-| **Responsável** | Pedro Vitor |
-| **Automação** | `[SEMI]` — interface `/dashboard/admin/clients` |
+| Campo              | Conteúdo                                                                                                                                                                                                                      |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Atividades**     | Criar registro em `clients`; configurar Vault com credenciais; definir `META_PHONE_NUMBER_ID`; configurar `WEBHOOK_BASE_URL`                                                                                                  |
+| **Workflow**       | 1. Acessar `/dashboard/admin/clients` → 2. Criar novo cliente → 3. Preencher nome, número, WABA ID → 4. Acessar Vault e adicionar `META_ACCESS_TOKEN`, chave OpenAI/Groq → 5. Testar: `GET /api/test/vault-config?clientId=X` |
+| **Prazo**          | 30 minutos                                                                                                                                                                                                                    |
+| **Saída esperada** | Cliente ativo com credenciais no Vault                                                                                                                                                                                        |
+| **Responsável**    | Pedro Vitor                                                                                                                                                                                                                   |
+| **Automação**      | `[SEMI]` — interface `/dashboard/admin/clients`                                                                                                                                                                               |
 
 ---
 
 ### 1.3 Configuração de Webhook Meta
 
-| Campo | Conteúdo |
-|-------|---------|
-| **Atividades** | Registrar URL do webhook no Meta; configurar `META_VERIFY_TOKEN`; verificar assinatura |
-| **Workflow** | 1. URL do webhook: `https://chat.luisfboff.com/api/webhook/{clientId}` → 2. Registrar no Meta App Dashboard → 3. Meta envia GET com `hub.challenge` → 4. Sistema responde → 5. Confirmar verificação no painel Meta |
-| **Prazo** | 15 minutos |
-| **Saída esperada** | Webhook verificado (ícone verde no Meta Dashboard) |
-| **Responsável** | Pedro Vitor |
-| **Automação** | `[⚠️ HUMANO]` — requer acesso ao Meta App Dashboard do cliente |
+| Campo              | Conteúdo                                                                                                                                                                                                         |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Atividades**     | Registrar URL do webhook no Meta; configurar `META_VERIFY_TOKEN`; verificar assinatura                                                                                                                           |
+| **Workflow**       | 1. URL do webhook: `https://uzzap.uzzai.com/api/webhook/{clientId}` → 2. Registrar no Meta App Dashboard → 3. Meta envia GET com `hub.challenge` → 4. Sistema responde → 5. Confirmar verificação no painel Meta |
+| **Prazo**          | 15 minutos                                                                                                                                                                                                       |
+| **Saída esperada** | Webhook verificado (ícone verde no Meta Dashboard)                                                                                                                                                               |
+| **Responsável**    | Pedro Vitor                                                                                                                                                                                                      |
+| **Automação**      | `[⚠️ HUMANO]` — requer acesso ao Meta App Dashboard do cliente                                                                                                                                                   |
 
 ---
 
 ### 1.4 Configuração do Prompt e Bot
 
-| Campo | Conteúdo |
-|-------|---------|
-| **Atividades** | Definir persona do bot; configurar prompt do sistema; ajustar temperatura e modelo; testar resposta |
-| **Workflow** | 1. Acessar `/dashboard/settings` → 2. Escrever prompt do sistema (persona + regras) → 3. Configurar modelo preferido (Groq/OpenAI) → 4. Testar: `POST /api/test/nodes/ai-response` → 5. Ajustar até satisfatório |
-| **Prazo** | 1–2 horas |
-| **Saída esperada** | Bot com persona adequada ao segmento do cliente |
-| **Responsável** | Pedro Vitor + cliente |
-| **Automação** | `[SEMI]` — interface `/dashboard/settings` |
+| Campo              | Conteúdo                                                                                                                                                                                                         |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Atividades**     | Definir persona do bot; configurar prompt do sistema; ajustar temperatura e modelo; testar resposta                                                                                                              |
+| **Workflow**       | 1. Acessar `/dashboard/settings` → 2. Escrever prompt do sistema (persona + regras) → 3. Configurar modelo preferido (Groq/OpenAI) → 4. Testar: `POST /api/test/nodes/ai-response` → 5. Ajustar até satisfatório |
+| **Prazo**          | 1–2 horas                                                                                                                                                                                                        |
+| **Saída esperada** | Bot com persona adequada ao segmento do cliente                                                                                                                                                                  |
+| **Responsável**    | Pedro Vitor + cliente                                                                                                                                                                                            |
+| **Automação**      | `[SEMI]` — interface `/dashboard/settings`                                                                                                                                                                       |
 
 ---
 
 ### 1.5 Importação de Contatos e Configuração CRM
 
-| Campo | Conteúdo |
-|-------|---------|
-| **Atividades** | Preparar CSV; importar contatos; criar colunas do funil; criar tags base; configurar regras de automação iniciais |
-| **Workflow** | 1. Converter Excel → CSV: `node scripts/xlsx-to-csv.js arquivo.xlsx` → 2. Verificar formato: telefone com 8–11 dígitos → 3. Importar via `/dashboard/contacts` → 4. Criar colunas e tags em `/dashboard/crm` → 5. Ativar 10 regras base do segmento |
-| **Prazo** | 2–4 horas |
-| **Saída esperada** | Contatos importados + CRM configurado com funil e regras ativas |
-| **Responsável** | Pedro Vitor |
-| **Automação** | `[SEMI]` — interface + script CLI para conversão |
-| **Referência** | `docs/MANUAL_CRM_AUTOMATION_V2.md` § 19 |
+| Campo              | Conteúdo                                                                                                                                                                                                                                            |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Atividades**     | Preparar CSV; importar contatos; criar colunas do funil; criar tags base; configurar regras de automação iniciais                                                                                                                                   |
+| **Workflow**       | 1. Converter Excel → CSV: `node scripts/xlsx-to-csv.js arquivo.xlsx` → 2. Verificar formato: telefone com 8–11 dígitos → 3. Importar via `/dashboard/contacts` → 4. Criar colunas e tags em `/dashboard/crm` → 5. Ativar 10 regras base do segmento |
+| **Prazo**          | 2–4 horas                                                                                                                                                                                                                                           |
+| **Saída esperada** | Contatos importados + CRM configurado com funil e regras ativas                                                                                                                                                                                     |
+| **Responsável**    | Pedro Vitor                                                                                                                                                                                                                                         |
+| **Automação**      | `[SEMI]` — interface + script CLI para conversão                                                                                                                                                                                                    |
+| **Referência**     | `docs/MANUAL_CRM_AUTOMATION_V2.md` § 19                                                                                                                                                                                                             |
 
 ---
 
 ### 1.6 Teste End-to-End e Go-Live
 
-| Campo | Conteúdo |
-|-------|---------|
-| **Atividades** | Enviar mensagem de teste real; validar recebimento; validar resposta do bot; validar card CRM criado; validar automação disparou |
-| **Workflow** | 1. Enviar WhatsApp de número externo para o número do cliente → 2. Verificar log em `/dashboard/debug` → 3. Verificar card criado em `/dashboard/crm` → 4. Verificar `crm_rule_executions` → 5. Enviar mensagem com keyword configurada → 6. Validar card movido de coluna |
-| **Prazo** | 1 hora |
-| **Saída esperada** | Bot respondendo + CRM atualizando automaticamente |
-| **Responsável** | Pedro Vitor |
-| **Automação** | `[⚠️ HUMANO]` — requer envio real de WhatsApp para validação final |
+| Campo              | Conteúdo                                                                                                                                                                                                                                                                   |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Atividades**     | Enviar mensagem de teste real; validar recebimento; validar resposta do bot; validar card CRM criado; validar automação disparou                                                                                                                                           |
+| **Workflow**       | 1. Enviar WhatsApp de número externo para o número do cliente → 2. Verificar log em `/dashboard/debug` → 3. Verificar card criado em `/dashboard/crm` → 4. Verificar `crm_rule_executions` → 5. Enviar mensagem com keyword configurada → 6. Validar card movido de coluna |
+| **Prazo**          | 1 hora                                                                                                                                                                                                                                                                     |
+| **Saída esperada** | Bot respondendo + CRM atualizando automaticamente                                                                                                                                                                                                                          |
+| **Responsável**    | Pedro Vitor                                                                                                                                                                                                                                                                |
+| **Automação**      | `[⚠️ HUMANO]` — requer envio real de WhatsApp para validação final                                                                                                                                                                                                         |
 
 ---
 
@@ -127,49 +126,49 @@
 
 ### 2.1 Processamento de Mensagens (Pipeline 14 Nós)
 
-| Campo | Conteúdo |
-|-------|---------|
-| **Atividades** | Receber webhook Meta; processar pipeline; enviar resposta |
-| **Workflow** | `WhatsApp → webhook/[clientId] → chatbotFlow.ts → 14 nós → resposta` |
+| Campo               | Conteúdo                                                                                                                                                                                                                                                     |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Atividades**      | Receber webhook Meta; processar pipeline; enviar resposta                                                                                                                                                                                                    |
+| **Workflow**        | `WhatsApp → webhook/[clientId] → chatbotFlow.ts → 14 nós → resposta`                                                                                                                                                                                         |
 | **Nós do pipeline** | 1. Filter Status → 2. Parse Message → 3. Check/Create Customer → 4. Download Media → 5. Normalize → 6. Push Redis → 7. Save User Message → 8. Batch (30s) → 9. Get History ‖ 10. Get RAG → 11. Generate AI → 12. Format → 13. Send + Save → (14. CRM Events) |
-| **Prazo** | < 30 segundos por mensagem (30s = janela de batching) |
-| **Saída esperada** | Resposta enviada ao usuário + histórico salvo + CRM atualizado |
-| **Responsável** | Sistema — totalmente autônomo |
-| **Automação** | `[AUTO]` |
+| **Prazo**           | < 30 segundos por mensagem (30s = janela de batching)                                                                                                                                                                                                        |
+| **Saída esperada**  | Resposta enviada ao usuário + histórico salvo + CRM atualizado                                                                                                                                                                                               |
+| **Responsável**     | Sistema — totalmente autônomo                                                                                                                                                                                                                                |
+| **Automação**       | `[AUTO]`                                                                                                                                                                                                                                                     |
 
 ---
 
 ### 2.2 Batching e Anti-spam Redis
 
-| Campo | Conteúdo |
-|-------|---------|
-| **Atividades** | Acumular mensagens de 30s no Redis; evitar respostas duplicadas; processar batch único |
-| **Workflow** | Mensagem recebida → push para Redis com TTL → aguarda 30s → se nova mensagem chega, reinicia timer → processa tudo junto |
-| **Configuração** | `REDIS_URL` em `.env.local`; TTL configurável por cliente |
-| **Responsável** | Sistema |
-| **Automação** | `[AUTO]` |
+| Campo            | Conteúdo                                                                                                                 |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| **Atividades**   | Acumular mensagens de 30s no Redis; evitar respostas duplicadas; processar batch único                                   |
+| **Workflow**     | Mensagem recebida → push para Redis com TTL → aguarda 30s → se nova mensagem chega, reinicia timer → processa tudo junto |
+| **Configuração** | `REDIS_URL` em `.env.local`; TTL configurável por cliente                                                                |
+| **Responsável**  | Sistema                                                                                                                  |
+| **Automação**    | `[AUTO]`                                                                                                                 |
 
 ---
 
 ### 2.3 Handoff Humano
 
-| Campo | Conteúdo |
-|-------|---------|
-| **Atividades** | Detectar trigger de transferência; parar bot; notificar responsável; registrar resumo da conversa; enviar e-mail |
-| **Workflow** | Tool call `transferir_atendimento` → status = `humano` → sumarizar conversa → enviar e-mail Gmail → bot para de responder → CRM: `assign_to` + `awaiting_attendant` |
-| **Responsável** | Sistema (trigger) + humano (atendimento) |
-| **Automação** | `[SEMI]` — bot transfere automaticamente, humano atende |
+| Campo           | Conteúdo                                                                                                                                                            |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Atividades**  | Detectar trigger de transferência; parar bot; notificar responsável; registrar resumo da conversa; enviar e-mail                                                    |
+| **Workflow**    | Tool call `transferir_atendimento` → status = `humano` → sumarizar conversa → enviar e-mail Gmail → bot para de responder → CRM: `assign_to` + `awaiting_attendant` |
+| **Responsável** | Sistema (trigger) + humano (atendimento)                                                                                                                            |
+| **Automação**   | `[SEMI]` — bot transfere automaticamente, humano atende                                                                                                             |
 
 ---
 
 ### 2.4 RAG (Base de Conhecimento)
 
-| Campo | Conteúdo |
-|-------|---------|
-| **Atividades** | Upload de documentos; chunking e embeddings; busca semântica em contexto de resposta |
-| **Workflow** | Upload PDF/TXT em `/dashboard/knowledge` → chunking 500 tokens (20% overlap) → embedding OpenAI → pgvector → busca cosine similarity > 0.8 → top 5 chunks injetados no prompt |
-| **Responsável** | Pedro Vitor (upload) + Sistema (busca) |
-| **Automação** | `[SEMI]` — upload manual, busca automática |
+| Campo           | Conteúdo                                                                                                                                                                      |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Atividades**  | Upload de documentos; chunking e embeddings; busca semântica em contexto de resposta                                                                                          |
+| **Workflow**    | Upload PDF/TXT em `/dashboard/knowledge` → chunking 500 tokens (20% overlap) → embedding OpenAI → pgvector → busca cosine similarity > 0.8 → top 5 chunks injetados no prompt |
+| **Responsável** | Pedro Vitor (upload) + Sistema (busca)                                                                                                                                        |
+| **Automação**   | `[SEMI]` — upload manual, busca automática                                                                                                                                    |
 
 ---
 
@@ -182,60 +181,60 @@
 
 ### 3.1 Gestão de Regras de Automação
 
-| Campo | Conteúdo |
-|-------|---------|
-| **Atividades** | Criar, editar, testar e reordenar regras |
-| **Workflow** | 1. Acessar `/dashboard/crm` → aba Automações → 2. Criar regra com trigger + condições + action_steps → 3. Simular: `POST /api/crm/automation-rules/simulate` → 4. Ativar → 5. Monitorar execuções |
-| **Prazo** | Configuração inicial: 2–4h; ajustes: contínuo |
-| **Responsável** | Pedro Vitor |
-| **Automação** | `[SEMI]` — interface + simulação automatizada |
+| Campo           | Conteúdo                                                                                                                                                                                          |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Atividades**  | Criar, editar, testar e reordenar regras                                                                                                                                                          |
+| **Workflow**    | 1. Acessar `/dashboard/crm` → aba Automações → 2. Criar regra com trigger + condições + action_steps → 3. Simular: `POST /api/crm/automation-rules/simulate` → 4. Ativar → 5. Monitorar execuções |
+| **Prazo**       | Configuração inicial: 2–4h; ajustes: contínuo                                                                                                                                                     |
+| **Responsável** | Pedro Vitor                                                                                                                                                                                       |
+| **Automação**   | `[SEMI]` — interface + simulação automatizada                                                                                                                                                     |
 
 ---
 
 ### 3.2 Engine de Automação (Execução em Tempo Real)
 
-| Campo | Conteúdo |
-|-------|---------|
-| **Atividades** | Processar eventos; avaliar regras; executar action_steps; registrar execuções |
-| **Ciclo** | Evento → filtrar regras → ordenar por priority → lock por card_id → idempotência → condições → action_steps[] → log |
-| **Responsável** | Sistema — `src/lib/crm-automation-engine.ts` |
-| **Automação** | `[AUTO]` |
+| Campo           | Conteúdo                                                                                                            |
+| --------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **Atividades**  | Processar eventos; avaliar regras; executar action_steps; registrar execuções                                       |
+| **Ciclo**       | Evento → filtrar regras → ordenar por priority → lock por card_id → idempotência → condições → action_steps[] → log |
+| **Responsável** | Sistema — `src/lib/crm-automation-engine.ts`                                                                        |
+| **Automação**   | `[AUTO]`                                                                                                            |
 
 ---
 
 ### 3.3 Jobs de Automação Agendados (Crons)
 
-| Cron | Schedule | Endpoint | Função |
-|------|----------|----------|--------|
-| Inatividade | `*/30 * * * *` | `/api/cron/inactivity-check` | Verifica cards sem resposta e dispara trigger `inactivity` |
-| Retry DLQ | `*/5 * * * *` | `/api/cron/crm-dlq-retry` | Retenta ações externas que falharam (`send_message`, `notify_user`) |
-| Cleanup | `0 3 * * *` | `/api/cron/crm-executions-cleanup` | Limpa logs antigos (90d success, 180d error, 30d DLQ) |
-| Scheduled Actions | `*/2 * * * *` | `/api/cron/crm-scheduled-actions` | Executa ações agendadas com atraso |
+| Cron              | Schedule       | Endpoint                           | Função                                                              |
+| ----------------- | -------------- | ---------------------------------- | ------------------------------------------------------------------- |
+| Inatividade       | `*/30 * * * *` | `/api/cron/inactivity-check`       | Verifica cards sem resposta e dispara trigger `inactivity`          |
+| Retry DLQ         | `*/5 * * * *`  | `/api/cron/crm-dlq-retry`          | Retenta ações externas que falharam (`send_message`, `notify_user`) |
+| Cleanup           | `0 3 * * *`    | `/api/cron/crm-executions-cleanup` | Limpa logs antigos (90d success, 180d error, 30d DLQ)               |
+| Scheduled Actions | `*/2 * * * *`  | `/api/cron/crm-scheduled-actions`  | Executa ações agendadas com atraso                                  |
 
 ---
 
 ### 3.4 Configuração LLM Intent Classifier
 
-| Campo | Conteúdo |
-|-------|---------|
-| **Atividades** | Ativar/desativar LLM; ajustar threshold; monitorar falsos positivos |
-| **Parâmetros** | `llm_intent_enabled`, `llm_intent_threshold` (0–1, padrão 0.85), timeout 2s, orçamento $2/dia |
-| **Fallback** | Regex determinístico quando LLM indisponível |
-| **Responsável** | Pedro Vitor |
-| **Automação** | `[SEMI]` — toggle em `/api/crm/settings` |
+| Campo           | Conteúdo                                                                                      |
+| --------------- | --------------------------------------------------------------------------------------------- |
+| **Atividades**  | Ativar/desativar LLM; ajustar threshold; monitorar falsos positivos                           |
+| **Parâmetros**  | `llm_intent_enabled`, `llm_intent_threshold` (0–1, padrão 0.85), timeout 2s, orçamento $2/dia |
+| **Fallback**    | Regex determinístico quando LLM indisponível                                                  |
+| **Responsável** | Pedro Vitor                                                                                   |
+| **Automação**   | `[SEMI]` — toggle em `/api/crm/settings`                                                      |
 
 ---
 
 ### 3.5 Monitoramento de Automações
 
-| Campo | Conteúdo |
-|-------|---------|
-| **Atividades** | Revisar execuções, falhas, DLQ; ajustar regras com baixa eficiência |
-| **Workflow** | Acessar `/dashboard/crm` → aba Execuções → filtrar por status/trigger → investigar `skip_reason` → corrigir regra |
-| **Frequência** | Diária (5min) + semanal (15min) |
-| **Responsável** | Pedro Vitor |
-| **Automação** | `[SEMI]` — visualização + queries SQL de observabilidade |
-| **Referência** | `docs/MANUAL_CRM_AUTOMATION_V2.md` § 12 |
+| Campo           | Conteúdo                                                                                                          |
+| --------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **Atividades**  | Revisar execuções, falhas, DLQ; ajustar regras com baixa eficiência                                               |
+| **Workflow**    | Acessar `/dashboard/crm` → aba Execuções → filtrar por status/trigger → investigar `skip_reason` → corrigir regra |
+| **Frequência**  | Diária (5min) + semanal (15min)                                                                                   |
+| **Responsável** | Pedro Vitor                                                                                                       |
+| **Automação**   | `[SEMI]` — visualização + queries SQL de observabilidade                                                          |
+| **Referência**  | `docs/MANUAL_CRM_AUTOMATION_V2.md` § 12                                                                           |
 
 ---
 
@@ -249,49 +248,49 @@
 
 ### 4.1 Ciclo de Feature
 
-| Campo | Conteúdo |
-|-------|---------|
-| **Atividades** | Análise → plano → implementação → teste → merge → documentação |
-| **Workflow** | 1. Criar plano: `twin-planner` → 2. Revisar plano com `twin-architect` → 3. Implementar: `twin-coder` → 4. **Checkpoint intermediário** a cada 2h → 5. Testar: `twin-tester` → 6. Documentar: `twin-documenter` → 7. Merge |
-| **Regra crítica** | **NUNCA** fazer deploy sem passar pelo processo de QA (§ 5) |
-| **Responsável** | Pedro Vitor + Luis |
-| **Automação** | `[SEMI]` — agentes Claude Code assistem cada etapa |
+| Campo             | Conteúdo                                                                                                                                                                                                                   |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Atividades**    | Análise → plano → implementação → teste → merge → documentação                                                                                                                                                             |
+| **Workflow**      | 1. Criar plano: `twin-planner` → 2. Revisar plano com `twin-architect` → 3. Implementar: `twin-coder` → 4. **Checkpoint intermediário** a cada 2h → 5. Testar: `twin-tester` → 6. Documentar: `twin-documenter` → 7. Merge |
+| **Regra crítica** | **NUNCA** fazer deploy sem passar pelo processo de QA (§ 5)                                                                                                                                                                |
+| **Responsável**   | Pedro Vitor + Luis                                                                                                                                                                                                         |
+| **Automação**     | `[SEMI]` — agentes Claude Code assistem cada etapa                                                                                                                                                                         |
 
 ---
 
 ### 4.2 Database — Migrations
 
-| Campo | Conteúdo |
-|-------|---------|
-| **Atividades** | Criar, revisar e aplicar migrations; nunca DDL direto no Supabase Dashboard |
-| **Workflow** | 1. `supabase migration new nome_da_mudanca` → 2. Editar SQL na migration → 3. Testar: `supabase db reset` (local) → 4. Aplicar: `supabase db push` → 5. Commit do arquivo de migration |
-| **Regra** | SEMPRE usar migrations — NUNCA executar DDL no Dashboard |
-| **Responsável** | Pedro Vitor |
-| **Automação** | `[SEMI]` — CLI Supabase |
-| **Referência** | `db/MIGRATION_WORKFLOW.md`, `docs/tables/tabelas.md` |
+| Campo           | Conteúdo                                                                                                                                                                               |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Atividades**  | Criar, revisar e aplicar migrations; nunca DDL direto no Supabase Dashboard                                                                                                            |
+| **Workflow**    | 1. `supabase migration new nome_da_mudanca` → 2. Editar SQL na migration → 3. Testar: `supabase db reset` (local) → 4. Aplicar: `supabase db push` → 5. Commit do arquivo de migration |
+| **Regra**       | SEMPRE usar migrations — NUNCA executar DDL no Dashboard                                                                                                                               |
+| **Responsável** | Pedro Vitor                                                                                                                                                                            |
+| **Automação**   | `[SEMI]` — CLI Supabase                                                                                                                                                                |
+| **Referência**  | `db/MIGRATION_WORKFLOW.md`, `docs/tables/tabelas.md`                                                                                                                                   |
 
 ---
 
 ### 4.3 Code Review e Qualidade
 
-| Campo | Conteúdo |
-|-------|---------|
-| **Atividades** | Revisão antes de merge; verificação de padrões; análise de segurança |
-| **Workflow** | PR aberto → `twin-reviewer` analisa → issues reportados → correções → aprovação → merge |
+| Campo                    | Conteúdo                                                                                                                      |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| **Atividades**           | Revisão antes de merge; verificação de padrões; análise de segurança                                                          |
+| **Workflow**             | PR aberto → `twin-reviewer` analisa → issues reportados → correções → aprovação → merge                                       |
 | **Padrões obrigatórios** | Supabase client (nunca `pg` em serverless); `await` em webhooks; snake_case em tabelas; `client_id` da sessão (nunca do body) |
-| **Responsável** | Pedro Vitor |
-| **Automação** | `[SEMI]` — `twin-reviewer` + `simplify` skill |
+| **Responsável**          | Pedro Vitor                                                                                                                   |
+| **Automação**            | `[SEMI]` — `twin-reviewer` + `simplify` skill                                                                                 |
 
 ---
 
 ### 4.4 Deploy
 
-| Campo | Conteúdo |
-|-------|---------|
-| **Atividades** | Validação pré-deploy; push para main (deploy automático Vercel); monitoramento pós-deploy |
-| **Workflow** | 1. Testes passando → 2. `npx tsc --noEmit` (zero erros) → 3. `npm run lint` → 4. `git push origin main` → 5. Monitorar Vercel dashboard → 6. Smoke test em produção (`/api/test/supabase-connection`) |
-| **Responsável** | Pedro Vitor |
-| **Automação** | `[SEMI]` — Vercel CI/CD automático, validação manual |
+| Campo           | Conteúdo                                                                                                                                                                                              |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Atividades**  | Validação pré-deploy; push para main (deploy automático Vercel); monitoramento pós-deploy                                                                                                             |
+| **Workflow**    | 1. Testes passando → 2. `npx tsc --noEmit` (zero erros) → 3. `npm run lint` → 4. `git push origin main` → 5. Monitorar Vercel dashboard → 6. Smoke test em produção (`/api/test/supabase-connection`) |
+| **Responsável** | Pedro Vitor                                                                                                                                                                                           |
+| **Automação**   | `[SEMI]` — Vercel CI/CD automático, validação manual                                                                                                                                                  |
 
 ---
 
@@ -633,8 +632,8 @@ curl $BASE/send-whatsapp    # Envio WhatsApp (⚠️ envia de verdade)
 
 ```bash
 # Smoke test imediato após deploy (< 2 minutos)
-curl https://chat.luisfboff.com/api/test/supabase-connection
-curl https://chat.luisfboff.com/api/health  # se existir
+curl https://uzzap.uzzai.com/api/test/supabase-connection
+curl https://uzzap.uzzai.com/api/health  # se existir
 
 # Verificar crons ativos no Vercel
 # Dashboard → Settings → Cron Jobs → confirmar 4 crons ativos
@@ -661,16 +660,16 @@ LIMIT 20;
 > Para cada novo cliente, executar bateria específica do segmento.
 > Baseada nas jornadas de `docs/MANUAL_CRM_AUTOMATION_V2.md` § 9.
 
-| Segmento | Mensagens de teste WhatsApp | Resultado esperado |
-|----------|----------------------------|-------------------|
-| Academia | "quero saber o preço da mensalidade" | Card → Negociação + tag Interesse Preço |
-| Academia | "posso fazer uma aula experimental?" | Card → Negociação + tag Lead Quente |
-| Yoga | "tenho interesse em hatha yoga" | Tag Interesse Modalidade |
-| Clínica | "quero agendar uma consulta" | Card → Negociação + tag Quer Agendar + notify |
-| Clínica | "estou com dor forte urgente" | Tag Urgente + notify(critical) |
-| Advocacia | "preciso de ajuda com processo trabalhista" | Tag Área Específica + assign especialista |
-| Todos | "quero cancelar" | Tag Risco Churn + notify(critical) |
-| Todos | [Webhook Stripe teste] | Card → Ganho + tag Comprou |
+| Segmento  | Mensagens de teste WhatsApp                 | Resultado esperado                            |
+| --------- | ------------------------------------------- | --------------------------------------------- |
+| Academia  | "quero saber o preço da mensalidade"        | Card → Negociação + tag Interesse Preço       |
+| Academia  | "posso fazer uma aula experimental?"        | Card → Negociação + tag Lead Quente           |
+| Yoga      | "tenho interesse em hatha yoga"             | Tag Interesse Modalidade                      |
+| Clínica   | "quero agendar uma consulta"                | Card → Negociação + tag Quer Agendar + notify |
+| Clínica   | "estou com dor forte urgente"               | Tag Urgente + notify(critical)                |
+| Advocacia | "preciso de ajuda com processo trabalhista" | Tag Área Específica + assign especialista     |
+| Todos     | "quero cancelar"                            | Tag Risco Churn + notify(critical)            |
+| Todos     | [Webhook Stripe teste]                      | Card → Ganho + tag Comprou                    |
 
 ---
 
@@ -680,12 +679,12 @@ LIMIT 20;
 
 ### 6.1 Monitoramento em Tempo Real
 
-| Campo | Conteúdo |
-|-------|---------|
-| **Atividades** | Verificar pipeline ativo; logs de webhook; erros em tempo real |
-| **Acesso** | `/dashboard/debug` — logs em tempo real; `/dashboard/backend` — métricas do sistema |
-| **Responsável** | Pedro Vitor |
-| **Automação** | `[AUTO]` — dashboards atualizando em tempo real |
+| Campo           | Conteúdo                                                                            |
+| --------------- | ----------------------------------------------------------------------------------- |
+| **Atividades**  | Verificar pipeline ativo; logs de webhook; erros em tempo real                      |
+| **Acesso**      | `/dashboard/debug` — logs em tempo real; `/dashboard/backend` — métricas do sistema |
+| **Responsável** | Pedro Vitor                                                                         |
+| **Automação**   | `[AUTO]` — dashboards atualizando em tempo real                                     |
 
 ---
 
@@ -786,38 +785,38 @@ WHERE client_id = 'CLIENT_ID'
 
 ### 7.1 Isolamento e Segurança por Tenant
 
-| Campo | Conteúdo |
-|-------|---------|
-| **Regra inviolável** | `client_id` SEMPRE da sessão autenticada — NUNCA do body, query string ou header externo |
-| **RLS** | Policies no Supabase garantem isolamento; `user_profiles` é a tabela de referência (não `auth.users`) |
-| **Vault** | Cada cliente tem suas próprias chaves API no Supabase Vault — zero compartilhamento |
-| **Automação** | `[AUTO]` — Supabase RLS garante isolamento sem código adicional |
+| Campo                | Conteúdo                                                                                              |
+| -------------------- | ----------------------------------------------------------------------------------------------------- |
+| **Regra inviolável** | `client_id` SEMPRE da sessão autenticada — NUNCA do body, query string ou header externo              |
+| **RLS**              | Policies no Supabase garantem isolamento; `user_profiles` é a tabela de referência (não `auth.users`) |
+| **Vault**            | Cada cliente tem suas próprias chaves API no Supabase Vault — zero compartilhamento                   |
+| **Automação**        | `[AUTO]` — Supabase RLS garante isolamento sem código adicional                                       |
 
 ---
 
 ### 7.2 Gerenciamento de Credenciais (Vault)
 
-| Campo | Conteúdo |
-|-------|---------|
-| **Atividades** | Adicionar, atualizar e revogar chaves API por cliente |
+| Campo                       | Conteúdo                                                                        |
+| --------------------------- | ------------------------------------------------------------------------------- |
+| **Atividades**              | Adicionar, atualizar e revogar chaves API por cliente                           |
 | **Credenciais por cliente** | `META_ACCESS_TOKEN`, `OPENAI_API_KEY` ou `GROQ_API_KEY`, `META_PHONE_NUMBER_ID` |
-| **Workflow** | Acessar Supabase → Vault → criar/atualizar secret com nome `client:{id}:{key}` |
-| **Teste** | `GET /api/test/vault-config?clientId=X` |
-| **Responsável** | Pedro Vitor |
-| **Automação** | `[MANUAL]` — interface Supabase Vault |
+| **Workflow**                | Acessar Supabase → Vault → criar/atualizar secret com nome `client:{id}:{key}`  |
+| **Teste**                   | `GET /api/test/vault-config?clientId=X`                                         |
+| **Responsável**             | Pedro Vitor                                                                     |
+| **Automação**               | `[MANUAL]` — interface Supabase Vault                                           |
 
 ---
 
 ### 7.3 Feature Flags e Rollout Controlado
 
-| Campo | Conteúdo |
-|-------|---------|
-| **Atividades** | Ativar/desativar features por tenant; rollout gradual; kill switch de emergência |
-| **Kill switch** | `UPDATE feature_flags SET enabled=FALSE WHERE key='crm_engine_v2_enabled'` — para todos os tenants em < 30s |
-| **Por tenant** | `UPDATE clients SET crm_engine_v2=FALSE WHERE id='uuid'` — para tenant específico |
-| **Rollout recomendado** | 5% (canary 48h) → 25% (beta 1 semana) → 100% (GA) |
-| **Responsável** | Pedro Vitor |
-| **Automação** | `[SEMI]` — SQL direto no Supabase |
+| Campo                   | Conteúdo                                                                                                    |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------- |
+| **Atividades**          | Ativar/desativar features por tenant; rollout gradual; kill switch de emergência                            |
+| **Kill switch**         | `UPDATE feature_flags SET enabled=FALSE WHERE key='crm_engine_v2_enabled'` — para todos os tenants em < 30s |
+| **Por tenant**          | `UPDATE clients SET crm_engine_v2=FALSE WHERE id='uuid'` — para tenant específico                           |
+| **Rollout recomendado** | 5% (canary 48h) → 25% (beta 1 semana) → 100% (GA)                                                           |
+| **Responsável**         | Pedro Vitor                                                                                                 |
+| **Automação**           | `[SEMI]` — SQL direto no Supabase                                                                           |
 
 ---
 
@@ -827,51 +826,51 @@ WHERE client_id = 'CLIENT_ID'
 
 ### 8.1 Meta WhatsApp Business API
 
-| Campo | Conteúdo |
-|-------|---------|
-| **Atividades** | Manter tokens atualizados; gerenciar templates; monitorar rate limits |
-| **Atenção** | Token de 60 dias (`EAA...`) expira — monitorar e renovar via System User |
-| **Templates** | Aprovar novos templates para mensagens fora da janela 24h (pode levar 24–48h) |
-| **Versão API** | v18.0 |
-| **Responsável** | Pedro Vitor |
-| **Automação** | `[MANUAL]` — gestão no Meta Business Manager |
+| Campo           | Conteúdo                                                                      |
+| --------------- | ----------------------------------------------------------------------------- |
+| **Atividades**  | Manter tokens atualizados; gerenciar templates; monitorar rate limits         |
+| **Atenção**     | Token de 60 dias (`EAA...`) expira — monitorar e renovar via System User      |
+| **Templates**   | Aprovar novos templates para mensagens fora da janela 24h (pode levar 24–48h) |
+| **Versão API**  | v18.0                                                                         |
+| **Responsável** | Pedro Vitor                                                                   |
+| **Automação**   | `[MANUAL]` — gestão no Meta Business Manager                                  |
 
 ---
 
 ### 8.2 Meta Ads (Lead Ads + CAPI)
 
-| Campo | Conteúdo |
-|-------|---------|
-| **Atividades** | Configurar webhook `leadgen`; capturar `ctwa_clid`; rastrear origem Meta Ads; enviar eventos CAPI |
-| **Workflow** | Ver `docs/GUIA_META_ADS_CONFIGURACAO.md` (passo a passo completo para leigos) |
-| **Permissões** | `ads_read`, `leads_retrieval`, `whatsapp_business_manage_events` |
-| **Responsável** | Pedro Vitor + cliente |
-| **Automação** | `[SEMI]` — configuração manual no Meta, execução automática |
+| Campo           | Conteúdo                                                                                          |
+| --------------- | ------------------------------------------------------------------------------------------------- |
+| **Atividades**  | Configurar webhook `leadgen`; capturar `ctwa_clid`; rastrear origem Meta Ads; enviar eventos CAPI |
+| **Workflow**    | Ver `docs/GUIA_META_ADS_CONFIGURACAO.md` (passo a passo completo para leigos)                     |
+| **Permissões**  | `ads_read`, `leads_retrieval`, `whatsapp_business_manage_events`                                  |
+| **Responsável** | Pedro Vitor + cliente                                                                             |
+| **Automação**   | `[SEMI]` — configuração manual no Meta, execução automática                                       |
 
 ---
 
 ### 8.3 Stripe (Pagamentos)
 
-| Campo | Conteúdo |
-|-------|---------|
-| **Atividades** | Configurar webhook Stripe; garantir `card_id` no metadata do Checkout; processar `payment_completed` |
-| **Regra crítica** | Sempre passar `card_id` (UUID do CRM) no `metadata` do Stripe Checkout Session |
-| **Fallback** | Se sem `card_id`, buscar card por telefone do cliente |
-| **Sem `card_id` e sem telefone** | Evento logado sem card, sem erro 500 |
-| **Responsável** | Pedro Vitor |
-| **Automação** | `[AUTO]` — webhook processa automaticamente |
+| Campo                            | Conteúdo                                                                                             |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| **Atividades**                   | Configurar webhook Stripe; garantir `card_id` no metadata do Checkout; processar `payment_completed` |
+| **Regra crítica**                | Sempre passar `card_id` (UUID do CRM) no `metadata` do Stripe Checkout Session                       |
+| **Fallback**                     | Se sem `card_id`, buscar card por telefone do cliente                                                |
+| **Sem `card_id` e sem telefone** | Evento logado sem card, sem erro 500                                                                 |
+| **Responsável**                  | Pedro Vitor                                                                                          |
+| **Automação**                    | `[AUTO]` — webhook processa automaticamente                                                          |
 
 ---
 
 ### 8.4 OpenAI / Groq (AI)
 
-| Campo | Conteúdo |
-|-------|---------|
-| **Atividades** | Monitorar uso e custos; alertar quando próximo do budget; trocar modelo se necessário |
-| **Budget** | Configurável por cliente via `client_budgets`; enforcement automático em `checkBudgetAvailable()` |
-| **Monitoramento** | `/dashboard/openai-analytics` + `/dashboard/ai-gateway` |
-| **Responsável** | Pedro Vitor |
-| **Automação** | `[AUTO]` — tracking e enforcement automáticos |
+| Campo             | Conteúdo                                                                                          |
+| ----------------- | ------------------------------------------------------------------------------------------------- |
+| **Atividades**    | Monitorar uso e custos; alertar quando próximo do budget; trocar modelo se necessário             |
+| **Budget**        | Configurável por cliente via `client_budgets`; enforcement automático em `checkBudgetAvailable()` |
+| **Monitoramento** | `/dashboard/openai-analytics` + `/dashboard/ai-gateway`                                           |
+| **Responsável**   | Pedro Vitor                                                                                       |
+| **Automação**     | `[AUTO]` — tracking e enforcement automáticos                                                     |
 
 ---
 
@@ -911,30 +910,30 @@ curl http://localhost:3000/api/test/supabase-connection
 
 > Verificar **diariamente** (< 5 minutos):
 
-| Alerta | Query / Verificação | Ação se disparar |
-|--------|-------------------|-----------------|
-| DLQ exausta | `SELECT COUNT(*) FROM crm_action_dlq WHERE exhausted_at > NOW() - INTERVAL '24h'` | Investigar `final_error`, corrigir ação manualmente |
-| Falhas no engine | `SELECT COUNT(*) FROM crm_rule_executions WHERE status='error' AND executed_at > NOW() - INTERVAL '24h'` | Ver `error_message`, corrigir regra ou código |
-| Budget próximo do limite | `/dashboard/ai-gateway` → usage por cliente | Alertar cliente, aumentar budget ou otimizar |
-| Token Meta expirado | Webhook retorna 401 nos logs | Renovar via System User no Meta Business Manager |
-| Cron de inatividade parado | Última execução > 35min atrás | Verificar Vercel Cron Dashboard, reiniciar se necessário |
+| Alerta                     | Query / Verificação                                                                                      | Ação se disparar                                         |
+| -------------------------- | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| DLQ exausta                | `SELECT COUNT(*) FROM crm_action_dlq WHERE exhausted_at > NOW() - INTERVAL '24h'`                        | Investigar `final_error`, corrigir ação manualmente      |
+| Falhas no engine           | `SELECT COUNT(*) FROM crm_rule_executions WHERE status='error' AND executed_at > NOW() - INTERVAL '24h'` | Ver `error_message`, corrigir regra ou código            |
+| Budget próximo do limite   | `/dashboard/ai-gateway` → usage por cliente                                                              | Alertar cliente, aumentar budget ou otimizar             |
+| Token Meta expirado        | Webhook retorna 401 nos logs                                                                             | Renovar via System User no Meta Business Manager         |
+| Cron de inatividade parado | Última execução > 35min atrás                                                                            | Verificar Vercel Cron Dashboard, reiniciar se necessário |
 
 ---
 
 ## Apêndice C — Arquivos de Referência
 
-| Arquivo | Conteúdo |
-|---------|---------|
-| `docs/CHECKLIST_ONBOARDING_CLIENTE.md` | Checklist completo de onboarding passo a passo |
-| `docs/MANUAL_CRM_AUTOMATION_V2.md` | Manual completo do CRM Automation (triggers, ações, jornadas, SQL) |
-| `docs/GUIA_META_ADS_CONFIGURACAO.md` | Guia passo a passo para configurar Meta Ads e tokens |
-| `docs/tables/tabelas.md` | Schema do banco — **consultar antes de qualquer query** |
-| `twin-plans/PRD_CRM_AUTOMATION_V2.md` | PRD técnico completo do CRM Automation Engine V2 |
-| `db/MIGRATION_WORKFLOW.md` | Workflow de migrations |
-| `CLAUDE.md` | Guia técnico principal do projeto (regras críticas, padrões) |
+| Arquivo                                | Conteúdo                                                           |
+| -------------------------------------- | ------------------------------------------------------------------ |
+| `docs/CHECKLIST_ONBOARDING_CLIENTE.md` | Checklist completo de onboarding passo a passo                     |
+| `docs/MANUAL_CRM_AUTOMATION_V2.md`     | Manual completo do CRM Automation (triggers, ações, jornadas, SQL) |
+| `docs/GUIA_META_ADS_CONFIGURACAO.md`   | Guia passo a passo para configurar Meta Ads e tokens               |
+| `docs/tables/tabelas.md`               | Schema do banco — **consultar antes de qualquer query**            |
+| `twin-plans/PRD_CRM_AUTOMATION_V2.md`  | PRD técnico completo do CRM Automation Engine V2                   |
+| `db/MIGRATION_WORKFLOW.md`             | Workflow de migrations                                             |
+| `CLAUDE.md`                            | Guia técnico principal do projeto (regras críticas, padrões)       |
 
 ---
 
-*Macroprocessos UzzApp v1.0 — 2026-03-31*
-*Owner: Pedro Vitor*
-*Revisão sugerida: quinzenal ou após mudança arquitetural significativa*
+_Macroprocessos UzzApp v1.0 — 2026-03-31_
+_Owner: Pedro Vitor_
+_Revisão sugerida: quinzenal ou após mudança arquitetural significativa_

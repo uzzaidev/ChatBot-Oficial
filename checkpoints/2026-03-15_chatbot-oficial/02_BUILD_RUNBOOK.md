@@ -78,7 +78,7 @@ STRIPE_CONNECT_WEBHOOK_SECRET=whsec_...
 STRIPE_PLATFORM_WEBHOOK_SECRET=whsec_...
 
 # Webhooks (SEMPRE PRODUÇÃO)
-WEBHOOK_BASE_URL=https://chat.luisfboff.com
+WEBHOOK_BASE_URL=https://uzzap.uzzai.com
 ```
 
 **⚠️ IMPORTANTE:** `WEBHOOK_BASE_URL` deve SEMPRE apontar para produção (Meta não consegue acessar localhost).
@@ -110,6 +110,7 @@ npm run dev -- --webpack
 ```
 
 **Endpoints disponíveis:**
+
 - Dashboard: http://localhost:3000/dashboard
 - Login: http://localhost:3000/login
 - API Health: http://localhost:3000/api/analytics
@@ -171,23 +172,23 @@ npx cap open ios
 
 ## Scripts Disponíveis
 
-| Script | Comando | Descrição |
-|--------|---------|-----------|
-| **dev** | `npm run dev` | Desenvolvimento local (porta 3000) |
-| **build** | `npm run build` | Build produção web |
-| **build:mobile** | `npm run build:mobile` | Build estático para Capacitor |
-| **build:mobile:old** | `npm run build:mobile:old` | Build mobile com Doppler (dev) |
-| **build:mobile:stg** | `npm run build:mobile:stg` | Build mobile staging |
-| **build:mobile:prd** | `npm run build:mobile:prd` | Build mobile production |
-| **start** | `npm run start` | Rodar build de produção |
-| **lint** | `npm run lint` | ESLint |
-| **test** | `npm run test` | Jest tests |
-| **test:watch** | `npm run test:watch` | Jest em modo watch |
-| **test:coverage** | `npm run test:coverage` | Coverage report |
-| **cap:sync** | `npx cap sync` | Sync com Capacitor (Android + iOS) |
-| **cap:open:android** | `npx cap open android` | Abrir Android Studio |
-| **cap:open:ios** | `npx cap open ios` | Abrir Xcode |
-| **db:export** | `npm run db:export` | Exportar schema do Supabase |
+| Script               | Comando                    | Descrição                          |
+| -------------------- | -------------------------- | ---------------------------------- |
+| **dev**              | `npm run dev`              | Desenvolvimento local (porta 3000) |
+| **build**            | `npm run build`            | Build produção web                 |
+| **build:mobile**     | `npm run build:mobile`     | Build estático para Capacitor      |
+| **build:mobile:old** | `npm run build:mobile:old` | Build mobile com Doppler (dev)     |
+| **build:mobile:stg** | `npm run build:mobile:stg` | Build mobile staging               |
+| **build:mobile:prd** | `npm run build:mobile:prd` | Build mobile production            |
+| **start**            | `npm run start`            | Rodar build de produção            |
+| **lint**             | `npm run lint`             | ESLint                             |
+| **test**             | `npm run test`             | Jest tests                         |
+| **test:watch**       | `npm run test:watch`       | Jest em modo watch                 |
+| **test:coverage**    | `npm run test:coverage`    | Coverage report                    |
+| **cap:sync**         | `npx cap sync`             | Sync com Capacitor (Android + iOS) |
+| **cap:open:android** | `npx cap open android`     | Abrir Android Studio               |
+| **cap:open:ios**     | `npx cap open ios`         | Abrir Xcode                        |
+| **db:export**        | `npm run db:export`        | Exportar schema do Supabase        |
 
 ---
 
@@ -196,8 +197,10 @@ npx cap open ios
 ### Build Failures
 
 #### Erro: "Cannot find module '@/lib/supabase'"
+
 **Causa:** TypeScript paths não resolvidos
 **Fix:**
+
 ```bash
 # Limpar cache
 rm -rf .next
@@ -206,8 +209,10 @@ npm run dev
 ```
 
 #### Erro: "NEXT_PUBLIC_SUPABASE_URL is not defined"
+
 **Causa:** `.env.local` não criado ou não carregado
 **Fix:**
+
 ```bash
 # Criar .env.local baseado em .env.example (se existir)
 # Ou criar manualmente com as variáveis necessárias
@@ -215,6 +220,7 @@ npm run dev
 ```
 
 #### Erro: FFmpeg webpack warnings
+
 **Causa:** FFmpeg não é bundleable
 **Status:** Esperado. Build continua funcionando.
 **Fix:** Ignorar warnings ou configurar externals (já configurado em next.config.js)
@@ -222,20 +228,25 @@ npm run dev
 ### Runtime Errors
 
 #### Erro: "pg: Connection timeout" (NODE 3)
+
 **Causa:** Usando `pg` library em serverless
 **Fix:** SEMPRE usar Supabase client, NUNCA `pg` diretamente.
 **Arquivo:** `src/lib/postgres.ts` (⚠️ não usar em API routes)
 
 #### Erro: "Webhook signature verification failed"
+
 **Causa:** `META_APP_SECRET` incorreto ou request adulterado
 **Fix:**
+
 1. Verificar `META_APP_SECRET` no .env.local
 2. Verificar Meta Dashboard → App Settings → Basic → App Secret
 3. Logs em `src/app/api/webhook/received/route.ts`
 
 #### Erro: "Redis connection refused"
+
 **Causa:** Redis não está rodando (opcional)
 **Fix:** Flow continua sem batching. Para habilitar batching:
+
 ```bash
 # Instalar Redis localmente
 # Windows: https://github.com/microsoftarchive/redis/releases
@@ -246,6 +257,7 @@ npm run dev
 ### Database Issues
 
 #### Migrations failing
+
 ```bash
 # Resetar database local (⚠️ DESTRUTIVO)
 npx supabase db reset
@@ -255,8 +267,10 @@ npx supabase db push
 ```
 
 #### RLS Policy errors (403)
+
 **Causa:** User sem perfil ou fora do client correto
 **Fix:**
+
 1. Verificar `user_profiles` table
 2. Verificar `client_id` na sessão
 3. Logs em `src/middleware.ts` (se existir)
@@ -266,17 +280,20 @@ npx supabase db push
 ## Ambientes
 
 ### Development
+
 - **URL:** http://localhost:3000
 - **Supabase:** Project dev
 - **Redis:** Local
 - **Webhooks:** ⚠️ Produção (Meta não acessa localhost)
 
 ### Staging (via Doppler)
+
 - **Build:** `npm run build:mobile:stg`
 - **Config:** Doppler config stg
 - **Supabase:** Project staging
 
 ### Production
+
 - **URL:** https://uzzapp.uzzai.com.br
 - **Deploy:** Vercel (auto-deploy branch main)
 - **Supabase:** Project production
@@ -288,16 +305,19 @@ npx supabase db push
 ## CI/CD
 
 ### Vercel (Web)
+
 **Trigger:** Push to branch
 **Build Command:** `npm run build`
 **Output:** `.next/`
 **Env Vars:** Configuradas no Vercel Dashboard
 
 ### Google Play (Android)
+
 **Manual:** Build via Android Studio → Upload .aab
 **Automated:** Não configurado
 
 ### App Store (iOS)
+
 **Status:** Pendente primeira submissão
 **Docs:** docs/ios/IOS_IMPLEMENTATION_GUIDE.md
 
@@ -315,6 +335,7 @@ ANALYZE=true npm run build
 ### Webpack Watch Optimization
 
 Já configurado em `next.config.js`:
+
 - Ignora: node_modules, .git, .next, db, docs, supabase
 - AggregateTimeout: 300ms
 - Poll: false (usa eventos do sistema)
@@ -352,12 +373,14 @@ Já configurado em `next.config.js`:
 ## Monitoring
 
 ### Logs
+
 - **Console:** `npm run dev` output
 - **Supabase:** Dashboard → Logs
 - **Vercel:** Dashboard → Logs
 - **Custom:** `src/lib/logger.ts` (com sanitização)
 
 ### Metrics
+
 - **Dashboard:** /dashboard/analytics
 - **API:** /api/analytics
 - **OpenAI Usage:** /dashboard/openai-analytics
@@ -382,12 +405,14 @@ cd db
 ## Support
 
 ### Internal Docs
+
 - **Architecture:** docs/architecture/
 - **Stripe:** docs/stripe/
 - **iOS:** docs/ios/
 - **Database:** docs/tables/tabelas.md
 
 ### External
+
 - **Next.js:** https://nextjs.org/docs
 - **Supabase:** https://supabase.com/docs
 - **Capacitor:** https://capacitorjs.com/docs
@@ -395,5 +420,5 @@ cd db
 
 ---
 
-*Última atualização: 2026-03-15*
-*Versão: 1.0*
+_Última atualização: 2026-03-15_
+_Versão: 1.0_

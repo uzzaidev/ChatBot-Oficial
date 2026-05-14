@@ -12,6 +12,7 @@
 **API Version:** Meta Graph API v18.0
 **Multi-Tenant:** ✅ SIM (webhook dinâmico por cliente + Vault credentials)
 **Tipos de Mensagem Suportados:**
+
 - ✅ Text (send + receive)
 - ✅ Image (send + receive + Vision analysis)
 - ✅ Audio (send + receive + Whisper transcription + TTS generation)
@@ -22,6 +23,7 @@
 - ✅ Status Updates (sent, delivered, read, failed)
 
 **Integrações AI:**
+
 - ✅ OpenAI Whisper (audio → text)
 - ✅ GPT-4o Vision (image → description)
 - ✅ OpenAI TTS (text → audio)
@@ -36,6 +38,7 @@
 **Padrão:** `/api/webhook/[clientId]`
 
 **Evidência:** `src/app/api/webhook/[clientId]/route.ts:1-16`
+
 ```typescript
 /**
  * 🔐 WEBHOOK MULTI-TENANT DINÂMICO POR CLIENTE
@@ -43,8 +46,8 @@
  * Rota: /api/webhook/[clientId]
  *
  * Cada cliente tem sua própria URL de webhook configurada no Meta Dashboard:
- * - Cliente A: https://chat.luisfboff.com/api/webhook/550e8400-e29b-41d4-a716-446655440000
- * - Cliente B: https://chat.luisfboff.com/api/webhook/660e8400-e29b-41d4-a716-446655440001
+ * - Cliente A: https://uzzap.uzzai.com/api/webhook/550e8400-e29b-41d4-a716-446655440000
+ * - Cliente B: https://uzzap.uzzai.com/api/webhook/660e8400-e29b-41d4-a716-446655440001
  *
  * Fluxo:
  * 1. Meta chama webhook com clientId na URL
@@ -55,6 +58,7 @@
 ```
 
 **Vantagens:**
+
 1. ✅ Isolamento total entre clientes
 2. ✅ Rate limiting por cliente
 3. ✅ Credentials isolados (Vault)
@@ -108,11 +112,13 @@ export async function GET(
 ```
 
 **Query Parameters:**
+
 - `hub.mode` → MUST be "subscribe"
 - `hub.verify_token` → Must match client's Vault token
 - `hub.challenge` → Random string to echo back
 
 **Security Features:**
+
 - ✅ Client-specific verify token (Vault)
 - ✅ Active status validation
 - ✅ Rate limiting (VULN-002 fix)
@@ -158,6 +164,7 @@ graph TD
 **Security Fix:** VULN-012
 
 **Evidência:** `route.ts:201-246`
+
 ```typescript
 // 1. Get signature from header
 const signature = request.headers.get("X-Hub-Signature-256");
@@ -191,6 +198,7 @@ if (
 ```
 
 **Credentials Separation:**
+
 - `metaVerifyToken` → GET verification (hub.verify_token)
 - `metaAppSecret` → POST HMAC validation (X-Hub-Signature-256)
 - **IMPORTANT:** Different credentials for different purposes!
@@ -223,6 +231,7 @@ if (statuses && statuses.length > 0) {
 ```
 
 **Status Types:**
+
 - `sent` → Message sent to WhatsApp servers
 - `delivered` → Message delivered to user's device
 - `read` → User opened the message
@@ -240,7 +249,7 @@ if (message && message.type === "reaction" && message.reaction) {
 
   console.log("😊 Processing reaction:", {
     emoji: reaction.emoji || "(removed)", // Empty string = removed reaction
-    targetMessage: reaction.message_id,   // WAMID of message being reacted to
+    targetMessage: reaction.message_id, // WAMID of message being reacted to
     from: reactorPhone,
   });
 
@@ -256,6 +265,7 @@ if (message && message.type === "reaction" && message.reaction) {
 ```
 
 **Reaction Features:**
+
 - ✅ Add emoji to message
 - ✅ Remove emoji (empty string)
 - ✅ Updates existing message in database
@@ -269,14 +279,14 @@ if (message && message.type === "reaction" && message.reaction) {
 // 🎯 Log referral data if present (Meta Ads / Click-to-WhatsApp)
 if (message.referral) {
   console.log("🎯 [REFERRAL] Lead came from Meta Ad:", {
-    source_type: message.referral.source_type,      // "ad" | "post"
-    source_url: message.referral.source_url,        // Meta ad URL
-    headline: message.referral.headline,            // Ad headline
-    body: message.referral.body,                    // Ad body text
-    ctwa_clid: message.referral.ctwa_clid,          // Click ID
-    source_id: message.referral.source_id,          // Page/Ad ID
-    ad_id: message.referral.ad_id,                  // Ad ID
-    campaign_id: message.referral.campaign_id,      // Campaign ID
+    source_type: message.referral.source_type, // "ad" | "post"
+    source_url: message.referral.source_url, // Meta ad URL
+    headline: message.referral.headline, // Ad headline
+    body: message.referral.body, // Ad body text
+    ctwa_clid: message.referral.ctwa_clid, // Click ID
+    source_id: message.referral.source_id, // Page/Ad ID
+    ad_id: message.referral.ad_id, // Ad ID
+    campaign_id: message.referral.campaign_id, // Campaign ID
   });
 }
 ```
@@ -294,15 +304,16 @@ const interactiveResponse = parseInteractiveMessage(message);
 
 if (interactiveResponse) {
   console.log("📱 Interactive message response received:", {
-    type: interactiveResponse.type,    // "button_reply" | "list_reply"
-    id: interactiveResponse.id,         // Button/List item ID
-    title: interactiveResponse.title,   // Button/List item title
-    from: interactiveResponse.from,     // User phone
+    type: interactiveResponse.type, // "button_reply" | "list_reply"
+    id: interactiveResponse.id, // Button/List item ID
+    title: interactiveResponse.title, // Button/List item title
+    from: interactiveResponse.from, // User phone
   });
 }
 ```
 
 **Interactive Types:**
+
 - `button_reply` → User clicked button
 - `list_reply` → User selected list item
 
@@ -330,6 +341,7 @@ if (messageId) {
 ```
 
 **Implementation:**
+
 - ✅ Redis primary (fast check)
 - ✅ PostgreSQL fallback (persistent)
 - ✅ TTL: 24 hours
@@ -365,26 +377,27 @@ return new NextResponse("EVENT_RECEIVED", { status: 200 });
 **Evidência:** `src/lib/meta.ts:12-39`
 
 ```typescript
-const META_API_VERSION = 'v18.0'
-const META_BASE_URL = `https://graph.facebook.com/${META_API_VERSION}`
+const META_API_VERSION = "v18.0";
+const META_BASE_URL = `https://graph.facebook.com/${META_API_VERSION}`;
 
 /**
  * 🔐 Cria cliente Meta API com accessToken dinâmico ou fallback para env
  */
 const createMetaApiClient = (accessToken?: string) => {
-  const token = accessToken || getRequiredEnvVariable('META_ACCESS_TOKEN')
+  const token = accessToken || getRequiredEnvVariable("META_ACCESS_TOKEN");
 
   return axios.create({
     baseURL: META_BASE_URL,
     headers: {
       Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
-  })
-}
+  });
+};
 ```
 
 **Multi-Tenant Credentials:**
+
 - Primary: `config.apiKeys.metaAccessToken` (from Vault)
 - Fallback: `META_ACCESS_TOKEN` (env var)
 
@@ -396,30 +409,33 @@ const createMetaApiClient = (accessToken?: string) => {
 export const sendTextMessage = async (
   phone: string,
   message: string,
-  config?: ClientConfig // 🔐 Client-specific config from Vault
+  config?: ClientConfig, // 🔐 Client-specific config from Vault
 ): Promise<{ messageId: string }> => {
-  const accessToken = config?.apiKeys.metaAccessToken
-  const phoneNumberId = config?.apiKeys.metaPhoneNumberId || getRequiredEnvVariable('META_PHONE_NUMBER_ID')
+  const accessToken = config?.apiKeys.metaAccessToken;
+  const phoneNumberId =
+    config?.apiKeys.metaPhoneNumberId ||
+    getRequiredEnvVariable("META_PHONE_NUMBER_ID");
 
-  const client = createMetaApiClient(accessToken)
+  const client = createMetaApiClient(accessToken);
 
   const response = await client.post(`/${phoneNumberId}/messages`, {
-    messaging_product: 'whatsapp',
-    recipient_type: 'individual',
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
     to: phone,
-    type: 'text',
+    type: "text",
     text: {
       body: message,
     },
-  })
+  });
 
-  const messageId = response.data?.messages?.[0]?.id // WAMID
+  const messageId = response.data?.messages?.[0]?.id; // WAMID
 
-  return { messageId }
-}
+  return { messageId };
+};
 ```
 
 **Response:**
+
 ```json
 {
   "messages": [
@@ -437,26 +453,27 @@ export const sendTextMessage = async (
 ```typescript
 export const sendImageMessage = async (
   phone: string,
-  imageUrl: string,      // Must be publicly accessible URL
-  caption?: string,       // Optional caption
-  config?: ClientConfig
+  imageUrl: string, // Must be publicly accessible URL
+  caption?: string, // Optional caption
+  config?: ClientConfig,
 ): Promise<{ messageId: string }> => {
   const response = await client.post(`/${phoneNumberId}/messages`, {
-    messaging_product: 'whatsapp',
-    recipient_type: 'individual',
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
     to: phone,
-    type: 'image',
+    type: "image",
     image: {
       link: imageUrl,
       ...(caption && { caption }),
     },
-  })
+  });
 
-  return { messageId: response.data?.messages?.[0]?.id }
-}
+  return { messageId: response.data?.messages?.[0]?.id };
+};
 ```
 
 **Requirements:**
+
 - ✅ Image URL must be HTTPS
 - ✅ Max file size: 5 MB
 - ✅ Formats: JPG, PNG
@@ -469,21 +486,21 @@ export const sendImageMessage = async (
 ```typescript
 export const sendAudioMessage = async (
   phone: string,
-  audioUrl: string,       // Public URL to audio file
-  config?: ClientConfig
+  audioUrl: string, // Public URL to audio file
+  config?: ClientConfig,
 ): Promise<{ messageId: string }> => {
   const response = await client.post(`/${phoneNumberId}/messages`, {
-    messaging_product: 'whatsapp',
-    recipient_type: 'individual',
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
     to: phone,
-    type: 'audio',
+    type: "audio",
     audio: {
       link: audioUrl,
     },
-  })
+  });
 
-  return { messageId: response.data?.messages?.[0]?.id }
-}
+  return { messageId: response.data?.messages?.[0]?.id };
+};
 ```
 
 **Formats:** MP3, OGG, AAC, AMR, M4A
@@ -496,21 +513,21 @@ export const sendAudioMessage = async (
 ```typescript
 export const sendAudioMessageByMediaId = async (
   phone: string,
-  mediaId: string,        // WhatsApp Media ID (from upload)
-  config?: ClientConfig
+  mediaId: string, // WhatsApp Media ID (from upload)
+  config?: ClientConfig,
 ): Promise<{ messageId: string }> => {
   const response = await client.post(`/${phoneNumberId}/messages`, {
-    messaging_product: 'whatsapp',
-    recipient_type: 'individual',
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
     to: phone,
-    type: 'audio',
+    type: "audio",
     audio: {
-      id: mediaId,         // Use Media ID instead of URL
+      id: mediaId, // Use Media ID instead of URL
     },
-  })
+  });
 
-  return { messageId: response.data?.messages?.[0]?.id }
-}
+  return { messageId: response.data?.messages?.[0]?.id };
+};
 ```
 
 **Use Case:** Send TTS-generated audio from handleAudioToolCall
@@ -526,22 +543,22 @@ export const sendDocumentMessage = async (
   documentUrl: string,
   filename: string,
   caption?: string,
-  config?: ClientConfig
+  config?: ClientConfig,
 ): Promise<{ messageId: string }> => {
   const response = await client.post(`/${phoneNumberId}/messages`, {
-    messaging_product: 'whatsapp',
-    recipient_type: 'individual',
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
     to: phone,
-    type: 'document',
+    type: "document",
     document: {
       link: documentUrl,
       filename,
       ...(caption && { caption }),
     },
-  })
+  });
 
-  return { messageId: response.data?.messages?.[0]?.id }
-}
+  return { messageId: response.data?.messages?.[0]?.id };
+};
 ```
 
 **Formats:** PDF, DOC, DOCX, XLS, XLSX, TXT, etc.
@@ -555,31 +572,31 @@ export const sendDocumentMessage = async (
 ```typescript
 export const sendTemplateMessage = async (
   phone: string,
-  templateName: string,     // Must be pre-approved by Meta
-  language: string,          // e.g., 'pt_BR', 'en_US'
-  parameters?: string[],     // Variables for template {{1}}, {{2}}, etc.
-  config?: ClientConfig
+  templateName: string, // Must be pre-approved by Meta
+  language: string, // e.g., 'pt_BR', 'en_US'
+  parameters?: string[], // Variables for template {{1}}, {{2}}, etc.
+  config?: ClientConfig,
 ): Promise<{ messageId: string }> => {
   // Build components with parameters
-  const components: TemplateComponentPayload[] = []
+  const components: TemplateComponentPayload[] = [];
 
   if (parameters && parameters.length > 0) {
-    const bodyParameters: TemplateParameter[] = parameters.map(value => ({
-      type: 'text',
+    const bodyParameters: TemplateParameter[] = parameters.map((value) => ({
+      type: "text",
       text: value,
-    }))
+    }));
 
     components.push({
-      type: 'body',
+      type: "body",
       parameters: bodyParameters,
-    })
+    });
   }
 
   const payload: TemplateSendPayload = {
-    messaging_product: 'whatsapp',
-    recipient_type: 'individual',
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
     to: phone,
-    type: 'template',
+    type: "template",
     template: {
       name: templateName,
       language: {
@@ -587,21 +604,23 @@ export const sendTemplateMessage = async (
       },
       ...(components.length > 0 && { components }),
     },
-  }
+  };
 
-  const response = await client.post(`/${phoneNumberId}/messages`, payload)
+  const response = await client.post(`/${phoneNumberId}/messages`, payload);
 
-  return { messageId: response.data?.messages?.[0]?.id }
-}
+  return { messageId: response.data?.messages?.[0]?.id };
+};
 ```
 
 **Template Workflow:**
+
 1. Create template via `createMetaTemplate()`
 2. Submit to Meta for approval
 3. Wait for approval (can take 24-48h)
 4. Use `sendTemplateMessage()` to send
 
 **Template Categories:**
+
 - `MARKETING` → Promotional messages
 - `UTILITY` → Account updates, order confirmations
 - `AUTHENTICATION` → OTP codes
@@ -615,35 +634,42 @@ export const sendTemplateMessage = async (
 **Evidência:** `src/lib/meta.ts:48-68`
 
 ```typescript
-export const downloadMedia = async (mediaId: string, accessToken?: string): Promise<Buffer> => {
-  const client = createMetaApiClient(accessToken)
+export const downloadMedia = async (
+  mediaId: string,
+  accessToken?: string,
+): Promise<Buffer> => {
+  const client = createMetaApiClient(accessToken);
 
   // STEP 1: Get media URL from Meta API
-  const mediaUrlResponse = await client.get(`/${mediaId}`)
-  const mediaUrl = mediaUrlResponse.data?.url
+  const mediaUrlResponse = await client.get(`/${mediaId}`);
+  const mediaUrl = mediaUrlResponse.data?.url;
 
   if (!mediaUrl) {
-    throw new Error('No media URL returned from Meta API')
+    throw new Error("No media URL returned from Meta API");
   }
 
   // STEP 2: Download media from URL
   const mediaResponse = await client.get(mediaUrl, {
-    responseType: 'arraybuffer',
-  })
+    responseType: "arraybuffer",
+  });
 
-  return Buffer.from(mediaResponse.data)
-}
+  return Buffer.from(mediaResponse.data);
+};
 ```
 
 **Usage:** `src/nodes/downloadMetaMedia.ts:10-17`
 
 ```typescript
-export const downloadMetaMedia = async (mediaId: string, accessToken?: string): Promise<Buffer> => {
-  return await downloadMedia(mediaId, accessToken)
-}
+export const downloadMetaMedia = async (
+  mediaId: string,
+  accessToken?: string,
+): Promise<Buffer> => {
+  return await downloadMedia(mediaId, accessToken);
+};
 ```
 
 **Media Types:**
+
 - `audio` → Transcribe with Whisper (NODE 4b)
 - `image` → Analyze with GPT-4o Vision (NODE 4b)
 - `document` → Store in Supabase Storage (NODE 4a)
@@ -657,26 +683,31 @@ export const downloadMetaMedia = async (mediaId: string, accessToken?: string): 
 **Evidência:** `src/nodes/transcribeAudio.ts:1-21`
 
 ```typescript
-import { transcribeAudio as transcribeAudioWithWhisper } from '@/lib/openai'
+import { transcribeAudio as transcribeAudioWithWhisper } from "@/lib/openai";
 
 export const transcribeAudio = async (
   audioBuffer: Buffer,
   apiKey?: string,
   clientId?: string,
-  phone?: string
+  phone?: string,
 ): Promise<{
-  text: string
-  usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number }
-  model: string
-  durationSeconds?: number
+  text: string;
+  usage: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+  model: string;
+  durationSeconds?: number;
 }> => {
-  return await transcribeAudioWithWhisper(audioBuffer, apiKey, clientId, phone)
-}
+  return await transcribeAudioWithWhisper(audioBuffer, apiKey, clientId, phone);
+};
 ```
 
 **Implementation:** `src/lib/openai.ts` (724 lines)
 
 **Features:**
+
 - ✅ Multi-tenant (Vault credentials)
 - ✅ Budget enforcement (before API call)
 - ✅ Usage tracking (unified_tracking)
@@ -684,12 +715,14 @@ export const transcribeAudio = async (
 - ✅ Model: `whisper-1`
 
 **Cost Calculation:**
+
 ```typescript
 // $0.006 / minute (Whisper pricing)
-const costUSD = (durationSeconds / 60) * 0.006
+const costUSD = (durationSeconds / 60) * 0.006;
 ```
 
 **Process Flow:**
+
 1. User sends audio → WhatsApp webhook
 2. NODE 4a: Download media (`downloadMetaMedia`)
 3. NODE 4b: Transcribe audio (`transcribeAudio`)
@@ -710,7 +743,7 @@ export const analyzeImage = async (
   mimeType: string = "image/jpeg",
   apiKey?: string,
   clientId?: string,
-  phone?: string
+  phone?: string,
 ): Promise<{
   text: string;
   usage: {
@@ -728,7 +761,7 @@ export const analyzeImage = async (
     mimeType,
     apiKey,
     clientId,
-    phone
+    phone,
   );
 };
 ```
@@ -738,6 +771,7 @@ export const analyzeImage = async (
 **Model:** `gpt-4o` (Vision capable)
 
 **Features:**
+
 - ✅ OCR text extraction
 - ✅ Object detection
 - ✅ Scene description
@@ -746,6 +780,7 @@ export const analyzeImage = async (
 - ✅ Cached tokens support (prompt caching)
 
 **Process Flow:**
+
 1. User sends image → WhatsApp webhook
 2. NODE 4a: Download media (`downloadMetaMedia`)
 3. NODE 4b: Analyze image (`analyzeImage`)
@@ -753,6 +788,7 @@ export const analyzeImage = async (
 5. Continue chatbot flow with description
 
 **Usage Tracking:**
+
 ```typescript
 await trackUnifiedUsage({
   apiType: "vision",
@@ -776,6 +812,7 @@ await trackUnifiedUsage({
 ### TTS Multi-Provider Support
 
 **Providers:**
+
 1. ✅ OpenAI TTS (`tts-1`, `tts-1-hd`)
 2. ✅ ElevenLabs TTS (multilingual)
 
@@ -899,7 +936,7 @@ if (provider === "elevenlabs") {
 
   // Estimate duration (approx. 150 words/minute)
   const wordCount = text.split(/\s+/).length;
-  durationSeconds = Math.ceil((wordCount / 2.5) / speed);
+  durationSeconds = Math.ceil(wordCount / 2.5 / speed);
 }
 ```
 
@@ -908,21 +945,24 @@ if (provider === "elevenlabs") {
 ### TTS Cost Calculation
 
 **OpenAI:**
+
 - `tts-1-hd`: $15.00 / 1M characters
 - `tts-1`: $7.50 / 1M characters
 
 **ElevenLabs:**
+
 - Starter tier: $0.30 / 1000 characters
 
 **Evidência:** `convertTextToSpeech.ts:247-263`
 
 ```typescript
 if (usedProvider === "openai") {
-  costUSD = model === "tts-1-hd"
-    ? (text.length / 1_000_000) * 15.0
-    : (text.length / 1_000_000) * 7.5;
+  costUSD =
+    model === "tts-1-hd"
+      ? (text.length / 1_000_000) * 15.0
+      : (text.length / 1_000_000) * 7.5;
 } else if (usedProvider === "elevenlabs") {
-  costUSD = (text.length / 1000) * 0.30;
+  costUSD = (text.length / 1000) * 0.3;
 }
 ```
 
@@ -931,6 +971,7 @@ if (usedProvider === "openai") {
 **Table:** `tts_cache`
 
 **Schema:**
+
 ```sql
 CREATE TABLE tts_cache (
   client_id UUID NOT NULL,
@@ -948,6 +989,7 @@ CREATE TABLE tts_cache (
 ```
 
 **Cache Workflow:**
+
 1. Hash text + voice + speed + provider (MD5)
 2. Check if cache entry exists and not expired
 3. If hit → Download from Supabase Storage
@@ -975,15 +1017,16 @@ CREATE TABLE tts_cache (
 export const sendTextMessage = async (
   phone: string,
   message: string,
-  config?: ClientConfig // 🔐 Client-specific config from Vault
+  config?: ClientConfig, // 🔐 Client-specific config from Vault
 ): Promise<{ messageId: string }> => {
-  const accessToken = config?.apiKeys.metaAccessToken
-  const phoneNumberId = config?.apiKeys.metaPhoneNumberId
+  const accessToken = config?.apiKeys.metaAccessToken;
+  const phoneNumberId = config?.apiKeys.metaPhoneNumberId;
   // ...
-}
+};
 ```
 
 **Isolation:**
+
 - ✅ Each client has their own Meta Business Account
 - ✅ Each client has their own Phone Number ID
 - ✅ Each client has their own API credentials
@@ -1064,28 +1107,28 @@ sequenceDiagram
 
 ### Webhook & Meta API
 
-| Arquivo | Linhas | Descrição |
-|---------|--------|-----------|
-| `src/app/api/webhook/[clientId]/route.ts` | 474 | Webhook handler (GET verify + POST messages) |
-| `src/lib/meta.ts` | 514 | Meta API client (send messages, templates, media) |
-| `src/nodes/downloadMetaMedia.ts` | 18 | Media download wrapper |
+| Arquivo                                   | Linhas | Descrição                                         |
+| ----------------------------------------- | ------ | ------------------------------------------------- |
+| `src/app/api/webhook/[clientId]/route.ts` | 474    | Webhook handler (GET verify + POST messages)      |
+| `src/lib/meta.ts`                         | 514    | Meta API client (send messages, templates, media) |
+| `src/nodes/downloadMetaMedia.ts`          | 18     | Media download wrapper                            |
 
 ### AI Integrations
 
-| Arquivo | Linhas | Descrição |
-|---------|--------|-----------|
-| `src/nodes/transcribeAudio.ts` | 21 | Whisper transcription wrapper |
-| `src/lib/openai.ts` | 724 | OpenAI client (Whisper, Vision, Embeddings) |
-| `src/nodes/convertTextToSpeech.ts` | 301 | TTS (OpenAI + ElevenLabs) with cache |
-| `src/lib/elevenlabs.ts` | N/A | ElevenLabs TTS client |
+| Arquivo                            | Linhas | Descrição                                   |
+| ---------------------------------- | ------ | ------------------------------------------- |
+| `src/nodes/transcribeAudio.ts`     | 21     | Whisper transcription wrapper               |
+| `src/lib/openai.ts`                | 724    | OpenAI client (Whisper, Vision, Embeddings) |
+| `src/nodes/convertTextToSpeech.ts` | 301    | TTS (OpenAI + ElevenLabs) with cache        |
+| `src/lib/elevenlabs.ts`            | N/A    | ElevenLabs TTS client                       |
 
 ### Tool Handlers
 
-| Arquivo | Descrição |
-|---------|-----------|
-| `src/handlers/handleAudioToolCall.ts` | TTS tool call handler |
-| `src/handlers/handleDocumentSearchToolCall.ts` | RAG document search |
-| `src/handlers/handleHumanHandoff.ts` | Human handoff |
+| Arquivo                                        | Descrição             |
+| ---------------------------------------------- | --------------------- |
+| `src/handlers/handleAudioToolCall.ts`          | TTS tool call handler |
+| `src/handlers/handleDocumentSearchToolCall.ts` | RAG document search   |
+| `src/handlers/handleHumanHandoff.ts`           | Human handoff         |
 
 ---
 
@@ -1094,31 +1137,41 @@ sequenceDiagram
 ### Text Message
 
 **Incoming:**
+
 ```json
 {
-  "entry": [{
-    "changes": [{
-      "value": {
-        "messages": [{
-          "from": "5554999567051",
-          "id": "wamid.HBgN...",
-          "timestamp": "1675790400",
-          "type": "text",
-          "text": {
-            "body": "Olá, preciso de ajuda!"
+  "entry": [
+    {
+      "changes": [
+        {
+          "value": {
+            "messages": [
+              {
+                "from": "5554999567051",
+                "id": "wamid.HBgN...",
+                "timestamp": "1675790400",
+                "type": "text",
+                "text": {
+                  "body": "Olá, preciso de ajuda!"
+                }
+              }
+            ],
+            "contacts": [
+              {
+                "profile": { "name": "João Silva" },
+                "wa_id": "5554999567051"
+              }
+            ]
           }
-        }],
-        "contacts": [{
-          "profile": { "name": "João Silva" },
-          "wa_id": "5554999567051"
-        }]
-      }
-    }]
-  }]
+        }
+      ]
+    }
+  ]
 }
 ```
 
 **Outgoing:**
+
 ```json
 {
   "messaging_product": "whatsapp",
@@ -1134,22 +1187,26 @@ sequenceDiagram
 ### Audio Message
 
 **Incoming:**
+
 ```json
 {
-  "messages": [{
-    "from": "5554999567051",
-    "type": "audio",
-    "audio": {
-      "mime_type": "audio/ogg; codecs=opus",
-      "sha256": "...",
-      "id": "1234567890",
-      "voice": true
+  "messages": [
+    {
+      "from": "5554999567051",
+      "type": "audio",
+      "audio": {
+        "mime_type": "audio/ogg; codecs=opus",
+        "sha256": "...",
+        "id": "1234567890",
+        "voice": true
+      }
     }
-  }]
+  ]
 }
 ```
 
 **Outgoing (URL):**
+
 ```json
 {
   "type": "audio",
@@ -1160,6 +1217,7 @@ sequenceDiagram
 ```
 
 **Outgoing (Media ID):**
+
 ```json
 {
   "type": "audio",
@@ -1172,21 +1230,25 @@ sequenceDiagram
 ### Image Message
 
 **Incoming:**
+
 ```json
 {
-  "messages": [{
-    "type": "image",
-    "image": {
-      "mime_type": "image/jpeg",
-      "sha256": "...",
-      "id": "1234567890",
-      "caption": "Minha nota fiscal"
+  "messages": [
+    {
+      "type": "image",
+      "image": {
+        "mime_type": "image/jpeg",
+        "sha256": "...",
+        "id": "1234567890",
+        "caption": "Minha nota fiscal"
+      }
     }
-  }]
+  ]
 }
 ```
 
 **Outgoing:**
+
 ```json
 {
   "type": "image",
@@ -1201,22 +1263,29 @@ sequenceDiagram
 
 ```json
 {
-  "entry": [{
-    "changes": [{
-      "value": {
-        "statuses": [{
-          "id": "wamid.HBgN...",
-          "status": "delivered",
-          "timestamp": "1675790400",
-          "recipient_id": "5554999567051"
-        }]
-      }
-    }]
-  }]
+  "entry": [
+    {
+      "changes": [
+        {
+          "value": {
+            "statuses": [
+              {
+                "id": "wamid.HBgN...",
+                "status": "delivered",
+                "timestamp": "1675790400",
+                "recipient_id": "5554999567051"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
 }
 ```
 
 **Status Values:**
+
 - `sent` → Sent to WhatsApp servers
 - `delivered` → Delivered to user's device
 - `read` → User opened message
@@ -1226,23 +1295,26 @@ sequenceDiagram
 
 ```json
 {
-  "messages": [{
-    "from": "5554999567051",
-    "type": "reaction",
-    "reaction": {
-      "message_id": "wamid.HBgN...",
-      "emoji": "👍"
+  "messages": [
+    {
+      "from": "5554999567051",
+      "type": "reaction",
+      "reaction": {
+        "message_id": "wamid.HBgN...",
+        "emoji": "👍"
+      }
     }
-  }]
+  ]
 }
 ```
 
 **Remove Reaction:**
+
 ```json
 {
   "reaction": {
     "message_id": "wamid.HBgN...",
-    "emoji": ""  // Empty string removes reaction
+    "emoji": "" // Empty string removes reaction
   }
 }
 ```
@@ -1251,17 +1323,19 @@ sequenceDiagram
 
 ```json
 {
-  "messages": [{
-    "from": "5554999567051",
-    "type": "interactive",
-    "interactive": {
-      "type": "button_reply",
-      "button_reply": {
-        "id": "btn_confirm",
-        "title": "Confirmar"
+  "messages": [
+    {
+      "from": "5554999567051",
+      "type": "interactive",
+      "interactive": {
+        "type": "button_reply",
+        "button_reply": {
+          "id": "btn_confirm",
+          "title": "Confirmar"
+        }
       }
     }
-  }]
+  ]
 }
 ```
 
@@ -1272,6 +1346,7 @@ sequenceDiagram
 ### Test Endpoints
 
 **TTS Test:**
+
 ```bash
 curl http://localhost:3000/api/test/tts \
   -H "Content-Type: application/json" \
@@ -1279,6 +1354,7 @@ curl http://localhost:3000/api/test/tts \
 ```
 
 **TTS Voices:**
+
 ```bash
 curl http://localhost:3000/api/test/tts-voices
 ```
@@ -1286,18 +1362,20 @@ curl http://localhost:3000/api/test/tts-voices
 ### Manual Webhook Testing
 
 **Verify GET:**
+
 ```bash
-curl "https://chat.luisfboff.com/api/webhook/CLIENT_ID?hub.mode=subscribe&hub.verify_token=YOUR_TOKEN&hub.challenge=test123"
+curl "https://uzzap.uzzai.com/api/webhook/CLIENT_ID?hub.mode=subscribe&hub.verify_token=YOUR_TOKEN&hub.challenge=test123"
 ```
 
 **Expected:** `test123`
 
 **Send POST (requires HMAC signature):**
+
 ```bash
 # Generate signature
 echo -n '{"entry":[]}' | openssl dgst -sha256 -hmac "YOUR_APP_SECRET"
 
-curl -X POST https://chat.luisfboff.com/api/webhook/CLIENT_ID \
+curl -X POST https://uzzap.uzzai.com/api/webhook/CLIENT_ID \
   -H "Content-Type: application/json" \
   -H "X-Hub-Signature-256: sha256=GENERATED_SIGNATURE" \
   -d '{"entry":[]}'
@@ -1312,11 +1390,13 @@ curl -X POST https://chat.luisfboff.com/api/webhook/CLIENT_ID \
 **Symptoms:** Meta returns "The callback URL or verify token couldn't be validated"
 
 **Causes:**
+
 - ❌ Wrong `metaVerifyToken` in Vault
 - ❌ Client status not "active"
 - ❌ Client not found in database
 
 **Debug:**
+
 ```typescript
 // Check logs in webhook handler (route.ts:87-124)
 console.log("🔐 Validação do Verify Token:");
@@ -1330,11 +1410,13 @@ console.log("  Tokens iguais?", token === expectedToken);
 **Symptoms:** Webhook returns 200 but messages don't appear in chat
 
 **Causes:**
+
 - ❌ Invalid HMAC signature (wrong `metaAppSecret`)
 - ❌ Deduplication false positive
 - ❌ chatbotFlow error (check logs)
 
 **Debug:**
+
 ```typescript
 // Check deduplication
 const dedupResult = await checkDuplicateMessage(clientId, messageId);
@@ -1346,6 +1428,7 @@ console.log("Duplicate?", dedupResult.alreadyProcessed);
 **Symptoms:** "Failed to download media from Meta API"
 
 **Causes:**
+
 - ❌ Wrong `metaAccessToken` in Vault
 - ❌ Media expired (24h TTL)
 - ❌ Network timeout
@@ -1357,10 +1440,12 @@ console.log("Duplicate?", dedupResult.alreadyProcessed);
 **Symptoms:** "❌ Limite de budget atingido"
 
 **Causes:**
+
 - ❌ Client budget exhausted
 - ❌ Budget check failing
 
 **Debug:**
+
 ```typescript
 const budgetAvailable = await checkBudgetAvailable(clientId);
 console.log("Budget available?", budgetAvailable);
@@ -1371,6 +1456,7 @@ console.log("Budget available?", budgetAvailable);
 **Symptoms:** Webhook returns 403 "Invalid signature"
 
 **Causes:**
+
 - ❌ Wrong `metaAppSecret` in Vault
 - ❌ Body parsing before signature validation
 - ❌ Multi-part requests (not supported)

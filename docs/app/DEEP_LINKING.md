@@ -22,13 +22,14 @@ Deep linking permite abrir o app mobile diretamente de uma URL, sem passar pelo 
 
 **Tipos:**
 
-| Tipo | Exemplo | Comportamento |
-|------|---------|---------------|
-| **Custom URL Scheme** | `chatbot://chat/123` | Sempre abre app (se instalado) |
-| **App Links (Android)** | `https://chat.luisfboff.com/chat/123` | Abre app diretamente (sem dialog) |
-| **Universal Links (iOS)** | `https://chat.luisfboff.com/chat/123` | Abre app diretamente |
+| Tipo                      | Exemplo                            | Comportamento                     |
+| ------------------------- | ---------------------------------- | --------------------------------- |
+| **Custom URL Scheme**     | `chatbot://chat/123`               | Sempre abre app (se instalado)    |
+| **App Links (Android)**   | `https://uzzap.uzzai.com/chat/123` | Abre app diretamente (sem dialog) |
+| **Universal Links (iOS)** | `https://uzzap.uzzai.com/chat/123` | Abre app diretamente              |
 
 **Vantagens de App/Universal Links:**
+
 - URL HTTPS (funciona na web se app não instalado)
 - Sem dialog "Abrir com..." (experiência seamless)
 - SEO-friendly
@@ -40,14 +41,17 @@ Deep linking permite abrir o app mobile diretamente de uma URL, sem passar pelo 
 ### Cenários Práticos
 
 1. **Email de notificação:**
-   - "Você tem uma nova mensagem → [Abrir Chat](https://chat.luisfboff.com/chat/123)"
+
+   - "Você tem uma nova mensagem → [Abrir Chat](https://uzzap.uzzai.com/chat/123)"
    - Clique abre app diretamente na conversa
 
 2. **Compartilhamento:**
-   - Usuário compartilha link: `https://chat.luisfboff.com/invite/abc`
+
+   - Usuário compartilha link: `https://uzzap.uzzai.com/invite/abc`
    - Clique abre app em tela de convite
 
 3. **QR Code:**
+
    - Scan QR code → Abre app em página específica
 
 4. **Web → App:**
@@ -71,10 +75,8 @@ Deep linking permite abrir o app mobile diretamente de uma URL, sem passar pelo 
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <!-- Aceitar URLs https://chat.luisfboff.com/* -->
-                <data
-                    android:scheme="https"
-                    android:host="chat.luisfboff.com" />
+                <!-- Aceitar URLs https://uzzap.uzzai.com/* -->
+                <data android:scheme="https" android:host="uzzap.uzzai.com" />
             </intent-filter>
 
             <!-- Custom URL scheme (opcional) -->
@@ -132,6 +134,7 @@ Copie o SHA256 fingerprint.
 ```
 
 **Substituir:**
+
 - `package_name`: Match com `capacitor.config.ts` (appId)
 - `sha256_cert_fingerprints`: SHA256 do keytool (sem espaços, com `:`)
 
@@ -140,22 +143,26 @@ Copie o SHA256 fingerprint.
 #### Hospedar assetlinks.json
 
 Upload para:
+
 ```
-https://chat.luisfboff.com/.well-known/assetlinks.json
+https://uzzap.uzzai.com/.well-known/assetlinks.json
 ```
 
 **Importante:**
+
 - HTTPS obrigatório
 - Arquivo deve ser acessível publicamente
 - Content-Type: `application/json`
 
 **Verificar:**
+
 ```bash
-curl https://chat.luisfboff.com/.well-known/assetlinks.json
+curl https://uzzap.uzzai.com/.well-known/assetlinks.json
 # Deve retornar JSON acima
 ```
 
 **Testar verificação:**
+
 - [Google Asset Links Checker](https://developers.google.com/digital-asset-links/tools/generator)
 
 ---
@@ -180,7 +187,7 @@ npm run cap:open:android
 2. Selecione target **App**
 3. **Signing & Capabilities** → **+ Capability** → **Associated Domains**
 4. Adicione:
-   - `applinks:chat.luisfboff.com`
+   - `applinks:uzzap.uzzai.com`
 
 **Ou editar manualmente:**
 
@@ -192,7 +199,7 @@ npm run cap:open:android
 <dict>
     <key>com.apple.developer.associated-domains</key>
     <array>
-        <string>applinks:chat.luisfboff.com</string>
+        <string>applinks:uzzap.uzzai.com</string>
     </array>
 </dict>
 </plist>
@@ -219,10 +226,12 @@ Similar ao `assetlinks.json` do Android.
 ```
 
 **Substituir:**
+
 - `TEAM_ID`: Encontre em Xcode → Signing & Capabilities → Team (ex: `A1B2C3D4E5`)
 - `com.chatbot.app`: Bundle ID
 
 **Paths:**
+
 - `"*"`: Todos os paths
 - `"/chat/*"`: Apenas URLs `/chat/...`
 - `"/invite/*"`: Apenas URLs `/invite/...`
@@ -232,22 +241,26 @@ Similar ao `assetlinks.json` do Android.
 #### Hospedar apple-app-site-association
 
 Upload para:
+
 ```
-https://chat.luisfboff.com/.well-known/apple-app-site-association
+https://uzzap.uzzai.com/.well-known/apple-app-site-association
 ```
 
 **Importante:**
+
 - HTTPS obrigatório
 - **SEM extensão** `.json` (exatamente `apple-app-site-association`)
 - Content-Type: `application/json`
 
 **Verificar:**
+
 ```bash
-curl https://chat.luisfboff.com/.well-known/apple-app-site-association
+curl https://uzzap.uzzai.com/.well-known/apple-app-site-association
 # Deve retornar JSON acima
 ```
 
 **Testar verificação:**
+
 - [Apple App Site Association Validator](https://branch.io/resources/aasa-validator/)
 
 ---
@@ -276,67 +289,67 @@ npx cap sync ios
 
 ```typescript
 // src/lib/deepLinking.ts
-'use client'
+"use client";
 
-import { App } from '@capacitor/app'
-import { Capacitor } from '@capacitor/core'
+import { App } from "@capacitor/app";
+import { Capacitor } from "@capacitor/core";
 
 export const initDeepLinking = () => {
-  if (!Capacitor.isNativePlatform()) return
+  if (!Capacitor.isNativePlatform()) return;
 
   // Listener para app aberto via deep link
-  App.addListener('appUrlOpen', (data) => {
-    console.log('App opened with URL:', data.url)
-    handleDeepLink(data.url)
-  })
+  App.addListener("appUrlOpen", (data) => {
+    console.log("App opened with URL:", data.url);
+    handleDeepLink(data.url);
+  });
 
   // Verificar se app foi aberto via deep link (iOS)
   App.getLaunchUrl().then((result) => {
     if (result?.url) {
-      console.log('App launched with URL:', result.url)
-      handleDeepLink(result.url)
+      console.log("App launched with URL:", result.url);
+      handleDeepLink(result.url);
     }
-  })
-}
+  });
+};
 
 const handleDeepLink = (url: string) => {
   try {
     // Parse URL
-    const urlObj = new URL(url)
-    const path = urlObj.pathname
+    const urlObj = new URL(url);
+    const path = urlObj.pathname;
 
-    console.log('Deep link path:', path)
+    console.log("Deep link path:", path);
 
     // Rotas
-    if (path.startsWith('/chat/')) {
-      const chatId = path.split('/')[2]
-      navigateToChat(chatId)
-    } else if (path.startsWith('/invite/')) {
-      const inviteCode = path.split('/')[2]
-      navigateToInvite(inviteCode)
+    if (path.startsWith("/chat/")) {
+      const chatId = path.split("/")[2];
+      navigateToChat(chatId);
+    } else if (path.startsWith("/invite/")) {
+      const inviteCode = path.split("/")[2];
+      navigateToInvite(inviteCode);
     } else {
       // Default: Home
-      navigateToHome()
+      navigateToHome();
     }
   } catch (error) {
-    console.error('Erro ao processar deep link:', error)
-    navigateToHome()
+    console.error("Erro ao processar deep link:", error);
+    navigateToHome();
   }
-}
+};
 
 const navigateToChat = (chatId: string) => {
-  console.log('Navegar para chat:', chatId)
-  window.location.href = `/dashboard/chat/${chatId}`
-}
+  console.log("Navegar para chat:", chatId);
+  window.location.href = `/dashboard/chat/${chatId}`;
+};
 
 const navigateToInvite = (inviteCode: string) => {
-  console.log('Navegar para invite:', inviteCode)
-  window.location.href = `/invite/${inviteCode}`
-}
+  console.log("Navegar para invite:", inviteCode);
+  window.location.href = `/invite/${inviteCode}`;
+};
 
 const navigateToHome = () => {
-  window.location.href = '/dashboard'
-}
+  window.location.href = "/dashboard";
+};
 ```
 
 ---
@@ -345,21 +358,25 @@ const navigateToHome = () => {
 
 ```typescript
 // src/app/layout.tsx
-'use client'
+"use client";
 
-import { useEffect } from 'react'
-import { initDeepLinking } from '@/lib/deepLinking'
+import { useEffect } from "react";
+import { initDeepLinking } from "@/lib/deepLinking";
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   useEffect(() => {
-    initDeepLinking()
-  }, [])
+    initDeepLinking();
+  }, []);
 
   return (
     <html>
       <body>{children}</body>
     </html>
-  )
+  );
 }
 ```
 
@@ -369,37 +386,37 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
 ```typescript
 // src/lib/deepLinking.ts (versão Next.js)
-import { useRouter } from 'next/navigation'
+import { useRouter } from "next/navigation";
 
 export const useDeepLinking = () => {
-  const router = useRouter()
+  const router = useRouter();
 
   useEffect(() => {
-    if (!Capacitor.isNativePlatform()) return
+    if (!Capacitor.isNativePlatform()) return;
 
     const handleDeepLink = (url: string) => {
-      const urlObj = new URL(url)
-      const path = urlObj.pathname
+      const urlObj = new URL(url);
+      const path = urlObj.pathname;
 
       // Next.js router push
-      router.push(path)
-    }
+      router.push(path);
+    };
 
-    App.addListener('appUrlOpen', (data) => {
-      handleDeepLink(data.url)
-    })
+    App.addListener("appUrlOpen", (data) => {
+      handleDeepLink(data.url);
+    });
 
     App.getLaunchUrl().then((result) => {
-      if (result?.url) handleDeepLink(result.url)
-    })
-  }, [router])
-}
+      if (result?.url) handleDeepLink(result.url);
+    });
+  }, [router]);
+};
 
 // Uso em layout
 const MyLayout = ({ children }) => {
-  useDeepLinking()
-  return <div>{children}</div>
-}
+  useDeepLinking();
+  return <div>{children}</div>;
+};
 ```
 
 ---
@@ -415,13 +432,14 @@ const MyLayout = ({ children }) => {
 adb shell am start -a android.intent.action.VIEW -d "chatbot://chat/123" com.chatbot.app
 
 # App Link (HTTPS)
-adb shell am start -a android.intent.action.VIEW -d "https://chat.luisfboff.com/chat/123" com.chatbot.app
+adb shell am start -a android.intent.action.VIEW -d "https://uzzap.uzzai.com/chat/123" com.chatbot.app
 
 # Verificar intent-filter reconhecido
 adb shell dumpsys package com.chatbot.app | findstr -i "filter"
 ```
 
 **Verificação:**
+
 - [ ] App abre
 - [ ] Listener `appUrlOpen` dispara
 - [ ] Console mostra URL correta
@@ -432,11 +450,12 @@ adb shell dumpsys package com.chatbot.app | findstr -i "filter"
 #### 2. Via Email/SMS
 
 1. Envie email/SMS para device com link:
-   - `https://chat.luisfboff.com/chat/123`
+   - `https://uzzap.uzzai.com/chat/123`
 2. Clique no link
 3. App deve abrir diretamente (sem dialog)
 
 **Nota:** Se aparecer dialog "Abrir com...", verificar:
+
 - `assetlinks.json` está correto e acessível
 - `android:autoVerify="true"` está no intent-filter
 - SHA256 fingerprint match
@@ -445,7 +464,7 @@ adb shell dumpsys package com.chatbot.app | findstr -i "filter"
 
 #### 3. Via QR Code
 
-1. Gere QR code com URL: `https://chat.luisfboff.com/chat/123`
+1. Gere QR code com URL: `https://uzzap.uzzai.com/chat/123`
    - [QR Code Generator](https://www.qr-code-generator.com/)
 2. Scan com câmera do device
 3. Toque na notificação
@@ -458,7 +477,7 @@ adb shell dumpsys package com.chatbot.app | findstr -i "filter"
 #### 1. Via Notes App
 
 1. Abra Notes app no iPhone
-2. Digite URL: `https://chat.luisfboff.com/chat/123`
+2. Digite URL: `https://uzzap.uzzai.com/chat/123`
 3. **Long press** no link → **Open in "ChatBot Oficial"**
 4. App deve abrir
 
@@ -469,7 +488,7 @@ adb shell dumpsys package com.chatbot.app | findstr -i "filter"
 #### 2. Via Safari
 
 1. Abra Safari
-2. Navegue para: `https://chat.luisfboff.com/chat/123`
+2. Navegue para: `https://uzzap.uzzai.com/chat/123`
 3. Banner deve aparecer: "Abrir no app ChatBot Oficial"
 4. Toque → App abre
 
@@ -480,7 +499,7 @@ adb shell dumpsys package com.chatbot.app | findstr -i "filter"
 ```bash
 # Verificar se iOS reconhece association
 # (apenas macOS com simulador)
-xcrun simctl openurl booted "https://chat.luisfboff.com/chat/123"
+xcrun simctl openurl booted "https://uzzap.uzzai.com/chat/123"
 ```
 
 ---
@@ -494,23 +513,27 @@ xcrun simctl openurl booted "https://chat.luisfboff.com/chat/123"
 **Soluções:**
 
 1. **Verificar assetlinks.json:**
+
 ```bash
-curl https://chat.luisfboff.com/.well-known/assetlinks.json
+curl https://uzzap.uzzai.com/.well-known/assetlinks.json
 # Deve retornar JSON válido
 ```
 
 2. **SHA256 fingerprint correto:**
+
 ```bash
 keytool -list -v -keystore %USERPROFILE%\.android\debug.keystore -alias androiddebugkey -storepass android -keypass android
 # Copie SHA256 exato (com : separadores)
 ```
 
 3. **android:autoVerify="true":**
+
 ```xml
 <intent-filter android:autoVerify="true">
 ```
 
 4. **Reinstalar app:**
+
 ```bash
 adb uninstall com.chatbot.app
 # Rebuild e reinstalar
@@ -525,20 +548,24 @@ Android verifica assetlinks.json na primeira instalação.
 **Causas:**
 
 1. **apple-app-site-association não acessível:**
+
 ```bash
-curl https://chat.luisfboff.com/.well-known/apple-app-site-association
+curl https://uzzap.uzzai.com/.well-known/apple-app-site-association
 # Deve retornar JSON (sem .json extension!)
 ```
 
 2. **Team ID errado:**
+
 - Verificar em Xcode → Signing → Team
 - Formato: `TEAM_ID.com.chatbot.app`
 
 3. **Associated Domains não configurado:**
+
 - Xcode → Signing & Capabilities → Associated Domains
-- Deve ter: `applinks:chat.luisfboff.com`
+- Deve ter: `applinks:uzzap.uzzai.com`
 
 4. **Cache do iOS:**
+
 ```bash
 # Deletar app
 # Reiniciar device
@@ -554,11 +581,12 @@ iOS cacheia associations, reinstalar força revalidação.
 **Causa:** Listener não registrado antes do deep link.
 
 **Solução:**
+
 ```typescript
 // Registrar listener o mais cedo possível
 useEffect(() => {
-  initDeepLinking() // Antes de qualquer navegação
-}, [])
+  initDeepLinking(); // Antes de qualquer navegação
+}, []);
 ```
 
 ---
@@ -568,13 +596,14 @@ useEffect(() => {
 **Causa:** Verificação de domínio falhou.
 
 **Debug:**
+
 ```bash
 # Android
 adb shell dumpsys package com.chatbot.app | findstr -i "verified"
 
 # Deve mostrar:
 # Domain verification state:
-#   chat.luisfboff.com: verified
+#   uzzap.uzzai.com: verified
 ```
 
 Se não aparecer "verified", verificar assetlinks.json.
@@ -601,11 +630,11 @@ Se não aparecer "verified", verificar assetlinks.json.
 keytool -list -v -keystore %USERPROFILE%\.android\debug.keystore -alias androiddebugkey -storepass android -keypass android
 
 # 3. Criar assetlinks.json
-# 4. Upload para https://chat.luisfboff.com/.well-known/assetlinks.json
+# 4. Upload para https://uzzap.uzzai.com/.well-known/assetlinks.json
 
 # 5. (iOS) Configurar Associated Domains no Xcode
 # 6. Criar apple-app-site-association
-# 7. Upload para https://chat.luisfboff.com/.well-known/apple-app-site-association
+# 7. Upload para https://uzzap.uzzai.com/.well-known/apple-app-site-association
 
 # 8. Implementar listener no código
 # src/lib/deepLinking.ts
@@ -616,7 +645,7 @@ npm run cap:sync
 npm run cap:open:android
 
 # 10. Testar via adb
-adb shell am start -a android.intent.action.VIEW -d "https://chat.luisfboff.com/chat/123" com.chatbot.app
+adb shell am start -a android.intent.action.VIEW -d "https://uzzap.uzzai.com/chat/123" com.chatbot.app
 ```
 
 ---
@@ -624,6 +653,7 @@ adb shell am start -a android.intent.action.VIEW -d "https://chat.luisfboff.com/
 **Status:** Phase 3 (planejado)
 
 **Próximos Passos:**
+
 - Deploy para lojas: [DEPLOY.md](./DEPLOY.md)
 - Push notifications: [PUSH_NOTIFICATIONS.md](./PUSH_NOTIFICATIONS.md)
 

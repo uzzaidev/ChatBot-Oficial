@@ -32,6 +32,7 @@ Capacitor é uma plataforma cross-platform que permite executar aplicações web
 ### Por que Capacitor para este projeto?
 
 **Vantagens**:
+
 - Reaproveita todo o código existente (React, TypeScript, Tailwind)
 - Dashboard já é responsivo e funcional
 - Componentes shadcn/ui funcionam nativamente
@@ -40,6 +41,7 @@ Capacitor é uma plataforma cross-platform que permite executar aplicações web
 - Melhor UX em mobile (offline mode, gestos nativos)
 
 **Desvantagens**:
+
 - Requer build estático do Next.js (sem SSR/Server Components)
 - Algumas APIs serverless precisam migrar para backend externo
 - Aumenta complexidade de deploy (3 plataformas: web, iOS, Android)
@@ -57,6 +59,7 @@ git checkout -b feature/mobile-app
 ```
 
 **Workflow**:
+
 1. Instalar Capacitor no projeto existente
 2. Configurar build estático (`output: 'export'`)
 3. Criar wrapper de APIs (detectar plataforma: web vs. mobile)
@@ -64,6 +67,7 @@ git checkout -b feature/mobile-app
 5. Merge quando pronto (ou manter separado indefinidamente)
 
 **Estrutura**:
+
 ```
 project/
 ├── src/                    # Código compartilhado (web + mobile)
@@ -75,6 +79,7 @@ project/
 ```
 
 **Vantagens**:
+
 - ✅ Não quebra o projeto web existente
 - ✅ Deploy independente (web continua em Vercel)
 - ✅ Permite testar mobile sem afetar produção
@@ -85,10 +90,12 @@ project/
 Substituir o projeto web por versão mobile-first:
 
 **Vantagens**:
+
 - Código único (sem duplicação)
 - Decisões de arquitetura simplificadas
 
 **Desvantagens**:
+
 - ❌ Perde recursos do Next.js (SSR, ISR, Server Actions)
 - ❌ Precisa refatorar APIs serverless
 - ❌ Mais arriscado (pode quebrar produção)
@@ -129,6 +136,7 @@ src/
 ```
 
 **O que isso significa**:
+
 - ✅ **Nodes** (`src/nodes/`) - 100% compartilhados (backend continua igual)
 - ✅ **Components** - Mesmo código funciona em web e mobile
 - ✅ **Hooks** - Zero mudanças necessárias
@@ -151,6 +159,7 @@ Projeto/
 #### Cenário 1: Você Melhora um Node no main (Web)
 
 **No branch main**:
+
 ```bash
 # Você melhora src/nodes/generateAIResponse.ts
 git add src/nodes/generateAIResponse.ts
@@ -159,6 +168,7 @@ git push origin main
 ```
 
 **No branch mobile**:
+
 ```bash
 # Merge mudanças do main
 git checkout feature/mobile-app
@@ -173,6 +183,7 @@ npm run build:mobile  # Testa
 #### Cenário 2: Você Adiciona um Componente no main (Web)
 
 **No branch main**:
+
 ```bash
 # Adiciona novo componente
 src/components/NewFeature.tsx
@@ -183,6 +194,7 @@ git push origin main
 ```
 
 **No branch mobile**:
+
 ```bash
 git merge main
 # ✅ Componente vem automaticamente
@@ -233,15 +245,15 @@ export default function Dashboard() {
 **Resolução**: Manter versão client-side (mobile) e adicionar melhorias do main:
 
 ```typescript
-'use client'
+"use client";
 export default function Dashboard() {
-  const [conversations, setConversations] = useState([])
+  const [conversations, setConversations] = useState([]);
 
   useEffect(() => {
-    fetchConversations() // Lógica melhorada do main
-  }, [])
+    fetchConversations(); // Lógica melhorada do main
+  }, []);
 
-  return <ConversationList conversations={conversations} />
+  return <ConversationList conversations={conversations} />;
 }
 ```
 
@@ -250,22 +262,26 @@ export default function Dashboard() {
 #### Opção A: Desenvolvimento Totalmente Paralelo ✅ RECOMENDADO
 
 **Como funciona**:
+
 1. Continua desenvolvendo no `main` (web) normalmente
 2. Trabalha no `feature/mobile-app` em paralelo
 3. Faz merge do `main` para `feature/mobile-app` regularmente (a cada 1-2 dias)
 4. Quando mobile estiver pronto, faz merge de volta para `main`
 
 **Vantagens**:
+
 - ✅ Não para desenvolvimento web
 - ✅ Web continua em produção (Vercel)
 - ✅ Pode testar mobile sem afetar web
 - ✅ Melhorias no main chegam no mobile automaticamente
 
 **Desvantagens**:
+
 - ⚠️ Precisa fazer merge regularmente (evita conflitos grandes)
 - ⚠️ Alguns conflitos em páginas (fácil de resolver)
 
 **Workflow**:
+
 ```bash
 # 1. Trabalha no main (web)
 git checkout main
@@ -298,45 +314,46 @@ git merge feature/mobile-app  # Merge de volta
 
 ```typescript
 // src/lib/platform.ts
-import { Capacitor } from '@capacitor/core'
+import { Capacitor } from "@capacitor/core";
 
-export const isMobile = () => Capacitor.isNativePlatform()
-export const isWeb = () => !Capacitor.isNativePlatform()
+export const isMobile = () => Capacitor.isNativePlatform();
+export const isWeb = () => !Capacitor.isNativePlatform();
 ```
 
 ```typescript
 // src/app/dashboard/page.tsx
-'use client'
+"use client";
 export default function Dashboard() {
-  const [data, setData] = useState([])
+  const [data, setData] = useState([]);
 
   useEffect(() => {
     // Funciona em web e mobile
-    fetchData().then(setData)
-  }, [])
+    fetchData().then(setData);
+  }, []);
 
   return (
     <>
       {isMobile() && <MobilePushButton />}
       <ConversationList data={data} />
     </>
-  )
+  );
 }
 ```
 
 ```javascript
 // next.config.js
-const isMobileBuild = process.env.CAPACITOR === 'true'
+const isMobileBuild = process.env.CAPACITOR === "true";
 
 module.exports = {
   ...(isMobileBuild && {
-    output: 'export',
+    output: "export",
     images: { unoptimized: true },
   }),
-}
+};
 ```
 
 **Build**:
+
 ```bash
 # Web build
 npm run build
@@ -348,11 +365,13 @@ npx cap sync
 ```
 
 **Vantagens**:
+
 - ✅ Zero conflitos (mesma branch)
 - ✅ Código compartilhado 100%
 - ✅ Mudanças aplicam-se a ambos automaticamente
 
 **Desvantagens**:
+
 - ⚠️ Mais complexo (precisa gerenciar feature flags)
 - ⚠️ Pode ter código específico de plataforma espalhado
 - ⚠️ Build web pode quebrar se esquecer de testar
@@ -362,15 +381,18 @@ npx cap sync
 #### Opção C: Foca em Mobile Primeiro, Web Depois ⏸️ NÃO RECOMENDADO
 
 **Como funciona**:
+
 1. Para desenvolvimento web (freeze)
 2. Foca 100% em mobile (2-3 semanas)
 3. Quando mobile estiver pronto, volta ao web
 
 **Vantagens**:
+
 - ✅ Sem conflitos
 - ✅ Foco total em mobile
 
 **Desvantagens**:
+
 - ❌ Web fica congelada (sem melhorias por semanas)
 - ❌ Urgências no web precisam esperar
 - ❌ Perde velocidade de desenvolvimento
@@ -384,6 +406,7 @@ npx cap sync
 #### ✅ Use Opção A (Desenvolvimento Paralelo com Merge Regular)
 
 **Por quê?**
+
 1. ✅ **90% do código é compartilhado** (nodes, components, hooks)
 2. ✅ **Backend não muda** (APIs continuam iguais)
 3. ✅ **Melhorias em nodes beneficiam ambos** (web e mobile)
@@ -425,23 +448,27 @@ git merge feature/mobile-app
 ### 📋 Checklist de Desenvolvimento Paralelo
 
 #### Antes de Começar
+
 - [ ] Criar branch `feature/mobile-app`
 - [ ] Documentar quais arquivos vão mudar (lista abaixo)
 - [ ] Configurar CI/CD para testar ambos (web e mobile)
 
 #### Durante Desenvolvimento
+
 - [ ] **A cada 1-2 dias**: `git merge main` → `feature/mobile-app`
 - [ ] Testar web após cada merge (garantir que não quebrou)
 - [ ] Testar mobile após cada merge
 - [ ] Commits pequenos e atômicos (facilita merge)
 
 #### Arquivos que Vão Ter Conflitos (prepare-se)
+
 - ⚠️ `src/app/**/page.tsx` - Adiciona `'use client'`
 - ⚠️ `next.config.js` - Adiciona lógica de export estático
 - ⚠️ `src/lib/supabase.ts` - Adiciona Capacitor Storage
 - ⚠️ `package.json` - Adiciona scripts e deps do Capacitor
 
 #### Arquivos que NÃO Vão Ter Conflitos (tranquilo)
+
 - ✅ `src/nodes/**` - Backend (compartilhado)
 - ✅ `src/components/**` - UI (compartilhado)
 - ✅ `src/hooks/**` - Lógica (compartilhado)
@@ -498,21 +525,25 @@ git commit -m "feat(mobile): add push notifications"       # Só mobile
 ### 🎯 Resumo Executivo
 
 **Você perguntou**:
+
 > "Se eu mexer nos nodes no main e trabalhar no mobile em paralelo, vai dar conflito no merge?"
 
 **Resposta**:
+
 1. ✅ **Nodes NO main → Zero conflitos** (backend é compartilhado)
 2. ✅ **Components no main → Zero conflitos** (UI é compartilhada)
 3. ⚠️ **Páginas (app/) → Conflitos pequenos** (fácil de resolver)
 4. ✅ **APIs serverless → Zero mudanças** (continuam no Vercel)
 
 **Você pode**:
+
 - ✅ Melhorar nodes no main → Mobile usa automaticamente
 - ✅ Adicionar componentes no main → Mobile usa automaticamente
 - ✅ Desenvolver features web no main → Merge depois para mobile
 - ✅ Desenvolver features mobile → Merge depois para main
 
 **O que compartilha (código ÚNICO)**:
+
 ```
 src/nodes/          ← Backend (100% compartilhado)
 src/components/     ← UI (100% compartilhado)
@@ -521,6 +552,7 @@ src/lib/utils.ts    ← Helpers (100% compartilhado)
 ```
 
 **O que precisa adaptar (PEQUENAS mudanças)**:
+
 ```
 src/app/**/page.tsx     ← Adiciona 'use client' (1 linha)
 src/lib/supabase.ts     ← Detecta plataforma (10 linhas)
@@ -542,10 +574,12 @@ next.config.js          ← Detecta target (5 linhas)
 ### 🎯 Cenário: Você no Web, Outro Dev no Mobile
 
 **Situação**:
+
 - **Você (Dev 1)**: Continua melhorando web app (main branch) - nodes, chatflow, features
 - **Dev Mobile (Dev 2)**: Trabalha na adaptação para iOS/Android (feature/mobile-app branch)
 
 **Pergunta Crítica**:
+
 > "Se eu mexer no chatflow, vai atrapalhar o dev mobile? Ele vai trabalhar em arquivos NOVOS ou MODIFICAR arquivos existentes?"
 
 ### 📂 Separação Clara de Responsabilidades
@@ -667,6 +701,7 @@ git push origin feature/mobile-app
 ```
 
 **Durante esses 3-5 dias**:
+
 - ✅ **Você pode**: Mexer em nodes, components, hooks, APIs, migrations
 - ⚠️ **Você NÃO deve**: Mexer em `src/app/**/page.tsx`, `next.config.js`, `package.json`, `src/lib/supabase.ts`
 
@@ -706,6 +741,7 @@ npm run dev     # Deve funcionar normal
 **Agora sim**: Vocês trabalham em arquivos SEPARADOS.
 
 **Você (Dev Web) - `main` branch**:
+
 ```
 src/nodes/                  ✅ Liberdade total
 src/components/             ✅ Adiciona novos (não modifica existentes)
@@ -716,6 +752,7 @@ src/lib/config.ts           ✅ Liberdade total
 ```
 
 **Dev Mobile - `feature/mobile-app` branch**:
+
 ```
 android/                    ✅ Liberdade total
 ios/                        ✅ Liberdade total
@@ -750,6 +787,7 @@ git push origin feature/mobile-app
 #### Durante Fase 1 (3-5 dias)
 
 **Dev Mobile (foco total em setup)**:
+
 - [ ] Instalar Capacitor
 - [ ] Configurar Android/iOS
 - [ ] Modificar `next.config.js`
@@ -759,11 +797,12 @@ git push origin feature/mobile-app
 - [ ] Testar build estático
 
 **Você (evita conflitos)**:
-- [ ] ✅ Melhora nodes (src/nodes/*)
+
+- [ ] ✅ Melhora nodes (src/nodes/\*)
 - [ ] ✅ Adiciona novos components (src/components/NovosComponents.tsx)
-- [ ] ✅ Melhora APIs (src/app/api/**)
+- [ ] ✅ Melhora APIs (src/app/api/\*\*)
 - [ ] ✅ Cria migrations (supabase/migrations/)
-- [ ] ❌ NÃO mexe em src/app/**/page.tsx
+- [ ] ❌ NÃO mexe em src/app/\*\*/page.tsx
 - [ ] ❌ NÃO mexe em next.config.js
 - [ ] ❌ NÃO mexe em src/lib/supabase.ts
 
@@ -778,12 +817,14 @@ git push origin feature/mobile-app
 #### Durante Fase 2 (2-3 semanas)
 
 **Dev Mobile**:
+
 - [ ] Desenvolve features mobile (push, biometria, deep links)
 - [ ] Testa em simuladores e dispositivos
 - [ ] **A cada 2 dias**: `git merge main`
 - [ ] Resolve conflitos (se houver)
 
 **Você**:
+
 - [ ] Continua desenvolvimento web normal
 - [ ] **Cuidado**: Se adicionar novas páginas, avisar Dev Mobile
 - [ ] **Cuidado**: Se mexer em components existentes que mobile usa, avisar
@@ -851,22 +892,27 @@ git commit -m "feat(mobile): add biometric login button"
 #### Semana 1 (Fase 1: Setup)
 
 **Segunda-feira**:
+
 - Dev Mobile: Instala Capacitor, cria `android/` e `ios/`
 - Você: Melhora node `generateAIResponse.ts`
 
 **Terça-feira**:
+
 - Dev Mobile: Modifica `next.config.js`, `package.json`
 - Você: Adiciona novo component `AdvancedMetrics.tsx`
 
 **Quarta-feira**:
+
 - Dev Mobile: Modifica `src/lib/supabase.ts`
 - Você: Cria migration para nova tabela `analytics`
 
 **Quinta-feira**:
+
 - Dev Mobile: Converte TODAS as páginas para client components (10-15 arquivos)
 - Você: Adiciona novo API endpoint `/api/analytics`
 
 **Sexta-feira** (Checkpoint):
+
 - Dev Mobile: Abre PR
 - Você: Revisa e aprova
 - Ambos: Merge para main, testam web
@@ -874,41 +920,49 @@ git commit -m "feat(mobile): add biometric login button"
 #### Semana 2 (Fase 2: Paralelo - Parte 1)
 
 **Segunda-feira**:
+
 - Dev Mobile: Merge main → mobile (pega suas melhorias da semana 1)
 - Dev Mobile: Adiciona push notifications
 - Você: Melhora chatflow (batch timing)
 
 **Quarta-feira**:
+
 - Dev Mobile: Adiciona biometria para login
 - Você: Adiciona filtros avançados no dashboard
 
 **Sexta-feira**:
+
 - Dev Mobile: Merge main → mobile (pega filtros avançados automaticamente)
 - Você: Adiciona export de relatórios
 
 #### Semana 3 (Fase 2: Paralelo - Parte 2)
 
 **Segunda-feira**:
+
 - Dev Mobile: Testa em iPhone físico, encontra bugs
 - Você: Otimiza queries do PostgreSQL
 
 **Quarta-feira**:
+
 - Dev Mobile: Merge main → mobile (pega otimizações de query)
 - Dev Mobile: Corrige bugs mobile
 - Você: Adiciona novos gráficos em Analytics
 
 **Sexta-feira**:
+
 - Dev Mobile: Testa build final
 - Você: Code review do PR mobile
 
 #### Semana 4 (Merge Final)
 
 **Segunda-feira**:
+
 - Dev Mobile: Merge main → mobile (última sincronização)
 - Dev Mobile: Build final para iOS/Android
 - Você: Testa web para garantir estabilidade
 
 **Quarta-feira**:
+
 - Dev Mobile: Abre PR final (feature/mobile-app → main)
 - Você: Revisa PR
 - Ambos: Merge para main
@@ -966,6 +1020,7 @@ git push
 **Velocidade**: Ambos trabalham 100% do tempo (sem esperar um pelo outro)
 
 **Por quê funciona**:
+
 1. ✅ Sprint inicial isola todas as modificações arriscadas
 2. ✅ Depois, vocês trabalham em arquivos diferentes
 3. ✅ Comunicação evita conflitos nos raros casos de overlap
@@ -974,6 +1029,7 @@ git push
 ### 📋 Resumo Ultra Prático
 
 **Você perguntou**:
+
 > "Se eu mexer no chatflow, vai atrapalhar o dev mobile?"
 
 **Respostas**:
@@ -987,6 +1043,7 @@ git push
 4. **APIs backend**: ✅ **ZERO impacto**. Dev Mobile nunca toca nisso.
 
 **Estratégia**:
+
 1. **Fase 1 (5 dias)**: Dev Mobile faz TODAS as modificações em arquivos existentes. Você evita esses arquivos.
 2. **Checkpoint (1 dia)**: Merge para main. Testam juntos.
 3. **Fase 2 (2-3 semanas)**: Trabalho 100% paralelo. Vocês mexem em arquivos diferentes. Zero conflitos.
@@ -1082,23 +1139,24 @@ export default function Dashboard() {
 ```typescript
 // src/app/dashboard/page.tsx
 
-'use client'
-import { useState, useEffect } from 'react'
+"use client";
+import { useState, useEffect } from "react";
 
 export default function Dashboard() {
-  const [conversations, setConversations] = useState([])
-  const [filters, setFilters] = useState({ status: 'all' }) // ✅ Mantém sua melhoria
+  const [conversations, setConversations] = useState([]);
+  const [filters, setFilters] = useState({ status: "all" }); // ✅ Mantém sua melhoria
 
   useEffect(() => {
-    fetchConversationsWithFilters(filters).then(setConversations) // ✅ Usa sua lógica melhorada
-  }, [filters])
+    fetchConversationsWithFilters(filters).then(setConversations); // ✅ Usa sua lógica melhorada
+  }, [filters]);
 
   return (
     <>
-      <FilterBar filters={filters} onChange={setFilters} /> {/* ✅ Mantém seu componente */}
+      <FilterBar filters={filters} onChange={setFilters} />{" "}
+      {/* ✅ Mantém seu componente */}
       <ConversationList conversations={conversations} />
     </>
-  )
+  );
 }
 ```
 
@@ -1116,6 +1174,7 @@ git push origin feature/mobile-app
 #### Segunda-feira
 
 **10:00 - Você (main)**:
+
 ```bash
 # Melhora node de IA
 git add src/nodes/generateAIResponse.ts
@@ -1124,6 +1183,7 @@ git push origin main
 ```
 
 **15:00 - Dev Mobile (mobile) - SYNC**:
+
 ```bash
 git checkout feature/mobile-app
 git merge origin/main
@@ -1137,6 +1197,7 @@ git push origin feature/mobile-app
 #### Terça-feira
 
 **09:00 - Você (main)**:
+
 ```bash
 # Adiciona novo component
 git add src/components/ConversationAnalytics.tsx
@@ -1149,6 +1210,7 @@ git push origin main
 #### Quarta-feira
 
 **10:00 - Você (main)**:
+
 ```bash
 # Adiciona API de analytics
 git add src/app/api/analytics/route.ts
@@ -1157,6 +1219,7 @@ git push origin main
 ```
 
 **16:00 - Dev Mobile (mobile) - SYNC (pega 2 dias de mudanças)**:
+
 ```bash
 git checkout feature/mobile-app
 git merge origin/main
@@ -1172,6 +1235,7 @@ git push origin feature/mobile-app
 #### Opção 1: Sync Agendado (Recomendado)
 
 **Dev Mobile cria rotina**:
+
 ```bash
 # Toda segunda, quarta, sexta às 16:00
 git checkout feature/mobile-app
@@ -1183,6 +1247,7 @@ git push origin feature/mobile-app
 ```
 
 **Vantagens**:
+
 - ✅ Previsível (você sabe quando vai acontecer)
 - ✅ Evita acúmulo de divergências
 - ✅ Conflitos pequenos (2 dias de mudanças por vez)
@@ -1201,10 +1266,12 @@ git merge origin/main
 ```
 
 **Vantagens**:
+
 - ✅ Flexível
 - ✅ Dev Mobile escolhe melhor momento
 
 **Desvantagens**:
+
 - ⚠️ Pode esquecer de fazer sync (acumula divergências)
 
 #### Opção 3: Sync Automático (CI/CD - Avançado)
@@ -1237,10 +1304,12 @@ jobs:
 ```
 
 **Vantagens**:
+
 - ✅ Automático (zero esforço)
 - ✅ Sempre sincronizado
 
 **Desvantagens**:
+
 - ⚠️ Se tiver conflito, CI falha (precisa resolver manualmente)
 - ⚠️ Mais complexo de configurar
 
@@ -1405,22 +1474,26 @@ npm run build:mobile
 ### 🎯 Resumo Executivo
 
 **Você perguntou**:
+
 > "Ele consegue ir puxando minhas atualizações do main para o branch dele?"
 
 **Resposta**: ✅ **SIM! Isso é FUNDAMENTAL.**
 
 **Como funciona**:
+
 1. **Você commita no main**: `git push origin main`
 2. **Dev Mobile puxa** (a cada 2 dias): `git merge origin/main`
 3. **Resultado**: Branch mobile tem suas mudanças automaticamente
 
 **Vantagens**:
+
 - ✅ Dev Mobile sempre tem versão atualizada
 - ✅ Suas melhorias em nodes/components chegam automaticamente
 - ✅ Evita divergência grande entre branches
 - ✅ Conflitos são pequenos e fáceis de resolver
 
 **Comandos que Dev Mobile usa**:
+
 ```bash
 # A cada 2 dias (10 minutos de trabalho):
 git checkout feature/mobile-app
@@ -1448,15 +1521,16 @@ Esta seção analisa **objetivamente** os impactos de migrar de Server-Side Rend
 
 #### Impactos Negativos
 
-| Métrica | SSR (Atual) | Static Export (Capacitor) | Diferença |
-|---------|-------------|---------------------------|-----------|
-| **Time to First Byte (TTFB)** | ~50-200ms | ~10-50ms | ✅ **Melhor** (sem servidor) |
-| **First Contentful Paint (FCP)** | ~300-800ms | ~800-1500ms | ❌ **Pior** (JS precisa carregar) |
-| **Largest Contentful Paint (LCP)** | ~500-1200ms | ~1200-2500ms | ❌ **Pior** (dados carregam depois) |
-| **Time to Interactive (TTI)** | ~1000-2000ms | ~1500-3000ms | ❌ **Pior** (hidratação + fetch) |
-| **Cumulative Layout Shift (CLS)** | ~0.05-0.15 | ~0.10-0.30 | ⚠️ **Pior** (conteúdo carrega depois) |
+| Métrica                            | SSR (Atual)  | Static Export (Capacitor) | Diferença                             |
+| ---------------------------------- | ------------ | ------------------------- | ------------------------------------- |
+| **Time to First Byte (TTFB)**      | ~50-200ms    | ~10-50ms                  | ✅ **Melhor** (sem servidor)          |
+| **First Contentful Paint (FCP)**   | ~300-800ms   | ~800-1500ms               | ❌ **Pior** (JS precisa carregar)     |
+| **Largest Contentful Paint (LCP)** | ~500-1200ms  | ~1200-2500ms              | ❌ **Pior** (dados carregam depois)   |
+| **Time to Interactive (TTI)**      | ~1000-2000ms | ~1500-3000ms              | ❌ **Pior** (hidratação + fetch)      |
+| **Cumulative Layout Shift (CLS)**  | ~0.05-0.15   | ~0.10-0.30                | ⚠️ **Pior** (conteúdo carrega depois) |
 
 **Resumo**:
+
 - ❌ **Piora inicial**: FCP, LCP e TTI aumentam 40-80%
 - ✅ **Melhora subsequente**: Navegação entre páginas é instantânea (SPA)
 - ⚠️ **Depende de rede**: Performance é mais dependente da qualidade da conexão
@@ -1471,6 +1545,7 @@ Esta seção analisa **objetivamente** os impactos de migrar de Server-Side Rend
 #### Exemplo Visual (Timeline de Carregamento)
 
 **SSR (Atual)**:
+
 ```
 0ms ──────────────────────> 1200ms
 │      HTML renderizado      │
@@ -1482,6 +1557,7 @@ Esta seção analisa **objetivamente** os impactos de migrar de Server-Side Rend
 ```
 
 **Static Export (Capacitor)**:
+
 ```
 0ms ──────────────────────────────────────────> 2500ms
 │  HTML skeleton  │  JS load  │  Fetch data  │  Render  │
@@ -1512,11 +1588,12 @@ Esta seção analisa **objetivamente** os impactos de migrar de Server-Side Rend
 #### Exemplo de Degradação de UX
 
 **Antes (SSR)**:
+
 ```typescript
 // src/app/dashboard/page.tsx
 export default async function Dashboard() {
-  const { data } = await supabase.from('conversations').select('*')
-  return <ConversationList conversations={data} /> // Renderiza imediatamente
+  const { data } = await supabase.from("conversations").select("*");
+  return <ConversationList conversations={data} />; // Renderiza imediatamente
 }
 ```
 
@@ -1525,22 +1602,24 @@ export default async function Dashboard() {
 ---
 
 **Depois (Static Export)**:
+
 ```typescript
-'use client'
+"use client";
 export default function Dashboard() {
-  const [conversations, setConversations] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [conversations, setConversations] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchConversations() // Demora 500-1500ms
-  }, [])
+    fetchConversations(); // Demora 500-1500ms
+  }, []);
 
-  if (loading) return <DashboardSkeleton /> // Usuário vê skeleton primeiro
-  return <ConversationList conversations={conversations} />
+  if (loading) return <DashboardSkeleton />; // Usuário vê skeleton primeiro
+  return <ConversationList conversations={conversations} />;
 }
 ```
 
 **Usuário vê**:
+
 1. Skeleton vazio (800ms)
 2. Depois dados aparecem (mais 500-1500ms)
 3. **Total**: 1300-2300ms vs. 500ms (SSR)
@@ -1556,6 +1635,7 @@ export default function Dashboard() {
 - Performance idêntica
 
 **Exemplo**:
+
 ```typescript
 // ✅ Funciona em SSR e Static Export
 <LineChart data={data}>
@@ -1572,6 +1652,7 @@ export default function Dashboard() {
 - Performance pode **melhorar** (sem round-trips ao servidor)
 
 **Impacto**:
+
 - ⚠️ Dados grandes (1000+ rows) demoram mais para carregar inicialmente
 - ✅ Mas sorting/filtering são instantâneos (sem backend)
 
@@ -1593,29 +1674,32 @@ export default function Dashboard() {
 
 ```typescript
 // src/components/AuthGuard.tsx
-'use client'
+"use client";
 export const AuthGuard = ({ children }) => {
-  const [user, setUser] = useState(null)
-  const router = useRouter()
+  const [user, setUser] = useState(null);
+  const router = useRouter();
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
-        router.push('/login')
+        router.push("/login");
       } else {
-        setUser(user)
+        setUser(user);
       }
-    }
-    checkAuth()
-  }, [])
+    };
+    checkAuth();
+  }, []);
 
-  if (!user) return <LoadingScreen />
-  return children
-}
+  if (!user) return <LoadingScreen />;
+  return children;
+};
 ```
 
 **Impacto UX**:
+
 - ❌ **Flash of unauthenticated content**: Usuário pode ver tela de login por ~100-300ms antes de redirecionar
 - ⚠️ **Menos seguro**: Client pode manipular JS e burlar guard (precisa validar no backend também)
 
@@ -1638,33 +1722,33 @@ export const AuthGuard = ({ children }) => {
 
 #### Cenário 1: Dashboard Principal
 
-| Ação | SSR | Static Export | Diferença |
-|------|-----|---------------|-----------|
-| **Primeira visita** | 800ms | 1800ms | ❌ **+125%** |
-| **Segunda visita** (cached) | 600ms | 400ms | ✅ **-33%** |
-| **Navegar para Conversas** | 700ms | 100ms | ✅ **-86%** |
-| **Voltar para Dashboard** | 700ms | 50ms | ✅ **-93%** |
+| Ação                        | SSR   | Static Export | Diferença    |
+| --------------------------- | ----- | ------------- | ------------ |
+| **Primeira visita**         | 800ms | 1800ms        | ❌ **+125%** |
+| **Segunda visita** (cached) | 600ms | 400ms         | ✅ **-33%**  |
+| **Navegar para Conversas**  | 700ms | 100ms         | ✅ **-86%**  |
+| **Voltar para Dashboard**   | 700ms | 50ms          | ✅ **-93%**  |
 
 **Conclusão**: Pior na primeira visita, muito melhor em navegação subsequente.
 
 #### Cenário 2: Abrir Conversa Individual
 
-| Ação | SSR | Static Export | Diferença |
-|------|-----|---------------|-----------|
-| **Carregar mensagens** | 500ms | 1200ms | ❌ **+140%** |
-| **Scroll infinito (mais msgs)** | 300ms | 300ms | ✅ **Igual** |
-| **Enviar mensagem** | 400ms | 400ms | ✅ **Igual** |
-| **Receber msg (realtime)** | Instantâneo | Instantâneo | ✅ **Igual** |
+| Ação                            | SSR         | Static Export | Diferença    |
+| ------------------------------- | ----------- | ------------- | ------------ |
+| **Carregar mensagens**          | 500ms       | 1200ms        | ❌ **+140%** |
+| **Scroll infinito (mais msgs)** | 300ms       | 300ms         | ✅ **Igual** |
+| **Enviar mensagem**             | 400ms       | 400ms         | ✅ **Igual** |
+| **Receber msg (realtime)**      | Instantâneo | Instantâneo   | ✅ **Igual** |
 
 **Conclusão**: Carregamento inicial pior, interações são iguais.
 
 #### Cenário 3: Analytics/Charts
 
-| Ação | SSR | Static Export | Diferença |
-|------|-----|---------------|-----------|
-| **Carregar dashboard analytics** | 1200ms | 2000ms | ❌ **+67%** |
-| **Trocar período (7d → 30d)** | 800ms | 800ms | ✅ **Igual** |
-| **Hover em chart** | Instantâneo | Instantâneo | ✅ **Igual** |
+| Ação                             | SSR         | Static Export | Diferença    |
+| -------------------------------- | ----------- | ------------- | ------------ |
+| **Carregar dashboard analytics** | 1200ms      | 2000ms        | ❌ **+67%**  |
+| **Trocar período (7d → 30d)**    | 800ms       | 800ms         | ✅ **Igual** |
+| **Hover em chart**               | Instantâneo | Instantâneo   | ✅ **Igual** |
 
 **Conclusão**: Carregamento inicial pior, interações são iguais.
 
@@ -1672,12 +1756,12 @@ export const AuthGuard = ({ children }) => {
 
 #### Consumo de Bateria
 
-| Aspecto | SSR (Web Mobile) | Static Export (Capacitor) |
-|---------|------------------|---------------------------|
-| **Rendering inicial** | Baixo (HTML pronto) | Alto (JS pesado) |
-| **Navegação** | Alto (novas requests) | Baixo (SPA cached) |
-| **Background** | Alto (web fica ativa) | Baixo (app suspende) |
-| **Realtime** | Alto (polling) | Médio (WebSocket otimizado) |
+| Aspecto               | SSR (Web Mobile)      | Static Export (Capacitor)   |
+| --------------------- | --------------------- | --------------------------- |
+| **Rendering inicial** | Baixo (HTML pronto)   | Alto (JS pesado)            |
+| **Navegação**         | Alto (novas requests) | Baixo (SPA cached)          |
+| **Background**        | Alto (web fica ativa) | Baixo (app suspende)        |
+| **Realtime**          | Alto (polling)        | Médio (WebSocket otimizado) |
 
 **Conclusão**: ✅ Capacitor é mais eficiente em sessões longas.
 
@@ -1704,7 +1788,7 @@ export const ConversationListSkeleton = () => (
       </div>
     ))}
   </div>
-)
+);
 ```
 
 #### 2. Usar React Query para Caching Agressivo
@@ -1715,22 +1799,23 @@ npm install @tanstack/react-query
 
 ```typescript
 // src/app/dashboard/page.tsx
-import { useQuery } from '@tanstack/react-query'
+import { useQuery } from "@tanstack/react-query";
 
 export default function Dashboard() {
   const { data, isLoading } = useQuery({
-    queryKey: ['conversations'],
+    queryKey: ["conversations"],
     queryFn: fetchConversations,
     staleTime: 5 * 60 * 1000, // Cache por 5 minutos
     cacheTime: 30 * 60 * 1000, // Mantém em memória por 30min
-  })
+  });
 
-  if (isLoading) return <ConversationListSkeleton />
-  return <ConversationList conversations={data} />
+  if (isLoading) return <ConversationListSkeleton />;
+  return <ConversationList conversations={data} />;
 }
 ```
 
 **Impacto**:
+
 - ✅ Segunda visita carrega instantaneamente (cache)
 - ✅ Reduz requests ao backend em 80%
 
@@ -1738,15 +1823,18 @@ export default function Dashboard() {
 
 ```typescript
 // next.config.js (com next-pwa)
-const withPWA = require('next-pwa')({
-  dest: 'public',
-  disable: process.env.NODE_ENV === 'development',
-})
+const withPWA = require("next-pwa")({
+  dest: "public",
+  disable: process.env.NODE_ENV === "development",
+});
 
-module.exports = withPWA({ /* ... */ })
+module.exports = withPWA({
+  /* ... */
+});
 ```
 
 **Impacto**:
+
 - ✅ App funciona offline
 - ✅ Assets cacheados (reduz carregamento em 70%)
 
@@ -1754,15 +1842,16 @@ module.exports = withPWA({ /* ... */ })
 
 ```typescript
 // src/app/dashboard/page.tsx
-import dynamic from 'next/dynamic'
+import dynamic from "next/dynamic";
 
-const AnalyticsChart = dynamic(() => import('@/components/AnalyticsChart'), {
+const AnalyticsChart = dynamic(() => import("@/components/AnalyticsChart"), {
   loading: () => <ChartSkeleton />,
   ssr: false, // Não tenta SSR
-})
+});
 ```
 
 **Impacto**:
+
 - ✅ Reduz bundle inicial em 40-60%
 - ✅ FCP melhora em 30-50%
 
@@ -1770,44 +1859,46 @@ const AnalyticsChart = dynamic(() => import('@/components/AnalyticsChart'), {
 
 ```typescript
 // src/components/ConversationList.tsx
-import { useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from "@tanstack/react-query";
 
 export const ConversationItem = ({ phone }) => {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   const handleMouseEnter = () => {
     // Prefetch messages antes de clicar
-    queryClient.prefetchQuery(['messages', phone], () => fetchMessages(phone))
-  }
+    queryClient.prefetchQuery(["messages", phone], () => fetchMessages(phone));
+  };
 
   return (
     <Link href={`/conversations/${phone}`} onMouseEnter={handleMouseEnter}>
       {/* ... */}
     </Link>
-  )
-}
+  );
+};
 ```
 
 **Impacto**:
+
 - ✅ Conversas carregam instantaneamente ao clicar
 - ✅ Percepção de performance melhora drasticamente
 
 ### 📊 Resultado Final com Mitigações
 
-| Métrica | SSR | Static (sem otimizações) | Static (com otimizações) |
-|---------|-----|--------------------------|--------------------------|
-| **FCP** | 300ms | 800ms | **500ms** ✅ |
-| **LCP** | 500ms | 2000ms | **900ms** ⚠️ |
-| **TTI** | 1000ms | 3000ms | **1500ms** ⚠️ |
-| **Navegação subsequente** | 700ms | 100ms | **50ms** ✅✅ |
-| **Uso de bateria** | Alto | Médio | **Baixo** ✅ |
-| **Offline** | ❌ | ❌ | **✅** ✅✅ |
+| Métrica                   | SSR    | Static (sem otimizações) | Static (com otimizações) |
+| ------------------------- | ------ | ------------------------ | ------------------------ |
+| **FCP**                   | 300ms  | 800ms                    | **500ms** ✅             |
+| **LCP**                   | 500ms  | 2000ms                   | **900ms** ⚠️             |
+| **TTI**                   | 1000ms | 3000ms                   | **1500ms** ⚠️            |
+| **Navegação subsequente** | 700ms  | 100ms                    | **50ms** ✅✅            |
+| **Uso de bateria**        | Alto   | Médio                    | **Baixo** ✅             |
+| **Offline**               | ❌     | ❌                       | **✅** ✅✅              |
 
 ### 🎯 Conclusão: Vale a Pena?
 
 **Para este projeto específico (Dashboard Chatbot WhatsApp)**:
 
 ✅ **SIM, vale a pena** porque:
+
 1. ✅ **Dashboard é usado por poucos usuários simultâneos** (não precisa escalar como site público)
 2. ✅ **Usuários fazem sessões longas** (carregamento inicial amortiza ao longo do tempo)
 3. ✅ **Mobile UX melhora drasticamente** (push nativo, biometria, offline)
@@ -1815,6 +1906,7 @@ export const ConversationItem = ({ phone }) => {
 5. ✅ **Dados não são públicos** (SEO não importa)
 
 ❌ **NÃO valeria a pena se**:
+
 - Site de conteúdo público (blog, e-commerce)
 - SEO é crítico para o negócio
 - Usuários fazem visitas curtas (< 1 minuto)
@@ -1833,6 +1925,7 @@ Use este checklist para decidir se deve migrar:
 - [ ] **Dados são principalmente realtime?** → SIM = +1 ponto
 
 **Pontuação**:
+
 - **7-10 pontos**: Migre sem medo ✅
 - **4-6 pontos**: Migre com otimizações ⚠️
 - **0-3 pontos**: Considere manter SSR ou usar React Native ❌
@@ -1846,17 +1939,20 @@ Use este checklist para decidir se deve migrar:
 ### Ferramentas Necessárias
 
 **Para iOS**:
+
 - macOS (obrigatório para build iOS)
 - Xcode 14+ (Download na App Store)
 - CocoaPods (`sudo gem install cocoapods`)
 - Apple Developer Account ($99/ano para publicar)
 
 **Para Android**:
+
 - Android Studio (https://developer.android.com/studio)
 - Java JDK 17+ (`java -version`)
 - Android SDK 33+ (configurado via Android Studio)
 
 **Para ambos**:
+
 - Node.js 18+ (já instalado)
 - npm ou yarn
 - Git
@@ -1918,16 +2014,16 @@ Editar `next.config.js`:
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Detect build target
-  ...(process.env.CAPACITOR === 'true' && {
-    output: 'export',
+  ...(process.env.CAPACITOR === "true" && {
+    output: "export",
     images: {
       unoptimized: true, // Capacitor não suporta next/image otimizado
     },
     trailingSlash: true, // iOS requer trailing slashes
   }),
-}
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;
 ```
 
 ### 4. Configurar Capacitor
@@ -1935,27 +2031,27 @@ module.exports = nextConfig
 Editar `capacitor.config.ts`:
 
 ```typescript
-import { CapacitorConfig } from '@capacitor/cli';
+import { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: 'com.luisfboff.chatbot',
-  appName: 'WhatsApp Chatbot',
-  webDir: 'out',
+  appId: "com.luisfboff.chatbot",
+  appName: "WhatsApp Chatbot",
+  webDir: "out",
   bundledWebRuntime: false,
   server: {
-    androidScheme: 'https', // Previne CORS issues
-    iosScheme: 'https',
-    hostname: 'app.localhost', // Domain local
+    androidScheme: "https", // Previne CORS issues
+    iosScheme: "https",
+    hostname: "app.localhost", // Domain local
     cleartext: false, // Força HTTPS
   },
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
-      backgroundColor: '#000000',
+      backgroundColor: "#000000",
       showSpinner: false,
     },
     PushNotifications: {
-      presentationOptions: ['badge', 'sound', 'alert'],
+      presentationOptions: ["badge", "sound", "alert"],
     },
   },
 };
@@ -2011,6 +2107,7 @@ ChatBot-Oficial/
 ### Código Compartilhado
 
 **Reutilizáveis sem mudanças**:
+
 - ✅ Componentes React (`src/components/`)
 - ✅ Hooks customizados (`src/hooks/`)
 - ✅ Utils e helpers (`src/lib/utils.ts`)
@@ -2019,6 +2116,7 @@ ChatBot-Oficial/
 - ✅ shadcn/ui components
 
 **Requerem adaptação**:
+
 - ⚠️ API Routes (`src/app/api/`) - Precisam migrar para backend externo
 - ⚠️ Server Components - Converter para Client Components
 - ⚠️ Server Actions - Substituir por API calls
@@ -2035,54 +2133,59 @@ ChatBot-Oficial/
 **Solução**: Manter APIs no Vercel, fazer requests HTTP do app mobile.
 
 **Antes** (Server Component):
+
 ```typescript
 // src/app/dashboard/page.tsx
 export default async function Dashboard() {
-  const supabase = createServerClient() // Server-side
-  const { data } = await supabase.from('conversations').select('*')
-  return <ConversationList data={data} />
+  const supabase = createServerClient(); // Server-side
+  const { data } = await supabase.from("conversations").select("*");
+  return <ConversationList data={data} />;
 }
 ```
 
 **Depois** (Client Component):
+
 ```typescript
-'use client'
-import { useEffect, useState } from 'react'
-import { createBrowserClient } from '@/lib/supabase'
+"use client";
+import { useEffect, useState } from "react";
+import { createBrowserClient } from "@/lib/supabase";
 
 export default function Dashboard() {
-  const [conversations, setConversations] = useState([])
-  const supabase = createBrowserClient() // Client-side
+  const [conversations, setConversations] = useState([]);
+  const supabase = createBrowserClient(); // Client-side
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data } = await supabase.from('conversations').select('*')
-      setConversations(data || [])
-    }
-    fetchData()
-  }, [])
+      const { data } = await supabase.from("conversations").select("*");
+      setConversations(data || []);
+    };
+    fetchData();
+  }, []);
 
-  return <ConversationList data={conversations} />
+  return <ConversationList data={conversations} />;
 }
 ```
 
 **Alternativa**: Manter APIs serverless no Vercel e fazer fetch:
 
 ```typescript
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://chat.luisfboff.com'
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "https://uzzap.uzzai.com";
 
-const response = await fetch(`${API_BASE_URL}/api/conversations`)
-const data = await response.json()
+const response = await fetch(`${API_BASE_URL}/api/conversations`);
+const data = await response.json();
 ```
 
 ### 2. Converter Server Components para Client Components
 
 Adicionar `'use client'` no topo de todos os arquivos que usam:
+
 - `useState`, `useEffect`, `useContext`
 - Event handlers (`onClick`, `onChange`)
 - Browser APIs (`localStorage`, `navigator`)
 
 **Lista de páginas que precisam converter**:
+
 - `src/app/dashboard/page.tsx`
 - `src/app/dashboard/conversations/page.tsx`
 - `src/app/dashboard/conversations/[phone]/page.tsx`
@@ -2100,6 +2203,7 @@ Adicionar `'use client'` no topo de todos os arquivos que usam:
 **Solução**: Usar Supabase Auth no client-side com Capacitor Storage.
 
 **Instalar plugin de storage**:
+
 ```bash
 npm install @capacitor/preferences
 ```
@@ -2108,11 +2212,11 @@ npm install @capacitor/preferences
 
 ```typescript
 // src/lib/supabase.ts
-import { createClient } from '@supabase/supabase-js'
-import { Preferences } from '@capacitor/preferences'
-import { Capacitor } from '@capacitor/core'
+import { createClient } from "@supabase/supabase-js";
+import { Preferences } from "@capacitor/preferences";
+import { Capacitor } from "@capacitor/core";
 
-const isNative = Capacitor.isNativePlatform()
+const isNative = Capacitor.isNativePlatform();
 
 export const createBrowserClient = () => {
   return createClient(
@@ -2123,23 +2227,23 @@ export const createBrowserClient = () => {
         storage: isNative
           ? {
               getItem: async (key) => {
-                const { value } = await Preferences.get({ key })
-                return value
+                const { value } = await Preferences.get({ key });
+                return value;
               },
               setItem: async (key, value) => {
-                await Preferences.set({ key, value })
+                await Preferences.set({ key, value });
               },
               removeItem: async (key) => {
-                await Preferences.remove({ key })
+                await Preferences.remove({ key });
               },
             }
           : undefined, // Web usa localStorage padrão
         persistSession: true,
         autoRefreshToken: true,
       },
-    }
-  )
-}
+    },
+  );
+};
 ```
 
 ### 4. Adaptar Navegação
@@ -2150,26 +2254,26 @@ export const createBrowserClient = () => {
 
 ```typescript
 // src/lib/navigation.ts
-import { Capacitor } from '@capacitor/core'
-import { useRouter as useNextRouter } from 'next/navigation'
+import { Capacitor } from "@capacitor/core";
+import { useRouter as useNextRouter } from "next/navigation";
 
 export const useRouter = () => {
-  const router = useNextRouter()
-  const isNative = Capacitor.isNativePlatform()
+  const router = useNextRouter();
+  const isNative = Capacitor.isNativePlatform();
 
   return {
     push: (path: string) => {
       if (isNative) {
         // Adiciona slight delay para animação nativa
-        setTimeout(() => router.push(path), 100)
+        setTimeout(() => router.push(path), 100);
       } else {
-        router.push(path)
+        router.push(path);
       }
     },
     back: () => router.back(),
     refresh: () => router.refresh(),
-  }
-}
+  };
+};
 ```
 
 ### 5. Adaptar Assets Estáticos
@@ -2197,6 +2301,7 @@ export const ASSET_BASE_URL = Capacitor.isNativePlatform()
 **Solução**: Manter backend no Vercel (não muda). App mobile apenas consome APIs.
 
 **Arquitetura**:
+
 ```
 Mobile App (Capacitor) ──HTTP──> Vercel (Next.js API Routes) ──> Supabase/Redis
                                         ↑
@@ -2213,6 +2318,7 @@ Mobile App (Capacitor) ──HTTP──> Vercel (Next.js API Routes) ──> Sup
 ### Plugins Recomendados
 
 **Essenciais**:
+
 ```bash
 npm install @capacitor/app           # App lifecycle, deep links
 npm install @capacitor/browser       # In-app browser
@@ -2224,6 +2330,7 @@ npm install @capacitor/keyboard      # Controle do teclado virtual
 ```
 
 **Funcionalidades Avançadas**:
+
 ```bash
 npm install @capacitor/push-notifications  # Push notifications nativas
 npm install @capacitor/local-notifications # Notificações locais
@@ -2238,56 +2345,63 @@ npm install @capacitor/biometric           # Face ID / Touch ID
 
 ```typescript
 // src/lib/notifications.ts
-import { PushNotifications } from '@capacitor/push-notifications'
-import { Capacitor } from '@capacitor/core'
+import { PushNotifications } from "@capacitor/push-notifications";
+import { Capacitor } from "@capacitor/core";
 
 export const registerPushNotifications = async () => {
-  if (!Capacitor.isNativePlatform()) return
+  if (!Capacitor.isNativePlatform()) return;
 
   // Solicitar permissão
-  const permission = await PushNotifications.requestPermissions()
-  if (permission.receive !== 'granted') {
-    throw new Error('Push notification permission denied')
+  const permission = await PushNotifications.requestPermissions();
+  if (permission.receive !== "granted") {
+    throw new Error("Push notification permission denied");
   }
 
   // Registrar listeners
-  await PushNotifications.addListener('registration', (token) => {
-    console.log('Push token:', token.value)
+  await PushNotifications.addListener("registration", (token) => {
+    console.log("Push token:", token.value);
     // Enviar token para backend
     fetch(`${API_URL}/api/devices`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({ token: token.value }),
-    })
-  })
+    });
+  });
 
-  await PushNotifications.addListener('pushNotificationReceived', (notification) => {
-    console.log('Push received:', notification)
-  })
+  await PushNotifications.addListener(
+    "pushNotificationReceived",
+    (notification) => {
+      console.log("Push received:", notification);
+    },
+  );
 
-  await PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
-    console.log('Push action:', notification)
-    // Navegar para conversa
-    router.push(`/dashboard/conversations/${notification.data.phone}`)
-  })
+  await PushNotifications.addListener(
+    "pushNotificationActionPerformed",
+    (notification) => {
+      console.log("Push action:", notification);
+      // Navegar para conversa
+      router.push(`/dashboard/conversations/${notification.data.phone}`);
+    },
+  );
 
   // Registrar
-  await PushNotifications.register()
-}
+  await PushNotifications.register();
+};
 ```
 
 **Uso no app**:
+
 ```typescript
 // src/app/layout.tsx
-'use client'
-import { useEffect } from 'react'
-import { registerPushNotifications } from '@/lib/notifications'
+"use client";
+import { useEffect } from "react";
+import { registerPushNotifications } from "@/lib/notifications";
 
 export default function RootLayout({ children }) {
   useEffect(() => {
-    registerPushNotifications()
-  }, [])
+    registerPushNotifications();
+  }, []);
 
-  return <html>{children}</html>
+  return <html>{children}</html>;
 }
 ```
 
@@ -2295,36 +2409,36 @@ export default function RootLayout({ children }) {
 
 ```typescript
 // src/hooks/useNetworkStatus.ts
-import { useState, useEffect } from 'react'
-import { Network } from '@capacitor/network'
+import { useState, useEffect } from "react";
+import { Network } from "@capacitor/network";
 
 export const useNetworkStatus = () => {
-  const [isOnline, setIsOnline] = useState(true)
+  const [isOnline, setIsOnline] = useState(true);
 
   useEffect(() => {
     const checkStatus = async () => {
-      const status = await Network.getStatus()
-      setIsOnline(status.connected)
-    }
+      const status = await Network.getStatus();
+      setIsOnline(status.connected);
+    };
 
-    checkStatus()
+    checkStatus();
 
-    const listener = Network.addListener('networkStatusChange', (status) => {
-      setIsOnline(status.connected)
-    })
+    const listener = Network.addListener("networkStatusChange", (status) => {
+      setIsOnline(status.connected);
+    });
 
     return () => {
-      listener.remove()
-    }
-  }, [])
+      listener.remove();
+    };
+  }, []);
 
-  return isOnline
-}
+  return isOnline;
+};
 
 // Uso:
-const isOnline = useNetworkStatus()
+const isOnline = useNetworkStatus();
 if (!isOnline) {
-  return <OfflineBanner />
+  return <OfflineBanner />;
 }
 ```
 
@@ -2332,30 +2446,30 @@ if (!isOnline) {
 
 ```typescript
 // src/lib/biometric.ts
-import { NativeBiometric } from 'capacitor-native-biometric'
+import { NativeBiometric } from "capacitor-native-biometric";
 
 export const loginWithBiometric = async () => {
   // Verificar disponibilidade
-  const result = await NativeBiometric.isAvailable()
+  const result = await NativeBiometric.isAvailable();
   if (!result.isAvailable) {
-    throw new Error('Biometric not available')
+    throw new Error("Biometric not available");
   }
 
   // Autenticar
   await NativeBiometric.verifyIdentity({
-    reason: 'Autenticar no WhatsApp Chatbot',
-    title: 'Login',
-    subtitle: 'Use sua digital ou Face ID',
-    description: '',
-  })
+    reason: "Autenticar no WhatsApp Chatbot",
+    title: "Login",
+    subtitle: "Use sua digital ou Face ID",
+    description: "",
+  });
 
   // Buscar credenciais salvas
   const credentials = await NativeBiometric.getCredentials({
-    server: 'chatbot.luisfboff.com',
-  })
+    server: "chatbot.luisfboff.com",
+  });
 
-  return credentials // { username, password }
-}
+  return credentials; // { username, password }
+};
 ```
 
 ---
@@ -2365,6 +2479,7 @@ export const loginWithBiometric = async () => {
 ### Build Local (Desenvolvimento)
 
 **iOS**:
+
 ```bash
 # Build Next.js + Sync com iOS
 npm run build:mobile
@@ -2378,6 +2493,7 @@ npm run ios
 ```
 
 **Android**:
+
 ```bash
 # Build Next.js + Sync com Android
 npm run build:mobile
@@ -2395,16 +2511,19 @@ npm run android
 **iOS (App Store)**:
 
 1. **Configurar assinatura**:
+
    - Abrir `ios/App/App.xcodeproj` no Xcode
    - Selecionar projeto → Signing & Capabilities
    - Team: Selecionar Apple Developer Account
    - Bundle Identifier: `com.luisfboff.chatbot`
 
 2. **Criar ícone e splash screen**:
+
    - Gerar assets: https://capacitorjs.com/docs/guides/splash-screens-and-icons
    - Colocar em `ios/App/App/Assets.xcassets/`
 
 3. **Build**:
+
    ```bash
    npm run build:mobile
    cd ios/App
@@ -2419,12 +2538,14 @@ npm run android
 **Android (Google Play)**:
 
 1. **Configurar assinatura**:
+
    ```bash
    # Gerar keystore
    keytool -genkey -v -keystore release-key.keystore -alias chatbot -keyalg RSA -keysize 2048 -validity 10000
    ```
 
    Editar `android/app/build.gradle`:
+
    ```gradle
    android {
      ...
@@ -2446,6 +2567,7 @@ npm run android
    ```
 
 2. **Build APK/AAB**:
+
    ```bash
    npm run build:mobile
    cd android
@@ -2496,8 +2618,8 @@ jobs:
           node-version: 18
       - uses: actions/setup-java@v3
         with:
-          distribution: 'zulu'
-          java-version: '17'
+          distribution: "zulu"
+          java-version: "17"
       - run: npm ci
       - run: npm run build:mobile
       - run: |
@@ -2518,11 +2640,13 @@ jobs:
 **Limitação**: Capacitor não suporta SSR. Apenas export estático (`output: 'export'`).
 
 **Impacto**:
+
 - ❌ Não pode usar `getServerSideProps`, `getStaticProps`
 - ❌ Server Components não funcionam (precisam converter para Client)
 - ❌ Server Actions não funcionam
 
 **Workaround**:
+
 - Use Client Components + fetch de APIs
 - Mantenha backend no Vercel (API Routes continuam funcionando)
 - Use Supabase Realtime para dados em tempo real
@@ -2532,13 +2656,15 @@ jobs:
 **Limitação**: API Routes (`/api/*`) não são empacotadas no build estático.
 
 **Impacto**:
+
 - ❌ `fetch('/api/conversations')` retorna 404 no app mobile
 
 **Workaround**:
+
 - Configure `API_BASE_URL` apontando para Vercel:
   ```typescript
-  const API_URL = 'https://chat.luisfboff.com'
-  fetch(`${API_URL}/api/conversations`)
+  const API_URL = "https://uzzap.uzzai.com";
+  fetch(`${API_URL}/api/conversations`);
   ```
 
 ### 3. Imagens Otimizadas
@@ -2546,9 +2672,11 @@ jobs:
 **Limitação**: `next/image` com otimização automática não funciona em export estático.
 
 **Impacto**:
+
 - ⚠️ Imagens não são otimizadas automaticamente
 
 **Workaround**:
+
 - Configurar `images: { unoptimized: true }` no `next.config.js`
 - Usar `<img>` nativo ou otimizar imagens manualmente (tinypng, squoosh)
 
@@ -2559,6 +2687,7 @@ jobs:
 **Workaround**:
 
 **iOS** (`ios/App/App/Info.plist`):
+
 ```xml
 <key>CFBundleURLTypes</key>
 <array>
@@ -2572,6 +2701,7 @@ jobs:
 ```
 
 **Android** (`android/app/src/main/AndroidManifest.xml`):
+
 ```xml
 <intent-filter>
   <action android:name="android.intent.action.VIEW" />
@@ -2582,14 +2712,15 @@ jobs:
 ```
 
 **Código**:
-```typescript
-import { App } from '@capacitor/app'
 
-App.addListener('appUrlOpen', (event) => {
-  const url = event.url
-  const path = url.replace('chatbot://', '')
-  router.push(`/${path}`)
-})
+```typescript
+import { App } from "@capacitor/app";
+
+App.addListener("appUrlOpen", (event) => {
+  const url = event.url;
+  const path = url.replace("chatbot://", "");
+  router.push(`/${path}`);
+});
 ```
 
 ### 5. CORS
@@ -2597,14 +2728,15 @@ App.addListener('appUrlOpen', (event) => {
 **Limitação**: Requests do app mobile podem ser bloqueados por CORS.
 
 **Workaround**:
+
 - Configure `androidScheme: 'https'` no `capacitor.config.ts`
 - Adicione headers CORS no backend (Vercel):
   ```typescript
   // src/app/api/*/route.ts
   export async function GET(request: Request) {
-    const response = NextResponse.json({ data })
-    response.headers.set('Access-Control-Allow-Origin', '*')
-    return response
+    const response = NextResponse.json({ data });
+    response.headers.set("Access-Control-Allow-Origin", "*");
+    return response;
   }
   ```
 
@@ -2618,13 +2750,14 @@ App.addListener('appUrlOpen', (event) => {
 // capacitor.config.ts
 const config: CapacitorConfig = {
   server: {
-    url: 'http://192.168.1.100:3000', // IP local do dev server
+    url: "http://192.168.1.100:3000", // IP local do dev server
     cleartext: true, // Permite HTTP em desenvolvimento
   },
-}
+};
 ```
 
 **Workflow**:
+
 1. `npm run dev` (inicia servidor local)
 2. Descobrir IP local: `ipconfig` (Windows) ou `ifconfig` (macOS/Linux)
 3. Atualizar `capacitor.config.ts` com IP
@@ -2639,6 +2772,7 @@ const config: CapacitorConfig = {
 ### Erro: "Could not find or load main class org.gradle.wrapper.GradleWrapperMain"
 
 **Solução**:
+
 ```bash
 cd android
 ./gradlew wrapper --gradle-version 8.0
@@ -2649,6 +2783,7 @@ cd android
 **Causa**: Build do Next.js não foi sincronizado.
 
 **Solução**:
+
 ```bash
 npm run build:mobile
 npx cap sync ios
@@ -2659,6 +2794,7 @@ npx cap sync ios
 **Causa**: Android bloqueia HTTP por padrão.
 
 **Solução**: Adicionar em `android/app/src/main/AndroidManifest.xml`:
+
 ```xml
 <application
   android:usesCleartextTraffic="true">
@@ -2669,6 +2805,7 @@ npx cap sync ios
 **Causa**: CORS ou URL incorreta.
 
 **Solução**:
+
 - Verificar `API_BASE_URL` está correto
 - Testar URL no Postman/Insomnia
 - Adicionar headers CORS no backend
@@ -2678,6 +2815,7 @@ npx cap sync ios
 **Causa**: Dependências nativas não instaladas.
 
 **Solução**:
+
 ```bash
 # iOS
 cd ios/App
@@ -2693,6 +2831,7 @@ cd android
 ## Próximos Passos
 
 ### Fase 1: Setup Inicial (1-2 dias)
+
 - [ ] Criar branch `feature/mobile-app`
 - [ ] Instalar Capacitor e plataformas (iOS, Android)
 - [ ] Configurar `next.config.js` para export estático
@@ -2700,6 +2839,7 @@ cd android
 - [ ] Abrir no simulador iOS e Android
 
 ### Fase 2: Adaptações de Código (3-5 dias)
+
 - [ ] Converter Server Components para Client Components
 - [ ] Migrar autenticação para client-side com Capacitor Storage
 - [ ] Criar wrapper de navegação (`useRouter`)
@@ -2707,6 +2847,7 @@ cd android
 - [ ] Testar fluxo completo (login → dashboard → conversas)
 
 ### Fase 3: APIs Nativas (2-3 dias)
+
 - [ ] Implementar push notifications
 - [ ] Adicionar biometria para login
 - [ ] Configurar deep links
@@ -2714,6 +2855,7 @@ cd android
 - [ ] Configurar splash screen e ícones
 
 ### Fase 4: Polimento (2-3 dias)
+
 - [ ] Otimizar performance (lazy loading, code splitting)
 - [ ] Adicionar animações nativas
 - [ ] Testar em dispositivos reais
@@ -2721,6 +2863,7 @@ cd android
 - [ ] Documentar processo de deploy
 
 ### Fase 5: Deploy (1-2 dias)
+
 - [ ] Configurar assinatura iOS (Apple Developer)
 - [ ] Gerar keystore Android
 - [ ] Build de produção (iOS + Android)

@@ -9,11 +9,13 @@
 ## Pré-requisitos
 
 ### Ambiente
+
 - Node.js (versão: ❓ **VERIFICAR** `.nvmrc` ou `engines` no package.json)
 - npm ou pnpm
 - Git
 
 ### Serviços Externos
+
 - Supabase project (PostgreSQL + Vault + Storage)
 - Redis instance (opcional - graceful degradation se indisponível)
 - Meta WhatsApp Business API (access token, phone number ID, verify token)
@@ -22,6 +24,7 @@
 - Gmail App Password (human handoff notifications)
 
 ### Ferramentas Opcionais
+
 - Doppler CLI (secrets management - verificar se em uso)
 - Capacitor CLI (para builds mobile)
 
@@ -46,6 +49,7 @@ npm install
 **⚠️ ATENÇÃO:** Arquivo `.env.example` NÃO ENCONTRADO na raiz.
 
 **Variáveis esperadas (baseado em CLAUDE.md):**
+
 ```env
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
@@ -75,7 +79,7 @@ GMAIL_USER=<email@gmail.com>
 GMAIL_APP_PASSWORD=<app-password>
 
 # Webhooks
-WEBHOOK_BASE_URL=https://chat.luisfboff.com  # SEMPRE produção, mesmo em dev!
+WEBHOOK_BASE_URL=https://uzzap.uzzai.com  # SEMPRE produção, mesmo em dev!
 
 # Build flags
 NODE_ENV=development
@@ -85,6 +89,7 @@ CAPACITOR_BUILD=false  # true para mobile build
 **AÇÃO:** Criar `.env.local` baseado nas variáveis acima.
 
 **⚠️ CRITICAL (CLAUDE.md):**
+
 - `WEBHOOK_BASE_URL` deve SEMPRE apontar para produção (Meta não consegue acessar localhost).
 - Não use `pg` library em serverless (usar Supabase client).
 
@@ -112,6 +117,7 @@ supabase db push
 **CRÍTICO:** Cliente-specific API keys devem ir no Vault, NÃO em .env.
 
 **Estrutura esperada (por client_id):**
+
 ```
 vault.secrets:
 - openai_api_key
@@ -131,10 +137,11 @@ vault.secrets:
 ```bash
 npm run dev
 ```
+
 **O que faz:** Inicia Next.js dev server com Webpack (não Turbopack).
 **Porta:** 3000 (default)
 **URL:** http://localhost:3000
-**Watch ignore:** db/, docs/, supabase/, capacitor/, *.md (next.config.js:38-48)
+**Watch ignore:** db/, docs/, supabase/, capacitor/, \*.md (next.config.js:38-48)
 
 **Evidência:** `package.json:6`, `next.config.js:36-52`.
 
@@ -145,6 +152,7 @@ npm run dev
 ```bash
 npm run build
 ```
+
 **O que faz:** `next build` (SSR/SSG/ISR support).
 **Output:** `.next/` directory.
 **Deploy target:** Vercel (serverless).
@@ -158,15 +166,18 @@ npm run build
 ```bash
 npm run build:mobile
 ```
+
 **O que faz:** Executa `node scripts/build-mobile.js`.
 **Verificar:** Script existe? O que faz exatamente?
 
 **Alternativas (Doppler-based):**
+
 ```bash
 npm run build:mobile:old  # dev config
 npm run build:mobile:stg  # staging config
 npm run build:mobile:prd  # production config
 ```
+
 **Evidência:** `package.json:9-11` - Usa Doppler + `CAPACITOR_BUILD=true`.
 
 **Output:** `out/` directory (static export).
@@ -204,6 +215,7 @@ npm run test:coverage    # Jest with coverage
 ```bash
 npm run db:export
 ```
+
 **O que faz:** `node scripts/export-database-schema.js`.
 **Verificar:** Script existe? Formato de saída?
 
@@ -392,15 +404,18 @@ cd db
 ## Environment-Specific Notes
 
 ### Development
+
 - `NODE_ENV=development`
 - CORS: permitido de qualquer origem (next.config.js:67)
-- Hot reload: ignorado db/, docs/, supabase/, *.md
+- Hot reload: ignorado db/, docs/, supabase/, \*.md
 
 ### Staging
+
 - Doppler config: `stg`
 - Deploy: verificar se há ambiente staging configurado
 
 ### Production
+
 - `NODE_ENV=production`
 - CORS: webhook routes somente de `https://graph.facebook.com`
 - Security headers: X-Frame-Options, CSP, etc.

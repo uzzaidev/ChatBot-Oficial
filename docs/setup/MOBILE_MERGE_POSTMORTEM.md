@@ -24,15 +24,15 @@ Após o merge do branch `feature/mobile-app` (#78) para `main` (commit ac75aef),
 
 ## Linha do Tempo
 
-| Horário | Evento |
-|---------|--------|
-| 11:16 | Merge do PR #78 (feature/mobile-app) para main |
-| 11:17 | Commit d415b22 (mudanças pós-merge) |
-| 11:20 | Usuário reporta: "APIs não funcionam, nenhum dado aparece" |
-| 11:22 | Diagnóstico: pasta `src/app/api/` deletada |
-| 11:22 | Restauração com `git checkout 0faa1d4 -- src/app/api` |
-| 11:22 | Commit 013a22d (fix: restore APIs) |
-| 11:23 | Sistema restaurado, APIs funcionando |
+| Horário | Evento                                                     |
+| ------- | ---------------------------------------------------------- |
+| 11:16   | Merge do PR #78 (feature/mobile-app) para main             |
+| 11:17   | Commit d415b22 (mudanças pós-merge)                        |
+| 11:20   | Usuário reporta: "APIs não funcionam, nenhum dado aparece" |
+| 11:22   | Diagnóstico: pasta `src/app/api/` deletada                 |
+| 11:22   | Restauração com `git checkout 0faa1d4 -- src/app/api`      |
+| 11:22   | Commit 013a22d (fix: restore APIs)                         |
+| 11:23   | Sistema restaurado, APIs funcionando                       |
 
 ---
 
@@ -62,6 +62,7 @@ O branch `feature/mobile-app` foi criado para transformar o dashboard web em app
 4. ⚠️ **ERRO:** Alguém assumiu que apps mobile não precisam de APIs
 
 **Falha de Planejamento:**
+
 - ❌ Não seguiu o plano do `CAPACITOR_INTEGRATION.md` (que diz para MANTER APIs)
 - ❌ Não testou após merge
 - ❌ Não revisou diff antes do merge (268 arquivos alterados)
@@ -71,6 +72,7 @@ O branch `feature/mobile-app` foi criado para transformar o dashboard web em app
 O documento `docs/app/CAPACITOR_INTEGRATION.md` **claramente instruía** para:
 
 > **Estratégia Paralela e Modular:**
+>
 > - ✅ Código compartilhado (componentes, hooks, nodes)
 > - ✅ APIs serverless continuam funcionando (web E mobile usam)
 > - ✅ Build detecta target: `CAPACITOR_BUILD=true` → export estático
@@ -84,14 +86,14 @@ O documento `docs/app/CAPACITOR_INTEGRATION.md` **claramente instruía** para:
 
 ### Sistemas Afetados
 
-| Sistema | Impacto | Motivo |
-|---------|---------|--------|
-| **Webhook WhatsApp** | 🔴 Offline | `src/app/api/webhook/[clientId]/route.ts` deletado |
-| **Dashboard Web** | 🔴 Sem dados | APIs de conversas/analytics deletadas |
-| **Autenticação** | 🔴 Login quebrado | `src/app/api/auth/*` deletado |
-| **Upload Documentos** | 🔴 Não funciona | `src/app/api/documents/*` deletado |
-| **Admin Panel** | 🔴 Inacessível | `src/app/api/admin/*` deletado |
-| **App Mobile** | 🟡 Não testado | Build mobile não foi testado |
+| Sistema               | Impacto           | Motivo                                             |
+| --------------------- | ----------------- | -------------------------------------------------- |
+| **Webhook WhatsApp**  | 🔴 Offline        | `src/app/api/webhook/[clientId]/route.ts` deletado |
+| **Dashboard Web**     | 🔴 Sem dados      | APIs de conversas/analytics deletadas              |
+| **Autenticação**      | 🔴 Login quebrado | `src/app/api/auth/*` deletado                      |
+| **Upload Documentos** | 🔴 Não funciona   | `src/app/api/documents/*` deletado                 |
+| **Admin Panel**       | 🔴 Inacessível    | `src/app/api/admin/*` deletado                     |
+| **App Mobile**        | 🟡 Não testado    | Build mobile não foi testado                       |
 
 ### Usuários Afetados
 
@@ -125,6 +127,7 @@ git commit -m "fix: restore all API routes deleted in mobile merge"
 ### Arquivos Restaurados (56 total)
 
 **APIs Críticas:**
+
 - ✅ `webhook/[clientId]/route.ts` - Webhook WhatsApp
 - ✅ `conversations/route.ts` - Lista de conversas
 - ✅ `messages/[phone]/route.ts` - Mensagens por cliente
@@ -132,10 +135,12 @@ git commit -m "fix: restore all API routes deleted in mobile merge"
 - ✅ `auth/*` - Autenticação
 
 **APIs Admin:**
+
 - ✅ `admin/users/*` - Gerenciamento usuários
 - ✅ `admin/clients/route.ts` - Gerenciamento clientes
 
 **APIs Utilitárias:**
+
 - ✅ `test/*` - Testes de nodes
 - ✅ `debug/*` - Ferramentas debug
 - ✅ `vault/*` - Secrets management
@@ -147,14 +152,17 @@ git commit -m "fix: restore all API routes deleted in mobile merge"
 ### O Que Deu Errado
 
 1. **❌ Não Seguiu Documentação**
+
    - `CAPACITOR_INTEGRATION.md` instruía manter APIs
    - Plano foi ignorado durante implementação
 
 2. **❌ Merge Sem Revisão**
+
    - 268 arquivos alterados, ninguém revisou diff completo
    - Deletions críticas passaram despercebidas
 
 3. **❌ Não Testou Após Merge**
+
    - Merge direto para `main` sem testar
    - Assume que build passou = funciona
 
@@ -165,6 +173,7 @@ git commit -m "fix: restore all API routes deleted in mobile merge"
 ### O Que Deveria Ter Sido Feito
 
 1. **✅ Seguir Plano à Risca**
+
    ```bash
    # Plano correto (CAPACITOR_INTEGRATION.md):
    git checkout -b feature/mobile-app
@@ -174,6 +183,7 @@ git commit -m "fix: restore all API routes deleted in mobile merge"
    ```
 
 2. **✅ Revisar Diff Antes do Merge**
+
    ```bash
    # Ver TODOS os arquivos deletados
    git diff main..feature/mobile-app --name-status | grep "^D"
@@ -181,6 +191,7 @@ git commit -m "fix: restore all API routes deleted in mobile merge"
    ```
 
 3. **✅ Testar Após Merge (Checklist)**
+
    ```bash
    # Após merge para main:
    npm run build              # Build web
@@ -190,13 +201,14 @@ git commit -m "fix: restore all API routes deleted in mobile merge"
    ```
 
 4. **✅ Usar Feature Flags (Não Deletar Código)**
+
    ```typescript
    // next.config.js
-   const isMobileBuild = process.env.CAPACITOR_BUILD === 'true'
+   const isMobileBuild = process.env.CAPACITOR_BUILD === "true";
 
    module.exports = {
-     output: isMobileBuild ? 'export' : undefined,  // APIs funcionam em ambos
-   }
+     output: isMobileBuild ? "export" : undefined, // APIs funcionam em ambos
+   };
    ```
 
 ---
@@ -255,7 +267,7 @@ jobs:
 
 Criar `docs/ARCHITECTURE.md` explicando:
 
-```markdown
+````markdown
 # Arquitetura: Por Que Precisamos de APIs
 
 **REGRA DE OURO:** NUNCA delete `src/app/api/*`
@@ -273,14 +285,16 @@ Criar `docs/ARCHITECTURE.md` explicando:
 // App Mobile (React Native via Capacitor)
 useEffect(() => {
   // Faz fetch para API Next.js (não usa SSR)
-  fetch('https://chat.luisfboff.com/api/conversations')
-    .then(res => res.json())
-    .then(setConversations)
-}, [])
+  fetch("https://uzzap.uzzai.com/api/conversations")
+    .then((res) => res.json())
+    .then(setConversations);
+}, []);
 ```
+````
 
 **Mobile NÃO usa Server Components, mas USA APIs!**
-```
+
+````
 
 ---
 
@@ -299,15 +313,17 @@ useEffect(() => {
    npm run dev
    # Acessar: http://localhost:3000/dashboard
    # Verificar: Conversas carregam? Analytics funcionam?
-   ```
+````
 
 2. **Verificar Webhook WhatsApp**
+
    ```bash
    # Enviar mensagem de teste para o bot
    # Verificar se processa e responde
    ```
 
 3. **Revisar Branch Mobile**
+
    ```bash
    # O branch mobile ainda existe? Precisa refazer?
    git branch -a | grep mobile
