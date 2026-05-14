@@ -13,6 +13,11 @@ const nextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'supabase.uzzai.com.br',
+        pathname: '/storage/v1/object/public/**',
+      },
+      {
+        protocol: 'https',
         hostname: 'graph.facebook.com',
         pathname: '/**',
       },
