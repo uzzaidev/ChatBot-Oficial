@@ -1271,6 +1271,12 @@ export const processChatbotMessage = async (
             openaiApiKey: config.apiKeys.openaiApiKey,
             similarityThreshold: config.activeAgent?.rag_threshold,
             maxResults: config.activeAgent?.rag_max_results,
+            clientConfig: {
+              primaryModelProvider: config.primaryProvider,
+              openaiModel: config.models.openaiModel,
+              groqModel: config.models.groqModel,
+            },
+            phone: parsedMessage.phone,
           }),
         ]);
 
@@ -1320,6 +1326,12 @@ export const processChatbotMessage = async (
           openaiApiKey: config.apiKeys.openaiApiKey,
           similarityThreshold: config.activeAgent?.rag_threshold,
           maxResults: config.activeAgent?.rag_max_results,
+          clientConfig: {
+            primaryModelProvider: config.primaryProvider,
+            openaiModel: config.models.openaiModel,
+            groqModel: config.models.groqModel,
+          },
+          phone: parsedMessage.phone,
         });
         ragContext = ragResult.context;
         ragTraceData = ragResult.traceData;
@@ -2003,6 +2015,12 @@ export const processChatbotMessage = async (
             openaiApiKey: config.apiKeys.openaiApiKey,
             similarityThreshold: config.activeAgent?.rag_threshold,
             maxResults: config.activeAgent?.rag_max_results,
+            clientConfig: {
+              primaryModelProvider: config.primaryProvider,
+              openaiModel: config.models.openaiModel,
+              groqModel: config.models.groqModel,
+            },
+            phone: parsedMessage.phone,
           });
 
           ragTraceData = knowledgeResult.traceData;
