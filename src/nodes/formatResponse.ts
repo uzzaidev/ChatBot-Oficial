@@ -1,4 +1,9 @@
-const MAX_MESSAGE_LENGTH = 4096;
+// Limite confortavel de UX no WhatsApp. O limite tecnico do WhatsApp eh 4096,
+// mas mensagens acima de ~400 chars ficam chatas de ler no celular. O prompt
+// do modelo (WHATSAPP_FORMATTING_RULES em generateAIResponse.ts) ja pede ~280
+// chars; este cap aqui eh defensa em profundidade quando o modelo passa do
+// limite. Quando ultrapassa, splitIntoSentences quebra em sentencas.
+const MAX_MESSAGE_LENGTH = 600;
 
 // Chaves de argumentos de tools conhecidas — se um bloco JSON no texto contiver
 // qualquer uma delas, é tool call vazada (modelo descreveu a chamada em texto
@@ -125,33 +130,52 @@ const splitIntoParagraphs = (text: string): string[] => {
   return [text];
 };
 
+// Quebra um trecho longo agrupando UNIDADES (frases ou palavras) ate o cap.
+const packUnits = (units: string[], cap: number): string[] => {
+  const chunks: string[] = [];
+  let current = "";
+
+  for (const unit of units) {
+    const candidate = current ? `${current} ${unit}` : unit;
+    if (candidate.length > cap) {
+      if (current) {
+        chunks.push(current.trim());
+      }
+      current = unit;
+    } else {
+      current = candidate;
+    }
+  }
+
+  if (current) {
+    chunks.push(current.trim());
+  }
+
+  return chunks;
+};
+
 const enforceMaxLength = (messages: string[]): string[] => {
   return messages.flatMap((msg) => {
     if (msg.length <= MAX_MESSAGE_LENGTH) {
       return [msg];
     }
 
-    const chunks: string[] = [];
-    let currentChunk = "";
-
-    const words = msg.split(" ");
-
-    for (const word of words) {
-      if ((currentChunk + " " + word).length > MAX_MESSAGE_LENGTH) {
-        if (currentChunk) {
-          chunks.push(currentChunk.trim());
-        }
-        currentChunk = word;
-      } else {
-        currentChunk = currentChunk ? `${currentChunk} ${word}` : word;
-      }
+    // 1) Quebra por sentencas e tenta agrupar em mensagens <= cap.
+    //    Preserva limite de frase — muito melhor pra leitura no WhatsApp do
+    //    que cortes no meio da frase.
+    const sentences = msg.split(/(?<=[.!?])\s+/).filter((s) => s.length > 0);
+    if (sentences.length > 1) {
+      const sentencePacked = packUnits(sentences, MAX_MESSAGE_LENGTH);
+      // Se alguma sentenca isolada ainda for > cap, cai pra word-split nela.
+      return sentencePacked.flatMap((chunk) =>
+        chunk.length <= MAX_MESSAGE_LENGTH
+          ? [chunk]
+          : packUnits(chunk.split(" "), MAX_MESSAGE_LENGTH),
+      );
     }
 
-    if (currentChunk) {
-      chunks.push(currentChunk.trim());
-    }
-
-    return chunks;
+    // 2) Sentenca unica monstruosa — fallback pra palavras.
+    return packUnits(msg.split(" "), MAX_MESSAGE_LENGTH);
   });
 };
 
