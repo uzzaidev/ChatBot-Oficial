@@ -11,6 +11,17 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-05-14
 
 ### feat
+- Adicionados componentes do assistente de IA para WhatsApp, incluindo interface, input, mensagens e abas de conversação.
+- Implementada nova API para chat, conversas e feedback do assistente de IA.
+- Criado esquema e migrações para tabelas relacionadas ao assistente e feedback no banco de dados.
+- Atualizadas dependências para suportar markdown com extensões GFM e melhorias no parsing de markdown.
+- Incluídas páginas e layout no dashboard para gerenciamento do assistente de IA e observabilidade.
+  - Arquivos: `src/app/api/assistant/chat/route.ts`, `src/app/api/assistant/conversations/[id]/route.ts`, `src/app/api/assistant/conversations/route.ts`, `src/app/api/assistant/feedback/route.ts`, `src/app/dashboard/assistant/page.tsx`, `src/components/assistant/AssistantInterface.tsx`, `src/components/assistant/AssistantMessage.tsx`, `src/components/assistant/AssistantInput.tsx`, `src/components/assistant/ConversationTabs.tsx`, `src/lib/assistant-schema.ts`, `src/lib/assistant-prompt.ts`, `migrations/20260514_add_assistant_tables.sql`, `migrations/20260514000001_add_assistant_feedback.sql`, `migrations/20260514000002_add_feedback_observations.sql`
+  - Confiança: alta
+
+## 2026-05-14
+
+### feat
 - Adicionado proxy via Cloudflare Worker para Supabase, permitindo contornar problemas de resolução DNS em clientes finais ao usar o domínio `supabase.uzzai.com.br` em vez de `*.supabase.co`. O proxy suporta REST, Auth, Realtime (WebSocket) e Storage, mantendo transparência no tráfego e preservando headers e métodos.
 - Atualizado `next.config.js` para permitir carregamento de imagens do Storage via novo domínio customizado.
 - Configurada variável de ambiente `NEXT_PUBLIC_SUPABASE_URL` para apontar para o proxy em todos os ambientes, sem alteração nas chaves de autenticação.
