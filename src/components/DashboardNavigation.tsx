@@ -25,6 +25,7 @@ import {
   Receipt,
   Settings,
   Shield,
+  Sparkles,
   TrendingUp,
   Users,
   Workflow,
@@ -168,6 +169,15 @@ export function DashboardNavigation({
           isCollapsed={isCollapsed}
           onClick={onLinkClick}
           tooltip="Gerenciar conversas do WhatsApp em tempo real"
+        />
+
+        <NavItem
+          href="/dashboard/assistant"
+          icon={<Sparkles className="h-5 w-5 flex-shrink-0" />}
+          label="Assistente IA"
+          isCollapsed={isCollapsed}
+          onClick={onLinkClick}
+          tooltip="Analise dados em linguagem natural com IA"
         />
 
         {/* SEÇÃO: GESTÃO */}

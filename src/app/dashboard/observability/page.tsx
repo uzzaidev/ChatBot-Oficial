@@ -1,20 +1,22 @@
 "use client";
 
-import { Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import {
   Activity,
   AlertTriangle,
+  Bot,
   CheckCircle,
   LineChart,
 } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TracesClient } from "@/components/TracesClient";
-import { QualityDashboard } from "@/components/quality/QualityDashboard";
+import { AssistantFeedbackDashboard } from "@/components/assistant/AssistantFeedbackDashboard";
 import { EvaluationsWorkspace } from "@/components/quality/EvaluationsWorkspace";
 import { GroundTruthManager } from "@/components/quality/GroundTruthManager";
+import { QualityDashboard } from "@/components/quality/QualityDashboard";
 import { SupportBugsDashboard } from "@/components/support/SupportBugsDashboard";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const TAB_VALUES = [
   "overview",
@@ -22,6 +24,7 @@ const TAB_VALUES = [
   "evaluations",
   "ground-truth",
   "support",
+  "agente-ia",
 ] as const;
 
 type TabValue = (typeof TAB_VALUES)[number];
@@ -89,6 +92,10 @@ const ObservabilityShell = () => {
             <AlertTriangle className="h-4 w-4" />
             Suporte / Bugs
           </TabsTrigger>
+          <TabsTrigger value="agente-ia" className="gap-2">
+            <Bot className="h-4 w-4" />
+            Agente IA
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-0">
@@ -109,6 +116,21 @@ const ObservabilityShell = () => {
 
         <TabsContent value="support" className="mt-0">
           <SupportBugsDashboard />
+        </TabsContent>
+
+        <TabsContent value="agente-ia" className="mt-0">
+          <div className="flex flex-col gap-2">
+            <div>
+              <h2 className="text-base font-semibold">
+                Feedbacks do Assistente IA
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Avaliações feitas pelos usuários nas respostas do assistente —
+                likes, dislikes e bugs reportados.
+              </p>
+            </div>
+            <AssistantFeedbackDashboard />
+          </div>
         </TabsContent>
       </Tabs>
     </div>
