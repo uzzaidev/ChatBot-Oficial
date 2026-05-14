@@ -11,6 +11,14 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-05-14
 
 ### feat
+- Implementado reranker LLM para RAG que reordena e filtra resultados da busca vetorial, melhorando a relevância dos trechos retornados. O reranker usa um modelo leve para selecionar os top-K mais úteis entre um pool maior inicial, com fallback seguro para busca por cosseno em caso de erro.
+- Integrado reranker no fluxo principal de chatbot e na obtenção do contexto RAG, ativado via parâmetro `clientConfig` com configurações de modelo e telefone.
+  - Arquivos: `src/lib/rerank.ts`, `src/nodes/getRAGContext.ts`, `src/flows/chatbotFlow.ts`
+  - Confiança: alta
+
+## 2026-05-14
+
+### feat
 - Melhorada geração de respostas da IA com regras específicas de formatação para mensagens WhatsApp, incluindo limite de caracteres por mensagem, quebra em múltiplas mensagens, e proibição de markdown para melhor legibilidade no app móvel.
 - Aprimorado tratamento do contexto RAG para evitar cópia literal de documentos, usando instruções negativas explícitas para que a IA reformule e resuma informações, além de remover cabeçalhos de documentos que induziam à repetição literal.
 - Otimizado prompt para maximizar cache do OpenAI, organizando mensagens system em blocos estáveis e variáveis para reduzir tokens processados em chamadas subsequentes.
