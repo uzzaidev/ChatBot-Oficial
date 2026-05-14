@@ -11,6 +11,13 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-05-14
 
 ### feat
+- Atualizado cliente Direct AI para usar a API Responses da OpenAI, removendo a função legada de chat completions; mantém uso da API de chat completions para Groq
+  - Arquivos: `src/lib/direct-ai-client.ts`, `src/lib/openai.ts`
+  - Confiança: alta
+
+## 2026-05-14
+
+### feat
 - Implementado endpoint PATCH em `/api/assistant/feedback` para atualização de registros de feedback, permitindo alterar tipo e observações.
 - Melhorada resposta do endpoint GET `/api/assistant/feedback` para super administradores, retornando feedbacks de todos os clientes com o nome do cliente incluído.
 - Adaptado dashboard de feedback para exibir coluna "Cliente" apenas para super administradores.
