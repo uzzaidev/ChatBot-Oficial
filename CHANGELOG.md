@@ -8,6 +8,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-05-14
+
+### feat
+- Adicionado padrão remoto para imagens do domínio `supabase.uzzai.com.br` na configuração do Next.js
+  - Arquivos: `next.config.js`
+  - Confiança: alta
+
 ## 2026-05-11
 
 ### feat
