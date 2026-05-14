@@ -11,6 +11,16 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-05-14
 
 ### feat
+- Melhorada geração de respostas da IA com regras específicas de formatação para mensagens WhatsApp, incluindo limite de caracteres por mensagem, quebra em múltiplas mensagens, e proibição de markdown para melhor legibilidade no app móvel.
+- Aprimorado tratamento do contexto RAG para evitar cópia literal de documentos, usando instruções negativas explícitas para que a IA reformule e resuma informações, além de remover cabeçalhos de documentos que induziam à repetição literal.
+- Otimizado prompt para maximizar cache do OpenAI, organizando mensagens system em blocos estáveis e variáveis para reduzir tokens processados em chamadas subsequentes.
+- Ajustado nível de esforço de raciocínio automático para "medium" quando há contexto RAG, melhorando síntese e relevância das respostas geradas.
+  - Arquivos: `src/nodes/generateAIResponse.ts`, `src/nodes/getRAGContext.ts`
+  - Confiança: alta
+
+## 2026-05-14
+
+### feat
 - Adicionado suporte para cache de tokens de entrada no cliente Direct AI e no sistema de tracking, incluindo registro da taxa de acerto do cache no console
   - Arquivos: `src/lib/direct-ai-client.ts`, `src/lib/direct-ai-tracking.ts`
   - Confiança: alta
