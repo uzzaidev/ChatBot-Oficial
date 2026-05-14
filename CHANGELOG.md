@@ -10,6 +10,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-05-14
 
+### docs
+- Atualizada descrição do projeto no README para incluir informação da versão V3
+  - Arquivos: `README.md`
+  - Confiança: alta
+
+## 2026-05-14
+
 ### feat
 - Ajustado o limite máximo de comprimento de mensagens para 600 caracteres visando melhor experiência no WhatsApp, abaixo do limite técnico de 4096 caracteres.
 - Melhorada a lógica de divisão e agrupamento de mensagens longas, quebrando primeiro por sentenças e, se necessário, por palavras para preservar a legibilidade.
