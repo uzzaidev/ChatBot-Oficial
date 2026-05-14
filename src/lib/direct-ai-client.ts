@@ -93,6 +93,7 @@ export interface DirectAIResponse {
     completionTokens: number;
     totalTokens: number;
     reasoningTokens?: number;
+    cachedInputTokens?: number;
   };
   model: string;
   provider: string;
@@ -564,6 +565,15 @@ export const callDirectAI = async (
     const totalTokens =
       usage?.totalTokens ?? promptTokens + completionTokens;
 
+    // OpenAI auto-caches prompt prefixes >=1024 tokens with 50% input discount.
+    // AI SDK v5 exposes the count on usage.cachedInputTokens (matches the
+    // shape used in src/lib/openai.ts for Vision/PDF). Older shapes use
+    // prompt_tokens_details.cached_tokens on the raw response.
+    const cachedInputTokens: number =
+      usage?.cachedInputTokens ??
+      usage?.prompt_tokens_details?.cached_tokens ??
+      0;
+
     // Extract reasoning tokens if reported by the model (gpt-5.x / o-series).
     // AI SDK v5 puts it directly on usage.reasoningTokens; older shapes used
     // output_tokens_details.reasoning_tokens or providerMetadata.openai.
@@ -576,6 +586,13 @@ export const callDirectAI = async (
       const visibleTokens = completionTokens - reasoningTokens;
       console.log(
         `[Direct AI] Reasoning tokens: ${reasoningTokens} | Visible output tokens: ${visibleTokens}`,
+      );
+    }
+
+    if (cachedInputTokens > 0 && promptTokens > 0) {
+      const cacheHitRate = ((cachedInputTokens / promptTokens) * 100).toFixed(1);
+      console.log(
+        `[Direct AI] Prompt cache hit: ${cachedInputTokens}/${promptTokens} input tokens (${cacheHitRate}%)`,
       );
     }
 
@@ -633,6 +650,7 @@ export const callDirectAI = async (
         modelName: model,
         inputTokens: promptTokens,
         outputTokens: completionTokens,
+        cachedTokens: cachedInputTokens,
         latencyMs,
         metadata: config.metadata,
       }).catch((err) => {
@@ -665,6 +683,7 @@ export const callDirectAI = async (
         completionTokens,
         totalTokens,
         reasoningTokens: reasoningTokens > 0 ? reasoningTokens : undefined,
+        cachedInputTokens: cachedInputTokens > 0 ? cachedInputTokens : undefined,
       },
       model,
       provider,
