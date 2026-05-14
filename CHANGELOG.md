@@ -11,6 +11,16 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-05-14
 
 ### feat
+- Implementado endpoint PATCH em `/api/assistant/feedback` para atualização de registros de feedback, permitindo alterar tipo e observações.
+- Melhorada resposta do endpoint GET `/api/assistant/feedback` para super administradores, retornando feedbacks de todos os clientes com o nome do cliente incluído.
+- Adaptado dashboard de feedback para exibir coluna "Cliente" apenas para super administradores.
+- Atualizados botões de feedback para suportar alteração de feedback já enviado via PATCH, com melhor usabilidade e controle de estado.
+  - Arquivos: `src/app/api/assistant/feedback/route.ts`, `src/components/assistant/AssistantFeedbackDashboard.tsx`, `src/components/assistant/AssistantMessage.tsx`
+  - Confiança: alta
+
+## 2026-05-14
+
+### feat
 - Adicionados componentes do assistente de IA para WhatsApp, incluindo interface, input, mensagens e abas de conversação.
 - Implementada nova API para chat, conversas e feedback do assistente de IA.
 - Criado esquema e migrações para tabelas relacionadas ao assistente e feedback no banco de dados.
