@@ -11,6 +11,13 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-05-14
 
 ### feat
+- Adicionado suporte para cache de tokens de entrada no cliente Direct AI e no sistema de tracking, incluindo registro da taxa de acerto do cache no console
+  - Arquivos: `src/lib/direct-ai-client.ts`, `src/lib/direct-ai-tracking.ts`
+  - Confiança: alta
+
+## 2026-05-14
+
+### feat
 - Atualizado cliente Direct AI para usar a API Responses da OpenAI, removendo a função legada de chat completions; mantém uso da API de chat completions para Groq
   - Arquivos: `src/lib/direct-ai-client.ts`, `src/lib/openai.ts`
   - Confiança: alta
