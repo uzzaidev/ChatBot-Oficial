@@ -77,12 +77,17 @@ export const getRAGContextWithTrace = async (
     }
 
     const documents = data as MatchedDocument[];
+
+    // Note: do NOT prefix chunks with "[Documento N - Relevancia: X%]".
+    // Small reasoning models (gpt-5.x-nano) interpret that header as an
+    // instruction to "present documents" and end up copying chunk content
+    // verbatim to the end user. Relevance scores live in traceData for
+    // observability — the LLM does not need them. Plain concatenation
+    // forces synthesis instead of regurgitation.
     const context = documents
-      .map(
-        (doc, i) =>
-          `[Documento ${i + 1} - Relevancia: ${(doc.similarity * 100).toFixed(1)}%]\n${doc.content}`,
-      )
-      .join("\n\n---\n\n");
+      .map((doc) => doc.content.trim())
+      .filter((c) => c.length > 0)
+      .join("\n\n");
 
     return {
       context,

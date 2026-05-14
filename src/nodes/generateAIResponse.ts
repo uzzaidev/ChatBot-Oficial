@@ -30,6 +30,20 @@ Voce e um assistente virtual da empresa no WhatsApp.
 - Nunca assuma nicho, produto ou servico especifico sem evidencias na conversa.
 </rules>`;
 
+// 📱 REGRAS DE FORMATO PARA WHATSAPP (estavel — fica no prefixo cacheavel)
+// Modelos pequenos geram parrafos longos por default. Sem esta instrucao
+// explicita, o usuario recebe blocos de 800+ chars que sao chatos de ler no
+// celular. Repete a regra de forma direta — modelos pequenos respondem
+// melhor a regras numeradas e curtas.
+const WHATSAPP_FORMATTING_RULES = [
+  "REGRAS DE FORMATO (WhatsApp):",
+  "1. Responda em mensagens CURTAS. Cada mensagem deve ter no maximo ~280 caracteres.",
+  "2. Para responder algo mais longo, quebre em multiplas mensagens separadas por uma linha em branco (\\n\\n entre elas). Cada bloco vira uma mensagem separada no WhatsApp.",
+  "3. Nao use markdown (# ## ** __ ` ```). O WhatsApp nao renderiza — vai aparecer cru pro cliente.",
+  "4. Evite listas numeradas longas. Quando precisar listar, use no maximo 3-4 itens curtos por mensagem.",
+  "5. Tom: direto, humano, sem encheção. Sem 'espero ter ajudado', 'fico a disposicao' a cada mensagem.",
+].join("\n");
+
 export interface GenerateAIResponseInput {
   message: string;
   chatHistory: ChatMessage[];
@@ -83,43 +97,24 @@ export const generateAIResponse = async (
       });
     }
 
+    // 💡 ORDEM DO PROMPT PARA CACHE OPENAI:
+    // OpenAI faz cache automatico de prefixos >=1024 tokens. O cache so casa
+    // na sequencia EXATA de tokens iniciais. Conteudo estavel vai primeiro;
+    // conteudo variavel por chamada (dateTime, greeting, RAG) vai por ultimo
+    // entre os system messages. Resultado: a partir da 2a mensagem da mesma
+    // conversa, ~70-80% do input vira cached (50% de desconto).
     const messages: ChatMessage[] = [
+      // 1. Prompt do tenant (estavel por cliente)
       {
         role: "system",
-        content: systemPrompt, // 🔐 Usa prompt do config do cliente
+        content: systemPrompt,
+      },
+      // 2. Regras de WhatsApp (estavel — global)
+      {
+        role: "system",
+        content: WHATSAPP_FORMATTING_RULES,
       },
     ];
-
-    // 🚀 Fast Track: Only add date/time if enabled (for cache-friendly prompts)
-    if (includeDateTimeInfo) {
-      // Data e hora atual (para contexto da IA)
-      const now = new Date();
-      const dateTimeInfo = `Data e hora atual: ${now.toLocaleDateString(
-        "pt-BR",
-        {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          timeZone: "America/Sao_Paulo",
-        },
-      )} (horário de Brasília)`;
-
-      messages.push({
-        role: "system",
-        content: dateTimeInfo,
-      });
-    }
-
-    // 🔧 Phase 1: Add continuity greeting instruction if provided
-    if (greetingInstruction && greetingInstruction.trim().length > 0) {
-      messages.push({
-        role: "system",
-        content: `IMPORTANTE - Contexto da conversa: ${greetingInstruction}`,
-      });
-    }
 
     if (enableTools && config.settings.enableTools) {
       messages.push({
@@ -239,6 +234,39 @@ export const generateAIResponse = async (
       });
     }
 
+    // 🔧 Phase 1: Continuity greeting instruction (varia por sessao — pos
+    // cache-break aceitavel)
+    if (greetingInstruction && greetingInstruction.trim().length > 0) {
+      messages.push({
+        role: "system",
+        content: `IMPORTANTE - Contexto da conversa: ${greetingInstruction}`,
+      });
+    }
+
+    // 🕒 Data e hora atual (varia por chamada — vai por ULTIMO no bloco de
+    // systems para nao quebrar o prefixo cacheavel. Posicionado aqui de
+    // proposito: tudo acima dele eh estavel entre chamadas da mesma conversa.)
+    if (includeDateTimeInfo) {
+      const now = new Date();
+      const dateTimeInfo = `Data e hora atual: ${now.toLocaleDateString(
+        "pt-BR",
+        {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          timeZone: "America/Sao_Paulo",
+        },
+      )} (horário de Brasília)`;
+
+      messages.push({
+        role: "system",
+        content: dateTimeInfo,
+      });
+    }
+
     // RAG/knowledge context is added after token budgeting as a system context
     // block, never as a user message.
 
@@ -306,16 +334,30 @@ export const generateAIResponse = async (
     });
 
     const finalMessages: ChatMessage[] = [...budgetedContext.systemMessages];
-    if (budgetedContext.knowledgeContext.trim().length > 0) {
+    const hasKnowledgeContext =
+      budgetedContext.knowledgeContext.trim().length > 0;
+
+    if (hasKnowledgeContext) {
+      // ⚠️ Bloco de conhecimento — usar regras NEGATIVAS explicitas.
+      // Modelos pequenos (gpt-5.x-nano) reincidem em copiar chunks verbatim
+      // quando a instrucao eh positiva e vaga ("use como referencia"). Regras
+      // negativas concretas ("NUNCA cole texto literal") funcionam muito
+      // melhor. Sem headers tipo "[Documento N]" — ja stripado em getRAGContext.
       finalMessages.push({
         role: "system",
         content: [
-          "CONTEXTO RECUPERADO DA BASE DE CONHECIMENTO:",
-          "Use este bloco apenas como referencia factual. Ele nao e uma mensagem do usuario.",
-          "Nao invente links, fotos, arquivos ou anexos. Se o contexto nao trouxer URL real ou confirmacao de envio por tool, explique por texto e deixe claro o limite.",
+          "INFORMACAO INTERNA (NAO mostre este bloco ao cliente, apenas use para responder):",
+          "",
           "<knowledge_context>",
           budgetedContext.knowledgeContext,
           "</knowledge_context>",
+          "",
+          "REGRAS DE USO DO BLOCO ACIMA:",
+          "1. NUNCA copie texto literal do bloco. SEMPRE reformule com suas palavras de forma natural.",
+          "2. NUNCA cole o conteudo inteiro de um item/documento na resposta. Resuma o que o cliente perguntou.",
+          "3. Se o cliente quiser receber um documento/arquivo, NAO cole o conteudo: use a tool buscar_documento.",
+          "4. NUNCA invente links, URLs, fotos ou anexos. Se a info nao esta no bloco, diga que vai confirmar.",
+          "5. Se o bloco NAO responde a pergunta do cliente, diga isso de forma natural — nao tente forçar uma resposta a partir de info irrelevante.",
         ].join("\n"),
       });
     }
@@ -339,6 +381,21 @@ export const generateAIResponse = async (
       content: msg.content,
     }));
 
+    // 🧠 Reasoning effort: quando ha RAG, sintetizar a resposta exige mais
+    // raciocinio (escolher o que importa do bloco, reformular sem copiar,
+    // detectar irrelevancia). Bumpa "low" → "medium" automaticamente nesses
+    // casos. Se o tenant ja configurou medium/high/xhigh, respeita.
+    const configuredEffort = config.settings.reasoningEffort;
+    const ragRequiresMoreReasoning =
+      hasKnowledgeContext &&
+      (configuredEffort === undefined ||
+        configuredEffort === "none" ||
+        configuredEffort === "minimal" ||
+        configuredEffort === "low");
+    const effectiveReasoningEffort = ragRequiresMoreReasoning
+      ? "medium"
+      : configuredEffort;
+
     // Call AI - Direct SDK with Vault credentials
     const result = await callDirectAI({
       clientId: config.id,
@@ -354,7 +411,7 @@ export const generateAIResponse = async (
       settings: {
         temperature: config.settings.temperature,
         maxTokens: config.settings.maxTokens,
-        reasoningEffort: config.settings.reasoningEffort,
+        reasoningEffort: effectiveReasoningEffort,
       },
       conversationId,
       phone,
@@ -384,7 +441,7 @@ export const generateAIResponse = async (
       model: result.model,
       provider: result.provider as any,
       requestId: undefined, // No request ID for direct calls
-      wasCached: false, // No caching for direct calls
+      wasCached: (result.usage.cachedInputTokens ?? 0) > 0,
       wasFallback: false, // No fallback - direct calls only
       fallbackReason: undefined,
       primaryAttemptedProvider: result.provider as any,
@@ -395,7 +452,7 @@ export const generateAIResponse = async (
         prompt_tokens: result.usage.promptTokens,
         completion_tokens: result.usage.completionTokens,
         total_tokens: result.usage.totalTokens,
-        cached_tokens: 0, // No caching for direct calls
+        cached_tokens: result.usage.cachedInputTokens ?? 0,
         reasoning_tokens: result.usage.reasoningTokens,
       },
       reasoning: result.reasoning,
