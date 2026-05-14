@@ -367,6 +367,7 @@ function FeedbackButtons({
   conversationId?: string;
 }) {
   const [selected, setSelected] = useState<FeedbackKind | null>(null);
+  const [feedbackId, setFeedbackId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [pending, setPending] = useState<FeedbackKind | null>(null); // waiting for obs
   const [obs, setObs] = useState("");
@@ -380,18 +381,34 @@ function FeedbackButtons({
   const doSubmit = async (kind: FeedbackKind, observations: string) => {
     setLoading(true);
     try {
-      await fetch("/api/assistant/feedback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          conversationId,
-          question,
-          sqlQuery,
-          response,
-          feedback: kind,
-          observations: observations.trim() || undefined,
-        }),
-      });
+      if (feedbackId) {
+        // PATCH — update existing record
+        await fetch("/api/assistant/feedback", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: feedbackId,
+            feedback: kind,
+            observations: observations.trim() || undefined,
+          }),
+        });
+      } else {
+        // POST — create new record, store returned id
+        const res = await fetch("/api/assistant/feedback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            conversationId,
+            question,
+            sqlQuery,
+            response,
+            feedback: kind,
+            observations: observations.trim() || undefined,
+          }),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (json.id) setFeedbackId(json.id);
+      }
       setSelected(kind);
     } finally {
       setLoading(false);
@@ -401,7 +418,7 @@ function FeedbackButtons({
   };
 
   const handleButtonClick = (kind: FeedbackKind) => {
-    if (loading || selected !== null) return;
+    if (loading) return;
     setPending(kind);
   };
 
@@ -413,9 +430,11 @@ function FeedbackButtons({
     if (pending) doSubmit(pending, "");
   };
 
+  // Close without saving — used only by the X button
   const handleClose = () => {
     if (loading) return;
-    handleSkip(); // close = save without obs
+    setPending(null);
+    setObs("");
   };
 
   const buttons: Array<{
@@ -457,23 +476,30 @@ function FeedbackButtons({
     <div className="relative flex items-center gap-0.5 px-1">
       {/* Saved indicator */}
       {selected !== null && (
-        <span className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
+        <span
+          className="flex items-center gap-1 text-[10px] text-muted-foreground/60"
+          title="Clique em outro botão para alterar"
+        >
           <CheckCircle2 className="h-3 w-3 text-emerald-500" />
           Salvo
         </span>
       )}
 
-      {/* Feedback buttons */}
+      {/* Feedback buttons — always clickable to allow changing */}
       {buttons.map(({ kind, Icon, title, color }) => (
         <button
           key={kind}
           data-active={selected === kind}
           onClick={() => handleButtonClick(kind)}
-          disabled={loading || selected !== null}
-          title={title}
+          disabled={loading}
+          title={
+            selected !== null && selected !== kind
+              ? `Alterar para: ${title}`
+              : title
+          }
           className={cn(
-            "rounded p-1 text-muted-foreground/40 transition-colors disabled:cursor-default",
-            selected === null && "hover:bg-muted",
+            "rounded p-1 text-muted-foreground/40 transition-colors disabled:opacity-50",
+            "hover:bg-muted",
             color,
           )}
         >
@@ -500,7 +526,9 @@ function FeedbackButtons({
             </button>
 
             <p className="text-sm font-semibold text-foreground">
-              {LABELS[pending]}
+              {selected !== null && selected !== pending
+                ? `Alterar para: ${LABELS[pending]}`
+                : LABELS[pending]}
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
               Adicione uma observação (opcional) para nos ajudar a melhorar.
@@ -521,11 +549,18 @@ function FeedbackButtons({
 
             <div className="mt-3 flex justify-end gap-2">
               <button
+                onClick={handleClose}
+                disabled={loading}
+                className="rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
                 onClick={handleSkip}
                 disabled={loading}
                 className="rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
               >
-                Não quero
+                Sem observação
               </button>
               <button
                 onClick={handleConfirm}

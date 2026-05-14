@@ -25,6 +25,7 @@ interface FeedbackRow {
   observations: string | null;
   conversation_id: string | null;
   created_at: string;
+  client_name?: string | null; // only present for super admin
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -120,6 +121,7 @@ export function AssistantFeedbackDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterKind>("all");
   const [page, setPage] = useState(1);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const limit = 50;
 
   const load = useCallback(async () => {
@@ -136,6 +138,7 @@ export function AssistantFeedbackDashboard() {
       const json = await res.json();
       setRows(json.data ?? []);
       setTotal(json.total ?? 0);
+      setIsSuperAdmin(json.is_super_admin === true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro desconhecido");
     } finally {
@@ -221,6 +224,11 @@ export function AssistantFeedbackDashboard() {
                   <th className="whitespace-nowrap border-b border-border/60 px-4 py-2.5 text-left font-medium uppercase tracking-wide text-muted-foreground">
                     Tipo
                   </th>
+                  {isSuperAdmin && (
+                    <th className="whitespace-nowrap border-b border-border/60 px-4 py-2.5 text-left font-medium uppercase tracking-wide text-muted-foreground">
+                      Cliente
+                    </th>
+                  )}
                   <th className="border-b border-border/60 px-4 py-2.5 text-left font-medium uppercase tracking-wide text-muted-foreground">
                     Pergunta
                   </th>
@@ -250,6 +258,13 @@ export function AssistantFeedbackDashboard() {
                     <td className="whitespace-nowrap px-4 py-2.5">
                       <FeedbackBadge kind={row.feedback} />
                     </td>
+                    {isSuperAdmin && (
+                      <td className="whitespace-nowrap px-4 py-2.5 text-xs font-medium text-foreground">
+                        {row.client_name ?? (
+                          <span className="text-muted-foreground/40">—</span>
+                        )}
+                      </td>
+                    )}
                     <td className="max-w-[220px] px-4 py-2.5 text-foreground">
                       <ExpandableText text={row.question} />
                     </td>
