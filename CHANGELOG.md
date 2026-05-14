@@ -11,6 +11,14 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-05-14
 
 ### feat
+- Ajustado o limite máximo de comprimento de mensagens para 600 caracteres visando melhor experiência no WhatsApp, abaixo do limite técnico de 4096 caracteres.
+- Melhorada a lógica de divisão e agrupamento de mensagens longas, quebrando primeiro por sentenças e, se necessário, por palavras para preservar a legibilidade.
+  - Arquivos: `src/nodes/formatResponse.ts`
+  - Confiança: alta
+
+## 2026-05-14
+
+### feat
 - Implementado reranker LLM para RAG que reordena e filtra resultados da busca vetorial, melhorando a relevância dos trechos retornados. O reranker usa um modelo leve para selecionar os top-K mais úteis entre um pool maior inicial, com fallback seguro para busca por cosseno em caso de erro.
 - Integrado reranker no fluxo principal de chatbot e na obtenção do contexto RAG, ativado via parâmetro `clientConfig` com configurações de modelo e telefone.
   - Arquivos: `src/lib/rerank.ts`, `src/nodes/getRAGContext.ts`, `src/flows/chatbotFlow.ts`
