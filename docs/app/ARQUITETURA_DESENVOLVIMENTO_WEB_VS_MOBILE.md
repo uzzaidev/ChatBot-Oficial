@@ -11,10 +11,11 @@ Este documento explica como o projeto está estruturado para suportar desenvolvi
 ### Detecção de Build Mobile
 
 ```javascript
-const isMobileBuild = process.env.CAPACITOR_BUILD === 'true'
+const isMobileBuild = process.env.CAPACITOR_BUILD === "true";
 ```
 
 **Como funciona:**
+
 - Quando `CAPACITOR_BUILD=true` → Build estático (mobile)
 - Quando `CAPACITOR_BUILD` não está definido → Build normal (web)
 
@@ -24,18 +25,19 @@ const isMobileBuild = process.env.CAPACITOR_BUILD === 'true'
 const nextConfig = {
   // Mobile: static export (sem servidor)
   // Web: build normal (com servidor)
-  output: isMobileBuild ? 'export' : undefined,
-  
+  output: isMobileBuild ? "export" : undefined,
+
   // Mobile: imagens não otimizadas (static export não suporta)
   // Web: imagens otimizadas pelo Next.js
   images: {
     unoptimized: isMobileBuild,
     // ... remotePatterns
   },
-}
+};
 ```
 
 **Por quê?**
+
 - Mobile precisa de arquivos estáticos (HTML/CSS/JS) para o Capacitor
 - Web pode usar otimizações do Next.js (Image Optimization, Server Components, etc.)
 
@@ -52,6 +54,7 @@ const nextConfig = {
 ```
 
 **O que faz:**
+
 - Inicia Next.js dev server em `http://localhost:3000`
 - Hot reload automático (mudanças aparecem instantaneamente)
 - Suporta Server Components, API Routes, etc.
@@ -67,11 +70,13 @@ const nextConfig = {
 ```
 
 **O que faz:**
+
 1. **Doppler**: Injeta environment variables (`NEXT_PUBLIC_*`)
 2. **cross-env**: Define `CAPACITOR_BUILD=true` (cross-platform)
 3. **next build**: Gera build estático em `out/`
 
 **Por quê Doppler?**
+
 - Mobile não tem servidor para ler `.env.local`
 - Variáveis precisam ser injetadas no build-time
 - Doppler gerencia secrets de forma segura
@@ -87,12 +92,14 @@ npm run dev
 ```
 
 **Fluxo:**
+
 1. Next.js dev server inicia
 2. Código compila sob demanda
 3. Hot reload atualiza automaticamente
 4. Acessa em `http://localhost:3000`
 
 **Vantagens:**
+
 - ✅ Desenvolvimento rápido
 - ✅ Hot reload instantâneo
 - ✅ Server Components funcionam
@@ -106,12 +113,14 @@ npx cap sync android
 ```
 
 **Fluxo:**
+
 1. Next.js gera build estático em `out/`
 2. Capacitor copia para `android/app/src/main/assets/public/`
 3. Android Studio compila app nativo
 4. App roda com arquivos estáticos
 
 **Vantagens:**
+
 - ✅ App completo e independente
 - ✅ Não precisa de servidor
 - ✅ Funciona offline
@@ -129,17 +138,20 @@ npx cap sync android
 ```
 
 **Fluxo:**
+
 1. Dev server roda normalmente
 2. App mobile conecta ao dev server via WiFi
 3. Mudanças no código refletem instantaneamente
 4. Sem necessidade de rebuild
 
 **Vantagens:**
+
 - ✅ Desenvolvimento rápido (como web)
 - ✅ Testa em device real
 - ✅ Hot reload funciona
 
 **Desvantagens:**
+
 - ⚠️ Requer dev server rodando
 - ⚠️ Requer mesma rede WiFi
 - ⚠️ Não funciona offline
@@ -157,6 +169,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 ```
 
 **Como funciona:**
+
 - Servidor Node.js lê `.env.local` em runtime
 - Variáveis disponíveis via `process.env.VARIAVEL`
 - Hot reload detecta mudanças
@@ -169,12 +182,14 @@ doppler run --config dev -- cross-env CAPACITOR_BUILD=true next build
 ```
 
 **Como funciona:**
+
 1. Doppler busca variáveis do projeto
 2. Injeta como `NEXT_PUBLIC_*` no build
 3. Next.js substitui no código durante build
 4. Variáveis ficam "hardcoded" no bundle final
 
 **Por quê?**
+
 - Mobile não tem servidor para ler `.env`
 - Variáveis precisam estar no bundle JavaScript
 - Apenas `NEXT_PUBLIC_*` são expostas ao cliente
@@ -188,17 +203,17 @@ doppler run --config dev -- cross-env CAPACITOR_BUILD=true next build
 ```javascript
 async headers() {
   const isDevelopment = process.env.NODE_ENV === 'development'
-  const allowedOrigins = isDevelopment 
+  const allowedOrigins = isDevelopment
     ? ['http://localhost:3000', 'http://localhost:3001']
-    : ['https://chat.luisfboff.com']
-  
+    : ['https://uzzap.uzzai.com']
+
   return [
     {
       source: '/api/:path*',
       headers: [
         {
           key: 'Access-Control-Allow-Origin',
-          value: isDevelopment ? '*' : 'https://chat.luisfboff.com',
+          value: isDevelopment ? '*' : 'https://uzzap.uzzai.com',
         },
         // ...
       ],
@@ -208,6 +223,7 @@ async headers() {
 ```
 
 **Como funciona:**
+
 - **Development**: CORS permissivo (`*`) para facilitar desenvolvimento
 - **Production**: CORS restritivo (apenas domínio específico)
 
@@ -221,10 +237,10 @@ async headers() {
 
 ```typescript
 const config: CapacitorConfig = {
-  appId: 'com.chatbot.app',
-  appName: 'ChatBot Oficial',
-  webDir: 'out'  // Pasta com build estático
-}
+  appId: "com.chatbot.app",
+  appName: "ChatBot Oficial",
+  webDir: "out", // Pasta com build estático
+};
 ```
 
 ### Live Reload (Opcional)
@@ -238,11 +254,13 @@ server: {
 ```
 
 **Quando usar:**
+
 - ✅ Desenvolvimento ativo
 - ✅ Mudanças frequentes
 - ✅ Quer hot reload no mobile
 
 **Quando NÃO usar:**
+
 - ❌ Testes finais
 - ❌ Build para produção
 - ❌ Testes offline
@@ -254,7 +272,7 @@ server: {
 ### Verificar se Está no Mobile
 
 ```typescript
-import { Capacitor } from '@capacitor/core'
+import { Capacitor } from "@capacitor/core";
 
 // Boolean simples
 if (Capacitor.isNativePlatform()) {
@@ -264,11 +282,12 @@ if (Capacitor.isNativePlatform()) {
 }
 
 // Plataforma específica
-const platform = Capacitor.getPlatform()
+const platform = Capacitor.getPlatform();
 // 'web' | 'android' | 'ios'
 ```
 
 **Uso comum:**
+
 - Features mobile-only (biometria, push notifications)
 - Fallbacks para web (compartilhar, câmera)
 - Ajustes de UI (tamanho de fonte, layout)
@@ -280,18 +299,22 @@ const platform = Capacitor.getPlatform()
 ### O que NÃO funciona em static export:
 
 1. **API Routes** (`/api/*`)
+
    - ❌ Não há servidor para processar
    - ✅ Solução: Usar Supabase Edge Functions ou backend externo
 
 2. **Server Components**
+
    - ❌ Não há servidor para renderizar
    - ✅ Solução: Usar Client Components (`'use client'`)
 
 3. **Server Actions**
+
    - ❌ Não há servidor para executar
    - ✅ Solução: Usar API routes externas ou Supabase
 
 4. **Image Optimization**
+
    - ❌ Next.js Image Optimization requer servidor
    - ✅ Solução: Usar `unoptimized: true` (já configurado)
 
@@ -303,16 +326,16 @@ const platform = Capacitor.getPlatform()
 
 ## 📊 Comparação: Web vs Mobile
 
-| Feature | Web (dev) | Mobile (build) | Mobile (live reload) |
-|---------|-----------|----------------|---------------------|
-| **Servidor** | ✅ Next.js dev server | ❌ Sem servidor | ✅ Next.js dev server |
-| **Hot Reload** | ✅ Automático | ❌ Não | ✅ Automático |
-| **API Routes** | ✅ Funciona | ❌ Não funciona | ✅ Funciona |
-| **Server Components** | ✅ Funciona | ❌ Não funciona | ✅ Funciona |
-| **Offline** | ❌ Não | ✅ Sim | ❌ Não |
-| **Environment Vars** | ✅ `.env.local` | ✅ Doppler (build-time) | ✅ `.env.local` |
-| **Build Time** | ⚡ Instantâneo | 🐢 30-60s | ⚡ Instantâneo |
-| **Teste em Device** | ❌ Não | ✅ Sim | ✅ Sim |
+| Feature               | Web (dev)             | Mobile (build)          | Mobile (live reload)  |
+| --------------------- | --------------------- | ----------------------- | --------------------- |
+| **Servidor**          | ✅ Next.js dev server | ❌ Sem servidor         | ✅ Next.js dev server |
+| **Hot Reload**        | ✅ Automático         | ❌ Não                  | ✅ Automático         |
+| **API Routes**        | ✅ Funciona           | ❌ Não funciona         | ✅ Funciona           |
+| **Server Components** | ✅ Funciona           | ❌ Não funciona         | ✅ Funciona           |
+| **Offline**           | ❌ Não                | ✅ Sim                  | ❌ Não                |
+| **Environment Vars**  | ✅ `.env.local`       | ✅ Doppler (build-time) | ✅ `.env.local`       |
+| **Build Time**        | ⚡ Instantâneo        | 🐢 30-60s               | ⚡ Instantâneo        |
+| **Teste em Device**   | ❌ Não                | ✅ Sim                  | ✅ Sim                |
 
 ---
 
@@ -388,4 +411,3 @@ cd android
 ---
 
 **Última atualização:** Análise da arquitetura existente (sem modificações)
-

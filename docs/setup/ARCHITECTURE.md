@@ -23,9 +23,10 @@ Documentação técnica completa da arquitetura do sistema de chatbot WhatsApp c
 
 Sistema de chatbot de WhatsApp baseado em IA, implementado com arquitetura serverless no Vercel. Processa mensagens de texto, áudio e imagem através de um pipeline de 12 nodes sequenciais, com suporte a RAG (Retrieval-Augmented Generation), batching de mensagens e transferência para atendimento humano.
 
-**Status Atual**: ✅ Produção ativa em https://chat.luisfboff.com
+**Status Atual**: ✅ Produção ativa em https://uzzap.uzzai.com
 
 **Principais Características**:
+
 - Processamento serverless (Vercel Edge Functions)
 - Pipeline modular de 12 nodes atômicos
 - Suporte multi-modal (texto, áudio, imagem)
@@ -43,7 +44,7 @@ Sistema de chatbot de WhatsApp baseado em IA, implementado com arquitetura serve
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
 │                         META WHATSAPP CLOUD API                          │
-│                  POST https://chat.luisfboff.com/api/webhook             │
+│                  POST https://uzzap.uzzai.com/api/webhook             │
 └────────────────────────────────┬─────────────────────────────────────────┘
                                  │
                                  ▼
@@ -242,41 +243,41 @@ Sistema de chatbot de WhatsApp baseado em IA, implementado com arquitetura serve
 
 ### Frontend & Backend
 
-| Componente | Tecnologia | Versão | Uso |
-|------------|-----------|--------|-----|
-| **Framework** | Next.js | 14.2.33 | App Router, API Routes, SSR |
-| **Runtime** | Node.js | 18+ | Serverless functions |
-| **Linguagem** | TypeScript | 5.x | Type safety |
-| **Deploy** | Vercel | - | Serverless hosting |
-| **UI** | React | 18.x | Dashboard components |
-| **Styling** | Tailwind CSS | 3.x | Utility-first CSS |
-| **Components** | shadcn/ui | - | Radix UI + Tailwind |
+| Componente     | Tecnologia   | Versão  | Uso                         |
+| -------------- | ------------ | ------- | --------------------------- |
+| **Framework**  | Next.js      | 14.2.33 | App Router, API Routes, SSR |
+| **Runtime**    | Node.js      | 18+     | Serverless functions        |
+| **Linguagem**  | TypeScript   | 5.x     | Type safety                 |
+| **Deploy**     | Vercel       | -       | Serverless hosting          |
+| **UI**         | React        | 18.x    | Dashboard components        |
+| **Styling**    | Tailwind CSS | 3.x     | Utility-first CSS           |
+| **Components** | shadcn/ui    | -       | Radix UI + Tailwind         |
 
 ### Banco de Dados & Cache
 
-| Componente | Tecnologia | Uso |
-|------------|-----------|-----|
-| **Database** | Supabase PostgreSQL | Clientes, histórico, RAG |
-| **ORM/Client** | `@supabase/supabase-js` | Queries otimizadas para serverless |
-| **Vector Store** | pgvector | Embeddings para RAG |
-| **Cache/Queue** | Redis (Upstash) | Message batching, TTL |
-| **Connection Pool** | Supavisor | Pooling para serverless |
+| Componente          | Tecnologia              | Uso                                |
+| ------------------- | ----------------------- | ---------------------------------- |
+| **Database**        | Supabase PostgreSQL     | Clientes, histórico, RAG           |
+| **ORM/Client**      | `@supabase/supabase-js` | Queries otimizadas para serverless |
+| **Vector Store**    | pgvector                | Embeddings para RAG                |
+| **Cache/Queue**     | Redis (Upstash)         | Message batching, TTL              |
+| **Connection Pool** | Supavisor               | Pooling para serverless            |
 
 ### IA & Machine Learning
 
-| Componente | Modelo | Uso |
-|------------|--------|-----|
-| **Chat** | Groq Llama 3.3 70B Versatile | Geração de respostas |
-| **Transcrição** | OpenAI Whisper | Áudio → Texto |
-| **Visão** | OpenAI GPT-4o Vision | Imagem → Descrição |
-| **Embeddings** | OpenAI text-embedding-3-small | RAG vector search |
+| Componente      | Modelo                        | Uso                  |
+| --------------- | ----------------------------- | -------------------- |
+| **Chat**        | Groq Llama 3.3 70B Versatile  | Geração de respostas |
+| **Transcrição** | OpenAI Whisper                | Áudio → Texto        |
+| **Visão**       | OpenAI GPT-4o Vision          | Imagem → Descrição   |
+| **Embeddings**  | OpenAI text-embedding-3-small | RAG vector search    |
 
 ### Integrações Externas
 
-| Serviço | API | Uso |
-|---------|-----|-----|
+| Serviço      | API                              | Uso                            |
+| ------------ | -------------------------------- | ------------------------------ |
 | **WhatsApp** | Meta WhatsApp Business Cloud API | Envio/recebimento de mensagens |
-| **Email** | Gmail SMTP | Notificações de handoff |
+| **Email**    | Gmail SMTP                       | Notificações de handoff        |
 
 ---
 
@@ -293,11 +294,12 @@ Sistema de chatbot de WhatsApp baseado em IA, implementado com arquitetura serve
 **Output**: `WhatsAppWebhookPayload | null`
 
 **Lógica**:
+
 ```typescript
 if (payload.entry[0].changes[0].value.statuses) {
-  return null // Status update, não processar
+  return null; // Status update, não processar
 }
-return payload // Mensagem válida, continuar
+return payload; // Mensagem válida, continuar
 ```
 
 **Condição de Parada**: Se retornar `null`, o flow termina imediatamente.
@@ -313,6 +315,7 @@ return payload // Mensagem válida, continuar
 **Input**: `WhatsAppWebhookPayload`
 
 **Output**: `ParsedMessage`
+
 ```typescript
 {
   phone: string       // Ex: "5511999999999"
@@ -338,17 +341,19 @@ return payload // Mensagem válida, continuar
 **Input**: `{ phone, name }`
 
 **Output**: `CustomerRecord`
+
 ```typescript
 {
-  id: string
-  phone: string
-  name: string
-  status: 'bot' | 'waiting' | 'human'
-  created_at: string
+  id: string;
+  phone: string;
+  name: string;
+  status: "bot" | "waiting" | "human";
+  created_at: string;
 }
 ```
 
 **Lógica**:
+
 1. `UPSERT` via Supabase client (não `pg`!)
 2. `ON CONFLICT (telefone)` → atualiza `nome` se mudou
 3. Retorna registro atualizado
@@ -370,6 +375,7 @@ return payload // Mensagem válida, continuar
 **Se `type === 'text'`**: Node é **PULADO**, usa `content` diretamente.
 
 **Se `type === 'audio'` ou `type === 'image'`**:
+
 1. Chama `downloadMetaMedia(mediaId)` → retorna `Buffer`
 2. **Se áudio**: Chama `transcribeAudio(buffer)` → retorna `string` (transcrição)
 3. **Se imagem**: Chama `analyzeImage(buffer, mimeType)` → retorna `string` (descrição)
@@ -387,16 +393,18 @@ return payload // Mensagem válida, continuar
 **Input**: `{ parsedMessage, processedContent }`
 
 **Output**: `NormalizedMessage`
+
 ```typescript
 {
-  phone: string
-  name: string
-  content: string  // SEMPRE texto (original ou processado)
-  timestamp: string
+  phone: string;
+  name: string;
+  content: string; // SEMPRE texto (original ou processado)
+  timestamp: string;
 }
 ```
 
 **Lógica**:
+
 - Se `type === 'text'`: `content = parsedMessage.content`
 - Se `type === 'audio'`: `content = processedContent` (transcrição)
 - Se `type === 'image'`: `content = processedContent` (descrição)
@@ -414,10 +422,11 @@ return payload // Mensagem válida, continuar
 **Output**: `void`
 
 **Lógica**:
+
 ```typescript
-const key = `chat:${phone}`
-await redis.lpush(key, JSON.stringify(message))
-await redis.expire(key, 300) // TTL 5 minutos
+const key = `chat:${phone}`;
+await redis.lpush(key, JSON.stringify(message));
+await redis.expire(key, 300); // TTL 5 minutos
 ```
 
 **Próximo Step**: `saveChatMessage` (user) - salva mensagem do usuário no histórico.
@@ -435,6 +444,7 @@ await redis.expire(key, 300) // TTL 5 minutos
 **Output**: `string` (mensagens concatenadas)
 
 **Lógica**:
+
 1. `await delay(10000)` - Aguarda 10 segundos
 2. `messages = await redis.lrange(key, 0, -1)` - Lê todas as mensagens
 3. `await redis.del(key)` - Remove fila
@@ -455,15 +465,18 @@ await redis.expire(key, 300) // TTL 5 minutos
 **Input**: `phone`
 
 **Output**: `ChatMessage[]`
+
 ```typescript
 {
-  role: 'user' | 'assistant'
-  content: string
-  timestamp: string
-}[]
+  role: "user" | "assistant";
+  content: string;
+  timestamp: string;
+}
+[];
 ```
 
 **Lógica**:
+
 ```sql
 SELECT session_id, message, created_at
 FROM n8n_chat_histories
@@ -489,6 +502,7 @@ LIMIT 15
 **Output**: `string` (documentos concatenados)
 
 **Lógica**:
+
 1. Gera embedding da mensagem (OpenAI `text-embedding-3-small`)
 2. Chama RPC Supabase: `match_documents(embedding, 5)`
 3. Concatena top 5 documentos mais similares
@@ -504,6 +518,7 @@ LIMIT 15
 **Função**: Gera resposta da IA usando Groq Llama 3.3 70B.
 
 **Input**:
+
 ```typescript
 {
   message: string         // Batched content
@@ -514,6 +529,7 @@ LIMIT 15
 ```
 
 **Output**: `AIResponse`
+
 ```typescript
 {
   content: string
@@ -523,6 +539,7 @@ LIMIT 15
 ```
 
 **Lógica**:
+
 1. Constrói system prompt + RAG context
 2. Formata histórico de chat
 3. Chama Groq API com tools definidas:
@@ -531,6 +548,7 @@ LIMIT 15
 4. Retorna resposta + tool calls (se houver)
 
 **Tool Calls**:
+
 - Se `transferir_atendimento` → Chama `handleHumanHandoff()` → **PARA FLOW**
 - Se `subagente_diagnostico` → (não implementado ainda, apenas log)
 
@@ -551,11 +569,13 @@ LIMIT 15
 **Output**: `string[]` (array de mensagens)
 
 **Lógica**:
+
 1. **Remove tool calls**: Regex `/<function=[^>]+>[\s\S]*?<\/function>/g`
 2. **Split**: Divide em `\n\n` (parágrafos)
 3. **Max length**: Garante cada mensagem ≤ 4096 chars (limite WhatsApp)
 
 **Exemplo**:
+
 ```
 Input: "Olá! Como posso ajudar?\n\nVocê precisa de algo específico?"
 Output: ["Olá! Como posso ajudar?", "Você precisa de algo específico?"]
@@ -576,14 +596,16 @@ Output: ["Olá! Como posso ajudar?", "Você precisa de algo específico?"]
 **Output**: `string[]` (array de messageIds)
 
 **Lógica**:
+
 ```typescript
 for (const message of messages) {
-  await sendMessage(phone, message)
-  await delay(2000) // Delay 2s entre mensagens
+  await sendMessage(phone, message);
+  await delay(2000); // Delay 2s entre mensagens
 }
 ```
 
 **API Call**:
+
 ```http
 POST https://graph.facebook.com/v18.0/{PHONE_NUMBER_ID}/messages
 Authorization: Bearer {META_ACCESS_TOKEN}
@@ -604,12 +626,14 @@ Authorization: Bearer {META_ACCESS_TOKEN}
 **Decisão**: Migrar de n8n para Next.js com deploy em Vercel.
 
 **Razões**:
+
 - **Escalabilidade**: Auto-scaling sem configuração
 - **Custo**: Pay-per-use (não paga quando idle)
 - **Performance**: Edge functions próximas ao usuário
 - **Developer Experience**: TypeScript, hot reload, type safety
 
 **Trade-offs**:
+
 - ❌ Cold start latency (~500ms)
 - ❌ Timeout máximo 10s (Vercel free) / 60s (pro)
 - ✅ Sem gerenciamento de infra
@@ -624,6 +648,7 @@ Authorization: Bearer {META_ACCESS_TOKEN}
 **Problema com `pg`**: Conexões TCP diretas não funcionam bem em serverless (ephemeral execution context).
 
 **Solução**: Supabase client
+
 - Uses Supavisor (connection pooler)
 - HTTP-based protocol (serverless-friendly)
 - Automatic retry and reconnection
@@ -642,6 +667,7 @@ Authorization: Bearer {META_ACCESS_TOKEN}
 **Sem batching**: Cada mensagem gera uma resposta da IA separada → UX ruim, custo alto.
 
 **Solução**: Redis message batching
+
 1. Push mensagem para lista Redis: `chat:{phone}`
 2. Aguarda 10 segundos
 3. Recupera todas as mensagens da lista
@@ -649,6 +675,7 @@ Authorization: Bearer {META_ACCESS_TOKEN}
 5. Gera uma resposta da IA para todo o contexto
 
 **Trade-off**:
+
 - ✅ UX melhor (resposta única e coerente)
 - ✅ Custo menor (1 chamada IA vs N chamadas)
 - ❌ Latência +10s (aceitável para chatbot)
@@ -666,14 +693,15 @@ Authorization: Bearer {META_ACCESS_TOKEN}
 **Consequência**: Queries assíncronas eram mortas antes de completar (NODE 3 travava).
 
 **Solução**: Aguardar processamento completo:
+
 ```typescript
 // BEFORE (wrong)
-processChatbotMessage(body) // Fire-and-forget ❌
-return new NextResponse("EVENT_RECEIVED", { status: 200 })
+processChatbotMessage(body); // Fire-and-forget ❌
+return new NextResponse("EVENT_RECEIVED", { status: 200 });
 
 // AFTER (correct)
-await processChatbotMessage(body) // Wait ✅
-return new NextResponse("EVENT_RECEIVED", { status: 200 })
+await processChatbotMessage(body); // Wait ✅
+return new NextResponse("EVENT_RECEIVED", { status: 200 });
 ```
 
 **Arquivo**: `src/app/api/webhook/route.ts:107`
@@ -687,14 +715,16 @@ return new NextResponse("EVENT_RECEIVED", { status: 200 })
 **Problema**: AI responses incluíam metadados de tool calls nas mensagens.
 
 **Exemplo**:
+
 ```
 Antes: "Olá! <function=subagente_diagnostico>{...}</function>"
 Depois: "Olá!"
 ```
 
 **Solução**: Regex em `formatResponse()`:
+
 ```typescript
-text.replace(/<function=[^>]+>[\s\S]*?<\/function>/g, '').trim()
+text.replace(/<function=[^>]+>[\s\S]*?<\/function>/g, "").trim();
 ```
 
 **Arquivo**: `src/nodes/formatResponse.ts:7-10`
@@ -706,6 +736,7 @@ text.replace(/<function=[^>]+>[\s\S]*?<\/function>/g, '').trim()
 **Decisão**: Salvar `type` DENTRO do JSON da coluna `message`, não como coluna separada.
 
 **Schema Real**:
+
 ```sql
 CREATE TABLE n8n_chat_histories (
   session_id TEXT,
@@ -715,6 +746,7 @@ CREATE TABLE n8n_chat_histories (
 ```
 
 **Formato JSON**:
+
 ```json
 {
   "type": "human",
@@ -724,6 +756,7 @@ CREATE TABLE n8n_chat_histories (
 ```
 
 **Arquivos**:
+
 - `saveChatMessage.ts:23-27` - Salva JSON completo
 - `getChatHistory.ts:12-18` - Parse JSON para extrair type e content
 
@@ -747,6 +780,7 @@ CREATE UNIQUE INDEX idx_telefone ON clientes_whatsapp(telefone);
 ```
 
 **VIEW para Compatibilidade**:
+
 ```sql
 CREATE VIEW "Clientes WhatsApp" AS SELECT * FROM clientes_whatsapp;
 ```
@@ -768,6 +802,7 @@ CREATE INDEX idx_chat_histories_session_created
 ```
 
 **Formato `message` JSON**:
+
 ```json
 {
   "type": "human",
@@ -793,6 +828,7 @@ CREATE INDEX idx_documents_embedding
 ```
 
 **RPC Function**:
+
 ```sql
 CREATE FUNCTION match_documents(
   query_embedding VECTOR(1536),
@@ -824,6 +860,7 @@ Example:
 **Endpoints Usados**:
 
 1. **Send Message**
+
 ```http
 POST /{PHONE_NUMBER_ID}/messages
 Authorization: Bearer {META_ACCESS_TOKEN}
@@ -836,12 +873,14 @@ Authorization: Bearer {META_ACCESS_TOKEN}
 ```
 
 2. **Download Media**
+
 ```http
 GET /{MEDIA_ID}
 Authorization: Bearer {META_ACCESS_TOKEN}
 ```
 
 3. **Get Media URL**
+
 ```http
 GET /{MEDIA_ID}
 Authorization: Bearer {META_ACCESS_TOKEN}
@@ -851,6 +890,7 @@ Response: { "url": "https://...", "mime_type": "audio/ogg" }
 **Rate Limits**: 80 mensagens/segundo (Cloud API)
 
 **Webhook Events**:
+
 - `messages` - Nova mensagem recebida
 - `statuses` - Delivery receipts (filtrados por NODE 1)
 
@@ -861,34 +901,39 @@ Response: { "url": "https://...", "mime_type": "audio/ogg" }
 **Modelos Usados**:
 
 1. **Whisper** (`whisper-1`)
+
 ```typescript
 await openai.audio.transcriptions.create({
   file: audioBuffer,
-  model: 'whisper-1',
-  language: 'pt'
-})
+  model: "whisper-1",
+  language: "pt",
+});
 ```
 
 2. **GPT-4o Vision** (`gpt-4o`)
+
 ```typescript
 await openai.chat.completions.create({
-  model: 'gpt-4o',
-  messages: [{
-    role: 'user',
-    content: [
-      { type: 'text', text: prompt },
-      { type: 'image_url', image_url: { url: base64Image } }
-    ]
-  }]
-})
+  model: "gpt-4o",
+  messages: [
+    {
+      role: "user",
+      content: [
+        { type: "text", text: prompt },
+        { type: "image_url", image_url: { url: base64Image } },
+      ],
+    },
+  ],
+});
 ```
 
 3. **Embeddings** (`text-embedding-3-small`)
+
 ```typescript
 await openai.embeddings.create({
-  model: 'text-embedding-3-small',
-  input: text
-})
+  model: "text-embedding-3-small",
+  input: text,
+});
 ```
 
 **Rate Limits**: Tier-based (veja dashboard OpenAI)
@@ -920,21 +965,23 @@ await groq.chat.completions.create({
 
 ### Métricas Atuais (Produção)
 
-| Métrica | Valor | Observação |
-|---------|-------|------------|
-| **Latência Webhook** | ~2-4s | Incluindo AI response |
-| **Cold Start** | ~500ms | Primeira requisição |
-| **Warm Request** | ~1.5s | Requisições subsequentes |
-| **NODE 3 (Upsert)** | ~200-400ms | Via Supabase client |
-| **NODE 10 (AI)** | ~1-2s | Groq Llama 3.3 70B |
-| **NODE 12 (Send)** | ~300ms/msg | Meta API |
+| Métrica              | Valor      | Observação               |
+| -------------------- | ---------- | ------------------------ |
+| **Latência Webhook** | ~2-4s      | Incluindo AI response    |
+| **Cold Start**       | ~500ms     | Primeira requisição      |
+| **Warm Request**     | ~1.5s      | Requisições subsequentes |
+| **NODE 3 (Upsert)**  | ~200-400ms | Via Supabase client      |
+| **NODE 10 (AI)**     | ~1-2s      | Groq Llama 3.3 70B       |
+| **NODE 12 (Send)**   | ~300ms/msg | Meta API                 |
 
 ### Gargalos Identificados
 
 1. **Redis Batching Delay**: 10s fixo
+
    - **Solução Futura**: Delay adaptativo baseado em rate de mensagens
 
 2. **AI Generation**: 1-2s por resposta
+
    - **Solução Futura**: Streaming (via Server-Sent Events)
 
 3. **Cold Start**: ~500ms
@@ -943,14 +990,17 @@ await groq.chat.completions.create({
 ### Escalabilidade
 
 **Horizontal Scaling**: Automático via Vercel
+
 - Sem limite de instâncias concorrentes
 - Auto-scaling baseado em carga
 
 **Database**: Supabase (Postgres)
+
 - Connection pooling via Supavisor
 - Read replicas disponíveis (não configurado)
 
 **Redis**: Upstash
+
 - Serverless Redis (auto-scaling)
 - Global replication opcional
 
@@ -961,24 +1011,27 @@ await groq.chat.completions.create({
 ### Autenticação Meta Webhook
 
 **Webhook Verification** (GET request):
+
 ```typescript
-const token = searchParams.get('hub.verify_token')
-const challenge = searchParams.get('hub.challenge')
+const token = searchParams.get("hub.verify_token");
+const challenge = searchParams.get("hub.challenge");
 
 if (token === META_VERIFY_TOKEN) {
-  return new NextResponse(challenge, { status: 200 })
+  return new NextResponse(challenge, { status: 200 });
 }
 ```
 
 **Signature Validation** (futuro):
+
 ```typescript
 // TODO: Validar X-Hub-Signature-256 header
-const signature = request.headers.get('x-hub-signature-256')
+const signature = request.headers.get("x-hub-signature-256");
 ```
 
 ### Secrets Management
 
 **Environment Variables**:
+
 - `SUPABASE_SERVICE_ROLE_KEY` - Service role (bypassa RLS)
 - `META_ACCESS_TOKEN` - WhatsApp send messages
 - `OPENAI_API_KEY` - OpenAI API
@@ -994,6 +1047,7 @@ const signature = request.headers.get('x-hub-signature-256')
 **Status**: Não habilitado (usa `service_role` key)
 
 **Futuro** (Phase 3 - Multi-tenant):
+
 ```sql
 CREATE POLICY "Users can only see own data"
   ON clientes_whatsapp
@@ -1008,13 +1062,15 @@ CREATE POLICY "Users can only see own data"
 ### Logging
 
 **Structured Logging**: Console.log com prefixos
+
 ```typescript
-console.log('[NODE_NAME] ✅ Success message')
-console.error('[NODE_NAME] ❌ Error message')
-console.warn('[NODE_NAME] ⚠️ Warning message')
+console.log("[NODE_NAME] ✅ Success message");
+console.error("[NODE_NAME] ❌ Error message");
+console.warn("[NODE_NAME] ⚠️ Warning message");
 ```
 
 **Log Levels**:
+
 - `🚀` - Flow start
 - `✅` - Success
 - `❌` - Error
@@ -1023,9 +1079,10 @@ console.warn('[NODE_NAME] ⚠️ Warning message')
 
 ### Debug Endpoints
 
-**Produção**: https://chat.luisfboff.com/api/debug/
+**Produção**: https://uzzap.uzzai.com/api/debug/
 
 1. **GET /api/debug/config** - Ver configuração (sem secrets)
+
 ```json
 {
   "environment": { "nodeEnv": "production", "isVercel": true },
@@ -1036,11 +1093,10 @@ console.warn('[NODE_NAME] ⚠️ Warning message')
 ```
 
 2. **GET /api/debug/logs** - In-memory execution logs
+
 ```json
 {
-  "logs": [
-    { "timestamp": "...", "node": "parseMessage", "status": "success" }
-  ]
+  "logs": [{ "timestamp": "...", "node": "parseMessage", "status": "success" }]
 }
 ```
 
@@ -1053,6 +1109,7 @@ console.warn('[NODE_NAME] ⚠️ Warning message')
 **Real-time**: `vercel logs --follow`
 
 **Filtragem**:
+
 ```bash
 vercel logs --filter "ERROR"
 vercel logs --filter "NODE 3"
@@ -1074,16 +1131,17 @@ Os seguintes arquivos podem ser **consolidados** (não deletados):
 
 1. **TROUBLESHOOTING.md** - Merge para ARCHITECTURE.md → "Decisões Críticas"
 2. **MIGRACAO_URGENTE.md** - Mover para `/docs/historical/`
-3. **plano_de_arquitetura_*.md** - Arquivar em `/docs/planning/`
+3. **plano*de_arquitetura*\*.md** - Arquivar em `/docs/planning/`
 
 ### Arquivos de Teste
 
 **Manter**: Todos os endpoints `/api/test/nodes/*` são úteis para debug.
 
 **Sugestão**: Adicionar flag de ambiente para desabilitar em produção:
+
 ```typescript
-if (process.env.NODE_ENV === 'production') {
-  return new NextResponse('Not available in production', { status: 404 })
+if (process.env.NODE_ENV === "production") {
+  return new NextResponse("Not available in production", { status: 404 });
 }
 ```
 

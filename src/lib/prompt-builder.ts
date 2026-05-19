@@ -15,8 +15,7 @@ const TONE_DESCRIPTIONS: Record<string, string> = {
     "Seja amigavel e acolhedor. Use uma linguagem calorosa e acessivel para criar conexao.",
   professional:
     "Mantenha um tom profissional mas acessivel. Seja confiavel e prestativo.",
-  casual:
-    "Seja casual e descontraido. Use uma linguagem informal e relaxada.",
+  casual: "Seja casual e descontraido. Use uma linguagem informal e relaxada.",
 };
 
 const STYLE_DESCRIPTIONS: Record<string, string> = {
@@ -108,30 +107,46 @@ export const compileSystemPrompt = (agent: Agent): string => {
   }
   sections.push(xmlTag("communication_style", styleParts.join("\n")));
 
+  // ── Greeting ──────────────────────────────────────────────────────────────
+  if (agent.greeting_message) {
+    sections.push(
+      xmlTag(
+        "greeting",
+        `OBRIGATORIO: Na primeira mensagem de QUALQUER conversa, use EXATAMENTE este texto, sem alterar nenhuma palavra:\n"${agent.greeting_message}"`,
+      ),
+    );
+  }
+
+  // ── Fallback ──────────────────────────────────────────────────────────────
+  if (agent.fallback_message) {
+    sections.push(
+      xmlTag(
+        "fallback",
+        `OBRIGATORIO: Quando nao entender ou nao conseguir responder a mensagem do usuario, responda EXATAMENTE com este texto, sem alterar nenhuma palavra:\n"${agent.fallback_message}"`,
+      ),
+    );
+  }
+
   // ── Rules ─────────────────────────────────────────────────────────────────
   const rules: string[] = [];
   const responseRules = sectionValue(promptSections, "response_rules");
   if (responseRules) {
     rules.push(responseRules);
   }
-  if (agent.greeting_message) {
-    rules.push(`Ao iniciar uma conversa, use esta saudacao: "${agent.greeting_message}"`);
-  }
-  if (agent.fallback_message) {
-    rules.push(`Se nao entender a mensagem, responda: "${agent.fallback_message}"`);
-  }
   if (agent.forbidden_topics && agent.forbidden_topics.length > 0) {
     rules.push(
-      `Nunca fale sobre os seguintes topicos: ${agent.forbidden_topics.join(", ")}`,
+      `Nunca fale sobre os seguintes topicos: ${agent.forbidden_topics.join(
+        ", ",
+      )}`,
     );
   }
   if (agent.always_mention && agent.always_mention.length > 0) {
-    rules.push(`Quando apropriado, mencione: ${agent.always_mention.join(", ")}`);
+    rules.push(
+      `Quando apropriado, mencione: ${agent.always_mention.join(", ")}`,
+    );
   }
   if (rules.length > 0) {
-    sections.push(
-      xmlTag("rules", rules.map((rule) => `- ${rule}`).join("\n")),
-    );
+    sections.push(xmlTag("rules", rules.map((rule) => `- ${rule}`).join("\n")));
   }
 
   // ── Boundaries ────────────────────────────────────────────────────────────
@@ -168,7 +183,10 @@ export const compileSystemPrompt = (agent: Agent): string => {
   }
 
   // ── Custom instructions ───────────────────────────────────────────────────
-  const customInstructions = sectionValue(promptSections, "custom_instructions");
+  const customInstructions = sectionValue(
+    promptSections,
+    "custom_instructions",
+  );
   if (customInstructions) {
     sections.push(xmlTag("custom_instructions", customInstructions));
   }
@@ -192,9 +210,13 @@ export const compileFormatterPrompt = (agent: Agent): string => {
 
   const rules = [
     `- Idioma: ${agent.language || "pt-BR"} (Portugues Brasileiro)`,
-    `- Tamanho: ${lengthMap[agent.max_response_length || "medium"] || lengthMap.medium}`,
+    `- Tamanho: ${
+      lengthMap[agent.max_response_length || "medium"] || lengthMap.medium
+    }`,
     `- Emojis: ${agent.use_emojis ? "permitidos com moderacao" : "nao usar"}`,
-    `- Tom: ${toneMap[agent.response_tone || "professional"] || toneMap.professional}`,
+    `- Tom: ${
+      toneMap[agent.response_tone || "professional"] || toneMap.professional
+    }`,
   ].join("\n");
 
   return xmlTag("formatting_rules", rules);

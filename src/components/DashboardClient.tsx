@@ -1,9 +1,10 @@
-'use client'
+"use client";
 
-import { DashboardMetricsView } from '@/components/DashboardMetricsView'
+import { DashboardMetricsView } from "@/components/DashboardMetricsView";
+import { TracesWidget } from "@/components/TracesWidget";
 
 interface DashboardClientProps {
-  clientId: string
+  clientId: string;
 }
 
 /**
@@ -19,8 +20,12 @@ interface DashboardClientProps {
  */
 export function DashboardClient({ clientId }: DashboardClientProps) {
   return (
-    <div>
+    <div className="space-y-6">
       <DashboardMetricsView clientId={clientId} />
+
+      <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <TracesWidget />
+      </section>
     </div>
-  )
+  );
 }

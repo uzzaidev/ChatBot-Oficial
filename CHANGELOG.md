@@ -6,6 +6,270 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+```
+
+## 2026-05-14
+
+### docs
+- Atualizada descrição do projeto no README para incluir informação da versão V3
+  - Arquivos: `README.md`
+  - Confiança: alta
+
+## 2026-05-14
+
+### feat
+- Ajustado o limite máximo de comprimento de mensagens para 600 caracteres visando melhor experiência no WhatsApp, abaixo do limite técnico de 4096 caracteres.
+- Melhorada a lógica de divisão e agrupamento de mensagens longas, quebrando primeiro por sentenças e, se necessário, por palavras para preservar a legibilidade.
+  - Arquivos: `src/nodes/formatResponse.ts`
+  - Confiança: alta
+
+## 2026-05-14
+
+### feat
+- Implementado reranker LLM para RAG que reordena e filtra resultados da busca vetorial, melhorando a relevância dos trechos retornados. O reranker usa um modelo leve para selecionar os top-K mais úteis entre um pool maior inicial, com fallback seguro para busca por cosseno em caso de erro.
+- Integrado reranker no fluxo principal de chatbot e na obtenção do contexto RAG, ativado via parâmetro `clientConfig` com configurações de modelo e telefone.
+  - Arquivos: `src/lib/rerank.ts`, `src/nodes/getRAGContext.ts`, `src/flows/chatbotFlow.ts`
+  - Confiança: alta
+
+## 2026-05-14
+
+### feat
+- Melhorada geração de respostas da IA com regras específicas de formatação para mensagens WhatsApp, incluindo limite de caracteres por mensagem, quebra em múltiplas mensagens, e proibição de markdown para melhor legibilidade no app móvel.
+- Aprimorado tratamento do contexto RAG para evitar cópia literal de documentos, usando instruções negativas explícitas para que a IA reformule e resuma informações, além de remover cabeçalhos de documentos que induziam à repetição literal.
+- Otimizado prompt para maximizar cache do OpenAI, organizando mensagens system em blocos estáveis e variáveis para reduzir tokens processados em chamadas subsequentes.
+- Ajustado nível de esforço de raciocínio automático para "medium" quando há contexto RAG, melhorando síntese e relevância das respostas geradas.
+  - Arquivos: `src/nodes/generateAIResponse.ts`, `src/nodes/getRAGContext.ts`
+  - Confiança: alta
+
+## 2026-05-14
+
+### feat
+- Adicionado suporte para cache de tokens de entrada no cliente Direct AI e no sistema de tracking, incluindo registro da taxa de acerto do cache no console
+  - Arquivos: `src/lib/direct-ai-client.ts`, `src/lib/direct-ai-tracking.ts`
+  - Confiança: alta
+
+## 2026-05-14
+
+### feat
+- Atualizado cliente Direct AI para usar a API Responses da OpenAI, removendo a função legada de chat completions; mantém uso da API de chat completions para Groq
+  - Arquivos: `src/lib/direct-ai-client.ts`, `src/lib/openai.ts`
+  - Confiança: alta
+
+## 2026-05-14
+
+### feat
+- Implementado endpoint PATCH em `/api/assistant/feedback` para atualização de registros de feedback, permitindo alterar tipo e observações.
+- Melhorada resposta do endpoint GET `/api/assistant/feedback` para super administradores, retornando feedbacks de todos os clientes com o nome do cliente incluído.
+- Adaptado dashboard de feedback para exibir coluna "Cliente" apenas para super administradores.
+- Atualizados botões de feedback para suportar alteração de feedback já enviado via PATCH, com melhor usabilidade e controle de estado.
+  - Arquivos: `src/app/api/assistant/feedback/route.ts`, `src/components/assistant/AssistantFeedbackDashboard.tsx`, `src/components/assistant/AssistantMessage.tsx`
+  - Confiança: alta
+
+## 2026-05-14
+
+### feat
+- Adicionados componentes do assistente de IA para WhatsApp, incluindo interface, input, mensagens e abas de conversação.
+- Implementada nova API para chat, conversas e feedback do assistente de IA.
+- Criado esquema e migrações para tabelas relacionadas ao assistente e feedback no banco de dados.
+- Atualizadas dependências para suportar markdown com extensões GFM e melhorias no parsing de markdown.
+- Incluídas páginas e layout no dashboard para gerenciamento do assistente de IA e observabilidade.
+  - Arquivos: `src/app/api/assistant/chat/route.ts`, `src/app/api/assistant/conversations/[id]/route.ts`, `src/app/api/assistant/conversations/route.ts`, `src/app/api/assistant/feedback/route.ts`, `src/app/dashboard/assistant/page.tsx`, `src/components/assistant/AssistantInterface.tsx`, `src/components/assistant/AssistantMessage.tsx`, `src/components/assistant/AssistantInput.tsx`, `src/components/assistant/ConversationTabs.tsx`, `src/lib/assistant-schema.ts`, `src/lib/assistant-prompt.ts`, `migrations/20260514_add_assistant_tables.sql`, `migrations/20260514000001_add_assistant_feedback.sql`, `migrations/20260514000002_add_feedback_observations.sql`
+  - Confiança: alta
+
+## 2026-05-14
+
+### feat
+- Adicionado proxy via Cloudflare Worker para Supabase, permitindo contornar problemas de resolução DNS em clientes finais ao usar o domínio `supabase.uzzai.com.br` em vez de `*.supabase.co`. O proxy suporta REST, Auth, Realtime (WebSocket) e Storage, mantendo transparência no tráfego e preservando headers e métodos.
+- Atualizado `next.config.js` para permitir carregamento de imagens do Storage via novo domínio customizado.
+- Configurada variável de ambiente `NEXT_PUBLIC_SUPABASE_URL` para apontar para o proxy em todos os ambientes, sem alteração nas chaves de autenticação.
+- Documentação detalhada adicionada em `docs/setup/CLOUDFLARE_SUPABASE_PROXY.md` explicando o problema, solução, arquitetura, setup e validação do proxy.
+  - Arquivos: `docs/setup/CLOUDFLARE_SUPABASE_PROXY.md`, `next.config.js`
+  - Confiança: alta
+
+## 2026-05-14
+
+### refactor
+- Refatorada documentação e código para integração do UzzApp com Stripe e isolamento multi-tenant, incluindo atualização de URLs base para produção, padronização de formatação TypeScript, melhorias na segurança (HMAC, rate limiting), e detalhamento dos fluxos principais e integrações.
+- Atualizadas descrições, exemplos e tabelas em 36 arquivos de documentação e runbooks para refletir a arquitetura atualizada, reforçando práticas críticas como uso do Supabase client em serverless, tokens Vault por cliente, e workflows de webhooks Meta, Stripe e outros serviços.
+- Melhorias no código do webhook, handlers, integração com Meta WhatsApp API, Stripe Connect, Google/Microsoft Calendar OAuth, Firebase push, e sistema de notificações, com padronização de sintaxe, tratamento de erros e segurança.
+- Atualizados scripts, comandos, variáveis de ambiente e exemplos para uso correto do domínio `https://uzzap.uzzai.com` em vez do antigo `chat.luisfboff.com`.
+- Documentação detalhada sobre limites de rate limiting, deduplicação, segurança, fallback e monitoramento para webhooks e serviços externos.
+- Ajustes em exemplos de payloads JSON, diagramas de sequência, e workflows para refletir a nova arquitetura multi-tenant e integração Stripe Connect.
+  - Arquivos: `docs/*.md`, `checkpoints/2026-02-19_chatbot-oficial/*`, `checkpoints/2026-03-15_chatbot-oficial/*`, `src/app/api/webhook/[clientId]/route.ts`, `src/lib/meta.ts`, `src/nodes/*`, `src/handlers/*`
+  - Confiança: alta
+
+## 2026-05-14
+
+### feat
+- Adicionado padrão remoto para imagens do domínio `supabase.uzzai.com.br` na configuração do Next.js
+  - Arquivos: `next.config.js`
+  - Confiança: alta
+
+## 2026-05-11
+
+### feat
+- Melhorada a conversão de dados numéricos na função `listQualityDailyReports` para tratar valores nulos ou indefinidos como `null`, evitando conversões inválidas
+  - Arquivos: `src/lib/quality-daily-report.ts`
+  - Confiança: alta
+
+## 2026-05-11
+
+### feat
+- Adicionado script de verificação de tipos TypeScript (`typecheck`) e melhorado cache para build incremental no workflow de CI
+  - Arquivos: `.github/workflows/ci.yml`, `package.json`
+  - Confiança: alta
+
+## 2026-05-11
+
+### fix
+- Adicionado variável de ambiente NODE_OPTIONS para aumentar memória no processo de checagem de tipos TypeScript no CI
+  - Arquivos: `.github/workflows/ci.yml`
+  - Evidência: inclusão de `NODE_OPTIONS: --max-old-space-size=6144` na etapa de type check
+  - Confiança: alta
+
+## 2026-05-11
+
+### feat
+- Adicionada página de Observabilidade com navegação por abas para visualização integrada de traces, avaliações, ground truth e suporte/bugs
+  - Arquivos: `src/app/dashboard/observability/page.tsx`, `src/components/DashboardNavigation.tsx`
+  - Confiança: alta
+
+## 2026-05-10
+
+### feat
+- Implementada visualização detalhada de contato com edição de nome, status de atendimento e controle de privacidade para salvar histórico de mensagens. Adicionado diálogo modal para detalhes do contato com informações de criação e atualização, além de perfil coletado pelo bot.
+- Remodelada interface do componente `ContactsClient` com nova toolbar, filtro por status via abas, tabela de contatos com seleção múltipla, ações em lote para exclusão de histórico, e melhorias na usabilidade e layout responsivo.
+- Adicionados botões para alternar modo de seleção, importar contatos via CSV e adicionar novo contato diretamente na interface principal.
+- Arquivos: `src/components/ContactsClient.tsx`
+- Confiança: alta
+
+## 2026-05-10
+
+### refactor
+- Simplificada a lógica de renderização do layout no `DashboardLayoutClient` para ajustar tratamento de rotas, removendo `contacts` das rotas full-screen e adicionando às rotas fluid com sidebar.
+- Ajustada estrutura e estilos do componente `ContactsClient` para remover botões redundantes e simplificar o header da lista de contatos.
+  - Arquivos: `src/components/DashboardLayoutClient.tsx`, `src/components/ContactsClient.tsx`
+  - Confiança: alta
+
+## 2026-05-10
+
+### feat
+- Implementado recurso de silenciamento de contato para evitar persistência de mensagens, pausando o bot e bloqueando o salvamento do histórico quando `metadata.save_history` está falso.
+- Adicionada opção no frontend para ativar/desativar o salvamento de mensagens por contato com feedback visual e rollback em caso de erro.
+- Atualizado endpoint PATCH de contato para suportar campo `save_history` e armazenar essa preferência no banco.
+- Modificada lógica do chatbot para respeitar o silenciamento, evitando salvar mensagens e responder contatos silenciados.
+- Criada função utilitária `isContactSilenced` para verificar status de silenciamento no banco.
+- Ajustada tipagem para incluir `save_history` em metadata de contato.
+  - Arquivos: `src/app/api/contacts/[phone]/route.ts`, `src/app/api/webhook/route.ts`, `src/components/ContactsClient.tsx`, `src/flows/chatbotFlow.ts`, `src/hooks/useContacts.ts`, `src/lib/contact-privacy.ts`, `src/lib/types.ts`, `src/nodes/checkHumanHandoffStatus.ts`, `src/nodes/saveChatMessage.ts`
+  - Confiança: alta
+
+## 2026-05-07
+
+### feat
+- Atualizado o tratamento de tokens na integração com o SDK de IA para suportar formatos antigos e novos, garantindo compatibilidade retroativa
+  - Arquivos: `src/lib/direct-ai-client.ts`
+  - Confiança: alta
+
+### refactor
+- Ajustadas classes CSS para cores de fundo, borda e texto dos papéis nas mensagens, melhorando contraste e suporte a temas claro e escuro no componente `TracesClient`
+  - Arquivos: `src/components/TracesClient.tsx`
+  - Confiança: alta
+
+### chore
+- Atualizada dependência `caniuse-lite` para versão mais recente via override no `pnpm` para manter dados de compatibilidade atualizados
+  - Arquivos: `package.json`, `pnpm-lock.yaml`
+  - Confiança: alta
+
+## 2026-05-07
+
+### feat
+- Adicionado snapshot detalhado e fiel do payload enviado ao LLM, incluindo mensagens, ferramentas, configurações e totais, para melhorar a análise e reprodução das chamadas AI no dashboard de qualidade.
+- Implementado suporte para exibição do raciocínio (chain-of-thought) fornecido por alguns provedores AI, com contagem de tokens e visualização dedicada na aba de prompt.
+- Atualizada interface e tipos para incluir o snapshot da requisição e o raciocínio bruto na resposta AI.
+- Adaptado componente `PromptTab` para suportar visualização do snapshot completo, raciocínio, chamadas de ferramentas e resposta final, mantendo fallback para traces legados.
+- Captura do snapshot e raciocínio integrada na função principal de chamada AI (`callDirectAI`) e no fluxo do chatbot.
+  - Arquivos: `src/components/TracesClient.tsx`, `src/flows/chatbotFlow.ts`, `src/lib/direct-ai-client.ts`, `src/lib/types.ts`, `src/nodes/generateAIResponse.ts`
+  - Confiança: alta
+
+## 2026-05-07
+
+### fix
+- Removida regra obrigatória de cadastro do prompt do agente principal para otimizar o fluxo de mensagens e reduzir o tamanho do prompt
+- A orientação para coleta de dados cadastrais foi mantida apenas na descrição da tool `registrar_dado_cadastral` em `src/lib/agent-tools.ts`
+  - Arquivos: `src/nodes/generateAIResponse.ts`
+  - Evidência: remoção do bloco de instruções no system prompt e comentário explicativo no código
+  - Confiança: alta
+```
+
+## 2026-05-07
+
+### docs
+- Adicionada documentação completa do fluxo visual da arquitetura do chatbot, detalhando agentes LLM, nodes do pipeline, sistema de tools, conexões externas, tabelas do Supabase e sequência de processamento.
+  - Arquivos: `docs/ARQUITETURA_FLUXO_VISUAL.md`
+  - Confiança: alta
+
+### refactor
+- Desativado globalmente o node 9.5 Fast Track Router no fluxo principal, mantendo código comentado para possível reativação futura.
+  - Arquivos: `src/flows/chatbotFlow.ts`
+  - Confiança: alta
+
+### fix
+- Ajustado `formatResponse.ts` para remover vazamento de chamadas de tools no texto da IA, eliminando blocos JSON com chaves de argumentos de tools conhecidas e frases narrativas inventadas que indicam execução de tools.
+  - Arquivos: `src/nodes/formatResponse.ts`
+  - Evidência: regex para remover JSON com chaves específicas e filtro de linhas com frases típicas de narração de tool calls
+  - Confiança: alta
+
+### refactor
+- Simplificada função `generateAIResponse` removendo constantes legadas de definição de tools e código morto relacionado a tools no formato antigo; agora usa exclusivamente `buildAllowedTools` para montar tools ativas.
+- Adicionada regra crítica no prompt do sistema para impedir que o modelo escreva JSON ou descreva chamadas de tools no texto, evitando vazamentos.
+- Removida duplicação do helper `checkSlotsAreFilled` e constantes legadas, reduzindo complexidade e dívida técnica.
+  - Arquivos: `src/nodes/generateAIResponse.ts`
+  - Confiança: alta
+
+## 2026-05-06
+
+### fix
+- Otimizado o formato do prompt do sistema para incluir instruções obrigatórias explícitas de saudação e fallback, garantindo que sejam usadas exatamente como configuradas. Ajustado o agrupamento e formatação das regras e estilo do prompt para maior clareza e consistência.
+- Arquivos: `src/lib/prompt-builder.ts`
+- Evidência: inclusão de tags XML específicas para greeting e fallback com texto obrigatório, remoção de regras duplicadas e reformatação do código.
+- Confiança: alta
+
+## 2026-05-06
+
+### feat
+- Adicionado widget de supervisão assistida no DashboardClient para análise de traces com sugestões automáticas de qualidade e interface para feedback humano.
+- Implementada lógica heurística para avaliação automática da qualidade das respostas do bot, incluindo status, latência, erros em tool calls e custo.
+- Incluído componente TracesWidget com controles para envio de feedback humano sobre a qualidade das respostas, permitindo marcação como correta, incorreta ou parcial, com opção de correção e promoção para ground truth.
+- Melhorado layout do DashboardClient para suportar a exibição do novo widget em grid responsivo.
+  - Arquivos: `src/components/DashboardClient.tsx`, `src/components/TracesClient.tsx`
+  - Confiança: alta
+
+## 2026-05-06
+
+### fix
+- Atualizada a versão do pacote `baseline-browser-mapping` para 2.10.27 e simplificado o input do ID do número de telefone Meta para usar apenas `meta_phone_number_id`
+  - Arquivos: `package.json`, `src/app/dashboard/settings/page.tsx`
+  - Evidência: atualização da dependência no `package.json` e remoção da fallback para `phone_number_id` no componente React
+  - Confiança: alta
+
+## 2026-05-06
+
+### fix
+- Atualizada versão do pacote `baseline-browser-mapping` para 2.10.27 no lockfile para corrigir dependências.
+- Melhorias no componente `TemplateForm` para usar consistentemente o termo "Meta Phone Number ID (Meta ID)" em vez de "WABA ID", incluindo fetch automático do Meta ID, validação e exibição no formulário.
+- Ajustes na interface da página de configurações para sempre exibir o Meta Phone Number ID (Meta ID) de forma legível e acessível.
+- Simplificação e correção na exibição do status do número WhatsApp na Meta, removendo detalhes redundantes e mensagens de permissão.
+  - Arquivos: `pnpm-lock.yaml`, `src/components/templates/TemplateForm.tsx`, `src/app/dashboard/settings/page.tsx`
+  - Evidência: commit e diff indicam atualização de dependência e refatoração do formulário e página de configurações para uso correto do Meta ID.
+  - Confiança: alta
+
+## 2026-05-06
+
+### feat
+- Adicionado estado `metaId` e lógica inicial para busca do ID do WABA no formulário de templates
+  - Arquivos: `src/components/templates/TemplateForm.tsx`
+  - Confiança: alta
+
 ## 2026-05-01
 
 ### feat

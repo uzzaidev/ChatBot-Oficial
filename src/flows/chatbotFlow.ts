@@ -965,31 +965,34 @@ export const processChatbotMessage = async (
       logger.logNodeSuccess("6.1. Bot Processing Skipped", {
         reason: handoffCheck.reason,
         status: handoffCheck.customerStatus,
-        messageWillBeSaved: true,
+        messageWillBeSaved: !handoffCheck.skipSave,
         messageHasTranscription: !!processedContent,
         botWillNotRespond: true,
+        silenced: !!handoffCheck.skipSave,
       });
 
-      // Para imagens, salvar uma versão simplificada no histórico
-      let messageForHistory = normalizedMessage.content;
-      if (parsedMessage.type === "image") {
-        messageForHistory =
-          parsedMessage.content && parsedMessage.content.trim().length > 0
-            ? `[Imagem recebida] ${parsedMessage.content}`
-            : "[Imagem recebida]";
+      if (!handoffCheck.skipSave) {
+        // Para imagens, salvar uma versão simplificada no histórico
+        let messageForHistory = normalizedMessage.content;
+        if (parsedMessage.type === "image") {
+          messageForHistory =
+            parsedMessage.content && parsedMessage.content.trim().length > 0
+              ? `[Imagem recebida] ${parsedMessage.content}`
+              : "[Imagem recebida]";
+        }
+
+        // Salvar mensagem do usuário no histórico (agora COM transcrição/descrição)
+        // 📎 Include media metadata for displaying real files in conversation
+        // 📱 Include wamid for WhatsApp message reactions
+        await saveChatMessage({
+          phone: parsedMessage.phone,
+          message: messageForHistory,
+          type: "user",
+          clientId: config.id,
+          mediaMetadata,
+          wamid: parsedMessage.messageId, // Store WhatsApp message ID for reactions
+        });
       }
-
-      // Salvar mensagem do usuário no histórico (agora COM transcrição/descrição)
-      // 📎 Include media metadata for displaying real files in conversation
-      // 📱 Include wamid for WhatsApp message reactions
-      await saveChatMessage({
-        phone: parsedMessage.phone,
-        message: messageForHistory,
-        type: "user",
-        clientId: config.id,
-        mediaMetadata,
-        wamid: parsedMessage.messageId, // Store WhatsApp message ID for reactions
-      });
 
       logger.finishExecution("success");
       return {
@@ -1143,11 +1146,19 @@ export const processChatbotMessage = async (
     }
 
     // ═════════════════════════════════════════════════════════════════
-    // 🚀 NODE 9.5: FAST TRACK ROUTER (Optional - Cache-Friendly FAQ Detection)
+    // 🚀 NODE 9.5: FAST TRACK ROUTER — DESATIVADO GLOBALMENTE
     // ═════════════════════════════════════════════════════════════════
-    let fastTrackResult: any = null;
-    let isFastTrack = false;
+    // Bypass total: fluxo segue sempre pelo caminho padrão (history + RAG).
+    // Implementação dormente em src/nodes/fastTrackRouter.ts (preservada
+    // caso queira reativar; basta restaurar o bloco abaixo).
+    const fastTrackResult: any = null;
+    const isFastTrack = false;
+    logger.logNodeSuccess("9.5. Fast Track Router", {
+      skipped: true,
+      reason: "globally_disabled",
+    });
 
+    /* DESATIVADO — manter dormente até decisão de reativar
     if (shouldExecuteNode("fast_track_router", nodeStates)) {
       logger.logNodeStart("9.5. Fast Track Router", {
         messageLength: batchedContent.length,
@@ -1179,6 +1190,7 @@ export const processChatbotMessage = async (
         reason: "node disabled",
       });
     }
+    */
 
     // ═════════════════════════════════════════════════════════════════
     // 🚀 NODE 15: CHECK INTERACTIVE FLOW (Phase 4)
@@ -1259,6 +1271,12 @@ export const processChatbotMessage = async (
             openaiApiKey: config.apiKeys.openaiApiKey,
             similarityThreshold: config.activeAgent?.rag_threshold,
             maxResults: config.activeAgent?.rag_max_results,
+            clientConfig: {
+              primaryModelProvider: config.primaryProvider,
+              openaiModel: config.models.openaiModel,
+              groqModel: config.models.groqModel,
+            },
+            phone: parsedMessage.phone,
           }),
         ]);
 
@@ -1308,6 +1326,12 @@ export const processChatbotMessage = async (
           openaiApiKey: config.apiKeys.openaiApiKey,
           similarityThreshold: config.activeAgent?.rag_threshold,
           maxResults: config.activeAgent?.rag_max_results,
+          clientConfig: {
+            primaryModelProvider: config.primaryProvider,
+            openaiModel: config.models.openaiModel,
+            groqModel: config.models.groqModel,
+          },
+          phone: parsedMessage.phone,
         });
         ragContext = ragResult.context;
         ragTraceData = ragResult.traceData;
@@ -1991,6 +2015,12 @@ export const processChatbotMessage = async (
             openaiApiKey: config.apiKeys.openaiApiKey,
             similarityThreshold: config.activeAgent?.rag_threshold,
             maxResults: config.activeAgent?.rag_max_results,
+            clientConfig: {
+              primaryModelProvider: config.primaryProvider,
+              openaiModel: config.models.openaiModel,
+              groqModel: config.models.groqModel,
+            },
+            phone: parsedMessage.phone,
           });
 
           ragTraceData = knowledgeResult.traceData;
@@ -2597,6 +2627,21 @@ export const processChatbotMessage = async (
       contentLength: aiResponse.content?.length ?? 0,
       provider: aiResponse.provider ?? null,
       model: aiResponse.model ?? null,
+      // Full faithful snapshot of what was sent to the LLM (no truncation):
+      // every system message, history, tool definition, settings, totals.
+      // Used by /dashboard/quality/traces "Prompt" tab.
+      requestPayload: aiResponse.requestPayload ?? null,
+      // Chain-of-thought when provider exposes it (Anthropic/OpenAI reasoning).
+      reasoning: aiResponse.reasoning ?? null,
+      reasoningTokens: aiResponse.usage?.reasoning_tokens ?? null,
+      finalResponse: aiResponse.content ?? "",
+      finishReason:
+        aiResponse.finished ? "stop" : aiResponse.fallbackReason ?? null,
+      toolCalls:
+        aiResponse.toolCalls?.map((tc) => ({
+          name: tc.function.name,
+          arguments: tc.function.arguments,
+        })) ?? [],
     });
     traceLogger.setGenerationData({
       model: aiResponse.model || "unknown",

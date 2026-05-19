@@ -18,9 +18,11 @@ Documentação dos domínios e configurações corretas do projeto.
 ### Deep Linking (App Links)
 
 **Domínio principal:**
+
 - `https://uzzapp.uzzai.com.br`
 
 **Exemplos de URLs:**
+
 - `https://uzzapp.uzzai.com.br/chat/123` → Abre chat específico
 - `https://uzzapp.uzzai.com.br/dashboard` → Abre dashboard
 - `https://uzzapp.uzzai.com.br/invite/abc` → Abre convite
@@ -28,9 +30,11 @@ Documentação dos domínios e configurações corretas do projeto.
 ### Custom URL Scheme
 
 **Scheme:**
+
 - `chatbot://` (mantido para compatibilidade)
 
 **Exemplos:**
+
 - `chatbot://chat/123` → Abre chat específico
 - `chatbot://dashboard` → Abre dashboard
 
@@ -43,6 +47,7 @@ Documentação dos domínios e configurações corretas do projeto.
 ### Android Package Name
 
 **Atual:**
+
 - `com.chatbot.app`
 
 **Nota:** Este é o package name do app Android. Pode ser alterado no futuro para `com.uzzai.uzzapp` se necessário, mas requer rebuild completo.
@@ -50,9 +55,11 @@ Documentação dos domínios e configurações corretas do projeto.
 ### Firebase Project
 
 **Nome sugerido:**
+
 - `UzzApp` ou `Uzz.Ai`
 
 **App nickname:**
+
 - `UzzApp Android`
 
 ---
@@ -62,6 +69,7 @@ Documentação dos domínios e configurações corretas do projeto.
 ### Arquivos Críticos (Já Atualizados)
 
 1. **`android/app/src/main/AndroidManifest.xml`**
+
    - App Links: `uzzapp.uzzai.com.br`
 
 2. **`src/lib/deepLinking.ts`**
@@ -74,7 +82,7 @@ Documentação dos domínios e configurações corretas do projeto.
 - `docs/app/O_QUE_E_DEEP_LINKING_SIMPLES.md`
 - E outros arquivos de documentação
 
-**Nota:** Os arquivos de documentação ainda podem conter referências ao domínio antigo (`chat.luisfboff.com`). Isso não afeta o funcionamento, mas pode ser atualizado para consistência.
+**Nota:** Os arquivos de documentação ainda podem conter referências ao domínio antigo (`uzzap.uzzai.com`). Isso não afeta o funcionamento, mas pode ser atualizado para consistência.
 
 ---
 
@@ -85,6 +93,7 @@ Documentação dos domínios e configurações corretas do projeto.
 Para App Links funcionarem completamente, você precisa:
 
 1. **Configurar `assetlinks.json` no servidor:**
+
    - URL: `https://uzzapp.uzzai.com.br/.well-known/assetlinks.json`
    - Deve conter o SHA256 fingerprint do app
 
@@ -106,4 +115,3 @@ O scheme `chatbot://` funciona sem configuração adicional no servidor. Pode se
 ---
 
 **Última atualização:** Configuração inicial de domínios UzzApp
-

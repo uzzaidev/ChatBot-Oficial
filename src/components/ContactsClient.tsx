@@ -3,7 +3,6 @@
 import { EmptyState } from "@/components/EmptyState";
 import { ContactNameEditor } from "@/components/ContactNameEditor";
 import { StatusBadge } from "@/components/StatusBadge";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,7 +19,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -31,7 +29,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,6 +41,15 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { Contact, useContacts } from "@/hooks/useContacts";
 import { apiFetch } from "@/lib/api";
@@ -56,12 +62,12 @@ import { formatDateTime, formatPhone, getInitials } from "@/lib/utils";
 import {
   AlertCircle,
   AlertTriangle,
-  ArrowLeft,
   ArrowRight,
   Bot,
   CheckCircle,
+  CheckSquare,
   Download,
-  LayoutDashboard,
+  Eraser,
   List,
   MessageCircle,
   Phone,
@@ -72,10 +78,8 @@ import {
   User,
   Users,
   Workflow,
-  X,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 interface ContactsClientProps {
@@ -162,7 +166,6 @@ const formatProfileFieldValue = (value: unknown): string | null => {
 };
 
 export function ContactsClient({ clientId }: ContactsClientProps) {
-  const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<"all" | ConversationStatus>(
     "all",
   );
@@ -173,6 +176,14 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
+  const [contactToClearHistory, setContactToClearHistory] = useState<Contact | null>(null);
+  const [isClearingHistory, setIsClearingHistory] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedPhones, setSelectedPhones] = useState<Set<string>>(new Set());
+  const [isBulkHistoryDialogOpen, setIsBulkHistoryDialogOpen] = useState(false);
+  const [isBulkClearing, setIsBulkClearing] = useState(false);
   const { toast } = useToast();
 
   // Form states
@@ -212,6 +223,8 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
     addContact,
     updateContact,
     deleteContact,
+    deleteContactHistory,
+    bulkDeleteHistory,
     importContacts,
   } = useContacts({
     clientId,
@@ -362,6 +375,141 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
     }
     setIsDeleteDialogOpen(false);
     setContactToDelete(null);
+  };
+
+  const handleClearContactHistory = async () => {
+    if (!contactToClearHistory) return;
+
+    setIsClearingHistory(true);
+    const result = await deleteContactHistory(contactToClearHistory.phone);
+    setIsClearingHistory(false);
+
+    if (result) {
+      toast({
+        title: "Histórico excluído",
+        description: `${result.deleted.total} registros removidos do contato ${
+          contactToClearHistory.name || formatPhone(contactToClearHistory.phone)
+        }.`,
+      });
+    } else {
+      toast({
+        title: "Erro",
+        description: "Falha ao excluir histórico do contato",
+        variant: "destructive",
+      });
+    }
+
+    setIsHistoryDialogOpen(false);
+    setContactToClearHistory(null);
+  };
+
+  const openContactDetail = (contact: Contact) => {
+    setSelectedContact(contact);
+    setIsDetailDialogOpen(true);
+  };
+
+  const closeContactDetail = (open: boolean) => {
+    setIsDetailDialogOpen(open);
+    if (!open) {
+      setSelectedContact(null);
+    }
+  };
+
+  const toggleSelectionMode = () => {
+    setSelectionMode((prev) => {
+      if (prev) {
+        setSelectedPhones(new Set());
+      }
+      return !prev;
+    });
+  };
+
+  const toggleContactSelected = (phone: string) => {
+    setSelectedPhones((prev) => {
+      const next = new Set(prev);
+      if (next.has(phone)) next.delete(phone);
+      else next.add(phone);
+      return next;
+    });
+  };
+
+  const handleSelectAllVisible = () => {
+    setSelectedPhones((prev) => {
+      const allSelected = contacts.every((c) => prev.has(c.phone));
+      if (allSelected) {
+        const next = new Set(prev);
+        contacts.forEach((c) => next.delete(c.phone));
+        return next;
+      }
+      const next = new Set(prev);
+      contacts.forEach((c) => next.add(c.phone));
+      return next;
+    });
+  };
+
+  const handleToggleSaveHistory = async (next: boolean) => {
+    if (!selectedContact) return;
+
+    const previousMetadata = selectedContact.metadata || {};
+    const optimisticContact: Contact = {
+      ...selectedContact,
+      metadata: { ...previousMetadata, save_history: next },
+    };
+    setSelectedContact(optimisticContact);
+
+    const result = await updateContact(selectedContact.phone, {
+      save_history: next,
+    });
+
+    if (result) {
+      setSelectedContact((current) =>
+        current && current.phone === result.phone ? result : current,
+      );
+      toast({
+        title: next ? "Salvamento ativado" : "Salvamento desativado",
+        description: next
+          ? "As mensagens deste contato voltarão a ser salvas."
+          : "O bot foi pausado e as mensagens deste contato não serão mais salvas.",
+      });
+    } else {
+      // rollback
+      setSelectedContact((current) =>
+        current && current.phone === selectedContact.phone
+          ? { ...current, metadata: previousMetadata }
+          : current,
+      );
+      toast({
+        title: "Erro",
+        description: "Falha ao atualizar a preferência do contato",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleBulkClearHistory = async () => {
+    const phones = Array.from(selectedPhones);
+    if (phones.length === 0) return;
+
+    setIsBulkClearing(true);
+    const result = await bulkDeleteHistory(phones);
+    setIsBulkClearing(false);
+
+    if (result) {
+      toast({
+        title: "Histórico excluído",
+        description: `${result.deleted.total} registros removidos de ${result.contacts} contato(s).`,
+      });
+      setSelectedPhones(new Set());
+      setSelectionMode(false);
+    } else {
+      toast({
+        title: "Erro",
+        description: "Falha ao excluir histórico em massa",
+        variant: "destructive",
+      });
+    }
+
+    setIsBulkHistoryDialogOpen(false);
   };
 
   const handleDownloadTemplate = async () => {
@@ -633,46 +781,23 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
     : [];
 
   return (
-    <div className="fixed inset-0 flex overflow-hidden bg-background">
-      {/* Sidebar com Lista de Contatos */}
-      <div className="w-full lg:w-96 border-r border-border/50 flex flex-col bg-card/95">
-        {/* Header */}
-        <div className="p-4 border-b border-border/50">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-3">
-              <Users className="h-6 w-6 text-primary" />
-              <h2 className="font-poppins font-semibold text-lg text-primary">
+    <div className="flex flex-1 min-h-0 w-full flex-col overflow-hidden bg-background">
+      {/* Toolbar */}
+      <div className="border-b border-border/50 bg-card/95">
+        <div className="flex flex-wrap items-center gap-3 p-4">
+          <div className="flex items-center gap-3 mr-2">
+            <Users className="h-6 w-6 text-primary" />
+            <div>
+              <h2 className="font-poppins font-semibold text-lg text-primary leading-none">
                 Contatos
               </h2>
-            </div>
-            <div className="flex items-center gap-1">
-              <Link href="/dashboard">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5 border-border/60 text-foreground hover:bg-muted/60"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  <span className="hidden sm:inline">Voltar</span>
-                </Button>
-              </Link>
-              <ThemeToggle />
-              <Link href="/dashboard">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                >
-                  <LayoutDashboard className="h-4 w-4" />
-                </Button>
-              </Link>
+              <p className="text-xs text-muted-foreground mt-1">
+                Mostrando {contacts.length} de {total}
+              </p>
             </div>
           </div>
-        </div>
 
-        {/* Search and Actions */}
-        <div className="p-4 border-b border-border/50 space-y-3">
-          <div className="relative">
+          <div className="relative flex-1 min-w-[220px] max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Buscar contato..."
@@ -681,18 +806,296 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
               className="pl-10 bg-surface-sunken border-border text-foreground placeholder:text-muted-foreground focus:border-primary"
             />
           </div>
-          <div className="flex gap-2">
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
+
+          <div className="flex flex-wrap items-center gap-2 ml-auto">
+            <Button
+              size="sm"
+              variant={selectionMode ? "default" : "outline"}
+              className="gap-1.5"
+              onClick={toggleSelectionMode}
+            >
+              <CheckSquare className="h-4 w-4" />
+              {selectionMode ? "Cancelar seleção" : "Selecionar"}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5"
+              onClick={() => setIsImportDialogOpen(true)}
+            >
+              <Upload className="h-4 w-4" />
+              Importar
+            </Button>
+            <Button
+              size="sm"
+              className="gap-1.5 bg-primary hover:bg-primary/90 text-white"
+              onClick={() => setIsAddDialogOpen(true)}
+            >
+              <Plus className="h-4 w-4" />
+              Adicionar
+            </Button>
+          </div>
+        </div>
+
+        {/* Status Filter Tabs */}
+        <div className="px-4 pb-2">
+          <Tabs
+            value={statusFilter}
+            onValueChange={(value) => setStatusFilter(value as any)}
+          >
+            <TabsList className="justify-start rounded-none h-auto p-0 bg-transparent overflow-x-auto">
+              <TabsTrigger
+                value="all"
+                className="flex items-center gap-1 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none text-xs px-3 text-muted-foreground data-[state=active]:text-primary"
+              >
+                <List className="h-3 w-3" />
+                Todos
+              </TabsTrigger>
+              <TabsTrigger
+                value="bot"
+                className="flex items-center gap-1 data-[state=active]:border-b-2 data-[state=active]:border-secondary rounded-none text-xs px-3 text-muted-foreground data-[state=active]:text-secondary"
+              >
+                <Bot className="h-3 w-3" />
+                Bot
+              </TabsTrigger>
+              <TabsTrigger
+                value="humano"
+                className="flex items-center gap-1 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none text-xs px-3 text-muted-foreground data-[state=active]:text-primary"
+              >
+                <User className="h-3 w-3" />
+                Humano
+              </TabsTrigger>
+              <TabsTrigger
+                value="transferido"
+                className="flex items-center gap-1 data-[state=active]:border-b-2 data-[state=active]:border-orange-400 rounded-none text-xs px-3 text-muted-foreground data-[state=active]:text-orange-400"
+              >
+                <ArrowRight className="h-3 w-3" />
+                Transferido
+              </TabsTrigger>
+              <TabsTrigger
+                value="fluxo_inicial"
+                className="flex items-center gap-1 data-[state=active]:border-b-2 data-[state=active]:border-[#9b59b6] rounded-none text-xs px-3 text-muted-foreground data-[state=active]:text-[#9b59b6]"
+              >
+                <Workflow className="h-3 w-3" />
+                Em Flow
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+
+        {/* Selection Action Bar */}
+        {selectionMode && (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/40 bg-muted/30 px-4 py-2">
+            <div className="flex items-center gap-3 text-sm">
+              <span className="text-muted-foreground">
+                {selectedPhones.size} selecionado(s)
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={handleSelectAllVisible}
+                disabled={contacts.length === 0}
+              >
+                {contacts.length > 0 &&
+                contacts.every((c) => selectedPhones.has(c.phone))
+                  ? "Desmarcar visíveis"
+                  : "Selecionar visíveis"}
+              </Button>
+            </div>
+            <Button
+              size="sm"
+              variant="destructive"
+              className="gap-1.5"
+              disabled={selectedPhones.size === 0}
+              onClick={() => setIsBulkHistoryDialogOpen(true)}
+            >
+              <Eraser className="h-3.5 w-3.5" />
+              Excluir histórico ({selectedPhones.size})
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Contacts Table */}
+      <div className="flex-1 overflow-auto">
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        ) : contacts.length === 0 ? (
+          <div className="py-12">
+            {searchQuery ? (
+              <EmptyState
+                icon={Search}
+                title="Nenhum resultado encontrado"
+                description={`Não encontramos contatos com "${searchQuery}". Tente ajustar sua busca.`}
+                className="mx-4"
+              />
+            ) : (
+              <EmptyState
+                icon={Users}
+                title="Nenhum contato cadastrado"
+                description="Comece adicionando contatos manualmente ou importe em massa via CSV para gerenciar seus clientes."
+                actionLabel="Adicionar Primeiro Contato"
+                onAction={() => setIsAddDialogOpen(true)}
+                secondaryActionLabel="Importar CSV"
+                onSecondaryAction={() => setIsImportDialogOpen(true)}
+                className="mx-4"
+              />
+            )}
+          </div>
+        ) : (
+          <>
+            <Table>
+              <TableHeader className="sticky top-0 z-10 bg-card/95 backdrop-blur">
+                <TableRow>
+                  {selectionMode && <TableHead className="w-10" />}
+                  <TableHead>Contato</TableHead>
+                  <TableHead className="hidden md:table-cell">Telefone</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="hidden lg:table-cell">
+                    Atualizado em
+                  </TableHead>
+                  <TableHead className="text-right pr-6">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {contacts.map((contact) => {
+                  const isSelected = selectedPhones.has(contact.phone);
+                  const silenced = contact.metadata?.save_history === false;
+                  return (
+                    <TableRow
+                      key={contact.id}
+                      data-state={isSelected ? "selected" : undefined}
+                      className="cursor-pointer"
+                      onClick={() => {
+                        if (selectionMode) {
+                          toggleContactSelected(contact.phone);
+                        } else {
+                          openContactDetail(contact);
+                        }
+                      }}
+                    >
+                      {selectionMode && (
+                        <TableCell className="w-10">
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() =>
+                              toggleContactSelected(contact.phone)
+                            }
+                            onClick={(e) => e.stopPropagation()}
+                            aria-label={`Selecionar ${
+                              contact.name || contact.phone
+                            }`}
+                          />
+                        </TableCell>
+                      )}
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-9 w-9 flex-shrink-0">
+                            <AvatarFallback className="bg-gradient-to-br from-secondary to-primary text-white text-xs font-poppins font-semibold">
+                              {getInitials(contact.name || "Sem nome")}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-sm truncate text-foreground">
+                                {contact.name || "Sem nome"}
+                              </span>
+                              {silenced && (
+                                <Badge
+                                  variant="outline"
+                                  className="h-5 gap-1 border-amber-500/50 text-amber-600 text-[10px] px-1.5"
+                                  title="Bot pausado e mensagens não estão sendo salvas"
+                                >
+                                  <AlertTriangle className="h-3 w-3" />
+                                  Silenciado
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground truncate md:hidden">
+                              {formatPhone(contact.phone)}
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
+                        {formatPhone(contact.phone)}
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge
+                          status={contact.status}
+                          showIcon={false}
+                          size="sm"
+                        />
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">
+                        {formatDateTime(contact.updated_at)}
+                      </TableCell>
+                      <TableCell className="text-right pr-4">
+                        <div
+                          className="flex justify-end gap-1"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Link
+                            href={`/dashboard/conversations?phone=${contact.phone}`}
+                            title="Ver conversas"
+                          >
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MessageCircle className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            title="Excluir histórico"
+                            onClick={() => {
+                              setContactToClearHistory(contact);
+                              setIsHistoryDialogOpen(true);
+                            }}
+                          >
+                            <Eraser className="h-4 w-4 text-red-500" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            title="Remover contato"
+                            onClick={() => {
+                              setContactToDelete(contact);
+                              setIsDeleteDialogOpen(true);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+
+            {(hasMore || loadingMore) && (
+              <div className="p-3 border-t border-border/50 flex justify-center">
                 <Button
-                  size="sm"
-                  className="flex-1 bg-primary hover:bg-primary/90 text-white"
+                  variant="outline"
+                  onClick={() => void loadMore()}
+                  disabled={loadingMore}
                 >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Adicionar
+                  {loadingMore ? "Carregando..." : "Carregar mais"}
                 </Button>
-              </DialogTrigger>
-              <DialogContent>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Add Contact Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Adicionar Contato</DialogTitle>
                   <DialogDescription>
@@ -775,24 +1178,15 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
               </DialogContent>
             </Dialog>
 
-            <Dialog
-              open={isImportDialogOpen}
-              onOpenChange={(open) => {
-                if (!open) closeImportDialog();
-                else setIsImportDialogOpen(true);
-              }}
-            >
-              <DialogTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="flex-1 border-border text-foreground/90 hover:bg-muted/50 hover:text-foreground"
-                >
-                  <Upload className="h-4 w-4 mr-1" />
-                  Importar
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-lg">
+      {/* Import Contacts Dialog */}
+      <Dialog
+        open={isImportDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) closeImportDialog();
+          else setIsImportDialogOpen(true);
+        }}
+      >
+        <DialogContent className="max-w-lg">
                 <DialogHeader>
                   <DialogTitle>Importar Contatos</DialogTitle>
                   <DialogDescription>
@@ -1065,310 +1459,211 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
                     {isSubmitting ? "Importando..." : "Importar"}
                   </Button>
                 </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Mostrando {contacts.length} de {total} contatos
-          </p>
-        </div>
+        </DialogContent>
+      </Dialog>
 
-        {/* Status Filter Tabs */}
-        <div className="border-b border-border/50">
-          <Tabs
-            value={statusFilter}
-            onValueChange={(value) => setStatusFilter(value as any)}
-          >
-            <TabsList className="w-full justify-start rounded-none h-auto p-0 bg-transparent overflow-x-auto">
-              <TabsTrigger
-                value="all"
-                className="flex items-center gap-1 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none text-xs px-3 text-muted-foreground data-[state=active]:text-primary"
-              >
-                <List className="h-3 w-3" />
-                Todos
-              </TabsTrigger>
-              <TabsTrigger
-                value="bot"
-                className="flex items-center gap-1 data-[state=active]:border-b-2 data-[state=active]:border-secondary rounded-none text-xs px-3 text-muted-foreground data-[state=active]:text-secondary"
-              >
-                <Bot className="h-3 w-3" />
-                Bot
-              </TabsTrigger>
-              <TabsTrigger
-                value="humano"
-                className="flex items-center gap-1 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none text-xs px-3 text-muted-foreground data-[state=active]:text-primary"
-              >
-                <User className="h-3 w-3" />
-                Humano
-              </TabsTrigger>
-              <TabsTrigger
-                value="transferido"
-                className="flex items-center gap-1 data-[state=active]:border-b-2 data-[state=active]:border-orange-400 rounded-none text-xs px-3 text-muted-foreground data-[state=active]:text-orange-400"
-              >
-                <ArrowRight className="h-3 w-3" />
-                Transferido
-              </TabsTrigger>
-              <TabsTrigger
-                value="fluxo_inicial"
-                className="flex items-center gap-1 data-[state=active]:border-b-2 data-[state=active]:border-[#9b59b6] rounded-none text-xs px-3 text-muted-foreground data-[state=active]:text-[#9b59b6]"
-              >
-                <Workflow className="h-3 w-3" />
-                Em Flow
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-
-        {/* Contact List */}
-        <div className="flex-1 overflow-y-auto">
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : contacts.length === 0 ? (
-            searchQuery ? (
-              <EmptyState
-                icon={Search}
-                title="Nenhum resultado encontrado"
-                description={`Não encontramos contatos com "${searchQuery}". Tente ajustar sua busca.`}
-                className="mx-4"
-              />
-            ) : (
-              <EmptyState
-                icon={Users}
-                title="Nenhum contato cadastrado"
-                description="Comece adicionando contatos manualmente ou importe em massa via CSV para gerenciar seus clientes."
-                actionLabel="Adicionar Primeiro Contato"
-                onAction={() => setIsAddDialogOpen(true)}
-                secondaryActionLabel="Importar CSV"
-                onSecondaryAction={() => setIsImportDialogOpen(true)}
-                className="mx-4"
-              />
-            )
-          ) : (
+      {/* Contact Detail Dialog */}
+      <Dialog open={isDetailDialogOpen} onOpenChange={closeContactDetail}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          {selectedContact && (
             <>
-              {contacts.map((contact) => (
-                <div
-                  key={contact.id}
-                  className={`flex items-center gap-3 p-3 cursor-pointer transition-colors duration-200 border-b border-border/50 ${
-                    selectedContact?.id === contact.id
-                      ? "bg-gradient-to-r from-primary/10 to-transparent border-l-2 border-l-primary"
-                      : "hover:bg-muted/50"
-                  }`}
-                  onClick={() => setSelectedContact(contact)}
-                >
-                  <Avatar className="h-12 w-12 flex-shrink-0">
-                    <AvatarFallback className="bg-gradient-to-br from-secondary to-primary text-white text-sm font-poppins font-semibold">
-                      {getInitials(contact.name || "Sem nome")}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-semibold text-sm truncate text-foreground">
-                        {contact.name || "Sem nome"}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs text-muted-foreground truncate flex-1">
-                        {formatPhone(contact.phone)}
+              <DialogHeader className="items-center text-center">
+                <Avatar className="h-20 w-20 mb-3">
+                  <AvatarFallback className="bg-gradient-to-br from-uzz-mint to-uzz-blue text-white text-2xl font-poppins font-bold">
+                    {getInitials(selectedContact.name || "Sem nome")}
+                  </AvatarFallback>
+                </Avatar>
+                <DialogTitle asChild>
+                  <div className="flex justify-center">
+                    <ContactNameEditor
+                      phone={selectedContact.phone}
+                      initialName={selectedContact.name}
+                      className="justify-center"
+                      textClassName="text-center text-xl font-semibold"
+                      inputClassName="h-10 text-center"
+                      onSaved={(updatedName) => {
+                        setSelectedContact((current) =>
+                          current
+                            ? {
+                                ...current,
+                                name: updatedName,
+                                updated_at: new Date().toISOString(),
+                              }
+                            : current,
+                        );
+                        void refetch();
+                      }}
+                    />
+                  </div>
+                </DialogTitle>
+                <DialogDescription className="flex items-center justify-center gap-2">
+                  <Phone className="h-4 w-4" />
+                  {formatPhone(selectedContact.phone)}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-6 py-2">
+                {/* Status Control */}
+                <div className="space-y-2">
+                  <Label>Status de Atendimento</Label>
+                  <Select
+                    value={selectedContact.status}
+                    onValueChange={(v) =>
+                      handleUpdateContactStatus(
+                        selectedContact.phone,
+                        v as ConversationStatus,
+                      )
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="bot">
+                        <div className="flex items-center gap-2">
+                          <Bot className="h-4 w-4 text-blue-500" />
+                          Bot (Automático)
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="humano">
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-green-500" />
+                          Humano (Manual)
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="transferido">
+                        <div className="flex items-center gap-2">
+                          <ArrowRight className="h-4 w-4 text-orange-500" />
+                          Transferido
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="fluxo_inicial">
+                        <div className="flex items-center gap-2">
+                          <Workflow className="h-4 w-4 text-purple-500" />
+                          Em Flow
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedContact.status === "bot"
+                      ? "Este contato será atendido pelo bot automaticamente"
+                      : selectedContact.status === "humano"
+                      ? "Este contato será atendido por um humano"
+                      : selectedContact.status === "transferido"
+                      ? "Este contato foi transferido para atendimento humano"
+                      : "Este contato está em um fluxo interativo"}
+                  </p>
+                </div>
+
+                {/* Privacidade: salvar histórico */}
+                <div className="space-y-2 rounded-md border border-border/60 p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="save-history-switch">
+                        Salvar mensagens deste contato
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Ao desativar, o bot é pausado e nenhuma mensagem
+                        (recebida ou enviada) será gravada para este contato.
                       </p>
-                      <div className="ml-2">
-                        <StatusBadge
-                          status={contact.status}
-                          showIcon={false}
-                          size="sm"
-                        />
-                      </div>
+                    </div>
+                    <Switch
+                      id="save-history-switch"
+                      checked={selectedContact.metadata?.save_history !== false}
+                      onCheckedChange={handleToggleSaveHistory}
+                    />
+                  </div>
+                  {selectedContact.metadata?.save_history === false && (
+                    <p className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-600">
+                      <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+                      <span>
+                        Bot pausado e mensagens não estão sendo salvas. As
+                        mensagens já gravadas continuam disponíveis até você
+                        excluir o histórico.
+                      </span>
+                    </p>
+                  )}
+                </div>
+
+                {/* Perfil coletado pelo bot */}
+                {selectedContactProfileEntries.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                      Perfil coletado
+                    </Label>
+                    <div className="rounded-md border border-border bg-muted/30 px-3 py-2 space-y-1 text-sm">
+                      {selectedContactProfileEntries.map((entry) => (
+                        <div
+                          key={entry.key}
+                          className="flex justify-between gap-2"
+                        >
+                          <span className="text-muted-foreground shrink-0">
+                            {formatProfileFieldLabel(entry.key)}
+                          </span>
+                          <span className="text-right break-all">
+                            {entry.value}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                </div>
-              ))}
+                )}
 
-              {(hasMore || loadingMore) && (
-                <div className="p-3 border-t border-border/50">
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => void loadMore()}
-                    disabled={loadingMore}
+                {/* Contact Info */}
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Criado em:</span>
+                    <span>{formatDateTime(selectedContact.created_at)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">
+                      Atualizado em:
+                    </span>
+                    <span>{formatDateTime(selectedContact.updated_at)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <DialogFooter className="flex-col sm:flex-col sm:space-x-0 gap-2">
+                <div className="flex gap-2 w-full">
+                  <Link
+                    href={`/dashboard/conversations?phone=${selectedContact.phone}`}
+                    className="flex-1"
                   >
-                    {loadingMore ? "Carregando..." : "Carregar mais"}
+                    <Button variant="outline" className="w-full">
+                      <MessageCircle className="h-4 w-4 mr-2" />
+                      Ver Conversas
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    title="Remover contato"
+                    onClick={() => {
+                      setContactToDelete(selectedContact);
+                      setIsDeleteDialogOpen(true);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
-              )}
+                <Button
+                  variant="outline"
+                  className="w-full border-red-500/40 text-red-500 hover:bg-red-500/10 hover:text-red-500"
+                  onClick={() => {
+                    setContactToClearHistory(selectedContact);
+                    setIsHistoryDialogOpen(true);
+                  }}
+                >
+                  <Eraser className="h-4 w-4 mr-2" />
+                  Excluir histórico
+                </Button>
+              </DialogFooter>
             </>
           )}
-        </div>
-      </div>
-
-      {/* Contact Details Panel */}
-      <div className="hidden lg:flex flex-1 items-center justify-center bg-surface">
-        {selectedContact ? (
-          <Card className="w-full max-w-md mx-4 bg-card border-border text-foreground">
-            <CardHeader className="text-center">
-              <div className="flex justify-end">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedContact(null)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              <Avatar className="h-20 w-20 mx-auto mb-4">
-                <AvatarFallback className="bg-gradient-to-br from-uzz-mint to-uzz-blue text-white text-2xl font-poppins font-bold">
-                  {getInitials(selectedContact.name || "Sem nome")}
-                </AvatarFallback>
-              </Avatar>
-              <CardTitle className="flex justify-center">
-                <ContactNameEditor
-                  phone={selectedContact.phone}
-                  initialName={selectedContact.name}
-                  className="justify-center"
-                  textClassName="text-center text-xl font-semibold"
-                  inputClassName="h-10 text-center"
-                  onSaved={(updatedName) => {
-                    setSelectedContact((current) =>
-                      current
-                        ? {
-                            ...current,
-                            name: updatedName,
-                            updated_at: new Date().toISOString(),
-                          }
-                        : current,
-                    );
-                    void refetch();
-                  }}
-                />
-              </CardTitle>
-              <CardDescription className="flex items-center justify-center gap-2">
-                <Phone className="h-4 w-4" />
-                {formatPhone(selectedContact.phone)}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Status Control */}
-              <div className="space-y-2">
-                <Label>Status de Atendimento</Label>
-                <Select
-                  value={selectedContact.status}
-                  onValueChange={(v) =>
-                    handleUpdateContactStatus(
-                      selectedContact.phone,
-                      v as ConversationStatus,
-                    )
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="bot">
-                      <div className="flex items-center gap-2">
-                        <Bot className="h-4 w-4 text-blue-500" />
-                        Bot (Automático)
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="humano">
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-green-500" />
-                        Humano (Manual)
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="transferido">
-                      <div className="flex items-center gap-2">
-                        <ArrowRight className="h-4 w-4 text-orange-500" />
-                        Transferido
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="fluxo_inicial">
-                      <div className="flex items-center gap-2">
-                        <Workflow className="h-4 w-4 text-purple-500" />
-                        Em Flow
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  {selectedContact.status === "bot"
-                    ? "Este contato será atendido pelo bot automaticamente"
-                    : selectedContact.status === "humano"
-                    ? "Este contato será atendido por um humano"
-                    : selectedContact.status === "transferido"
-                    ? "Este contato foi transferido para atendimento humano"
-                    : "Este contato está em um fluxo interativo"}
-                </p>
-              </div>
-
-              {/* Perfil coletado pelo bot */}
-              {selectedContactProfileEntries.length > 0 && (
-                <div className="space-y-2">
-                  <Label className="text-xs uppercase tracking-wide text-muted-foreground">Perfil coletado</Label>
-                  <div className="rounded-md border border-border bg-muted/30 px-3 py-2 space-y-1 text-sm">
-                    {selectedContactProfileEntries.map((entry) => (
-                      <div key={entry.key} className="flex justify-between gap-2">
-                        <span className="text-muted-foreground shrink-0">
-                          {formatProfileFieldLabel(entry.key)}
-                        </span>
-                        <span className="text-right break-all">{entry.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Contact Info */}
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Criado em:</span>
-                  <span>{formatDateTime(selectedContact.created_at)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Atualizado em:</span>
-                  <span>{formatDateTime(selectedContact.updated_at)}</span>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-2 pt-4">
-                <Link
-                  href={`/dashboard/conversations?phone=${selectedContact.phone}`}
-                  className="flex-1"
-                >
-                  <Button variant="outline" className="w-full">
-                    <MessageCircle className="h-4 w-4 mr-2" />
-                    Ver Conversas
-                  </Button>
-                </Link>
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  onClick={() => {
-                    setContactToDelete(selectedContact);
-                    setIsDeleteDialogOpen(true);
-                  }}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="text-center">
-            <div className="mb-6 flex justify-center">
-              <div className="h-20 w-20 rounded-full flex items-center justify-center border-2 bg-surface border-primary shadow-glow">
-                <Users className="h-10 w-10 text-primary" />
-              </div>
-            </div>
-            <h3 className="text-xl font-poppins font-semibold text-foreground mb-2">
-              Nenhum contato selecionado
-            </h3>
-            <p className="text-muted-foreground">
-              Selecione um contato à esquerda para ver os detalhes
-            </p>
-          </div>
-        )}
-      </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog
@@ -1396,6 +1691,95 @@ export function ContactsClient({ clientId }: ContactsClientProps) {
               className="bg-red-500 hover:bg-red-600"
             >
               Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Clear History (single) Confirmation */}
+      <AlertDialog
+        open={isHistoryDialogOpen}
+        onOpenChange={(open) => {
+          setIsHistoryDialogOpen(open);
+          if (!open) setContactToClearHistory(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir histórico do contato</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>
+                  Você está prestes a apagar todo o histórico de mensagens do
+                  contato{" "}
+                  <strong>
+                    {contactToClearHistory?.name ||
+                      formatPhone(contactToClearHistory?.phone || "")}
+                  </strong>
+                  . O contato continuará cadastrado, apenas as mensagens serão
+                  removidas.
+                </p>
+                <p className="flex items-start gap-2 rounded-md border border-red-500/40 bg-red-500/10 p-2 text-red-600">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                  <span>
+                    Essa ação <strong>não pode ser desfeita</strong>.
+                  </span>
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isClearingHistory}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleClearContactHistory}
+              disabled={isClearingHistory}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              {isClearingHistory ? "Excluindo..." : "Excluir histórico"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Clear History (bulk) Confirmation */}
+      <AlertDialog
+        open={isBulkHistoryDialogOpen}
+        onOpenChange={setIsBulkHistoryDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir histórico em massa</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>
+                  Você está prestes a apagar todo o histórico de mensagens de{" "}
+                  <strong>{selectedPhones.size}</strong> contato(s)
+                  selecionado(s). Os contatos continuarão cadastrados, apenas as
+                  mensagens serão removidas.
+                </p>
+                <p className="flex items-start gap-2 rounded-md border border-red-500/40 bg-red-500/10 p-2 text-red-600">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                  <span>
+                    Essa ação <strong>não pode ser desfeita</strong>.
+                  </span>
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isBulkClearing}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkClearHistory}
+              disabled={isBulkClearing || selectedPhones.size === 0}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              {isBulkClearing
+                ? "Excluindo..."
+                : `Excluir histórico (${selectedPhones.size})`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

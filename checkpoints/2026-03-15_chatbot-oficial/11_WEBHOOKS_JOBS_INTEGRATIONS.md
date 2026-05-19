@@ -28,19 +28,20 @@
 
 O projeto integra-se com **7 serviços externos** principais:
 
-| Serviço | Tipo | Status | Criticidade | Fallback |
-|---------|------|--------|-------------|----------|
-| Meta WhatsApp | Webhook (incoming) | ✅ Produção | CRITICAL | ❌ |
-| Meta Ads | Webhook (leads) | ✅ Produção | HIGH | Log + retry |
-| Stripe V1 | Webhook (subscriptions) | ✅ Produção | HIGH | Idempotent |
-| Stripe Connect | Webhook V2 (accounts) | ✅ Produção | HIGH | Idempotent |
-| Stripe Platform | Webhook (billing) | ✅ Produção | HIGH | Idempotent |
-| Firebase | Push (outgoing) | ✅ Produção | MEDIUM | Graceful skip |
-| Google Calendar | OAuth + API | ✅ Produção | MEDIUM | Auto-refresh |
-| Microsoft Calendar | OAuth + Graph API | ✅ Produção | MEDIUM | Auto-refresh |
-| Gmail SMTP | Email (handoff) | ✅ Produção | LOW | Graceful skip |
+| Serviço            | Tipo                    | Status      | Criticidade | Fallback      |
+| ------------------ | ----------------------- | ----------- | ----------- | ------------- |
+| Meta WhatsApp      | Webhook (incoming)      | ✅ Produção | CRITICAL    | ❌            |
+| Meta Ads           | Webhook (leads)         | ✅ Produção | HIGH        | Log + retry   |
+| Stripe V1          | Webhook (subscriptions) | ✅ Produção | HIGH        | Idempotent    |
+| Stripe Connect     | Webhook V2 (accounts)   | ✅ Produção | HIGH        | Idempotent    |
+| Stripe Platform    | Webhook (billing)       | ✅ Produção | HIGH        | Idempotent    |
+| Firebase           | Push (outgoing)         | ✅ Produção | MEDIUM      | Graceful skip |
+| Google Calendar    | OAuth + API             | ✅ Produção | MEDIUM      | Auto-refresh  |
+| Microsoft Calendar | OAuth + Graph API       | ✅ Produção | MEDIUM      | Auto-refresh  |
+| Gmail SMTP         | Email (handoff)         | ✅ Produção | LOW         | Graceful skip |
 
 **Características:**
+
 - Todos webhooks validam assinatura HMAC (exceto Meta Ads - opcional)
 - Deduplicação via `webhook_events` table (idempotency)
 - Multi-tenant: cada cliente tem suas próprias credenciais (Vault)
@@ -55,62 +56,64 @@ O projeto integra-se com **7 serviços externos** principais:
 ### 1.1 Endpoints
 
 #### GET /api/webhook/[clientId]
+
 **Função:** Verificação de webhook (Meta challenge)
 
 ```typescript
 // Verificação multi-tenant por cliente
-const config = await getClientConfig(clientId)
-const expectedToken = config.apiKeys.metaVerifyToken
+const config = await getClientConfig(clientId);
+const expectedToken = config.apiKeys.metaVerifyToken;
 
-if (mode === 'subscribe' && token === expectedToken) {
-  return new NextResponse(challenge, { status: 200 })
+if (mode === "subscribe" && token === expectedToken) {
+  return new NextResponse(challenge, { status: 200 });
 }
 ```
 
 **Security Features:**
+
 - ✅ Rate limit: 5 requests/hour por IP (VULN-002)
 - ✅ Token comparison character-by-character para debug
 - ✅ Logs detalhados de verificação
 
 **Rate Limiting:**
+
 ```typescript
-const identifier = `webhook-verify:${ip}`
+const identifier = `webhook-verify:${ip}`;
 // Implementado em src/lib/rate-limit.ts
 // 5 requests per hour via Upstash Redis
 ```
 
 #### POST /api/webhook/[clientId]
+
 **Função:** Processar mensagens, status e reações
 
 **Security Validation (VULN-012):**
+
 ```typescript
 // 1. Validar assinatura HMAC ANTES de processar
-const signature = request.headers.get('X-Hub-Signature-256')
-const appSecret = config.apiKeys.metaAppSecret
+const signature = request.headers.get("X-Hub-Signature-256");
+const appSecret = config.apiKeys.metaAppSecret;
 
-const expectedSignature = 'sha256=' +
-  crypto.createHmac('sha256', appSecret)
-    .update(rawBody)
-    .digest('hex')
+const expectedSignature =
+  "sha256=" +
+  crypto.createHmac("sha256", appSecret).update(rawBody).digest("hex");
 
 // Timing-safe comparison
-crypto.timingSafeEqual(
-  Buffer.from(signature),
-  Buffer.from(expectedSignature)
-)
+crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
 ```
 
 **Deduplication (VULN-006):**
+
 ```typescript
 // Redis + PostgreSQL fallback
-const dedupResult = await checkDuplicateMessage(clientId, messageId)
+const dedupResult = await checkDuplicateMessage(clientId, messageId);
 
 if (dedupResult.alreadyProcessed) {
-  return new NextResponse('DUPLICATE_MESSAGE_IGNORED', { status: 200 })
+  return new NextResponse("DUPLICATE_MESSAGE_IGNORED", { status: 200 });
 }
 
 // Mark in both systems
-await markMessageAsProcessed(clientId, messageId, metadata)
+await markMessageAsProcessed(clientId, messageId, metadata);
 ```
 
 **Message Processing Flow:**
@@ -139,40 +142,43 @@ graph TD
 **Special Cases:**
 
 1. **Status Updates:**
+
 ```typescript
 if (statuses && statuses.length > 0) {
   for (const status of statuses) {
     await processStatusUpdate({
       statusUpdate: status,
-      clientId
-    })
+      clientId,
+    });
   }
-  return new NextResponse('STATUS_UPDATE_PROCESSED', { status: 200 })
+  return new NextResponse("STATUS_UPDATE_PROCESSED", { status: 200 });
 }
 ```
 
 2. **Reactions:**
+
 ```typescript
-if (message.type === 'reaction' && message.reaction) {
+if (message.type === "reaction" && message.reaction) {
   await updateMessageReaction({
     targetWamid: reaction.message_id,
-    emoji: reaction.emoji || '',
+    emoji: reaction.emoji || "",
     reactorPhone,
-    clientId
-  })
-  return new NextResponse('REACTION_PROCESSED', { status: 200 })
+    clientId,
+  });
+  return new NextResponse("REACTION_PROCESSED", { status: 200 });
 }
 ```
 
 3. **Referrals (Meta Ads):**
+
 ```typescript
 if (message.referral) {
-  console.log('🎯 [REFERRAL] Lead came from Meta Ad:', {
+  console.log("🎯 [REFERRAL] Lead came from Meta Ad:", {
     source_type: message.referral.source_type,
     ctwa_clid: message.referral.ctwa_clid,
     ad_id: message.referral.ad_id,
-    campaign_id: message.referral.campaign_id
-  })
+    campaign_id: message.referral.campaign_id,
+  });
   // Auto-saved in message metadata
 }
 ```
@@ -180,6 +186,7 @@ if (message.referral) {
 ### 1.2 Configuration
 
 **Per-Client Settings (Vault):**
+
 ```typescript
 {
   metaVerifyToken: 'your-unique-token',     // GET verification
@@ -190,13 +197,15 @@ if (message.referral) {
 ```
 
 **Webhook URL Format:**
+
 ```
-https://chat.luisfboff.com/api/webhook/{clientId}
+https://uzzap.uzzai.com/api/webhook/{clientId}
 ```
 
 ### 1.3 Monitoring
 
 **Cache System:**
+
 ```typescript
 // In-memory cache of last 100 messages
 addWebhookMessage({
@@ -204,8 +213,8 @@ addWebhookMessage({
   timestamp: new Date().toISOString(),
   from: message.from,
   type: message.type,
-  content: extractedContent
-})
+  content: extractedContent,
+});
 
 // View: GET /api/webhook/received
 ```
@@ -221,6 +230,7 @@ addWebhookMessage({
 **URL:** `/api/webhook/meta-ads`
 
 **Subscription Types:**
+
 - `ad_account` → leadgen, campaigns, ads
 - `page` → leadgen (alternative delivery)
 
@@ -228,18 +238,18 @@ addWebhookMessage({
 
 ```typescript
 // GET - Verification
-if (mode === 'subscribe' && token === expectedToken) {
-  return new NextResponse(challenge, { status: 200 })
+if (mode === "subscribe" && token === expectedToken) {
+  return new NextResponse(challenge, { status: 200 });
 }
 
 // POST - Process events
-const signature = request.headers.get('x-hub-signature-256')
-const appSecret = process.env.META_APP_SECRET
+const signature = request.headers.get("x-hub-signature-256");
+const appSecret = process.env.META_APP_SECRET;
 
 // Optional but recommended signature verification
 if (appSecret && signature) {
   if (!verifySignature(rawBody, signature, appSecret)) {
-    return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 }
 ```
@@ -266,11 +276,12 @@ graph TD
 ```
 
 **Lead Fetching:**
+
 ```typescript
-const leadData = await fetchLeadDetails(value.leadgen_id, accessToken)
+const leadData = await fetchLeadDetails(value.leadgen_id, accessToken);
 // Returns: { id, created_time, field_data[], ad_id, campaign_id, ... }
 
-const parsedLead = parseLeadData(leadData)
+const parsedLead = parseLeadData(leadData);
 // Maps: phone_number, email, full_name, custom_fields
 ```
 
@@ -284,8 +295,9 @@ const parsedLead = parseLeadData(leadData)
 | Custom fields | `custom_fields{}` | JSON |
 
 **CRM Integration:**
+
 ```typescript
-const result = await createCardFromLead(clientId, parsedLead)
+const result = await createCardFromLead(clientId, parsedLead);
 
 // Creates:
 // 1. crm_cards entry (first column)
@@ -343,92 +355,103 @@ META_APP_SECRET=your-app-secret          # For signature verification
 **Endpoint:** `/api/stripe/webhooks/route.ts`
 
 **Eventos Tratados:**
+
 ```typescript
 switch (event.type) {
-  case 'checkout.session.completed':
-    await handleCheckoutCompleted(session, eventAccount)
-    break
+  case "checkout.session.completed":
+    await handleCheckoutCompleted(session, eventAccount);
+    break;
 
-  case 'customer.subscription.created':
-  case 'customer.subscription.updated':
-    await handleSubscriptionUpdated(subscription, eventAccount)
-    break
+  case "customer.subscription.created":
+  case "customer.subscription.updated":
+    await handleSubscriptionUpdated(subscription, eventAccount);
+    break;
 
-  case 'customer.subscription.deleted':
-    await handleSubscriptionDeleted(subscription, eventAccount)
-    break
+  case "customer.subscription.deleted":
+    await handleSubscriptionDeleted(subscription, eventAccount);
+    break;
 
-  case 'invoice.paid':
-  case 'invoice.payment_succeeded':
-    await handleInvoicePaid(invoice)
-    break
+  case "invoice.paid":
+  case "invoice.payment_succeeded":
+    await handleInvoicePaid(invoice);
+    break;
 
-  case 'invoice.payment_failed':
-    await handleInvoicePaymentFailed(invoice)
-    break
+  case "invoice.payment_failed":
+    await handleInvoicePaymentFailed(invoice);
+    break;
 
   // Billing Portal events (passive - no action)
-  case 'payment_method.attached':
-  case 'customer.updated':
-  case 'billing_portal.session.created':
-    break
+  case "payment_method.attached":
+  case "customer.updated":
+  case "billing_portal.session.created":
+    break;
 }
 ```
 
 **Deduplication:**
+
 ```typescript
 // Check if already processed
 if (await isWebhookEventAlreadyProcessed(event.id)) {
-  return NextResponse.json({ received: true, duplicate: true })
+  return NextResponse.json({ received: true, duplicate: true });
 }
 
 // Insert with unique constraint race condition handling
-const created = await createWebhookEventRecord(event.id, event.type)
+const created = await createWebhookEventRecord(event.id, event.type);
 if (!created) {
   // Lost race condition
-  return NextResponse.json({ received: true, duplicate: true })
+  return NextResponse.json({ received: true, duplicate: true });
 }
 ```
 
 **Database Updates:**
 
 1. **Subscriptions:**
+
 ```typescript
-await supabase.from('stripe_subscriptions').upsert({
-  client_id: clientId,
-  stripe_subscription_id: subscription.id,
-  stripe_price_id: stripePriceId,
-  status: subscription.status,
-  current_period_start: unixToIso(subscription.current_period_start),
-  current_period_end: unixToIso(subscription.current_period_end),
-  cancel_at_period_end: Boolean(subscription.cancel_at_period_end)
-}, { onConflict: 'stripe_subscription_id' })
+await supabase.from("stripe_subscriptions").upsert(
+  {
+    client_id: clientId,
+    stripe_subscription_id: subscription.id,
+    stripe_price_id: stripePriceId,
+    status: subscription.status,
+    current_period_start: unixToIso(subscription.current_period_start),
+    current_period_end: unixToIso(subscription.current_period_end),
+    cancel_at_period_end: Boolean(subscription.cancel_at_period_end),
+  },
+  { onConflict: "stripe_subscription_id" },
+);
 ```
 
 2. **Orders (One-time payments):**
+
 ```typescript
-await supabase.from('stripe_orders').upsert({
-  stripe_payment_intent_id: paymentIntentId,
-  stripe_session_id: session.id,
-  product_id: productId,
-  status: session.payment_status,
-  amount: session.amount_total,
-  application_fee_amount: applicationFeeAmount
-}, { onConflict: 'stripe_payment_intent_id' })
+await supabase.from("stripe_orders").upsert(
+  {
+    stripe_payment_intent_id: paymentIntentId,
+    stripe_session_id: session.id,
+    product_id: productId,
+    status: session.payment_status,
+    amount: session.amount_total,
+    application_fee_amount: applicationFeeAmount,
+  },
+  { onConflict: "stripe_payment_intent_id" },
+);
 ```
 
 **Client Mapping:**
+
 ```typescript
 // Find client by Stripe Account ID
 const findClientByStripeAccount = async (stripeAccountId: string) => {
   const { data } = await supabase
-    .from('stripe_accounts')
-    .select('client_id')
-    .eq('stripe_account_id', stripeAccountId)
-    .single()
+    .from("stripe_accounts")
+    .select("client_id")
+    .eq("stripe_account_id", stripeAccountId)
+    .single();
 
-  return data?.client_id ?? null
-}
+  return data?.client_id ?? null;
+};
 ```
 
 ### 3.3 Webhook Connect (V2 Thin Events)
@@ -438,40 +461,49 @@ const findClientByStripeAccount = async (stripeAccountId: string) => {
 **Purpose:** Monitor Connected Account onboarding status
 
 **Eventos Tratados:**
+
 ```typescript
-const isRequirementsUpdate = event.type === 'v2.core.account[requirements].updated'
-const isCapabilityUpdate = event.type.endsWith('.capability_status_updated')
+const isRequirementsUpdate =
+  event.type === "v2.core.account[requirements].updated";
+const isCapabilityUpdate = event.type.endsWith(".capability_status_updated");
 
 if (isRequirementsUpdate || isCapabilityUpdate) {
-  const stripeAccountId = getAccountIdFromEvent(event)
-  await syncAccountFromStripe(stripeAccountId)
+  const stripeAccountId = getAccountIdFromEvent(event);
+  await syncAccountFromStripe(stripeAccountId);
 }
 ```
 
 **Thin Event Pattern:**
+
 ```typescript
 // Step 1: Parse thin notification (signature verification)
-const notification = parseConnectEventNotification(rawBody, signature, webhookSecret)
+const notification = parseConnectEventNotification(
+  rawBody,
+  signature,
+  webhookSecret,
+);
 
 // Step 2: Fetch full event data
-const event = typeof notification.fetchEvent === 'function'
-  ? await notification.fetchEvent()
-  : await getStripeClient().v2.core.events.retrieve(eventId)
+const event =
+  typeof notification.fetchEvent === "function"
+    ? await notification.fetchEvent()
+    : await getStripeClient().v2.core.events.retrieve(eventId);
 
 // Step 3: Process
-await syncAccountFromStripe(stripeAccountId)
+await syncAccountFromStripe(stripeAccountId);
 ```
 
 **Account Sync:**
+
 ```typescript
 // Updates: stripe_accounts table
-await supabase.from('stripe_accounts').update({
+await supabase.from("stripe_accounts").update({
   charges_enabled: account.charges_enabled,
   payouts_enabled: account.payouts_enabled,
   requirements_currently_due: account.requirements.currently_due,
   requirements_eventually_due: account.requirements.eventually_due,
-  updated_at: new Date().toISOString()
-})
+  updated_at: new Date().toISOString(),
+});
 ```
 
 ### 3.4 Webhook Platform
@@ -481,62 +513,74 @@ await supabase.from('stripe_accounts').update({
 **Purpose:** Billing UzzAI → Clients (SaaS subscription)
 
 **Eventos Tratados:**
+
 ```typescript
 switch (event.type) {
-  case 'customer.subscription.created':
-  case 'customer.subscription.updated':
-  case 'customer.subscription.resumed':
-  case 'customer.subscription.trial_will_end':
-    await upsertPlatformSubscription(subscription)
-    break
+  case "customer.subscription.created":
+  case "customer.subscription.updated":
+  case "customer.subscription.resumed":
+  case "customer.subscription.trial_will_end":
+    await upsertPlatformSubscription(subscription);
+    break;
 
-  case 'customer.subscription.deleted':
-    await upsertPlatformSubscription(subscription, 'canceled')
-    break
+  case "customer.subscription.deleted":
+    await upsertPlatformSubscription(subscription, "canceled");
+    break;
 
-  case 'invoice.paid':
-  case 'invoice.payment_succeeded':
-    await upsertInvoiceHistory(invoice)
-    break
+  case "invoice.paid":
+  case "invoice.payment_succeeded":
+    await upsertInvoiceHistory(invoice);
+    break;
 
-  case 'invoice.payment_failed':
-    await upsertInvoiceHistory(invoice)
-    await setClientPlanStatusByCustomer(customerId, 'past_due')
-    break
+  case "invoice.payment_failed":
+    await upsertInvoiceHistory(invoice);
+    await setClientPlanStatusByCustomer(customerId, "past_due");
+    break;
 }
 ```
 
 **Database Updates:**
 
 1. **Platform Subscriptions:**
+
 ```typescript
-await supabase.from('platform_client_subscriptions').upsert({
-  client_id: clientId,
-  stripe_customer_id: stripeCustomerId,
-  stripe_subscription_id: subscription.id,
-  plan_name: 'pro',
-  status: normalizedStatus,
-  trial_end: unixToIso(subscription.trial_end),
-  current_period_end: unixToIso(currentPeriodEnd)
-}, { onConflict: 'client_id' })
+await supabase.from("platform_client_subscriptions").upsert(
+  {
+    client_id: clientId,
+    stripe_customer_id: stripeCustomerId,
+    stripe_subscription_id: subscription.id,
+    plan_name: "pro",
+    status: normalizedStatus,
+    trial_end: unixToIso(subscription.trial_end),
+    current_period_end: unixToIso(currentPeriodEnd),
+  },
+  { onConflict: "client_id" },
+);
 
 // Also update clients table
-await supabase.from('clients').update({
-  plan_name: 'pro',
-  plan_status: clientPlanStatus
-}).eq('id', clientId)
+await supabase
+  .from("clients")
+  .update({
+    plan_name: "pro",
+    plan_status: clientPlanStatus,
+  })
+  .eq("id", clientId);
 ```
 
 2. **Payment History:**
+
 ```typescript
-await supabase.from('platform_payment_history').upsert({
-  client_id: clientId,
-  stripe_invoice_id: invoice.id,
-  amount: invoice.amount_paid,
-  status: invoice.status,
-  paid_at: paidAt,
-  invoice_url: invoice.hosted_invoice_url
-}, { onConflict: 'stripe_invoice_id' })
+await supabase.from("platform_payment_history").upsert(
+  {
+    client_id: clientId,
+    stripe_invoice_id: invoice.id,
+    amount: invoice.amount_paid,
+    status: invoice.status,
+    paid_at: paidAt,
+    invoice_url: invoice.hosted_invoice_url,
+  },
+  { onConflict: "stripe_invoice_id" },
+);
 ```
 
 ### 3.5 Environment Variables
@@ -560,41 +604,45 @@ STRIPE_PLATFORM_PRODUCT_ID=prod_...
 ### 3.6 Security & Best Practices
 
 **Signature Verification:**
+
 ```typescript
-const event = constructWebhookEvent(rawBody, signature, webhookSecret)
+const event = constructWebhookEvent(rawBody, signature, webhookSecret);
 // Uses Stripe SDK's constructEvent (HMAC validation)
 ```
 
 **Idempotency:**
+
 ```typescript
 // webhook_events table with UNIQUE constraint on stripe_event_id
-const UNIQUE_VIOLATION_CODE = '23505'
+const UNIQUE_VIOLATION_CODE = "23505";
 
-const { error } = await supabase.from('webhook_events').insert({
+const { error } = await supabase.from("webhook_events").insert({
   stripe_event_id: eventId,
   event_scope: WEBHOOK_SCOPE,
   event_type: eventType,
-  status: 'processing'
-})
+  status: "processing",
+});
 
 if (error?.code === UNIQUE_VIOLATION_CODE) {
-  return { duplicate: true }
+  return { duplicate: true };
 }
 ```
 
 **Error Handling:**
+
 ```typescript
 // ALWAYS return 200 after logging error (prevent aggressive retries)
 try {
-  await processEvent(event)
-  await markWebhookEventDone(event.id)
+  await processEvent(event);
+  await markWebhookEventDone(event.id);
 } catch (error) {
-  await markWebhookEventFailed(event.id, error.message)
+  await markWebhookEventFailed(event.id, error.message);
 }
-return NextResponse.json({ received: true })
+return NextResponse.json({ received: true });
 ```
 
 **Status Tracking:**
+
 ```sql
 CREATE TABLE webhook_events (
   stripe_event_id TEXT PRIMARY KEY,
@@ -625,68 +673,73 @@ processChatbotMessage()
 ### 4.2 Implementation
 
 **Initialization (src/lib/firebase-admin.ts):**
+
 ```typescript
 const getFirebaseMessaging = (): admin.messaging.Messaging | null => {
   if (admin.apps.length > 0) {
-    return admin.messaging()
+    return admin.messaging();
   }
 
   const serviceAccount = {
     projectId: process.env.FIREBASE_PROJECT_ID,
     clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
-  }
+    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+  };
 
   admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
-  })
+    credential: admin.credential.cert(serviceAccount),
+  });
 
-  return admin.messaging()
-}
+  return admin.messaging();
+};
 ```
 
 **Push Dispatch (src/lib/push-dispatch.ts):**
+
 ```typescript
 export const sendIncomingMessagePush = async ({
   clientId,
   phone,
   customerName,
-  messagePreview
+  messagePreview,
 }: IncomingPushParams) => {
   // 1. Get active users for client
   const { data: users } = await supabase
-    .from('user_profiles')
-    .select('id')
-    .eq('client_id', clientId)
-    .eq('is_active', true)
+    .from("user_profiles")
+    .select("id")
+    .eq("client_id", clientId)
+    .eq("is_active", true);
 
   // 2. Get push tokens
   const { data: pushTokens } = await supabase
-    .from('push_tokens')
-    .select('token')
-    .in('user_id', userIds)
+    .from("push_tokens")
+    .select("token")
+    .in("user_id", userIds);
 
   // 3. Send multicast
   const response = await messaging.sendEachForMulticast({
     tokens: uniqueTokens,
     notification: {
-      title: customerName ? `Nova mensagem de ${customerName}` : 'Nova mensagem',
-      body: messagePreview.slice(0, 140)
+      title: customerName
+        ? `Nova mensagem de ${customerName}`
+        : "Nova mensagem",
+      body: messagePreview.slice(0, 140),
     },
-    data: { type: 'message', phone },
-    android: { priority: 'high' },
-    apns: { headers: { 'apns-priority': '10' } }
-  })
+    data: { type: "message", phone },
+    android: { priority: "high" },
+    apns: { headers: { "apns-priority": "10" } },
+  });
 
   // 4. Remove invalid tokens
-  await removeInvalidTokens(failedTokens)
-}
+  await removeInvalidTokens(failedTokens);
+};
 ```
 
 **Timeout Wrapper:**
+
 ```typescript
 // Non-blocking: race with 1800ms timeout
-await sendIncomingMessagePushWithTimeout(params, 1800)
+await sendIncomingMessagePushWithTimeout(params, 1800);
 ```
 
 ### 4.3 Database Schema
@@ -717,6 +770,7 @@ FIREBASE_SERVICE_ACCOUNT_JSON='{...}'
 ### 4.5 Error Handling
 
 **Graceful Degradation:**
+
 ```typescript
 // If Firebase not configured, skip silently
 if (!messaging) {
@@ -734,20 +788,23 @@ try {
 ```
 
 **Invalid Token Cleanup:**
+
 ```typescript
-const invalidTokens: string[] = []
+const invalidTokens: string[] = [];
 
 response.responses.forEach((result, index) => {
   if (!result.success) {
-    const code = result.error?.code || ''
-    if (code.includes('registration-token-not-registered') ||
-        code.includes('invalid-registration-token')) {
-      invalidTokens.push(uniqueTokens[index])
+    const code = result.error?.code || "";
+    if (
+      code.includes("registration-token-not-registered") ||
+      code.includes("invalid-registration-token")
+    ) {
+      invalidTokens.push(uniqueTokens[index]);
     }
   }
-})
+});
 
-await supabase.from('push_tokens').delete().in('token', invalidTokens)
+await supabase.from("push_tokens").delete().in("token", invalidTokens);
 ```
 
 ---
@@ -778,98 +835,104 @@ sequenceDiagram
 ```
 
 **OAuth URL Generation:**
+
 ```typescript
 const getGoogleCalendarOAuthURL = (state: string): string => {
   const params = new URLSearchParams({
     client_id: config.clientId,
     redirect_uri: config.redirectUri,
-    response_type: 'code',
-    scope: 'https://www.googleapis.com/auth/calendar',
-    access_type: 'offline',  // Get refresh token
-    prompt: 'consent'        // Always show consent (ensures refresh token)
-  })
+    response_type: "code",
+    scope: "https://www.googleapis.com/auth/calendar",
+    access_type: "offline", // Get refresh token
+    prompt: "consent", // Always show consent (ensures refresh token)
+  });
 
-  return `https://accounts.google.com/o/oauth2/v2/auth?${params}`
-}
+  return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+};
 ```
 
 **Token Exchange:**
+
 ```typescript
 const { accessToken, refreshToken, userEmail, expiresIn } =
-  await exchangeGoogleCodeForTokens(code)
+  await exchangeGoogleCodeForTokens(code);
 
 // Store in Vault
-const secretId = await storeCalendarTokens(clientId, 'google', {
+const secretId = await storeCalendarTokens(clientId, "google", {
   accessToken,
   refreshToken,
-  userEmail
-})
+  userEmail,
+});
 ```
 
 ### 5.2 API Client
 
 **Auto-Refresh Pattern:**
+
 ```typescript
 const withRefresh = async <T>(fn: () => Promise<T>): Promise<T> => {
   try {
-    return await fn()
+    return await fn();
   } catch (err: any) {
     if (err?.code === 401 || err?.status === 401) {
-      console.log('[GoogleCalendar] Token expired, refreshing...')
-      await doRefresh()
-      return await fn()  // Retry
+      console.log("[GoogleCalendar] Token expired, refreshing...");
+      await doRefresh();
+      return await fn(); // Retry
     }
-    throw err
+    throw err;
   }
-}
+};
 ```
 
 **Refresh Implementation:**
+
 ```typescript
 const doRefresh = async (): Promise<void> => {
-  const { accessToken: newToken } =
-    await refreshGoogleAccessToken(refreshToken)
+  const { accessToken: newToken } = await refreshGoogleAccessToken(
+    refreshToken,
+  );
 
-  oauth2Client.setCredentials({ access_token: newToken })
+  oauth2Client.setCredentials({ access_token: newToken });
 
   // Update Vault
-  await updateCalendarToken(secretId, newToken)
-}
+  await updateCalendarToken(secretId, newToken);
+};
 ```
 
 **API Operations:**
+
 ```typescript
 // List Events
 const events = await calendar.events.list({
-  calendarId: 'primary',
+  calendarId: "primary",
   timeMin: start.toISOString(),
   timeMax: end.toISOString(),
   singleEvents: true,
-  orderBy: 'startTime',
-  maxResults: 50
-})
+  orderBy: "startTime",
+  maxResults: 50,
+});
 
 // Create Event
 const event = await calendar.events.insert({
-  calendarId: 'primary',
+  calendarId: "primary",
   requestBody: {
     summary: title,
     description,
     start: { dateTime: startDateTime },
     end: { dateTime: endDateTime },
-    attendees: attendees.map(email => ({ email }))
-  }
-})
+    attendees: attendees.map((email) => ({ email })),
+  },
+});
 
 // Check Availability
 const busyResponse = await calendar.freebusy.query({
   requestBody: {
     timeMin: start.toISOString(),
     timeMax: end.toISOString(),
-    items: [{ id: 'primary' }]
-  }
-})
-const available = busyResponse.data.calendars?.['primary']?.busy?.length === 0
+    items: [{ id: "primary" }],
+  },
+});
+const available = busyResponse.data.calendars?.["primary"]?.busy?.length === 0;
 ```
 
 ### 5.3 Environment Variables
@@ -883,18 +946,20 @@ NEXT_PUBLIC_URL=https://uzzapp.uzzai.com.br  # For redirect URI
 ### 5.4 Security
 
 **State Parameter (CSRF Protection):**
+
 ```typescript
 // Generate: random:clientId
-const state = generateCalendarOAuthState(clientId)
+const state = generateCalendarOAuthState(clientId);
 
 // Verify callback:
-const extractedClientId = extractClientIdFromState(state)
+const extractedClientId = extractClientIdFromState(state);
 if (!extractedClientId) {
-  return new NextResponse('Invalid state', { status: 400 })
+  return new NextResponse("Invalid state", { status: 400 });
 }
 ```
 
 **Token Storage:**
+
 - Access tokens in Vault (encrypted)
 - Refresh tokens in Vault (encrypted)
 - Tokens tied to `clients.google_calendar_token_secret_id`
@@ -908,46 +973,49 @@ if (!extractedClientId) {
 ### 6.1 OAuth Flow
 
 **URL Generation:**
+
 ```typescript
 const getMicrosoftCalendarOAuthURL = (state: string): string => {
   const params = new URLSearchParams({
     client_id: config.clientId,
     redirect_uri: config.redirectUri,
-    response_type: 'code',
-    scope: 'Calendars.ReadWrite offline_access User.Read',
-    response_mode: 'query',
-    prompt: 'consent'
-  })
+    response_type: "code",
+    scope: "Calendars.ReadWrite offline_access User.Read",
+    response_mode: "query",
+    prompt: "consent",
+  });
 
-  return `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?${params}`
-}
+  return `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?${params}`;
+};
 ```
 
 **Token Exchange:**
+
 ```typescript
 const tokenRes = await fetch(
   `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`,
   {
-    method: 'POST',
+    method: "POST",
     body: new URLSearchParams({
       client_id: config.clientId,
       client_secret: config.clientSecret,
       code,
-      grant_type: 'authorization_code',
-      scope: 'Calendars.ReadWrite offline_access User.Read'
-    })
-  }
-)
+      grant_type: "authorization_code",
+      scope: "Calendars.ReadWrite offline_access User.Read",
+    }),
+  },
+);
 
 // Fetch user email
-const userInfo = await fetch('https://graph.microsoft.com/v1.0/me', {
-  headers: { Authorization: `Bearer ${accessToken}` }
-})
+const userInfo = await fetch("https://graph.microsoft.com/v1.0/me", {
+  headers: { Authorization: `Bearer ${accessToken}` },
+});
 ```
 
 ### 6.2 Graph API Client
 
 **Implementation Pattern:**
+
 ```typescript
 const graphFetch = async (url: string, options?: RequestInit) => {
   const doFetch = async () => {
@@ -955,59 +1023,60 @@ const graphFetch = async (url: string, options?: RequestInit) => {
       ...options,
       headers: {
         Authorization: `Bearer ${currentToken}`,
-        'Content-Type': 'application/json'
-      }
-    })
+        "Content-Type": "application/json",
+      },
+    });
 
     if (!res.ok) {
-      const error = new Error(`Graph API error: ${res.status}`)
-      error.status = res.status
-      throw error
+      const error = new Error(`Graph API error: ${res.status}`);
+      error.status = res.status;
+      throw error;
     }
 
-    return res.json()
-  }
+    return res.json();
+  };
 
   try {
-    return await doFetch()
+    return await doFetch();
   } catch (err: any) {
     if (err?.status === 401) {
-      await doRefresh()
-      return await doFetch()  // Retry
+      await doRefresh();
+      return await doFetch(); // Retry
     }
-    throw err
+    throw err;
   }
-}
+};
 ```
 
 **API Operations:**
+
 ```typescript
 // List Events (Calendar View)
 const params = new URLSearchParams({
   startDateTime: start.toISOString(),
   endDateTime: end.toISOString(),
-  $orderby: 'start/dateTime',
-  $top: '50',
-  $select: 'id,subject,start,end,bodyPreview,location,attendees'
-})
+  $orderby: "start/dateTime",
+  $top: "50",
+  $select: "id,subject,start,end,bodyPreview,location,attendees",
+});
 
 const data = await graphFetch(
-  `https://graph.microsoft.com/v1.0/me/calendarView?${params}`
-)
+  `https://graph.microsoft.com/v1.0/me/calendarView?${params}`,
+);
 
 // Create Event
-await graphFetch('https://graph.microsoft.com/v1.0/me/events', {
-  method: 'POST',
+await graphFetch("https://graph.microsoft.com/v1.0/me/events", {
+  method: "POST",
   body: JSON.stringify({
     subject: title,
-    start: { dateTime: startDateTime, timeZone: 'UTC' },
-    end: { dateTime: endDateTime, timeZone: 'UTC' },
-    attendees: attendees.map(email => ({
+    start: { dateTime: startDateTime, timeZone: "UTC" },
+    end: { dateTime: endDateTime, timeZone: "UTC" },
+    attendees: attendees.map((email) => ({
       emailAddress: { address: email },
-      type: 'required'
-    }))
-  })
-})
+      type: "required",
+    })),
+  }),
+});
 ```
 
 ### 6.3 Environment Variables
@@ -1021,13 +1090,13 @@ NEXT_PUBLIC_URL=https://uzzapp.uzzai.com.br
 
 ### 6.4 Differences from Google
 
-| Feature | Google | Microsoft |
-|---------|--------|-----------|
-| SDK | `googleapis` package | Raw `fetch` calls |
-| API Base | `https://www.googleapis.com` | `https://graph.microsoft.com` |
-| Auth Endpoint | `accounts.google.com` | `login.microsoftonline.com` |
-| Datetime Format | ISO with `Z` suffix | ISO without suffix + timezone field |
-| Tenant | Single | Multi-tenant support |
+| Feature         | Google                       | Microsoft                           |
+| --------------- | ---------------------------- | ----------------------------------- |
+| SDK             | `googleapis` package         | Raw `fetch` calls                   |
+| API Base        | `https://www.googleapis.com` | `https://graph.microsoft.com`       |
+| Auth Endpoint   | `accounts.google.com`        | `login.microsoftonline.com`         |
+| Datetime Format | ISO with `Z` suffix          | ISO without suffix + timezone field |
+| Tenant          | Single                       | Multi-tenant support                |
 
 ---
 
@@ -1039,64 +1108,66 @@ NEXT_PUBLIC_URL=https://uzzapp.uzzai.com.br
 
 ```typescript
 // Triggered by AI tool call
-if (toolCall.function.name === 'transferir_atendimento') {
+if (toolCall.function.name === "transferir_atendimento") {
   await handleHumanHandoff({
     phone,
     customerName,
     config,
-    reason: toolCall.function.arguments?.motivo
-  })
+    reason: toolCall.function.arguments?.motivo,
+  });
 }
 ```
 
 **Handoff Flow:**
+
 ```typescript
 export const handleHumanHandoff = async ({
   phone,
   customerName,
   config,
-  reason
+  reason,
 }: HandleHumanHandoffInput) => {
   // 1. Update customer status (CRITICAL)
-  await query(
-    'UPDATE clientes_whatsapp SET status = $1 WHERE telefone = $2',
-    ['transferido', phone]
-  )
+  await query("UPDATE clientes_whatsapp SET status = $1 WHERE telefone = $2", [
+    "transferido",
+    phone,
+  ]);
 
   // 2. Send email (OPTIONAL - graceful fail)
   try {
-    const notificationEmail = config.notificationEmail || process.env.GMAIL_USER
+    const notificationEmail =
+      config.notificationEmail || process.env.GMAIL_USER;
 
     if (notificationEmail && process.env.GMAIL_APP_PASSWORD) {
       await sendEmail(
         notificationEmail,
-        'Novo Lead aguardando contato',
-        `Nome: ${customerName}\nTelefone: ${phone}\n${reason || ''}`
-      )
+        "Novo Lead aguardando contato",
+        `Nome: ${customerName}\nTelefone: ${phone}\n${reason || ""}`,
+      );
     }
   } catch (emailError) {
     // Don't throw - handoff should succeed even if email fails
   }
-}
+};
 ```
 
 ### 7.2 SMTP Configuration
 
 ```typescript
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  service: "gmail",
   auth: {
     user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD  // NOT regular password
-  }
-})
+    pass: process.env.GMAIL_APP_PASSWORD, // NOT regular password
+  },
+});
 
 await transporter.sendMail({
   from: gmailUser,
   to,
   subject,
-  html
-})
+  html,
+});
 ```
 
 ### 7.3 Environment Variables
@@ -1107,6 +1178,7 @@ GMAIL_APP_PASSWORD=abcd efgh ijkl mnop  # 16-char app password
 ```
 
 **Generate App Password:**
+
 1. Google Account → Security → 2-Step Verification
 2. App passwords → Generate
 3. Copy 16-character password
@@ -1115,7 +1187,7 @@ GMAIL_APP_PASSWORD=abcd efgh ijkl mnop  # 16-char app password
 
 ```typescript
 // Priority: client config > env fallback
-const notificationEmail = config.notificationEmail || process.env.GMAIL_USER
+const notificationEmail = config.notificationEmail || process.env.GMAIL_USER;
 ```
 
 ---
@@ -1129,100 +1201,109 @@ const notificationEmail = config.notificationEmail || process.env.GMAIL_USER
 **Purpose:** Send WhatsApp messages scheduled in advance
 
 **Trigger Options:**
+
 1. **Vercel Cron** (recommended for production)
 2. **GitHub Actions** (alternative)
 3. **Manual POST** (testing)
 
 **Implementation:**
+
 ```typescript
-export const maxDuration = 60  // 60 seconds max
+export const maxDuration = 60; // 60 seconds max
 
 export async function POST(request: NextRequest) {
   // 1. Verify authorization
-  const authHeader = request.headers.get('authorization')
-  const cronSecret = process.env.CRON_SECRET
+  const authHeader = request.headers.get("authorization");
+  const cronSecret = process.env.CRON_SECRET;
 
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   // 2. Fetch pending messages
   const { data: pendingMessages } = await supabase
-    .from('scheduled_messages')
-    .select(`
+    .from("scheduled_messages")
+    .select(
+      `
       id, client_id, phone, message_type, content,
       client:clients!scheduled_messages_client_id_fkey(
         whatsapp_phone_id, whatsapp_token
       )
-    `)
-    .eq('status', 'pending')
-    .lte('scheduled_for', now)
-    .limit(50)
+    `,
+    )
+    .eq("status", "pending")
+    .lte("scheduled_for", now)
+    .limit(50);
 
   // 3. Send via WhatsApp API
   for (const msg of pendingMessages) {
     const response = await fetch(
       `https://graph.facebook.com/v22.0/${phoneNumberId}/messages`,
       {
-        method: 'POST',
+        method: "POST",
         headers: {
           Authorization: `Bearer ${whatsappToken}`,
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          messaging_product: 'whatsapp',
+          messaging_product: "whatsapp",
           to: String(msg.phone),
           type: msg.message_type,
-          text: { body: msg.content }
-        })
-      }
-    )
+          text: { body: msg.content },
+        }),
+      },
+    );
 
     // 4. Update status
-    await supabase.from('scheduled_messages').update({
-      status: 'sent',
-      sent_at: new Date().toISOString(),
-      wamid: whatsappResponse.messages[0].id
-    }).eq('id', msg.id)
+    await supabase
+      .from("scheduled_messages")
+      .update({
+        status: "sent",
+        sent_at: new Date().toISOString(),
+        wamid: whatsappResponse.messages[0].id,
+      })
+      .eq("id", msg.id);
 
     // 5. Log to messages table
-    await supabase.from('messages').insert({
+    await supabase.from("messages").insert({
       client_id: msg.client_id,
       phone: String(msg.phone),
-      direction: 'outgoing',
+      direction: "outgoing",
       content: msg.content,
       wamid: wamid,
-      status: 'sent'
-    })
+      status: "sent",
+    });
   }
 }
 ```
 
 **Health Check:**
+
 ```typescript
 export async function GET() {
   const { count: pendingCount } = await supabase
-    .from('scheduled_messages')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'pending')
+    .from("scheduled_messages")
+    .select("*", { count: "exact", head: true })
+    .eq("status", "pending");
 
   const { count: dueCount } = await supabase
-    .from('scheduled_messages')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'pending')
-    .lte('scheduled_for', new Date().toISOString())
+    .from("scheduled_messages")
+    .select("*", { count: "exact", head: true })
+    .eq("status", "pending")
+    .lte("scheduled_for", new Date().toISOString());
 
   return NextResponse.json({
-    status: 'healthy',
+    status: "healthy",
     pending_messages: pendingCount,
-    due_messages: dueCount
-  })
+    due_messages: dueCount,
+  });
 }
 ```
 
 ### 8.2 Vercel Cron Configuration
 
 **vercel.json:**
+
 ```json
 {
   "crons": [
@@ -1276,70 +1357,71 @@ CREATE INDEX idx_scheduled_messages_status ON scheduled_messages(status, schedul
 **Library:** `@upstash/ratelimit` + `@upstash/redis`
 
 **Limiters:**
+
 ```typescript
 // VULN-002: Webhook verification (prevent brute force)
 export const webhookVerifyLimiter = new Ratelimit({
   redis,
-  limiter: Ratelimit.slidingWindow(5, '1 h'),  // 5 requests/hour
+  limiter: Ratelimit.slidingWindow(5, "1 h"), // 5 requests/hour
   analytics: true,
-  prefix: 'ratelimit:webhook:verify'
-})
+  prefix: "ratelimit:webhook:verify",
+});
 
 // VULN-017: General API (per user)
 export const apiUserLimiter = new Ratelimit({
   redis,
-  limiter: Ratelimit.slidingWindow(100, '1 m'),  // 100 requests/min
+  limiter: Ratelimit.slidingWindow(100, "1 m"), // 100 requests/min
   analytics: true,
-  prefix: 'ratelimit:api:user'
-})
+  prefix: "ratelimit:api:user",
+});
 
 // VULN-017: Admin API (more strict)
 export const apiAdminLimiter = new Ratelimit({
   redis,
-  limiter: Ratelimit.slidingWindow(50, '1 m'),
+  limiter: Ratelimit.slidingWindow(50, "1 m"),
   analytics: true,
-  prefix: 'ratelimit:api:admin'
-})
+  prefix: "ratelimit:api:admin",
+});
 
 // VULN-017: IP-based backstop
 export const ipLimiter = new Ratelimit({
   redis,
-  limiter: Ratelimit.slidingWindow(1000, '1 m'),
+  limiter: Ratelimit.slidingWindow(1000, "1 m"),
   analytics: true,
-  prefix: 'ratelimit:ip'
-})
+  prefix: "ratelimit:ip",
+});
 ```
 
 ### 9.2 Usage Patterns
 
 **Manual Check:**
+
 ```typescript
 const rateLimitResponse = await checkRateLimit(
   request,
   webhookVerifyLimiter,
-  identifier
-)
+  identifier,
+);
 
 if (rateLimitResponse) {
-  return rateLimitResponse  // 429 Too Many Requests
+  return rateLimitResponse; // 429 Too Many Requests
 }
 ```
 
 **Wrapper (Decorator):**
+
 ```typescript
-export const GET = withRateLimit(
-  apiUserLimiter,
-  async (request) => {
-    return NextResponse.json({ data: 'protected' })
-  }
-)
+export const GET = withRateLimit(apiUserLimiter, async (request) => {
+  return NextResponse.json({ data: "protected" });
+});
 ```
 
 **IP-based Quick Wrapper:**
+
 ```typescript
 export const POST = withIpRateLimit(async (request) => {
   // Handler code
-})
+});
 ```
 
 ### 9.3 Response Headers
@@ -1365,17 +1447,17 @@ UPSTASH_REDIS_REST_TOKEN=AXX...
 ```typescript
 // If Redis not configured, allow all requests
 if (!redis) {
-  console.warn('[rate-limit] Redis not configured, skipping')
-  return null
+  console.warn("[rate-limit] Redis not configured, skipping");
+  return null;
 }
 
 // If Redis fails at runtime, allow request
 try {
-  const result = await limiter.limit(identifier)
+  const result = await limiter.limit(identifier);
   // ...
 } catch (error) {
-  console.error('[rate-limit] Redis error, allowing request')
-  return null
+  console.error("[rate-limit] Redis error, allowing request");
+  return null;
 }
 ```
 
@@ -1403,7 +1485,7 @@ META_VERIFY_TOKEN=your-unique-token
 META_APP_SECRET=your-app-secret
 
 # Webhook base URL
-WEBHOOK_BASE_URL=https://chat.luisfboff.com
+WEBHOOK_BASE_URL=https://uzzap.uzzai.com
 
 # =============================================================================
 # META ADS (OPTIONAL - Lead capture)
@@ -1501,24 +1583,25 @@ NEXT_PUBLIC_ENV=production
 ```typescript
 interface ClientAPIKeys {
   // WhatsApp
-  metaAccessToken: string
-  metaPhoneNumberId: string
-  metaVerifyToken: string
-  metaAppSecret: string
+  metaAccessToken: string;
+  metaPhoneNumberId: string;
+  metaVerifyToken: string;
+  metaAppSecret: string;
 
   // AI
-  openaiApiKey: string
-  groqApiKey: string
+  openaiApiKey: string;
+  groqApiKey: string;
 
   // Calendar
-  googleCalendarToken?: string      // Stored separately
-  microsoftCalendarToken?: string   // Stored separately
+  googleCalendarToken?: string; // Stored separately
+  microsoftCalendarToken?: string; // Stored separately
 }
 ```
 
 **Access Pattern:**
+
 ```typescript
-const config = await getClientConfig(clientId)
+const config = await getClientConfig(clientId);
 // Returns: { apiKeys, notificationEmail, ... }
 ```
 
@@ -1529,37 +1612,35 @@ const config = await getClientConfig(clientId)
 ### 11.1 Webhook Signature Verification
 
 **Meta WhatsApp (HMAC SHA-256):**
-```typescript
-const signature = request.headers.get('X-Hub-Signature-256')
-const appSecret = config.apiKeys.metaAppSecret
 
-const expectedSignature = 'sha256=' +
-  crypto.createHmac('sha256', appSecret)
-    .update(rawBody)
-    .digest('hex')
+```typescript
+const signature = request.headers.get("X-Hub-Signature-256");
+const appSecret = config.apiKeys.metaAppSecret;
+
+const expectedSignature =
+  "sha256=" +
+  crypto.createHmac("sha256", appSecret).update(rawBody).digest("hex");
 
 // Timing-safe comparison
 if (
   signatureBuffer.length !== expectedBuffer.length ||
   !crypto.timingSafeEqual(signatureBuffer, expectedBuffer)
 ) {
-  return new NextResponse('Invalid signature', { status: 403 })
+  return new NextResponse("Invalid signature", { status: 403 });
 }
 ```
 
 **Stripe (SDK-based):**
+
 ```typescript
-const event = stripe.webhooks.constructEvent(
-  rawBody,
-  signature,
-  webhookSecret
-)
+const event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
 // Throws error if invalid
 ```
 
 ### 11.2 Idempotency
 
 **Database-Backed:**
+
 ```sql
 CREATE TABLE webhook_events (
   stripe_event_id TEXT PRIMARY KEY,  -- or message_id
@@ -1573,50 +1654,55 @@ CREATE UNIQUE INDEX idx_webhook_events_event_id
 ```
 
 **Pattern:**
+
 ```typescript
 // Check
 if (await isAlreadyProcessed(eventId)) {
-  return { duplicate: true }
+  return { duplicate: true };
 }
 
 // Insert (race-safe)
 try {
-  await insert({ eventId, status: 'processing' })
+  await insert({ eventId, status: "processing" });
 } catch (error) {
-  if (error.code === '23505') {  // Unique violation
-    return { duplicate: true }
+  if (error.code === "23505") {
+    // Unique violation
+    return { duplicate: true };
   }
-  throw error
+  throw error;
 }
 
 // Process
-await handleEvent(event)
-await update({ eventId, status: 'processed' })
+await handleEvent(event);
+await update({ eventId, status: "processed" });
 ```
 
 ### 11.3 Rate Limiting
 
 **Per-Endpoint Limits:**
 
-| Endpoint | Limit | Identifier | Prevention |
-|----------|-------|------------|------------|
-| `GET /api/webhook/[clientId]` | 5/hour | IP | Brute force token |
-| `POST /api/*` (user) | 100/min | User ID | API abuse |
-| `POST /api/admin/*` | 50/min | User ID | Admin abuse |
-| `*` (global) | 1000/min | IP | DDoS |
+| Endpoint                      | Limit    | Identifier | Prevention        |
+| ----------------------------- | -------- | ---------- | ----------------- |
+| `GET /api/webhook/[clientId]` | 5/hour   | IP         | Brute force token |
+| `POST /api/*` (user)          | 100/min  | User ID    | API abuse         |
+| `POST /api/admin/*`           | 50/min   | User ID    | Admin abuse       |
+| `*` (global)                  | 1000/min | IP         | DDoS              |
 
 ### 11.4 Sensitive Data Handling
 
 **Vault Storage:**
+
 - API keys encrypted at rest (Supabase Vault)
 - Calendar tokens encrypted separately
 - No credentials in code or logs
 
 **CSRF Protection:**
+
 - OAuth state parameter: `{random}:{clientId}`
 - Cryptographically secure random (32 bytes)
 
 **Token Rotation:**
+
 - Calendar access tokens auto-refresh on 401
 - Refresh tokens stored in Vault
 - Invalid push tokens auto-deleted
@@ -1628,6 +1714,7 @@ await update({ eventId, status: 'processed' })
 ### 12.1 Webhook Cache
 
 **In-Memory Debug Cache:**
+
 ```typescript
 // Circular buffer of last 100 webhook messages
 addWebhookMessage({
@@ -1636,8 +1723,8 @@ addWebhookMessage({
   from: message.from,
   type: message.type,
   content: extractedContent,
-  raw: body
-})
+  raw: body,
+});
 
 // View: GET /api/webhook/received
 ```
@@ -1645,6 +1732,7 @@ addWebhookMessage({
 ### 12.2 Database Logs
 
 **Webhook Events:**
+
 ```sql
 SELECT
   stripe_event_id,
@@ -1660,12 +1748,14 @@ LIMIT 50;
 ```
 
 **Push Notifications:**
+
 ```sql
 -- No built-in tracking table
 -- Logs via console only
 ```
 
 **Scheduled Messages:**
+
 ```sql
 SELECT
   id,
@@ -1682,6 +1772,7 @@ ORDER BY scheduled_for DESC;
 ### 12.3 Debug Endpoints
 
 **Webhook Health:**
+
 ```bash
 GET /api/webhook/received
 # Returns: { messages: [...], count: 100 }
@@ -1691,6 +1782,7 @@ GET /api/cron/scheduled-messages
 ```
 
 **Config Verification:**
+
 ```bash
 GET /api/debug/webhook-config/[clientId]
 # Returns client webhook config (sanitized)
@@ -1699,17 +1791,18 @@ GET /api/debug/webhook-config/[clientId]
 ### 12.4 Console Logs
 
 **Structured Logging:**
-```typescript
-console.log('🎯 [META-ADS-WEBHOOK] Event received')
-console.log('  Leadgen ID:', value.leadgen_id)
-console.log('  Client:', client.name)
 
-console.log('[push] Multicast processed', {
+```typescript
+console.log("🎯 [META-ADS-WEBHOOK] Event received");
+console.log("  Leadgen ID:", value.leadgen_id);
+console.log("  Client:", client.name);
+
+console.log("[push] Multicast processed", {
   clientId,
   tokens: uniqueTokens.length,
   successCount: response.successCount,
-  failureCount: response.failureCount
-})
+  failureCount: response.failureCount,
+});
 ```
 
 ---
@@ -1718,39 +1811,43 @@ console.log('[push] Multicast processed', {
 
 ### Integration Status Matrix
 
-| Integration | Webhook | OAuth | API Calls | Signature | Dedup | Rate Limit | Fallback |
-|------------|---------|-------|-----------|-----------|-------|------------|----------|
-| Meta WhatsApp | ✅ | ❌ | ✅ | ✅ HMAC | ✅ Redis+DB | ✅ 5/h | ❌ |
-| Meta Ads | ✅ | ❌ | ✅ | ⚠️ Optional | ✅ DB | ❌ | ✅ Log |
-| Stripe V1 | ✅ | ❌ | ✅ | ✅ SDK | ✅ DB | ❌ | ✅ 200 |
-| Stripe Connect | ✅ | ❌ | ✅ | ✅ SDK | ✅ DB | ❌ | ✅ 200 |
-| Stripe Platform | ✅ | ❌ | ✅ | ✅ SDK | ✅ DB | ❌ | ✅ 200 |
-| Firebase | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ✅ Skip |
-| Google Calendar | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ 401 |
-| Microsoft Calendar | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ 401 |
-| Gmail | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ✅ Skip |
+| Integration        | Webhook | OAuth | API Calls | Signature   | Dedup       | Rate Limit | Fallback |
+| ------------------ | ------- | ----- | --------- | ----------- | ----------- | ---------- | -------- |
+| Meta WhatsApp      | ✅      | ❌    | ✅        | ✅ HMAC     | ✅ Redis+DB | ✅ 5/h     | ❌       |
+| Meta Ads           | ✅      | ❌    | ✅        | ⚠️ Optional | ✅ DB       | ❌         | ✅ Log   |
+| Stripe V1          | ✅      | ❌    | ✅        | ✅ SDK      | ✅ DB       | ❌         | ✅ 200   |
+| Stripe Connect     | ✅      | ❌    | ✅        | ✅ SDK      | ✅ DB       | ❌         | ✅ 200   |
+| Stripe Platform    | ✅      | ❌    | ✅        | ✅ SDK      | ✅ DB       | ❌         | ✅ 200   |
+| Firebase           | ❌      | ❌    | ✅        | ❌          | ❌          | ❌         | ✅ Skip  |
+| Google Calendar    | ❌      | ✅    | ✅        | ❌          | ❌          | ❌         | ✅ 401   |
+| Microsoft Calendar | ❌      | ✅    | ✅        | ❌          | ❌          | ❌         | ✅ 401   |
+| Gmail              | ❌      | ❌    | ✅        | ❌          | ❌          | ❌         | ✅ Skip  |
 
 ### Key Takeaways
 
 **Security:**
+
 - All webhooks validate signatures (except Meta Ads - optional)
 - Rate limiting on critical endpoints (webhook verify, APIs)
 - Multi-tenant credential isolation via Vault
 - Timing-safe comparisons for secrets
 
 **Reliability:**
+
 - Idempotency via database unique constraints
 - Graceful degradation for non-critical services
 - Auto-refresh for expired calendar tokens
 - Always return 200 to prevent aggressive retries
 
 **Scalability:**
+
 - Redis for message batching (30s default)
 - Upstash Redis for distributed rate limiting
 - Firebase multicast for push (1000 tokens/batch)
 - Scheduled jobs with 60s max duration
 
 **Multi-Tenancy:**
+
 - Per-client webhook URLs (`/api/webhook/[clientId]`)
 - Vault-stored credentials per client
 - Client-specific notification emails
@@ -1759,16 +1856,19 @@ console.log('[push] Multicast processed', {
 ### Missing Components
 
 **No cron configuration found:**
+
 - `vercel.json` not present in project
 - Scheduled messages endpoint exists but not triggered automatically
 - Recommendation: Add Vercel Cron or GitHub Actions workflow
 
 **No centralized monitoring:**
+
 - Webhook events logged to database
 - Push notifications only console logs
 - Recommendation: Add Sentry or DataDog integration
 
 **No retry mechanism:**
+
 - Webhooks always return 200 (prevent retries)
 - Failed scheduled messages marked but not auto-retried
 - Recommendation: Add exponential backoff retry queue

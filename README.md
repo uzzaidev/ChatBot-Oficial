@@ -1,6 +1,6 @@
 # UzzApp / ChatBot Oficial
 
-Aplicação full-stack para atendimento, automação de CRM e chatbot de WhatsApp com IA. O projeto roda em Next.js, usa Supabase como banco e camada de segurança, integra a Meta WhatsApp Cloud API e mantém fluxos multi-tenant com credenciais por cliente.
+Aplicação full-stack para atendimento, automação de CRM e chatbot de WhatsApp com IA. O projeto roda em Next.js, usa Supabase como banco e camada de segurança, integra a Meta WhatsApp Cloud API e mantém fluxos multi-tenant com credenciais por cliente. V3
 
 Produção atual: `https://uzzapp.uzzai.com.br`
 

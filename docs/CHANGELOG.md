@@ -10,7 +10,9 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 ## [Não Lançado] - Em Desenvolvimento
 
 ### Fixed
+
 - **Busca de Documentos RAG Não Encontrava Resultados** (2025-12-04)
+
   - Corrigido bug crítico onde busca semântica retornava 0 resultados apesar de documentos existirem
   - Causa raiz: Filtro de tipo de documento muito restritivo rejeitava resultados válidos
     - Exemplo: Imagem marcada como "catalog" era rejeitada ao buscar tipo "image"
@@ -33,6 +35,7 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
   - Arquivos: `src/handlers/handleAudioToolCall.ts`, `src/flows/chatbotFlow.ts`, `src/nodes/generateAIResponse.ts`
 
 ### Added
+
 - **Logs de Debug Aprimorados para Busca de Documentos** (2025-12-04)
   - Adicionado validação de magnitude do embedding (deve ser ≈ 1.0)
   - Adicionado logging de resposta RPC completa
@@ -41,6 +44,7 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
   - Facilita diagnóstico de problemas futuros em busca vetorial
 
 ### Changed
+
 - **Arquitetura TTS Refatorada** (2025-12-04)
   - Tool `enviar_resposta_em_audio` não requer mais argumentos
   - Lógica de "quando usar áudio" movida 100% para prompt do sistema (configurável via frontend)
@@ -56,6 +60,7 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 Sistema completo de busca semântica e envio automático de documentos/imagens da base de conhecimento diretamente via WhatsApp.
 
 #### Added
+
 - **Tool `buscar_documento`** - AI pode buscar e enviar documentos autonomamente quando solicitado pelo usuário
 - **Node `searchDocumentInKnowledge`** - Busca semântica com pgvector, agrupamento por arquivo e ranking por similaridade
 - **Node `handleDocumentSearchToolCall`** - Processa tool call e envia documentos via WhatsApp API
@@ -79,6 +84,7 @@ Sistema completo de busca semântica e envio automático de documentos/imagens d
 - **Endpoint de teste** - `/api/test/nodes/search-document` para validação isolada
 
 #### Changed
+
 - Upload API (`/api/documents/upload`) agora salva arquivo original no Storage antes do chunking
 - `processDocumentWithChunking` inclui metadata do arquivo original em cada chunk
 - `listDocuments` retorna `originalFileUrl` para cada documento
@@ -86,6 +92,7 @@ Sistema completo de busca semântica e envio automático de documentos/imagens d
 - API de configuração de nodes (`/api/flow/nodes/[nodeId]`) suporta `search_document`
 
 #### Technical Details
+
 - **Pipeline de execução**:
   1. USER: "me envia o catálogo"
   2. NODE 12 (Generate AI Response): AI detecta necessidade
@@ -102,6 +109,7 @@ Sistema completo de busca semântica e envio automático de documentos/imagens d
   - `20251203000002_add_original_file_metadata.sql` - Novas colunas + indexes
 
 #### Documentation
+
 - `docs/features/knowledge-media/PLANO_ENVIO_DOCUMENTOS_RAG.md` - Plano completo da implementação (5 fases)
 - `docs/features/knowledge-media/OPERACAO_ENVIO_DOCUMENTOS.md` - Guia operacional completo:
   - Fluxo visual do sistema
@@ -113,6 +121,7 @@ Sistema completo de busca semântica e envio automático de documentos/imagens d
   - Tabela de erros (onde aparecem e significado)
 
 #### Fixes
+
 - pdf-parse import corrigido para compatibilidade TypeScript em serverless
 - Unescaped quotes em JSX substituídas por `&quot;`
 - Build de produção completo sem erros
@@ -126,6 +135,7 @@ Sistema completo de busca semântica e envio automático de documentos/imagens d
 Sistema completo de notificações no navegador para novas mensagens.
 
 #### Added
+
 - **Browser Notifications API** integrada ao dashboard
 - Notificações aparecem apenas para conversas NÃO abertas no momento
 - Sistema de singleton callback para evitar múltiplas instâncias
@@ -136,16 +146,19 @@ Sistema completo de notificações no navegador para novas mensagens.
 - Click na notificação redireciona para a conversa
 
 #### Changed
+
 - Hook `useGlobalRealtimeNotifications` com padrão singleton para callback global
 - `NotificationManager` busca nome do cliente de forma inteligente (API + fallback Supabase)
 - Refs utilizadas para evitar loops infinitos de useEffect
 
 #### Fixed
+
 - Sistema de unread messages usando coluna `last_read_at` do banco de dados
 - Removido estado manual de unread count (100% realtime agora)
 - Limpeza completa de console.logs desnecessários de debug
 
 #### Technical Details
+
 - Singleton pattern: `globalCallback` em nível de módulo
 - Phone matching com 3 variações (55xxx, xxx, 55555xxx)
 - Extração de JSON de mensagens n8n (`{"type":"human","content":"..."}`)
@@ -153,6 +166,7 @@ Sistema completo de notificações no navegador para novas mensagens.
 - Manifest.json criado para identificação PWA
 
 #### Documentation
+
 - Logs de debug removidos de 4 arquivos principais (useGlobalRealtimeNotifications, NotificationManager, useRealtimeConversations, useRealtimeMessages)
 
 ---
@@ -164,6 +178,7 @@ Sistema completo de notificações no navegador para novas mensagens.
 Sistema SaaS completo com controle de acesso baseado em roles, autenticação completa e painel administrativo.
 
 #### Added
+
 - Sistema de autenticação com Supabase Auth
 - RBAC (Role-Based Access Control) com 3 níveis:
   - `admin`: Acesso total ao sistema e gestão de todos os clientes
@@ -181,12 +196,14 @@ Sistema SaaS completo com controle de acesso baseado em roles, autenticação co
 - Isolamento de dados via Row Level Security (RLS)
 
 #### Changed
+
 - Removido `DEFAULT_CLIENT_ID` de todas as API routes de produção
 - Dashboard agora requer login obrigatório
 - Configurações do Vault agora por usuário autenticado
 - Settings page com controles de permissão por role
 
 #### Security
+
 - Implementação completa de RLS em 8 tabelas principais
 - Políticas de segurança granulares por role
 - Auditoria de ações administrativas
@@ -197,6 +214,7 @@ Sistema SaaS completo com controle de acesso baseado em roles, autenticação co
 ## [2.5.2] - 2025-11-22
 
 ### Fixed
+
 - **Audio Recording**: Removido logging desnecessário de chunks de áudio e criação de arquivos
 - Melhorias de performance no componente `AudioRecorder`
 
@@ -205,10 +223,12 @@ Sistema SaaS completo com controle de acesso baseado em roles, autenticação co
 ## [2.5.1] - 2025-11-22
 
 ### Added
+
 - Função `delete_secret` no Supabase Vault para remoção de segredos
 - Coluna `media_metadata` na tabela `messages` para metadata de mídia
 
 ### Fixed
+
 - Função `update_secret` alternativa para compatibilidade com Vault
 - Normalização de valores de status nas tabelas
 - Campos de human handoff (`handoff_status`, `agent_id`, etc.)
@@ -222,6 +242,7 @@ Sistema SaaS completo com controle de acesso baseado em roles, autenticação co
 Sistema de configuração dinâmica do bot com suporte a múltiplas funcionalidades.
 
 #### Added
+
 - Tabela `bot_configurations` para configurações por cliente
 - **Phase 1 - Continuity & States**:
   - Node `checkContinuity.ts` para detecção de conversas novas vs continuações
@@ -237,6 +258,7 @@ Sistema de configuração dinâmica do bot com suporte a múltiplas funcionalida
   - Integração com agentes especializados
 
 #### Documentation
+
 - `BOT_CONFIGURATION_INFRASTRUCTURE.md`: Infraestrutura do sistema
 - `BOT_CONFIGURATION_USAGE.md`: Guia de uso completo
 - `BOT_CONFIGURATION_IMPLEMENTATION_COMPLETE.md`: Detalhes de implementação
@@ -251,21 +273,25 @@ Sistema de configuração dinâmica do bot com suporte a múltiplas funcionalida
 Migração completa para Supabase Vault sem fallbacks de `.env`.
 
 #### Added
+
 - Suporte exclusivo a Supabase Vault para todas as credenciais
 - Settings page (`/dashboard/settings`) para configuração de API keys
 - Mensagens de erro claras quando credenciais não estão no Vault
 
 #### Changed
+
 - **BREAKING**: Removido fallback para variáveis `.env`
 - **BREAKING**: Webhook legacy (`/api/webhook`) retorna HTTP 410 Gone
 - Webhook multi-tenant (`/api/webhook/[clientId]`) como padrão
 - Todas as credenciais devem ser configuradas via Dashboard
 
 #### Removed
+
 - Fallbacks para `OPENAI_API_KEY`, `GROQ_API_KEY`, etc. de `.env`
 - Suporte ao webhook sem `clientId` explícito
 
 #### Documentation
+
 - `VAULT_ONLY_MIGRATION.md`: Guia completo de migração
 
 ---
@@ -277,6 +303,7 @@ Migração completa para Supabase Vault sem fallbacks de `.env`.
 Migração completa do n8n para Next.js com arquitetura serverless.
 
 #### Added
+
 - Pipeline completo de 12 nodes em TypeScript:
   1. `filterStatusUpdates`: Filtro de status updates
   2. `parseMessage`: Parser de mensagens WhatsApp
@@ -292,11 +319,13 @@ Migração completa do n8n para Next.js com arquitetura serverless.
   12. `sendWhatsAppMessage`: Envio via Meta API
 
 #### Changed
+
 - Todos os fluxos n8n migrados para código TypeScript
 - Arquitetura de nodes modular e testável
 - Processamento serverless no Vercel
 
 #### Documentation
+
 - `CHATBOT_FLOW_ARCHITECTURE.md`: Arquitetura completa dos 12 nodes
 - `CHATBOT_FLOW_INTEGRATION.md`: Guia de integração
 - `setup/ARCHITECTURE.md`: Documentação técnica detalhada
@@ -310,6 +339,7 @@ Migração completa do n8n para Next.js com arquitetura serverless.
 Notificações em tempo real de novas mensagens no dashboard.
 
 #### Added
+
 - Indicadores visuais para conversas com novas mensagens:
   - Fundo azul (bg-blue-50)
   - Texto em negrito
@@ -320,11 +350,13 @@ Notificações em tempo real de novas mensagens no dashboard.
 - Estado de "unread" por conversa
 
 #### Changed
+
 - Componente `ConversationList` refatorado com estado de unread
 - Auto-remoção de indicador ao selecionar conversa
 - Timeout de 2s para animação de pulso
 
 #### Documentation
+
 - `REALTIME_NOTIFICATIONS.md`: Documentação técnica (160 linhas)
 - `VISUAL_GUIDE_REALTIME.md`: Guia visual (206 linhas)
 
@@ -337,6 +369,7 @@ Notificações em tempo real de novas mensagens no dashboard.
 Implementação de arquitetura multi-tenant com isolamento de dados.
 
 #### Added
+
 - Webhook por cliente: `/api/webhook/[clientId]`
 - Função helper `getClientIdFromSession()` para autenticação
 - RLS (Row Level Security) em 8 tabelas:
@@ -352,11 +385,13 @@ Implementação de arquitetura multi-tenant com isolamento de dados.
 - Trigger `handle_new_user()` para auto-criação de perfil
 
 #### Changed
+
 - API routes de teste agora requerem `clientId` explícito
 - Node `checkOrCreateCustomer` com `clientId` obrigatório
 - Backward compatibility mantida em webhook principal
 
 #### Documentation
+
 - `migrations/RLS.sql`: 450+ linhas de políticas RLS
 - `IMPLEMENTATION_SUMMARY.md`: Resumo completo da migração
 - `SECURITY_FIX_CLIENT_ID.md`: Correções de segurança
@@ -367,12 +402,14 @@ Implementação de arquitetura multi-tenant com isolamento de dados.
 ## [1.3.0] - 2025-10-27
 
 ### Added
+
 - Supabase Vault para armazenamento seguro de API keys
 - Helper `getClientConfigFromVault()` para recuperação de secrets
 - Tabela `vault.decrypted_secrets` com pgsodium
 - Encryption at rest de todas as credenciais
 
 #### Documentation
+
 - `VAULT_MEDIA_FIX.md`: Correção de mídia com Vault
 
 ---
@@ -380,6 +417,7 @@ Implementação de arquitetura multi-tenant com isolamento de dados.
 ## [1.2.0] - 2025-10-26
 
 ### Added
+
 - Analytics dashboard com métricas de uso:
   - Total de mensagens (enviadas/recebidas)
   - Conversas ativas
@@ -389,6 +427,7 @@ Implementação de arquitetura multi-tenant com isolamento de dados.
 - Tracking de custos por mensagem em `usage_logs`
 
 #### Documentation
+
 - `ANALYTICS_GUIDE.md`: Guia completo de analytics
 - `OPENAI_USAGE_TRACKING.md`: Tracking de custos OpenAI
 
@@ -397,12 +436,14 @@ Implementação de arquitetura multi-tenant com isolamento de dados.
 ## [1.1.0] - 2025-10-25
 
 ### Added
+
 - Sistema de pricing configurável por cliente
 - Tabela `pricing_configurations` com modelos de cobrança
 - Cálculo automático de custos baseado em tokens
 - Dashboard de custos e receitas
 
 #### Documentation
+
 - `PRICING_CONFIG_GUIDE.md`: Guia de configuração
 - `PRICING_IMPLEMENTATION_SUMMARY.md`: Detalhes de implementação
 
@@ -415,6 +456,7 @@ Implementação de arquitetura multi-tenant com isolamento de dados.
 Primeiro lançamento do dashboard Next.js integrado com n8n backend.
 
 #### Added
+
 - Dashboard Next.js 14 com App Router
 - Listagem de conversas em tempo real
 - Visualização de histórico de mensagens
@@ -432,10 +474,12 @@ Primeiro lançamento do dashboard Next.js integrado com n8n backend.
   - `/api/messages/[phone]`: Mensagens por telefone
 
 #### Changed
+
 - Integração híbrida: n8n (processamento) + Next.js (UI)
 - Leitura direta do Supabase (sem proxy n8n)
 
 #### Documentation
+
 - `README.md`: Documentação completa do projeto
 - `QUICK_START.md`: Guia de instalação 5 minutos
 - `CLAUDE.md`: Guia arquitetural para Claude
@@ -450,6 +494,7 @@ Primeiro lançamento do dashboard Next.js integrado com n8n backend.
 Sistema funcionando 100% em n8n (antes da migração Next.js).
 
 #### Features (n8n)
+
 - Webhook Meta WhatsApp
 - Processamento de mensagens com OpenAI
 - RAG com Supabase Vector Store
@@ -458,6 +503,7 @@ Sistema funcionando 100% em n8n (antes da migração Next.js).
 - Persistência em PostgreSQL
 
 #### Documentation
+
 - `historical/plano_de_arquitetura_saa_s_whats_app_resumao_n_8_n_→_next.md`: Plano completo de migração n8n → Next.js
 - `historical/WORKFLOW-LOGIC.md`: Lógica do workflow n8n
 
@@ -466,16 +512,19 @@ Sistema funcionando 100% em n8n (antes da migração Next.js).
 ## Convenções de Versionamento
 
 ### Major (X.0.0)
+
 - Mudanças que quebram compatibilidade (breaking changes)
 - Migrações de arquitetura completas (n8n → Next.js, Vault-only, RBAC)
 - Novas phases do projeto
 
 ### Minor (0.X.0)
+
 - Novas funcionalidades significativas
 - Novos sistemas (Analytics, Pricing, Configurations)
 - Features que não quebram compatibilidade
 
 ### Patch (0.0.X)
+
 - Bug fixes
 - Melhorias de performance
 - Ajustes de documentação
@@ -486,6 +535,7 @@ Sistema funcionando 100% em n8n (antes da migração Next.js).
 ## Roadmap - Phase 5 (Futuro) 📋
 
 ### Planejado
+
 - [ ] Sistema de filas avançado (BullMQ com dashboard e DLQ)
 - [ ] Integração com CRMs (Pipedrive, HubSpot)
 - [ ] Análise de sentimento em mensagens
@@ -497,6 +547,7 @@ Sistema funcionando 100% em n8n (antes da migração Next.js).
 - [ ] Suporte a WhatsApp Business oficial (não Cloud API)
 
 ### Concluído
+
 - [✅] Webhooks customizados por cliente (implementado em v1.4.0)
 - [✅] Sistema de filas para processamento assíncrono (Redis batching implementado em v2.0.0)
 
@@ -505,6 +556,7 @@ Sistema funcionando 100% em n8n (antes da migração Next.js).
 ## Notas de Migração
 
 ### De v2.x para v3.0.0 (RBAC)
+
 1. Executar migrations de RLS: `supabase db push`
 2. Criar usuários no Supabase Auth
 3. Associar usuários a clientes em `user_profiles`
@@ -512,12 +564,14 @@ Sistema funcionando 100% em n8n (antes da migração Next.js).
 5. Remover `DEFAULT_CLIENT_ID` de scripts personalizados
 
 ### De v1.x para v2.0.0 (Next.js Full)
+
 1. Migrar configurações de n8n para Dashboard
 2. Atualizar webhooks Meta para `/api/webhook/[clientId]`
 3. Configurar credenciais no Supabase Vault
 4. Desabilitar workflows n8n (opcional, para backup)
 
 ### De v0.x para v1.0.0 (Dashboard)
+
 1. Instalar dependências Next.js: `npm install`
 2. Configurar `.env.local` com credenciais Supabase
 3. Executar migrations: `supabase db push`
@@ -527,7 +581,7 @@ Sistema funcionando 100% em n8n (antes da migração Next.js).
 
 ## Links Úteis
 
-- **Produção**: https://chat.luisfboff.com
+- **Produção**: https://uzzap.uzzai.com
 - **Repositório**: https://github.com/uzzaidev/ChatBot-Oficial
 - **Documentação Completa**: Ver pasta `/docs`
 - **Issues**: https://github.com/uzzaidev/ChatBot-Oficial/issues
@@ -537,6 +591,7 @@ Sistema funcionando 100% em n8n (antes da migração Next.js).
 ## Manutenção deste Arquivo
 
 Este CHANGELOG deve ser atualizado sempre que:
+
 - Uma nova feature for implementada (minor)
 - Um bug significativo for corrigido (patch)
 - Houver uma mudança de arquitetura (major)
@@ -544,24 +599,30 @@ Este CHANGELOG deve ser atualizado sempre que:
 - Breaking changes forem introduzidas
 
 **Template para novas entradas**:
+
 ```markdown
 ## [X.Y.Z] - YYYY-MM-DD
 
 ### Added
+
 - Nova funcionalidade A
 - Nova funcionalidade B
 
 ### Changed
+
 - Mudança em X
 - Mudança em Y
 
 ### Fixed
+
 - Correção de bug A
 - Correção de bug B
 
 ### Removed
+
 - Funcionalidade removida A
 
 ### Security
+
 - Correção de segurança A
 ```

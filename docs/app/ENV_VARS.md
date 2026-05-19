@@ -23,6 +23,7 @@ Guia completo para configurar environment variables em builds mobile Capacitor.
 ### Por Que Mobile É Diferente?
 
 **Web (Next.js com servidor):**
+
 ```bash
 # .env.local é lido em runtime pelo servidor Node.js
 npm run dev
@@ -30,6 +31,7 @@ npm run dev
 ```
 
 **Mobile (Build estático):**
+
 ```bash
 # Build gera arquivos HTML/JS/CSS estáticos em out/
 npm run build:mobile
@@ -40,7 +42,7 @@ npm run build:mobile
 
 ```typescript
 // Código rodando no mobile
-console.log(process.env.NEXT_PUBLIC_SUPABASE_URL)
+console.log(process.env.NEXT_PUBLIC_SUPABASE_URL);
 // Output: undefined ❌ (se não configurado corretamente)
 ```
 
@@ -50,12 +52,12 @@ console.log(process.env.NEXT_PUBLIC_SUPABASE_URL)
 
 ## Soluções Disponíveis
 
-| Solução | Complexidade | Segurança | Status |
-|---------|--------------|-----------|--------|
-| **Opção 1: Doppler** | Média | ⭐⭐⭐ | ✅ Implementado (RECOMENDADO) |
-| **Opção 2: dotenv-cli** | Média | ⭐⭐⭐ | ⚠️ Alternativa/Fallback |
-| **Opção 3: Hardcode em config** | Baixa | ⭐ | ⚠️ Apenas não-secretas |
-| **Opção 4: Plugin Preferences** | Alta | ⭐⭐ | 🔄 Para runtime dinâmico |
+| Solução                         | Complexidade | Segurança | Status                        |
+| ------------------------------- | ------------ | --------- | ----------------------------- |
+| **Opção 1: Doppler**            | Média        | ⭐⭐⭐    | ✅ Implementado (RECOMENDADO) |
+| **Opção 2: dotenv-cli**         | Média        | ⭐⭐⭐    | ⚠️ Alternativa/Fallback       |
+| **Opção 3: Hardcode em config** | Baixa        | ⭐        | ⚠️ Apenas não-secretas        |
+| **Opção 4: Plugin Preferences** | Alta         | ⭐⭐      | 🔄 Para runtime dinâmico      |
 
 ---
 
@@ -64,6 +66,7 @@ console.log(process.env.NEXT_PUBLIC_SUPABASE_URL)
 **Status**: ✅ Implementado e Ativo
 
 [Doppler](https://www.doppler.com/) é a plataforma de gerenciamento de secrets **atualmente utilizada** no projeto para:
+
 - Centralizar environment variables (dev, staging, production)
 - Rotacionar secrets automaticamente
 - Sincronizar variáveis entre equipe
@@ -76,7 +79,7 @@ O projeto **já usa Doppler** nos scripts de build:
 ```json
 {
   "scripts": {
-    "build:mobile": "node scripts/build-mobile.js",  // Usa Doppler prd internamente
+    "build:mobile": "node scripts/build-mobile.js", // Usa Doppler prd internamente
     "build:mobile:stg": "doppler run --config stg -- cross-env CAPACITOR_BUILD=true next build",
     "build:mobile:prd": "doppler run --config prd -- cross-env CAPACITOR_BUILD=true next build"
   }
@@ -88,16 +91,19 @@ O projeto **já usa Doppler** nos scripts de build:
 ### Como Usar
 
 **Build desenvolvimento:**
+
 ```bash
 npm run build:mobile
 ```
 
 **Build staging:**
+
 ```bash
 npm run build:mobile:stg
 ```
 
 **Build produção:**
+
 ```bash
 npm run build:mobile:prd
 ```
@@ -107,6 +113,7 @@ npm run build:mobile:prd
 > 📚 **Guia Completo:** Para instruções detalhadas de instalação no Windows, veja [DOPPLER_SETUP_WINDOWS.md](../../setup/DOPPLER_SETUP_WINDOWS.md)
 
 1. **Instalar Doppler CLI:**
+
    ```bash
    # Windows (PowerShell como Admin)
    iwr https://cli.doppler.com/install.ps1 | iex
@@ -118,18 +125,21 @@ npm run build:mobile:prd
    **⚠️ IMPORTANTE:** Após instalar, feche e reabra o PowerShell para recarregar o PATH.
 
 2. **Verificar instalação:**
+
    ```bash
    doppler --version
    # Deve mostrar: doppler version x.x.x
    ```
 
 3. **Autenticar:**
+
    ```bash
    doppler login
    # Abrirá o navegador para autenticação
    ```
 
 4. **Configurar projeto:**
+
    ```bash
    cd "C:\Projetos Uzz.Ai\10  - ChatBot-Oficial-main\ChatBot-Oficial"
    doppler setup
@@ -138,6 +148,7 @@ npm run build:mobile:prd
    ```
 
 5. **Verificar variáveis:**
+
    ```bash
    doppler secrets
    # Deve mostrar todas as variáveis (NEXT_PUBLIC_SUPABASE_URL, etc.)
@@ -201,10 +212,11 @@ NEXT_PUBLIC_META_PHONE_NUMBER_ID=899639703222013
 
 # App Config (OPCIONAL)
 NEXT_PUBLIC_APP_ENV=production
-NEXT_PUBLIC_API_BASE_URL=https://chat.luisfboff.com
+NEXT_PUBLIC_API_BASE_URL=https://uzzap.uzzai.com
 ```
 
 **IMPORTANTE:**
+
 - Use `NEXT_PUBLIC_*` prefix (Next.js requirement)
 - Nunca commitar `.env.mobile` com secrets reais (add ao `.gitignore`)
 
@@ -217,6 +229,7 @@ npm install --save-dev dotenv-cli
 ```
 
 **Verificação:**
+
 ```bash
 npx dotenv --version
 # Esperado: dotenv-cli@x.x.x
@@ -237,6 +250,7 @@ npx dotenv --version
 ```
 
 **O que mudou:**
+
 - `dotenv -e .env.mobile` carrega variáveis ANTES de `next build`
 - Variáveis ficam disponíveis durante compilation
 
@@ -250,15 +264,16 @@ npm run cap:sync
 ```
 
 **Verificação no código:**
+
 ```typescript
 // src/app/page.tsx
-'use client'
+"use client";
 
 export default function Home() {
-  console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
+  console.log("Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
   // Deve mostrar a URL real
 
-  return <div>Environment vars configuradas!</div>
+  return <div>Environment vars configuradas!</div>;
 }
 ```
 
@@ -272,6 +287,7 @@ export default function Home() {
 4. Verifique console: URL do Supabase deve aparecer
 
 **Checklist:**
+
 - [ ] `.env.mobile` criado com variáveis corretas
 - [ ] `dotenv-cli` instalado
 - [ ] `package.json` modificado
@@ -302,12 +318,12 @@ Para variáveis **não-secretas** (ex: `APP_NAME`, `APP_VERSION`).
 
 ```typescript
 // capacitor.config.ts
-import { CapacitorConfig } from '@capacitor/cli'
+import { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: 'com.chatbot.app',
-  appName: 'ChatBot Oficial',
-  webDir: 'out',
+  appId: "com.chatbot.app",
+  appName: "ChatBot Oficial",
+  webDir: "out",
   plugins: {
     // Configurações de plugins podem acessar via CapacitorConfig
   },
@@ -315,29 +331,32 @@ const config: CapacitorConfig = {
   android: {
     buildOptions: {
       // Variáveis podem ser passadas aqui
-    }
-  }
-}
+    },
+  },
+};
 
-export default config
+export default config;
 ```
 
 **Acesso no código:**
-```typescript
-import { Capacitor } from '@capacitor/core'
 
-const config = Capacitor.getConfig()
-console.log(config.appId) // 'com.chatbot.app'
+```typescript
+import { Capacitor } from "@capacitor/core";
+
+const config = Capacitor.getConfig();
+console.log(config.appId); // 'com.chatbot.app'
 ```
 
 **Limitação**: Não suporta `NEXT_PUBLIC_*` diretamente (apenas configs Capacitor).
 
 ### Quando usar:
+
 - App ID, nome, versão
 - URLs públicas (não-secretas)
 - Feature flags
 
 ### NÃO use para:
+
 - ❌ API keys secretas
 - ❌ Tokens de autenticação
 - ❌ Credenciais de banco de dados
@@ -361,34 +380,34 @@ npx cap sync
 
 ```typescript
 // src/lib/config.ts
-'use client'
+"use client";
 
-import { Preferences } from '@capacitor/preferences'
-import { Capacitor } from '@capacitor/core'
+import { Preferences } from "@capacitor/preferences";
+import { Capacitor } from "@capacitor/core";
 
 export const initializeConfig = async () => {
-  if (!Capacitor.isNativePlatform()) return
+  if (!Capacitor.isNativePlatform()) return;
 
   // Salvar variáveis no primeiro startup
   await Preferences.set({
-    key: 'SUPABASE_URL',
-    value: 'https://your-project.supabase.co'
-  })
+    key: "SUPABASE_URL",
+    value: "https://your-project.supabase.co",
+  });
 
   await Preferences.set({
-    key: 'SUPABASE_ANON_KEY',
-    value: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
-  })
-}
+    key: "SUPABASE_ANON_KEY",
+    value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  });
+};
 
 export const getConfig = async (key: string): Promise<string | null> => {
   if (!Capacitor.isNativePlatform()) {
-    return process.env[`NEXT_PUBLIC_${key}`] || null
+    return process.env[`NEXT_PUBLIC_${key}`] || null;
   }
 
-  const { value } = await Preferences.get({ key })
-  return value
-}
+  const { value } = await Preferences.get({ key });
+  return value;
+};
 ```
 
 ---
@@ -397,29 +416,29 @@ export const getConfig = async (key: string): Promise<string | null> => {
 
 ```typescript
 // src/lib/supabase/client.ts
-'use client'
+"use client";
 
-import { createClient } from '@supabase/supabase-js'
-import { getConfig } from '@/lib/config'
-import { useState, useEffect } from 'react'
+import { createClient } from "@supabase/supabase-js";
+import { getConfig } from "@/lib/config";
+import { useState, useEffect } from "react";
 
 export const useSupabaseClient = () => {
-  const [client, setClient] = useState<any>(null)
+  const [client, setClient] = useState<any>(null);
 
   useEffect(() => {
     const initClient = async () => {
-      const url = await getConfig('SUPABASE_URL')
-      const key = await getConfig('SUPABASE_ANON_KEY')
+      const url = await getConfig("SUPABASE_URL");
+      const key = await getConfig("SUPABASE_ANON_KEY");
 
       if (url && key) {
-        setClient(createClient(url, key))
+        setClient(createClient(url, key));
       }
-    }
-    initClient()
-  }, [])
+    };
+    initClient();
+  }, []);
 
-  return client
-}
+  return client;
+};
 ```
 
 ---
@@ -437,6 +456,7 @@ export const useSupabaseClient = () => {
 - ⚠️ Variáveis devem ser setadas na primeira execução
 
 ### Quando usar:
+
 - Configurações por usuário (multi-tenant)
 - Features que mudam frequentemente
 - A/B testing
@@ -473,15 +493,18 @@ export const useSupabaseClient = () => {
 ### Onde Obter Credenciais
 
 **Supabase:**
+
 1. Acesse: [https://app.supabase.com/project/YOUR_PROJECT/settings/api](https://app.supabase.com/project/YOUR_PROJECT/settings/api)
 2. Copie "Project URL" → `NEXT_PUBLIC_SUPABASE_URL`
 3. Copie "anon public" → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
 **OpenAI:**
+
 1. Acesse: [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys)
 2. Crie nova API key → `NEXT_PUBLIC_OPENAI_API_KEY`
 
 **Groq:**
+
 1. Acesse: [https://console.groq.com/keys](https://console.groq.com/keys)
 2. Crie nova API key → `NEXT_PUBLIC_GROQ_API_KEY`
 
@@ -492,17 +515,20 @@ export const useSupabaseClient = () => {
 Se você **não tem acesso ao Doppler** (ex: desenvolvedor externo, testes locais), pode usar `.env.mobile`:
 
 **1. Criar arquivo:**
+
 ```bash
 cp .env.mobile.example .env.mobile
 # Editar .env.mobile com valores reais
 ```
 
 **2. Modificar script temporariamente:**
+
 ```json
 "build:mobile": "dotenv -e .env.mobile -- cross-env CAPACITOR_BUILD=true next build"
 ```
 
 **3. Instalar dotenv-cli:**
+
 ```bash
 npm install --save-dev dotenv-cli
 ```
@@ -510,11 +536,13 @@ npm install --save-dev dotenv-cli
 **⚠️ IMPORTANTE:** Não commitar `.env.mobile` (já está no `.gitignore`).
 
 **Quando usar `.env.mobile`:**
+
 - ✅ Testes locais rápidos
 - ✅ Desenvolvimento offline
 - ✅ Desenvolvedor sem acesso Doppler
 
 **Quando usar Doppler:**
+
 - ✅ Build CI/CD (GitHub Actions, Vercel)
 - ✅ Deploy produção
 - ✅ Equipe com múltiplos devs
@@ -566,6 +594,7 @@ NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY=...  # PERIGO!
 ### Segurança
 
 **Variáveis no Mobile São Públicas:**
+
 - JavaScript bundle pode ser decompilado
 - Qualquer pessoa pode inspecionar o código
 - **NUNCA** inclua:
@@ -574,11 +603,13 @@ NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY=...  # PERIGO!
   - Private API keys
 
 **Use apenas variáveis "públicas":**
+
 - ✅ `NEXT_PUBLIC_SUPABASE_ANON_KEY` (RLS protege dados)
 - ✅ API keys com rate limiting
 - ✅ URLs públicas
 
 **Backend protege secrets:**
+
 - Secrets sensíveis ficam no Vercel (backend)
 - Mobile chama APIs backend autenticadas
 - Backend usa `SUPABASE_SERVICE_ROLE_KEY` internamente
@@ -593,42 +624,47 @@ Adicione validação no app startup:
 
 ```typescript
 // src/app/layout.tsx
-'use client'
+"use client";
 
-import { useEffect } from 'react'
+import { useEffect } from "react";
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   useEffect(() => {
-    validateEnvVars()
-  }, [])
+    validateEnvVars();
+  }, []);
 
-  return <html>{children}</html>
+  return <html>{children}</html>;
 }
 
 const validateEnvVars = () => {
   const required = {
-    'NEXT_PUBLIC_SUPABASE_URL': process.env.NEXT_PUBLIC_SUPABASE_URL,
-    'NEXT_PUBLIC_SUPABASE_ANON_KEY': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    'NEXT_PUBLIC_OPENAI_API_KEY': process.env.NEXT_PUBLIC_OPENAI_API_KEY,
-    'NEXT_PUBLIC_GROQ_API_KEY': process.env.NEXT_PUBLIC_GROQ_API_KEY
-  }
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    NEXT_PUBLIC_OPENAI_API_KEY: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+    NEXT_PUBLIC_GROQ_API_KEY: process.env.NEXT_PUBLIC_GROQ_API_KEY,
+  };
 
   const missing = Object.entries(required)
     .filter(([_, value]) => !value)
-    .map(([key]) => key)
+    .map(([key]) => key);
 
   if (missing.length > 0) {
-    const message = `❌ Missing environment variables:\n${missing.join('\n')}`
-    console.error(message)
-    alert(message)
-    throw new Error(message)
+    const message = `❌ Missing environment variables:\n${missing.join("\n")}`;
+    console.error(message);
+    alert(message);
+    throw new Error(message);
   }
 
-  console.log('✅ All environment variables configured')
-}
+  console.log("✅ All environment variables configured");
+};
 ```
 
 **Resultado:**
+
 - Build falha se vars faltando (evita deploy quebrado)
 - Alert no app se vars undefined
 
@@ -637,6 +673,7 @@ const validateEnvVars = () => {
 ### Testar no Mobile
 
 1. Build com variáveis:
+
 ```bash
 npm run build:mobile
 npm run cap:sync
@@ -646,15 +683,17 @@ npm run cap:open:android
 2. Abra Chrome DevTools (`chrome://inspect`)
 
 3. No console, verifique:
+
 ```javascript
-console.log(process.env.NEXT_PUBLIC_SUPABASE_URL)
+console.log(process.env.NEXT_PUBLIC_SUPABASE_URL);
 // Esperado: https://your-project.supabase.co
 
-console.log(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.substring(0, 20))
+console.log(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.substring(0, 20));
 // Esperado: eyJhbGciOiJIUzI1NiIsInR...
 ```
 
 **Checklist:**
+
 - [ ] Variáveis não retornam `undefined`
 - [ ] App conecta ao Supabase sem erros
 - [ ] Sem alerts de "Missing environment variables"
@@ -663,15 +702,15 @@ console.log(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.substring(0, 20))
 
 ## Troubleshooting
 
-| Problema | Causa | Solução |
-|----------|-------|---------|
-| `process.env.VAR` retorna `undefined` | Variável sem `NEXT_PUBLIC_` prefix | Renomear para `NEXT_PUBLIC_VAR` |
-| Variáveis não atualizam | Cache de build | Delete `out/`, rebuild: `npm run build:mobile` |
-| `dotenv-cli` não funciona | Não instalado ou script errado | Verificar `package.json` e reinstalar `dotenv-cli` |
-| Erro "Cannot read .env.mobile" | Arquivo não existe ou caminho errado | Criar `.env.mobile` na raiz do projeto |
-| Build falha ao carregar .env | Syntax error no arquivo | Verificar formato: `KEY=value` (sem espaços) |
-| App funciona na web, não no mobile | `.env.local` não usado no build mobile | Usar `.env.mobile` com `dotenv -e .env.mobile` |
-| Variáveis vazias após build | Arquivo `.env.mobile` vazio | Preencher variáveis, rebuild |
+| Problema                              | Causa                                  | Solução                                            |
+| ------------------------------------- | -------------------------------------- | -------------------------------------------------- |
+| `process.env.VAR` retorna `undefined` | Variável sem `NEXT_PUBLIC_` prefix     | Renomear para `NEXT_PUBLIC_VAR`                    |
+| Variáveis não atualizam               | Cache de build                         | Delete `out/`, rebuild: `npm run build:mobile`     |
+| `dotenv-cli` não funciona             | Não instalado ou script errado         | Verificar `package.json` e reinstalar `dotenv-cli` |
+| Erro "Cannot read .env.mobile"        | Arquivo não existe ou caminho errado   | Criar `.env.mobile` na raiz do projeto             |
+| Build falha ao carregar .env          | Syntax error no arquivo                | Verificar formato: `KEY=value` (sem espaços)       |
+| App funciona na web, não no mobile    | `.env.local` não usado no build mobile | Usar `.env.mobile` com `dotenv -e .env.mobile`     |
+| Variáveis vazias após build           | Arquivo `.env.mobile` vazio            | Preencher variáveis, rebuild                       |
 
 ---
 
@@ -726,7 +765,7 @@ NEXT_PUBLIC_OPENAI_API_KEY=sk-proj-REAL_KEY_HERE
 NEXT_PUBLIC_GROQ_API_KEY=gsk_REAL_KEY_HERE
 NEXT_PUBLIC_META_PHONE_NUMBER_ID=899639703222013
 NEXT_PUBLIC_APP_ENV=production
-NEXT_PUBLIC_API_BASE_URL=https://chat.luisfboff.com
+NEXT_PUBLIC_API_BASE_URL=https://uzzap.uzzai.com
 ```
 
 ---

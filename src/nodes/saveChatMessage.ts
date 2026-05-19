@@ -1,3 +1,4 @@
+import { isContactSilenced } from '@/lib/contact-privacy'
 import { createServiceRoleClient } from '@/lib/supabase'
 import type { StoredMediaMetadata } from '@/lib/types'
 
@@ -26,6 +27,11 @@ export interface SaveChatMessageResult {
 
 export const saveChatMessage = async (input: SaveChatMessageInput): Promise<SaveChatMessageResult> => {
   const { phone, message, type, clientId, mediaMetadata, wamid, status, errorDetails } = input
+
+  // Privacy gate: contatos com save_history=false não persistem nada
+  if (await isContactSilenced(clientId, phone)) {
+    return { inserted: false, skippedDuplicate: false }
+  }
 
   // LangChain-compatible message format stored in JSONB column
   const messageJson = {

@@ -55,17 +55,17 @@ export function DashboardLayoutClient({
       maxWidth: 320,
     });
 
-  // Se estiver em qualquer rota de conversas, chat ou contatos, renderiza apenas children
+  // Se estiver em qualquer rota de conversas ou chat, renderiza apenas children
   // (essas páginas têm seu próprio layout/sidebar full-screen)
   const isFullScreenRoute =
     pathname.startsWith("/dashboard/conversations") ||
-    pathname.startsWith("/dashboard/chat") ||
-    pathname.startsWith("/dashboard/contacts");
+    pathname.startsWith("/dashboard/chat");
 
   // Rotas que usam layout fluid (sem padding/max-width) mas mantêm a sidebar
   const isFluidRoute =
     pathname.startsWith("/dashboard/traces") ||
-    pathname.startsWith("/dashboard/crm");
+    pathname.startsWith("/dashboard/crm") ||
+    pathname.startsWith("/dashboard/contacts");
 
   // Detecta se estamos em desktop (md+) para aplicar marginLeft corretamente
   useEffect(() => {

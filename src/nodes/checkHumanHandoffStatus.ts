@@ -7,6 +7,11 @@ export interface CheckHumanHandoffInput {
 
 export interface CheckHumanHandoffOutput {
   skipBot: boolean
+  /**
+   * Quando true, além de pular o bot, o flow deve evitar persistir
+   * mensagens (contato silenciado via `metadata.save_history === false`).
+   */
+  skipSave?: boolean
   customerStatus: string
   reason?: string
 }
@@ -41,7 +46,7 @@ export const checkHumanHandoffStatus = async (
     // Buscar status do cliente - FILTERED BY client_id for tenant isolation
     const { data: customer, error } = await supabaseAny
       .from('clientes_whatsapp')
-      .select('status')
+      .select('status, metadata')
       .eq('telefone', phone)
       .eq('client_id', clientId) // 🔐 CRITICAL: Tenant isolation filter
       .single()
@@ -57,6 +62,19 @@ export const checkHumanHandoffStatus = async (
 
     const status = customer.status
     const statusLower = status?.toLowerCase() || ''
+    const metadata = (customer.metadata && typeof customer.metadata === 'object'
+      ? customer.metadata
+      : null) as Record<string, unknown> | null
+    const silenced = metadata?.save_history === false
+
+    if (silenced) {
+      return {
+        skipBot: true,
+        skipSave: true,
+        customerStatus: status,
+        reason: 'Contato silenciado: bot pausado e mensagens não persistidas'
+      }
+    }
 
     // Se está em atendimento humano, para o bot
     // Usar case-insensitive comparison para evitar bugs de capitalização

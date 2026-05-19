@@ -26,6 +26,7 @@ export interface DirectAIUsageParams {
   modelName: string;
   inputTokens: number;
   outputTokens: number;
+  cachedTokens?: number;
   latencyMs: number;
   metadata?: Record<string, any>;
 }
@@ -60,9 +61,9 @@ export const logDirectAIUsage = async (
       modelName: params.modelName,
       inputTokens: params.inputTokens,
       outputTokens: params.outputTokens,
-      cachedTokens: 0, // No caching for direct calls
+      cachedTokens: params.cachedTokens ?? 0,
       latencyMs: params.latencyMs,
-      wasCached: false, // No gateway cache
+      wasCached: (params.cachedTokens ?? 0) > 0,
       wasFallback: false, // Direct calls, no fallback
       metadata: {
         source: "direct-sdk",

@@ -11,6 +11,7 @@
 Este documento mapeia os **fluxos principais** do sistema do ponto de vista do usuário final (WhatsApp) e admin (Dashboard).
 
 **Flows Cobertos:**
+
 1. WhatsApp User: First Contact → Bot Response
 2. WhatsApp User: Media Message (Audio/Image/PDF)
 3. WhatsApp User: Human Handoff
@@ -137,6 +138,7 @@ sequenceDiagram
 **Duration:** ~3-8 seconds (batching can add 10s)
 
 **Key Points:**
+
 - Customer auto-created on first contact
 - Messages saved **immediately after sending** (prevents race condition)
 - Batching prevents duplicate AI responses for rapid messages
@@ -201,6 +203,7 @@ sequenceDiagram
 **Duration:** ~5-15 seconds (audio processing)
 
 **Key Points:**
+
 - Audio automatically converted OGG → MP3
 - Whisper transcription in Portuguese
 - If transcription fails, message saved as FAILED (no silent failure)
@@ -247,6 +250,7 @@ sequenceDiagram
 **Duration:** ~3-8 seconds (vision API)
 
 **Key Points:**
+
 - Image uploaded to Supabase Storage (permanent)
 - GPT-4o Vision describes image in Portuguese
 - Caption + image description merged for AI context
@@ -304,6 +308,7 @@ sequenceDiagram
 **Duration:** ~2-5 seconds
 
 **Key Points:**
+
 - AI autonomously decides when to transfer (via tool call)
 - Email sent to admin with conversation summary
 - Bot immediately stops responding (status='humano')
@@ -371,6 +376,7 @@ sequenceDiagram
 **Duration:** Variable (depends on user interaction speed)
 
 **Key Points:**
+
 - Customer status changes to 'fluxo_inicial' during execution
 - Bot does NOT respond while flow is active
 - Flow execution tracked in `flow_executions` table
@@ -423,6 +429,7 @@ sequenceDiagram
 **Duration:** ~10-60 seconds (depends on file size)
 
 **Key Points:**
+
 - Maximum 10MB per file
 - Automatic chunking with overlap (prevents context loss)
 - Embeddings generated via OpenAI (text-embedding-3-small)
@@ -474,6 +481,7 @@ sequenceDiagram
 **Duration:** ~1-2 seconds + 5min cache TTL
 
 **Configurable Settings:**
+
 - `system_prompt` (AI personality)
 - `primaryModelProvider` (groq | openai)
 - `temperature` (0.0-2.0)
@@ -517,6 +525,7 @@ sequenceDiagram
 **Duration:** ~500ms-2s
 
 **Analytics Available:**
+
 - **Tokens:** Input, output, total (per model)
 - **Cost:** BRL, USD (per model)
 - **Requests:** Count, success rate
@@ -584,12 +593,13 @@ sequenceDiagram
 **Duration:** ~3-15 seconds (depends on chatbot pipeline)
 
 **Key Points:**
+
 - Signature verification REQUIRED (prevent tampering)
 - Status updates (delivered, read) are IGNORED
 - Processing errors return 200 OK (to prevent Meta retries)
 - Webhook MUST respond within 30s (Vercel timeout)
 
-**Webhook URL Format:** `https://chat.luisfboff.com/api/webhook/received`
+**Webhook URL Format:** `https://uzzap.uzzai.com/api/webhook/received`
 
 ---
 
@@ -644,12 +654,14 @@ sequenceDiagram
 **Duration:** ~1-3 seconds
 
 **Webhook Types:**
+
 - `checkout.session.completed` → Purchase confirmed
 - `customer.subscription.created` → Subscription started
 - `invoice.payment_succeeded` → Recurring payment
 - `account.updated` → Stripe Connect account status change
 
 **Webhooks:**
+
 - **V1 (Thin):** `/api/stripe/webhooks` (client purchases)
 - **V2 (Connect):** `/api/stripe/webhooks/connect` (seller account events)
 - **Platform:** `/api/stripe/platform/webhooks` (platform-level billing)
@@ -660,18 +672,18 @@ sequenceDiagram
 
 ## 📈 Flow Metrics
 
-| Flow | Avg Duration | Bottleneck | Optimization |
-|------|-------------|------------|--------------|
-| First Contact | 3-8s | AI response (2-5s) | Fast Track Router |
-| Audio Message | 5-15s | Whisper API (3-10s) | Pre-download audio |
-| Image Message | 3-8s | Vision API (2-5s) | Cache common images |
-| Human Handoff | 2-5s | Email send (1-2s) | Async email queue |
-| Interactive Flow | Variable | User interaction | N/A |
-| RAG Upload | 10-60s | Embedding generation | Batch embeddings |
-| Config Update | 1-2s + 5min cache | Cache TTL | Manual invalidation endpoint |
-| Analytics | 500ms-2s | DB query | Materialized views |
-| Meta Webhook | 3-15s | Full chatbot pipeline | N/A |
-| Stripe Webhook | 1-3s | DB writes | Batch updates |
+| Flow             | Avg Duration      | Bottleneck            | Optimization                 |
+| ---------------- | ----------------- | --------------------- | ---------------------------- |
+| First Contact    | 3-8s              | AI response (2-5s)    | Fast Track Router            |
+| Audio Message    | 5-15s             | Whisper API (3-10s)   | Pre-download audio           |
+| Image Message    | 3-8s              | Vision API (2-5s)     | Cache common images          |
+| Human Handoff    | 2-5s              | Email send (1-2s)     | Async email queue            |
+| Interactive Flow | Variable          | User interaction      | N/A                          |
+| RAG Upload       | 10-60s            | Embedding generation  | Batch embeddings             |
+| Config Update    | 1-2s + 5min cache | Cache TTL             | Manual invalidation endpoint |
+| Analytics        | 500ms-2s          | DB query              | Materialized views           |
+| Meta Webhook     | 3-15s             | Full chatbot pipeline | N/A                          |
+| Stripe Webhook   | 1-3s              | DB writes             | Batch updates                |
 
 ---
 
@@ -687,6 +699,6 @@ sequenceDiagram
 
 ---
 
-*Última atualização: 2026-03-15*
-*Versão: 1.0*
-*Baseado em análise de código-fonte + arquitetura*
+_Última atualização: 2026-03-15_
+_Versão: 1.0_
+_Baseado em análise de código-fonte + arquitetura_

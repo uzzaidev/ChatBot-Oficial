@@ -92,6 +92,7 @@ UzzAI (Stripe Platform Account — sua conta mestre)
 ```
 
 Para adicionar um novo produto no futuro:
+
 1. Criar um Connected Account via API — **já está no código**
 2. Fazer o onboarding — **já está no código**
 3. Criar produtos/preços na conta — **já está no código**
@@ -104,13 +105,16 @@ Custo de adicionar o Produto 2: praticamente zero em código.
 Quando existir um segundo produto em outro repo, ele tem duas opções:
 
 **Opção A — Delegar para esta plataforma (recomendado):**
+
 ```
-Produto 2 → POST https://chat.luisfboff.com/api/stripe/checkout
+Produto 2 → POST https://uzzap.uzzai.com/api/stripe/checkout
            → recebe { url: 'https://checkout.stripe.com/...' }
 ```
+
 Sem nenhuma chave Stripe no outro repo.
 
 **Opção B — Stripe próprio apontando para a mesma conta:**
+
 ```typescript
 // No outro repo — mesma STRIPE_SECRET_KEY, diferente stripeAccount
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY) // mesma chave
@@ -236,6 +240,7 @@ flowchart TB
 ```
 
 **Modelo de receita:**
+
 - Cada venda dos clientes → você recebe `application_fee_amount` automaticamente
 - Configurável via `STRIPE_APPLICATION_FEE_PERCENT=10`
 - Stripe deposita direto na conta platform, sem ação manual
@@ -281,10 +286,11 @@ STRIPE_CONNECT_WEBHOOK_SECRET=whsec_...
 STRIPE_APPLICATION_FEE_PERCENT=10
 
 # URL base da aplicação — usado em return_url, success_url, etc.
-NEXT_PUBLIC_APP_URL=https://chat.luisfboff.com
+NEXT_PUBLIC_APP_URL=https://uzzap.uzzai.com
 ```
 
 > **Erro explícito se não configurado:**
+>
 > ```
 > Error: STRIPE_SECRET_KEY is not configured.
 > Add it to your .env.local file.
@@ -299,13 +305,13 @@ NEXT_PUBLIC_APP_URL=https://chat.luisfboff.com
 
 O Stripe armazena tudo internamente. O banco de dados é para **você**:
 
-| Tabela | Por que precisa |
-|--------|-----------------|
-| `stripe_accounts` | Saber qual `acct_xxx` pertence a qual cliente. Sem isso, não há como saber de quem é cada conta conectada. |
-| `stripe_products` | Listar produtos no dashboard e storefront sem chamar a API do Stripe a cada request. |
-| `stripe_subscriptions` | Saber quem está ativo, cancelado, em trial — para liberar ou bloquear acesso. |
-| `stripe_orders` | Histórico de compras únicas. |
-| `webhook_events` | Idempotência: evitar processar o mesmo evento duas vezes (Stripe reenvia por até 3 dias). |
+| Tabela                 | Por que precisa                                                                                            |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `stripe_accounts`      | Saber qual `acct_xxx` pertence a qual cliente. Sem isso, não há como saber de quem é cada conta conectada. |
+| `stripe_products`      | Listar produtos no dashboard e storefront sem chamar a API do Stripe a cada request.                       |
+| `stripe_subscriptions` | Saber quem está ativo, cancelado, em trial — para liberar ou bloquear acesso.                              |
+| `stripe_orders`        | Histórico de compras únicas.                                                                               |
+| `webhook_events`       | Idempotência: evitar processar o mesmo evento duas vezes (Stripe reenvia por até 3 dias).                  |
 
 ### Criar a migration
 
@@ -446,27 +452,27 @@ CREATE TABLE IF NOT EXISTS public.webhook_events (
 // @stripe-module
 // Este arquivo pertence ao módulo de pagamentos Stripe.
 
-import Stripe from 'stripe'
+import Stripe from "stripe";
 
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error(
-    'STRIPE_SECRET_KEY is not configured. ' +
-    'Add it to your .env.local file. ' +
-    'Get your key at https://dashboard.stripe.com/apikeys'
-  )
+    "STRIPE_SECRET_KEY is not configured. " +
+      "Add it to your .env.local file. " +
+      "Get your key at https://dashboard.stripe.com/apikeys",
+  );
 }
 
 // Singleton — mesma instância em toda a aplicação
 // Versão da API usada automaticamente pelo SDK (2026-02-25.clover)
-export const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY)
+export const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // Construir evento V1 a partir de webhook (valida assinatura)
 export const constructWebhookEvent = (
   rawBody: string,
   signature: string,
-  secret: string
+  secret: string,
 ): Stripe.Event =>
-  stripeClient.webhooks.constructEvent(rawBody, signature, secret)
+  stripeClient.webhooks.constructEvent(rawBody, signature, secret);
 ```
 
 ---
@@ -481,19 +487,19 @@ export const constructWebhookEvent = (
 
 // Criar Connected Account (V2 API)
 export const createConnectedAccount = async (params: {
-  clientId: string
-  email: string
-  businessName: string
+  clientId: string;
+  email: string;
+  businessName: string;
 }): Promise<{ stripeAccountId: string }> => {
   const account = await stripeClient.v2.core.accounts.create({
     display_name: params.businessName,
     contact_email: params.email,
-    identity: { country: 'us' },
-    dashboard: 'full',
+    identity: { country: "us" },
+    dashboard: "full",
     defaults: {
       responsibilities: {
-        fees_collector: 'stripe',
-        losses_collector: 'stripe',
+        fees_collector: "stripe",
+        losses_collector: "stripe",
       },
     },
     configuration: {
@@ -502,63 +508,68 @@ export const createConnectedAccount = async (params: {
         capabilities: { card_payments: { requested: true } },
       },
     },
-  })
+  });
 
-  const supabase = createServiceClient()
-  await supabase.from('stripe_accounts').insert({
+  const supabase = createServiceClient();
+  await supabase.from("stripe_accounts").insert({
     client_id: params.clientId,
     stripe_account_id: account.id,
-    account_status: 'pending',
-  })
+    account_status: "pending",
+  });
 
-  return { stripeAccountId: account.id }
-}
+  return { stripeAccountId: account.id };
+};
 
 // Gerar link de onboarding
 export const createAccountLink = async (params: {
-  stripeAccountId: string
-  returnUrl: string
-  refreshUrl: string
+  stripeAccountId: string;
+  returnUrl: string;
+  refreshUrl: string;
 }): Promise<{ url: string }> => {
   const accountLink = await stripeClient.v2.core.accountLinks.create({
     account: params.stripeAccountId,
     use_case: {
-      type: 'account_onboarding',
+      type: "account_onboarding",
       account_onboarding: {
-        configurations: ['merchant', 'customer'],
+        configurations: ["merchant", "customer"],
         refresh_url: params.refreshUrl,
         return_url: params.returnUrl,
       },
     },
-  })
-  return { url: accountLink.url }
-}
+  });
+  return { url: accountLink.url };
+};
 
 // Status da conta — sempre busca direto da API Stripe, não do banco
 export const getAccountStatus = async (stripeAccountId: string) => {
-  const account = await stripeClient.v2.core.accounts.retrieve(stripeAccountId, {
-    include: ['configuration.merchant', 'requirements'],
-  })
+  const account = await stripeClient.v2.core.accounts.retrieve(
+    stripeAccountId,
+    {
+      include: ["configuration.merchant", "requirements"],
+    },
+  );
 
   const readyToProcessPayments =
-    account?.configuration?.merchant?.capabilities?.card_payments?.status === 'active'
+    account?.configuration?.merchant?.capabilities?.card_payments?.status ===
+    "active";
 
-  const requirementsStatus = account.requirements?.summary?.minimum_deadline?.status
+  const requirementsStatus =
+    account.requirements?.summary?.minimum_deadline?.status;
   const onboardingComplete =
-    requirementsStatus !== 'currently_due' && requirementsStatus !== 'past_due'
+    requirementsStatus !== "currently_due" && requirementsStatus !== "past_due";
 
-  return { readyToProcessPayments, onboardingComplete, requirementsStatus }
-}
+  return { readyToProcessPayments, onboardingComplete, requirementsStatus };
+};
 
 // Criar produto na conta conectada (header Stripe-Account)
 export const createProductOnConnectedAccount = async (params: {
-  stripeAccountId: string
-  name: string
-  description?: string
-  amountCentavos: number
-  currency: string
-  type: 'one_time' | 'subscription'
-  interval?: 'month' | 'year'
+  stripeAccountId: string;
+  name: string;
+  description?: string;
+  amountCentavos: number;
+  currency: string;
+  type: "one_time" | "subscription";
+  interval?: "month" | "year";
 }) => {
   return stripeClient.products.create(
     {
@@ -567,23 +578,25 @@ export const createProductOnConnectedAccount = async (params: {
       default_price_data: {
         unit_amount: params.amountCentavos,
         currency: params.currency,
-        ...(params.type === 'subscription' && params.interval
+        ...(params.type === "subscription" && params.interval
           ? { recurring: { interval: params.interval } }
           : {}),
       },
     },
-    { stripeAccount: params.stripeAccountId }
-  )
-}
+    { stripeAccount: params.stripeAccountId },
+  );
+};
 
 // Listar produtos de uma conta conectada
-export const listProductsFromConnectedAccount = async (stripeAccountId: string) => {
+export const listProductsFromConnectedAccount = async (
+  stripeAccountId: string,
+) => {
   const products = await stripeClient.products.list(
-    { limit: 20, active: true, expand: ['data.default_price'] },
-    { stripeAccount: stripeAccountId }
-  )
-  return products.data
-}
+    { limit: 20, active: true, expand: ["data.default_price"] },
+    { stripeAccount: stripeAccountId },
+  );
+  return products.data;
+};
 ```
 
 ---
@@ -594,19 +607,19 @@ Todas seguem o padrão do projeto: `export const dynamic = 'force-dynamic'`, aut
 
 ### Mapa de rotas
 
-| Rota | Método | Auth | Propósito |
-|------|--------|------|-----------|
-| `/api/stripe/connect/account` | GET | ✅ | Status da conta conectada |
-| `/api/stripe/connect/account` | POST | ✅ | Criar conta conectada |
-| `/api/stripe/connect/account-link` | POST | ✅ | Gerar URL de onboarding |
-| `/api/stripe/connect/products` | GET | ✅ | Listar produtos |
-| `/api/stripe/connect/products` | POST | ✅ | Criar produto |
-| `/api/stripe/connect/products/[id]` | PUT | ✅ | Atualizar produto |
-| `/api/stripe/connect/products/[id]` | DELETE | ✅ | Arquivar produto |
-| `/api/stripe/checkout` | POST | ❌ público | Criar sessão de checkout |
-| `/api/stripe/billing-portal` | POST | ❌ público | Criar sessão do portal |
-| `/api/stripe/webhooks` | POST | ❌ Stripe | V1 — eventos de assinatura |
-| `/api/stripe/webhooks/connect` | POST | ❌ Stripe | V2 thin events |
+| Rota                                | Método | Auth       | Propósito                  |
+| ----------------------------------- | ------ | ---------- | -------------------------- |
+| `/api/stripe/connect/account`       | GET    | ✅         | Status da conta conectada  |
+| `/api/stripe/connect/account`       | POST   | ✅         | Criar conta conectada      |
+| `/api/stripe/connect/account-link`  | POST   | ✅         | Gerar URL de onboarding    |
+| `/api/stripe/connect/products`      | GET    | ✅         | Listar produtos            |
+| `/api/stripe/connect/products`      | POST   | ✅         | Criar produto              |
+| `/api/stripe/connect/products/[id]` | PUT    | ✅         | Atualizar produto          |
+| `/api/stripe/connect/products/[id]` | DELETE | ✅         | Arquivar produto           |
+| `/api/stripe/checkout`              | POST   | ❌ público | Criar sessão de checkout   |
+| `/api/stripe/billing-portal`        | POST   | ❌ público | Criar sessão do portal     |
+| `/api/stripe/webhooks`              | POST   | ❌ Stripe  | V1 — eventos de assinatura |
+| `/api/stripe/webhooks/connect`      | POST   | ❌ Stripe  | V2 thin events             |
 
 ---
 
@@ -614,67 +627,73 @@ Todas seguem o padrão do projeto: `export const dynamic = 'force-dynamic'`, aut
 
 ```typescript
 // @stripe-module
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   // ⚠️ CRÍTICO: corpo RAW obrigatório — request.json() quebra a validação
-  const rawBody = await request.text()
-  const signature = request.headers.get('stripe-signature')
+  const rawBody = await request.text();
+  const signature = request.headers.get("stripe-signature");
 
   if (!signature) {
-    return NextResponse.json({ error: 'No signature' }, { status: 400 })
+    return NextResponse.json({ error: "No signature" }, { status: 400 });
   }
 
-  let event: Stripe.Event
+  let event: Stripe.Event;
   try {
-    event = constructWebhookEvent(rawBody, signature, process.env.STRIPE_WEBHOOK_SECRET!)
+    event = constructWebhookEvent(
+      rawBody,
+      signature,
+      process.env.STRIPE_WEBHOOK_SECRET!,
+    );
   } catch (err) {
-    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
+    return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
   // ⚠️ Idempotência — checar antes de processar
-  const supabase = createServiceClient()
+  const supabase = createServiceClient();
   const { data: existing } = await supabase
-    .from('webhook_events')
-    .select('id')
-    .eq('stripe_event_id', event.id)
-    .single()
+    .from("webhook_events")
+    .select("id")
+    .eq("stripe_event_id", event.id)
+    .single();
 
   if (existing) {
-    return NextResponse.json({ received: true, duplicate: true })
+    return NextResponse.json({ received: true, duplicate: true });
   }
 
-  await supabase.from('webhook_events').insert({
+  await supabase.from("webhook_events").insert({
     stripe_event_id: event.id,
     event_type: event.type,
-    status: 'processing',
-  })
+    status: "processing",
+  });
 
   switch (event.type) {
-    case 'checkout.session.completed':
-      await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session)
-      break
-    case 'customer.subscription.updated':
-      await handleSubscriptionUpdated(event.data.object as Stripe.Subscription)
-      break
-    case 'customer.subscription.deleted':
-      await handleSubscriptionDeleted(event.data.object as Stripe.Subscription)
-      break
-    case 'invoice.payment_succeeded':
-      await handleInvoicePaid(event.data.object as Stripe.Invoice)
-      break
-    case 'invoice.payment_failed':
-      await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice)
-      break
+    case "checkout.session.completed":
+      await handleCheckoutCompleted(
+        event.data.object as Stripe.Checkout.Session,
+      );
+      break;
+    case "customer.subscription.updated":
+      await handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
+      break;
+    case "customer.subscription.deleted":
+      await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
+      break;
+    case "invoice.payment_succeeded":
+      await handleInvoicePaid(event.data.object as Stripe.Invoice);
+      break;
+    case "invoice.payment_failed":
+      await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
+      break;
   }
 
   await supabase
-    .from('webhook_events')
-    .update({ status: 'processed', processed_at: new Date().toISOString() })
-    .eq('stripe_event_id', event.id)
+    .from("webhook_events")
+    .update({ status: "processed", processed_at: new Date().toISOString() })
+    .eq("stripe_event_id", event.id);
 
   // ⚠️ Sempre 200 — Stripe para de retentar ao receber 200
-  return NextResponse.json({ received: true })
+  return NextResponse.json({ received: true });
 }
 ```
 
@@ -684,37 +703,39 @@ export async function POST(request: NextRequest) {
 
 ```typescript
 // @stripe-module
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
-  const rawBody = await request.text()
-  const signature = request.headers.get('stripe-signature')!
+  const rawBody = await request.text();
+  const signature = request.headers.get("stripe-signature")!;
 
-  let thinEvent: Stripe.ThinEvent
+  let thinEvent: Stripe.ThinEvent;
   try {
     thinEvent = stripeClient.parseThinEvent(
-      rawBody, signature, process.env.STRIPE_CONNECT_WEBHOOK_SECRET!
-    )
+      rawBody,
+      signature,
+      process.env.STRIPE_CONNECT_WEBHOOK_SECRET!,
+    );
   } catch (err) {
-    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
+    return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
   // Thin events não têm payload completo — buscar evento completo
-  const event = await stripeClient.v2.core.events.retrieve(thinEvent.id)
+  const event = await stripeClient.v2.core.events.retrieve(thinEvent.id);
 
   switch (event.type) {
-    case 'v2.core.account[requirements].updated':
-      await syncAccountRequirements((event.data as any).account_id)
-      break
-    case 'v2.core.account[configuration.merchant].capability_status_updated':
-      await syncAccountCapabilities((event.data as any).account_id)
-      break
-    case 'v2.core.account[configuration.customer].capability_status_updated':
-      await syncAccountCapabilities((event.data as any).account_id)
-      break
+    case "v2.core.account[requirements].updated":
+      await syncAccountRequirements((event.data as any).account_id);
+      break;
+    case "v2.core.account[configuration.merchant].capability_status_updated":
+      await syncAccountCapabilities((event.data as any).account_id);
+      break;
+    case "v2.core.account[configuration.customer].capability_status_updated":
+      await syncAccountCapabilities((event.data as any).account_id);
+      break;
   }
 
-  return NextResponse.json({ received: true })
+  return NextResponse.json({ received: true });
 }
 ```
 
@@ -758,38 +779,44 @@ restricted     → "⚠️ Conta com restrições — verificar requisitos"
 // Rota pública — sem auth — chamada pelo storefront
 
 export async function POST(request: NextRequest) {
-  const { productId, clientSlug } = await request.json()
+  const { productId, clientSlug } = await request.json();
 
-  const supabase = createServiceClient()
+  const supabase = createServiceClient();
   const { data: product } = await supabase
-    .from('stripe_products')
-    .select('*, clients!inner(slug)')
-    .eq('id', productId)
-    .eq('clients.slug', clientSlug)
-    .single()
+    .from("stripe_products")
+    .select("*, clients!inner(slug)")
+    .eq("id", productId)
+    .eq("clients.slug", clientSlug)
+    .single();
 
-  const feePercent = Number(process.env.STRIPE_APPLICATION_FEE_PERCENT || 10)
-  const feeAmount = Math.floor(product.amount * feePercent / 100)
+  const feePercent = Number(process.env.STRIPE_APPLICATION_FEE_PERCENT || 10);
+  const feeAmount = Math.floor((product.amount * feePercent) / 100);
 
   const session = await stripeClient.checkout.sessions.create(
     {
-      mode: product.type === 'subscription' ? 'subscription' : 'payment',
+      mode: product.type === "subscription" ? "subscription" : "payment",
       line_items: [{ price: product.stripe_price_id, quantity: 1 }],
-      payment_intent_data: product.type === 'one_time' ? {
-        application_fee_amount: feeAmount,
-        transfer_data: { destination: product.stripe_account_id },
-      } : undefined,
-      subscription_data: product.type === 'subscription' ? {
-        application_fee_percent: feePercent,
-        transfer_data: { destination: product.stripe_account_id },
-      } : undefined,
+      payment_intent_data:
+        product.type === "one_time"
+          ? {
+              application_fee_amount: feeAmount,
+              transfer_data: { destination: product.stripe_account_id },
+            }
+          : undefined,
+      subscription_data:
+        product.type === "subscription"
+          ? {
+              application_fee_percent: feePercent,
+              transfer_data: { destination: product.stripe_account_id },
+            }
+          : undefined,
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/store/${clientSlug}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/store/${clientSlug}/cancel`,
     },
-    { stripeAccount: product.stripe_account_id }
-  )
+    { stripeAccount: product.stripe_account_id },
+  );
 
-  return NextResponse.json({ url: session.url })
+  return NextResponse.json({ url: session.url });
 }
 ```
 
@@ -797,12 +824,12 @@ export async function POST(request: NextRequest) {
 
 ## 11. Fase 6 — Componentes
 
-| Componente | Arquivo | Propósito |
-|------------|---------|-----------|
+| Componente             | Arquivo                                   | Propósito                                       |
+| ---------------------- | ----------------------------------------- | ----------------------------------------------- |
 | `StripeOnboardingCard` | `src/components/StripeOnboardingCard.tsx` | Status da conta + requisitos + botão onboarding |
-| `ProductCard` | `src/components/ProductCard.tsx` | Card de produto no storefront |
-| `ProductForm` | `src/components/ProductForm.tsx` | Modal criar/editar produto no dashboard |
-| `SubscriptionsList` | `src/components/SubscriptionsList.tsx` | Tabela de assinaturas com status badges |
+| `ProductCard`          | `src/components/ProductCard.tsx`          | Card de produto no storefront                   |
+| `ProductForm`          | `src/components/ProductForm.tsx`          | Modal criar/editar produto no dashboard         |
+| `SubscriptionsList`    | `src/components/SubscriptionsList.tsx`    | Tabela de assinaturas com status badges         |
 
 Todos com `// @stripe-module` no topo.
 
@@ -840,14 +867,14 @@ Cliente final paga R$ 100
 ```typescript
 stripeClient.checkout.sessions.create(
   {
-    mode: 'payment',
+    mode: "payment",
     payment_intent_data: {
       application_fee_amount: 1000, // 10% de R$100
-      transfer_data: { destination: 'acct_xxx' },
+      transfer_data: { destination: "acct_xxx" },
     },
   },
-  { stripeAccount: 'acct_xxx' }
-)
+  { stripeAccount: "acct_xxx" },
+);
 ```
 
 ### Subscription com taxa recorrente
@@ -855,14 +882,14 @@ stripeClient.checkout.sessions.create(
 ```typescript
 stripeClient.checkout.sessions.create(
   {
-    mode: 'subscription',
+    mode: "subscription",
     subscription_data: {
       application_fee_percent: 10, // 10% de cada cobrança
-      transfer_data: { destination: 'acct_xxx' },
+      transfer_data: { destination: "acct_xxx" },
     },
   },
-  { stripeAccount: 'acct_xxx' }
-)
+  { stripeAccount: "acct_xxx" },
+);
 ```
 
 ### Billing Portal
@@ -871,11 +898,11 @@ stripeClient.checkout.sessions.create(
 // Para contas V2: usar customer_account (acct_), NÃO customer (cus_)
 const session = await stripeClient.billingPortal.sessions.create(
   {
-    customer_account: 'acct_xxx',
+    customer_account: "acct_xxx",
     return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
   },
-  { stripeAccount: 'acct_xxx' }
-)
+  { stripeAccount: "acct_xxx" },
+);
 ```
 
 ---
@@ -884,9 +911,9 @@ const session = await stripeClient.billingPortal.sessions.create(
 
 ### Dois endpoints, dois registros no Stripe Dashboard
 
-| Tipo | Endpoint | Onde registrar |
-|------|----------|----------------|
-| V1 Standard | `/api/stripe/webhooks` | Stripe Dashboard → Webhooks |
+| Tipo           | Endpoint                       | Onde registrar                                   |
+| -------------- | ------------------------------ | ------------------------------------------------ |
+| V1 Standard    | `/api/stripe/webhooks`         | Stripe Dashboard → Webhooks                      |
 | V2 Thin Events | `/api/stripe/webhooks/connect` | Stripe Dashboard → Webhooks → Connected Accounts |
 
 ### Desenvolvimento local
@@ -903,16 +930,16 @@ stripe listen \
 
 ### Eventos V1 necessários
 
-| Evento | Ação |
-|--------|------|
-| `checkout.session.completed` | Criar pedido ou assinatura inicial |
-| `customer.subscription.created` | Nova assinatura — liberar acesso |
-| `customer.subscription.updated` | Mudança de plano, pausa, reativação |
-| `customer.subscription.deleted` | **REVOGAR ACESSO** |
+| Evento                                 | Ação                                      |
+| -------------------------------------- | ----------------------------------------- |
+| `checkout.session.completed`           | Criar pedido ou assinatura inicial        |
+| `customer.subscription.created`        | Nova assinatura — liberar acesso          |
+| `customer.subscription.updated`        | Mudança de plano, pausa, reativação       |
+| `customer.subscription.deleted`        | **REVOGAR ACESSO**                        |
 | `customer.subscription.trial_will_end` | Enviar email 3 dias antes do trial acabar |
-| `invoice.payment_succeeded` | Renovação OK — manter acesso |
-| `invoice.payment_failed` | Renovação falhou — iniciar dunning |
-| `charge.dispute.created` | Chargeback — investigar |
+| `invoice.payment_succeeded`            | Renovação OK — manter acesso              |
+| `invoice.payment_failed`               | Renovação falhou — iniciar dunning        |
+| `charge.dispute.created`               | Chargeback — investigar                   |
 
 ### Regras críticas
 
@@ -1099,16 +1126,16 @@ erDiagram
 
 ### Decisões
 
-| Decisão | Detalhes |
-|---------|----------|
+| Decisão                  | Detalhes                                               |
+| ------------------------ | ------------------------------------------------------ |
 | Stripe Checkout para MVP | Mais rápido, menos código, sem UI de pagamento própria |
-| Payment Element para V2 | Quando precisar de controle total de UX |
-| PIX apenas one-time | Sem suporte a recorrência automática |
-| Cartão para assinaturas | Único método com recorrência |
+| Payment Element para V2  | Quando precisar de controle total de UX                |
+| PIX apenas one-time      | Sem suporte a recorrência automática                   |
+| Cartão para assinaturas  | Único método com recorrência                           |
 
 ### Red flags de Nicolas
 
-> *"Integrar Stripe é simples. AUTOMATIZAR via webhooks é a parte difícil."*
+> _"Integrar Stripe é simples. AUTOMATIZAR via webhooks é a parte difícil."_
 
 1. **Webhooks sem idempotência** → cobranças duplicadas, acesso liberado incorretamente
 2. **Body parseado no webhook** → `request.json()` antes de validar quebra a assinatura
@@ -1116,11 +1143,11 @@ erDiagram
 
 ### Cartões de teste
 
-| Situação | Número |
-|----------|--------|
+| Situação         | Número                |
+| ---------------- | --------------------- |
 | Pagamento válido | `4242 4242 4242 4242` |
-| 3D Secure | `4000 0025 0000 3155` |
-| Cartão recusado | `4000 0000 0000 9995` |
+| 3D Secure        | `4000 0025 0000 3155` |
+| Cartão recusado  | `4000 0000 0000 9995` |
 
 ---
 
@@ -1145,12 +1172,14 @@ para criar um repositório independente de pagamentos UzzAI.
 ## O que copiar
 
 ### Pastas completas (copiar inteiro)
+
 - src/app/api/stripe/
 - src/app/dashboard/payments/
 - src/app/store/
-- supabase/migrations/ (apenas as migrations stripe_*)
+- supabase/migrations/ (apenas as migrations stripe\_\*)
 
 ### Arquivos individuais
+
 - src/lib/stripe.ts
 - src/lib/stripe-connect.ts
 - src/components/StripeOnboardingCard.tsx
@@ -1159,22 +1188,26 @@ para criar um repositório independente de pagamentos UzzAI.
 - src/components/SubscriptionsList.tsx
 
 ## O que NÃO copiar
-- src/app/api/webhook/       (WhatsApp — chatbot)
-- src/flows/                  (chatbot)
-- src/nodes/                  (chatbot)
-- src/lib/vault.ts            (chatbot)
+
+- src/app/api/webhook/ (WhatsApp — chatbot)
+- src/flows/ (chatbot)
+- src/nodes/ (chatbot)
+- src/lib/vault.ts (chatbot)
 - qualquer coisa sem @stripe-module
 
 ## Dependências necessárias no novo repo
+
 - stripe
 - @stripe/stripe-js
 - next (App Router)
 - @supabase/supabase-js
 
 ## Variáveis de ambiente necessárias
+
 (lista das vars da seção 5 deste documento)
 
 ## Ajustes após a cópia
+
 - Atualizar imports relativos que apontavam para src/lib/supabase
 - Criar novo projeto Supabase ou reutilizar o existente
 - Registrar novos endpoints de webhook no Stripe Dashboard
@@ -1188,22 +1221,25 @@ para criar um repositório independente de pagamentos UzzAI.
 
 **Conteúdo esperado:**
 
-```markdown
+````markdown
 # Migrations Stripe — Registro Completo
 
 ## Migration: stripe_connect
+
 Arquivo: supabase/migrations/TIMESTAMP_stripe_connect.sql
 Aplicada em: DD/MM/AAAA
 Status: ✅ Aplicada em produção
 
 ### Tabelas criadas
-- stripe_accounts     — conta conectada por cliente
-- stripe_products     — produtos nas contas conectadas
+
+- stripe_accounts — conta conectada por cliente
+- stripe_products — produtos nas contas conectadas
 - stripe_subscriptions — assinaturas sincronizadas via webhook
-- stripe_orders       — pedidos únicos (direct charges)
-- webhook_events      — idempotência de webhooks
+- stripe_orders — pedidos únicos (direct charges)
+- webhook_events — idempotência de webhooks
 
 ### Para reverter (se necessário)
+
 ```sql
 DROP TABLE IF EXISTS public.webhook_events;
 DROP TABLE IF EXISTS public.stripe_orders;
@@ -1211,20 +1247,26 @@ DROP TABLE IF EXISTS public.stripe_subscriptions;
 DROP TABLE IF EXISTS public.stripe_products;
 DROP TABLE IF EXISTS public.stripe_accounts;
 ```
+````
+
 ⚠️ CUIDADO: operação irreversível em produção.
 
 ### Relacionamentos criados
+
 - stripe_accounts.client_id → clients.id
 - stripe_products.client_id → clients.id
 - stripe_subscriptions.client_id → clients.id
 - stripe_orders.client_id → clients.id
 
 ### RLS configurada
+
 - Autenticados: veem apenas dados do próprio client_id
 - service_role: acesso total (usado nos webhooks)
 - anon: leitura de stripe_products ativos (storefront público)
+
 ```
 
 ---
 
 *Documento atualizado em 10/03/2026. Versão 2.0 — inclui decisão de arquitetura, estrutura modular definitiva e guia pós-implementação.*
+```

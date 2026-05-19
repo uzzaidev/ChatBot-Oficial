@@ -5,11 +5,13 @@ WhatsApp SaaS chatbot guidance for Claude Code.
 ## Quick Navigation
 
 **Before any task:**
+
 1. Check "Quick Reference" for entry points
 2. Consult `docs/tables/tabelas.md` for database work
 3. Review "Common Issues" for known problems
 
 **Critical Rules:**
+
 - ALWAYS use migrations for database changes (`supabase migration new`)
 - NEVER use `pg` library in serverless (use Supabase client)
 - ALWAYS await async operations in webhooks
@@ -22,6 +24,7 @@ WhatsApp SaaS chatbot guidance for Claude Code.
 **WhatsApp SaaS Chatbot** - Multi-tenant AI-powered conversations via WhatsApp Business API
 
 **Tech Stack:**
+
 - Next.js 14 (App Router), TypeScript, Serverless (Vercel)
 - Supabase (PostgreSQL + Vault + pgvector)
 - Redis (message batching)
@@ -42,25 +45,26 @@ npm run dev                      # Start dev server (localhost:3000)
 ```
 
 **Prerequisites:**
+
 - Create `.env.local` from `.env.example`
 - Apply migrations: `supabase db push`
 - Configure client API keys in Vault (OpenAI/Groq)
 
 ### Key Entry Points
 
-| Task | File |
-|------|------|
-| **Webhook Entry** | `src/app/api/webhook/[clientId]/route.ts` |
-| **Main Orchestrator** | `src/flows/chatbotFlow.ts` (14-node pipeline) |
-| **Flow Visual Manager** | `/dashboard/flow-architecture` (Mermaid diagram) |
-| **Node Functions** | `src/nodes/*` (atomic, pure functions) |
-| **Multi-tenant Config** | `src/lib/config.ts` (Vault integration) |
-| **AI Prompts** | `src/nodes/generateAIResponse.ts`, `formatResponse.ts` |
-| **RAG Knowledge** | `/dashboard/knowledge` (PDF/TXT upload) |
-| **Database Schema** | `docs/tables/tabelas.md` ⚠️ CRITICAL |
-| **Migrations** | `supabase/migrations/*`, `db/MIGRATION_WORKFLOW.md` |
-| **Direct AI Client** | `src/lib/direct-ai-client.ts` (main AI interface) |
-| **Vault Credentials** | `src/lib/vault.ts` (client-specific API keys) |
+| Task                    | File                                                   |
+| ----------------------- | ------------------------------------------------------ |
+| **Webhook Entry**       | `src/app/api/webhook/[clientId]/route.ts`              |
+| **Main Orchestrator**   | `src/flows/chatbotFlow.ts` (14-node pipeline)          |
+| **Flow Visual Manager** | `/dashboard/flow-architecture` (Mermaid diagram)       |
+| **Node Functions**      | `src/nodes/*` (atomic, pure functions)                 |
+| **Multi-tenant Config** | `src/lib/config.ts` (Vault integration)                |
+| **AI Prompts**          | `src/nodes/generateAIResponse.ts`, `formatResponse.ts` |
+| **RAG Knowledge**       | `/dashboard/knowledge` (PDF/TXT upload)                |
+| **Database Schema**     | `docs/tables/tabelas.md` ⚠️ CRITICAL                   |
+| **Migrations**          | `supabase/migrations/*`, `db/MIGRATION_WORKFLOW.md`    |
+| **Direct AI Client**    | `src/lib/direct-ai-client.ts` (main AI interface)      |
+| **Vault Credentials**   | `src/lib/vault.ts` (client-specific API keys)          |
 
 ### Common Commands
 
@@ -82,16 +86,16 @@ npm run lint                     # Lint
 
 ## Common Issues - Quick Lookup
 
-| Error | Cause | Fix |
-|-------|-------|-----|
-| Missing NEXT_PUBLIC_SUPABASE_URL | No `.env.local` | Create from `.env.example`, restart |
-| NODE 3 freezing | Using `pg` in serverless | Use Supabase client (see Critical #1) |
-| Table name error | Space in name | See Critical #3 |
-| Column 'type' not found | JSON field, not column | See Critical #4 |
-| Tool calls in messages | Not stripped | See Critical #5 |
-| Redis connection failed | Redis not running | Start Redis (flow continues gracefully) |
-| Webhook not working | Wrong verify token | Check `META_VERIFY_TOKEN` |
-| Build fails (Google Fonts) | Network restrictions | Expected in sandboxed environments |
+| Error                            | Cause                    | Fix                                     |
+| -------------------------------- | ------------------------ | --------------------------------------- |
+| Missing NEXT_PUBLIC_SUPABASE_URL | No `.env.local`          | Create from `.env.example`, restart     |
+| NODE 3 freezing                  | Using `pg` in serverless | Use Supabase client (see Critical #1)   |
+| Table name error                 | Space in name            | See Critical #3                         |
+| Column 'type' not found          | JSON field, not column   | See Critical #4                         |
+| Tool calls in messages           | Not stripped             | See Critical #5                         |
+| Redis connection failed          | Redis not running        | Start Redis (flow continues gracefully) |
+| Webhook not working              | Wrong verify token       | Check `META_VERIFY_TOKEN`               |
+| Build fails (Google Fonts)       | Network restrictions     | Expected in sandboxed environments      |
 
 ---
 
@@ -104,13 +108,15 @@ WhatsApp → Webhook → chatbotFlow → 14 Nodes → WhatsApp Response
 ```
 
 **Pipeline:**
+
 1. Filter Status Updates → 2. Parse Message → 3. Check/Create Customer →
-4. Download Media → 5. Normalize Message → 6. Push to Redis →
-7. Save User Message → 8. Batch Messages (30s default) → 9. Get Chat History →
-10. Get RAG Context → 11. Generate AI Response → 12. Format Response →
-13. Send and Save WhatsApp Messages (intercalado para evitar race condition)
+2. Download Media → 5. Normalize Message → 6. Push to Redis →
+3. Save User Message → 8. Batch Messages (30s default) → 9. Get Chat History →
+4. Get RAG Context → 11. Generate AI Response → 12. Format Response →
+5. Send and Save WhatsApp Messages (intercalado para evitar race condition)
 
 **Key Patterns:**
+
 - Pure functions (nodes in `src/nodes/*`)
 - Redis batching (30s default, configurable) prevents duplicate AI responses
 - Parallel execution for independent nodes (9 & 10)
@@ -122,12 +128,14 @@ WhatsApp → Webhook → chatbotFlow → 14 Nodes → WhatsApp Response
 **⚠️ CRITICAL: Always check `docs/tables/tabelas.md` before database work**
 
 **Why critical:**
+
 - Database shared with poker system
 - Column names in Portuguese (`telefone`, `nome` NOT `phone`, `name`)
 - `telefone` is NUMERIC, not TEXT (requires `::TEXT` cast)
 - RLS policies use `user_profiles`, NOT `auth.users`
 
 **Key Tables:**
+
 ```sql
 -- clientes_whatsapp (customers)
 telefone NUMERIC       -- NOT TEXT!
@@ -161,6 +169,7 @@ Top 5 chunks injected into AI prompt
 ### AI System
 
 **Main Agent:** Groq Llama 3.3 70B
+
 - Tools: `transferir_atendimento` (human handoff), `subagente_diagnostico`
 - Chat memory: Last 15 messages
 - Multi-message response: Splits on `\n\n`, 2s delay between messages
@@ -172,6 +181,7 @@ Top 5 chunks injected into AI prompt
 **Status:** ✅ Active (AI Gateway deprecated)
 
 **Architecture:** Client-specific Vault credentials with direct SDK calls
+
 - ✅ Each client uses their OWN API keys from Vault (complete multi-tenant isolation)
 - ✅ Supports OpenAI and Groq providers
 - ✅ Budget enforcement via `checkBudgetAvailable()`
@@ -181,6 +191,7 @@ Top 5 chunks injected into AI prompt
 - ✅ Transparent errors (no hidden fallback failures)
 
 **Why Direct AI:**
+
 - Simpler architecture (less code to maintain)
 - Better multi-tenant isolation
 - More transparent errors
@@ -188,12 +199,14 @@ Top 5 chunks injected into AI prompt
 - Direct control over provider choice per client
 
 **Key Files:**
+
 - `src/lib/direct-ai-client.ts` - Main AI interface (`callDirectAI()`)
 - `src/lib/direct-ai-tracking.ts` - Simplified usage tracking
 - `src/lib/vault.ts` - Vault credential management
 - `src/lib/unified-tracking.ts` - Budget enforcement and usage logging
 
 **Usage Example:**
+
 ```typescript
 import { callDirectAI } from '@/lib/direct-ai-client'
 
@@ -214,11 +227,13 @@ const result = await callDirectAI({
 **Credentials:** Retrieved from Supabase Vault per client
 
 **Database Tables:**
+
 - `ai_models_registry` - Model catalog with pricing
 - `gateway_usage_logs` - Per-request tracking (multi-tenant)
 - `client_budgets` - Budget control per client
 
 **Monitoring:**
+
 ```sql
 -- Ver uso por cliente (últimas 24h)
 SELECT
@@ -256,6 +271,7 @@ git commit -m "feat: add feature"
 **Rollback:** Create reversal migration (no automatic rollback!)
 
 **Backup before risky migrations:**
+
 ```bash
 cd db && .\backup-complete.bat
 ```
@@ -269,6 +285,7 @@ cd db && .\backup-complete.bat
 **Problem:** `pg` library hangs in serverless (Vercel)
 
 **Solution:** Use Supabase client (Supavisor pooler)
+
 ```typescript
 // ❌ NEVER in serverless
 const { Pool } = require('pg')
@@ -287,12 +304,12 @@ await supabase.from('table').upsert(...)
 
 ```typescript
 // ❌ Fire-and-forget
-processChatbotMessage(body)
-return NextResponse.json({ status: 200 })
+processChatbotMessage(body);
+return NextResponse.json({ status: 200 });
 
 // ✅ Wait for completion
-await processChatbotMessage(body)
-return NextResponse.json({ status: 200 })
+await processChatbotMessage(body);
+return NextResponse.json({ status: 200 });
 ```
 
 **File:** `src/app/api/webhook/[clientId]/route.ts`
@@ -316,6 +333,7 @@ await supabaseAny.from('clientes_whatsapp').upsert(...)
 **Problem:** `n8n_chat_histories.type` doesn't exist as column
 
 **Reality:**
+
 ```sql
 CREATE TABLE n8n_chat_histories (
   message JSONB  -- type is INSIDE: {"type": "human", "content": "..."}
@@ -331,10 +349,11 @@ CREATE TABLE n8n_chat_histories (
 **Problem:** AI responses include `<function=...>` in WhatsApp messages
 
 **Solution:**
+
 ```typescript
 const removeToolCalls = (text: string): string => {
-  return text.replace(/<function=[^>]+>[\s\S]*?<\/function>/g, '').trim()
-}
+  return text.replace(/<function=[^>]+>[\s\S]*?<\/function>/g, "").trim();
+};
 ```
 
 **File:** `formatResponse.ts:7-10`
@@ -344,13 +363,15 @@ const removeToolCalls = (text: string): string => {
 **Problem:** Localhost webhooks don't work (Meta can't reach)
 
 **Solution:** ALWAYS use production URL
+
 ```env
-WEBHOOK_BASE_URL=https://chat.luisfboff.com  # Even in dev!
+WEBHOOK_BASE_URL=https://uzzap.uzzai.com  # Even in dev!
 ```
 
 ### 7. Token Confusion
 
 **Different tokens:**
+
 - `META_ACCESS_TOKEN` (EAA...) → Send messages via API
 - `META_VERIFY_TOKEN` (your string) → Webhook verification
 
@@ -362,15 +383,15 @@ WEBHOOK_BASE_URL=https://chat.luisfboff.com  # Even in dev!
 
 ```typescript
 export interface NodeInput {
-  phone: string
-  content: string
+  phone: string;
+  content: string;
 }
 
 export const myNode = async (input: NodeInput): Promise<string> => {
-  const { phone, content } = input
+  const { phone, content } = input;
   // Pure logic, single responsibility
-  return result
-}
+  return result;
+};
 ```
 
 **Rules:** Export interface, named function, pure, descriptive names
@@ -378,16 +399,16 @@ export const myNode = async (input: NodeInput): Promise<string> => {
 ### API Route Pattern
 
 ```typescript
-export const dynamic = 'force-dynamic' // CRITICAL!
+export const dynamic = "force-dynamic"; // CRITICAL!
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerClient() // Service role
-    const { data, error } = await supabase.from('table').select('*')
-    if (error) throw error
-    return NextResponse.json({ data })
+    const supabase = createServerClient(); // Service role
+    const { data, error } = await supabase.from("table").select("*");
+    if (error) throw error;
+    return NextResponse.json({ data });
   } catch (error) {
-    return NextResponse.json({ error: 'Message' }, { status: 500 })
+    return NextResponse.json({ error: "Message" }, { status: 500 });
   }
 }
 ```
@@ -468,6 +489,7 @@ curl http://localhost:3000/api/test/nodes/ai-response
 ## Environment Variables
 
 **Required:**
+
 ```env
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=
@@ -495,6 +517,7 @@ GMAIL_APP_PASSWORD=
 ```
 
 **Get credentials:**
+
 - Supabase: https://app.supabase.com/project/_/settings/api
 - Meta: https://developers.facebook.com/apps/
 - OpenAI: https://platform.openai.com/api-keys
@@ -507,6 +530,7 @@ GMAIL_APP_PASSWORD=
 **Access:** `/dashboard/flow-architecture`
 
 **Features:**
+
 - Interactive Mermaid diagram (14-node pipeline)
 - Click any node to configure
 - Enable/disable nodes (visual feedback)
@@ -555,14 +579,18 @@ GMAIL_APP_PASSWORD=
 You have access to two Byterover MCP tools:
 
 ### `byterover-store-knowledge`
+
 Use when:
+
 - Learning new patterns, APIs, or architectural decisions
 - Encountering error solutions or debugging techniques
 - Finding reusable code patterns
 - Completing significant tasks
 
 ### `byterover-retrieve-knowledge`
+
 Use when:
+
 - Starting new tasks (gather context)
 - Making architectural decisions
 - Debugging issues (check previous solutions)
@@ -575,107 +603,123 @@ Use when:
 [byterover-mcp]
 
 You are given two tools from Byterover MCP server, including
+
 ## 1. `byterover-store-knowledge`
+
 You `MUST` always use this tool when:
 
-+ Learning new patterns, APIs, or architectural decisions from the codebase
-+ Encountering error solutions or debugging techniques
-+ Finding reusable code patterns or utility functions
-+ Completing any significant task or plan implementation
+- Learning new patterns, APIs, or architectural decisions from the codebase
+- Encountering error solutions or debugging techniques
+- Finding reusable code patterns or utility functions
+- Completing any significant task or plan implementation
 
 ## 2. `byterover-retrieve-knowledge`
+
 You `MUST` always use this tool when:
 
-+ Starting any new task or implementation to gather relevant context
-+ Before making architectural decisions to understand existing patterns
-+ When debugging issues to check for previous solutions
-+ Working with unfamiliar parts of the codebase
+- Starting any new task or implementation to gather relevant context
+- Before making architectural decisions to understand existing patterns
+- When debugging issues to check for previous solutions
+- Working with unfamiliar parts of the codebase
 
 [byterover-mcp]
 
 [byterover-mcp]
 
 You are given two tools from Byterover MCP server, including
+
 ## 1. `byterover-store-knowledge`
+
 You `MUST` always use this tool when:
 
-+ Learning new patterns, APIs, or architectural decisions from the codebase
-+ Encountering error solutions or debugging techniques
-+ Finding reusable code patterns or utility functions
-+ Completing any significant task or plan implementation
+- Learning new patterns, APIs, or architectural decisions from the codebase
+- Encountering error solutions or debugging techniques
+- Finding reusable code patterns or utility functions
+- Completing any significant task or plan implementation
 
 ## 2. `byterover-retrieve-knowledge`
+
 You `MUST` always use this tool when:
 
-+ Starting any new task or implementation to gather relevant context
-+ Before making architectural decisions to understand existing patterns
-+ When debugging issues to check for previous solutions
-+ Working with unfamiliar parts of the codebase
+- Starting any new task or implementation to gather relevant context
+- Before making architectural decisions to understand existing patterns
+- When debugging issues to check for previous solutions
+- Working with unfamiliar parts of the codebase
 
 [byterover-mcp]
 
 [byterover-mcp]
 
 You are given two tools from Byterover MCP server, including
+
 ## 1. `byterover-store-knowledge`
+
 You `MUST` always use this tool when:
 
-+ Learning new patterns, APIs, or architectural decisions from the codebase
-+ Encountering error solutions or debugging techniques
-+ Finding reusable code patterns or utility functions
-+ Completing any significant task or plan implementation
+- Learning new patterns, APIs, or architectural decisions from the codebase
+- Encountering error solutions or debugging techniques
+- Finding reusable code patterns or utility functions
+- Completing any significant task or plan implementation
 
 ## 2. `byterover-retrieve-knowledge`
+
 You `MUST` always use this tool when:
 
-+ Starting any new task or implementation to gather relevant context
-+ Before making architectural decisions to understand existing patterns
-+ When debugging issues to check for previous solutions
-+ Working with unfamiliar parts of the codebase
+- Starting any new task or implementation to gather relevant context
+- Before making architectural decisions to understand existing patterns
+- When debugging issues to check for previous solutions
+- Working with unfamiliar parts of the codebase
 
 [byterover-mcp]
 
 [byterover-mcp]
 
 You are given two tools from Byterover MCP server, including
+
 ## 1. `byterover-store-knowledge`
+
 You `MUST` always use this tool when:
 
-+ Learning new patterns, APIs, or architectural decisions from the codebase
-+ Encountering error solutions or debugging techniques
-+ Finding reusable code patterns or utility functions
-+ Completing any significant task or plan implementation
+- Learning new patterns, APIs, or architectural decisions from the codebase
+- Encountering error solutions or debugging techniques
+- Finding reusable code patterns or utility functions
+- Completing any significant task or plan implementation
 
 ## 2. `byterover-retrieve-knowledge`
+
 You `MUST` always use this tool when:
 
-+ Starting any new task or implementation to gather relevant context
-+ Before making architectural decisions to understand existing patterns
-+ When debugging issues to check for previous solutions
-+ Working with unfamiliar parts of the codebase
+- Starting any new task or implementation to gather relevant context
+- Before making architectural decisions to understand existing patterns
+- When debugging issues to check for previous solutions
+- Working with unfamiliar parts of the codebase
 
 [byterover-mcp]
 
 [byterover-mcp]
 
 You are given two tools from Byterover MCP server, including
+
 ## 1. `byterover-store-knowledge`
+
 You `MUST` always use this tool when:
 
-+ Learning new patterns, APIs, or architectural decisions from the codebase
-+ Encountering error solutions or debugging techniques
-+ Finding reusable code patterns or utility functions
-+ Completing any significant task or plan implementation
+- Learning new patterns, APIs, or architectural decisions from the codebase
+- Encountering error solutions or debugging techniques
+- Finding reusable code patterns or utility functions
+- Completing any significant task or plan implementation
 
 ## 2. `byterover-retrieve-knowledge`
+
 You `MUST` always use this tool when:
 
-+ Starting any new task or implementation to gather relevant context
-+ Before making architectural decisions to understand existing patterns
-+ When debugging issues to check for previous solutions
-+ Working with unfamiliar parts of the codebase
+- Starting any new task or implementation to gather relevant context
+- Before making architectural decisions to understand existing patterns
+- When debugging issues to check for previous solutions
+- Working with unfamiliar parts of the codebase
 
 ## Important usage note
-+ In this Codex environment, the ByteRover MCP server runs in global mode rather than being automatically bound to this repository.
-+ Always pass `cwd` with the repository root: `C:\Users\Luisf\Documents\GITHUB\ChatBot-Oficial`.
-+ Apply that rule to both retrieve/query and store/curate calls. If `cwd` is omitted, the MCP may fail with a global-mode error or operate without project scoping.
+
+- In this Codex environment, the ByteRover MCP server runs in global mode rather than being automatically bound to this repository.
+- Always pass `cwd` with the repository root: `C:\Users\Luisf\Documents\GITHUB\ChatBot-Oficial`.
+- Apply that rule to both retrieve/query and store/curate calls. If `cwd` is omitted, the MCP may fail with a global-mode error or operate without project scoping.

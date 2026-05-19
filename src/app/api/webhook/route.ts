@@ -1,6 +1,7 @@
 import { processChatbotMessage } from "@/flows/chatbotFlow";
 import { handleUnknownWABA } from "@/lib/auto-provision";
 import { updateClientProvisioningStatus } from "@/lib/coexistence-sync";
+import { isContactSilenced } from "@/lib/contact-privacy";
 import { checkDuplicateMessage, markMessageAsProcessed } from "@/lib/dedup";
 import { query } from "@/lib/postgres";
 import { uploadFileToStorage } from "@/lib/storage";
@@ -943,6 +944,10 @@ async function persistHistoryMessage(input: {
 }): Promise<void> {
   const { config, phone, message, direction, status, source, phase, chunkOrder, progress } =
     input;
+
+  if (await isContactSilenced(config.id, phone)) {
+    return;
+  }
   const timestamp = parseWebhookTimestamp(message.timestamp);
   const wamid = typeof message.id === "string" ? message.id : null;
   const importedAsRead = source === "history_sync";
@@ -1535,6 +1540,14 @@ async function processSMBEcho(
     const customerPhone = echo.to || value?.contacts?.[0]?.wa_id || null;
     if (!customerPhone) {
       console.warn("[SMB Echo] Could not determine recipient phone");
+      continue;
+    }
+
+    if (await isContactSilenced(config.id, customerPhone)) {
+      console.log("[SMB Echo] Skipping silenced contact", {
+        clientId: config.id,
+        phone: customerPhone,
+      });
       continue;
     }
 

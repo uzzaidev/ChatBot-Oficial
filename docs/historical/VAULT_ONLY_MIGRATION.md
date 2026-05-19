@@ -13,25 +13,28 @@ Este documento detalha as mudanças implementadas para **remover completamente o
 ### 1. **Credenciais devem estar configuradas no Vault**
 
 **ANTES**: Sistema usava fallback para .env se credenciais não existissem no Vault
+
 ```typescript
-const finalOpenaiKey = secrets.openaiApiKey || process.env.OPENAI_API_KEY!
-const finalGroqKey = secrets.groqApiKey || process.env.GROQ_API_KEY!
+const finalOpenaiKey = secrets.openaiApiKey || process.env.OPENAI_API_KEY!;
+const finalGroqKey = secrets.groqApiKey || process.env.GROQ_API_KEY!;
 ```
 
 **DEPOIS**: Sistema lança erro claro se credenciais não estiverem no Vault
+
 ```typescript
-const finalOpenaiKey = secrets.openaiApiKey
-const finalGroqKey = secrets.groqApiKey
+const finalOpenaiKey = secrets.openaiApiKey;
+const finalGroqKey = secrets.groqApiKey;
 
 if (!finalOpenaiKey) {
   throw new Error(
     `No OpenAI key configured for client ${clientId}. ` +
-    `Please configure in Settings: /dashboard/settings`
-  )
+      `Please configure in Settings: /dashboard/settings`,
+  );
 }
 ```
 
 **Ação Necessária**: Configure TODAS as credenciais em `/dashboard/settings`:
+
 - OpenAI API Key
 - Groq API Key
 - Meta Access Token
@@ -41,17 +44,19 @@ if (!finalOpenaiKey) {
 ### 2. **Webhook Legacy Depreciado**
 
 **ANTES**: Webhook em `/api/webhook` usava `DEFAULT_CLIENT_ID` do .env
+
 ```typescript
-const clientId = process.env.DEFAULT_CLIENT_ID
-const config = await getClientConfigWithFallback(clientId)
+const clientId = process.env.DEFAULT_CLIENT_ID;
+const config = await getClientConfigWithFallback(clientId);
 ```
 
 **DEPOIS**: Webhook legacy retorna HTTP 410 Gone com instruções de migração
+
 ```json
 {
   "error": "DEPRECATED_ENDPOINT",
   "message": "This webhook endpoint is deprecated and no longer supported.",
-  "new_format": "https://chat.luisfboff.com/api/webhook/{client_id}",
+  "new_format": "https://uzzap.uzzai.com/api/webhook/{client_id}",
   "instructions": [
     "1. Login to dashboard",
     "2. Go to Settings → Environment Variables",
@@ -62,45 +67,51 @@ const config = await getClientConfigWithFallback(clientId)
 ```
 
 **Ação Necessária**: Atualizar webhook no Meta Dashboard
-1. Acesse https://chat.luisfboff.com/dashboard/settings
-2. Copie a Webhook URL completa (ex: `https://chat.luisfboff.com/api/webhook/550e8400-...`)
+
+1. Acesse https://uzzap.uzzai.com/dashboard/settings
+2. Copie a Webhook URL completa (ex: `https://uzzap.uzzai.com/api/webhook/550e8400-...`)
 3. Atualize em https://developers.facebook.com/apps/ → WhatsApp → Webhook Configuration
 
 ### 3. **Função `getClientConfigWithFallback()` Depreciada**
 
 **ANTES**: Permitia passar `clientId = null` para usar .env
+
 ```typescript
 export const getClientConfigWithFallback = async (clientId?: string | null) => {
   if (clientId) {
-    return await getClientConfig(clientId)
+    return await getClientConfig(clientId);
   }
 
   // Fallback para .env
-  return { /* config from .env */ }
-}
+  return {
+    /* config from .env */
+  };
+};
 ```
 
 **DEPOIS**: Lança erro se `clientId` for null
+
 ```typescript
 export const getClientConfigWithFallback = async (clientId?: string | null) => {
   if (clientId) {
-    return await getClientConfig(clientId)
+    return await getClientConfig(clientId);
   }
 
   throw new Error(
-    'Legacy .env config is no longer supported. ' +
-    'Please update your webhook URL to include client_id'
-  )
-}
+    "Legacy .env config is no longer supported. " +
+      "Please update your webhook URL to include client_id",
+  );
+};
 ```
 
 **Ação Necessária**: Use `getClientConfig(clientId)` diretamente
+
 ```typescript
 // ❌ DEPRECATED
-const config = await getClientConfigWithFallback(null)
+const config = await getClientConfigWithFallback(null);
 
 // ✅ CORRETO
-const config = await getClientConfig(clientId)
+const config = await getClientConfig(clientId);
 ```
 
 ---
@@ -110,30 +121,43 @@ const config = await getClientConfig(clientId)
 ### 1. `src/lib/config.ts`
 
 **Linha 154-184**: Removido fallback e adicionado validação obrigatória
+
 ```typescript
 // ANTES (linhas 155-156)
-const finalOpenaiKey = secrets.openaiApiKey || process.env.OPENAI_API_KEY!
-const finalGroqKey = secrets.groqApiKey || process.env.GROQ_API_KEY!
+const finalOpenaiKey = secrets.openaiApiKey || process.env.OPENAI_API_KEY!;
+const finalGroqKey = secrets.groqApiKey || process.env.GROQ_API_KEY!;
 
 // DEPOIS
-const finalOpenaiKey = secrets.openaiApiKey
-const finalGroqKey = secrets.groqApiKey
+const finalOpenaiKey = secrets.openaiApiKey;
+const finalGroqKey = secrets.groqApiKey;
 
 if (!finalOpenaiKey) {
-  throw new Error(`No OpenAI key configured for client ${clientId}. Configure in /dashboard/settings`)
+  throw new Error(
+    `No OpenAI key configured for client ${clientId}. Configure in /dashboard/settings`,
+  );
 }
 if (!finalGroqKey) {
-  throw new Error(`No Groq key configured for client ${clientId}. Configure in /dashboard/settings`)
+  throw new Error(
+    `No Groq key configured for client ${clientId}. Configure in /dashboard/settings`,
+  );
 }
 if (!secrets.metaAccessToken) {
-  throw new Error(`No Meta Access Token configured for client ${clientId}. Configure in /dashboard/settings`)
+  throw new Error(
+    `No Meta Access Token configured for client ${clientId}. Configure in /dashboard/settings`,
+  );
 }
-if (!client.meta_phone_number_id || client.meta_phone_number_id === 'CONFIGURE_IN_SETTINGS') {
-  throw new Error(`No Meta Phone Number ID configured for client ${clientId}. Configure in /dashboard/settings`)
+if (
+  !client.meta_phone_number_id ||
+  client.meta_phone_number_id === "CONFIGURE_IN_SETTINGS"
+) {
+  throw new Error(
+    `No Meta Phone Number ID configured for client ${clientId}. Configure in /dashboard/settings`,
+  );
 }
 ```
 
 **Linha 256-290**: Marcado `getClientConfigWithFallback()` como deprecated
+
 ```typescript
 /**
  * ⚠️ DEPRECATED: Esta função será removida em breve.
@@ -143,45 +167,55 @@ if (!client.meta_phone_number_id || client.meta_phone_number_id === 'CONFIGURE_I
  */
 export const getClientConfigWithFallback = async (clientId?: string | null) => {
   if (clientId) {
-    return await getClientConfig(clientId)
+    return await getClientConfig(clientId);
   }
 
-  throw new Error('Legacy .env config is no longer supported.')
-}
+  throw new Error("Legacy .env config is no longer supported.");
+};
 ```
 
 ### 2. `src/app/api/webhook/route.ts`
 
 **GET Handler (linhas 6-51)**: Retorna HTTP 410 Gone
+
 ```typescript
 export async function GET(req: NextRequest) {
-  console.error('❌ [WEBHOOK GET] DEPRECATED: Este endpoint não é mais suportado')
+  console.error(
+    "❌ [WEBHOOK GET] DEPRECATED: Este endpoint não é mais suportado",
+  );
 
   return new NextResponse(
     JSON.stringify({
-      error: 'DEPRECATED_ENDPOINT',
-      message: 'This webhook endpoint is deprecated and no longer supported.',
+      error: "DEPRECATED_ENDPOINT",
+      message: "This webhook endpoint is deprecated and no longer supported.",
       new_format: `${getWebhookBaseUrl()}/api/webhook/{client_id}`,
-      instructions: [ /* migration steps */ ],
+      instructions: [
+        /* migration steps */
+      ],
     }),
-    { status: 410 }
-  )
+    { status: 410 },
+  );
 }
 ```
 
 **POST Handler (linhas 102-138)**: Retorna HTTP 410 Gone
+
 ```typescript
 export async function POST(req: NextRequest) {
-  console.error('❌ [WEBHOOK] DEPRECATED: Este endpoint não usa mais .env fallback')
-  console.error('📋 [WEBHOOK] AÇÃO NECESSÁRIA: Migre para /api/webhook/{client_id}')
+  console.error(
+    "❌ [WEBHOOK] DEPRECATED: Este endpoint não usa mais .env fallback",
+  );
+  console.error(
+    "📋 [WEBHOOK] AÇÃO NECESSÁRIA: Migre para /api/webhook/{client_id}",
+  );
 
   return new NextResponse(
     JSON.stringify({
-      error: 'DEPRECATED_ENDPOINT',
+      error: "DEPRECATED_ENDPOINT",
       /* same structure as GET */
     }),
-    { status: 410 }
-  )
+    { status: 410 },
+  );
 }
 ```
 
@@ -194,6 +228,7 @@ export async function POST(req: NextRequest) {
 **Já existe e está funcionando corretamente!**
 
 Este endpoint:
+
 - ✅ Extrai `clientId` da URL automaticamente
 - ✅ Busca credenciais do Vault usando `getClientConfig(clientId)`
 - ✅ Não depende de .env (exceto `WEBHOOK_BASE_URL`)
@@ -201,8 +236,9 @@ Este endpoint:
 - ✅ Processa mensagens com config do cliente
 
 **Exemplo de uso**:
+
 ```
-URL do Webhook: https://chat.luisfboff.com/api/webhook/550e8400-e29b-41d4-a716-446655440000
+URL do Webhook: https://uzzap.uzzai.com/api/webhook/550e8400-e29b-41d4-a716-446655440000
                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
                                                         client_id do usuário
 ```
@@ -214,9 +250,10 @@ URL do Webhook: https://chat.luisfboff.com/api/webhook/550e8400-e29b-41d4-a716-4
 Algumas variáveis de ambiente ainda são obrigatórias no `.env.local`:
 
 ### Obrigatórias (Infraestrutura)
+
 ```env
 # Webhook Base URL (usado para construir URLs dinâmicas)
-WEBHOOK_BASE_URL=https://chat.luisfboff.com
+WEBHOOK_BASE_URL=https://uzzap.uzzai.com
 
 # Supabase (acesso ao banco e Vault)
 NEXT_PUBLIC_SUPABASE_URL=https://project.supabase.co
@@ -231,6 +268,7 @@ REDIS_URL=redis://localhost:6379
 ```
 
 ### NÃO São Mais Usadas (Podem ser removidas)
+
 ```env
 # ❌ DEPRECATED - Agora vêm do Vault
 OPENAI_API_KEY=sk-...
@@ -278,6 +316,7 @@ DEFAULT_CLIENT_ID=550e8400-...
 ### Q: Por que remover os fallbacks de .env?
 
 **A**: Para garantir segurança e multi-tenancy correto:
+
 - **Segurança**: Credenciais no Vault são criptografadas (AES-256)
 - **Multi-tenant**: Cada cliente tem suas próprias credenciais isoladas
 - **Auditoria**: Mudanças no Vault são rastreáveis
@@ -309,14 +348,17 @@ Please configure in Settings: /dashboard/settings
 ## Próximos Passos (Futuro)
 
 1. **Remover funções deprecated completamente** (após período de transição)
+
    - Remover `getClientConfigWithFallback()`
    - Remover `getMetaConfig()`
    - Remover `getMetaVerifyToken()` (usar Vault)
 
 2. **Remover endpoint legacy `/api/webhook`** (após migração completa)
+
    - Todos os clientes devem usar `/api/webhook/{client_id}`
 
 3. **Adicionar rate limiting por cliente**
+
    - Baseado em `client.plan` (free, basic, pro)
 
 4. **Auditoria de uso de credenciais**

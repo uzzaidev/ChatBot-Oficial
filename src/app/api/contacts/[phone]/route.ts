@@ -86,7 +86,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const { phone } = await params;
     const cleanPhone = phone.replace(/\D/g, "");
     const body = await request.json();
-    const { name, status } = body as { name?: unknown; status?: string };
+    const { name, status, save_history: saveHistory } = body as {
+      name?: unknown;
+      status?: string;
+      save_history?: unknown;
+    };
 
     // Validar status se fornecido
     if (
@@ -100,6 +104,17 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         },
         { status: 400 }
       );
+    }
+
+    let normalizedSaveHistory: boolean | undefined;
+    if (saveHistory !== undefined) {
+      if (typeof saveHistory !== "boolean") {
+        return NextResponse.json(
+          { error: "save_history deve ser booleano" },
+          { status: 400 }
+        );
+      }
+      normalizedSaveHistory = saveHistory;
     }
 
     let normalizedName: string | undefined;
@@ -137,6 +152,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       paramIndex++;
     }
 
+    if (normalizedSaveHistory !== undefined) {
+      // jsonb_set + COALESCE garante que o metadata existe antes do merge
+      updates.push(
+        `metadata = jsonb_set(COALESCE(metadata, '{}'::jsonb), '{save_history}', $${paramIndex}::jsonb, true)`
+      );
+      values.push(JSON.stringify(normalizedSaveHistory));
+      paramIndex++;
+    }
+
     if (updates.length === 0) {
       return NextResponse.json(
         { error: "Nenhum campo para atualizar fornecido" },
@@ -150,7 +174,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       UPDATE clientes_whatsapp
       SET ${updates.join(", ")}
       WHERE client_id = $1 AND telefone = $2
-      RETURNING telefone as phone, nome as name, status, created_at, COALESCE(updated_at, NOW()) as updated_at
+      RETURNING telefone as phone, nome as name, status, created_at, COALESCE(updated_at, NOW()) as updated_at, metadata
     `;
 
     const result = await query<any>(updateQuery, values);
@@ -173,6 +197,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         status: row.status,
         created_at: row.created_at,
         updated_at: row.updated_at,
+        metadata: row.metadata || undefined,
       },
     });
   } catch (error) {

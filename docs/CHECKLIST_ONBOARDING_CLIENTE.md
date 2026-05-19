@@ -258,7 +258,7 @@ FASE 10 — Go-Live
 
 ### 8.1 URL do Webhook
 
-- [ ] URL de produção do sistema confirmada (ex: `https://chat.luisfboff.com`)
+- [ ] URL de produção do sistema confirmada (ex: `https://uzzap.uzzai.com`)
 - [ ] URL do webhook no formato correto: `https://<dominio>/api/webhook/<clientId>`
   - `clientId` = UUID do cliente no banco (tabela `clients`)
   - Localizar em: `/dashboard/settings` → campo "Client ID" ou via admin
@@ -377,32 +377,32 @@ FASE 10 — Go-Live
 
 ## Referência Rápida — Problemas Comuns
 
-| Sintoma | Causa Provável | Onde Investigar |
-|---------|---------------|-----------------|
-| Bot não responde | Webhook não verificado | `/dashboard/backend` → logs |
-| "Invalid token" no webhook | `META_VERIFY_TOKEN` divergente | Comparar Vault vs Meta Dashboard |
-| Resposta genérica / sem contexto | Prompt muito vago | `/dashboard/settings` → rever prompt |
-| Áudio sem transcrição | OpenAI key inválida ou node desabilitado | `/api/vault/debug` + `/dashboard/flow-architecture` |
-| RAG não encontra resposta | Embeddings não gerados | `/api/debug/embeddings` |
-| Bot responde em handoff | Status não atualizado | `/dashboard/contacts` → checar status |
-| Duplicate respostas | Batch window muito curto | `/dashboard/settings` → aumentar batch |
-| Budget excedido | Limite de IA atingido | `/api/budget/status` + `/dashboard/admin/budget-plans` |
-| Contatos não importados | Formato inválido do CSV | Baixar template: `/api/contacts/template` |
+| Sintoma                          | Causa Provável                           | Onde Investigar                                        |
+| -------------------------------- | ---------------------------------------- | ------------------------------------------------------ |
+| Bot não responde                 | Webhook não verificado                   | `/dashboard/backend` → logs                            |
+| "Invalid token" no webhook       | `META_VERIFY_TOKEN` divergente           | Comparar Vault vs Meta Dashboard                       |
+| Resposta genérica / sem contexto | Prompt muito vago                        | `/dashboard/settings` → rever prompt                   |
+| Áudio sem transcrição            | OpenAI key inválida ou node desabilitado | `/api/vault/debug` + `/dashboard/flow-architecture`    |
+| RAG não encontra resposta        | Embeddings não gerados                   | `/api/debug/embeddings`                                |
+| Bot responde em handoff          | Status não atualizado                    | `/dashboard/contacts` → checar status                  |
+| Duplicate respostas              | Batch window muito curto                 | `/dashboard/settings` → aumentar batch                 |
+| Budget excedido                  | Limite de IA atingido                    | `/api/budget/status` + `/dashboard/admin/budget-plans` |
+| Contatos não importados          | Formato inválido do CSV                  | Baixar template: `/api/contacts/template`              |
 
 ---
 
 ## IDs e URLs Importantes
 
-| Item | Como obter |
-|------|-----------|
-| `clientId` (UUID) | `/dashboard/settings` → seção "Informações Técnicas" |
-| `META_PHONE_NUMBER_ID` | Meta → App → WhatsApp → API Setup |
-| `META_APP_SECRET` | Meta → App → Configurações → Básico |
-| URL do Webhook | `https://<dominio>/api/webhook/<clientId>` |
-| Logs de execução | `/dashboard/backend` |
-| Debug de config | `/api/debug/config` |
-| Status do budget | `/api/budget/status` |
+| Item                   | Como obter                                           |
+| ---------------------- | ---------------------------------------------------- |
+| `clientId` (UUID)      | `/dashboard/settings` → seção "Informações Técnicas" |
+| `META_PHONE_NUMBER_ID` | Meta → App → WhatsApp → API Setup                    |
+| `META_APP_SECRET`      | Meta → App → Configurações → Básico                  |
+| URL do Webhook         | `https://<dominio>/api/webhook/<clientId>`           |
+| Logs de execução       | `/dashboard/backend`                                 |
+| Debug de config        | `/api/debug/config`                                  |
+| Status do budget       | `/api/budget/status`                                 |
 
 ---
 
-*Documento gerado em 2026-03-30 — ChatBot-Oficial (UzzApp WhatsApp SaaS)*
+_Documento gerado em 2026-03-30 — ChatBot-Oficial (UzzApp WhatsApp SaaS)_
