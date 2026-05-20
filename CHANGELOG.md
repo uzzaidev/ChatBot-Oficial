@@ -8,6 +8,15 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-05-20
+
+### refactor
+- Melhorado tratamento de erros e lógica de atualização do template na função `submitTemplate` do hook `useTemplates`. Agora erros detalhados da API são exibidos e a atualização do estado ocorre somente com template válido.
+- Atualizada nomenclatura e mensagens relacionadas ao ID da conta WhatsApp Business (WABA ID) no formulário de templates para maior clareza.
+- Ajustes na exibição de mensagens de erro na submissão de templates na página de templates.
+  - Arquivos: `src/hooks/useTemplates.ts`, `src/components/templates/TemplateForm.tsx`, `src/app/dashboard/templates/page.tsx`
+  - Confiança: alta
+
 ## 2026-05-14
 
 ### feat
