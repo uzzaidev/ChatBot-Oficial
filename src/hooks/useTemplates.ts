@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import type { MessageTemplate, TemplateStatus } from "@/lib/types";
+import { useCallback, useEffect, useState } from "react";
 
 interface UseTemplatesOptions {
   status?: TemplateStatus;
@@ -59,62 +59,66 @@ export const useTemplates = ({
     }
   }, [status]);
 
-  const submitTemplate = useCallback(
-    async (templateId: string) => {
-      try {
-        setError(null);
+  const submitTemplate = useCallback(async (templateId: string) => {
+    try {
+      setError(null);
 
-        const res = await apiFetch(`/api/templates/${templateId}/submit`, {
-          method: "POST",
-        });
-        const response = (await res.json()) as {
-          message: string;
-          template: MessageTemplate;
-        };
+      const res = await apiFetch(`/api/templates/${templateId}/submit`, {
+        method: "POST",
+      });
 
-        // Update the template in the list
+      const response = (await res.json()) as {
+        message?: string;
+        template?: MessageTemplate;
+        error?: string;
+        details?: string;
+      };
+
+      if (!res.ok) {
+        const errMsg = response.details
+          ? `${response.error}: ${response.details}`
+          : response.error ?? "Failed to submit template";
+        throw new Error(errMsg);
+      }
+
+      // Update the template in the list only when we have a valid template back
+      if (response.template) {
         setTemplates((prev) =>
-          prev.map((t) =>
-            t.id === templateId ? response.template : t
-          )
+          prev.map((t) => (t.id === templateId ? response.template! : t)),
         );
-
-        return Promise.resolve();
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Failed to submit template";
-        setError(errorMessage);
-        console.error("Error submitting template:", err);
-        return Promise.reject(err);
       }
-    },
-    []
-  );
 
-  const deleteTemplate = useCallback(
-    async (templateId: string) => {
-      try {
-        setError(null);
+      return Promise.resolve();
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to submit template";
+      setError(errorMessage);
+      console.error("Error submitting template:", err);
+      return Promise.reject(err);
+    }
+  }, []);
 
-        await apiFetch(`/api/templates/${templateId}`, {
-          method: "DELETE",
-        });
+  const deleteTemplate = useCallback(async (templateId: string) => {
+    try {
+      setError(null);
 
-        // Remove the template from the list
-        setTemplates((prev) => prev.filter((t) => t.id !== templateId));
-        setTotal((prev) => prev - 1);
+      await apiFetch(`/api/templates/${templateId}`, {
+        method: "DELETE",
+      });
 
-        return Promise.resolve();
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Failed to delete template";
-        setError(errorMessage);
-        console.error("Error deleting template:", err);
-        return Promise.reject(err);
-      }
-    },
-    []
-  );
+      // Remove the template from the list
+      setTemplates((prev) => prev.filter((t) => t.id !== templateId));
+      setTotal((prev) => prev - 1);
+
+      return Promise.resolve();
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to delete template";
+      setError(errorMessage);
+      console.error("Error deleting template:", err);
+      return Promise.reject(err);
+    }
+  }, []);
 
   const syncTemplates = useCallback(async () => {
     try {

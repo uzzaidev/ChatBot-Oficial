@@ -1,17 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClientBrowser } from "@/lib/supabase";
 import { TemplateList } from "@/components/templates/TemplateList";
-import { useTemplates } from "@/hooks/useTemplates";
 import { Button } from "@/components/ui/button";
-import { Plus, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTemplates } from "@/hooks/useTemplates";
+import { createClientBrowser } from "@/lib/supabase";
+import { Plus, RefreshCw } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 /**
  * Templates Page - Client Component
- * 
+ *
  * Displays list of WhatsApp message templates
  */
 export default function TemplatesPage() {
@@ -82,8 +82,11 @@ export default function TemplatesPage() {
       });
     } catch (err) {
       toast({
-        title: "Erro",
-        description: "Falha ao submeter template para aprovação.",
+        title: "Erro ao submeter template",
+        description:
+          err instanceof Error
+            ? err.message
+            : "Falha ao submeter template para aprovação.",
         variant: "destructive",
       });
     }
