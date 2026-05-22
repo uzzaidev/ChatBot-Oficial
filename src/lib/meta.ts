@@ -115,10 +115,17 @@ export const sendTextMessage = async (
       const detailed = metaError
         ? `${metaError.message ?? "no message"} (code=${metaError.code ?? "?"} subcode=${metaError.error_subcode ?? "?"} type=${metaError.type ?? "?"})`
         : error.message;
-      console.error("[meta.sendTextMessage] Meta API error", {
-        status: error.response?.status,
-        data: errorData,
-      });
+      console.error(
+        "[meta.sendTextMessage] Meta API error",
+        JSON.stringify(
+          {
+            status: error.response?.status,
+            data: errorData,
+          },
+          null,
+          2,
+        ),
+      );
       throw new Error(`Failed to send text message via Meta API: ${detailed}`);
     }
     const errorMessage =
