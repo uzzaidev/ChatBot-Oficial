@@ -10,6 +10,15 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-05-22
 
+### feat
+- Expandido o suporte da integração financeiro para encaminhar mensagens de texto, documentos CSV, áudios e vídeos recebidos via WhatsApp Business para o agente financeiro. Adicionado processamento específico para importação de CSVs (Wise e Revolut) e upload de mídia para gravações de reuniões.
+- Implementadas funções auxiliares para detectar o provedor do CSV, enviar arquivos CSV e mídias para o backend financeiro via API multipart com timeout configurado.
+- Introduzido modo silencioso para o bridge financeiro que permite persistir conversas sem enviar respostas via WhatsApp, útil para comandos fire-and-forget.
+  - Arquivos: `src/app/api/webhook/route.ts`, `src/lib/financeiro-bridge.ts`
+  - Confiança: alta
+
+## 2026-05-22
+
 ### docs
 - Corrigido erro de digitação na seção "Common Issues" do arquivo `CLAUDE.md`
   - Arquivos: `CLAUDE.md`
