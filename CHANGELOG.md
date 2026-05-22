@@ -10,6 +10,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-05-22
 
+### docs
+- Corrigido erro de digitação na seção "Common Issues" do arquivo `CLAUDE.md`
+  - Arquivos: `CLAUDE.md`
+  - Confiança: alta
+
+## 2026-05-22
+
 ### feat
 - Implementada resolução canônica de telefone para unificação das conversas no módulo financeiro, permitindo que mensagens e respostas sejam roteadas para um número principal mesmo quando originadas de aliases alternativos configurados via variável de ambiente `FINANCEIRO_REPLY_TO`.
 - Ajustada lógica de envio de respostas financeiras para redirecionar mensagens ao número alternativo configurado, evitando autoenvio proibido pela Meta Cloud API.
