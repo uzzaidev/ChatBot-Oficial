@@ -109,6 +109,18 @@ export const sendTextMessage = async (
 
     return { messageId };
   } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const errorData = error.response?.data;
+      const metaError = errorData?.error;
+      const detailed = metaError
+        ? `${metaError.message ?? "no message"} (code=${metaError.code ?? "?"} subcode=${metaError.error_subcode ?? "?"} type=${metaError.type ?? "?"})`
+        : error.message;
+      console.error("[meta.sendTextMessage] Meta API error", {
+        status: error.response?.status,
+        data: errorData,
+      });
+      throw new Error(`Failed to send text message via Meta API: ${detailed}`);
+    }
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
     throw new Error(
