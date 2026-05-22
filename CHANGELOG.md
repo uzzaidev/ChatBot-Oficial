@@ -11,6 +11,14 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-05-22
 
 ### fix
+- Ajustado formato de log de erro na função `sendTextMessage` para melhorar legibilidade do JSON registrado
+  - Arquivos: `src/lib/meta.ts`
+  - Evidência: alteração no console.error para usar JSON.stringify com indentação
+  - Confiança: alta
+
+## 2026-05-22
+
+### fix
 - Melhorado tratamento e log de erros na função de envio de mensagens via Meta API para detalhar códigos e mensagens de erro da resposta HTTP
   - Arquivos: `src/lib/meta.ts`
   - Evidência: adição de captura e formatação detalhada de erros Axios na função `sendTextMessage`
