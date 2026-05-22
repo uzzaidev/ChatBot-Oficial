@@ -3,6 +3,9 @@ import { handleUnknownWABA } from "@/lib/auto-provision";
 import { updateClientProvisioningStatus } from "@/lib/coexistence-sync";
 import { isContactSilenced } from "@/lib/contact-privacy";
 import {
+  detectCsvProvider,
+  forwardCsvToFinanceiro,
+  forwardMediaToFinanceiro,
   isFinanceiroOwner,
   resolveCanonicalOwnerPhone,
   routeMessageToFinanceiro,
@@ -1669,43 +1672,144 @@ async function processSMBEcho(
     }
 
     // 🏦 Financeiro bridge for echoes (owner self-chat via WhatsApp Business app)
-    // If `echo.to` (the conversation partner — for self-chat this is the
-    // business number itself) is the owner's whitelisted phone, forward the
-    // text to the financeiro agent. The agent's reply is sent back via the
-    // Cloud API to the same conversation, so it lands in the same chat thread
-    // the user just typed into. Only text echoes are routed; media echoes are
-    // ignored (the financeiro endpoint does not parse media yet).
+    // When `echo.to` matches the owner whitelist, route the echo to the
+    // financeiro by its media type:
+    //   text     → agente conversacional (lembretes, queries, ações)
+    //   document → CSV de Wise/Revolut → import direto
+    //   audio    → upload de gravação de reunião → transcrição + reunião
+    //   video    → idem (video pode ser usado em reuniões gravadas)
+    // The text path responds back via WhatsApp; document/audio paths log the
+    // outcome and the user checks the painel web for results.
     if (isFinanceiroOwner(customerPhone)) {
-      const echoText =
-        typeof echo?.text?.body === "string" ? echo.text.body.trim() : "";
-      if (!echoText) {
-        console.log("[SMB Echo] Financeiro owner echo with no text body — skipping route", {
+      const canonicalPhone =
+        resolveCanonicalOwnerPhone(customerPhone) ?? customerPhone;
+
+      // ── Text ──
+      if (echo?.type === "text") {
+        const echoText =
+          typeof echo?.text?.body === "string" ? echo.text.body.trim() : "";
+        if (!echoText) {
+          console.log("[SMB Echo] Financeiro owner echo with no text body — skipping route", {
+            phone: customerPhone,
+          });
+        } else {
+          try {
+            const routeResult = await routeMessageToFinanceiro({
+              phone: canonicalPhone,
+              text: echoText,
+              config,
+            });
+            console.log("[SMB Echo] Financeiro route result (text)", {
+              phone: customerPhone,
+              canonicalPhone,
+              ok: routeResult.ok,
+              replyType: routeResult.replyType ?? null,
+              reason: routeResult.reason ?? null,
+              error: routeResult.error ?? null,
+            });
+          } catch (routeError) {
+            console.error(
+              "[SMB Echo] Financeiro route threw",
+              routeError instanceof Error ? routeError.message : routeError,
+            );
+          }
+        }
+      }
+
+      // ── Document (CSV import) ──
+      else if (echo?.type === "document" && echo?.document?.id) {
+        const filename: string =
+          (typeof echo.document.filename === "string" && echo.document.filename) ||
+          `document_${Date.now()}.csv`;
+        const isCsv =
+          /\.csv$/i.test(filename) ||
+          echo.document.mime_type === "text/csv" ||
+          echo.document.mime_type === "application/csv";
+
+        if (!isCsv) {
+          console.log("[SMB Echo] Financeiro owner sent non-CSV document — skipping", {
+            filename,
+            mime: echo.document.mime_type,
+          });
+        } else {
+          try {
+            const buffer = await downloadMetaMedia(
+              echo.document.id,
+              config.apiKeys.metaAccessToken,
+            );
+            const csvText = buffer.toString("utf-8");
+            const provider = detectCsvProvider(filename, csvText);
+            if (!provider) {
+              console.warn("[SMB Echo] CSV provider could not be detected — skipping", {
+                filename,
+                firstLine: csvText.split(/\r?\n/, 1)[0]?.slice(0, 200),
+              });
+            } else {
+              const result = await forwardCsvToFinanceiro({
+                buffer,
+                filename,
+                provider,
+              });
+              console.log("[SMB Echo] Financeiro CSV import result", {
+                phone: customerPhone,
+                provider,
+                filename,
+                result,
+              });
+            }
+          } catch (csvError) {
+            console.error(
+              "[SMB Echo] Financeiro CSV import threw",
+              csvError instanceof Error ? csvError.message : csvError,
+            );
+          }
+        }
+      }
+
+      // ── Audio / Video (upload as recording) ──
+      else if (
+        (echo?.type === "audio" && echo?.audio?.id) ||
+        (echo?.type === "video" && echo?.video?.id)
+      ) {
+        const descriptor = echo.type === "audio" ? echo.audio : echo.video;
+        const mediaId: string = descriptor.id;
+        const mimeType: string =
+          descriptor.mime_type ?? (echo.type === "audio" ? "audio/ogg" : "video/mp4");
+        const ext = MIME_TO_EXTENSION[mimeType] ?? (echo.type === "audio" ? "ogg" : "mp4");
+        const filename =
+          descriptor.filename ?? `${echo.type}_${customerPhone}_${Date.now()}.${ext}`;
+        try {
+          const buffer = await downloadMetaMedia(
+            mediaId,
+            config.apiKeys.metaAccessToken,
+          );
+          const result = await forwardMediaToFinanceiro({
+            buffer,
+            filename,
+            mimeType,
+          });
+          console.log("[SMB Echo] Financeiro media upload result", {
+            phone: customerPhone,
+            type: echo.type,
+            filename,
+            mimeType,
+            sizeBytes: buffer.length,
+            result,
+          });
+        } catch (mediaError) {
+          console.error(
+            "[SMB Echo] Financeiro media upload threw",
+            mediaError instanceof Error ? mediaError.message : mediaError,
+          );
+        }
+      }
+
+      // ── Other types (image, sticker, etc.) — currently ignored ──
+      else {
+        console.log("[SMB Echo] Financeiro owner echo type not handled — ignoring", {
           phone: customerPhone,
           type: echo?.type,
         });
-      } else {
-        const canonicalPhone =
-          resolveCanonicalOwnerPhone(customerPhone) ?? customerPhone;
-        try {
-          const routeResult = await routeMessageToFinanceiro({
-            phone: canonicalPhone,
-            text: echoText,
-            config,
-          });
-          console.log("[SMB Echo] Financeiro route result", {
-            phone: customerPhone,
-            canonicalPhone,
-            ok: routeResult.ok,
-            replyType: routeResult.replyType ?? null,
-            reason: routeResult.reason ?? null,
-            error: routeResult.error ?? null,
-          });
-        } catch (routeError) {
-          console.error(
-            "[SMB Echo] Financeiro route threw",
-            routeError instanceof Error ? routeError.message : routeError,
-          );
-        }
       }
     }
   }

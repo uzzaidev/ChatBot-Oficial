@@ -43,6 +43,22 @@ function normalizePhone(raw: string): string {
   return raw.replace(/\D+/g, "");
 }
 
+/**
+ * Derive a financeiro base URL from FINANCEIRO_AGENT_URL.
+ * `https://gestao.luisfboff.com/api/agente/whatsapp` → `https://gestao.luisfboff.com`
+ * Returns null when the env is unset/invalid.
+ */
+function getFinanceiroOrigin(): string | null {
+  const raw = process.env.FINANCEIRO_AGENT_URL;
+  if (!raw) return null;
+  try {
+    const u = new URL(raw);
+    return `${u.protocol}//${u.host}`;
+  } catch {
+    return null;
+  }
+}
+
 function loadAllowedNumbers(): Set<string> {
   const raw = process.env.FINANCEIRO_OWNER_NUMBERS ?? "";
   return new Set(
@@ -169,6 +185,20 @@ export const sendFinanceiroReply = async (params: {
     return { ok: true };
   }
 
+  // Silent mode: when FINANCEIRO_SILENT_MODE=true, the bridge never delivers
+  // a WhatsApp message back. The conversation is still persisted in the
+  // financeiro DB and visible in the web painel — this is the fire-and-forget
+  // command mode (pair with WHATSAPP_AGENT_AUTO_APPROVE=true on financeiro).
+  const silentMode = (process.env.FINANCEIRO_SILENT_MODE ?? "")
+    .toLowerCase()
+    .trim() === "true";
+  if (silentMode) {
+    console.log(
+      `[financeiro-bridge] silent mode: not delivering reply (type=${reply.type}, length=${reply.text?.length ?? 0})`,
+    );
+    return { ok: true, deliveredTo: undefined };
+  }
+
   // Self-send isn't allowed by Meta Cloud API. When FINANCEIRO_REPLY_TO is
   // configured, route the reply to that alternate WhatsApp number (e.g. a
   // personal number the user reads on a different device). Otherwise fall
@@ -258,4 +288,128 @@ export const routeMessageToFinanceiro = async (params: {
     return { ok: false, reason: "send_failed", error: send.error };
   }
   return { ok: true, messageId: send.messageId, replyType: reply.type };
+};
+
+// ── CSV import (Wise / Revolut) ────────────────────────────────────────────
+
+export type CsvProvider = "wise" | "revolut";
+
+/**
+ * Detect the CSV provider from filename or content. We prefer filename
+ * heuristics (cheap), then peek at the header line for the discriminating
+ * column names. Returns `null` when neither matches — the caller logs and
+ * skips so we never import the wrong table.
+ */
+export const detectCsvProvider = (
+  filename: string | undefined,
+  csvText: string,
+): CsvProvider | null => {
+  const name = (filename ?? "").toLowerCase();
+  if (/(wise|transferwise|\btw\b)/.test(name)) return "wise";
+  if (/(revolut|statement)/.test(name)) return "revolut";
+
+  const firstLine = csvText.split(/\r?\n/, 1)[0]?.toLowerCase() ?? "";
+  // Wise header signature: includes "direction" and "source amount" early on.
+  if (firstLine.includes("direction") && firstLine.includes("source amount"))
+    return "wise";
+  // Revolut header signature: starts with Type,Product,Started Date...
+  if (firstLine.includes("started date") && firstLine.includes("completed date"))
+    return "revolut";
+
+  return null;
+};
+
+/**
+ * POST a CSV file as multipart to the financeiro provider endpoint. Returns
+ * the parsed JSON response (`{ imported, skipped, brasilCreated }` for Wise;
+ * provider-specific for Revolut). Throws on network/HTTP errors so the
+ * caller can decide whether to surface to the user.
+ */
+export const forwardCsvToFinanceiro = async (params: {
+  buffer: Buffer;
+  filename: string;
+  provider: CsvProvider;
+}): Promise<Record<string, unknown>> => {
+  const origin = getFinanceiroOrigin();
+  const token = process.env.FINANCEIRO_AGENT_TOKEN;
+  if (!origin || !token) {
+    throw new Error("FINANCEIRO_AGENT_URL or FINANCEIRO_AGENT_TOKEN missing");
+  }
+
+  const url = `${origin}/api/${params.provider}/csv`;
+  const form = new FormData();
+  // Node 20 has global Blob/FormData/File. Convert Buffer to Uint8Array so
+  // Blob accepts it cleanly across Node minor versions.
+  const blob = new Blob([new Uint8Array(params.buffer)], { type: "text/csv" });
+  form.append("file", blob, params.filename);
+
+  // 60s timeout — the Wise route does N inserts; Revolut similar.
+  const ctrl = new AbortController();
+  const timeout = setTimeout(() => ctrl.abort(), 60_000);
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+      signal: ctrl.signal,
+    });
+    const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    if (!res.ok) {
+      const errMsg =
+        typeof data.error === "string" ? data.error : `HTTP ${res.status}`;
+      throw new Error(`financeiro CSV import failed: ${errMsg}`);
+    }
+    return data;
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
+// ── Media upload (audio/video → reunião gravacao) ──────────────────────────
+
+/**
+ * POST an audio/video file as multipart to the financeiro media upload
+ * endpoint. The financeiro side stores the file in Vercel Blob, creates the
+ * reunião + gravação rows, and (optionally) kicks off transcription.
+ * Returns `{ reuniaoId, gravacaoId }`. Throws on network/HTTP errors.
+ */
+export const forwardMediaToFinanceiro = async (params: {
+  buffer: Buffer;
+  filename: string;
+  mimeType: string;
+}): Promise<Record<string, unknown>> => {
+  const origin = getFinanceiroOrigin();
+  const token = process.env.FINANCEIRO_AGENT_TOKEN;
+  if (!origin || !token) {
+    throw new Error("FINANCEIRO_AGENT_URL or FINANCEIRO_AGENT_TOKEN missing");
+  }
+
+  const url = `${origin}/api/agente/whatsapp/upload-audio`;
+  const form = new FormData();
+  const blob = new Blob([new Uint8Array(params.buffer)], { type: params.mimeType });
+  form.append("file", blob, params.filename);
+  form.append("filename", params.filename);
+  form.append("mimeType", params.mimeType);
+
+  // Audio uploads can be larger — give it more time. Vercel Blob handles
+  // multi-MB files fine but we don't want to abort a still-uploading body.
+  const ctrl = new AbortController();
+  const timeout = setTimeout(() => ctrl.abort(), 120_000);
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+      signal: ctrl.signal,
+    });
+    const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    if (!res.ok) {
+      const errMsg =
+        typeof data.error === "string" ? data.error : `HTTP ${res.status}`;
+      throw new Error(`financeiro media upload failed: ${errMsg}`);
+    }
+    return data;
+  } finally {
+    clearTimeout(timeout);
+  }
 };
