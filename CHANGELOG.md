@@ -10,6 +10,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-05-22
 
+### feat
+- Implementado roteamento de mensagens de eco de auto-chat para o agente financeiro, encaminhando textos do proprietário para processamento específico
+  - Arquivos: `src/app/api/webhook/route.ts`
+  - Confiança: alta
+
+## 2026-05-22
+
 ### docs
 - Atualizada orientação para esclarecer a revisão de problemas comuns no arquivo CLAUDE.md
   - Arquivos: `CLAUDE.md`
