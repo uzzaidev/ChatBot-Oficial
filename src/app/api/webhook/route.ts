@@ -4,6 +4,7 @@ import { updateClientProvisioningStatus } from "@/lib/coexistence-sync";
 import { isContactSilenced } from "@/lib/contact-privacy";
 import {
   isFinanceiroOwner,
+  resolveCanonicalOwnerPhone,
   routeMessageToFinanceiro,
 } from "@/lib/financeiro-bridge";
 import { checkDuplicateMessage, markMessageAsProcessed } from "@/lib/dedup";
@@ -1683,14 +1684,17 @@ async function processSMBEcho(
           type: echo?.type,
         });
       } else {
+        const canonicalPhone =
+          resolveCanonicalOwnerPhone(customerPhone) ?? customerPhone;
         try {
           const routeResult = await routeMessageToFinanceiro({
-            phone: customerPhone,
+            phone: canonicalPhone,
             text: echoText,
             config,
           });
           console.log("[SMB Echo] Financeiro route result", {
             phone: customerPhone,
+            canonicalPhone,
             ok: routeResult.ok,
             replyType: routeResult.replyType ?? null,
             reason: routeResult.reason ?? null,

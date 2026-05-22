@@ -54,14 +54,53 @@ function loadAllowedNumbers(): Set<string> {
 }
 
 /**
- * True if `phone` is whitelisted as a financeiro owner. The whitelist is
- * loaded from env on every call so a redeploy isn't required to add a number,
- * and `false` when the env is unset (feature disabled).
+ * Optional override: when set, all financeiro replies are delivered to this
+ * WhatsApp number instead of the conversation's original `phone`. Necessary
+ * because Meta Cloud API rejects `to == phone_number_id` (self-send), so for
+ * Business-app self-chat the reply must land on a different WhatsApp account.
+ */
+function getReplyToOverride(): string | null {
+  const raw = (process.env.FINANCEIRO_REPLY_TO ?? "").trim();
+  if (!raw) return null;
+  const normalized = normalizePhone(raw);
+  return normalized.length > 0 ? normalized : null;
+}
+
+/**
+ * True if `phone` is whitelisted as a financeiro owner. Accepts both:
+ *  - any number in `FINANCEIRO_OWNER_NUMBERS` (canonical IDs — e.g. the BR
+ *    business number the user types from in the Business app);
+ *  - the `FINANCEIRO_REPLY_TO` number if set (the alternate WhatsApp account
+ *    that receives replies, e.g. the user's French number). Including it here
+ *    means button taps on the reply side also pass the gate.
+ * Returns `false` when the env is unset (feature disabled).
  */
 export const isFinanceiroOwner = (phone: string): boolean => {
+  const normalized = normalizePhone(phone);
   const allowed = loadAllowedNumbers();
-  if (allowed.size === 0) return false;
-  return allowed.has(normalizePhone(phone));
+  if (allowed.has(normalized)) return true;
+  const replyTo = getReplyToOverride();
+  if (replyTo && normalized === replyTo) return true;
+  return false;
+};
+
+/**
+ * Map a raw incoming phone to the canonical owner phone the financeiro uses
+ * to key the conversation. When the user sends from the `FINANCEIRO_REPLY_TO`
+ * alias (e.g. taps a button on the French number), we re-key to the first
+ * `FINANCEIRO_OWNER_NUMBERS` entry so the conversation history stays unified
+ * and pending approvals are found. Returns `null` if the phone isn't owned.
+ */
+export const resolveCanonicalOwnerPhone = (rawPhone: string): string | null => {
+  const normalized = normalizePhone(rawPhone);
+  const allowed = loadAllowedNumbers();
+  if (allowed.has(normalized)) return normalized;
+  const replyTo = getReplyToOverride();
+  if (replyTo && normalized === replyTo) {
+    const first = [...allowed][0];
+    return first ?? null;
+  }
+  return null;
 };
 
 /**
@@ -120,7 +159,7 @@ export const sendFinanceiroReply = async (params: {
   phone: string;
   reply: FinanceiroReply;
   config: ClientConfig;
-}): Promise<{ ok: boolean; messageId?: string; error?: string }> => {
+}): Promise<{ ok: boolean; messageId?: string; error?: string; deliveredTo?: string }> => {
   const { phone, reply, config } = params;
 
   if (reply.type === "noop") {
@@ -130,21 +169,32 @@ export const sendFinanceiroReply = async (params: {
     return { ok: true };
   }
 
+  // Self-send isn't allowed by Meta Cloud API. When FINANCEIRO_REPLY_TO is
+  // configured, route the reply to that alternate WhatsApp number (e.g. a
+  // personal number the user reads on a different device). Otherwise fall
+  // back to the original conversation phone.
+  const deliveredTo = getReplyToOverride() ?? phone;
+  if (deliveredTo !== phone) {
+    console.log(
+      `[financeiro-bridge] redirecting reply: source=${phone} → reply_to=${deliveredTo}`,
+    );
+  }
+
   if (reply.type === "interactive") {
     if (!reply.text || !reply.buttons || reply.buttons.length === 0) {
       return { ok: false, error: "interactive reply missing text/buttons" };
     }
     try {
       const { messageId } = await sendInteractiveButtons(
-        phone,
+        deliveredTo,
         { body: reply.text, buttons: reply.buttons },
         config,
       );
-      return { ok: true, messageId };
+      return { ok: true, messageId, deliveredTo };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error("[financeiro-bridge] sendInteractiveButtons failed", msg);
-      return { ok: false, error: msg };
+      return { ok: false, error: msg, deliveredTo };
     }
   }
 
@@ -153,12 +203,12 @@ export const sendFinanceiroReply = async (params: {
     return { ok: false, error: "text reply missing text" };
   }
   try {
-    const { messageId } = await sendTextMessage(phone, reply.text, config);
-    return { ok: true, messageId };
+    const { messageId } = await sendTextMessage(deliveredTo, reply.text, config);
+    return { ok: true, messageId, deliveredTo };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[financeiro-bridge] sendTextMessage failed", msg);
-    return { ok: false, error: msg };
+    return { ok: false, error: msg, deliveredTo };
   }
 };
 

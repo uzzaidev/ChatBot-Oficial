@@ -1,6 +1,7 @@
 import { resolvePolicy } from "@/lib/policy-engine";
 import {
   isFinanceiroOwner,
+  resolveCanonicalOwnerPhone,
   routeMessageToFinanceiro,
 } from "@/lib/financeiro-bridge";
 import {
@@ -323,8 +324,14 @@ export const processChatbotMessage = async (
         return { success: true, skipped: true, reason: "financeiro_unsupported_media" };
       }
 
+      // Re-key the sender to the canonical owner phone so the financeiro
+      // conversation stays unified across the source number (BR business) and
+      // the FINANCEIRO_REPLY_TO alias (e.g. FR) — important so button taps
+      // find their pending approvals.
+      const canonicalPhone =
+        resolveCanonicalOwnerPhone(parsedMessage.phone) ?? parsedMessage.phone;
       const routeResult = await routeMessageToFinanceiro({
-        phone: parsedMessage.phone,
+        phone: canonicalPhone,
         text: isPlainText ? parsedMessage.content : undefined,
         buttonId: isButtonReply ? parsedMessage.interactiveResponseId : undefined,
         config,
