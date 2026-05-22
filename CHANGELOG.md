@@ -10,6 +10,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-05-22
 
+### fix
+- Melhorado tratamento e log de erros na função de envio de mensagens via Meta API para detalhar códigos e mensagens de erro da resposta HTTP
+  - Arquivos: `src/lib/meta.ts`
+  - Evidência: adição de captura e formatação detalhada de erros Axios na função `sendTextMessage`
+  - Confiança: alta
+
+## 2026-05-22
+
 ### feat
 - Implementado roteamento de mensagens de eco de auto-chat para o agente financeiro, encaminhando textos do proprietário para processamento específico
   - Arquivos: `src/app/api/webhook/route.ts`
