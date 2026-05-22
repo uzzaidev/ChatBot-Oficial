@@ -8,6 +8,19 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-05-22
+
+### feat
+- Implementado roteamento de mensagens de números autorizados para o agente financeiro externo, com suporte a mensagens de texto e respostas interativas via botões. Mensagens de mídia não suportadas recebem aviso ao usuário.
+- Adicionada ponte financeira no fluxo principal do chatbot para interceptar e encaminhar mensagens específicas, evitando processamento padrão.
+  - Arquivos: `src/flows/chatbotFlow.ts`, `src/lib/financeiro-bridge.ts`
+  - Confiança: alta
+
+### chore
+- Removidos documentos extensos relacionados ao deploy e checklist iOS, incluindo guias de implantação, checklist de implementação, guia detalhado de iOS e documentação de App Store Connect.
+  - Arquivos removidos: `docs/app/DEPLOY.md`, `docs/ios/IOS_CHECKLIST.md`, `docs/ios/IOS_IMPLEMENTATION_GUIDE.md`
+  - Confiança: alta
+
 ## 2026-05-20
 
 ### refactor
