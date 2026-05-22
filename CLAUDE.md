@@ -8,7 +8,7 @@ WhatsApp SaaS chatbot guidance for Claude Code.
 
 1. Check "Quick Reference" for entry points
 2. Consult `docs/tables/tabelas.md` for database work
-3. Review "Common Issues" for known problems yes
+3. Review "Common Issues" for known problems
 
 **Critical Rules:**
 
