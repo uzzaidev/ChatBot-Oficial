@@ -2,6 +2,10 @@ import { processChatbotMessage } from "@/flows/chatbotFlow";
 import { handleUnknownWABA } from "@/lib/auto-provision";
 import { updateClientProvisioningStatus } from "@/lib/coexistence-sync";
 import { isContactSilenced } from "@/lib/contact-privacy";
+import {
+  isFinanceiroOwner,
+  routeMessageToFinanceiro,
+} from "@/lib/financeiro-bridge";
 import { checkDuplicateMessage, markMessageAsProcessed } from "@/lib/dedup";
 import { query } from "@/lib/postgres";
 import { uploadFileToStorage } from "@/lib/storage";
@@ -1661,6 +1665,44 @@ async function processSMBEcho(
         "[SMB Echo] Failed to insert into n8n_chat_histories",
         historyError,
       );
+    }
+
+    // 🏦 Financeiro bridge for echoes (owner self-chat via WhatsApp Business app)
+    // If `echo.to` (the conversation partner — for self-chat this is the
+    // business number itself) is the owner's whitelisted phone, forward the
+    // text to the financeiro agent. The agent's reply is sent back via the
+    // Cloud API to the same conversation, so it lands in the same chat thread
+    // the user just typed into. Only text echoes are routed; media echoes are
+    // ignored (the financeiro endpoint does not parse media yet).
+    if (isFinanceiroOwner(customerPhone)) {
+      const echoText =
+        typeof echo?.text?.body === "string" ? echo.text.body.trim() : "";
+      if (!echoText) {
+        console.log("[SMB Echo] Financeiro owner echo with no text body — skipping route", {
+          phone: customerPhone,
+          type: echo?.type,
+        });
+      } else {
+        try {
+          const routeResult = await routeMessageToFinanceiro({
+            phone: customerPhone,
+            text: echoText,
+            config,
+          });
+          console.log("[SMB Echo] Financeiro route result", {
+            phone: customerPhone,
+            ok: routeResult.ok,
+            replyType: routeResult.replyType ?? null,
+            reason: routeResult.reason ?? null,
+            error: routeResult.error ?? null,
+          });
+        } catch (routeError) {
+          console.error(
+            "[SMB Echo] Financeiro route threw",
+            routeError instanceof Error ? routeError.message : routeError,
+          );
+        }
+      }
     }
   }
 }
