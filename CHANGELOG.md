@@ -10,6 +10,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-05-22
 
+### docs
+- Atualizada orientação para esclarecer a revisão de problemas comuns no arquivo CLAUDE.md
+  - Arquivos: `CLAUDE.md`
+  - Confiança: alta
+
+## 2026-05-22
+
 ### feat
 - Implementado roteamento de mensagens de números autorizados para o agente financeiro externo, com suporte a mensagens de texto e respostas interativas via botões. Mensagens de mídia não suportadas recebem aviso ao usuário.
 - Adicionada ponte financeira no fluxo principal do chatbot para interceptar e encaminhar mensagens específicas, evitando processamento padrão.
