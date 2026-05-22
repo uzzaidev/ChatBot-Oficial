@@ -10,6 +10,15 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-05-22
 
+### feat
+- Implementada resolução canônica de telefone para unificação das conversas no módulo financeiro, permitindo que mensagens e respostas sejam roteadas para um número principal mesmo quando originadas de aliases alternativos configurados via variável de ambiente `FINANCEIRO_REPLY_TO`.
+- Ajustada lógica de envio de respostas financeiras para redirecionar mensagens ao número alternativo configurado, evitando autoenvio proibido pela Meta Cloud API.
+- Atualizada função de verificação de proprietário financeiro para considerar também o número alternativo e garantir que interações via alias passem na validação.
+  - Arquivos: `src/lib/financeiro-bridge.ts`, `src/app/api/webhook/route.ts`, `src/flows/chatbotFlow.ts`
+  - Confiança: alta
+
+## 2026-05-22
+
 ### fix
 - Ajustado formato de log de erro na função `sendTextMessage` para melhorar legibilidade do JSON registrado
   - Arquivos: `src/lib/meta.ts`
