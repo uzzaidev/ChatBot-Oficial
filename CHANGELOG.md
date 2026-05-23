@@ -11,6 +11,17 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-05-23
 
 ### feat
+- Implementado sistema de feedback para mensagens com API REST e componentes de UI para envio e visualização de avaliações (like, dislike, bug).
+- Adicionada tabela `message_feedback` no banco com políticas de segurança para armazenar avaliações vinculadas a mensagens e rastros.
+- Integrado carregamento de feedback nas APIs de mensagens e rastros, exibindo contagem e detalhes no dashboard.
+- Criados botões interativos de feedback em mensagens enviadas, com modal para observações opcionais.
+- Agrupamento de rastros no cliente por telefone/contato, incluindo filtro por status "com review" e exibição de indicadores visuais.
+  - Arquivos: `src/app/api/message-feedback/route.ts`, `src/app/api/messages/[phone]/route.ts`, `src/app/api/traces/[id]/route.ts`, `src/app/api/traces/route.ts`, `src/components/MessageFeedbackButtons.tsx`, `src/components/MessageBubble.tsx`, `src/components/TracesClient.tsx`, `supabase/migrations/20260523110000_create_message_feedback.sql`
+  - Confiança: alta
+
+## 2026-05-23
+
+### feat
 - Melhorado o tratamento de upload de mídia para arquivos de áudio e vídeo enviados como documentos pelo WhatsApp Business, diferenciando CSV de mídias por extensão e MIME, e encaminhando corretamente para upload no financeiro.
 - Alterado fluxo de upload de mídia para usar Supabase Storage, evitando limite de tamanho do Vercel serverless, e enviando URL público para o financeiro registrar a gravação.
 - Ajustada lógica de timeout e formato do corpo da requisição para registro da mídia no financeiro.
