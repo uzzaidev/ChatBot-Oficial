@@ -314,6 +314,49 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     });
 
     try {
+      const wamids = messages.map((msg) => getWamid(msg)).filter(Boolean);
+
+      if (wamids.length > 0) {
+        const tracesResult = await query<{
+          id: string;
+          whatsapp_message_id: string;
+        }>(
+          `
+          SELECT id, whatsapp_message_id
+          FROM public.message_traces
+          WHERE client_id = $1
+            AND whatsapp_message_id = ANY($2::text[])
+          `,
+          [clientId, wamids],
+        );
+
+        const traceByWamid = new Map(
+          tracesResult.rows.map((row) => [row.whatsapp_message_id, row.id]),
+        );
+
+        for (const msg of messages) {
+          const wamid = getWamid(msg);
+          const traceId = wamid ? traceByWamid.get(wamid) : undefined;
+          if (!traceId) continue;
+
+          const baseMeta = asMetadataRecord(msg.metadata);
+          msg.metadata = {
+            ...baseMeta,
+            trace_id: traceId,
+          };
+        }
+      }
+    } catch (traceLookupError) {
+      const msg =
+        traceLookupError instanceof Error
+          ? traceLookupError.message
+          : String(traceLookupError);
+      if (!msg.toLowerCase().includes("message_traces")) {
+        console.warn("[Messages API Debug] trace lookup failed", msg);
+      }
+    }
+
+    try {
       const messageIds = messages.map((msg) => msg.id);
       const wamids = messages.map((msg) => getWamid(msg)).filter(Boolean);
 

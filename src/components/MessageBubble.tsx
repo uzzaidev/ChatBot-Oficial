@@ -726,8 +726,9 @@ export const MessageBubble = ({
         "flex " + (isIncoming ? "justify-start" : "justify-end") + " mb-2 px-2"
       }
     >
+      <div className="flex max-w-[85%] flex-col items-end sm:max-w-[75%] md:max-w-[70%]">
       <div
-        className={`relative group max-w-[85%] sm:max-w-[75%] md:max-w-[70%] rounded-lg p-3 overflow-hidden [overflow-wrap:anywhere] ${bubbleStyles}`}
+        className={`relative group w-fit max-w-full rounded-lg p-3 overflow-hidden [overflow-wrap:anywhere] ${bubbleStyles}`}
         style={bubbleColorStyle}
       >
         {/* Action menu - WhatsApp style dropdown */}
@@ -791,7 +792,8 @@ export const MessageBubble = ({
           {renderStatusIcon()}
         </p>
 
-        {!isIncoming && textContent && (
+      </div>
+        {!isIncoming && textContent && !isStickerOnly && (
           <MessageFeedbackButtons message={message} />
         )}
       </div>

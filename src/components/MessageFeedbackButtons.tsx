@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import type { Message } from "@/lib/types";
-import { Bug, CheckCircle2, ThumbsDown, ThumbsUp, X } from "lucide-react";
+import { Bug, CheckCircle2, Info, ThumbsDown, ThumbsUp, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 type FeedbackKind = "like" | "dislike" | "bug";
@@ -19,7 +19,19 @@ const getWamid = (message: Message) => {
   return typeof raw === "string" ? raw : null;
 };
 
+const getTraceId = (message: Message) => {
+  const metadata =
+    message.metadata && typeof message.metadata === "object"
+      ? (message.metadata as Record<string, unknown>)
+      : {};
+  const raw = metadata.trace_id ?? metadata.feedback_trace_id;
+  return typeof raw === "string" && raw.length > 0 ? raw : null;
+};
+
 export function MessageFeedbackButtons({ message }: MessageFeedbackButtonsProps) {
+  const [traceId, setTraceId] = useState<string | null>(() =>
+    getTraceId(message),
+  );
   const existingFeedback =
     message.metadata && typeof message.metadata === "object"
       ? ((message.metadata as Record<string, unknown>).feedback as
@@ -62,6 +74,11 @@ export function MessageFeedbackButtons({ message }: MessageFeedbackButtonsProps)
         throw new Error(payload.error ?? `HTTP ${res.status}`);
       }
 
+      const payload = await res.json().catch(() => ({}));
+      if (typeof payload.trace_id === "string") {
+        setTraceId(payload.trace_id);
+      }
+
       setSelected(kind);
       setPending(null);
       setObservations("");
@@ -84,26 +101,45 @@ export function MessageFeedbackButtons({ message }: MessageFeedbackButtonsProps)
       kind: "like",
       label: "Gostei",
       Icon: ThumbsUp,
-      activeClass: "data-[active=true]:text-emerald-500 data-[active=true]:bg-emerald-500/10 hover:text-emerald-500",
+      activeClass: "data-[active=true]:border-emerald-500/60 data-[active=true]:bg-emerald-500/15 data-[active=true]:text-emerald-600 hover:text-emerald-600",
     },
     {
       kind: "dislike",
       label: "Nao gostei",
       Icon: ThumbsDown,
-      activeClass: "data-[active=true]:text-red-500 data-[active=true]:bg-red-500/10 hover:text-red-500",
+      activeClass: "data-[active=true]:border-red-500/60 data-[active=true]:bg-red-500/15 data-[active=true]:text-red-600 hover:text-red-600",
     },
     {
       kind: "bug",
       label: "Reportar bug",
       Icon: Bug,
-      activeClass: "data-[active=true]:text-orange-500 data-[active=true]:bg-orange-500/10 hover:text-orange-500",
+      activeClass: "data-[active=true]:border-orange-500/60 data-[active=true]:bg-orange-500/15 data-[active=true]:text-orange-600 hover:text-orange-600",
     },
   ];
 
   return (
-    <div className="relative mt-1 flex items-center justify-end gap-1 px-1">
+    <div className="relative mt-1.5 flex items-center justify-end gap-1 rounded-full border border-border/70 bg-background/95 px-1.5 py-1 text-foreground shadow-sm">
+      {traceId ? (
+        <a
+          href={`/dashboard/observability?traceId=${encodeURIComponent(traceId)}`}
+          title="Abrir trace desta mensagem"
+          className="rounded-full border border-transparent p-1 text-foreground/65 transition-colors hover:bg-muted hover:text-primary"
+        >
+          <Info className="h-3.5 w-3.5" />
+        </a>
+      ) : (
+        <button
+          type="button"
+          disabled
+          title="Trace ainda nao vinculado a esta mensagem"
+          className="rounded-full border border-transparent p-1 text-foreground/30"
+        >
+          <Info className="h-3.5 w-3.5" />
+        </button>
+      )}
+
       {selected && (
-        <span className="mr-1 inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+        <span className="mr-1 inline-flex items-center gap-1 text-[10px] font-medium text-foreground/75">
           <CheckCircle2 className="h-3 w-3 text-emerald-500" />
           Revisado
         </span>
@@ -118,7 +154,7 @@ export function MessageFeedbackButtons({ message }: MessageFeedbackButtonsProps)
           title={selected && selected !== kind ? `Alterar para: ${label}` : label}
           onClick={() => setPending(kind)}
           className={cn(
-            "rounded p-1 text-muted-foreground/60 transition-colors hover:bg-muted disabled:opacity-50",
+            "rounded-full border border-transparent p-1 text-foreground/65 transition-colors hover:bg-muted disabled:opacity-50",
             activeClass,
           )}
         >

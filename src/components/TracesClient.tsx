@@ -1390,7 +1390,7 @@ export function TracesClient({ initialTraceId }: TracesClientProps = {}) {
     setListError(null);
     try {
       const [tracesRes, alertsRes] = await Promise.all([
-        fetch("/api/traces?limit=100"),
+        fetch("/api/traces?limit=500"),
         fetch("/api/quality/alerts"),
       ]);
 
@@ -1683,7 +1683,7 @@ export function TracesClient({ initialTraceId }: TracesClientProps = {}) {
   return (
     <div className="flex flex-col flex-1 h-full overflow-hidden bg-background">
       {/* ── Top stats bar ─────────────────────────────────────────────── */}
-      <div className="border-b border-border/50 bg-card/60 px-4 py-3 shrink-0">
+      <div className="hidden">
         <div className="flex items-center gap-2 mb-3">
           <Activity className="h-5 w-5 text-uzz-mint" />
           <h1 className="text-lg font-bold font-poppins text-foreground">
@@ -1983,8 +1983,6 @@ function TraceClientGroupItem({
 }) {
   const [open, setOpen] = useState(false);
   const latest = group.latestTrace;
-  const cfg = STATUS[latest.status as StatusKey] ?? STATUS.pending;
-  const StatusIcon = cfg.icon;
 
   return (
     <div className="border-b border-border/40">
@@ -2012,15 +2010,6 @@ function TraceClientGroupItem({
               {maskPhone(group.phone)}
             </p>
           </div>
-          <span
-            className={cn(
-              "inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-medium",
-              cfg.color,
-            )}
-          >
-            <StatusIcon className="h-2.5 w-2.5" />
-            {cfg.label}
-          </span>
           <ChevronRight
             className={cn(
               "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
@@ -2063,9 +2052,6 @@ function TraceListItem({
   isSelected: boolean;
   onClick: () => void;
 }) {
-  const cfg = STATUS[trace.status as StatusKey] ?? STATUS.pending;
-  const StatusIcon = cfg.icon;
-
   return (
     <button
       onClick={onClick}
@@ -2076,28 +2062,16 @@ function TraceListItem({
           : "hover:bg-muted/40 border-l-2 border-l-transparent",
       )}
     >
-      {/* Row 1: phone + status + time */}
+      {/* Row 1: time */}
       <div className="flex items-center gap-2">
-        <span className="font-mono text-xs font-semibold text-foreground">
-          {maskPhone(trace.phone)}
-        </span>
-        <span
-          className={cn(
-            "inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-medium",
-            cfg.color,
-          )}
-        >
-          <StatusIcon className="h-2.5 w-2.5" />
-          {cfg.label}
-        </span>
         <span className="ml-auto text-[10px] text-muted-foreground shrink-0">
           {timeAgo(trace.created_at)}
         </span>
       </div>
 
       {/* Row 2: message preview */}
-      <p className="text-xs text-muted-foreground truncate leading-snug">
-        {trace.user_message?.slice(0, 70) || <em>sem mensagem</em>}
+      <p className="text-xs text-foreground/80 truncate leading-snug">
+        {trace.user_message?.slice(0, 96) || <em>sem mensagem</em>}
       </p>
 
       {/* Row 3: metrics */}
@@ -2105,10 +2079,6 @@ function TraceListItem({
         <span className="flex items-center gap-0.5">
           <Clock className="h-2.5 w-2.5" />
           {formatMs(trace.latency_total_ms)}
-        </span>
-        <span className="flex items-center gap-0.5">
-          <DollarSign className="h-2.5 w-2.5" />
-          {formatCost(trace.cost_usd)}
         </span>
         {trace.model_used && (
           <span className="font-mono truncate max-w-[90px]">
