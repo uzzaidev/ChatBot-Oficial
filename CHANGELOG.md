@@ -11,6 +11,18 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-05-23
 
 ### feat
+- Melhorada a associação de mensagens com traces no endpoint de mensagens, adicionando o campo `trace_id` na metadata das mensagens para melhor rastreabilidade.
+- Atualizada a interface de observabilidade para definir a aba padrão como "traces" e permitir abertura direta de traces via parâmetro `traceId` na URL.
+- Adicionados botões de feedback nas mensagens com indicação visual de trace vinculado, possibilitando acesso rápido ao trace correspondente na dashboard.
+- Ajustada a interface do componente de mensagens para melhor alinhamento e responsividade dos balões de mensagem e botões de feedback.
+- Expandido limite de carregamento de traces na dashboard de 100 para 500 para maior visibilidade.
+- Refinada exibição dos itens de trace na lista, removendo indicadores de status e ajustando o layout para foco em tempo, mensagem e latência.
+  - Arquivos: `src/app/api/messages/[phone]/route.ts`, `src/app/dashboard/observability/page.tsx`, `src/components/MessageBubble.tsx`, `src/components/MessageFeedbackButtons.tsx`, `src/components/TracesClient.tsx`
+  - Confiança: alta
+
+## 2026-05-23
+
+### feat
 - Implementado sistema de feedback para mensagens com API REST e componentes de UI para envio e visualização de avaliações (like, dislike, bug).
 - Adicionada tabela `message_feedback` no banco com políticas de segurança para armazenar avaliações vinculadas a mensagens e rastros.
 - Integrado carregamento de feedback nas APIs de mensagens e rastros, exibindo contagem e detalhes no dashboard.
