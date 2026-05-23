@@ -368,15 +368,22 @@ export const forwardCsvToFinanceiro = async (params: {
 // ── Media upload (audio/video → reunião gravacao) ──────────────────────────
 
 /**
- * POST an audio/video file as multipart to the financeiro media upload
- * endpoint. The financeiro side stores the file in Vercel Blob, creates the
- * reunião + gravação rows, and (optionally) kicks off transcription.
- * Returns `{ reuniaoId, gravacaoId }`. Throws on network/HTTP errors.
+ * Upload an audio/video buffer to the chatbot's Supabase Storage and notify
+ * the financeiro of the resulting URL. We MUST avoid sending the file body
+ * through Vercel's serverless gateway because the platform caps request
+ * bodies at ~4.5 MB on Node functions — anything beyond that fails with 413.
+ * Supabase Storage has no such cap (bucket limit is 100 MB) and the public
+ * URL it returns is HTTPS, so the financeiro can later fetch it directly
+ * from /transcrever.
+ *
+ * Returns the financeiro JSON: `{ reuniaoId, gravacaoId, mediaUrl, titulo }`.
+ * Throws on upload/network/HTTP errors.
  */
 export const forwardMediaToFinanceiro = async (params: {
   buffer: Buffer;
   filename: string;
   mimeType: string;
+  clientId: string;
 }): Promise<Record<string, unknown>> => {
   const origin = getFinanceiroOrigin();
   const token = process.env.FINANCEIRO_AGENT_TOKEN;
@@ -384,31 +391,41 @@ export const forwardMediaToFinanceiro = async (params: {
     throw new Error("FINANCEIRO_AGENT_URL or FINANCEIRO_AGENT_TOKEN missing");
   }
 
-  const url = `${origin}/api/agente/whatsapp/upload-audio`;
-  const form = new FormData();
-  const blob = new Blob([new Uint8Array(params.buffer)], { type: params.mimeType });
-  form.append("file", blob, params.filename);
-  form.append("filename", params.filename);
-  form.append("mimeType", params.mimeType);
+  // Step 1 — upload to Supabase Storage (lives in the chatbot project).
+  const { uploadFileToStorage } = await import("./storage");
+  const mediaUrl = await uploadFileToStorage(
+    params.buffer,
+    params.filename,
+    params.mimeType,
+    params.clientId,
+  );
 
-  // Audio uploads can be larger — give it more time. Vercel Blob handles
-  // multi-MB files fine but we don't want to abort a still-uploading body.
+  // Step 2 — register the recording in the financeiro (small JSON body).
+  const url = `${origin}/api/agente/whatsapp/upload-audio`;
   const ctrl = new AbortController();
-  const timeout = setTimeout(() => ctrl.abort(), 120_000);
+  const timeout = setTimeout(() => ctrl.abort(), 30_000);
   try {
     const res = await fetch(url, {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-      body: form,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        mediaUrl,
+        filename: params.filename,
+        mimeType: params.mimeType,
+        sizeBytes: params.buffer.length,
+      }),
       signal: ctrl.signal,
     });
     const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
     if (!res.ok) {
       const errMsg =
         typeof data.error === "string" ? data.error : `HTTP ${res.status}`;
-      throw new Error(`financeiro media upload failed: ${errMsg}`);
+      throw new Error(`financeiro media register failed: ${errMsg}`);
     }
-    return data;
+    return { ...data, mediaUrl };
   } finally {
     clearTimeout(timeout);
   }

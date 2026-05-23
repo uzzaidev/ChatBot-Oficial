@@ -1716,22 +1716,25 @@ async function processSMBEcho(
         }
       }
 
-      // ── Document (CSV import) ──
+      // ── Document — CSV import OR audio/video attached as file ──
+      // WhatsApp Business often delivers .mp4/.m4a/.ogg as `type: "document"`
+      // when sent from the file picker (only voice notes recorded inside the
+      // app come as `type: "audio"`). So we dispatch by filename/mime here.
       else if (echo?.type === "document" && echo?.document?.id) {
         const filename: string =
           (typeof echo.document.filename === "string" && echo.document.filename) ||
-          `document_${Date.now()}.csv`;
+          `document_${Date.now()}`;
+        const docMime: string = echo.document.mime_type ?? "";
         const isCsv =
           /\.csv$/i.test(filename) ||
-          echo.document.mime_type === "text/csv" ||
-          echo.document.mime_type === "application/csv";
+          docMime === "text/csv" ||
+          docMime === "application/csv";
+        const isMedia =
+          /\.(mp4|m4a|mp3|ogg|opus|wav|webm|aac|mov)$/i.test(filename) ||
+          docMime.startsWith("audio/") ||
+          docMime.startsWith("video/");
 
-        if (!isCsv) {
-          console.log("[SMB Echo] Financeiro owner sent non-CSV document — skipping", {
-            filename,
-            mime: echo.document.mime_type,
-          });
-        } else {
+        if (isCsv) {
           try {
             const buffer = await downloadMetaMedia(
               echo.document.id,
@@ -1763,6 +1766,62 @@ async function processSMBEcho(
               csvError instanceof Error ? csvError.message : csvError,
             );
           }
+        } else if (isMedia) {
+          // Audio/video sent as file attachment — forward to recording upload.
+          // The Meta-provided mime is often `application/octet-stream` for
+          // these attachments, so we map by extension when that happens.
+          const extMatch = filename.match(/\.([a-z0-9]+)$/i);
+          const ext = extMatch ? extMatch[1].toLowerCase() : "";
+          const inferredMime =
+            docMime && docMime !== "application/octet-stream"
+              ? docMime
+              : ext === "mp4"
+                ? "video/mp4"
+                : ext === "m4a"
+                  ? "audio/mp4"
+                  : ext === "mp3"
+                    ? "audio/mpeg"
+                    : ext === "ogg" || ext === "opus"
+                      ? "audio/ogg"
+                      : ext === "wav"
+                        ? "audio/wav"
+                        : ext === "webm"
+                          ? "audio/webm"
+                          : ext === "aac"
+                            ? "audio/aac"
+                            : ext === "mov"
+                              ? "video/quicktime"
+                              : "application/octet-stream";
+          try {
+            const buffer = await downloadMetaMedia(
+              echo.document.id,
+              config.apiKeys.metaAccessToken,
+            );
+            const result = await forwardMediaToFinanceiro({
+              buffer,
+              filename,
+              mimeType: inferredMime,
+              clientId: config.id,
+            });
+            console.log("[SMB Echo] Financeiro media upload (document path)", {
+              phone: customerPhone,
+              filename,
+              docMime,
+              inferredMime,
+              sizeBytes: buffer.length,
+              result,
+            });
+          } catch (mediaError) {
+            console.error(
+              "[SMB Echo] Financeiro media upload (document path) threw",
+              mediaError instanceof Error ? mediaError.message : mediaError,
+            );
+          }
+        } else {
+          console.log("[SMB Echo] Financeiro owner sent unsupported document — skipping", {
+            filename,
+            mime: docMime,
+          });
         }
       }
 
@@ -1787,6 +1846,7 @@ async function processSMBEcho(
             buffer,
             filename,
             mimeType,
+            clientId: config.id,
           });
           console.log("[SMB Echo] Financeiro media upload result", {
             phone: customerPhone,
