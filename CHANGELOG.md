@@ -8,6 +8,15 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-05-23
+
+### feat
+- Melhorado o tratamento de upload de mídia para arquivos de áudio e vídeo enviados como documentos pelo WhatsApp Business, diferenciando CSV de mídias por extensão e MIME, e encaminhando corretamente para upload no financeiro.
+- Alterado fluxo de upload de mídia para usar Supabase Storage, evitando limite de tamanho do Vercel serverless, e enviando URL público para o financeiro registrar a gravação.
+- Ajustada lógica de timeout e formato do corpo da requisição para registro da mídia no financeiro.
+  - Arquivos: `src/app/api/webhook/route.ts`, `src/lib/financeiro-bridge.ts`
+  - Confiança: alta
+
 ## 2026-05-22
 
 ### feat
