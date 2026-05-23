@@ -1,4 +1,5 @@
 import { createServiceRoleClient } from "@/lib/supabase";
+import { query as pgQuery } from "@/lib/postgres";
 import { getClientIdFromSession } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -58,9 +59,62 @@ export async function GET(
       .eq("trace_id", id)
       .order("sequence_index", { ascending: true });
 
+    let contactName: string | null = null;
+    let feedbackCount = 0;
+
+    try {
+      const contact = await pgQuery<{ name: string | null }>(
+        `
+        SELECT nome AS name
+        FROM clientes_whatsapp
+        WHERE client_id = $1
+          AND regexp_replace(telefone::text, '\\D', '', 'g') = regexp_replace($2::text, '\\D', '', 'g')
+        ORDER BY updated_at DESC NULLS LAST
+        LIMIT 1
+        `,
+        [clientId, trace.phone],
+      );
+      contactName = contact.rows[0]?.name?.trim() || null;
+    } catch (contactError) {
+      console.warn("[GET /api/traces/[id]] contact lookup failed", {
+        clientId,
+        error:
+          contactError instanceof Error
+            ? contactError.message
+            : String(contactError),
+      });
+    }
+
+    try {
+      const feedback = await pgQuery<{ count: number }>(
+        `
+        SELECT COUNT(*)::int AS count
+        FROM public.message_feedback
+        WHERE client_id = $1
+          AND trace_id = $2
+        `,
+        [clientId, id],
+      );
+      feedbackCount = Number(feedback.rows[0]?.count ?? 0);
+    } catch (feedbackError) {
+      const msg =
+        feedbackError instanceof Error
+          ? feedbackError.message
+          : String(feedbackError);
+      if (!msg.toLowerCase().includes("message_feedback")) {
+        console.warn("[GET /api/traces/[id]] feedback lookup failed", {
+          clientId,
+          error: msg,
+        });
+      }
+    }
+
     return NextResponse.json({
       data: {
         ...trace,
+        contact_name: contactName,
+        feedback_count: feedbackCount,
+        has_feedback: feedbackCount > 0,
         retrieval: retrieval ?? null,
         tool_calls: toolCalls ?? [],
       },

@@ -4,6 +4,7 @@ import { AudioMessage } from "@/components/AudioMessage";
 import { InteractiveButtonsMessage } from "@/components/InteractiveButtonsMessage";
 import { InteractiveListMessage } from "@/components/InteractiveListMessage";
 import { MessageActionMenu } from "@/components/MessageActionMenu";
+import { MessageFeedbackButtons } from "@/components/MessageFeedbackButtons";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -789,6 +790,10 @@ export const MessageBubble = ({
           </span>
           {renderStatusIcon()}
         </p>
+
+        {!isIncoming && textContent && (
+          <MessageFeedbackButtons message={message} />
+        )}
       </div>
     </div>
   );
