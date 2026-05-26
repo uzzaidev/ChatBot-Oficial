@@ -2,6 +2,14 @@ import { processChatbotMessage } from "@/flows/chatbotFlow";
 import { handleUnknownWABA } from "@/lib/auto-provision";
 import { updateClientProvisioningStatus } from "@/lib/coexistence-sync";
 import { isContactSilenced } from "@/lib/contact-privacy";
+import {
+  detectCsvProvider,
+  forwardCsvToFinanceiro,
+  forwardMediaToFinanceiro,
+  isFinanceiroOwner,
+  resolveCanonicalOwnerPhone,
+  routeMessageToFinanceiro,
+} from "@/lib/financeiro-bridge";
 import { checkDuplicateMessage, markMessageAsProcessed } from "@/lib/dedup";
 import { query } from "@/lib/postgres";
 import { uploadFileToStorage } from "@/lib/storage";
@@ -1661,6 +1669,208 @@ async function processSMBEcho(
         "[SMB Echo] Failed to insert into n8n_chat_histories",
         historyError,
       );
+    }
+
+    // 🏦 Financeiro bridge for echoes (owner self-chat via WhatsApp Business app)
+    // When `echo.to` matches the owner whitelist, route the echo to the
+    // financeiro by its media type:
+    //   text     → agente conversacional (lembretes, queries, ações)
+    //   document → CSV de Wise/Revolut → import direto
+    //   audio    → upload de gravação de reunião → transcrição + reunião
+    //   video    → idem (video pode ser usado em reuniões gravadas)
+    // The text path responds back via WhatsApp; document/audio paths log the
+    // outcome and the user checks the painel web for results.
+    if (isFinanceiroOwner(customerPhone)) {
+      const canonicalPhone =
+        resolveCanonicalOwnerPhone(customerPhone) ?? customerPhone;
+
+      // ── Text ──
+      if (echo?.type === "text") {
+        const echoText =
+          typeof echo?.text?.body === "string" ? echo.text.body.trim() : "";
+        if (!echoText) {
+          console.log("[SMB Echo] Financeiro owner echo with no text body — skipping route", {
+            phone: customerPhone,
+          });
+        } else {
+          try {
+            const routeResult = await routeMessageToFinanceiro({
+              phone: canonicalPhone,
+              text: echoText,
+              config,
+            });
+            console.log("[SMB Echo] Financeiro route result (text)", {
+              phone: customerPhone,
+              canonicalPhone,
+              ok: routeResult.ok,
+              replyType: routeResult.replyType ?? null,
+              reason: routeResult.reason ?? null,
+              error: routeResult.error ?? null,
+            });
+          } catch (routeError) {
+            console.error(
+              "[SMB Echo] Financeiro route threw",
+              routeError instanceof Error ? routeError.message : routeError,
+            );
+          }
+        }
+      }
+
+      // ── Document — CSV import OR audio/video attached as file ──
+      // WhatsApp Business often delivers .mp4/.m4a/.ogg as `type: "document"`
+      // when sent from the file picker (only voice notes recorded inside the
+      // app come as `type: "audio"`). So we dispatch by filename/mime here.
+      else if (echo?.type === "document" && echo?.document?.id) {
+        const filename: string =
+          (typeof echo.document.filename === "string" && echo.document.filename) ||
+          `document_${Date.now()}`;
+        const docMime: string = echo.document.mime_type ?? "";
+        const isCsv =
+          /\.csv$/i.test(filename) ||
+          docMime === "text/csv" ||
+          docMime === "application/csv";
+        const isMedia =
+          /\.(mp4|m4a|mp3|ogg|opus|wav|webm|aac|mov)$/i.test(filename) ||
+          docMime.startsWith("audio/") ||
+          docMime.startsWith("video/");
+
+        if (isCsv) {
+          try {
+            const buffer = await downloadMetaMedia(
+              echo.document.id,
+              config.apiKeys.metaAccessToken,
+            );
+            const csvText = buffer.toString("utf-8");
+            const provider = detectCsvProvider(filename, csvText);
+            if (!provider) {
+              console.warn("[SMB Echo] CSV provider could not be detected — skipping", {
+                filename,
+                firstLine: csvText.split(/\r?\n/, 1)[0]?.slice(0, 200),
+              });
+            } else {
+              const result = await forwardCsvToFinanceiro({
+                buffer,
+                filename,
+                provider,
+              });
+              console.log("[SMB Echo] Financeiro CSV import result", {
+                phone: customerPhone,
+                provider,
+                filename,
+                result,
+              });
+            }
+          } catch (csvError) {
+            console.error(
+              "[SMB Echo] Financeiro CSV import threw",
+              csvError instanceof Error ? csvError.message : csvError,
+            );
+          }
+        } else if (isMedia) {
+          // Audio/video sent as file attachment — forward to recording upload.
+          // The Meta-provided mime is often `application/octet-stream` for
+          // these attachments, so we map by extension when that happens.
+          const extMatch = filename.match(/\.([a-z0-9]+)$/i);
+          const ext = extMatch ? extMatch[1].toLowerCase() : "";
+          const inferredMime =
+            docMime && docMime !== "application/octet-stream"
+              ? docMime
+              : ext === "mp4"
+                ? "video/mp4"
+                : ext === "m4a"
+                  ? "audio/mp4"
+                  : ext === "mp3"
+                    ? "audio/mpeg"
+                    : ext === "ogg" || ext === "opus"
+                      ? "audio/ogg"
+                      : ext === "wav"
+                        ? "audio/wav"
+                        : ext === "webm"
+                          ? "audio/webm"
+                          : ext === "aac"
+                            ? "audio/aac"
+                            : ext === "mov"
+                              ? "video/quicktime"
+                              : "application/octet-stream";
+          try {
+            const buffer = await downloadMetaMedia(
+              echo.document.id,
+              config.apiKeys.metaAccessToken,
+            );
+            const result = await forwardMediaToFinanceiro({
+              buffer,
+              filename,
+              mimeType: inferredMime,
+              clientId: config.id,
+            });
+            console.log("[SMB Echo] Financeiro media upload (document path)", {
+              phone: customerPhone,
+              filename,
+              docMime,
+              inferredMime,
+              sizeBytes: buffer.length,
+              result,
+            });
+          } catch (mediaError) {
+            console.error(
+              "[SMB Echo] Financeiro media upload (document path) threw",
+              mediaError instanceof Error ? mediaError.message : mediaError,
+            );
+          }
+        } else {
+          console.log("[SMB Echo] Financeiro owner sent unsupported document — skipping", {
+            filename,
+            mime: docMime,
+          });
+        }
+      }
+
+      // ── Audio / Video (upload as recording) ──
+      else if (
+        (echo?.type === "audio" && echo?.audio?.id) ||
+        (echo?.type === "video" && echo?.video?.id)
+      ) {
+        const descriptor = echo.type === "audio" ? echo.audio : echo.video;
+        const mediaId: string = descriptor.id;
+        const mimeType: string =
+          descriptor.mime_type ?? (echo.type === "audio" ? "audio/ogg" : "video/mp4");
+        const ext = MIME_TO_EXTENSION[mimeType] ?? (echo.type === "audio" ? "ogg" : "mp4");
+        const filename =
+          descriptor.filename ?? `${echo.type}_${customerPhone}_${Date.now()}.${ext}`;
+        try {
+          const buffer = await downloadMetaMedia(
+            mediaId,
+            config.apiKeys.metaAccessToken,
+          );
+          const result = await forwardMediaToFinanceiro({
+            buffer,
+            filename,
+            mimeType,
+            clientId: config.id,
+          });
+          console.log("[SMB Echo] Financeiro media upload result", {
+            phone: customerPhone,
+            type: echo.type,
+            filename,
+            mimeType,
+            sizeBytes: buffer.length,
+            result,
+          });
+        } catch (mediaError) {
+          console.error(
+            "[SMB Echo] Financeiro media upload threw",
+            mediaError instanceof Error ? mediaError.message : mediaError,
+          );
+        }
+      }
+
+      // ── Other types (image, sticker, etc.) — currently ignored ──
+      else {
+        console.log("[SMB Echo] Financeiro owner echo type not handled — ignoring", {
+          phone: customerPhone,
+          type: echo?.type,
+        });
+      }
     }
   }
 }

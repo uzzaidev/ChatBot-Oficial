@@ -8,6 +8,115 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-05-23
+
+### feat
+- Melhorada a associação de mensagens com traces no endpoint de mensagens, adicionando o campo `trace_id` na metadata das mensagens para melhor rastreabilidade.
+- Atualizada a interface de observabilidade para definir a aba padrão como "traces" e permitir abertura direta de traces via parâmetro `traceId` na URL.
+- Adicionados botões de feedback nas mensagens com indicação visual de trace vinculado, possibilitando acesso rápido ao trace correspondente na dashboard.
+- Ajustada a interface do componente de mensagens para melhor alinhamento e responsividade dos balões de mensagem e botões de feedback.
+- Expandido limite de carregamento de traces na dashboard de 100 para 500 para maior visibilidade.
+- Refinada exibição dos itens de trace na lista, removendo indicadores de status e ajustando o layout para foco em tempo, mensagem e latência.
+  - Arquivos: `src/app/api/messages/[phone]/route.ts`, `src/app/dashboard/observability/page.tsx`, `src/components/MessageBubble.tsx`, `src/components/MessageFeedbackButtons.tsx`, `src/components/TracesClient.tsx`
+  - Confiança: alta
+
+## 2026-05-23
+
+### feat
+- Implementado sistema de feedback para mensagens com API REST e componentes de UI para envio e visualização de avaliações (like, dislike, bug).
+- Adicionada tabela `message_feedback` no banco com políticas de segurança para armazenar avaliações vinculadas a mensagens e rastros.
+- Integrado carregamento de feedback nas APIs de mensagens e rastros, exibindo contagem e detalhes no dashboard.
+- Criados botões interativos de feedback em mensagens enviadas, com modal para observações opcionais.
+- Agrupamento de rastros no cliente por telefone/contato, incluindo filtro por status "com review" e exibição de indicadores visuais.
+  - Arquivos: `src/app/api/message-feedback/route.ts`, `src/app/api/messages/[phone]/route.ts`, `src/app/api/traces/[id]/route.ts`, `src/app/api/traces/route.ts`, `src/components/MessageFeedbackButtons.tsx`, `src/components/MessageBubble.tsx`, `src/components/TracesClient.tsx`, `supabase/migrations/20260523110000_create_message_feedback.sql`
+  - Confiança: alta
+
+## 2026-05-23
+
+### feat
+- Melhorado o tratamento de upload de mídia para arquivos de áudio e vídeo enviados como documentos pelo WhatsApp Business, diferenciando CSV de mídias por extensão e MIME, e encaminhando corretamente para upload no financeiro.
+- Alterado fluxo de upload de mídia para usar Supabase Storage, evitando limite de tamanho do Vercel serverless, e enviando URL público para o financeiro registrar a gravação.
+- Ajustada lógica de timeout e formato do corpo da requisição para registro da mídia no financeiro.
+  - Arquivos: `src/app/api/webhook/route.ts`, `src/lib/financeiro-bridge.ts`
+  - Confiança: alta
+
+## 2026-05-22
+
+### feat
+- Expandido o suporte da integração financeiro para encaminhar mensagens de texto, documentos CSV, áudios e vídeos recebidos via WhatsApp Business para o agente financeiro. Adicionado processamento específico para importação de CSVs (Wise e Revolut) e upload de mídia para gravações de reuniões.
+- Implementadas funções auxiliares para detectar o provedor do CSV, enviar arquivos CSV e mídias para o backend financeiro via API multipart com timeout configurado.
+- Introduzido modo silencioso para o bridge financeiro que permite persistir conversas sem enviar respostas via WhatsApp, útil para comandos fire-and-forget.
+  - Arquivos: `src/app/api/webhook/route.ts`, `src/lib/financeiro-bridge.ts`
+  - Confiança: alta
+
+## 2026-05-22
+
+### docs
+- Corrigido erro de digitação na seção "Common Issues" do arquivo `CLAUDE.md`
+  - Arquivos: `CLAUDE.md`
+  - Confiança: alta
+
+## 2026-05-22
+
+### feat
+- Implementada resolução canônica de telefone para unificação das conversas no módulo financeiro, permitindo que mensagens e respostas sejam roteadas para um número principal mesmo quando originadas de aliases alternativos configurados via variável de ambiente `FINANCEIRO_REPLY_TO`.
+- Ajustada lógica de envio de respostas financeiras para redirecionar mensagens ao número alternativo configurado, evitando autoenvio proibido pela Meta Cloud API.
+- Atualizada função de verificação de proprietário financeiro para considerar também o número alternativo e garantir que interações via alias passem na validação.
+  - Arquivos: `src/lib/financeiro-bridge.ts`, `src/app/api/webhook/route.ts`, `src/flows/chatbotFlow.ts`
+  - Confiança: alta
+
+## 2026-05-22
+
+### fix
+- Ajustado formato de log de erro na função `sendTextMessage` para melhorar legibilidade do JSON registrado
+  - Arquivos: `src/lib/meta.ts`
+  - Evidência: alteração no console.error para usar JSON.stringify com indentação
+  - Confiança: alta
+
+## 2026-05-22
+
+### fix
+- Melhorado tratamento e log de erros na função de envio de mensagens via Meta API para detalhar códigos e mensagens de erro da resposta HTTP
+  - Arquivos: `src/lib/meta.ts`
+  - Evidência: adição de captura e formatação detalhada de erros Axios na função `sendTextMessage`
+  - Confiança: alta
+
+## 2026-05-22
+
+### feat
+- Implementado roteamento de mensagens de eco de auto-chat para o agente financeiro, encaminhando textos do proprietário para processamento específico
+  - Arquivos: `src/app/api/webhook/route.ts`
+  - Confiança: alta
+
+## 2026-05-22
+
+### docs
+- Atualizada orientação para esclarecer a revisão de problemas comuns no arquivo CLAUDE.md
+  - Arquivos: `CLAUDE.md`
+  - Confiança: alta
+
+## 2026-05-22
+
+### feat
+- Implementado roteamento de mensagens de números autorizados para o agente financeiro externo, com suporte a mensagens de texto e respostas interativas via botões. Mensagens de mídia não suportadas recebem aviso ao usuário.
+- Adicionada ponte financeira no fluxo principal do chatbot para interceptar e encaminhar mensagens específicas, evitando processamento padrão.
+  - Arquivos: `src/flows/chatbotFlow.ts`, `src/lib/financeiro-bridge.ts`
+  - Confiança: alta
+
+### chore
+- Removidos documentos extensos relacionados ao deploy e checklist iOS, incluindo guias de implantação, checklist de implementação, guia detalhado de iOS e documentação de App Store Connect.
+  - Arquivos removidos: `docs/app/DEPLOY.md`, `docs/ios/IOS_CHECKLIST.md`, `docs/ios/IOS_IMPLEMENTATION_GUIDE.md`
+  - Confiança: alta
+
+## 2026-05-20
+
+### refactor
+- Melhorado tratamento de erros e lógica de atualização do template na função `submitTemplate` do hook `useTemplates`. Agora erros detalhados da API são exibidos e a atualização do estado ocorre somente com template válido.
+- Atualizada nomenclatura e mensagens relacionadas ao ID da conta WhatsApp Business (WABA ID) no formulário de templates para maior clareza.
+- Ajustes na exibição de mensagens de erro na submissão de templates na página de templates.
+  - Arquivos: `src/hooks/useTemplates.ts`, `src/components/templates/TemplateForm.tsx`, `src/app/dashboard/templates/page.tsx`
+  - Confiança: alta
+
 ## 2026-05-14
 
 ### docs

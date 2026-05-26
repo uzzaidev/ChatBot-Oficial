@@ -19,8 +19,8 @@ import { SupportBugsDashboard } from "@/components/support/SupportBugsDashboard"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const TAB_VALUES = [
-  "overview",
   "traces",
+  "overview",
   "evaluations",
   "ground-truth",
   "support",
@@ -29,7 +29,7 @@ const TAB_VALUES = [
 
 type TabValue = (typeof TAB_VALUES)[number];
 
-const DEFAULT_TAB: TabValue = "overview";
+const DEFAULT_TAB: TabValue = "traces";
 
 const isTabValue = (value: string | null): value is TabValue =>
   value !== null && (TAB_VALUES as readonly string[]).includes(value);
@@ -38,6 +38,7 @@ const ObservabilityShell = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedTab = searchParams.get("tab");
+  const traceId = searchParams.get("traceId");
   const activeTab: TabValue = isTabValue(requestedTab)
     ? requestedTab
     : DEFAULT_TAB;
@@ -57,7 +58,7 @@ const ObservabilityShell = () => {
 
   return (
     <div className="flex flex-col gap-4 p-4 md:p-6">
-      <div className="flex flex-col gap-1">
+      <div className="hidden">
         <h1 className="text-2xl font-semibold tracking-tight">
           Observabilidade
         </h1>
@@ -72,13 +73,13 @@ const ObservabilityShell = () => {
         className="flex flex-col gap-4"
       >
         <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 bg-muted/60 p-1">
-          <TabsTrigger value="overview" className="gap-2">
-            <LineChart className="h-4 w-4" />
-            Visão Geral
-          </TabsTrigger>
           <TabsTrigger value="traces" className="gap-2">
             <Activity className="h-4 w-4" />
             Traces
+          </TabsTrigger>
+          <TabsTrigger value="overview" className="gap-2">
+            <LineChart className="h-4 w-4" />
+            Visão Geral
           </TabsTrigger>
           <TabsTrigger value="evaluations" className="gap-2">
             <CheckCircle className="h-4 w-4" />
@@ -103,7 +104,7 @@ const ObservabilityShell = () => {
         </TabsContent>
 
         <TabsContent value="traces" className="mt-0">
-          <TracesClient />
+          <TracesClient initialTraceId={traceId ?? undefined} />
         </TabsContent>
 
         <TabsContent value="evaluations" className="mt-0">

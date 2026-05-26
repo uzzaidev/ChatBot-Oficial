@@ -105,10 +105,10 @@ export const TemplateForm = ({
           setFetchingMetaId(true);
           const response = await apiFetch("/api/client/config");
           const data = await response.json();
-          if (data.phone_number_id) {
-            setMetaId(data.phone_number_id);
-          } else if (data.config && data.config.phone_number_id) {
-            setMetaId(data.config.phone_number_id);
+          if (data.whatsapp_business_account_id) {
+            setMetaId(data.whatsapp_business_account_id);
+          } else if (data.config?.whatsapp_business_account_id) {
+            setMetaId(data.config.whatsapp_business_account_id);
           }
         } catch (error) {
           console.error("Error fetching Meta ID:", error);
@@ -134,7 +134,7 @@ export const TemplateForm = ({
 
     // Validate Meta ID
     if (!metaId) {
-      newErrors.metaId = "Meta Phone Number ID é obrigatório";
+      newErrors.metaId = "WABA ID é obrigatório";
     }
 
     // Validate body text
@@ -347,7 +347,9 @@ export const TemplateForm = ({
           </div>
 
           <div>
-            <Label htmlFor="metaId">Meta Phone Number ID (Meta ID) *</Label>
+            <Label htmlFor="metaId">
+              WhatsApp Business Account ID (WABA ID) *
+            </Label>
             <Input
               id="metaId"
               value={metaId}
@@ -363,8 +365,8 @@ export const TemplateForm = ({
             )}
             <p className="text-xs text-erie-black-500 mt-1">
               {fetchingMetaId
-                ? "Buscando Meta ID da configuração do cliente..."
-                : "ID do número de telefone da Meta configurado nas configurações"}
+                ? "Buscando WABA ID da configuração do cliente..."
+                : "ID da conta WhatsApp Business (preenchido automaticamente após o Embedded Signup)"}
             </p>
           </div>
         </CardContent>

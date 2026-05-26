@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
     const to = searchParams.get("to");
     const phone = searchParams.get("phone");
     const status = searchParams.get("status");
+    const reviewed = searchParams.get("reviewed") === "true";
     const limit = Math.min(Number(searchParams.get("limit") ?? "50"), 200);
     const offset = Number(searchParams.get("offset") ?? "0");
 
@@ -115,13 +116,18 @@ export async function GET(request: NextRequest) {
       {},
     );
 
+    let rows = data ?? [];
+
     const normalizedPhones = Array.from(
       new Set(
-        (data ?? [])
+        rows
           .map((row: { phone: string }) => normalizePhoneDigits(row.phone))
           .filter((phone: string) => phone.length > 0),
       ),
     );
+
+    let contactNamesByPhone = new Map<string, string>();
+    let feedbackByTraceId = new Map<string, number>();
 
     let metadataCoverage: {
       contatos_no_periodo: number;
@@ -179,10 +185,86 @@ export async function GET(request: NextRequest) {
               : String(coverageError),
         });
       }
+
+      try {
+        const contacts = await pgQuery<{
+          phone: string;
+          name: string | null;
+        }>(
+          `
+          SELECT DISTINCT ON (regexp_replace(telefone::text, '\\D', '', 'g'))
+            regexp_replace(telefone::text, '\\D', '', 'g') AS phone,
+            nome AS name
+          FROM clientes_whatsapp
+          WHERE client_id = $2
+            AND regexp_replace(telefone::text, '\\D', '', 'g') = ANY($1::text[])
+          ORDER BY regexp_replace(telefone::text, '\\D', '', 'g'), updated_at DESC NULLS LAST
+          `,
+          [normalizedPhones, clientId],
+        );
+        contactNamesByPhone = new Map(
+          contacts.rows
+            .filter((row) => row.phone)
+            .map((row) => [row.phone, row.name?.trim() || "Sem nome"]),
+        );
+      } catch (contactsError) {
+        console.warn("[GET /api/traces] contact names query failed", {
+          clientId,
+          error:
+            contactsError instanceof Error
+              ? contactsError.message
+              : String(contactsError),
+        });
+      }
+    }
+
+    const traceIds = rows.map((row: { id: string }) => row.id);
+    if (traceIds.length > 0) {
+      try {
+        const feedback = await pgQuery<{ trace_id: string; count: number }>(
+          `
+          SELECT trace_id, COUNT(*)::int AS count
+          FROM public.message_feedback
+          WHERE client_id = $1
+            AND trace_id = ANY($2::uuid[])
+          GROUP BY trace_id
+          `,
+          [clientId, traceIds],
+        );
+        feedbackByTraceId = new Map(
+          feedback.rows.map((row) => [row.trace_id, Number(row.count) || 0]),
+        );
+      } catch (feedbackError) {
+        const msg =
+          feedbackError instanceof Error
+            ? feedbackError.message
+            : String(feedbackError);
+        if (!msg.toLowerCase().includes("message_feedback")) {
+          console.warn("[GET /api/traces] feedback query failed", {
+            clientId,
+            error: msg,
+          });
+        }
+      }
+    }
+
+    rows = rows.map((row: { id: string; phone: string }) => {
+      const normalizedPhone = normalizePhoneDigits(row.phone);
+      const feedbackCount = feedbackByTraceId.get(row.id) ?? 0;
+      return {
+        ...row,
+        contact_name: contactNamesByPhone.get(normalizedPhone) ?? null,
+        feedback_count: feedbackCount,
+        has_feedback: feedbackCount > 0,
+      };
+    });
+
+    if (reviewed) {
+      rows = rows.filter((row: { has_feedback?: boolean }) => row.has_feedback);
     }
 
     return NextResponse.json({
-      data: data ?? [],
+      data: rows,
       meta: {
         limit,
         offset,

@@ -1,5 +1,10 @@
 import { resolvePolicy } from "@/lib/policy-engine";
 import {
+  isFinanceiroOwner,
+  resolveCanonicalOwnerPhone,
+  routeMessageToFinanceiro,
+} from "@/lib/financeiro-bridge";
+import {
   AIResponse,
   ClientConfig,
   StoredMediaMetadata,
@@ -271,6 +276,97 @@ export const processChatbotMessage = async (
       phone: parsedMessage.phone,
       type: parsedMessage.type,
     });
+
+    // NODE 2.1: Financeiro Bridge
+    // Short-circuits the entire chatbot pipeline for messages from the owner's
+    // personal phone(s). Forwards to the external financeiro agent
+    // (gestao.luisfboff.com/api/agente/whatsapp) and sends back its reply —
+    // either a plain text message or a 3-button approval card. Gated by the
+    // FINANCEIRO_OWNER_NUMBERS env var; feature is off when unset.
+    if (isFinanceiroOwner(parsedMessage.phone)) {
+      logger.logNodeStart("2.1. Financeiro Bridge", {
+        phone: parsedMessage.phone,
+        type: parsedMessage.type,
+      });
+
+      const isButtonReply =
+        parsedMessage.type === "interactive" &&
+        parsedMessage.interactiveType === "button_reply" &&
+        !!parsedMessage.interactiveResponseId;
+      const isPlainText =
+        parsedMessage.type === "text" &&
+        !!parsedMessage.content &&
+        parsedMessage.content.trim().length > 0;
+
+      // We only forward text and button replies — media/audio/etc. are not
+      // supported by the financeiro endpoint yet. Tell the user politely.
+      if (!isButtonReply && !isPlainText) {
+        try {
+          const { sendTextMessage } = await import("@/lib/meta");
+          await sendTextMessage(
+            parsedMessage.phone,
+            "Por enquanto o assistente financeiro só entende texto e respostas de botão. Tenta escrever sua mensagem.",
+            config,
+          );
+        } catch (sendError) {
+          console.warn(
+            "[chatbotFlow] financeiro-bridge: failed to send unsupported-media notice",
+            sendError,
+          );
+        }
+        logger.logNodeSuccess("2.1. Financeiro Bridge", {
+          routed: true,
+          reason: "unsupported_media_type",
+          type: parsedMessage.type,
+        });
+        logger.finishExecution("success");
+        await flushTrace();
+        return { success: true, skipped: true, reason: "financeiro_unsupported_media" };
+      }
+
+      // Re-key the sender to the canonical owner phone so the financeiro
+      // conversation stays unified across the source number (BR business) and
+      // the FINANCEIRO_REPLY_TO alias (e.g. FR) — important so button taps
+      // find their pending approvals.
+      const canonicalPhone =
+        resolveCanonicalOwnerPhone(parsedMessage.phone) ?? parsedMessage.phone;
+      const routeResult = await routeMessageToFinanceiro({
+        phone: canonicalPhone,
+        text: isPlainText ? parsedMessage.content : undefined,
+        buttonId: isButtonReply ? parsedMessage.interactiveResponseId : undefined,
+        config,
+      });
+
+      if (routeResult.ok) {
+        logger.logNodeSuccess("2.1. Financeiro Bridge", {
+          routed: true,
+          replyType: routeResult.replyType,
+          messageId: routeResult.messageId,
+        });
+        logger.finishExecution("success");
+        await flushTrace();
+        return {
+          success: true,
+          skipped: true,
+          reason: "financeiro_route",
+        };
+      } else {
+        const failureReason = routeResult.reason;
+        const failureError = routeResult.error;
+        logger.logNodeError(
+          "2.1. Financeiro Bridge",
+          new Error(`${failureReason}: ${failureError ?? ""}`),
+        );
+        logger.finishExecution("error");
+        await flushTrace();
+        return {
+          success: false,
+          skipped: true,
+          reason: "financeiro_route",
+          error: failureReason,
+        };
+      }
+    }
 
     // NODE 2.5: Business Hours Check
     if (config.businessHours?.enabled) {

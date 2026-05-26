@@ -313,6 +313,108 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
     });
 
+    try {
+      const wamids = messages.map((msg) => getWamid(msg)).filter(Boolean);
+
+      if (wamids.length > 0) {
+        const tracesResult = await query<{
+          id: string;
+          whatsapp_message_id: string;
+        }>(
+          `
+          SELECT id, whatsapp_message_id
+          FROM public.message_traces
+          WHERE client_id = $1
+            AND whatsapp_message_id = ANY($2::text[])
+          `,
+          [clientId, wamids],
+        );
+
+        const traceByWamid = new Map(
+          tracesResult.rows.map((row) => [row.whatsapp_message_id, row.id]),
+        );
+
+        for (const msg of messages) {
+          const wamid = getWamid(msg);
+          const traceId = wamid ? traceByWamid.get(wamid) : undefined;
+          if (!traceId) continue;
+
+          const baseMeta = asMetadataRecord(msg.metadata);
+          msg.metadata = {
+            ...baseMeta,
+            trace_id: traceId,
+          };
+        }
+      }
+    } catch (traceLookupError) {
+      const msg =
+        traceLookupError instanceof Error
+          ? traceLookupError.message
+          : String(traceLookupError);
+      if (!msg.toLowerCase().includes("message_traces")) {
+        console.warn("[Messages API Debug] trace lookup failed", msg);
+      }
+    }
+
+    try {
+      const messageIds = messages.map((msg) => msg.id);
+      const wamids = messages.map((msg) => getWamid(msg)).filter(Boolean);
+
+      if (messageIds.length > 0 || wamids.length > 0) {
+        const feedbackResult = await query<{
+          message_id: string;
+          wamid: string | null;
+          feedback: "like" | "dislike" | "bug";
+          observations: string | null;
+          trace_id: string | null;
+        }>(
+          `
+          SELECT message_id, wamid, feedback, observations, trace_id
+          FROM public.message_feedback
+          WHERE client_id = $1
+            AND (
+              message_id = ANY($2::text[])
+              OR ($3::text[] IS NOT NULL AND wamid = ANY($3::text[]))
+            )
+          `,
+          [clientId, messageIds, wamids],
+        );
+
+        const feedbackByMessage = new Map(
+          feedbackResult.rows.map((row) => [row.message_id, row]),
+        );
+        const feedbackByWamid = new Map(
+          feedbackResult.rows
+            .filter((row) => row.wamid)
+            .map((row) => [row.wamid as string, row]),
+        );
+
+        for (const msg of messages) {
+          const wamid = getWamid(msg);
+          const feedback =
+            feedbackByMessage.get(msg.id) ??
+            (wamid ? feedbackByWamid.get(wamid) : undefined);
+          if (!feedback) continue;
+
+          const baseMeta = asMetadataRecord(msg.metadata);
+          msg.metadata = {
+            ...baseMeta,
+            feedback: feedback.feedback,
+            feedback_observations: feedback.observations,
+            feedback_trace_id: feedback.trace_id,
+          };
+        }
+      }
+    } catch (feedbackError) {
+      const msg =
+        feedbackError instanceof Error
+          ? feedbackError.message
+          : String(feedbackError);
+      if (!msg.toLowerCase().includes("message_feedback")) {
+        console.warn("[Messages API Debug] feedback query failed", msg);
+      }
+    }
+
     console.log(
       DEBUG_PREFIX,
       "Final response media rows",

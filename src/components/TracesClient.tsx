@@ -48,6 +48,9 @@ interface TraceRow {
   sent_at: string | null;
   metadata: Record<string, unknown> | null;
   created_at: string;
+  contact_name?: string | null;
+  feedback_count?: number;
+  has_feedback?: boolean;
 }
 
 interface ToolCall {
@@ -377,7 +380,7 @@ function EmptyList({ filtered }: { filtered: boolean }) {
 
 // ─── Detail panel tabs ────────────────────────────────────────────────────────
 
-type DetailTab = "overview" | "toolcalls" | "rag" | "prompt";
+type DetailTab = "prompt" | "toolcalls" | "overview" | "rag";
 
 function PipelineTimeline({ trace }: { trace: TraceDetail }) {
   const stages = [
@@ -1340,7 +1343,18 @@ const STATUS_FILTERS = [
   { key: "failed", label: "Falhas" },
   { key: "needs_review", label: "Revisão" },
   { key: "evaluated", label: "Avaliadas" },
+  { key: "reviewed", label: "Com review" },
 ] as const;
+
+interface TraceClientGroup {
+  key: string;
+  name: string;
+  phone: string;
+  latestTrace: TraceRow;
+  traces: TraceRow[];
+  total: number;
+  feedbackCount: number;
+}
 
 interface TracesClientProps {
   initialTraceId?: string;
@@ -1356,7 +1370,7 @@ export function TracesClient({ initialTraceId }: TracesClientProps = {}) {
   const [detailError, setDetailError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [tab, setTab] = useState<DetailTab>("overview");
+  const [tab, setTab] = useState<DetailTab>("prompt");
   const [refreshing, setRefreshing] = useState(false);
   const [promotingTraceId, setPromotingTraceId] = useState<string | null>(null);
   const [feedbackSubmittingTraceId, setFeedbackSubmittingTraceId] = useState<
@@ -1376,7 +1390,7 @@ export function TracesClient({ initialTraceId }: TracesClientProps = {}) {
     setListError(null);
     try {
       const [tracesRes, alertsRes] = await Promise.all([
-        fetch("/api/traces?limit=100"),
+        fetch("/api/traces?limit=500"),
         fetch("/api/quality/alerts"),
       ]);
 
@@ -1430,7 +1444,7 @@ export function TracesClient({ initialTraceId }: TracesClientProps = {}) {
   const fetchDetail = async (id: string) => {
     setDetailLoading(true);
     setDetailError(null);
-    setTab("overview");
+    setTab("prompt");
     try {
       const res = await fetch(`/api/traces/${id}`);
       if (!res.ok) {
@@ -1585,17 +1599,59 @@ export function TracesClient({ initialTraceId }: TracesClientProps = {}) {
 
   // Filtered traces
   const filtered = traces.filter((t) => {
-    if (statusFilter !== "all" && t.status !== statusFilter) return false;
+    if (statusFilter === "reviewed" && !t.has_feedback) return false;
+    if (
+      statusFilter !== "all" &&
+      statusFilter !== "reviewed" &&
+      t.status !== statusFilter
+    ) {
+      return false;
+    }
     if (search.trim()) {
       const q = search.toLowerCase();
       return (
         t.phone.includes(q) ||
+        (t.contact_name ?? "").toLowerCase().includes(q) ||
         (t.user_message ?? "").toLowerCase().includes(q) ||
         (t.agent_response ?? "").toLowerCase().includes(q)
       );
     }
     return true;
   });
+
+  const grouped = filtered.reduce((acc, trace) => {
+    const key = trace.phone || trace.id;
+    const existing = acc.get(key);
+    if (existing) {
+      existing.traces.push(trace);
+      existing.total += 1;
+      existing.feedbackCount += trace.feedback_count ?? 0;
+      if (
+        new Date(trace.created_at).getTime() >
+        new Date(existing.latestTrace.created_at).getTime()
+      ) {
+        existing.latestTrace = trace;
+      }
+      return acc;
+    }
+
+    acc.set(key, {
+      key,
+      name: trace.contact_name?.trim() || maskPhone(trace.phone),
+      phone: trace.phone,
+      latestTrace: trace,
+      traces: [trace],
+      total: 1,
+      feedbackCount: trace.feedback_count ?? 0,
+    });
+    return acc;
+  }, new Map<string, TraceClientGroup>());
+
+  const clientGroups = Array.from(grouped.values()).sort(
+    (a, b) =>
+      new Date(b.latestTrace.created_at).getTime() -
+      new Date(a.latestTrace.created_at).getTime(),
+  );
 
   // Stats
   const totalToday = traces.length;
@@ -1627,7 +1683,7 @@ export function TracesClient({ initialTraceId }: TracesClientProps = {}) {
   return (
     <div className="flex flex-col flex-1 h-full overflow-hidden bg-background">
       {/* ── Top stats bar ─────────────────────────────────────────────── */}
-      <div className="border-b border-border/50 bg-card/60 px-4 py-3 shrink-0">
+      <div className="hidden">
         <div className="flex items-center gap-2 mb-3">
           <Activity className="h-5 w-5 text-uzz-mint" />
           <h1 className="text-lg font-bold font-poppins text-foreground">
@@ -1741,7 +1797,7 @@ export function TracesClient({ initialTraceId }: TracesClientProps = {}) {
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 ref={searchRef}
-                placeholder="Buscar por telefone ou mensagem…"
+                placeholder="Buscar por cliente, telefone ou mensagem..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-8 h-8 text-xs"
@@ -1760,9 +1816,14 @@ export function TracesClient({ initialTraceId }: TracesClientProps = {}) {
                   )}
                 >
                   {f.label}
-                  {f.key !== "all" && (
+                  {f.key !== "all" && f.key !== "reviewed" && (
                     <span className="ml-1 opacity-60">
                       {traces.filter((t) => t.status === f.key).length}
+                    </span>
+                  )}
+                  {f.key === "reviewed" && (
+                    <span className="ml-1 opacity-60">
+                      {traces.filter((t) => t.has_feedback).length}
                     </span>
                   )}
                   {f.key === "all" && (
@@ -1779,17 +1840,17 @@ export function TracesClient({ initialTraceId }: TracesClientProps = {}) {
               <div className="flex items-center justify-center h-32">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
               </div>
-            ) : filtered.length === 0 ? (
+            ) : clientGroups.length === 0 ? (
               <EmptyList
                 filtered={search.length > 0 || statusFilter !== "all"}
               />
             ) : (
-              filtered.map((t) => (
-                <TraceListItem
-                  key={t.id}
-                  trace={t}
-                  isSelected={selected?.id === t.id}
-                  onClick={() => fetchDetail(t.id)}
+              clientGroups.map((group) => (
+                <TraceClientGroupItem
+                  key={group.key}
+                  group={group}
+                  selectedId={selected?.id ?? null}
+                  onTraceClick={fetchDetail}
                 />
               ))
             )}
@@ -1810,10 +1871,22 @@ export function TracesClient({ initialTraceId }: TracesClientProps = {}) {
               <div className="border-b border-border/50 bg-card/60 px-5 py-3 shrink-0">
                 <div className="flex items-center gap-3 flex-wrap">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm font-semibold text-foreground">
-                      {maskPhone(selected.phone)}
-                    </span>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold text-foreground">
+                        {selected.contact_name || maskPhone(selected.phone)}
+                      </span>
+                      {selected.contact_name && (
+                        <span className="font-mono text-[10px] text-muted-foreground">
+                          {maskPhone(selected.phone)}
+                        </span>
+                      )}
+                    </div>
                     <StatusBadge status={selected.status} />
+                    {selected.has_feedback && (
+                      <span className="rounded-full border border-uzz-mint/40 bg-uzz-mint/10 px-1.5 py-0.5 text-[10px] font-medium text-uzz-mint">
+                        review
+                      </span>
+                    )}
                   </div>
                   <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40" />
                   <span className="text-xs text-muted-foreground font-mono truncate max-w-[180px]">
@@ -1830,7 +1903,11 @@ export function TracesClient({ initialTraceId }: TracesClientProps = {}) {
                 <div className="flex gap-0">
                   {(
                     [
-                      { key: "overview", label: "Visão Geral", icon: Activity },
+                      {
+                        key: "prompt",
+                        label: "Prompt & Historico",
+                        icon: FileText,
+                      },
                       {
                         key: "toolcalls",
                         label: `Tool Calls ${
@@ -1840,12 +1917,8 @@ export function TracesClient({ initialTraceId }: TracesClientProps = {}) {
                         }`,
                         icon: Wrench,
                       },
+                      { key: "overview", label: "Resumo", icon: Activity },
                       { key: "rag", label: "RAG", icon: Search },
-                      {
-                        key: "prompt",
-                        label: "Prompt & Histórico",
-                        icon: FileText,
-                      },
                     ] as {
                       key: DetailTab;
                       label: string;
@@ -1899,6 +1972,77 @@ export function TracesClient({ initialTraceId }: TracesClientProps = {}) {
 
 // ─── Trace list item ──────────────────────────────────────────────────────────
 
+function TraceClientGroupItem({
+  group,
+  selectedId,
+  onTraceClick,
+}: {
+  group: TraceClientGroup;
+  selectedId: string | null;
+  onTraceClick: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const latest = group.latestTrace;
+
+  return (
+    <div className="border-b border-border/40">
+      <button
+        onClick={() => setOpen((value) => !value)}
+        className={cn(
+          "w-full px-4 py-3 text-left transition-colors hover:bg-muted/40",
+          group.traces.some((trace) => trace.id === selectedId) &&
+            "bg-primary/5",
+        )}
+      >
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="truncate text-sm font-semibold text-foreground">
+                {group.name}
+              </span>
+              {group.feedbackCount > 0 && (
+                <span className="rounded-full border border-uzz-mint/40 bg-uzz-mint/10 px-1.5 py-0.5 text-[10px] font-medium text-uzz-mint">
+                  review
+                </span>
+              )}
+            </div>
+            <p className="font-mono text-[10px] text-muted-foreground">
+              {maskPhone(group.phone)}
+            </p>
+          </div>
+          <ChevronRight
+            className={cn(
+              "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+              open && "rotate-90",
+            )}
+          />
+        </div>
+        <p className="mt-2 truncate text-xs text-muted-foreground">
+          {latest.user_message?.slice(0, 92) || "sem mensagem"}
+        </p>
+        <div className="mt-2 flex items-center gap-3 text-[10px] text-muted-foreground">
+          <span>{group.total} mensagem{group.total !== 1 ? "s" : ""}</span>
+          <span>{timeAgo(latest.created_at)}</span>
+          {group.feedbackCount > 0 && <span>{group.feedbackCount} review</span>}
+        </div>
+      </button>
+
+      {open && (
+        <div className="border-t border-border/30 bg-background/30">
+          {group.traces.map((trace) => (
+            <TraceListItem
+              key={trace.id}
+              trace={trace}
+              isSelected={selectedId === trace.id}
+              onClick={() => onTraceClick(trace.id)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TraceListItem({
   trace,
   isSelected,
@@ -1908,9 +2052,6 @@ function TraceListItem({
   isSelected: boolean;
   onClick: () => void;
 }) {
-  const cfg = STATUS[trace.status as StatusKey] ?? STATUS.pending;
-  const StatusIcon = cfg.icon;
-
   return (
     <button
       onClick={onClick}
@@ -1921,28 +2062,16 @@ function TraceListItem({
           : "hover:bg-muted/40 border-l-2 border-l-transparent",
       )}
     >
-      {/* Row 1: phone + status + time */}
+      {/* Row 1: time */}
       <div className="flex items-center gap-2">
-        <span className="font-mono text-xs font-semibold text-foreground">
-          {maskPhone(trace.phone)}
-        </span>
-        <span
-          className={cn(
-            "inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-medium",
-            cfg.color,
-          )}
-        >
-          <StatusIcon className="h-2.5 w-2.5" />
-          {cfg.label}
-        </span>
         <span className="ml-auto text-[10px] text-muted-foreground shrink-0">
           {timeAgo(trace.created_at)}
         </span>
       </div>
 
       {/* Row 2: message preview */}
-      <p className="text-xs text-muted-foreground truncate leading-snug">
-        {trace.user_message?.slice(0, 70) || <em>sem mensagem</em>}
+      <p className="text-xs text-foreground/80 truncate leading-snug">
+        {trace.user_message?.slice(0, 96) || <em>sem mensagem</em>}
       </p>
 
       {/* Row 3: metrics */}
@@ -1950,10 +2079,6 @@ function TraceListItem({
         <span className="flex items-center gap-0.5">
           <Clock className="h-2.5 w-2.5" />
           {formatMs(trace.latency_total_ms)}
-        </span>
-        <span className="flex items-center gap-0.5">
-          <DollarSign className="h-2.5 w-2.5" />
-          {formatCost(trace.cost_usd)}
         </span>
         {trace.model_used && (
           <span className="font-mono truncate max-w-[90px]">
