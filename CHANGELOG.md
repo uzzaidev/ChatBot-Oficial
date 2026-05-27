@@ -11,6 +11,13 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-05-27
 
 ### refactor
+- Atualizado parâmetro de resumo de raciocínio de "concise" para "detailed" para melhorar a clareza das respostas do Direct AI Client
+  - Arquivos: `src/lib/direct-ai-client.ts`
+  - Confiança: alta
+
+## 2026-05-27
+
+### refactor
 - Alterado para avançar automaticamente ao próximo bloco em execuções de fluxo de mensagens, removendo espera por resposta do usuário
 - Ajustada extração do texto de raciocínio da resposta da IA para usar nova propriedade `reasoningText` e melhorar compatibilidade com diferentes formatos de resposta
   - Arquivos: `src/lib/direct-ai-client.ts`, `src/lib/flows/flowExecutor.ts`
