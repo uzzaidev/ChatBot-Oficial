@@ -11,6 +11,14 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-05-27
 
 ### refactor
+- Alterado para avançar automaticamente ao próximo bloco em execuções de fluxo de mensagens, removendo espera por resposta do usuário
+- Ajustada extração do texto de raciocínio da resposta da IA para usar nova propriedade `reasoningText` e melhorar compatibilidade com diferentes formatos de resposta
+  - Arquivos: `src/lib/direct-ai-client.ts`, `src/lib/flows/flowExecutor.ts`
+  - Confiança: alta
+
+## 2026-05-27
+
+### refactor
 - Removidas instruções de saudação para clientes novos e recorrentes das configurações padrão do bot.
 - Atualizada execução dos blocos de mensagem para incluir `clientId` e enviar mensagens WhatsApp com configuração do cliente.
 - Melhorias gerais na organização e formatação do código em `FlowExecutor`, incluindo tratamento de mensagens interativas e salvamento de mensagens.
