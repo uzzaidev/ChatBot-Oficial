@@ -329,9 +329,7 @@ const stringifyMessageContent = (content: unknown): string => {
  * Captures every message (including all dynamic system messages), every tool,
  * settings, and totals. Token estimate uses the ~4 chars/token heuristic.
  */
-const buildRequestSnapshot = (
-  generateParams: any,
-): DirectAIRequestSnapshot => {
+const buildRequestSnapshot = (generateParams: any): DirectAIRequestSnapshot => {
   const messages = (generateParams.messages ?? []) as Array<{
     role: string;
     content: unknown;
@@ -351,7 +349,8 @@ const buildRequestSnapshot = (
     { description?: string }
   >;
   const toolRows = Object.entries(toolsObject).map(([name, tool]) => {
-    const description = typeof tool?.description === "string" ? tool.description : "";
+    const description =
+      typeof tool?.description === "string" ? tool.description : "";
     return {
       name,
       description,
@@ -364,7 +363,9 @@ const buildRequestSnapshot = (
     (sum, t) => sum + t.descriptionCharCount + t.name.length,
     0,
   );
-  const systemMessageCount = messageRows.filter((m) => m.role === "system").length;
+  const systemMessageCount = messageRows.filter(
+    (m) => m.role === "system",
+  ).length;
   const historyMessageCount = messageRows.filter(
     (m) => m.role === "user" || m.role === "assistant",
   ).length;
@@ -378,8 +379,7 @@ const buildRequestSnapshot = (
       topP: generateParams.topP,
       frequencyPenalty: generateParams.frequencyPenalty,
       presencePenalty: generateParams.presencePenalty,
-      reasoningEffort:
-        generateParams.providerOptions?.openai?.reasoningEffort,
+      reasoningEffort: generateParams.providerOptions?.openai?.reasoningEffort,
     },
     totals: {
       messageCount: messageRows.length,
@@ -500,6 +500,9 @@ export const callDirectAI = async (
       generateParams.providerOptions = {
         openai: {
           reasoningEffort: effectiveEffort,
+          // Request a reasoning summary so the text is returned in the response.
+          // Without this, OpenAI keeps reasoning server-side (only token count).
+          reasoningSummary: "auto",
         },
       };
 
@@ -558,12 +561,10 @@ export const callDirectAI = async (
     // We accept both shapes so older provider responses don't silently zero out.
     const usage = result.usage as any;
 
-    const promptTokens =
-      usage?.inputTokens ?? usage?.promptTokens ?? 0;
+    const promptTokens = usage?.inputTokens ?? usage?.promptTokens ?? 0;
     const completionTokens =
       usage?.outputTokens ?? usage?.completionTokens ?? 0;
-    const totalTokens =
-      usage?.totalTokens ?? promptTokens + completionTokens;
+    const totalTokens = usage?.totalTokens ?? promptTokens + completionTokens;
 
     // OpenAI auto-caches prompt prefixes >=1024 tokens with 50% input discount.
     // AI SDK v5 exposes the count on usage.cachedInputTokens (matches the
@@ -590,7 +591,9 @@ export const callDirectAI = async (
     }
 
     if (cachedInputTokens > 0 && promptTokens > 0) {
-      const cacheHitRate = ((cachedInputTokens / promptTokens) * 100).toFixed(1);
+      const cacheHitRate = ((cachedInputTokens / promptTokens) * 100).toFixed(
+        1,
+      );
       console.log(
         `[Direct AI] Prompt cache hit: ${cachedInputTokens}/${promptTokens} input tokens (${cacheHitRate}%)`,
       );
@@ -667,9 +670,7 @@ export const callDirectAI = async (
         : (result as any).reasoning?.text ??
           (Array.isArray((result as any).reasoning)
             ? (result as any).reasoning
-                .map((r: any) =>
-                  typeof r === "string" ? r : r?.text ?? "",
-                )
+                .map((r: any) => (typeof r === "string" ? r : r?.text ?? ""))
                 .filter(Boolean)
                 .join("\n\n")
             : undefined);
@@ -683,13 +684,15 @@ export const callDirectAI = async (
         completionTokens,
         totalTokens,
         reasoningTokens: reasoningTokens > 0 ? reasoningTokens : undefined,
-        cachedInputTokens: cachedInputTokens > 0 ? cachedInputTokens : undefined,
+        cachedInputTokens:
+          cachedInputTokens > 0 ? cachedInputTokens : undefined,
       },
       model,
       provider,
       latencyMs,
       finishReason: result.finishReason,
-      reasoning: reasoningText && reasoningText.length > 0 ? reasoningText : undefined,
+      reasoning:
+        reasoningText && reasoningText.length > 0 ? reasoningText : undefined,
       requestSnapshot,
     };
   } catch (error) {

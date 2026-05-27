@@ -1279,22 +1279,37 @@ function PromptTab({ trace }: { trace: TraceDetail }) {
       )}
 
       {/* Reasoning */}
-      {reasoning && reasoning.length > 0 && (
+      {(reasoning && reasoning.length > 0) ||
+      (reasoningTokens && reasoningTokens > 0) ? (
         <div className="rounded-xl border border-purple-500/30 bg-purple-500/5 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-2.5 bg-purple-500/10 border-b border-purple-500/20">
             <p className="text-xs font-semibold uppercase tracking-wider text-purple-300">
-              Chain-of-thought / Reasoning
+              🧠 Chain-of-thought / Reasoning
             </p>
             <span className="text-[10px] font-mono text-purple-300/70">
-              {reasoning.length.toLocaleString("pt-BR")} chars
-              {reasoningTokens ? ` · ${reasoningTokens} tokens` : ""}
+              {reasoning
+                ? `${reasoning.length.toLocaleString("pt-BR")} chars · `
+                : ""}
+              {reasoningTokens ? `${reasoningTokens} tokens` : ""}
             </span>
           </div>
-          <pre className="text-xs p-4 whitespace-pre-wrap break-words font-mono leading-relaxed max-h-72 overflow-y-auto text-purple-100/90">
-            {reasoning}
-          </pre>
+          {reasoning && reasoning.length > 0 ? (
+            <pre className="text-xs p-4 whitespace-pre-wrap break-words font-mono leading-relaxed max-h-72 overflow-y-auto text-purple-100/90">
+              {reasoning}
+            </pre>
+          ) : (
+            <div className="px-4 py-3 text-xs text-purple-300/60 italic">
+              O modelo usou {reasoningTokens} tokens de raciocínio interno, mas
+              a API não retornou o texto. Isso é esperado para modelos OpenAI
+              sem resumo ativado — verifique se{" "}
+              <span className="font-mono text-purple-300/80">
+                reasoningSummary: &quot;auto&quot;
+              </span>{" "}
+              está no providerOptions.
+            </div>
+          )}
         </div>
-      )}
+      ) : null}
 
       {/* Tool calls emitted */}
       {toolCallsList.length > 0 && (
