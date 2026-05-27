@@ -8,6 +8,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-05-27
+
+### refactor
+- Removidos valores padrão de saudações no código, agora configuráveis via dashboard; melhorada formatação e padronização do código em `checkContinuity.ts` e `route.ts`.
+- Ajustado retorno para não usar mais mensagens fixas internas, incentivando configuração externa das instruções de saudação.
+  - Arquivos: `src/app/api/flow/nodes/[nodeId]/route.ts`, `src/nodes/checkContinuity.ts`
+  - Confiança: alta
+
 ## 2026-05-23
 
 ### feat
