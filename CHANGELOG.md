@@ -10,6 +10,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-05-27
 
+### chore
+- Melhorada a formatação do código para aumentar a legibilidade nos componentes `LeadStageSelector` e `AdminBillingPage`
+  - Arquivos: `src/components/LeadStageSelector.tsx`, `src/app/dashboard/admin/billing/page.tsx`
+  - Confiança: alta
+
+## 2026-05-27
+
 ### feat
 - Adicionado suporte a métodos de pagamento "card" e "boleto" no Stripe Checkout para assinaturas.
 - Implementada API para liberação e revogação manual de acesso gratuito a clientes, sem uso do Stripe, com atualização do status do plano no banco.
