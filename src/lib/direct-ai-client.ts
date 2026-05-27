@@ -501,9 +501,9 @@ export const callDirectAI = async (
         openai: {
           reasoningEffort: effectiveEffort,
           // Request a reasoning summary so the text is returned in the response.
-          // "concise" forces OpenAI to always return a summary ("auto" skips it
-          // when the model uses very few reasoning tokens, e.g. <100).
-          reasoningSummary: "concise",
+          // "detailed" forces OpenAI to always return the full reasoning summary
+          // ("auto" skips it when the model uses very few reasoning tokens).
+          reasoningSummary: "detailed",
         },
       };
 
