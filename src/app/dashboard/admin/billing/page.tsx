@@ -624,11 +624,12 @@ export default function AdminBillingPage() {
                                           Revogar
                                         </Button>
                                       )}
-                                    {c.plan_status === "active" && c.activated && (
-                                      <span className="text-xs text-green-600 font-medium">
-                                        Assinatura ativa
-                                      </span>
-                                    )}
+                                    {c.plan_status === "active" &&
+                                      c.activated && (
+                                        <span className="text-xs text-green-600 font-medium">
+                                          Assinatura ativa
+                                        </span>
+                                      )}
                                   </div>
                                 </td>
                               </tr>

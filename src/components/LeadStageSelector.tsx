@@ -60,7 +60,7 @@ export function LeadStageSelector({
         ) ?? null;
 
       const matched = matchedCard
-        ? (allColumns.find((col) => col.id === matchedCard.column_id) ?? null)
+        ? allColumns.find((col) => col.id === matchedCard.column_id) ?? null
         : null;
 
       setColumns(allColumns);
@@ -118,7 +118,10 @@ export function LeadStageSelector({
   // No card in CRM — show a subtle indicator
   if (!card) {
     return (
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground" title="Contato não está no CRM">
+      <div
+        className="flex items-center gap-1.5 text-xs text-muted-foreground"
+        title="Contato não está no CRM"
+      >
         <Kanban className="h-3.5 w-3.5" />
         <span className="hidden sm:inline">Sem estágio</span>
       </div>
