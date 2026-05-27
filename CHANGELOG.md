@@ -10,6 +10,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-05-27
 
+### feat
+- Adicionado rastreamento de passos de follow-up em interações de IA para maior observabilidade no componente de traces. Inclui exibição detalhada dos argumentos da ferramenta, resumo dos resultados, prompts enviados ao LLM, raciocínio do modelo e respostas geradas após chamadas de ferramentas.
+- Implementado suporte no fluxo do chatbot para coletar e salvar snapshots das chamadas de follow-up feitas após resultados de ferramentas, como buscar_conhecimento e buscar_documento, integrando essas informações ao trace para análise posterior.
+  - Arquivos: `src/components/TracesClient.tsx`, `src/flows/chatbotFlow.ts`
+  - Confiança: alta
+
+## 2026-05-27
+
 ### refactor
 - Removidos valores padrão de saudações no código, agora configuráveis via dashboard; melhorada formatação e padronização do código em `checkContinuity.ts` e `route.ts`.
 - Ajustado retorno para não usar mais mensagens fixas internas, incentivando configuração externa das instruções de saudação.
