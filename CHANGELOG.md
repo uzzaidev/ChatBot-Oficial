@@ -10,6 +10,16 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-05-27
 
+### refactor
+- Removidas instruções de saudação para clientes novos e recorrentes das configurações padrão do bot.
+- Atualizada execução dos blocos de mensagem para incluir `clientId` e enviar mensagens WhatsApp com configuração do cliente.
+- Melhorias gerais na organização e formatação do código em `FlowExecutor`, incluindo tratamento de mensagens interativas e salvamento de mensagens.
+- Ajustes na extração e uso de variáveis de contexto e histórico de execução para maior clareza.
+  - Arquivos: `src/lib/flows/flowExecutor.ts`, `supabase/seeds/default_bot_configurations.sql`
+  - Confiança: alta
+
+## 2026-05-27
+
 ### chore
 - Melhorada a formatação do código para aumentar a legibilidade nos componentes `LeadStageSelector` e `AdminBillingPage`
   - Arquivos: `src/components/LeadStageSelector.tsx`, `src/app/dashboard/admin/billing/page.tsx`
