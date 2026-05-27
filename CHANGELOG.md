@@ -11,6 +11,16 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-05-27
 
 ### feat
+- Adicionado suporte a métodos de pagamento "card" e "boleto" no Stripe Checkout para assinaturas.
+- Implementada API para liberação e revogação manual de acesso gratuito a clientes, sem uso do Stripe, com atualização do status do plano no banco.
+- Incluída interface no dashboard administrativo para controlar manualmente o acesso dos clientes, com botões para liberar ou revogar acesso gratuito.
+- Adicionado componente LeadStageSelector para exibir e alterar o estágio do lead no CRM diretamente na página de conversa do cliente, com integração via API para mover cartões entre colunas do pipeline.
+  - Arquivos: `src/app/api/admin/billing/checkout-session/route.ts`, `src/app/api/admin/billing/override/route.ts`, `src/app/dashboard/admin/billing/page.tsx`, `src/components/ConversationPageClient.tsx`, `src/components/LeadStageSelector.tsx`
+  - Confiança: alta
+
+## 2026-05-27
+
+### feat
 - Melhorada a exibição do raciocínio (chain-of-thought) no componente de traces, incluindo mensagem informativa quando apenas tokens de raciocínio interno são usados sem texto retornado. Ajustada a solicitação para incluir resumo automático do raciocínio na chamada à API OpenAI.
   - Arquivos: `src/components/TracesClient.tsx`, `src/lib/direct-ai-client.ts`
   - Confiança: alta
