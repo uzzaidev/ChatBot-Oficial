@@ -1,9 +1,9 @@
-import { resolvePolicy } from "@/lib/policy-engine";
 import {
   isFinanceiroOwner,
   resolveCanonicalOwnerPhone,
   routeMessageToFinanceiro,
 } from "@/lib/financeiro-bridge";
+import { resolvePolicy } from "@/lib/policy-engine";
 import {
   AIResponse,
   ClientConfig,
@@ -321,7 +321,11 @@ export const processChatbotMessage = async (
         });
         logger.finishExecution("success");
         await flushTrace();
-        return { success: true, skipped: true, reason: "financeiro_unsupported_media" };
+        return {
+          success: true,
+          skipped: true,
+          reason: "financeiro_unsupported_media",
+        };
       }
 
       // Re-key the sender to the canonical owner phone so the financeiro
@@ -333,7 +337,9 @@ export const processChatbotMessage = async (
       const routeResult = await routeMessageToFinanceiro({
         phone: canonicalPhone,
         text: isPlainText ? parsedMessage.content : undefined,
-        buttonId: isButtonReply ? parsedMessage.interactiveResponseId : undefined,
+        buttonId: isButtonReply
+          ? parsedMessage.interactiveResponseId
+          : undefined,
         config,
       });
 
@@ -1955,6 +1961,18 @@ export const processChatbotMessage = async (
 
     let metadataToolTriggered = false;
 
+    // Collects snapshots of every follow-up AI call made after a tool result
+    // (buscar_conhecimento, buscar_documento text-file path, etc.).
+    // Saved to the trace so the Prompt tab can show the full agentic chain.
+    const followUpSteps: Array<{
+      toolName: string;
+      toolArgs: Record<string, unknown>;
+      toolResultSummary: Record<string, unknown>;
+      requestPayload: unknown | null;
+      reasoning: string | null;
+      response: string;
+    }> = [];
+
     if (aiResponse.toolCalls && aiResponse.toolCalls.length > 0) {
       const uniqueToolCalls = dedupeToolCalls(aiResponse.toolCalls);
       if (uniqueToolCalls.length !== aiResponse.toolCalls.length) {
@@ -2154,6 +2172,19 @@ export const processChatbotMessage = async (
             supportModeEnabled,
           });
 
+          // Track follow-up for observability
+          followUpSteps.push({
+            toolName: "buscar_conhecimento",
+            toolArgs: { query: queryText },
+            toolResultSummary: {
+              contextLength: knowledgeResult.context.length,
+              chunks: knowledgeResult.traceData?.chunkIds.length ?? 0,
+            },
+            requestPayload: followUpResponse.requestPayload ?? null,
+            reasoning: followUpResponse.reasoning ?? null,
+            response: followUpResponse.content ?? "",
+          });
+
           aiResponse.content = followUpResponse.content;
           aiResponse.toolCalls = undefined;
           continue;
@@ -2270,6 +2301,20 @@ export const processChatbotMessage = async (
               config,
               greetingInstruction: continuityInfo.greetingInstruction,
               enableTools: false,
+            });
+
+            // Track follow-up for observability
+            followUpSteps.push({
+              toolName: "buscar_documento",
+              toolArgs: JSON.parse(toolCall.function.arguments || "{}"),
+              toolResultSummary: {
+                textFilesFound: documentSearchResult.textFilesFound,
+                gateDecision: documentSearchResult.documentGateDecision,
+                contextLength: documentSearchResult.message?.length ?? 0,
+              },
+              requestPayload: followUpResponse.requestPayload ?? null,
+              reasoning: followUpResponse.reasoning ?? null,
+              response: followUpResponse.content ?? "",
             });
 
             aiResponse.content = followUpResponse.content;
@@ -2731,13 +2776,18 @@ export const processChatbotMessage = async (
       reasoning: aiResponse.reasoning ?? null,
       reasoningTokens: aiResponse.usage?.reasoning_tokens ?? null,
       finalResponse: aiResponse.content ?? "",
-      finishReason:
-        aiResponse.finished ? "stop" : aiResponse.fallbackReason ?? null,
+      finishReason: aiResponse.finished
+        ? "stop"
+        : aiResponse.fallbackReason ?? null,
       toolCalls:
         aiResponse.toolCalls?.map((tc) => ({
           name: tc.function.name,
           arguments: tc.function.arguments,
         })) ?? [],
+      // Follow-up AI calls made after tool results (RAG, document search, etc.).
+      // Each entry contains: tool used, its result summary, the new prompt snapshot,
+      // any reasoning the model produced, and the final response text.
+      followUpSteps: followUpSteps.length > 0 ? followUpSteps : undefined,
     });
     traceLogger.setGenerationData({
       model: aiResponse.model || "unknown",

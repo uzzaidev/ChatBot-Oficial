@@ -944,10 +944,8 @@ const roleLabel = (role: string) => {
     return "text-blue-700 dark:text-blue-300";
   if (role === "assistant" || role === "ai")
     return "text-emerald-700 dark:text-uzz-mint";
-  if (role === "system")
-    return "text-amber-700 dark:text-amber-300";
-  if (role === "tool")
-    return "text-purple-700 dark:text-purple-300";
+  if (role === "system") return "text-amber-700 dark:text-amber-300";
+  if (role === "tool") return "text-purple-700 dark:text-purple-300";
   return "text-muted-foreground";
 };
 
@@ -963,18 +961,28 @@ function PromptTab({ trace }: { trace: TraceDetail }) {
   const requestPayload: RequestPayloadShape | null =
     (completedStage?.requestPayload as RequestPayloadShape | null) ?? null;
   const reasoning: string | null = completedStage?.reasoning ?? null;
-  const reasoningTokens: number | null = completedStage?.reasoningTokens ?? null;
+  const reasoningTokens: number | null =
+    completedStage?.reasoningTokens ?? null;
   const finalResponse: string =
     completedStage?.finalResponse ?? trace.agent_response ?? "";
   const toolCallsList: Array<{ name: string; arguments: string }> =
     completedStage?.toolCalls ?? [];
+  const followUpSteps: Array<{
+    toolName: string;
+    toolArgs: Record<string, unknown>;
+    toolResultSummary: Record<string, unknown>;
+    requestPayload: RequestPayloadShape | null;
+    reasoning: string | null;
+    response: string;
+  }> = completedStage?.followUpSteps ?? [];
 
   // Fallback for legacy traces (pre-2026-05-07) — still show what we can
   const legacySystemPrompt: string = startedStage?.systemPrompt ?? "";
   const legacyHistory: Array<{ role: string; content: string }> =
     startedStage?.historyMessages ?? [];
   const legacyRag: string = startedStage?.ragContext ?? "";
-  const legacyUser: string = startedStage?.userMessage ?? trace.user_message ?? "";
+  const legacyUser: string =
+    startedStage?.userMessage ?? trace.user_message ?? "";
 
   const isLegacy = !requestPayload;
   const hasLegacyData =
@@ -1215,10 +1223,7 @@ function PromptTab({ trace }: { trace: TraceDetail }) {
           {requestPayload.messages.map((m, i) => (
             <div
               key={i}
-              className={cn(
-                "rounded-lg border px-3 py-2",
-                roleBlock(m.role),
-              )}
+              className={cn("rounded-lg border px-3 py-2", roleBlock(m.role))}
             >
               <div className="flex items-center justify-between mb-1">
                 <p
@@ -1311,6 +1316,123 @@ function PromptTab({ trace }: { trace: TraceDetail }) {
                 <pre className="text-[11px] whitespace-pre-wrap break-words font-mono text-muted-foreground leading-relaxed">
                   {tc.arguments}
                 </pre>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Agentic loop: follow-up AI calls made after tool results */}
+      {followUpSteps.length > 0 && (
+        <div className="rounded-xl border border-orange-500/30 bg-orange-500/5 overflow-hidden">
+          <div className="px-4 py-2.5 bg-orange-500/10 border-b border-orange-500/20">
+            <p className="text-xs font-semibold uppercase tracking-wider text-orange-300">
+              Loop agentic — chamadas de retorno após tool (
+              {followUpSteps.length})
+            </p>
+          </div>
+          <div className="p-3 space-y-4">
+            {followUpSteps.map((step, si) => (
+              <div
+                key={si}
+                className="rounded-lg border border-orange-500/20 bg-orange-500/5 overflow-hidden"
+              >
+                {/* Tool header */}
+                <div className="flex items-center gap-2 px-3 py-2 bg-orange-500/10 border-b border-orange-500/20">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-orange-300">
+                    Step {si + 1}
+                  </span>
+                  <span className="text-[10px] text-orange-200/60">·</span>
+                  <span className="text-xs font-mono font-semibold text-orange-200">
+                    {step.toolName}
+                  </span>
+                </div>
+
+                <div className="p-3 space-y-3">
+                  {/* Tool args */}
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-orange-300/80 mb-1">
+                      → Argumentos da tool
+                    </p>
+                    <pre className="text-[11px] whitespace-pre-wrap break-words font-mono bg-muted/30 rounded p-2 text-foreground/80 leading-relaxed">
+                      {JSON.stringify(step.toolArgs, null, 2)}
+                    </pre>
+                  </div>
+
+                  {/* Tool result summary */}
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-orange-300/80 mb-1">
+                      ← Resultado da tool (resumo)
+                    </p>
+                    <pre className="text-[11px] whitespace-pre-wrap break-words font-mono bg-muted/30 rounded p-2 text-foreground/80 leading-relaxed">
+                      {JSON.stringify(step.toolResultSummary, null, 2)}
+                    </pre>
+                  </div>
+
+                  {/* Follow-up prompt sent to LLM */}
+                  {step.requestPayload && (
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-orange-300/80 mb-1">
+                        📨 Novo prompt enviado ao LLM (com resultado da tool)
+                      </p>
+                      <div className="rounded-lg border border-border/40 bg-muted/20 overflow-hidden">
+                        <div className="flex items-center justify-between px-3 py-1.5 bg-muted/30 border-b border-border/30">
+                          <span className="text-[10px] text-muted-foreground">
+                            {step.requestPayload.messages.length} mensagens ·{" "}
+                            {step.requestPayload.totals?.estimatedInputTokens ??
+                              "?"}{" "}
+                            tokens est.
+                          </span>
+                        </div>
+                        <div className="p-2 space-y-1.5 max-h-72 overflow-y-auto">
+                          {step.requestPayload.messages.map((m, mi) => (
+                            <div
+                              key={mi}
+                              className={cn(
+                                "rounded border px-2 py-1.5",
+                                roleBlock(m.role),
+                              )}
+                            >
+                              <p
+                                className={cn(
+                                  "text-[10px] font-bold uppercase mb-0.5",
+                                  roleLabel(m.role),
+                                )}
+                              >
+                                {m.role}
+                              </p>
+                              <pre className="text-[11px] whitespace-pre-wrap break-words font-mono leading-relaxed text-foreground">
+                                {m.content}
+                              </pre>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Reasoning after tool */}
+                  {step.reasoning && step.reasoning.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-purple-300/80 mb-1">
+                        🧠 Raciocínio do modelo após a tool
+                      </p>
+                      <pre className="text-[11px] p-2 whitespace-pre-wrap break-words font-mono bg-purple-500/5 border border-purple-500/20 rounded leading-relaxed max-h-40 overflow-y-auto text-purple-100/90">
+                        {step.reasoning}
+                      </pre>
+                    </div>
+                  )}
+
+                  {/* Follow-up response */}
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-300/80 mb-1">
+                      ✅ Resposta gerada após a tool
+                    </p>
+                    <pre className="text-[11px] p-2 whitespace-pre-wrap break-words font-mono bg-uzz-mint/5 border border-uzz-mint/20 rounded leading-relaxed text-foreground">
+                      {step.response || "—"}
+                    </pre>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -2021,7 +2143,9 @@ function TraceClientGroupItem({
           {latest.user_message?.slice(0, 92) || "sem mensagem"}
         </p>
         <div className="mt-2 flex items-center gap-3 text-[10px] text-muted-foreground">
-          <span>{group.total} mensagem{group.total !== 1 ? "s" : ""}</span>
+          <span>
+            {group.total} mensagem{group.total !== 1 ? "s" : ""}
+          </span>
           <span>{timeAgo(latest.created_at)}</span>
           {group.feedbackCount > 0 && <span>{group.feedbackCount} review</span>}
         </div>
