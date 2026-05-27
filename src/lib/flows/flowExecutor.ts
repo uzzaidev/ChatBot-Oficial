@@ -299,9 +299,8 @@ export class FlowExecutor {
           execution.client_id,
           block,
         );
-        // Keep execution pointing to this block while waiting for user reply
-        await this.setCurrentBlock(executionId, block.id);
-        // Wait for user response
+        // Auto-advance to the next block (message blocks don't wait for user input)
+        await this.advanceToNextBlock(executionId, blockId, flow);
         break;
 
       case "interactive_list":

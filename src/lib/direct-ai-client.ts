@@ -501,8 +501,9 @@ export const callDirectAI = async (
         openai: {
           reasoningEffort: effectiveEffort,
           // Request a reasoning summary so the text is returned in the response.
-          // Without this, OpenAI keeps reasoning server-side (only token count).
-          reasoningSummary: "auto",
+          // "concise" forces OpenAI to always return a summary ("auto" skips it
+          // when the model uses very few reasoning tokens, e.g. <100).
+          reasoningSummary: "concise",
         },
       };
 
@@ -662,18 +663,24 @@ export const callDirectAI = async (
     }
 
     // Capture reasoning text if exposed by the provider.
-    // Anthropic extended thinking returns it on `result.reasoning`; OpenAI
-    // reasoning models keep it server-side (only token count is exposed).
+    // AI SDK v5 exposes result.reasoningText (pre-joined string) and
+    // result.reasoning (array of {type,text} parts). Try reasoningText first
+    // since it's always the canonical joined form. Fall back to manual join.
     const reasoningText: string | undefined =
-      typeof (result as any).reasoning === "string"
-        ? (result as any).reasoning
-        : (result as any).reasoning?.text ??
-          (Array.isArray((result as any).reasoning)
-            ? (result as any).reasoning
-                .map((r: any) => (typeof r === "string" ? r : r?.text ?? ""))
-                .filter(Boolean)
-                .join("\n\n")
-            : undefined);
+      // 1. SDK's built-in joined property (AI SDK v5 generateText result)
+      ((result as any).reasoningText as string | undefined) ||
+      // 2. Anthropic-style string
+      (typeof (result as any).reasoning === "string"
+        ? (result as any).reasoning as string
+        : undefined) ||
+      // 3. Array of reasoning parts — map to text and join
+      (Array.isArray((result as any).reasoning)
+        ? ((result as any).reasoning
+            .map((r: any) => (typeof r === "string" ? r : r?.text ?? ""))
+            .filter(Boolean)
+            .join("\n\n") || undefined)
+        : undefined) ||
+      undefined;
 
     // 11. Return standardized response
     return {
