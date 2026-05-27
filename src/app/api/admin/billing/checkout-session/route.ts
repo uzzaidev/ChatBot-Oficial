@@ -112,6 +112,7 @@ export async function POST(request: NextRequest) {
       customer: stripeCustomerId,
       mode: "subscription",
       locale: "pt-BR",
+      payment_method_types: ["card", "boleto"],
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${appUrl}/dashboard/billing?checkout=success`,
       cancel_url: `${appUrl}/dashboard/billing?checkout=canceled`,
