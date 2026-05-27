@@ -11,6 +11,13 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-05-27
 
 ### feat
+- Melhorada a exibição do raciocínio (chain-of-thought) no componente de traces, incluindo mensagem informativa quando apenas tokens de raciocínio interno são usados sem texto retornado. Ajustada a solicitação para incluir resumo automático do raciocínio na chamada à API OpenAI.
+  - Arquivos: `src/components/TracesClient.tsx`, `src/lib/direct-ai-client.ts`
+  - Confiança: alta
+
+## 2026-05-27
+
+### feat
 - Adicionado rastreamento de passos de follow-up em interações de IA para maior observabilidade no componente de traces. Inclui exibição detalhada dos argumentos da ferramenta, resumo dos resultados, prompts enviados ao LLM, raciocínio do modelo e respostas geradas após chamadas de ferramentas.
 - Implementado suporte no fluxo do chatbot para coletar e salvar snapshots das chamadas de follow-up feitas após resultados de ferramentas, como buscar_conhecimento e buscar_documento, integrando essas informações ao trace para análise posterior.
   - Arquivos: `src/components/TracesClient.tsx`, `src/flows/chatbotFlow.ts`
