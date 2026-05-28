@@ -8,6 +8,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-05-28
+
+### refactor
+- Atualizado o tratamento do ID do WhatsApp Business Account (WABA) para priorizar o uso do campo `meta_waba_id` em vez de `whatsapp_business_account_id`, visando maior precisão na identificação do cliente. Ajustes feitos na API de configuração do cliente, submissão de templates e formulário de templates para refletir essa preferência e corrigir IDs desatualizados.
+  - Arquivos: `src/app/api/client/config/route.ts`, `src/app/api/templates/[templateId]/submit/route.ts`, `src/components/templates/TemplateForm.tsx`
+  - Confiança: alta
+
 ## 2026-05-27
 
 ### refactor
