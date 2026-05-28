@@ -10,6 +10,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-05-28
 
+### feat
+- Adicionado seletor de estágio do CRM no componente `ConversationsIndexClient` para filtrar conversas por estágio
+  - Arquivos: `src/components/ConversationsIndexClient.tsx`
+  - Confiança: alta
+
+## 2026-05-28
+
 ### refactor
 - Reordenados imports e ajustada formatação das respostas de erro para maior consistência na API de submissão de templates
   - Arquivos: `src/app/api/templates/[templateId]/submit/route.ts`
