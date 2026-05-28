@@ -18,14 +18,28 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import type { ConversationStatus, CRMCard, CRMColumn, CRMTag } from "@/lib/types";
+import type {
+  ConversationStatus,
+  CRMCard,
+  CRMColumn,
+  CRMTag,
+} from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useDroppable } from "@dnd-kit/core";
 import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { ArrowRight, Bot, Loader2, MoreHorizontal, Settings, Trash2, User, Workflow } from "lucide-react";
+import {
+  ArrowRight,
+  Bot,
+  Loader2,
+  MoreHorizontal,
+  Settings,
+  Trash2,
+  User,
+  Workflow,
+} from "lucide-react";
 import { useState } from "react";
 import { ColumnHeader } from "./ColumnHeader";
 import { KanbanCard } from "./KanbanCard";
@@ -183,9 +197,10 @@ export const KanbanColumn = ({
                       );
                     })}
 
-                  {onBulkUpdateColumnStatus && (onEditColumn || onDeleteColumn) && (
-                    <DropdownMenuSeparator />
-                  )}
+                  {onBulkUpdateColumnStatus &&
+                    (onEditColumn || onDeleteColumn) && (
+                      <DropdownMenuSeparator />
+                    )}
 
                   {onEditColumn && (
                     <DropdownMenuItem
@@ -275,7 +290,9 @@ export const KanbanColumn = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Alterar status em massa</AlertDialogTitle>
             <AlertDialogDescription>
-              {`Aplicar "${pendingOption?.label || "-"}" para todos os ${cards.length} contato(s) da coluna "${column.name}"?`}
+              {`Aplicar "${pendingOption?.label || "-"}" para todos os ${
+                cards.length
+              } contato(s) da coluna "${column.name}"?`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
