@@ -1,9 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
-import { query } from "@/lib/postgres";
-import { getClientIdFromSession, createServerClient } from "@/lib/supabase-server";
 import { getClientConfig } from "@/lib/config";
 import { createMetaTemplate } from "@/lib/meta";
+import { query } from "@/lib/postgres";
+import {
+  createServerClient,
+  getClientIdFromSession,
+} from "@/lib/supabase-server";
 import type { MessageTemplate } from "@/lib/types";
+import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
@@ -27,14 +30,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     if (!clientId) {
       return NextResponse.json(
         { error: "Unauthorized - authentication required" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     if (!templateId) {
       return NextResponse.json(
         { error: "Template ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -53,12 +56,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       WHERE id = $1 AND client_id = $2
     `;
 
-    const getResult = await query<MessageTemplate>(getSql, [templateId, clientId]);
+    const getResult = await query<MessageTemplate>(getSql, [
+      templateId,
+      clientId,
+    ]);
 
     if (getResult.rowCount === 0) {
       return NextResponse.json(
         { error: "Template not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -67,8 +73,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // Validate status is DRAFT
     if (template.status !== "DRAFT") {
       return NextResponse.json(
-        { error: `Cannot submit template with status: ${template.status}. Only DRAFT templates can be submitted.` },
-        { status: 400 }
+        {
+          error: `Cannot submit template with status: ${template.status}. Only DRAFT templates can be submitted.`,
+        },
+        { status: 400 },
       );
     }
 
@@ -78,7 +86,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     if (!config) {
       return NextResponse.json(
         { error: "Client configuration not found" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -86,7 +94,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     if (!config.apiKeys.metaAccessToken) {
       return NextResponse.json(
         { error: "Meta Access Token not configured for this client" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -106,19 +114,22 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     if (!resolvedWabaId) {
       return NextResponse.json(
-        { error: "WABA ID not configured for this client. Connect WhatsApp first." },
-        { status: 400 }
+        {
+          error:
+            "WABA ID not configured for this client. Connect WhatsApp first.",
+        },
+        { status: 400 },
       );
     }
 
     // If template has stale waba_id, update it before submitting
     if (resolvedWabaId !== template.waba_id) {
       console.log(
-        `[Submit Template] Correcting waba_id: ${template.waba_id} → ${resolvedWabaId}`
+        `[Submit Template] Correcting waba_id: ${template.waba_id} → ${resolvedWabaId}`,
       );
       await query(
         "UPDATE public.message_templates SET waba_id = $1 WHERE id = $2 AND client_id = $3",
-        [resolvedWabaId, templateId, clientId]
+        [resolvedWabaId, templateId, clientId],
       );
     }
 
@@ -132,7 +143,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           components: template.components,
         },
         resolvedWabaId,
-        config
+        config,
       );
 
       // Update template in database with Meta template ID and status
@@ -169,7 +180,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       if (updateResult.rowCount === 0) {
         return NextResponse.json(
           { error: "Failed to update template status" },
-          { status: 500 }
+          { status: 500 },
         );
       }
 
@@ -190,14 +201,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           error: "Failed to submit template to Meta",
           details: metaError.message,
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
   } catch (error) {
     console.error("Error submitting template:", error);
     return NextResponse.json(
       { error: "Failed to submit template" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
