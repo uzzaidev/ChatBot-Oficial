@@ -11,6 +11,17 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-05-28
 
 ### feat
+- Implementado paginação e contagem total na API de cards do CRM para melhorar desempenho e usabilidade.
+- Adicionado botão "Ver todos" no dashboard CRM para carregar todos os leads quando houver mais resultados que o limite padrão.
+- Atualizados hooks `useCRMCards`, `useCRMColumns` e `useCRMTags` para gerenciar estado de carregamento com cache local e suporte a carregamento completo.
+- Criados índices no banco de dados para otimizar joins entre `crm_cards` e `clientes_whatsapp` via campos `phone` e `client_id`.
+- Ajustes na configuração e no gerenciamento do pool de conexões PostgreSQL para melhorar estabilidade e performance em ambiente serverless.
+  - Arquivos: `src/app/api/crm/cards/route.ts`, `src/app/dashboard/crm/page.tsx`, `src/hooks/useCRMCards.ts`, `src/hooks/useCRMColumns.ts`, `src/hooks/useCRMTags.ts`, `src/lib/postgres.ts`, `supabase/migrations/20260528_crm_phone_index.sql`
+  - Confiança: alta
+
+## 2026-05-28
+
+### feat
 - Adicionado seletor de estágio do CRM no componente `ConversationsIndexClient` para filtrar conversas por estágio
   - Arquivos: `src/components/ConversationsIndexClient.tsx`
   - Confiança: alta
