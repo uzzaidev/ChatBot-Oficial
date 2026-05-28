@@ -4,16 +4,17 @@ import { apiFetch } from "@/lib/api";
 import type { ConversationStatus, CRMCard, CRMFilters } from "@/lib/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-// Default page size — fast initial load; loadAll() bypasses this
-const DEFAULT_LIMIT = 100;
+// Cards loaded per column on initial load; "Ver mais" fetches the next page
+const DEFAULT_LIMIT_PER_COLUMN = 10;
 
 interface UseCRMCardsResult {
   cards: CRMCard[];
   loading: boolean;
   error: string | null;
-  total: number;
-  hasMore: boolean;
-  loadAll: () => Promise<void>;
+  /** Total cards per column_id returned by the API */
+  columnTotals: Record<string, number>;
+  /** Append the next page of cards for a specific column */
+  loadMoreForColumn: (columnId: string) => Promise<void>;
   createCard: (data: {
     column_id: string;
     phone: string | number;
@@ -39,87 +40,108 @@ export const useCRMCards = (
   filters?: CRMFilters,
 ): UseCRMCardsResult => {
   const [cards, setCards] = useState<CRMCard[]>([]);
-  const [total, setTotal] = useState(0);
+  const [columnTotals, setColumnTotals] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   // Track whether we have shown data at least once (stale-while-revalidate)
   const hasDataRef = useRef(false);
 
-  const fetchCardsWithLimit = useCallback(
-    async (limit: number) => {
-      if (!clientId) {
-        setLoading(false);
-        return;
+  const fetchCards = useCallback(async () => {
+    if (!clientId) {
+      setLoading(false);
+      return;
+    }
+
+    // Only show full loading spinner on the very first load (no stale data yet)
+    if (!hasDataRef.current) {
+      setLoading(true);
+    }
+    setError(null);
+
+    try {
+      const params = new URLSearchParams();
+
+      if (filters?.search) {
+        // Search mode: return all matches (API ignores limitPerColumn)
+        params.append("search", filters.search);
+      } else {
+        // Initial load mode: per-column window function
+        params.append("limitPerColumn", String(DEFAULT_LIMIT_PER_COLUMN));
+      }
+      if (filters?.autoStatus) params.append("autoStatus", filters.autoStatus);
+      if (filters?.assignedTo) params.append("assignedTo", filters.assignedTo);
+
+      const response = await apiFetch(`/api/crm/cards?${params.toString()}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to fetch cards");
       }
 
-      // Only show full loading spinner on the very first load (no stale data yet)
-      if (!hasDataRef.current) {
-        setLoading(true);
-      }
-      setError(null);
+      const data = await response.json();
+      setCards(data.cards || []);
+      setColumnTotals(data.columnTotals ?? {});
+      hasDataRef.current = true;
+    } catch (err: any) {
+      setError(err.message);
+      console.error("Error fetching CRM cards:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [clientId, filters]);
+
+  /** Append the next page of cards for the given column */
+  const loadMoreForColumn = useCallback(
+    async (columnId: string) => {
+      if (!clientId) return;
+
+      const loaded = cards.filter((c) => c.column_id === columnId).length;
+      const total = columnTotals[columnId] ?? 0;
+      if (loaded >= total) return; // nothing left to load
 
       try {
-        // Build query params
-        const params = new URLSearchParams();
-
-        // When a text search filter is active the API already ignores the limit,
-        // but we still send 0 explicitly for clarity.
-        const effectiveLimit = filters?.search ? 0 : limit;
-        params.append("limit", String(effectiveLimit));
-
-        if (filters?.search) {
-          params.append("search", filters.search);
-        }
-        if (filters?.autoStatus) {
+        const params = new URLSearchParams({
+          columnId,
+          limit: String(DEFAULT_LIMIT_PER_COLUMN),
+          offset: String(loaded),
+        });
+        if (filters?.autoStatus)
           params.append("autoStatus", filters.autoStatus);
-        }
-        if (filters?.assignedTo) {
+        if (filters?.assignedTo)
           params.append("assignedTo", filters.assignedTo);
-        }
 
         const response = await apiFetch(`/api/crm/cards?${params.toString()}`);
-
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.error || "Failed to fetch cards");
+          throw new Error(errorData.error || "Failed to load more cards");
         }
 
         const data = await response.json();
-        setCards(data.cards || []);
-        setTotal(data.total ?? data.cards?.length ?? 0);
-        hasDataRef.current = true;
+        const newCards: CRMCard[] = data.cards || [];
+
+        // Append only cards we don't already have
+        setCards((prev) => {
+          const existingIds = new Set(prev.map((c) => c.id));
+          const fresh = newCards.filter((c) => !existingIds.has(c.id));
+          return [...prev, ...fresh];
+        });
       } catch (err: any) {
         setError(err.message);
-        console.error("Error fetching CRM cards:", err);
-      } finally {
-        setLoading(false);
+        console.error("Error loading more cards:", err);
       }
     },
-    [clientId, filters],
-  );
-
-  const fetchCards = useCallback(
-    () => fetchCardsWithLimit(DEFAULT_LIMIT),
-    [fetchCardsWithLimit],
-  );
-
-  // loadAll bypasses the default limit
-  const loadAll = useCallback(
-    () => fetchCardsWithLimit(0),
-    [fetchCardsWithLimit],
+    [clientId, cards, columnTotals, filters],
   );
 
   // Reset stale-data flag when clientId changes so new account always shows loader
   useEffect(() => {
     hasDataRef.current = false;
+    setColumnTotals({});
   }, [clientId]);
 
   // Auto-fetch on mount and when filters change
   useEffect(() => {
-    fetchCards();
+    void fetchCards();
   }, [fetchCards]);
-
-  const hasMore = total > cards.length;
 
   const createCard = useCallback(
     async (data: { column_id: string; phone: string | number }) => {
@@ -392,9 +414,8 @@ export const useCRMCards = (
     cards,
     loading,
     error,
-    total,
-    hasMore,
-    loadAll,
+    columnTotals,
+    loadMoreForColumn,
     createCard,
     updateCard,
     deleteCard,

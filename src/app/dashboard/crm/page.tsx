@@ -108,9 +108,8 @@ export default function CRMPage() {
   const {
     cards,
     loading: cardsLoading,
-    total: cardsTotal,
-    hasMore: cardsHasMore,
-    loadAll: loadAllCards,
+    columnTotals,
+    loadMoreForColumn,
     moveCard,
     addTag,
     removeTag,
@@ -318,19 +317,6 @@ export default function CRMPage() {
                   {activeFiltersCount} filtro{activeFiltersCount > 1 ? "s" : ""}
                 </span>
               )}
-              {cardsHasMore && !filters.search && (
-                <>
-                  <span className="crm-stat-chip text-muted-foreground text-xs">
-                    {cards.length} de {cardsTotal} leads
-                  </span>
-                  <button
-                    className="crm-pill-button gap-1.5 px-3 text-xs"
-                    onClick={() => void loadAllCards()}
-                  >
-                    Ver todos
-                  </button>
-                </>
-              )}
             </div>
 
             {activeTab === "pipeline" && (
@@ -474,6 +460,21 @@ export default function CRMPage() {
                                       disableDrag
                                     />
                                   ))}
+                                  {!filters.search &&
+                                    (columnTotals[col.id] ?? 0) >
+                                      columnCards.length && (
+                                      <button
+                                        className="crm-pill-button w-full justify-center text-xs text-muted-foreground mt-1"
+                                        onClick={() =>
+                                          void loadMoreForColumn(col.id)
+                                        }
+                                      >
+                                        Ver mais (
+                                        {(columnTotals[col.id] ?? 0) -
+                                          columnCards.length}{" "}
+                                        restantes)
+                                      </button>
+                                    )}
                                   {columnCards.length === 0 && (
                                     <div className="crm-column-empty rounded-[20px] px-4 py-8 text-center text-sm text-muted-foreground">
                                       Nenhum card nesta coluna
@@ -507,6 +508,8 @@ export default function CRMPage() {
                         onEditColumn={handleEditColumn}
                         onDeleteColumn={handleDeleteColumn}
                         onReorderColumns={reorderColumns}
+                        columnTotals={columnTotals}
+                        onLoadMoreForColumn={loadMoreForColumn}
                       />
                     ) : (
                       <div className="crm-board-scroll flex-1 overflow-auto pr-4">

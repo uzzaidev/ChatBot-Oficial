@@ -7,7 +7,10 @@ export const dynamic = "force-dynamic";
 
 /**
  * GET /api/crm/cards
- * Fetch all cards with filters
+ * Fetch cards. Three modes:
+ *  1. search=X          → all matches (no limit)
+ *  2. columnId=X        → specific column, LIMIT + OFFSET (load-more)
+ *  3. (default)         → first limitPerColumn per column via window fn + columnTotals
  */
 export async function GET(request: NextRequest) {
   try {
@@ -26,12 +29,16 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search");
     const autoStatus = searchParams.get("autoStatus");
     const assignedTo = searchParams.get("assignedTo");
-    // limit=0 → no limit (used by loadAll); default 100 for fast initial load
-    // When search is active we always skip the limit to return all matches
-    const limitParam = parseInt(searchParams.get("limit") || "100", 10);
-    const effectiveLimit = search ? 0 : limitParam;
+    // For initial load: how many cards to return per column
+    const limitPerColumn = parseInt(
+      searchParams.get("limitPerColumn") || "10",
+      10,
+    );
+    // For load-more (columnId mode): page size and offset
+    const limit = parseInt(searchParams.get("limit") || "10", 10);
+    const offset = parseInt(searchParams.get("offset") || "0", 10);
 
-    // Build dynamic query
+    // Build dynamic WHERE conditions (all reference alias `c`)
     const conditions: string[] = ["c.client_id = $1"];
     const values: any[] = [clientId];
     let paramCount = 2;
@@ -40,17 +47,14 @@ export async function GET(request: NextRequest) {
       conditions.push(`c.column_id = $${paramCount++}`);
       values.push(columnId);
     }
-
     if (autoStatus) {
       conditions.push(`c.auto_status = $${paramCount++}`);
       values.push(autoStatus);
     }
-
     if (assignedTo) {
       conditions.push(`c.assigned_to = $${paramCount++}`);
       values.push(assignedTo);
     }
-
     if (search) {
       conditions.push(`(
         cw.nome ILIKE $${paramCount} OR
@@ -60,47 +64,82 @@ export async function GET(request: NextRequest) {
       paramCount++;
     }
 
-    // Count total matching cards (same WHERE, no LIMIT)
-    const countValues = [...values];
-    const countSql = `
-      SELECT COUNT(DISTINCT c.id) as total
-      FROM crm_cards c
-      LEFT JOIN clientes_whatsapp cw ON c.phone = cw.telefone AND c.client_id = cw.client_id
-      WHERE ${conditions.join(" AND ")}
-    `;
-    const countResult = await query<{ total: string }>(countSql, countValues);
-    const total = parseInt(countResult.rows[0]?.total ?? "0", 10);
+    const whereClause = conditions.join(" AND ");
 
-    // Build main query with optional LIMIT
-    let sqlQuery = `
-      SELECT 
+    // Shared base SELECT (grouped per card, needs GROUP BY c.id, cw.nome, up.full_name)
+    const baseSelect = `
+      SELECT
         c.*,
         cw.nome as contact_name,
         up.full_name as assigned_user_name,
         COALESCE(
-          json_agg(
-            DISTINCT jsonb_build_object('id', ct.tag_id)
-          ) FILTER (WHERE ct.tag_id IS NOT NULL),
+          json_agg(DISTINCT jsonb_build_object('id', ct.tag_id)) FILTER (WHERE ct.tag_id IS NOT NULL),
           '[]'
         ) as tag_ids
       FROM crm_cards c
       LEFT JOIN clientes_whatsapp cw ON c.phone = cw.telefone AND c.client_id = cw.client_id
       LEFT JOIN user_profiles up ON c.assigned_to = up.id
       LEFT JOIN crm_card_tags ct ON c.id = ct.card_id
-      WHERE ${conditions.join(" AND ")}
+      WHERE ${whereClause}
       GROUP BY c.id, cw.nome, up.full_name
-      ORDER BY c.column_id, c.position ASC
     `;
 
-    if (effectiveLimit > 0) {
-      sqlQuery += ` LIMIT $${paramCount}`;
-      values.push(effectiveLimit);
+    let result: any;
+    let columnTotals: Record<string, number> | undefined;
+
+    if (search) {
+      // Mode 1: text search — return all matches
+      result = await query<any>(
+        `${baseSelect} ORDER BY c.column_id, c.position ASC`,
+        values,
+      );
+    } else if (columnId) {
+      // Mode 2: load-more for a specific column
+      result = await query<any>(
+        `${baseSelect} ORDER BY c.position ASC LIMIT $${paramCount} OFFSET $${
+          paramCount + 1
+        }`,
+        [...values, limit, offset],
+      );
+    } else {
+      // Mode 3: initial load — first N cards per column via window function
+      result = await query<any>(
+        `WITH grouped AS (${baseSelect}),
+         ranked AS (
+           SELECT *, ROW_NUMBER() OVER (PARTITION BY column_id ORDER BY position ASC) AS rn
+           FROM grouped
+         )
+         SELECT * FROM ranked WHERE rn <= $${paramCount}
+         ORDER BY column_id, position ASC`,
+        [...values, limitPerColumn],
+      );
+
+      // Fetch per-column totals (plain crm_cards scan, no JOINs needed since no search)
+      const totalsConditions: string[] = ["client_id = $1"];
+      const totalsValues: any[] = [clientId];
+      let totalsParam = 2;
+      if (autoStatus) {
+        totalsConditions.push(`auto_status = $${totalsParam++}`);
+        totalsValues.push(autoStatus);
+      }
+      if (assignedTo) {
+        totalsConditions.push(`assigned_to = $${totalsParam++}`);
+        totalsValues.push(assignedTo);
+      }
+      const totalsResult = await query<{ column_id: string; total: number }>(
+        `SELECT column_id, COUNT(*)::int AS total
+         FROM crm_cards
+         WHERE ${totalsConditions.join(" AND ")}
+         GROUP BY column_id`,
+        totalsValues,
+      );
+      columnTotals = Object.fromEntries(
+        totalsResult.rows.map((r) => [r.column_id, r.total]),
+      );
     }
 
-    const result = await query<any>(sqlQuery, values);
-
-    // Transform results
-    const cards: CRMCard[] = result.rows.map((row) => ({
+    // Transform rows into CRMCard objects
+    const cards: CRMCard[] = result.rows.map((row: any) => ({
       id: row.id,
       client_id: row.client_id,
       column_id: row.column_id,
@@ -120,18 +159,17 @@ export async function GET(request: NextRequest) {
       moved_to_column_at: row.moved_to_column_at,
       created_at: row.created_at,
       updated_at: row.updated_at,
-      contact: {
-        name: row.contact_name,
-      },
+      contact: { name: row.contact_name },
       assignedUser: row.assigned_user_name
-        ? {
-            name: row.assigned_user_name,
-          }
+        ? { name: row.assigned_user_name }
         : undefined,
       tagIds: row.tag_ids.map((t: any) => t.id).filter(Boolean),
     }));
 
-    return NextResponse.json({ cards, total });
+    return NextResponse.json({
+      cards,
+      ...(columnTotals !== undefined ? { columnTotals } : {}),
+    });
   } catch (error) {
     console.error("Error fetching CRM cards:", error);
     return NextResponse.json(
