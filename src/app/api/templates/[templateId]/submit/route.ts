@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/postgres";
-import { getClientIdFromSession } from "@/lib/supabase-server";
+import { getClientIdFromSession, createServerClient } from "@/lib/supabase-server";
 import { getClientConfig } from "@/lib/config";
 import { createMetaTemplate } from "@/lib/meta";
 import type { MessageTemplate } from "@/lib/types";
@@ -90,6 +90,38 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    // Resolve correct WABA ID: prefer meta_waba_id from clients table
+    // (template.waba_id may have been saved with a legacy/wrong value)
+    const supabase = await createServerClient();
+    const { data: clientRow } = await supabase
+      .from("clients")
+      .select("meta_waba_id, whatsapp_business_account_id")
+      .eq("id", clientId)
+      .single();
+
+    const resolvedWabaId =
+      (clientRow as any)?.meta_waba_id ||
+      clientRow?.whatsapp_business_account_id ||
+      template.waba_id;
+
+    if (!resolvedWabaId) {
+      return NextResponse.json(
+        { error: "WABA ID not configured for this client. Connect WhatsApp first." },
+        { status: 400 }
+      );
+    }
+
+    // If template has stale waba_id, update it before submitting
+    if (resolvedWabaId !== template.waba_id) {
+      console.log(
+        `[Submit Template] Correcting waba_id: ${template.waba_id} → ${resolvedWabaId}`
+      );
+      await query(
+        "UPDATE public.message_templates SET waba_id = $1 WHERE id = $2 AND client_id = $3",
+        [resolvedWabaId, templateId, clientId]
+      );
+    }
+
     try {
       // Submit template to Meta API
       const metaResponse = await createMetaTemplate(
@@ -99,7 +131,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           language: template.language,
           components: template.components,
         },
-        template.waba_id,
+        resolvedWabaId,
         config
       );
 
