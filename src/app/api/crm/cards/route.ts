@@ -26,6 +26,10 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search");
     const autoStatus = searchParams.get("autoStatus");
     const assignedTo = searchParams.get("assignedTo");
+    // limit=0 → no limit (used by loadAll); default 100 for fast initial load
+    // When search is active we always skip the limit to return all matches
+    const limitParam = parseInt(searchParams.get("limit") || "100", 10);
+    const effectiveLimit = search ? 0 : limitParam;
 
     // Build dynamic query
     const conditions: string[] = ["c.client_id = $1"];
@@ -56,8 +60,19 @@ export async function GET(request: NextRequest) {
       paramCount++;
     }
 
-    // Fetch cards with joined data
-    const sqlQuery = `
+    // Count total matching cards (same WHERE, no LIMIT)
+    const countValues = [...values];
+    const countSql = `
+      SELECT COUNT(DISTINCT c.id) as total
+      FROM crm_cards c
+      LEFT JOIN clientes_whatsapp cw ON c.phone = cw.telefone AND c.client_id = cw.client_id
+      WHERE ${conditions.join(" AND ")}
+    `;
+    const countResult = await query<{ total: string }>(countSql, countValues);
+    const total = parseInt(countResult.rows[0]?.total ?? "0", 10);
+
+    // Build main query with optional LIMIT
+    let sqlQuery = `
       SELECT 
         c.*,
         cw.nome as contact_name,
@@ -76,6 +91,11 @@ export async function GET(request: NextRequest) {
       GROUP BY c.id, cw.nome, up.full_name
       ORDER BY c.column_id, c.position ASC
     `;
+
+    if (effectiveLimit > 0) {
+      sqlQuery += ` LIMIT $${paramCount}`;
+      values.push(effectiveLimit);
+    }
 
     const result = await query<any>(sqlQuery, values);
 
@@ -111,7 +131,7 @@ export async function GET(request: NextRequest) {
       tagIds: row.tag_ids.map((t: any) => t.id).filter(Boolean),
     }));
 
-    return NextResponse.json({ cards });
+    return NextResponse.json({ cards, total });
   } catch (error) {
     console.error("Error fetching CRM cards:", error);
     return NextResponse.json(

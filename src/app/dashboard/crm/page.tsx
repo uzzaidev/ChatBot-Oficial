@@ -108,6 +108,9 @@ export default function CRMPage() {
   const {
     cards,
     loading: cardsLoading,
+    total: cardsTotal,
+    hasMore: cardsHasMore,
+    loadAll: loadAllCards,
     moveCard,
     addTag,
     removeTag,
@@ -314,6 +317,19 @@ export default function CRMPage() {
                   <Filter className="h-3.5 w-3.5 text-primary" />
                   {activeFiltersCount} filtro{activeFiltersCount > 1 ? "s" : ""}
                 </span>
+              )}
+              {cardsHasMore && !filters.search && (
+                <>
+                  <span className="crm-stat-chip text-muted-foreground text-xs">
+                    {cards.length} de {cardsTotal} leads
+                  </span>
+                  <button
+                    className="crm-pill-button gap-1.5 px-3 text-xs"
+                    onClick={() => void loadAllCards()}
+                  >
+                    Ver todos
+                  </button>
+                </>
               )}
             </div>
 

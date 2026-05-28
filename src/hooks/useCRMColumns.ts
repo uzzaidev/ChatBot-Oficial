@@ -2,7 +2,7 @@
 
 import { apiFetch } from "@/lib/api";
 import type { CRMColumn } from "@/lib/types";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface UseCRMColumnsResult {
   columns: CRMColumn[];
@@ -28,6 +28,7 @@ export const useCRMColumns = (clientId: string | null): UseCRMColumnsResult => {
   const [columns, setColumns] = useState<CRMColumn[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasDataRef = useRef(false);
 
   const fetchColumns = useCallback(async () => {
     if (!clientId) {
@@ -35,10 +36,12 @@ export const useCRMColumns = (clientId: string | null): UseCRMColumnsResult => {
       return;
     }
 
-    try {
+    if (!hasDataRef.current) {
       setLoading(true);
-      setError(null);
+    }
+    setError(null);
 
+    try {
       const response = await apiFetch("/api/crm/columns");
 
       if (!response.ok) {
@@ -48,12 +51,17 @@ export const useCRMColumns = (clientId: string | null): UseCRMColumnsResult => {
 
       const data = await response.json();
       setColumns(data.columns || []);
+      hasDataRef.current = true;
     } catch (err: any) {
       setError(err.message);
       console.error("Error fetching CRM columns:", err);
     } finally {
       setLoading(false);
     }
+  }, [clientId]);
+
+  useEffect(() => {
+    hasDataRef.current = false;
   }, [clientId]);
 
   // Auto-fetch on mount and when clientId changes
