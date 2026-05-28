@@ -10,6 +10,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-05-28
 
+### feat
+- Adicionada configuração de regiões (`gru1`, `iad1`) no arquivo `vercel.json` para deploy na Vercel
+  - Arquivos: `vercel.json`
+  - Confiança: alta
+
+## 2026-05-28
+
 ### refactor
 - Melhorada formatação e legibilidade do código no componente `KanbanColumn`
   - Arquivos: `src/components/crm/KanbanColumn.tsx`
