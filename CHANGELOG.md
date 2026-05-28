@@ -10,6 +10,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-05-28
 
+### refactor
+- Melhorada formatação e legibilidade do código no componente `KanbanColumn`
+  - Arquivos: `src/components/crm/KanbanColumn.tsx`
+  - Confiança: alta
+
+## 2026-05-28
+
 ### feat
 - Implementado paginação e contagem total na API de cards do CRM para melhorar desempenho e usabilidade.
 - Adicionado botão "Ver todos" no dashboard CRM para carregar todos os leads quando houver mais resultados que o limite padrão.
