@@ -9,9 +9,11 @@ import {
   AlertTriangle,
   ArrowRight,
   Bot,
+  CheckCircle,
   CheckCircle2,
   ChevronRight,
   Clock,
+  Copy,
   DollarSign,
   FileText,
   MessageSquare,
@@ -950,6 +952,9 @@ const roleLabel = (role: string) => {
 };
 
 function PromptTab({ trace }: { trace: TraceDetail }) {
+  // ⚠️ All hooks must be declared before any early return (Rules of Hooks)
+  const [copied, setCopied] = useState(false);
+
   const stages = (trace.metadata as Record<string, any>)?.stages ?? {};
   const completedStage = stages.generation_completed as
     | Record<string, any>
@@ -1104,8 +1109,114 @@ function PromptTab({ trace }: { trace: TraceDetail }) {
       ? actualPromptTokens - totals.estimatedInputTokens
       : null;
 
+  const handleCopyAll = () => {
+    const lines: string[] = [];
+
+    // Settings
+    lines.push(`=== CONFIGURAÇÕES ===`);
+    lines.push(`Modelo: ${trace.model_used ?? "—"}`);
+    if (settings.temperature != null)
+      lines.push(`Temperatura: ${settings.temperature}`);
+    if (settings.maxTokens != null)
+      lines.push(`Max tokens: ${settings.maxTokens}`);
+    if (settings.reasoningEffort)
+      lines.push(`Reasoning effort: ${settings.reasoningEffort}`);
+    if (reasoningTokens && reasoningTokens > 0)
+      lines.push(`Reasoning tokens: ${reasoningTokens}`);
+    lines.push(
+      `Prompt estimado: ~${totals.estimatedInputTokens} tokens / ${totals.promptCharCount} chars`,
+    );
+    lines.push("");
+
+    // Messages
+    lines.push(
+      `=== MENSAGENS ENVIADAS AO LLM (${requestPayload.messages.length} blocos) ===`,
+    );
+    for (const m of requestPayload.messages) {
+      lines.push(`\n[${m.role.toUpperCase()}]`);
+      lines.push(m.content);
+    }
+    lines.push("");
+
+    // Tools
+    if (requestPayload.tools.length > 0) {
+      lines.push(`=== TOOLS EXPOSTAS (${requestPayload.tools.length}) ===`);
+      for (const t of requestPayload.tools) {
+        lines.push(`\n[${t.name}]`);
+        if (t.description) lines.push(t.description);
+      }
+      lines.push("");
+    }
+
+    // Reasoning
+    if (reasoning && reasoning.length > 0) {
+      lines.push(
+        `=== CHAIN-OF-THOUGHT / REASONING (${reasoningTokens ?? 0} tokens) ===`,
+      );
+      lines.push(reasoning);
+      lines.push("");
+    }
+
+    // Tool calls
+    if (toolCallsList.length > 0) {
+      lines.push(`=== TOOL CALLS EMITIDAS ===`);
+      for (const tc of toolCallsList) {
+        lines.push(`\n[${tc.name}]`);
+        lines.push(tc.arguments);
+      }
+      lines.push("");
+    }
+
+    // Follow-up steps
+    if (followUpSteps.length > 0) {
+      lines.push(`=== LOOP AGENTIC (${followUpSteps.length} steps) ===`);
+      for (let si = 0; si < followUpSteps.length; si++) {
+        const step = followUpSteps[si];
+        lines.push(`\n--- Step ${si + 1}: ${step.toolName} ---`);
+        lines.push(`Args: ${JSON.stringify(step.toolArgs, null, 2)}`);
+        lines.push(
+          `Result: ${JSON.stringify(step.toolResultSummary, null, 2)}`,
+        );
+        if (step.reasoning) lines.push(`Reasoning: ${step.reasoning}`);
+        lines.push(`Resposta: ${step.response || "—"}`);
+      }
+      lines.push("");
+    }
+
+    // Final response
+    if (finalResponse) {
+      lines.push(`=== RESPOSTA FINAL ===`);
+      lines.push(finalResponse);
+    }
+
+    navigator.clipboard.writeText(lines.join("\n")).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
   return (
     <div className="p-5 space-y-5">
+      {/* Copy all button */}
+      <div className="flex justify-end">
+        <button
+          onClick={handleCopyAll}
+          className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted"
+        >
+          {copied ? (
+            <>
+              <CheckCircle className="h-3 w-3 text-uzz-mint" />
+              <span className="text-uzz-mint">Copiado!</span>
+            </>
+          ) : (
+            <>
+              <Copy className="h-3 w-3" />
+              Copiar tudo
+            </>
+          )}
+        </button>
+      </div>
+
       {/* Totals strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <div className="rounded-lg border border-border/50 bg-card/60 px-3 py-2">
@@ -1300,12 +1411,13 @@ function PromptTab({ trace }: { trace: TraceDetail }) {
           ) : (
             <div className="px-4 py-3 text-xs text-purple-300/60 italic">
               O modelo usou {reasoningTokens} tokens de raciocínio interno, mas
-              a API não retornou o texto. Isso é esperado para modelos OpenAI
-              sem resumo ativado — verifique se{" "}
+              a API não retornou o texto do raciocínio. Isso pode acontecer com
+              modelos GPT (raciocínio interno não exposto) ou quando o modelo
+              não suporta{" "}
               <span className="font-mono text-purple-300/80">
-                reasoningSummary: &quot;auto&quot;
-              </span>{" "}
-              está no providerOptions.
+                reasoningSummary: &quot;detailed&quot;
+              </span>
+              . Modelos suportados: série o (o1, o3-mini, o4-mini).
             </div>
           )}
         </div>

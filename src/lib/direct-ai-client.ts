@@ -671,14 +671,34 @@ export const callDirectAI = async (
       ((result as any).reasoningText as string | undefined) ||
       // 2. Anthropic-style string
       (typeof (result as any).reasoning === "string"
-        ? (result as any).reasoning as string
+        ? ((result as any).reasoning as string)
         : undefined) ||
       // 3. Array of reasoning parts — map to text and join
       (Array.isArray((result as any).reasoning)
-        ? ((result as any).reasoning
+        ? (result as any).reasoning
             .map((r: any) => (typeof r === "string" ? r : r?.text ?? ""))
             .filter(Boolean)
-            .join("\n\n") || undefined)
+            .join("\n\n") || undefined
+        : undefined) ||
+      // 4. Step-level reasoning (AI SDK v5 multi-step or single-step result.steps)
+      (Array.isArray((result as any).steps) && (result as any).steps.length > 0
+        ? (result as any).steps
+            .map(
+              (step: any) =>
+                (step.reasoningText as string | undefined) ||
+                (typeof step.reasoning === "string" ? step.reasoning : "") ||
+                (Array.isArray(step.reasoning)
+                  ? step.reasoning
+                      .map((r: any) =>
+                        typeof r === "string" ? r : r?.text ?? "",
+                      )
+                      .filter(Boolean)
+                      .join("\n\n")
+                  : "") ||
+                "",
+            )
+            .filter(Boolean)
+            .join("\n\n") || undefined
         : undefined) ||
       undefined;
 
