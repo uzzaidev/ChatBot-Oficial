@@ -8,6 +8,20 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-05-29
+
+### feat
+- Implementado dashboard de feedback de conversas WhatsApp com filtros, paginação e visualização detalhada no dashboard de observabilidade
+- Adicionada API GET para listagem paginada e filtrada de feedbacks de mensagens, com controle de acesso por papel (admin ou cliente)
+- Adicionado botão "Copiar tudo" no componente de detalhes de trace para facilitar exportação dos dados da requisição e raciocínio
+  - Arquivos: `src/app/api/message-feedback/route.ts`, `src/app/dashboard/observability/page.tsx`, `src/components/conversations/ConversationFeedbackDashboard.tsx`, `src/components/TracesClient.tsx`
+  - Confiança: alta
+
+### refactor
+- Melhorada extração do campo reasoning no client Direct AI para suportar múltiplos formatos, incluindo passos detalhados
+  - Arquivos: `src/lib/direct-ai-client.ts`
+  - Confiança: alta
+
 ## 2026-05-28
 
 ### feat
