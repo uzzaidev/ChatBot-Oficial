@@ -1,130 +1,148 @@
-'use client'
+"use client";
 
-import { useCallback, useState, useEffect } from 'react'
-import { apiFetch } from '@/lib/api'
-import type { CRMTag } from '@/lib/types'
+import { apiFetch } from "@/lib/api";
+import type { CRMTag } from "@/lib/types";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface UseCRMTagsResult {
-  tags: CRMTag[]
-  loading: boolean
-  error: string | null
-  createTag: (data: { name: string; color?: string; description?: string }) => Promise<CRMTag | null>
-  updateTag: (id: string, data: { name?: string; color?: string; description?: string }) => Promise<CRMTag | null>
-  deleteTag: (id: string) => Promise<boolean>
-  refetch: () => Promise<void>
+  tags: CRMTag[];
+  loading: boolean;
+  error: string | null;
+  createTag: (data: {
+    name: string;
+    color?: string;
+    description?: string;
+  }) => Promise<CRMTag | null>;
+  updateTag: (
+    id: string,
+    data: { name?: string; color?: string; description?: string },
+  ) => Promise<CRMTag | null>;
+  deleteTag: (id: string) => Promise<boolean>;
+  refetch: () => Promise<void>;
 }
 
 export const useCRMTags = (clientId: string | null): UseCRMTagsResult => {
-  const [tags, setTags] = useState<CRMTag[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [tags, setTags] = useState<CRMTag[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const hasDataRef = useRef(false);
 
   const fetchTags = useCallback(async () => {
     if (!clientId) {
-      setLoading(false)
-      return
+      setLoading(false);
+      return;
     }
+
+    if (!hasDataRef.current) {
+      setLoading(true);
+    }
+    setError(null);
 
     try {
-      setLoading(true)
-      setError(null)
-
-      const response = await apiFetch('/api/crm/tags')
+      const response = await apiFetch("/api/crm/tags");
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to fetch tags')
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to fetch tags");
       }
 
-      const data = await response.json()
-      setTags(data.tags || [])
+      const data = await response.json();
+      setTags(data.tags || []);
+      hasDataRef.current = true;
     } catch (err: any) {
-      setError(err.message)
-      console.error('Error fetching CRM tags:', err)
+      setError(err.message);
+      console.error("Error fetching CRM tags:", err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [clientId])
+  }, [clientId]);
+
+  useEffect(() => {
+    hasDataRef.current = false;
+  }, [clientId]);
 
   // Auto-fetch on mount
   useEffect(() => {
-    fetchTags()
-  }, [fetchTags])
+    fetchTags();
+  }, [fetchTags]);
 
   const createTag = useCallback(
     async (data: { name: string; color?: string; description?: string }) => {
       try {
-        const response = await apiFetch('/api/crm/tags', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const response = await apiFetch("/api/crm/tags", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(data),
-        })
+        });
 
         if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || 'Failed to create tag')
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to create tag");
         }
 
-        const result = await response.json()
-        await fetchTags() // Refresh list
-        return result.tag
+        const result = await response.json();
+        await fetchTags(); // Refresh list
+        return result.tag;
       } catch (err: any) {
-        setError(err.message)
-        console.error('Error creating tag:', err)
-        return null
+        setError(err.message);
+        console.error("Error creating tag:", err);
+        return null;
       }
     },
-    [fetchTags]
-  )
+    [fetchTags],
+  );
 
   const updateTag = useCallback(
-    async (id: string, data: { name?: string; color?: string; description?: string }) => {
+    async (
+      id: string,
+      data: { name?: string; color?: string; description?: string },
+    ) => {
       try {
         const response = await apiFetch(`/api/crm/tags/${id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(data),
-        })
+        });
 
         if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || 'Failed to update tag')
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to update tag");
         }
 
-        const result = await response.json()
-        await fetchTags() // Refresh list
-        return result.tag
+        const result = await response.json();
+        await fetchTags(); // Refresh list
+        return result.tag;
       } catch (err: any) {
-        setError(err.message)
-        console.error('Error updating tag:', err)
-        return null
+        setError(err.message);
+        console.error("Error updating tag:", err);
+        return null;
       }
     },
-    [fetchTags]
-  )
+    [fetchTags],
+  );
 
   const deleteTag = useCallback(
     async (id: string) => {
       try {
         const response = await apiFetch(`/api/crm/tags/${id}`, {
-          method: 'DELETE',
-        })
+          method: "DELETE",
+        });
 
         if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || 'Failed to delete tag')
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to delete tag");
         }
 
-        await fetchTags() // Refresh list
-        return true
+        await fetchTags(); // Refresh list
+        return true;
       } catch (err: any) {
-        setError(err.message)
-        console.error('Error deleting tag:', err)
-        return false
+        setError(err.message);
+        console.error("Error deleting tag:", err);
+        return false;
       }
     },
-    [fetchTags]
-  )
+    [fetchTags],
+  );
 
   return {
     tags,
@@ -134,5 +152,5 @@ export const useCRMTags = (clientId: string | null): UseCRMTagsResult => {
     updateTag,
     deleteTag,
     refetch: fetchTags,
-  }
-}
+  };
+};

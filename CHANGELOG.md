@@ -8,6 +8,131 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-05-29
+
+### feat
+- Implementado dashboard de feedback de conversas WhatsApp com filtros, paginação e visualização detalhada no dashboard de observabilidade
+- Adicionada API GET para listagem paginada e filtrada de feedbacks de mensagens, com controle de acesso por papel (admin ou cliente)
+- Adicionado botão "Copiar tudo" no componente de detalhes de trace para facilitar exportação dos dados da requisição e raciocínio
+  - Arquivos: `src/app/api/message-feedback/route.ts`, `src/app/dashboard/observability/page.tsx`, `src/components/conversations/ConversationFeedbackDashboard.tsx`, `src/components/TracesClient.tsx`
+  - Confiança: alta
+
+### refactor
+- Melhorada extração do campo reasoning no client Direct AI para suportar múltiplos formatos, incluindo passos detalhados
+  - Arquivos: `src/lib/direct-ai-client.ts`
+  - Confiança: alta
+
+## 2026-05-28
+
+### feat
+- Adicionada configuração de regiões (`gru1`, `iad1`) no arquivo `vercel.json` para deploy na Vercel
+  - Arquivos: `vercel.json`
+  - Confiança: alta
+
+## 2026-05-28
+
+### refactor
+- Melhorada formatação e legibilidade do código no componente `KanbanColumn`
+  - Arquivos: `src/components/crm/KanbanColumn.tsx`
+  - Confiança: alta
+
+## 2026-05-28
+
+### feat
+- Implementado paginação e contagem total na API de cards do CRM para melhorar desempenho e usabilidade.
+- Adicionado botão "Ver todos" no dashboard CRM para carregar todos os leads quando houver mais resultados que o limite padrão.
+- Atualizados hooks `useCRMCards`, `useCRMColumns` e `useCRMTags` para gerenciar estado de carregamento com cache local e suporte a carregamento completo.
+- Criados índices no banco de dados para otimizar joins entre `crm_cards` e `clientes_whatsapp` via campos `phone` e `client_id`.
+- Ajustes na configuração e no gerenciamento do pool de conexões PostgreSQL para melhorar estabilidade e performance em ambiente serverless.
+  - Arquivos: `src/app/api/crm/cards/route.ts`, `src/app/dashboard/crm/page.tsx`, `src/hooks/useCRMCards.ts`, `src/hooks/useCRMColumns.ts`, `src/hooks/useCRMTags.ts`, `src/lib/postgres.ts`, `supabase/migrations/20260528_crm_phone_index.sql`
+  - Confiança: alta
+
+## 2026-05-28
+
+### feat
+- Adicionado seletor de estágio do CRM no componente `ConversationsIndexClient` para filtrar conversas por estágio
+  - Arquivos: `src/components/ConversationsIndexClient.tsx`
+  - Confiança: alta
+
+## 2026-05-28
+
+### refactor
+- Reordenados imports e ajustada formatação das respostas de erro para maior consistência na API de submissão de templates
+  - Arquivos: `src/app/api/templates/[templateId]/submit/route.ts`
+  - Confiança: alta
+
+## 2026-05-28
+
+### refactor
+- Atualizado o tratamento do ID do WhatsApp Business Account (WABA) para priorizar o uso do campo `meta_waba_id` em vez de `whatsapp_business_account_id`, visando maior precisão na identificação do cliente. Ajustes feitos na API de configuração do cliente, submissão de templates e formulário de templates para refletir essa preferência e corrigir IDs desatualizados.
+  - Arquivos: `src/app/api/client/config/route.ts`, `src/app/api/templates/[templateId]/submit/route.ts`, `src/components/templates/TemplateForm.tsx`
+  - Confiança: alta
+
+## 2026-05-27
+
+### refactor
+- Atualizado parâmetro de resumo de raciocínio de "concise" para "detailed" para melhorar a clareza das respostas do Direct AI Client
+  - Arquivos: `src/lib/direct-ai-client.ts`
+  - Confiança: alta
+
+## 2026-05-27
+
+### refactor
+- Alterado para avançar automaticamente ao próximo bloco em execuções de fluxo de mensagens, removendo espera por resposta do usuário
+- Ajustada extração do texto de raciocínio da resposta da IA para usar nova propriedade `reasoningText` e melhorar compatibilidade com diferentes formatos de resposta
+  - Arquivos: `src/lib/direct-ai-client.ts`, `src/lib/flows/flowExecutor.ts`
+  - Confiança: alta
+
+## 2026-05-27
+
+### refactor
+- Removidas instruções de saudação para clientes novos e recorrentes das configurações padrão do bot.
+- Atualizada execução dos blocos de mensagem para incluir `clientId` e enviar mensagens WhatsApp com configuração do cliente.
+- Melhorias gerais na organização e formatação do código em `FlowExecutor`, incluindo tratamento de mensagens interativas e salvamento de mensagens.
+- Ajustes na extração e uso de variáveis de contexto e histórico de execução para maior clareza.
+  - Arquivos: `src/lib/flows/flowExecutor.ts`, `supabase/seeds/default_bot_configurations.sql`
+  - Confiança: alta
+
+## 2026-05-27
+
+### chore
+- Melhorada a formatação do código para aumentar a legibilidade nos componentes `LeadStageSelector` e `AdminBillingPage`
+  - Arquivos: `src/components/LeadStageSelector.tsx`, `src/app/dashboard/admin/billing/page.tsx`
+  - Confiança: alta
+
+## 2026-05-27
+
+### feat
+- Adicionado suporte a métodos de pagamento "card" e "boleto" no Stripe Checkout para assinaturas.
+- Implementada API para liberação e revogação manual de acesso gratuito a clientes, sem uso do Stripe, com atualização do status do plano no banco.
+- Incluída interface no dashboard administrativo para controlar manualmente o acesso dos clientes, com botões para liberar ou revogar acesso gratuito.
+- Adicionado componente LeadStageSelector para exibir e alterar o estágio do lead no CRM diretamente na página de conversa do cliente, com integração via API para mover cartões entre colunas do pipeline.
+  - Arquivos: `src/app/api/admin/billing/checkout-session/route.ts`, `src/app/api/admin/billing/override/route.ts`, `src/app/dashboard/admin/billing/page.tsx`, `src/components/ConversationPageClient.tsx`, `src/components/LeadStageSelector.tsx`
+  - Confiança: alta
+
+## 2026-05-27
+
+### feat
+- Melhorada a exibição do raciocínio (chain-of-thought) no componente de traces, incluindo mensagem informativa quando apenas tokens de raciocínio interno são usados sem texto retornado. Ajustada a solicitação para incluir resumo automático do raciocínio na chamada à API OpenAI.
+  - Arquivos: `src/components/TracesClient.tsx`, `src/lib/direct-ai-client.ts`
+  - Confiança: alta
+
+## 2026-05-27
+
+### feat
+- Adicionado rastreamento de passos de follow-up em interações de IA para maior observabilidade no componente de traces. Inclui exibição detalhada dos argumentos da ferramenta, resumo dos resultados, prompts enviados ao LLM, raciocínio do modelo e respostas geradas após chamadas de ferramentas.
+- Implementado suporte no fluxo do chatbot para coletar e salvar snapshots das chamadas de follow-up feitas após resultados de ferramentas, como buscar_conhecimento e buscar_documento, integrando essas informações ao trace para análise posterior.
+  - Arquivos: `src/components/TracesClient.tsx`, `src/flows/chatbotFlow.ts`
+  - Confiança: alta
+
+## 2026-05-27
+
+### refactor
+- Removidos valores padrão de saudações no código, agora configuráveis via dashboard; melhorada formatação e padronização do código em `checkContinuity.ts` e `route.ts`.
+- Ajustado retorno para não usar mais mensagens fixas internas, incentivando configuração externa das instruções de saudação.
+  - Arquivos: `src/app/api/flow/nodes/[nodeId]/route.ts`, `src/nodes/checkContinuity.ts`
+  - Confiança: alta
+
 ## 2026-05-23
 
 ### feat

@@ -3,6 +3,7 @@
 import { ConversationDetail } from "@/components/ConversationDetail";
 import { ConversationList } from "@/components/ConversationList";
 import { DragDropZone } from "@/components/DragDropZone";
+import { LeadStageSelector } from "@/components/LeadStageSelector";
 import { LogoutButton } from "@/components/LogoutButton";
 import type { MediaAttachment } from "@/components/MediaPreview";
 import { SendMessageForm } from "@/components/SendMessageForm";
@@ -452,6 +453,9 @@ export function ConversationPageClient({
                     {conversation.phone}
                   </p>
                 </div>
+
+                {/* CRM Stage Selector */}
+                <LeadStageSelector phone={phone} />
 
                 {/* Status Toggle */}
                 <div className="w-full sm:w-auto">

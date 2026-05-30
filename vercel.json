@@ -1,5 +1,6 @@
 {
   "ignoreCommand": "git diff --quiet HEAD^ HEAD -- . ':!CHANGELOG.md'",
+  "regions": ["gru1", "iad1"],
   "crons": [
     {
       "path": "/api/cron/inactivity-check",

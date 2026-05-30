@@ -558,10 +558,8 @@ function getDefaultConfig(nodeId: string): Record<string, any> {
   const defaults: Record<string, Record<string, any>> = {
     check_continuity: {
       new_conversation_threshold_hours: 24,
-      greeting_for_new_customer:
-        "Seja acolhedor e apresente o profissional brevemente. Esta é a PRIMEIRA interação com este cliente.",
-      greeting_for_returning_customer:
-        "Continue de onde parou. NÃO se apresente novamente. O cliente já te conhece e vocês têm histórico de conversa.",
+      greeting_for_new_customer: "",
+      greeting_for_returning_customer: "",
     },
     classify_intent: {
       use_llm: true,

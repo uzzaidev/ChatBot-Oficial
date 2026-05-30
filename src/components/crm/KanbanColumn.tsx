@@ -18,14 +18,28 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import type { ConversationStatus, CRMCard, CRMColumn, CRMTag } from "@/lib/types";
+import type {
+  ConversationStatus,
+  CRMCard,
+  CRMColumn,
+  CRMTag,
+} from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useDroppable } from "@dnd-kit/core";
 import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { ArrowRight, Bot, Loader2, MoreHorizontal, Settings, Trash2, User, Workflow } from "lucide-react";
+import {
+  ArrowRight,
+  Bot,
+  Loader2,
+  MoreHorizontal,
+  Settings,
+  Trash2,
+  User,
+  Workflow,
+} from "lucide-react";
 import { useState } from "react";
 import { ColumnHeader } from "./ColumnHeader";
 import { KanbanCard } from "./KanbanCard";
@@ -44,6 +58,10 @@ interface KanbanColumnProps {
   onEditColumn?: () => void;
   onDeleteColumn?: () => void;
   isOver?: boolean;
+  /** Total number of cards in this column (from server); may exceed cards.length */
+  total?: number;
+  /** Called when the user clicks "Ver mais" to load the next page */
+  onLoadMore?: () => void;
 }
 
 const BULK_STATUS_OPTIONS: Array<{
@@ -68,6 +86,8 @@ export const KanbanColumn = ({
   onEditColumn,
   onDeleteColumn,
   isOver = false,
+  total,
+  onLoadMore,
 }: KanbanColumnProps) => {
   const { toast } = useToast();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -134,7 +154,7 @@ export const KanbanColumn = ({
         <div className="crm-column-header flex items-center justify-between gap-3 px-4 py-3.5">
           <ColumnHeader
             name={column.name}
-            count={cards.length}
+            count={total ?? cards.length}
             icon={column.icon}
             color={column.color}
             className="min-w-0 flex-1"
@@ -177,9 +197,10 @@ export const KanbanColumn = ({
                       );
                     })}
 
-                  {onBulkUpdateColumnStatus && (onEditColumn || onDeleteColumn) && (
-                    <DropdownMenuSeparator />
-                  )}
+                  {onBulkUpdateColumnStatus &&
+                    (onEditColumn || onDeleteColumn) && (
+                      <DropdownMenuSeparator />
+                    )}
 
                   {onEditColumn && (
                     <DropdownMenuItem
@@ -233,6 +254,15 @@ export const KanbanColumn = ({
                     onMoveToColumn={(columnId) => onCardMove(card.id, columnId)}
                   />
                 ))}
+
+                {(total ?? 0) > cards.length && onLoadMore && (
+                  <button
+                    className="crm-pill-button w-full justify-center text-xs text-muted-foreground"
+                    onClick={onLoadMore}
+                  >
+                    Ver mais ({(total ?? 0) - cards.length} restantes)
+                  </button>
+                )}
               </div>
             </SortableContext>
 
@@ -260,7 +290,9 @@ export const KanbanColumn = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Alterar status em massa</AlertDialogTitle>
             <AlertDialogDescription>
-              {`Aplicar "${pendingOption?.label || "-"}" para todos os ${cards.length} contato(s) da coluna "${column.name}"?`}
+              {`Aplicar "${pendingOption?.label || "-"}" para todos os ${
+                cards.length
+              } contato(s) da coluna "${column.name}"?`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -7,6 +7,7 @@ import { ConversationList } from "@/components/ConversationList";
 import { ConversationsHeader } from "@/components/ConversationsHeader";
 import { DragDropZone } from "@/components/DragDropZone";
 import { EmptyStateSimple } from "@/components/EmptyState";
+import { LeadStageSelector } from "@/components/LeadStageSelector";
 import type { MediaAttachment } from "@/components/MediaPreview";
 import { SendMessageForm } from "@/components/SendMessageForm";
 import { StatusToggle } from "@/components/StatusToggle";
@@ -817,6 +818,9 @@ export function ConversationsIndexClient({
                       {selectedPhone}
                     </p>
                   </div>
+
+                  {/* CRM Stage Selector */}
+                  <LeadStageSelector phone={selectedPhone} />
 
                   {/* Status Toggle */}
                   <div className="flex-shrink-0 ml-auto">

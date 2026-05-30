@@ -10,26 +10,23 @@
  * 4. Handling user responses and determining next blocks
  */
 
+import { getClientConfig } from "@/lib/config";
+import { sendTextMessage as sendWhatsAppText } from "@/lib/meta";
 import { createServiceRoleClient } from "@/lib/supabase";
-import {
-  Condition,
-  FlowBlock,
-  FlowBlockType,
-  FlowExecution,
-  FlowExecutionDB,
-  FlowExecutionStatus,
-  FlowStep,
-  InteractiveFlow,
-  InteractiveFlowDB,
-} from "@/types/interactiveFlows";
 import {
   ListSection as InteractiveListSection,
   ReplyButton as InteractiveReplyButton,
   sendInteractiveButtons,
   sendInteractiveList,
 } from "@/lib/whatsapp/interactiveMessages";
-import { sendTextMessage as sendWhatsAppText } from "@/lib/meta";
-import { getClientConfig } from "@/lib/config";
+import {
+  FlowBlock,
+  FlowExecution,
+  FlowExecutionDB,
+  FlowStep,
+  InteractiveFlow,
+  InteractiveFlowDB,
+} from "@/types/interactiveFlows";
 
 export class FlowExecutor {
   private supabase = createServiceRoleClient() as any;
@@ -191,8 +188,8 @@ export class FlowExecutor {
       const flow = this.dbToFlow(flowDB);
 
       // 2. Find current block
-      const currentBlock = flow.blocks.find((b) =>
-        b.id === execution.currentBlockId
+      const currentBlock = flow.blocks.find(
+        (b) => b.id === execution.currentBlockId,
       );
 
       if (!currentBlock) {
@@ -297,8 +294,13 @@ export class FlowExecutor {
         break;
 
       case "message":
-        await this.executeMessageBlock(execution.phone, block);
-        // Wait for user response
+        await this.executeMessageBlock(
+          execution.phone,
+          execution.client_id,
+          block,
+        );
+        // Auto-advance to the next block (message blocks don't wait for user input)
+        await this.advanceToNextBlock(executionId, blockId, flow);
         break;
 
       case "interactive_list":
@@ -381,6 +383,7 @@ export class FlowExecutor {
    */
   private async executeMessageBlock(
     phone: string,
+    clientId: string,
     block: FlowBlock,
   ): Promise<void> {
     const { messageText } = block.data;
@@ -393,9 +396,8 @@ export class FlowExecutor {
       `💬 [FlowExecutor] Sending message to ${phone}: ${messageText}`,
     );
 
-    // TODO: Integrate with WhatsApp send message function
-    // For now, just log
-    // await sendWhatsAppMessage(phone, messageText)
+    await this.sendTextMessage(phone, clientId, messageText);
+    await this.saveOutgoingMessage(phone, clientId, messageText);
   }
 
   /**
@@ -412,7 +414,10 @@ export class FlowExecutor {
       block.data;
 
     if (
-      !listBody || !listButtonText || !listSections || listSections.length === 0
+      !listBody ||
+      !listButtonText ||
+      !listSections ||
+      listSections.length === 0
     ) {
       throw new Error("Invalid list block configuration");
     }
@@ -429,13 +434,19 @@ export class FlowExecutor {
       })),
     }));
 
-    const { messageId: wamid } = await sendInteractiveList(phone, {
-      header: listHeader,
-      body: listBody,
-      footer: listFooter,
-      buttonText: listButtonText,
-      sections,
-    });
+    const clientConfig = await getClientConfig(clientId);
+
+    const { messageId: wamid } = await sendInteractiveList(
+      phone,
+      {
+        header: listHeader,
+        body: listBody,
+        footer: listFooter,
+        buttonText: listButtonText,
+        sections,
+      },
+      clientConfig || undefined,
+    );
 
     // Save message to database with interactive metadata
     await this.saveInteractiveMessage(phone, clientId, {
@@ -479,11 +490,17 @@ export class FlowExecutor {
       title: btn.title,
     }));
 
-    const { messageId: wamid } = await sendInteractiveButtons(phone, {
-      body: buttonsBody,
-      footer: buttonsFooter,
-      buttons: buttonsList,
-    });
+    const clientConfig = await getClientConfig(clientId);
+
+    const { messageId: wamid } = await sendInteractiveButtons(
+      phone,
+      {
+        body: buttonsBody,
+        footer: buttonsFooter,
+        buttons: buttonsList,
+      },
+      clientConfig || undefined,
+    );
 
     // Save message to database with interactive metadata
     await this.saveInteractiveMessage(phone, clientId, {
@@ -861,15 +878,26 @@ export class FlowExecutor {
       { aliases: ["cidade", "city"], target: "cidade" },
       { aliases: ["estado", "uf", "state"], target: "estado" },
       {
-        aliases: ["telefone_alternativo", "telefone_secundario", "telefone_2", "phone_alt"],
+        aliases: [
+          "telefone_alternativo",
+          "telefone_secundario",
+          "telefone_2",
+          "phone_alt",
+        ],
         target: "telefone_alternativo",
       },
-      { aliases: ["profissao", "occupation", "cargo_profissional"], target: "profissao" },
+      {
+        aliases: ["profissao", "occupation", "cargo_profissional"],
+        target: "profissao",
+      },
       {
         aliases: ["como_conheceu", "origem", "source", "canal_origem"],
         target: "como_conheceu",
       },
-      { aliases: ["indicado_por", "indicacao", "referral"], target: "indicado_por" },
+      {
+        aliases: ["indicado_por", "indicacao", "referral"],
+        target: "indicado_por",
+      },
       { aliases: ["objetivo", "objetivo_yoga"], target: "objetivo" },
       {
         aliases: ["tecnofit_reservado", "reservou_tecnofit"],
@@ -883,7 +911,11 @@ export class FlowExecutor {
 
       for (const alias of mapping.aliases) {
         const aliasValue = variables[alias];
-        if (aliasValue !== null && aliasValue !== undefined && aliasValue !== "") {
+        if (
+          aliasValue !== null &&
+          aliasValue !== undefined &&
+          aliasValue !== ""
+        ) {
           metadata[mapping.target] = aliasValue;
           break;
         }
@@ -949,10 +981,7 @@ export class FlowExecutor {
   ): Promise<void> {
     console.log(`👤 [FlowExecutor] Transferring ${phone} to Human Agent`);
 
-    const {
-      transitionMessage,
-      notifyAgent = true,
-    } = block.data;
+    const { transitionMessage, notifyAgent = true } = block.data;
 
     // 1. Get execution with history
     const { data: executionDB, error: execError } = await this.supabase
@@ -1093,10 +1122,7 @@ export class FlowExecutor {
       const config = await getClientConfig(clientId);
       await sendWhatsAppText(phone, message, config || undefined);
     } catch (error) {
-      console.error(
-        `❌ [FlowExecutor] Failed to send text message:`,
-        error,
-      );
+      console.error(`❌ [FlowExecutor] Failed to send text message:`, error);
       throw error;
     }
   }
@@ -1134,10 +1160,7 @@ export class FlowExecutor {
 
       console.log(`✅ [FlowExecutor] Outgoing message saved to database`);
     } catch (error) {
-      console.error(
-        `❌ [FlowExecutor] Error saving outgoing message:`,
-        error,
-      );
+      console.error(`❌ [FlowExecutor] Error saving outgoing message:`, error);
     }
   }
 
@@ -1416,17 +1439,17 @@ export class FlowExecutor {
 
       if (!conversationId) {
         // Create conversation
-        const { data: newConversation, error: createError } = await this
-          .supabase
-          .from("conversations")
-          .insert({
-            client_id: clientId,
-            phone,
-            status: "fluxo_inicial",
-            last_message: interactiveData.body,
-          })
-          .select("id")
-          .single();
+        const { data: newConversation, error: createError } =
+          await this.supabase
+            .from("conversations")
+            .insert({
+              client_id: clientId,
+              phone,
+              status: "fluxo_inicial",
+              last_message: interactiveData.body,
+            })
+            .select("id")
+            .single();
 
         if (createError) {
           console.error(
@@ -1506,10 +1529,7 @@ export class FlowExecutor {
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
-      console.error(
-        `❌ [FlowExecutor] Error saving incoming message:`,
-        error,
-      );
+      console.error(`❌ [FlowExecutor] Error saving incoming message:`, error);
     }
   }
 
@@ -1527,11 +1547,12 @@ export class FlowExecutor {
       const vars = execution.variables;
       const lastStep = execution.history[execution.history.length - 1];
 
-      const varsText = Object.keys(vars).length > 0
-        ? Object.entries(vars)
-          .map(([k, v]) => `- ${k}: ${v}`)
-          .join("\n")
-        : "Nenhuma variável coletada.";
+      const varsText =
+        Object.keys(vars).length > 0
+          ? Object.entries(vars)
+              .map(([k, v]) => `- ${k}: ${v}`)
+              .join("\n")
+          : "Nenhuma variável coletada.";
 
       const lastInteraction = lastStep
         ? lastStep.userResponse || lastStep.interactiveResponseId || "N/A"
@@ -1555,18 +1576,19 @@ IMPORTANTE: O cliente já forneceu essas informações. Use-as no contexto da co
       // Full: histórico completo de interações
       const steps = execution.history
         .map((step, i) => {
-          const response = step.userResponse || step.interactiveResponseId ||
-            "-";
+          const response =
+            step.userResponse || step.interactiveResponseId || "-";
           return `${i + 1}. [${step.blockType}] ${response}`;
         })
         .join("\n");
 
       const vars = execution.variables;
-      const varsText = Object.keys(vars).length > 0
-        ? Object.entries(vars)
-          .map(([k, v]) => `- ${k}: ${v}`)
-          .join("\n")
-        : "Nenhuma variável coletada.";
+      const varsText =
+        Object.keys(vars).length > 0
+          ? Object.entries(vars)
+              .map(([k, v]) => `- ${k}: ${v}`)
+              .join("\n")
+          : "Nenhuma variável coletada.";
 
       const context = `[HISTÓRICO COMPLETO DO FLUXO INTERATIVO]
 
@@ -1708,10 +1730,7 @@ IMPORTANTE: Use este histórico para entender o contexto completo da conversa.`;
         `✅ [FlowExecutor] Bot response triggered successfully for ${phone}`,
       );
     } catch (error) {
-      console.error(
-        `❌ [FlowExecutor] Error triggering bot response:`,
-        error,
-      );
+      console.error(`❌ [FlowExecutor] Error triggering bot response:`, error);
       // Não lançar erro - transferência ainda foi feita
     }
   }

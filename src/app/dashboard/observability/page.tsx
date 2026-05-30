@@ -6,12 +6,14 @@ import {
   Bot,
   CheckCircle,
   LineChart,
+  MessageSquare,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
 import { TracesClient } from "@/components/TracesClient";
 import { AssistantFeedbackDashboard } from "@/components/assistant/AssistantFeedbackDashboard";
+import { ConversationFeedbackDashboard } from "@/components/conversations/ConversationFeedbackDashboard";
 import { EvaluationsWorkspace } from "@/components/quality/EvaluationsWorkspace";
 import { GroundTruthManager } from "@/components/quality/GroundTruthManager";
 import { QualityDashboard } from "@/components/quality/QualityDashboard";
@@ -25,6 +27,7 @@ const TAB_VALUES = [
   "ground-truth",
   "support",
   "agente-ia",
+  "conversas",
 ] as const;
 
 type TabValue = (typeof TAB_VALUES)[number];
@@ -97,6 +100,10 @@ const ObservabilityShell = () => {
             <Bot className="h-4 w-4" />
             Agente IA
           </TabsTrigger>
+          <TabsTrigger value="conversas" className="gap-2">
+            <MessageSquare className="h-4 w-4" />
+            Conversas
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-0">
@@ -131,6 +138,21 @@ const ObservabilityShell = () => {
               </p>
             </div>
             <AssistantFeedbackDashboard />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="conversas" className="mt-0">
+          <div className="flex flex-col gap-2">
+            <div>
+              <h2 className="text-base font-semibold">
+                Feedbacks de Conversas WhatsApp
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Avaliações feitas pelos clientes diretamente no WhatsApp —
+                likes, dislikes e bugs reportados via app.
+              </p>
+            </div>
+            <ConversationFeedbackDashboard />
           </div>
         </TabsContent>
       </Tabs>

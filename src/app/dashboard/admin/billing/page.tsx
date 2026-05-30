@@ -148,6 +148,9 @@ export default function AdminBillingPage() {
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [checkoutCoupon, setCheckoutCoupon] = useState<string>("");
 
+  // Manual override
+  const [overrideLoading, setOverrideLoading] = useState<string | null>(null);
+
   const fetchCoupons = async () => {
     try {
       const res = await fetch("/api/admin/billing/coupons");
@@ -277,6 +280,43 @@ export default function AdminBillingPage() {
       setError(err.message);
     } finally {
       setFormLoading(false);
+    }
+  };
+
+  const handleOverride = async (
+    clientId: string,
+    action: "grant" | "revoke",
+  ) => {
+    setOverrideLoading(clientId);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/billing/override", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientId, action }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+      // Refresh clients list
+      setClients((prev) =>
+        prev.map((c) =>
+          c.id === clientId
+            ? {
+                ...c,
+                plan_status: action === "grant" ? "active" : "canceled",
+                // Clear stripe subscription indicator for revoked manual overrides
+                stripe_subscription_id:
+                  action === "revoke" && !c.activated
+                    ? null
+                    : c.stripe_subscription_id,
+              }
+            : c,
+        ),
+      );
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setOverrideLoading(null);
     }
   };
 
@@ -521,24 +561,76 @@ export default function AdminBillingPage() {
                                   )}
                                 </td>
                                 <td className="py-2.5 text-right">
-                                  {canCharge ? (
-                                    <Button
-                                      size="sm"
-                                      onClick={() => handleCheckout(c.id)}
-                                      disabled={checkoutLoading === c.id}
-                                    >
-                                      {checkoutLoading === c.id ? (
-                                        <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
-                                      ) : (
-                                        <Send className="h-3.5 w-3.5 mr-1" />
+                                  <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                                    {canCharge && (
+                                      <Button
+                                        size="sm"
+                                        onClick={() => handleCheckout(c.id)}
+                                        disabled={
+                                          checkoutLoading === c.id ||
+                                          overrideLoading === c.id
+                                        }
+                                      >
+                                        {checkoutLoading === c.id ? (
+                                          <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                                        ) : (
+                                          <Send className="h-3.5 w-3.5 mr-1" />
+                                        )}
+                                        Cobrar
+                                      </Button>
+                                    )}
+                                    {/* Manual override buttons */}
+                                    {c.plan_status !== "active" &&
+                                      c.plan_status !== "trial" && (
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          className="text-green-700 border-green-300 hover:bg-green-50"
+                                          onClick={() =>
+                                            handleOverride(c.id, "grant")
+                                          }
+                                          disabled={
+                                            overrideLoading === c.id ||
+                                            checkoutLoading === c.id
+                                          }
+                                          title="Liberar acesso gratuito sem cobrança"
+                                        >
+                                          {overrideLoading === c.id ? (
+                                            <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                                          ) : (
+                                            <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                                          )}
+                                          Liberar
+                                        </Button>
                                       )}
-                                      Cobrar Cliente
-                                    </Button>
-                                  ) : (
-                                    <span className="text-xs text-green-600 font-medium">
-                                      Assinatura ativa
-                                    </span>
-                                  )}
+                                    {c.plan_status === "active" &&
+                                      !c.activated && (
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          className="text-red-700 border-red-300 hover:bg-red-50"
+                                          onClick={() =>
+                                            handleOverride(c.id, "revoke")
+                                          }
+                                          disabled={
+                                            overrideLoading === c.id ||
+                                            checkoutLoading === c.id
+                                          }
+                                          title="Revogar acesso manual (sem Stripe)"
+                                        >
+                                          {overrideLoading === c.id ? (
+                                            <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                                          ) : null}
+                                          Revogar
+                                        </Button>
+                                      )}
+                                    {c.plan_status === "active" &&
+                                      c.activated && (
+                                        <span className="text-xs text-green-600 font-medium">
+                                          Assinatura ativa
+                                        </span>
+                                      )}
+                                  </div>
                                 </td>
                               </tr>
                             );

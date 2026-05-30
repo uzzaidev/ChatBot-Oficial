@@ -26,20 +26,6 @@ VALUES
   true,
   'Horas desde última interação para considerar nova conversa (padrão: 24h)',
   'thresholds'
-),
-(
-  'continuity:greeting_for_new_customer',
-  '"Seja acolhedor e apresente o profissional brevemente. Esta é a PRIMEIRA interação."'::jsonb,
-  true,
-  'Instrução para saudar novos clientes',
-  'prompts'
-),
-(
-  'continuity:greeting_for_returning_customer',
-  '"Continue de onde parou. NÃO se apresente novamente. O cliente já te conhece."'::jsonb,
-  true,
-  'Instrução para clientes recorrentes (< 24h desde última msg)',
-  'prompts'
 );
 
 -- ========================================

@@ -55,6 +55,10 @@ interface KanbanBoardProps {
   onReorderColumns?: (
     columnOrders: Array<{ id: string; position: number }>,
   ) => Promise<boolean>;
+  /** Total cards per column_id (from initial load) */
+  columnTotals?: Record<string, number>;
+  /** Append the next page for a specific column */
+  onLoadMoreForColumn?: (columnId: string) => void;
 }
 
 const measuringConfig = {
@@ -85,6 +89,8 @@ export const KanbanBoard = ({
   onEditColumn,
   onDeleteColumn,
   onReorderColumns,
+  columnTotals,
+  onLoadMoreForColumn,
 }: KanbanBoardProps) => {
   const [activeCard, setActiveCard] = useState<CRMCard | null>(null);
   const [activeColumn, setActiveColumn] = useState<CRMColumn | null>(null);
@@ -333,6 +339,12 @@ export const KanbanBoard = ({
                           : undefined
                       }
                       isOver={overId === column.id}
+                      total={columnTotals?.[column.id]}
+                      onLoadMore={
+                        onLoadMoreForColumn
+                          ? () => onLoadMoreForColumn(column.id)
+                          : undefined
+                      }
                     />
                   </SortableColumn>
                 );

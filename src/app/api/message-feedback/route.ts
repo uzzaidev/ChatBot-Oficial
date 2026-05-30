@@ -1,3 +1,4 @@
+import { getCurrentUserRole } from "@/lib/auth-helpers";
 import { query } from "@/lib/postgres";
 import { getClientIdFromSession } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
@@ -53,6 +54,96 @@ const resolveTraceId = async ({
   return byTime.rows[0]?.id ?? null;
 };
 
+export async function GET(request: NextRequest) {
+  const roleResult = await getCurrentUserRole(request as any);
+  if (roleResult.ok === false) {
+    return roleResult.response;
+  }
+
+  const { role, clientId } = roleResult.context;
+  const isSuperAdmin = role === "admin";
+
+  if (!isSuperAdmin && !clientId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const type = searchParams.get("type") ?? "all";
+  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
+  const limit = Math.min(
+    100,
+    Math.max(1, parseInt(searchParams.get("limit") ?? "50", 10)),
+  );
+  const offset = (page - 1) * limit;
+
+  try {
+    const whereConditions: string[] = [];
+    const countParams: (string | number)[] = [];
+
+    if (!isSuperAdmin) {
+      countParams.push(clientId!);
+      whereConditions.push(`mf.client_id = $${countParams.length}`);
+    }
+
+    if (type !== "all" && VALID_FEEDBACK.includes(type as FeedbackType)) {
+      countParams.push(type);
+      whereConditions.push(`mf.feedback = $${countParams.length}`);
+    }
+
+    const whereClause =
+      whereConditions.length > 0
+        ? `WHERE ${whereConditions.join(" AND ")}`
+        : "";
+
+    const countResult = await query<{ total: string }>(
+      `SELECT COUNT(*) as total FROM public.message_feedback mf ${whereClause}`,
+      countParams,
+    );
+    const total = parseInt(countResult.rows[0]?.total ?? "0", 10);
+
+    const dataParams = [...countParams, limit, offset];
+    const dataResult = await query<Record<string, unknown>>(
+      `
+      SELECT
+        mf.id,
+        mf.client_id,
+        mf.trace_id,
+        mf.phone,
+        mf.message_id,
+        mf.wamid,
+        mf.message_content,
+        mf.message_direction,
+        mf.feedback,
+        mf.observations,
+        mf.created_at,
+        mf.updated_at
+        ${isSuperAdmin ? ", c.name as client_name" : ""}
+      FROM public.message_feedback mf
+      ${isSuperAdmin ? "LEFT JOIN public.clients c ON c.id = mf.client_id" : ""}
+      ${whereClause}
+      ORDER BY mf.created_at DESC
+      LIMIT $${countParams.length + 1} OFFSET $${countParams.length + 2}
+      `,
+      dataParams,
+    );
+
+    return NextResponse.json({
+      data: dataResult.rows,
+      total,
+      page,
+      limit,
+      is_super_admin: isSuperAdmin,
+    });
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    console.error("[GET /api/message-feedback]", error);
+    return NextResponse.json(
+      { error: "Erro ao buscar feedbacks.", detail },
+      { status: 500 },
+    );
+  }
+}
+
 export async function POST(request: NextRequest) {
   const clientId = await getClientIdFromSession(request as any);
   if (!clientId) {
@@ -85,7 +176,10 @@ export async function POST(request: NextRequest) {
   }
 
   if (!body.phone?.trim()) {
-    return NextResponse.json({ error: "phone e obrigatorio." }, { status: 400 });
+    return NextResponse.json(
+      { error: "phone e obrigatorio." },
+      { status: 400 },
+    );
   }
 
   if (!body.content?.trim()) {
@@ -150,7 +244,10 @@ export async function POST(request: NextRequest) {
         body.direction ?? "outgoing",
         body.feedback,
         body.observations?.trim() ?? "",
-        JSON.stringify({ source: "conversation_ui", timestamp: body.timestamp ?? null }),
+        JSON.stringify({
+          source: "conversation_ui",
+          timestamp: body.timestamp ?? null,
+        }),
       ],
     );
 

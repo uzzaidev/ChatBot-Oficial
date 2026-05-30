@@ -105,7 +105,10 @@ export const TemplateForm = ({
           setFetchingMetaId(true);
           const response = await apiFetch("/api/client/config");
           const data = await response.json();
-          if (data.whatsapp_business_account_id) {
+          // Prefer meta_waba_id (correct WABA ID for template API) over the legacy field
+          if (data.meta_waba_id) {
+            setMetaId(data.meta_waba_id);
+          } else if (data.whatsapp_business_account_id) {
             setMetaId(data.whatsapp_business_account_id);
           } else if (data.config?.whatsapp_business_account_id) {
             setMetaId(data.config.whatsapp_business_account_id);
