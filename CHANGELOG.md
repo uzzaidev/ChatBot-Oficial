@@ -8,6 +8,27 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-05-31
+
+### feat
+- Adicionado componente de visualização do prompt final bruto com seções editáveis e navegação para campos do editor, integrado na aba "Prompt Final" do modal de edição do agente (`AgentEditorModal.tsx`, `RawPromptPreview.tsx`).
+- Implementado painel de avaliação de prompt por IA que executa uma revisão especializada do prompt compilado do agente, gera sugestões aplicáveis e permite aplicar ou descartar cada sugestão diretamente no editor (`PromptEvaluatorPanel.tsx`, `AgentEditorModal.tsx`).
+- Criada API REST `/api/agents/[id]/evaluate-prompt` para listar avaliações anteriores (GET) e executar nova avaliação (POST), armazenando resultados e sugestões estruturadas no banco (`src/app/api/agents/[id]/evaluate-prompt/route.ts`).
+- Desenvolvida lógica de avaliação de prompt especializada que usa LLM para revisar o prompt compilado do agente, produzindo sugestões por seção mapeadas para campos do editor e avaliação geral com escore e justificativa (`prompt-evaluator.ts`).
+- Refatorado o construtor do prompt do sistema para retornar segmentos estruturados com metadados que permitem mapear cada seção para o campo correspondente no editor, suportando navegação e aplicação de sugestões (`prompt-builder.ts`).
+- Criada migração para nova tabela `agent_prompt_evaluations` no banco, que armazena avaliações de prompt com sugestões, estado de aplicação, referência opcional a mensagens reais, e políticas RLS para isolamento multi-tenant (`20260531120000_create_agent_prompt_evaluations.sql`).
+
+- Arquivos principais:  
+  `src/components/agents/AgentEditorModal.tsx`,  
+  `src/components/agents/RawPromptPreview.tsx`,  
+  `src/components/agents/PromptEvaluatorPanel.tsx`,  
+  `src/app/api/agents/[id]/evaluate-prompt/route.ts`,  
+  `src/lib/prompt-evaluator.ts`,  
+  `src/lib/prompt-builder.ts`,  
+  `supabase/migrations/20260531120000_create_agent_prompt_evaluations.sql`
+
+- Confiança: alta
+
 ## 2026-05-29
 
 ### feat
