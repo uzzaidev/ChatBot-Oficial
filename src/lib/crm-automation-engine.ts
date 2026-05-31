@@ -1382,7 +1382,15 @@ const executeActionStep = async (
   }
 };
 
-const isEngineEnabledForClient = async (clientId: string): Promise<boolean> => {
+const ENGINE_ENABLED_CACHE_TTL_MS = 30 * 1000;
+const engineEnabledCache = new Map<
+  string,
+  { enabled: boolean; expiresAt: number }
+>();
+
+const resolveEngineEnabledForClient = async (
+  clientId: string,
+): Promise<boolean> => {
   try {
     const globalFlag = await query<{ enabled: boolean }>(
       `SELECT enabled FROM feature_flags WHERE key = 'crm_engine_v2_enabled' LIMIT 1`,
@@ -1413,6 +1421,21 @@ const isEngineEnabledForClient = async (clientId: string): Promise<boolean> => {
   }
 
   return true;
+};
+
+const isEngineEnabledForClient = async (clientId: string): Promise<boolean> => {
+  const now = Date.now();
+  const cached = engineEnabledCache.get(clientId);
+  if (cached && cached.expiresAt > now) {
+    return cached.enabled;
+  }
+
+  const enabled = await resolveEngineEnabledForClient(clientId);
+  engineEnabledCache.set(clientId, {
+    enabled,
+    expiresAt: now + ENGINE_ENABLED_CACHE_TTL_MS,
+  });
+  return enabled;
 };
 
 const withCardLock = async <T>(

@@ -3,17 +3,18 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { toast } from "@/hooks/use-toast";
 import {
-  buildSystemPromptSegments,
-  compileFormatterPrompt,
-  compileSystemPrompt,
-  type PromptSegment,
+    buildSystemPromptSegments,
+    compileFormatterPrompt,
+    compileSystemPrompt,
+    type PromptSegment,
+    type PromptSegmentSource,
 } from "@/lib/prompt-builder";
 import type { Agent } from "@/lib/types";
 import { Copy, Lock, Pencil } from "lucide-react";
@@ -125,7 +126,26 @@ export const RawPromptPreview = ({
           <div className="rounded-lg border bg-muted/40 p-3 font-mono text-xs leading-relaxed overflow-auto max-h-[52vh]">
             {segments.map((segment, index) => {
               const block = xmlWrap(segment);
-              const isEditable = segment.source.editable;
+              const source = segment.source;
+              const isEditable = source.editable;
+              const editableSource = isEditable
+                ? (source as Extract<PromptSegmentSource, { editable: true }>)
+                : null;
+              const fixedSource = isEditable
+                ? null
+                : (source as Extract<PromptSegmentSource, { editable: false }>);
+              const handleNavigate = editableSource
+                ? () => onNavigate(editableSource.tab, editableSource.fieldId)
+                : undefined;
+              const tooltip = editableSource ? (
+                <span className="text-xs">
+                  Editar em: <strong>{editableSource.label}</strong>
+                </span>
+              ) : (
+                <span className="text-xs">
+                  <strong>{fixedSource!.label}.</strong> {fixedSource!.reason}
+                </span>
+              );
 
               const content = (
                 <div
@@ -134,26 +154,15 @@ export const RawPromptPreview = ({
                       ? "cursor-pointer hover:bg-primary/10 hover:ring-1 hover:ring-primary/40"
                       : "cursor-default bg-amber-500/5 hover:bg-amber-500/10"
                   }`}
-                  onClick={
-                    isEditable
-                      ? () =>
-                          onNavigate(
-                            segment.source.tab as AgentEditorTab,
-                            segment.source.fieldId,
-                          )
-                      : undefined
-                  }
+                  onClick={handleNavigate}
                   role={isEditable ? "button" : undefined}
                   tabIndex={isEditable ? 0 : undefined}
                   onKeyDown={
-                    isEditable
+                    handleNavigate
                       ? (e) => {
                           if (e.key === "Enter" || e.key === " ") {
                             e.preventDefault();
-                            onNavigate(
-                              segment.source.tab as AgentEditorTab,
-                              segment.source.fieldId,
-                            );
+                            handleNavigate();
                           }
                         }
                       : undefined
@@ -178,16 +187,7 @@ export const RawPromptPreview = ({
                 <Tooltip key={`${segment.tag}-${index}`}>
                   <TooltipTrigger asChild>{content}</TooltipTrigger>
                   <TooltipContent side="left" className="max-w-xs">
-                    {isEditable ? (
-                      <span className="text-xs">
-                        Editar em: <strong>{segment.source.label}</strong>
-                      </span>
-                    ) : (
-                      <span className="text-xs">
-                        <strong>{segment.source.label}.</strong>{" "}
-                        {segment.source.reason}
-                      </span>
-                    )}
+                    {tooltip}
                   </TooltipContent>
                 </Tooltip>
               );

@@ -16,6 +16,13 @@ export interface InactivityCheckResult {
 }
 
 /**
+ * Concorrência alinhada ao pool do Postgres (max: 3 conexões).
+ * Cada emissão usa withCardLock, que segura uma conexão dedicada
+ * pela transação inteira — exceder o pool causaria connectionTimeout.
+ */
+const EMIT_CONCURRENCY = 3;
+
+/**
  * Executa o scan de inatividade e emite eventos para o engine.
  */
 export const runInactivityCheck = async (
@@ -51,7 +58,7 @@ export const runInactivityCheck = async (
     [limit],
   );
 
-  for (const card of cards.rows) {
+  const processCard = async (card: InactiveCardRow): Promise<void> => {
     result.scanned++;
 
     try {
@@ -80,6 +87,11 @@ export const runInactivityCheck = async (
         error,
       });
     }
+  };
+
+  for (let i = 0; i < cards.rows.length; i += EMIT_CONCURRENCY) {
+    const batch = cards.rows.slice(i, i + EMIT_CONCURRENCY);
+    await Promise.all(batch.map(processCard));
   }
 
   return result;
