@@ -11,6 +11,24 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-05-31
 
 ### feat
+- Melhorada a navegação e exibição de tooltip nas seções editáveis do componente `RawPromptPreview`, facilitando a edição direta a partir da visualização do prompt
+  - Arquivos: `src/components/agents/RawPromptPreview.tsx`
+  - Confiança: alta
+
+### chore
+- Aumentado o tempo máximo da cron job de verificação de inatividade de 60 para 300 segundos para maior tolerância na execução
+  - Arquivos: `src/app/api/cron/inactivity-check/route.ts`
+  - Confiança: alta
+
+### refactor
+- Implementado cache temporário (30 segundos) para checagem se o engine está habilitado para um cliente, reduzindo consultas repetidas ao banco
+- Ajustada concorrência da verificação de inatividade para processar até 3 cards simultaneamente, alinhando com o pool de conexões do Postgres e evitando timeouts por excesso de conexões
+  - Arquivos: `src/lib/crm-automation-engine.ts`, `src/lib/jobs/inactivity-check.ts`
+  - Confiança: alta
+
+## 2026-05-31
+
+### feat
 - Adicionado componente de visualização do prompt final bruto com seções editáveis e navegação para campos do editor, integrado na aba "Prompt Final" do modal de edição do agente (`AgentEditorModal.tsx`, `RawPromptPreview.tsx`).
 - Implementado painel de avaliação de prompt por IA que executa uma revisão especializada do prompt compilado do agente, gera sugestões aplicáveis e permite aplicar ou descartar cada sugestão diretamente no editor (`PromptEvaluatorPanel.tsx`, `AgentEditorModal.tsx`).
 - Criada API REST `/api/agents/[id]/evaluate-prompt` para listar avaliações anteriores (GET) e executar nova avaliação (POST), armazenando resultados e sugestões estruturadas no banco (`src/app/api/agents/[id]/evaluate-prompt/route.ts`).
