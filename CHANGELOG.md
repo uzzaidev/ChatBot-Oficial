@@ -11,6 +11,13 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-06-01
 
 ### feat
+- Removidos endpoints de debug obsoletos relacionados a billing OpenAI e vault para limpeza do código
+  - Arquivos removidos: `src/app/api/debug/config/route.ts`, `src/app/api/debug/env-check/route.ts`, `src/app/api/openai-billing/test-billing-usage/route.ts`, `src/app/api/openai-billing/test-costs/route.ts`, `src/app/api/openai-billing/test-subscription/route.ts`, `src/app/api/vault/debug/route.ts`
+  - Confiança: alta
+
+## 2026-06-01
+
+### feat
 - Implementado lockdown de segurança para o papel `anon`, removendo acesso público a tabelas e funções sensíveis para mitigar exposição de dados após incidente de vazamento de chaves. Revogadas permissões e corrigidas policies excessivamente permissivas, mantendo acesso normal para `authenticated` e `service_role`.
   - Arquivos: `supabase/migrations/20260601120000_security_lockdown_anon_exposure.sql`
   - Confiança: alta
