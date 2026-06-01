@@ -8,6 +8,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-06-01
+
+### feat
+- Implementado lockdown de segurança para o papel `anon`, removendo acesso público a tabelas e funções sensíveis para mitigar exposição de dados após incidente de vazamento de chaves. Revogadas permissões e corrigidas policies excessivamente permissivas, mantendo acesso normal para `authenticated` e `service_role`.
+  - Arquivos: `supabase/migrations/20260601120000_security_lockdown_anon_exposure.sql`
+  - Confiança: alta
+
 ## 2026-05-31
 
 ### feat
