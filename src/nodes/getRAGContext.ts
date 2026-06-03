@@ -1,5 +1,5 @@
 import { generateEmbedding } from "@/lib/openai";
-import { createServerClient } from "@/lib/supabase";
+import { createServiceRoleClient } from "@/lib/supabase";
 import { getBotConfig } from "@/lib/config";
 import { rerankChunks, type RerankableChunk } from "@/lib/rerank";
 
@@ -81,7 +81,7 @@ export const getRAGContextWithTrace = async (
       : maxResults;
 
     const embeddingResult = await generateEmbedding(query, openaiApiKey, clientId);
-    const supabase = await createServerClient();
+    const supabase = createServiceRoleClient() as any;
 
     const { data, error } = await supabase.rpc("match_documents", {
       query_embedding: embeddingResult.embedding,

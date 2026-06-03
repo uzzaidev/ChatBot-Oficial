@@ -6,7 +6,7 @@
 
 import type { CalendarClient, CalendarEvent } from "@/lib/calendar-client";
 import { refreshMicrosoftAccessToken } from "@/lib/microsoft-calendar-oauth";
-import { createServerClient } from "@/lib/supabase-server";
+import { createServiceClient } from "@/lib/supabase-server";
 import { updateCalendarToken } from "@/lib/vault";
 
 const GRAPH_BASE = "https://graph.microsoft.com/v1.0";
@@ -32,7 +32,7 @@ export const createMicrosoftCalendarClient = (
     currentToken = newToken;
 
     // Update Vault
-    const supabase = await createServerClient();
+    const supabase = createServiceClient() as any;
     const { data } = await supabase
       .from("clients")
       .select("microsoft_calendar_token_secret_id")

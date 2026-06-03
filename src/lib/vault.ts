@@ -9,7 +9,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { createServerClient } from "./supabase";
+import { createServiceRoleClient } from "./supabase";
 
 /**
  * Cria um secret no Vault e retorna o ID
@@ -25,7 +25,7 @@ export const createSecret = async (
   description?: string,
 ): Promise<string> => {
   try {
-    const supabase = await createServerClient();
+    const supabase = createServiceRoleClient() as any;
 
     // @ts-ignore - RPC custom function
     const { data, error } = await supabase.rpc("create_client_secret", {
@@ -56,7 +56,7 @@ export const createSecret = async (
 export const deleteSecret = async (secretId: string): Promise<boolean> => {
   try {
     if (!secretId) return false;
-    const supabase = await createServerClient();
+    const supabase = createServiceRoleClient() as any;
     // @ts-ignore - RPC custom function
     const { data, error } = await supabase.rpc("delete_client_secret", {
       secret_id: secretId,
@@ -81,7 +81,7 @@ export const createOrUpdateSecret = async (
   description?: string,
 ): Promise<string> => {
   try {
-    const supabase = await createServerClient();
+    const supabase = createServiceRoleClient() as any;
 
     // @ts-ignore - RPC custom function
     const { data, error } = await supabase.rpc("upsert_client_secret", {
@@ -118,7 +118,7 @@ export const getSecret = async (secretId: string): Promise<string | null> => {
       return null;
     }
 
-    const supabase = await createServerClient();
+    const supabase = createServiceRoleClient() as any;
 
     // @ts-ignore - RPC custom function
     const { data, error } = await supabase.rpc("get_client_secret", {
@@ -149,7 +149,7 @@ export const updateSecret = async (
   newValue: string,
 ): Promise<boolean> => {
   try {
-    const supabase = await createServerClient();
+    const supabase = createServiceRoleClient() as any;
 
     // @ts-ignore - RPC custom function
     const { data, error } = await supabase.rpc("update_client_secret", {
@@ -316,7 +316,7 @@ export const getClientVaultCredentials = async (
   clientId: string,
 ): Promise<ClientAPICredentials> => {
   try {
-    const supabase = await createServerClient();
+    const supabase = createServiceRoleClient() as any;
 
     // Buscar IDs dos secrets do cliente
     const { data: client, error } = await supabase
@@ -361,7 +361,7 @@ export const getClientOpenAIKey = async (
   clientId: string,
 ): Promise<string | null> => {
   try {
-    const supabase = await createServerClient();
+    const supabase = createServiceRoleClient() as any;
 
     // Buscar ID do secret OpenAI do cliente
     const { data: client, error } = await supabase
@@ -410,7 +410,7 @@ export const getClientOpenAIAdminKey = async (
   clientId: string,
 ): Promise<string | null> => {
   try {
-    const supabase = await createServerClient();
+    const supabase = createServiceRoleClient() as any;
 
     // Buscar ID do secret OpenAI Admin do cliente
     const { data: client, error } = await supabase
@@ -462,7 +462,7 @@ export const getClientCalendarTokens = async (
   clientId: string,
 ): Promise<ClientCalendarTokens> => {
   try {
-    const supabase = await createServerClient();
+    const supabase = createServiceRoleClient() as any;
 
     const { data: client, error } = await supabase
       .from("clients")
