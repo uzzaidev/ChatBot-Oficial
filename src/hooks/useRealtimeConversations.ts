@@ -56,7 +56,7 @@ export const useRealtimeConversations = ({
   }, [onConversationUpdate]);
 
   // Setup da subscription - UMA VEZ, sem retry loops
-  const setupRealtimeSubscription = useCallback(() => {
+  const setupRealtimeSubscription = useCallback(async () => {
     if (!clientId || hasAttemptedRef.current) return;
     hasAttemptedRef.current = true;
 
@@ -64,6 +64,17 @@ export const useRealtimeConversations = ({
     isReconnectingRef.current = true;
 
     const supabase = createClientBrowser();
+
+    // 🔐 Authenticate the Realtime socket with the user's JWT before subscribing
+    // (otherwise the socket is anon and per-tenant RLS delivers ZERO rows).
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (token) await supabase.realtime.setAuth(token);
+    } catch (e) {
+      console.warn("[Realtime conversations] setAuth failed:", e);
+    }
+
     const channelName = `conversations:${clientId}`;
 
     const channel = supabase
@@ -197,6 +208,9 @@ export const useRealtimeConversations = ({
       )
       .subscribe((status, err) => {
         isReconnectingRef.current = false;
+        if (status !== "SUBSCRIBED") {
+          console.warn(`[Realtime conversations] channel status: ${status}`, err || "");
+        }
         if (status === "SUBSCRIBED") {
           setIsConnected(true);
         } else if (status === "CLOSED" || status === "CHANNEL_ERROR") {
