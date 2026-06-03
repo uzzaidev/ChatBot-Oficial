@@ -11,6 +11,14 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-06-03
 
 ### fix
+- Corrigido erro de digitação em comentário sobre revogação de acesso do papel anon em migração de segurança
+  - Arquivos: `supabase/migrations/20260601120000_security_lockdown_anon_exposure.sql`
+  - Evidência: ajuste em comentário de linha referente a papel anon
+  - Confiança: alta
+
+## 2026-06-03
+
+### fix
 - Ajustado endpoint de secrets no Vault para rejeitar valores mascarados ou placeholders ao salvar, evitando sobrescrever chaves reais com valores inválidos (ex: "***1234", "placeholder")
   - Arquivos: `src/app/api/vault/secrets/route.ts`
   - Evidência: validação explícita no PUT que bloqueia valores com máscaras e placeholders comuns
