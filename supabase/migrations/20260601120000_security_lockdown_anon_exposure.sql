@@ -26,7 +26,7 @@
 BEGIN;
 
 -- ---------------------------------------------------------------------
--- 1) REVOGAR todo acesso do papel anon às tabelas sensíveis
+-- 1) REVOGAR todo acesso do papel anon às tabelas sensíveisd
 --    (anon = visitante não autenticado = internet pública)
 -- ---------------------------------------------------------------------
 DO $$
