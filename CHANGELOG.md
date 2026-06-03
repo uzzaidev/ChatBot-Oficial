@@ -10,6 +10,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-06-03
 
+### refactor
+- Refatorada a inicialização do cliente Supabase para utilizar o client com role de serviço em múltiplos módulos, substituindo o client de servidor padrão. Essa alteração unifica a forma de acesso ao Supabase para operações que requerem privilégios elevados.
+  - Arquivos: `src/lib/calendar-client.ts`, `src/lib/google-calendar-client.ts`, `src/lib/ground-truth-matcher.ts`, `src/lib/microsoft-calendar-client.ts`, `src/lib/unified-tracking.ts`, `src/lib/vault.ts`, `src/nodes/convertTextToSpeech.ts`, `src/nodes/getRAGContext.ts`
+  - Confiança: alta
+
+## 2026-06-03
+
 ### feat
 - Atualizado o acesso às configurações de cliente e bot para usar o client com service role, garantindo conformidade com Row Level Security (RLS) no backend e webhook
   - Arquivos: `src/lib/config.ts`
