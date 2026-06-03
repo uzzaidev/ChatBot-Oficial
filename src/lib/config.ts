@@ -182,7 +182,12 @@ export const getClientConfig = async (
   clientId: string,
 ): Promise<ClientConfig | null> => {
   try {
-    const supabase = await createServerClient();
+    // 🔐 Backend/webhook flow has NO user session — MUST use service role.
+    // createServerClient() uses the anon key (+cookies); after the RLS lockdown
+    // the anon role can't read `clients` nor decrypt Vault secrets, so this
+    // returned null and the webhook fell through to auto-provision. Use the
+    // service-role client (bypasses RLS) like getActiveAgent/getBotConfigs.
+    const supabase = createServiceRoleClient();
 
     const { data: client, error } = (await supabase
       .from("clients")
@@ -542,7 +547,9 @@ export const getBotConfig = async (
   }
 
   try {
-    const supabase = await createServerClient();
+    // 🔐 Backend/webhook flow: use service role (bypass RLS). Anon can't read
+    // bot_configurations for other tenants under RLS. Same fix as getClientConfig.
+    const supabase = createServiceRoleClient();
 
     // Buscar configuração do cliente OU default
     // Ordem: cliente (is_default=false) tem prioridade sobre default (is_default=true)
@@ -563,13 +570,15 @@ export const getBotConfig = async (
       return null;
     }
 
+    const configValue = (data as any).config_value;
+
     // Cachear resultado
     botConfigCache.set(cacheKey, {
-      value: data.config_value,
+      value: configValue,
       expiresAt: Date.now() + BOT_CONFIG_CACHE_TTL,
     });
 
-    return data.config_value;
+    return configValue;
   } catch (error) {
     return null;
   }
