@@ -11,6 +11,14 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-06-03
 
 ### fix
+- Ajustado endpoint de secrets no Vault para rejeitar valores mascarados ou placeholders ao salvar, evitando sobrescrever chaves reais com valores inválidos (ex: "***1234", "placeholder")
+  - Arquivos: `src/app/api/vault/secrets/route.ts`
+  - Evidência: validação explícita no PUT que bloqueia valores com máscaras e placeholders comuns
+  - Confiança: alta
+
+## 2026-06-03
+
+### fix
 - Ajustado autenticação dos sockets Realtime para usar o JWT do usuário antes de assinar canais, garantindo que as políticas RLS por tenant funcionem corretamente e evitando assinaturas anônimas que retornavam zero dados.
 - Adicionadas mensagens de aviso para estados de canal diferentes de "SUBSCRIBED" nas assinaturas Realtime de notificações globais, conversas e mensagens.
   - Arquivos: `src/hooks/useGlobalRealtimeNotifications.ts`, `src/hooks/useRealtimeConversations.ts`, `src/hooks/useRealtimeMessages.ts`
