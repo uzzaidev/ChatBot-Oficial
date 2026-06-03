@@ -54,6 +54,16 @@ export const useGlobalRealtimeNotifications = ({
     let channel: RealtimeChannel;
 
     const setupGlobalSubscription = async () => {
+      // 🔐 Authenticate the Realtime socket with the user's JWT before subscribing
+      // (otherwise the socket is anon and per-tenant RLS delivers ZERO rows).
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        if (token) await supabase.realtime.setAuth(token);
+      } catch (e) {
+        console.warn("[Realtime notifications] setAuth failed:", e);
+      }
+
       channel = supabase
         // 🔐 Multi-tenant: Include clientId in channel name for isolation
         .channel(`global-chat-histories:${clientId}`)
@@ -133,6 +143,9 @@ export const useGlobalRealtimeNotifications = ({
           },
         )
         .subscribe((status) => {
+          if (status !== "SUBSCRIBED") {
+            console.warn(`[Realtime notifications] channel status: ${status}`);
+          }
           if (status === "SUBSCRIBED") {
             setIsConnected(true);
           } else if (status === "CLOSED") {
