@@ -8,6 +8,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-06-05
+
+### fix
+- Atualizado endpoint de override de billing para definir status operacional e de cobrança como ativos no cliente, além de limpar período de carência
+  - Arquivos: `src/app/api/admin/billing/override/route.ts`
+  - Evidência: alteração na função POST para atualizar campos `status`, `plan_status` e `grace_period_ends_at`
+  - Confiança: alta
+
 ## 2026-06-03
 
 ### fix
