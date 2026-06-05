@@ -11,6 +11,16 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-06-05
 
 ### fix
+- Atualizado texto do banner de status de cobrança para indicar que o atendimento está pausado em vez de desconectado.
+- Alterada lógica de suspensão de clientes para preservar credenciais do WhatsApp, permitindo reativação manual sem necessidade de novo onboarding Meta.
+- Ajustado lookup de cliente por WABA ID para bloquear clientes com status de plano "canceled" ou "suspended", evitando uso indevido.
+  - Arquivos: `src/components/BillingStatusBanner.tsx`, `src/lib/billing-lifecycle.ts`, `src/lib/waba-lookup.ts`
+  - Evidência: remoção da desconexão automática do WhatsApp na suspensão e checagem explícita de status no lookup
+  - Confiança: alta
+
+## 2026-06-05
+
+### fix
 - Atualizado endpoint de override de billing para definir status operacional e de cobrança como ativos no cliente, além de limpar período de carência
   - Arquivos: `src/app/api/admin/billing/override/route.ts`
   - Evidência: alteração na função POST para atualizar campos `status`, `plan_status` e `grace_period_ends_at`
