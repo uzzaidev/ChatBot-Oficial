@@ -37,7 +37,7 @@ export const getClientByWABAId = async (
   const supabase = createServiceRoleClient();
   const { data: clientRow, error } = await supabase
     .from("clients")
-    .select("id")
+    .select("id, plan_status")
     .eq("meta_waba_id", wabaId)
     .eq("status", "active")
     .single();
@@ -47,7 +47,19 @@ export const getClientByWABAId = async (
     return null;
   }
 
-  const clientId = (clientRow as { id: string }).id;
+  const typedClientRow = clientRow as { id: string; plan_status?: string | null };
+  const blockedPlanStatuses = new Set(["canceled", "suspended"]);
+  if (
+    typedClientRow.plan_status &&
+    blockedPlanStatuses.has(typedClientRow.plan_status)
+  ) {
+    console.log(
+      `[WABA Lookup] Client ${typedClientRow.id} blocked by plan status ${typedClientRow.plan_status} for WABA ${wabaId}`,
+    );
+    return null;
+  }
+
+  const clientId = typedClientRow.id;
 
   let config: ClientConfig | null = null;
   try {
