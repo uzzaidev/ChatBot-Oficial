@@ -8,6 +8,18 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-06-13
+
+### feat
+- Adicionada avaliação automática por IA para relatórios de QA, com julgamento de cada pergunta/resposta e sugestões aplicáveis de ajuste de prompt. A avaliação é salva no relatório e pode ser reavaliada pelo usuário via interface.
+  - Arquivos: `src/app/api/agents/[id]/qa/reports/[reportId]/evaluate/route.ts`, `src/components/agents/AgentQAPanel.tsx`, `src/components/agents/PromptSuggestionCard.tsx`, `src/lib/qa-evaluator.ts`, `src/lib/types.ts`
+  - Confiança: alta
+
+### chore
+- Criada migração para adicionar colunas `evaluation` (JSONB), `evaluator_model` (texto) e `evaluated_at` (timestamp) na tabela `agent_qa_reports` para armazenar a avaliação IA dos relatórios de QA.
+  - Arquivos: `supabase/migrations/20260613130000_add_qa_report_evaluation.sql`
+  - Confiança: alta
+
 ## 2026-06-05
 
 ### fix
