@@ -2795,6 +2795,8 @@ export const AgentEditorModal = ({
                   onQuestionsChange={(questions) =>
                     updateField("qa_questions", questions)
                   }
+                  onApplySuggestion={handleApplySuggestion}
+                  onNavigate={handleNavigateToField}
                 />
               </TabsContent>
 

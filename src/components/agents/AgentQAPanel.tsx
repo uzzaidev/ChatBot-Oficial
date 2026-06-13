@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  PromptSuggestionCard,
+  type SuggestionView,
+} from "@/components/agents/PromptSuggestionCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,9 +11,16 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { apiFetch } from "@/lib/api";
+import {
+  buildSystemPromptSegments,
+  type PromptApplyTarget,
+  type PromptSegment,
+} from "@/lib/prompt-builder";
 import type {
   Agent,
+  AgentQAEvaluation,
   AgentQAQuestion,
+  AgentQAQuestionReview,
   AgentQAReport,
   AgentQAResultItem,
 } from "@/lib/types";
@@ -22,9 +33,11 @@ import {
   Play,
   Plus,
   Save,
+  Sparkles,
   Trash2,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { AgentEditorTab } from "./RawPromptPreview";
 
 interface AgentQAPanelProps {
   /** Agent id; null when creating a new (unsaved) agent → QA disabled. */
@@ -33,17 +46,58 @@ interface AgentQAPanelProps {
   agent: Partial<Agent>;
   /** Writes the edited question battery back into the editor form. */
   onQuestionsChange: (questions: AgentQAQuestion[]) => void;
+  /** Applies an evaluation suggestion back into the editor form. */
+  onApplySuggestion: (target: PromptApplyTarget, value: string) => void;
+  /** Navigate to the editor field that controls a section. */
+  onNavigate: (tab: AgentEditorTab, fieldId?: string) => void;
 }
+
+const EVALUATOR_MODELS: Array<{
+  provider: "openai" | "groq";
+  value: string;
+  label: string;
+}> = [
+  { provider: "openai", value: "gpt-5.4-mini", label: "GPT-5.4 Mini" },
+  { provider: "openai", value: "gpt-5.4", label: "GPT-5.4" },
+  { provider: "openai", value: "gpt-4o", label: "GPT-4o" },
+  { provider: "openai", value: "gpt-4o-mini", label: "GPT-4o Mini" },
+  {
+    provider: "groq",
+    value: "llama-3.3-70b-versatile",
+    label: "Llama 3.3 70B (Groq)",
+  },
+];
 
 const newId = (): string =>
   typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
     : `q_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
+const scoreColor = (score: number): string => {
+  if (score >= 80) return "text-emerald-600 dark:text-emerald-400";
+  if (score >= 50) return "text-amber-600 dark:text-amber-400";
+  return "text-red-600 dark:text-red-400";
+};
+
+const verdictStyles: Record<AgentQAQuestionReview["verdict"], string> = {
+  good: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
+  partial:
+    "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30",
+  bad: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30",
+};
+
+const verdictLabel: Record<AgentQAQuestionReview["verdict"], string> = {
+  good: "Boa",
+  partial: "Parcial",
+  bad: "Ruim",
+};
+
 export const AgentQAPanel = ({
   agentId,
   agent,
   onQuestionsChange,
+  onApplySuggestion,
+  onNavigate,
 }: AgentQAPanelProps) => {
   const questions: AgentQAQuestion[] = agent.qa_questions ?? [];
 
@@ -61,7 +115,22 @@ export const AgentQAPanel = ({
   // History of saved reports
   const [reports, setReports] = useState<AgentQAReport[]>([]);
   const [reportsLoading, setReportsLoading] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
+  const [showHistory, setShowHistory] = useState(true);
+
+  // Map each editable section tag → editor tab/field, for "edit manually".
+  const navByTag = useMemo(() => {
+    const map = new Map<string, { tab: AgentEditorTab; fieldId?: string }>();
+    const segments: PromptSegment[] = buildSystemPromptSegments(agent as Agent);
+    for (const segment of segments) {
+      if (segment.source.editable) {
+        map.set(segment.tag, {
+          tab: segment.source.tab as AgentEditorTab,
+          fieldId: segment.source.fieldId,
+        });
+      }
+    }
+    return map;
+  }, [agent]);
 
   const loadReports = async () => {
     if (!agentId) return;
@@ -84,9 +153,7 @@ export const AgentQAPanel = ({
 
   // ── Question battery editing ──────────────────────────────────────────────
   const updateQuestion = (id: string, text: string) => {
-    onQuestionsChange(
-      questions.map((q) => (q.id === id ? { ...q, text } : q)),
-    );
+    onQuestionsChange(questions.map((q) => (q.id === id ? { ...q, text } : q)));
   };
 
   const addQuestion = () => {
@@ -240,7 +307,7 @@ export const AgentQAPanel = ({
       setLabel("");
       toast({
         title: "Relatório salvo",
-        description: "Disponível no histórico abaixo para avaliação posterior.",
+        description: "Disponível no histórico abaixo. Avalie com IA quando quiser.",
       });
       void loadReports();
     } catch (err) {
@@ -267,6 +334,24 @@ export const AgentQAPanel = ({
     } catch {
       toast({ title: "Erro ao excluir relatório", variant: "destructive" });
     }
+  };
+
+  const handleEvaluated = (
+    reportId: string,
+    evaluation: AgentQAEvaluation,
+  ) => {
+    setReports((prev) =>
+      prev.map((r) =>
+        r.id === reportId
+          ? {
+              ...r,
+              evaluation,
+              evaluator_model: evaluation.evaluatorModel,
+              evaluated_at: new Date().toISOString(),
+            }
+          : r,
+      ),
+    );
   };
 
   if (!agentId) {
@@ -415,6 +500,11 @@ export const AgentQAPanel = ({
               </Button>
             </div>
           </div>
+          {savedThisRun && (
+            <p className="text-xs text-muted-foreground">
+              Relatório salvo no histórico abaixo — abra-o para avaliar com IA.
+            </p>
+          )}
 
           {results.map((r, i) => (
             <QAResultCard key={r.id} index={i} result={r} />
@@ -454,8 +544,15 @@ export const AgentQAPanel = ({
               reports.map((report) => (
                 <SavedReportCard
                   key={report.id}
+                  agentId={agentId}
                   report={report}
+                  navByTag={navByTag}
                   onDelete={() => handleDeleteReport(report.id)}
+                  onApplySuggestion={onApplySuggestion}
+                  onNavigate={onNavigate}
+                  onEvaluated={(evaluation) =>
+                    handleEvaluated(report.id, evaluation)
+                  }
                 />
               ))
             )}
@@ -467,15 +564,17 @@ export const AgentQAPanel = ({
 };
 
 // =====================================================
-// RESULT CARD (current run)
+// RESULT CARD (question + answer, optional verdict)
 // =====================================================
 
 const QAResultCard = ({
   index,
   result,
+  review,
 }: {
   index: number;
   result: AgentQAResultItem;
+  review?: AgentQAQuestionReview;
 }) => {
   return (
     <div
@@ -487,7 +586,15 @@ const QAResultCard = ({
         <Badge variant="outline" className="shrink-0 text-[10px]">
           {index + 1}
         </Badge>
-        <p className="text-sm font-medium">{result.question}</p>
+        <p className="flex-1 text-sm font-medium">{result.question}</p>
+        {review && (
+          <Badge
+            variant="outline"
+            className={`shrink-0 text-[10px] ${verdictStyles[review.verdict]}`}
+          >
+            {verdictLabel[review.verdict]} · {review.score}
+          </Badge>
+        )}
       </div>
 
       {result.error ? (
@@ -497,6 +604,12 @@ const QAResultCard = ({
       ) : (
         <p className="whitespace-pre-wrap rounded-md bg-muted/40 p-2 text-sm">
           {result.response || "(resposta vazia)"}
+        </p>
+      )}
+
+      {review?.issue && (
+        <p className="mt-1.5 text-xs italic text-muted-foreground">
+          💬 {review.issue}
         </p>
       )}
 
@@ -523,22 +636,85 @@ const QAResultCard = ({
 };
 
 // =====================================================
-// SAVED REPORT CARD (history)
+// SAVED REPORT CARD (history + AI evaluation)
 // =====================================================
 
 const SavedReportCard = ({
+  agentId,
   report,
+  navByTag,
   onDelete,
+  onApplySuggestion,
+  onNavigate,
+  onEvaluated,
 }: {
+  agentId: string;
   report: AgentQAReport;
+  navByTag: Map<string, { tab: AgentEditorTab; fieldId?: string }>;
   onDelete: () => void;
+  onApplySuggestion: (target: PromptApplyTarget, value: string) => void;
+  onNavigate: (tab: AgentEditorTab, fieldId?: string) => void;
+  onEvaluated: (evaluation: AgentQAEvaluation) => void;
 }) => {
   const [expanded, setExpanded] = useState(false);
+  const [model, setModel] = useState("gpt-5.4-mini");
+  const [evaluating, setEvaluating] = useState(false);
+  const [evaluation, setEvaluation] = useState<AgentQAEvaluation | null>(
+    report.evaluation,
+  );
+  // Local suggestion status (applied/dismissed) keyed by suggestion id.
+  const [suggestionStatus, setSuggestionStatus] = useState<
+    Record<string, "open" | "applied" | "dismissed">
+  >({});
+
   const date = new Date(report.created_at).toLocaleString("pt-BR");
   const avgLatency =
     report.total_latency_ms && report.question_count
       ? Math.round(report.total_latency_ms / report.question_count)
       : null;
+
+  const reviewById = useMemo(() => {
+    const map = new Map<string, AgentQAQuestionReview>();
+    (evaluation?.questionReviews || []).forEach((r) => map.set(r.id, r));
+    return map;
+  }, [evaluation]);
+
+  const handleEvaluate = async () => {
+    setEvaluating(true);
+    try {
+      const selected = EVALUATOR_MODELS.find((m) => m.value === model);
+      const provider = selected?.provider ?? "openai";
+      const res = await apiFetch(
+        `/api/agents/${agentId}/qa/reports/${report.id}/evaluate`,
+        {
+          method: "POST",
+          body: JSON.stringify({ provider, model }),
+        },
+      );
+      const data = await res.json();
+      if (!res.ok || !data.evaluation) {
+        throw new Error(data.error || "Falha ao avaliar relatório");
+      }
+      setEvaluation(data.evaluation as AgentQAEvaluation);
+      setSuggestionStatus({});
+      onEvaluated(data.evaluation as AgentQAEvaluation);
+      toast({
+        title: "Avaliação concluída",
+        description: `${data.evaluation.suggestions.length} sugestão(ões) de prompt.`,
+      });
+    } catch (err) {
+      toast({
+        title: "Erro na avaliação",
+        description: err instanceof Error ? err.message : "Tente novamente",
+        variant: "destructive",
+      });
+    } finally {
+      setEvaluating(false);
+    }
+  };
+
+  const statusOf = (s: SuggestionView) =>
+    suggestionStatus[s.id] ?? s.status ?? "open";
 
   return (
     <div className="rounded-md border border-border">
@@ -554,8 +730,13 @@ const SavedReportCard = ({
             <ChevronDown className="h-3.5 w-3.5 shrink-0" />
           )}
           <div className="min-w-0">
-            <p className="truncate text-xs font-medium">
+            <p className="flex items-center gap-2 truncate text-xs font-medium">
               {report.label || `Relatório de ${date}`}
+              {evaluation && (
+                <span className={`font-bold ${scoreColor(evaluation.overallScore)}`}>
+                  {evaluation.overallScore}/100
+                </span>
+              )}
             </p>
             <p className="truncate text-[10px] text-muted-foreground">
               {date} · {report.question_count} pergunta(s)
@@ -577,10 +758,109 @@ const SavedReportCard = ({
       </div>
 
       {expanded && (
-        <div className="space-y-2 border-t border-border p-2.5">
+        <div className="space-y-3 border-t border-border p-2.5">
+          {/* Evaluation control */}
+          <div className="flex flex-wrap items-center gap-2 rounded-md bg-muted/30 p-2">
+            <Sparkles className="h-3.5 w-3.5 text-primary" />
+            <span className="text-xs font-medium">Avaliar com IA:</span>
+            <select
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+              className="h-7 rounded-md border border-input bg-background px-2 text-xs"
+              disabled={evaluating}
+            >
+              {EVALUATOR_MODELS.map((m) => (
+                <option key={m.value} value={m.value}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleEvaluate}
+              disabled={evaluating}
+              className="h-7 gap-1.5 text-xs"
+            >
+              {evaluating ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5" />
+              )}
+              {evaluating
+                ? "Avaliando..."
+                : evaluation
+                ? "Reavaliar"
+                : "Avaliar"}
+            </Button>
+          </div>
+
+          {/* Overall assessment */}
+          {evaluation?.overallAssessment && (
+            <div className="rounded-md border border-border p-2.5">
+              <p className="text-xs text-muted-foreground">
+                {evaluation.overallAssessment}
+              </p>
+              <p className="mt-1 text-[10px] text-muted-foreground">
+                {evaluation.evaluatorProvider} · {evaluation.evaluatorModel} ·{" "}
+                {(evaluation.usage.tokensInput + evaluation.usage.tokensOutput)}{" "}
+                tokens · {(evaluation.durationMs / 1000).toFixed(1)}s
+              </p>
+            </div>
+          )}
+
+          {/* Per-question results (with verdict if evaluated) */}
           {report.results.map((r, i) => (
-            <QAResultCard key={r.id || i} index={i} result={r} />
+            <QAResultCard
+              key={r.id || i}
+              index={i}
+              result={r}
+              review={reviewById.get(r.id)}
+            />
           ))}
+
+          {/* Prompt suggestions */}
+          {evaluation && evaluation.suggestions.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold">
+                Sugestões de ajuste no prompt
+              </p>
+              {(evaluation.suggestions as SuggestionView[]).map((s) => {
+                const status = statusOf(s);
+                return (
+                  <PromptSuggestionCard
+                    key={s.id}
+                    suggestion={{ ...s, status }}
+                    canNavigate={navByTag.has(s.sectionTag)}
+                    onApply={() => {
+                      if (s.apply.kind === "advisory" || !s.suggestedValue)
+                        return;
+                      onApplySuggestion(s.apply, s.suggestedValue);
+                      setSuggestionStatus((prev) => ({
+                        ...prev,
+                        [s.id]: "applied",
+                      }));
+                      toast({
+                        title: "Sugestão aplicada",
+                        description:
+                          "Preenchida no editor. Salve o agente para confirmar.",
+                      });
+                    }}
+                    onDismiss={() =>
+                      setSuggestionStatus((prev) => ({
+                        ...prev,
+                        [s.id]: "dismissed",
+                      }))
+                    }
+                    onNavigate={() => {
+                      const nav = navByTag.get(s.sectionTag);
+                      if (nav) onNavigate(nav.tab, nav.fieldId);
+                    }}
+                  />
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>

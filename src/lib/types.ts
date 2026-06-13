@@ -716,6 +716,33 @@ export interface AgentQAResultItem {
 }
 
 /**
+ * AI verdict for a single question in a QA report.
+ */
+export interface AgentQAQuestionReview {
+  /** Matches AgentQAResultItem.id. */
+  id: string;
+  verdict: "good" | "partial" | "bad";
+  score: number; // 0-100
+  issue: string; // what's wrong / what's good (pt-BR)
+}
+
+/**
+ * AI evaluation of a QA report. Suggestions mirror the prompt-evaluator shape
+ * (PromptSuggestion) so they can be applied back into the editor fields.
+ */
+export interface AgentQAEvaluation {
+  overallScore: number;
+  overallAssessment: string;
+  questionReviews: AgentQAQuestionReview[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  suggestions: any[]; // PromptSuggestion[] (from src/lib/prompt-evaluator.ts)
+  evaluatorProvider: string;
+  evaluatorModel: string;
+  usage: { tokensInput: number; tokensOutput: number };
+  durationMs: number;
+}
+
+/**
  * A saved QA run: the battery of questions and how the agent answered each.
  */
 export interface AgentQAReport {
@@ -729,6 +756,9 @@ export interface AgentQAReport {
   results: AgentQAResultItem[];
   question_count: number;
   total_latency_ms: number | null;
+  evaluation: AgentQAEvaluation | null;
+  evaluator_model: string | null;
+  evaluated_at: string | null;
   created_by: string | null;
   created_at: string;
 }
