@@ -11,6 +11,15 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-06-13
 
 ### feat
+- Adicionada funcionalidade no dashboard admin para estender o período grátis de assinaturas, adiando a próxima cobrança em até 12 meses sem gerar fatura.
+- Implementada rota PATCH `/api/admin/billing/subscriptions/[id]` para atualizar o trial_end da assinatura no Stripe e refletir no banco Supabase.
+- Incluído botão "+1 mês grátis" na lista de assinaturas do admin para facilitar a extensão do período grátis.
+  - Arquivos: `src/app/api/admin/billing/subscriptions/[id]/route.ts`, `src/app/dashboard/admin/billing/page.tsx`
+  - Confiança: alta
+
+## 2026-06-13
+
+### feat
 - Adicionada avaliação automática por IA para relatórios de QA, com julgamento de cada pergunta/resposta e sugestões aplicáveis de ajuste de prompt. A avaliação é salva no relatório e pode ser reavaliada pelo usuário via interface.
   - Arquivos: `src/app/api/agents/[id]/qa/reports/[reportId]/evaluate/route.ts`, `src/components/agents/AgentQAPanel.tsx`, `src/components/agents/PromptSuggestionCard.tsx`, `src/lib/qa-evaluator.ts`, `src/lib/types.ts`
   - Confiança: alta
