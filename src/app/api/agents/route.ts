@@ -329,6 +329,9 @@ export async function POST(request: NextRequest) {
       batching_delay_seconds: body.batching_delay_seconds ?? 10,
       message_delay_ms: body.message_delay_ms ?? 2000,
       message_split_enabled: body.message_split_enabled ?? false,
+
+      // QA battery (reusable list of questions saved on the agent)
+      qa_questions: body.qa_questions || [],
     };
 
     // Compile prompts

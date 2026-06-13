@@ -1,5 +1,6 @@
 "use client";
 
+import { AgentQAPanel } from "@/components/agents/AgentQAPanel";
 import { AgentVersionHistory } from "@/components/agents/AgentVersionHistory";
 import { PromptEvaluatorPanel } from "@/components/agents/PromptEvaluatorPanel";
 import {
@@ -51,6 +52,7 @@ import {
   Brain,
   Check,
   CheckCircle2,
+  ClipboardList,
   Clock,
   FileText,
   History,
@@ -349,6 +351,7 @@ const DEFAULT_AGENT: Partial<Agent> = {
     { day: 6, active: false, start: "09:00", end: "18:00" },
   ],
   business_hours_off_message: "",
+  qa_questions: [],
 };
 
 // =====================================================
@@ -1003,6 +1006,10 @@ export const AgentEditorModal = ({
                 <TabsTrigger value="test" className="gap-2" disabled={isNew}>
                   <Send className="w-4 h-4" />
                   Testar
+                </TabsTrigger>
+                <TabsTrigger value="qa" className="gap-2" disabled={isNew}>
+                  <ClipboardList className="w-4 h-4" />
+                  QA
                 </TabsTrigger>
                 <TabsTrigger value="raw-prompt" className="gap-2">
                   <FileText className="w-4 h-4" />
@@ -2778,6 +2785,17 @@ export const AgentEditorModal = ({
                     </Button>
                   </div>
                 </div>
+              </TabsContent>
+
+              {/* QA TAB */}
+              <TabsContent value="qa" className="p-6 mt-0">
+                <AgentQAPanel
+                  agentId={isNew ? null : agent?.id ?? null}
+                  agent={formData}
+                  onQuestionsChange={(questions) =>
+                    updateField("qa_questions", questions)
+                  }
+                />
               </TabsContent>
 
               {/* RAW PROMPT TAB */}
