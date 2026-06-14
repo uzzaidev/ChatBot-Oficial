@@ -10,6 +10,18 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-06-14
 
+### feat
+- Adicionada aba "Otimizar IA" no modal de edição de agentes com painel avaliador de prompts que revisa, pontua e sugere melhorias aplicáveis com um clique
+  - Arquivos: `src/components/agents/AgentEditorModal.tsx`
+  - Confiança: alta
+
+### chore
+- Removido arquivo de contexto obsoleto `.brv/context-tree/your_domain/your_topic/your_title.overview.md`
+  - Arquivos: `.brv/context-tree/your_domain/your_topic/your_title.overview.md`
+  - Confiança: alta
+
+## 2026-06-14
+
 ### fix
 - Atualizado status da fila reduzindo pendentes e incrementando processados; incrementado contador de curations no estado dream
   - Arquivos: `.brv/_queue_status.json`, `.brv/dream-state.json`
