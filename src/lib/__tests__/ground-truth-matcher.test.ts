@@ -4,7 +4,7 @@ import {
 } from "@/lib/ground-truth-matcher";
 import { getBotConfig } from "@/lib/config";
 import { generateEmbedding } from "@/lib/openai";
-import { createServerClient } from "@/lib/supabase";
+import { createServiceRoleClient } from "@/lib/supabase";
 
 jest.mock("@/lib/config", () => ({
   getBotConfig: jest.fn(),
@@ -15,7 +15,7 @@ jest.mock("@/lib/openai", () => ({
 }));
 
 jest.mock("@/lib/supabase", () => ({
-  createServerClient: jest.fn(),
+  createServiceRoleClient: jest.fn(),
 }));
 
 describe("ground-truth-matcher", () => {
@@ -27,7 +27,7 @@ describe("ground-truth-matcher", () => {
     (generateEmbedding as jest.Mock).mockResolvedValue({
       embedding: new Array(1536).fill(0.1),
     });
-    (createServerClient as jest.Mock).mockResolvedValue({
+    (createServiceRoleClient as jest.Mock).mockReturnValue({
       rpc: rpcMock,
     });
   });
