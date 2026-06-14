@@ -10,6 +10,20 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-06-14
 
+### docs
+- Adicionada documentação completa do ByteRover para gerenciamento de conhecimento e guia de uso da CLI.
+- Atualizados e reorganizados arquivos de contexto e fatos para refletir o estado atual do projeto, incluindo arquitetura do runtime AI, estado do projeto, e pipeline de exportação e reconstrução do deck comercial UzzApp.
+- Documentados fluxos de trabalho de engenharia de contexto RLM e requisitos de curadoria, detalhando uso de recon precomputado, extração single-pass, e verificação via paths aplicados.
+  - Arquivos: `.brv/context-tree/architecture/ai_runtime/*`, `.brv/context-tree/facts/*`, `.brv/context-tree/facts/project/*`, `.brv/context-tree/your_domain/your_topic/your_title.*`, `.github/skills/byterover/SKILL.md`, `claude/skills/byterover/SKILL.md`
+- Confiança: alta
+
+### chore
+- Criados arquivos de configuração e status para ByteRover MCP (`.brv/_queue_status.json`, `.brv/config.json`).
+- Atualizada estrutura e manifesto do contexto para refletir nova organização e tokens totais.
+- Confiança: alta
+
+## 2026-06-14
+
 ### fix
 - Atualizado importação e mocks de `createServerClient` para `createServiceRoleClient` nos testes de `ground-truth-matcher`
   - Arquivos: `src/lib/__tests__/ground-truth-matcher.test.ts`
