@@ -10,6 +10,26 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-06-14
 
+### fix
+- Atualizado status da fila reduzindo pendentes e incrementando processados; incrementado contador de curations no estado dream
+  - Arquivos: `.brv/_queue_status.json`, `.brv/dream-state.json`
+  - Evidência: alteração dos campos `pending` e `processed` e incremento de `curationsSinceDream`
+  - Confiança: alta
+
+### chore
+- Removidos arquivos de contexto obsoletos e ajustada estrutura de metadados para curadoria de fatos
+  - Arquivos: `.brv/context-tree/your_domain/your_topic/your_title.*`
+  - Confiança: alta
+
+### feat
+- Adicionada aba QA no editor de agentes para testes de regressão de prompts, com armazenamento e avaliação AI de relatórios
+- Implementada ação administrativa no dashboard para estender assinatura de clientes em +1 mês grátis via Stripe sem cupom
+- Atualizado padrão de cliente para matcher de ground-truth usando `createServiceRoleClient()` síncrono, com orientações para mocks em testes
+  - Arquivos: `.brv/context-tree/facts/project/dashboard_qa_billing_matcher.md`, `src/lib/ground-truth-matcher.ts`
+  - Confiança: alta
+
+## 2026-06-14
+
 ### docs
 - Adicionada documentação completa do ByteRover para gerenciamento de conhecimento e guia de uso da CLI.
 - Atualizados e reorganizados arquivos de contexto e fatos para refletir o estado atual do projeto, incluindo arquitetura do runtime AI, estado do projeto, e pipeline de exportação e reconstrução do deck comercial UzzApp.
