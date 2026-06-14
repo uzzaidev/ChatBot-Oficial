@@ -8,6 +8,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-06-14
+
+### fix
+- Atualizado importação e mocks de `createServerClient` para `createServiceRoleClient` nos testes de `ground-truth-matcher`
+  - Arquivos: `src/lib/__tests__/ground-truth-matcher.test.ts`
+  - Evidência: substituição direta no import e nos mocks Jest
+  - Confiança: alta
+
 ## 2026-06-13
 
 ### feat
