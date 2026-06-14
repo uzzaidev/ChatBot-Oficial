@@ -1,475 +1,138 @@
 ---
-children_hash: 5471f049ece2e57a5ed276b12c92a463ca45f0604321338cadea29cd792308e3
-compression_ratio: 0.5563920065699425
+children_hash: 8b21bf23352a3687f69085c623ebd28c721a8dc76e670a4ebf79423672d61a70
+compression_ratio: 0.7126760563380282
 condensation_order: 3
 covers: [architecture/_index.md, facts/_index.md]
-covers_token_total: 7306
+covers_token_total: 3905
 summary_level: d3
-token_count: 4065
+token_count: 2783
 type: summary
 ---
-# Structural Summary
-
-## Top-level domains
-The provided entries split into two complementary domains:
-
-- `architecture/_index.md` — architectural decisions, runtime boundaries, and dated project-state design choices.
-- `facts/_index.md` — durable repository facts, environment constraints, validation outcomes, and stable operational/product metadata.
-
-Together they describe:
-1. how ChatBot-Oficial is architected and constrained in production,
-2. what the repository/runtime environment requires,
-3. how the UzzApp HTML → PDF → PPTX pipeline evolved.
-
----
-
-## 1) Runtime architecture and operating boundaries
-
-### Core platform model
-From `architecture/_index.md`:
-- ChatBot-Oficial is a **multi-tenant WhatsApp SaaS** built on **Next.js**.
-- Production AI execution is centered on **`callDirectAI()`**, not a heavyweight agent framework.
-- Main hot path is intentionally bounded:
-
-`incoming webhook -> flow routing -> serverless node pipeline -> callDirectAI() -> explicit tool processing/handoff -> response`
-
-### `callDirectAI()` responsibility boundary
-Referenced in `agent_framework_decision_for_realtime_flow.md`:
-- provider access
-- per-client credential resolution via Vault
-- budget enforcement
-- usage tracking
-- tool-call normalization
-- tenant/runtime overrides through `getClientConfig()`
-
-Important override dimensions:
-- `prompt`
-- `provider`
-- `model`
-- feature flags like `enableTools`, `enableRAG`, `enableHumanHandoff`
-
-### Framework decision
-From `agent_framework_decision_for_realtime_flow.md`:
-- Realtime WhatsApp flows prioritize **predictable latency** and **fail-safe behavior**.
-- Heavy agent frameworks such as **Deep Agents** are explicitly **not** the core runtime for customer-facing execution.
-- Acceptable uses for those frameworks remain:
-  - asynchronous modules
-  - internal automations
-  - backoffice copilots
-- `ADR-006` reinforces reuse of `callDirectAI()`.
-- `LangChain` is treated as optional/secondary for workloads like CRM or classification.
-
-### Operational environment rule
-Shared across `byterover_global_mode_cwd_requirement.md` and `byterover_cwd_requirement_for_repository.md`:
-- ByteRover MCP is running in **global mode**.
-- Repository-scoped calls must use:
-
-`C:\Users\Luisf\Documents\GITHUB\ChatBot-Oficial`
-
-This is a stable environment constraint, not an installation defect. Related instruction sources include `AGENTS.md`, `CLAUDE.md`, and `.github/copilot-instructions.md`.
-
----
-
-## 2) Repository/project state baseline
-
-### Product and stack snapshot
-Across `chatbot_oficial_snapshot_2026_03_31.md` and `chatbot_oficial_state_facts_2026_03_31.md`:
-- ChatBot-Oficial is a production-active **multi-tenant WhatsApp customer-service SaaS with AI**.
-- Stack includes:
-  - `Next.js 16`
-  - `React 18`
-  - `Supabase`
-  - `Stripe`
-  - `Redis`
-  - `AI SDK / OpenAI / Groq`
-  - `Capacitor`
-  - `Jest`
-
-### Validation and doc drift
-Same entries record:
-- tests: **3 suites / 10 tests passing**
-- lint: **0 errors, 12 warnings**
-- build `EPERM` failure treated as environment/sandbox-related
-- documentation drift:
-  - `README.md` says **Next.js 14**
-  - `package.json` indicates **Next.js 16**
-
-### Recent implementation emphasis
-Referenced in both architecture/facts summaries:
-- Meta/WhatsApp integration
-- coexistence contact/history sync
-- unified multi-tenant webhook
-- SMB echoes
-- Embedded Signup onboarding
-- dashboard/settings work
-- improved logging and error handling
-
-### Theme default decision
-From `theme_default_fallback_light_mode_2026_03_31.md` and `theme_fallback_default_light_2026_03_31.md`:
-- `src/app/layout.tsx` changed `ThemeProvider defaultTheme` from `'dark'` to `'light'`.
-- Preserved:
-  - `enableSystem={false}`
-  - `themes=['dark','light']`
-  - `storageKey='uzzapp-theme'`
-- Result: default fallback is **light mode** when no saved preference exists.
-
----
-
-## 3) UzzApp PDF export architecture evolution
-
-This is the strongest cross-entry cluster, spanning `commercial_deck_*`, `uzzapp_deck_*`, and PPTX entries.
-
-### A. Print-safe HTML/PDF baseline
-From `commercial_deck_mobile_pdf_export_pattern.md` and `commercial_deck_export_facts_2026_03_31.md`:
-- Source:
-  - `docs/UzzApp_Apresentacao_Comercial_v2.html`
-- Export script:
-  - `scripts/export-uzzapp-commercial-pdf.js`
-- Output:
-  - `docs/UzzApp_Apresentacao_Comercial_v2.pdf`
-- Baseline export invariants:
-  - fixed slide geometry `1280x720`
-  - `emulateMediaType("print")`
-  - wait for `document.fonts.ready`
-  - `page.pdf({ preferCSSPageSize: true })`
-  - `body.export-pdf`
-- Output result: **12 pages**
-
-This phase focused on print hardening and safe rendering under print media.
-
-### B. Shift to fidelity-first live HTML PDF
-From `uzzapp_deck_html_pdf_export_pattern_2026_04_02.md` and `uzzapp_deck_export_facts_2026_04_02.md`:
-- Source:
-  - `docs/UzzApp apresentacao Luis/UzzApp_Apresentacao_Comercial_v2.html`
-- Script:
-  - `scripts/export-uzzapp-luis-pdf.js`
-- Output:
-  - `docs/UzzApp apresentacao Luis/UzzApp_Apresentacao_Comercial_v2.pdf`
-- Key decision:
-  - reject screenshot-first export as primary path
-  - prefer original HTML rendered by Puppeteer with **screen media**
-- Validation:
-  - **12 pages**
-  - `textLength 8043`
-  - contains `UzzApp`
-
-This established the architectural preference for preserving **visual fidelity + selectable text**.
-
-### C. Diagnostic comparison path
-From `uzzapp_deck_live_html_vs_image_pdf_comparison_pattern.md` and `uzzapp_deck_comparison_export_facts_2026_04_02.md`:
-- Comparison outputs:
-  - `...v2.live-html.pdf`
-  - `...v2.image.pdf`
-- Image pipeline script:
-  - `scripts/export-uzzapp-luis-image-pdf.js`
-- PNG output dir:
-  - `docs/UzzApp apresentacao Luis/output/image-pdf-slides`
-
-Diagnostic findings:
-- both outputs had **12 pages**
-- live HTML PDF:
-  - `textLength 8043`
-  - contains `UzzApp`
-- image PDF:
-  - `textLength 24`
-  - does not contain `UzzApp`
-
-Architectural interpretation:
-- if mobile rendering breaks only on live HTML PDF, likely cause is **PDF viewer compatibility**, not missing assets.
-
----
-
-## 4) Preferred PDF stabilization pattern: export-only hybrid
-
-### PDF-safe clone as transitional strategy
-From `uzzapp_deck_pdf_safe_framework_variant_2026_04_02.md` and `uzzapp_deck_pdf_safe_variant_facts_2026_04_02.md`:
-- Cloned source:
-  - `docs/UzzApp apresentacao Luis/UzzApp_Apresentacao_Comercial_v2_pdfsafe.html`
-- Techniques:
-  - `.gradient-text` → inline SVG
-  - glow pseudo-elements → SVG data URIs
-  - blur/backdrop surfaces → static glass variants
-  - stronger print color-adjust rules
-- Outputs:
-  - `..._pdfsafe.live-html.pdf`
-  - `..._pdfsafe.image.pdf`
-- Live PDF preserved extractable text:
-  - `textLength 8214`
-  - **12 pages**
-
-This proved that fragile visual features could be replaced with PDF-friendlier constructs.
-
-### Export-only hybrid becomes the reusable rule
-From `uzzapp_deck_export_only_hybrid_pdf_pattern_2026_04_02.md` and `uzzapp_deck_export_only_hybrid_pdf_facts_2026_04_02.md`:
-- Script:
-  - `scripts/export-uzzapp-luis-exportonly-hybrid-pdf.js`
-- `package.json` command:
-  - `export:uzzapp-luis-exportonly-hybrid-pdf`
-- Output:
-  - `docs/UzzApp apresentacao Luis/UzzApp_Apresentacao_Comercial_v2.exportonly-hybrid.live-html.pdf`
-
-Main architectural decision:
-- keep author-facing HTML intact
-- apply PDF-safe CSS/DOM mutations **only during Puppeteer export**
-
-Export-time transformations include:
-- gradient text → inline SVG
-- CTA backgrounds → inline SVG
-- flatten unstable surfaces/layers/blur-heavy overlays only during export
-
-Validation:
-- **12 pages**
-- extractable text
-- `textLength 8214`
-- contains `UzzApp`
-
-### Minimal override refinement
-From `uzzapp_deck_export_only_hybrid_minimal_override_pattern_2026_04_02.md` and corresponding facts entry:
-- Preserves original styling for stable elements:
-  - cards
-  - stat pills
-  - integration cards
-  - CTA buttons
-- Stabilizes only fragile elements:
-  - gradient text
-  - blur/backdrop overlays
-  - bubble-ai surfaces
-  - selected mockup/device layers
-
-Output:
-- `...exportonly-minimal.live-html.pdf`
-- **12 pages**
-- `textLength 8214`
-
-### CTA-specific targeted fix
-From `uzzapp_deck_export_only_hybrid_cta_light_pdf_2026_04_02.md` and `uzzapp_deck_export_cta_light_facts_2026_04_02.md`:
-- Export forces `.cta-btn` to solid brand green
-- `deviceScaleFactor` reduced from `2` to `1`
-- Output:
-  - `...exportonly-cta-light.live-html.pdf`
-- Validation:
-  - **12 pages**
-  - `textLength 8214`
-  - contains `UzzApp`
-  - approx. **1.41 MB**
-
-### Pattern across the PDF entries
-The export strategy clearly evolves as:
-
-`print-safe baseline`  
-→ `live HTML fidelity-first PDF`  
-→ `pdfsafe clone`  
-→ `export-only hybrid`  
-→ `minimal override hybrid`  
-→ `CTA-specific targeted override`
-
-The dominant architectural preference is:
-- preserve rich authoring HTML,
-- move compatibility fixes to **export-time only**,
-- retain **extractable text** and branded fidelity.
-
----
-
-## 5) PPTX rebuild evolution
-
-### A. Image-based PPTX reconstruction
-From `uzzapp_openai_slides_skill_pptx_rebuild_2026_04_05.md`:
-- Uses OpenAI curated slides skill
-- Workspace:
-  - `docs/UzzApp apresentacao Luis/pptx-rebuild`
-- Output:
-  - `docs/UzzApp apresentacao Luis/UzzApp_Apresentacao_Comercial_v2.pptx`
-- Source imagery:
-  - existing slide PNGs in `output/image-pdf-slides`
-- Result:
-  - image-based
-  - not fully native-editable
-  - about **13.46 MB**
-  - **12 slides**
-- Validation used **PowerPoint COM automation** because `soffice`/LibreOffice was unavailable
-
-This was a functional but non-ideal bridge step.
-
-### B. Native editable PPTX
-From `uzzapp_openai_slides_skill_pptx_rebuild.md` and `uzzapp_openai_slides_skill_pptx_rebuild_facts_2026_04_05.md`:
-- Builder:
-  - `docs/UzzApp apresentacao Luis/pptx-rebuild/build-uzzapp-ppt.js`
-- Output:
-  - `docs/UzzApp apresentacao Luis/UzzApp_Apresentacao_Comercial_v2_editable_native.pptx`
-- Library:
-  - `PptxGenJS`
-
-Key decisions:
-- preserve **editability** with native text and native shapes
-- approximate unsupported HTML gradients with layered semi-transparent shapes
-- build CTA buttons as native round-rect multi-shape components
-- preserve hyperlink coverage on both shapes and text
-- PNG render validation is source of truth
-
-Special note:
-- `finish(s, 10, { skipWarnings: true });` used for false-positive slide 10 table bounds warnings
-
-Embedded facts preserved in related entries:
-- **12 slides**
-- pricing on slide 11:
-  - `R$ 247,00/mês`
-  - `R$ 1.000,00` setup
-  - `R$ 2.727/ano`
-
-### C. Native gradient post-processing pipeline
-From `uzzapp_native_gradient_pptx_pipeline_2026_04_05.md` and `uzzapp_native_gradient_pptx_pipeline_facts_2026_04_05.md`:
-- Files:
-  - `build-uzzapp-ppt.js`
-  - `postprocess-native-gradients.py`
-  - `rebuild-native-gradients.ps1`
-- Flow:
-  1. `PptxGenJS` builds editable base deck
-  2. `python-pptx` reopens deck
-  3. native gradients applied to named shapes
-  4. PowerShell wrapper orchestrates
-  5. PowerPoint COM validates rendering
-
-Artifacts:
-- `..._editable_native.pptx`
-- `..._editable_native_gradients.pptx`
-
-Stable shape targeting by `shape.name`:
-- `bg_canvas_s1` ... `bg_canvas_s12`
-- `cta_demo_s1`
-- `cta_sales_s11`
-- `cta_sales_s12`
-- `plan_anual_s11`
-
-Gradient/application rules:
-- use `fill.gradient()`
-- set `gradient_angle`
-- reuse exposed stop collection
-
-Important limitation:
-- `python-pptx` exposes only **2 gradient stops**
-
-Error/validation pattern:
-- `Gradient stop count mismatch for {shape.name}: library exposes {len(stops)} stops, requested {len(stops_spec)}`
-
-Preserved metadata/facts:
-- `LAYOUT_WIDE`
-- author `OpenAI Codex`
-- company `Uzz.Ai`
-- language `pt-BR`
-- fonts: `Poppins`, `Inter`
-- slide 12 links:
-  - `mailto:contato@uzzai.com.br`
-  - `https://uzzai.com.br`
-- contact:
-  - `contato@uzzai.com.br`
-  - `+55 54 99284-1942`
-
-### D. HTML-background aligned refinement
-From `uzzapp_native_gradient_html_background_alignment_2026_04_05.md` and corresponding facts entry:
-- Refines the gradient pipeline to match original HTML background more closely
-- `postprocess-native-gradients.py` rewrites `bg_canvas_s*` XML `gradFill gsLst` to a **3-stop** gradient:
-  - `0D1520` at `0%`
-  - `162232` at `50%`
-  - `0D1A28` at `100%`
-- Reason:
-  - bypass `python-pptx` 2-stop limitation with ZIP/XML post-processing
-- Adds `ALT_OUT` fallback if PowerPoint locks the primary output
-- Validated artifact:
-  - `docs/UzzApp apresentacao Luis/UzzApp_Apresentacao_Comercial_v2_editable_native_gradients_htmlbg.pptx`
-
-### PPTX evolution pattern
-The PPTX architecture progresses as:
-
-`image-based reconstruction`  
-→ `native editable PPTX with PptxGenJS`  
-→ `python-pptx native gradient enhancement`  
-→ `ZIP/XML 3-stop gradient correction aligned to HTML backgrounds`
-
-The repeated design goal is to preserve:
-- editability,
-- visual fidelity,
-- clickable CTAs/hyperlinks,
-- validation fidelity through PowerPoint rendering.
-
----
-
-## 6) Cross-domain patterns and relationships
-
-### Architecture ↔ facts relationship
-- `architecture/_index.md` captures **why** the system is designed this way.
-- `facts/_index.md` captures **what is stably true** about environment, outputs, validation, and repo state.
-
-### Stable invariants across entries
-Referenced repeatedly in both domain summaries:
-- repository operations are **cwd-sensitive**
-- environment limitations are treated as operational constraints:
-  - `EPERM spawn`
-  - unavailable `soffice`
-  - PowerPoint file locking
-  - `python-pptx` gradient-stop limit
-- deck geometry standard is **`1280x720`**
-- output count standard is **12 pages / 12 slides**
-- PDF success criteria include:
-  - extractable/selectable text
-  - string-presence checks such as `UzzApp`
-  - `pdf-parse` metrics like `textLength`
-- PPTX success criteria include:
-  - native editability
-  - preserved hyperlinks
-  - PowerPoint COM visual validation
-
-### Repeated architectural preference
-Across `commercial_deck_mobile_pdf_export_pattern.md`, `uzzapp_deck_html_pdf_export_pattern_2026_04_02.md`, `uzzapp_deck_export_only_hybrid_pdf_pattern_2026_04_02.md`, `uzzapp_openai_slides_skill_pptx_rebuild.md`, `uzzapp_native_gradient_pptx_pipeline_2026_04_05.md`, and `uzzapp_native_gradient_html_background_alignment_2026_04_05.md`:
-
-- keep the **author-facing HTML** visually rich and minimally disturbed
-- push compatibility fixes into:
-  - **export-time transforms** for PDF
-  - **post-processing** for PPTX
-- preserve:
-  - branded gradients/glows/CTA appearance
-  - text extractability in PDFs
-  - editability in PowerPoint
-  - hyperlinks and CTA behavior
-
----
-
-## Drill-down map
-
-### Runtime and environment
-- `agent_framework_decision_for_realtime_flow.md`
-- `byterover_global_mode_cwd_requirement.md`
-- `byterover_cwd_requirement_for_repository.md`
-- `initial_byterover_repository_sanity_check.md`
-
-### Repo state and product baseline
-- `chatbot_oficial_snapshot_2026_03_31.md`
-- `chatbot_oficial_state_facts_2026_03_31.md`
-- `theme_default_fallback_light_mode_2026_03_31.md`
-- `theme_fallback_default_light_2026_03_31.md`
-
-### HTML/PDF export path
-- `commercial_deck_mobile_pdf_export_pattern.md`
-- `commercial_deck_export_facts_2026_03_31.md`
-- `uzzapp_deck_html_pdf_export_pattern_2026_04_02.md`
-- `uzzapp_deck_export_facts_2026_04_02.md`
-- `uzzapp_deck_live_html_vs_image_pdf_comparison_pattern.md`
-- `uzzapp_deck_comparison_export_facts_2026_04_02.md`
-
-### Export-only hybrid refinements
-- `uzzapp_deck_pdf_safe_framework_variant_2026_04_02.md`
-- `uzzapp_deck_pdf_safe_variant_facts_2026_04_02.md`
-- `uzzapp_deck_export_only_hybrid_pdf_pattern_2026_04_02.md`
-- `uzzapp_deck_export_only_hybrid_pdf_facts_2026_04_02.md`
-- `uzzapp_deck_export_only_hybrid_minimal_override_pattern_2026_04_02.md`
-- `uzzapp_deck_export_only_hybrid_minimal_override_facts_2026_04_02.md`
-- `uzzapp_deck_export_only_hybrid_cta_light_pdf_2026_04_02.md`
-- `uzzapp_deck_export_cta_light_facts_2026_04_02.md`
-
-### Editable PPTX and gradients
-- `uzzapp_openai_slides_skill_pptx_rebuild_2026_04_05.md`
-- `uzzapp_openai_slides_skill_pptx_rebuild.md`
-- `uzzapp_openai_slides_skill_pptx_rebuild_facts_2026_04_05.md`
-- `uzzapp_native_gradient_pptx_pipeline_2026_04_05.md`
-- `uzzapp_native_gradient_pptx_pipeline_facts_2026_04_05.md`
-- `uzzapp_native_gradient_html_background_alignment_2026_04_05.md`
-- `uzzapp_native_gradient_html_background_alignment_facts_2026_04_05.md`
+# d3 Structural Summary
+
+## architecture
+This domain consolidates the runtime decisions and product-state evolution for ChatBot-Oficial, with a strong emphasis on AI execution strategy and the UzzApp commercial deck pipeline.
+
+### ai_runtime
+See **`agent_framework_decision_for_realtime_flow.md`** and **`byterover_global_mode_cwd_requirement.md`** for the runtime rules that shape the customer-facing AI path.
+
+- **Realtime execution path**: The primary flow is `incoming webhook -> flow routing -> serverless node pipeline -> callDirectAI() -> explicit tool processing/handoff -> response`.
+- **Framework posture**: Heavy agent frameworks such as LangChain, LangGraph, and Deep Agents are intentionally excluded from the realtime hot path and reserved for isolated async modules like internal automations, backoffice copilots, CRM, or classification tasks.
+- **Operational constraints**: `callDirectAI()` depends on per-client Vault credential resolution, budget enforcement, usage tracking, and `getClientConfig()` overrides such as `enableTools`, `enableRAG`, and `enableHumanHandoff`.
+- **Execution preference**: The runtime favors deterministic, fail-safe tool handling over framework abstraction.
+- **ByteRover rule**: In this repo, ByteRover operates in global mode and every query/curation call must pass the repository cwd explicitly: `C:\Users\Luisf\Documents\GITHUB\ChatBot-Oficial`.
+
+### project_state
+See **`chatbot_oficial_snapshot_2026_03_31.md`**, **`theme_default_fallback_light_mode_2026_03_31.md`**, and the UzzApp deck-related entries for the dated product snapshot and export/rebuild evolution.
+
+#### Repository and product snapshot
+- **Current state**: ChatBot-Oficial is a production-active multi-tenant SaaS for WhatsApp customer service with AI.
+- **Main stack**: Next.js 16, React 18, Supabase, Stripe, Redis, AI SDK/OpenAI/Groq, Capacitor, Jest.
+- **Documentation drift**: `README.md` still reflects Next.js 14 while `package.json` indicates Next.js 16.
+- **Recent delivery focus**: Meta/WhatsApp integration, including coexistence contact/history sync, unified multi-tenant webhook, SMB echoes, Embedded Signup onboarding, dashboard/settings work, and stronger logging/error handling.
+- **Validation status**: 3 test suites / 10 tests passed; lint reported 0 errors and 12 warnings; build EPERM was treated as an environmental/sandbox issue.
+- **Theme default**: `src/app/layout.tsx` changed `ThemeProvider defaultTheme` from `'dark'` to `'light'`, while preserving `enableSystem={false}`, `themes=['dark','light']`, and `storageKey='uzzapp-theme'`.
+
+#### UzzApp deck export and PDF patterns
+The deck work progresses through a consistent sequence: fixed-layout HTML export, live HTML PDF fidelity, export-only stabilization, then native PPTX rebuilds.
+
+1. **Fixed-slide print-safe baseline**  
+   See **`commercial_deck_mobile_pdf_export_pattern.md`**.  
+   - Establishes a reusable `1280x720` slide layout.
+   - Uses CSS scaling on screen and print-specific resets for dimensions, overflow, positioning, and page breaks.
+   - `body.export-pdf` disables unstable effects such as glow pseudo-elements, gradient text clipping, blur, shadows, and transparency-heavy surfaces.
+   - Export uses Puppeteer with `document.fonts.ready` and `page.pdf({ preferCSSPageSize: true })`.
+   - Output: `docs/UzzApp_Apresentacao_Comercial_v2.pdf`, 12 pages.
+
+2. **Live HTML PDF fidelity**  
+   See **`uzzapp_deck_html_pdf_export_pattern_2026_04_02.md`**.  
+   - Rejects screenshot-based export in favor of live selectable text and exact HTML visuals.
+   - Uses Puppeteer screen media with export-only CSS enforcing fixed slide dimensions and print rules.
+   - Output: `docs/UzzApp apresentacao Luis/UzzApp_Apresentacao_Comercial_v2.pdf`, 12 pages, text-extractable.
+
+3. **Live HTML vs image PDF diagnosis**  
+   See **`uzzapp_deck_live_html_vs_image_pdf_comparison_pattern.md`**.  
+   - Compares live HTML PDF and image-based PDF behavior.
+   - Diagnostic takeaway: if live HTML breaks on mobile but image PDF looks correct, the issue is likely mobile PDF viewer compatibility rather than missing assets.
+   - Live HTML preserves text; image PDF has minimal extractable text.
+
+4. **Export-only hybrid stabilization**  
+   See **`uzzapp_deck_export_only_hybrid_pdf_pattern_2026_04_02.md`**, **`uzzapp_deck_export_only_hybrid_minimal_override_pattern_2026_04_02.md`**, and **`uzzapp_deck_export_only_hybrid_cta_light_pdf_2026_04_02.md`**.  
+   - Preferred strategy: keep author-facing HTML intact and apply PDF-safe mutations only during export.
+   - Initial mutations converted gradient text and CTA backgrounds to inline SVG and flattened unstable surfaces.
+   - The minimal-override refinement preserves stable HTML styling and stabilizes only fragile layers.
+   - CTA-light refinement simplifies CTA rendering to a solid brand green background and reduces `deviceScaleFactor` from 2 to 1.
+
+5. **PDF-safe framework variant**  
+   See **`uzzapp_deck_pdf_safe_framework_variant_2026_04_02.md`**.  
+   - Clones the HTML into a PDF-friendlier variant using inline SVG gradient text, SVG glow backgrounds, and static glass surfaces.
+   - Live-html and image outputs remained 12 pages and text-extractable.
+
+#### Native PPTX rebuild and gradient pipeline
+The deck later shifts from HTML/PDF export to editable PowerPoint generation.
+
+- **Image-based PPTX rebuild**: See **`uzzapp_openai_slides_skill_pptx_rebuild_2026_04_05.md`**.  
+  Builds a PPTX from slide PNGs using the OpenAI curated slides skill. The deck is image-based, not fully editable, and validation relied on PowerPoint COM because LibreOffice/`soffice` was unavailable.
+
+- **Native editable PPTX**: See **`uzzapp_openai_slides_skill_pptx_rebuild.md`**.  
+  Moves to a native `PptxGenJS` deck with editable text/shapes, layered approximations for unsupported gradients, and CTA buttons as native multi-shape components with hyperlink coverage preserved. Validation still uses PowerPoint COM, and slide 10 includes a `skipWarnings: true` exception for a false-positive table bounds warning.
+
+- **Hybrid native-gradient pipeline**: See **`uzzapp_native_gradient_pptx_pipeline_2026_04_05.md`**.  
+  Formalizes the workflow:
+  1. `PptxGenJS` builds an editable base deck
+  2. `python-pptx` post-processes stable named shapes with native gradients
+  3. PowerShell runs the pipeline
+  4. PowerPoint COM validates rendering  
+  Key targets include `bg_canvas_s1` through `bg_canvas_s12`, `cta_demo_s1`, `cta_sales_s11`, `cta_sales_s12`, and `plan_anual_s11`. The pipeline depends on `shape.name` lookup, `fill.gradient()`, and two-stop gradients because the environment exposes only two gradient stops. CTA hyperlinks, including WhatsApp and slide 12 contact links, remain intact. Metadata includes `LAYOUT_WIDE`, author `OpenAI Codex`, company `Uzz.Ai`, language `pt-BR`, Poppins headings, Inter body, 12 slides, and pricing/contact facts.
+
+- **HTML-background-aligned refinement**: See **`uzzapp_native_gradient_html_background_alignment_2026_04_05.md`**.  
+  Improves the native gradient background using ZIP/XML post-processing to rewrite `bg_canvas_s*` gradients to a three-stop specification matching the HTML artwork. Adds `ALT_OUT` fallback for locked files and validates the final artifact `UzzApp_Apresentacao_Comercial_v2_editable_native_gradients_htmlbg.pptx`.
+
+### Cross-entry pattern
+Across the deck-related entries, the durable architectural preference is consistent:
+- keep author-facing HTML high quality,
+- move PDF/PPT accommodations into export-time transforms or post-processing,
+- preserve text extractability, visual fidelity, editability, and hyperlinks,
+- adapt to environment limits such as unavailable `soffice`, PowerPoint file locks, and `python-pptx` gradient-stop limitations.
+
+## facts
+This domain captures repository-level factual knowledge, operational constraints, and durable project metadata. It is centered on ByteRover workflow rules, the project snapshot, and the UzzApp commercial deck export/PPTX pipeline.
+
+### Repository operation and ByteRover conventions
+See **`initial_byterover_repository_sanity_check.md`** and **`byterover_cwd_requirement_for_repository.md`**.
+
+- Start tasks with a ByteRover query and curate meaningful knowledge when completing significant work.
+- The initial project-scoped query found no prior curated knowledge for the working directory.
+- ByteRover MCP calls in this repo must use the explicit cwd `C:\Users\Luisf\Documents\GITHUB\ChatBot-Oficial` because the server runs in global mode.
+- Together these entries define the expected operational pattern: cwd-specific ByteRover usage with curation as part of the workflow.
+
+### Project snapshot and baseline facts
+See **`chatbot_oficial_state_facts_2026_03_31.md`** and **`theme_fallback_default_light_2026_03_31.md`**.
+
+- The repository is a multi-tenant WhatsApp AI SaaS built with Next.js 16 + React 18.
+- Core dependencies include Supabase, Stripe, Redis, AI SDK/OpenAI/Groq, Capacitor, and Jest.
+- Validation status includes passing tests, lint warnings, and a README/package.json version drift.
+- Recent work focused on Meta/WhatsApp integration, webhook unification, Embedded Signup, dashboard/settings, and logging/error handling.
+- Unsaved users fall back to light mode, the preference key is `uzzapp-theme`, and system theme auto-detection is disabled.
+
+### Commercial deck export pipeline and rebuild facts
+See the deck-related facts entries for the implementation-level details behind the architecture summaries above.
+
+- **HTML/PDF export path**: fixed `1280x720` layout, mobile-friendly scaling, print overrides, export-only PDF-safe behavior, Puppeteer-based export, and a 12-page PDF output.
+- **Export comparisons and stabilization**: screen-media Puppeteer strategy, `emulateMediaType('screen')`, `document.fonts.ready`, exact-fidelity rules, 12-page text-extractable PDFs, live HTML vs image diagnostics, PDF-safe SVG/glass substitutions, and export-only hybrid mutation patterns.
+- **Native editable PPTX rebuild**: PptxGenJS-based editable PowerPoint, native shapes, round-rect CTA buttons with hyperlinks, PowerPoint COM validation, and embedded pricing values.
+- **Hybrid native gradient pipeline**: editable base deck, python-pptx gradient post-processing, stable shape names, gradient colors/angles, CTA and annual-plan line styles, font stack, embedded URLs, and 12-slide output.
+- **HTML-aligned gradient refinement**: three-stop background matching, ZIP/XML post-processing due to python-pptx two-stop limits, `ALT_OUT` fallback for locked files, and the validated final artifact path.
+
+### Cross-cutting pattern
+The deck work consistently distinguishes between:
+- author-facing HTML,
+- export-only PDF transformations,
+- native editable PPTX generation.
+
+Recurring technical themes include:
+- preserving selectable text where needed,
+- stabilizing fragile visual constructs during export,
+- using exact viewport/layout dimensions like `1280x720`,
+- validating outputs with measurable metrics such as page count and text length,
+- preserving clickable WhatsApp, site, and email links through export and rebuild stages.

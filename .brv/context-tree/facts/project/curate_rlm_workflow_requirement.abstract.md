@@ -1,0 +1,1 @@
+The RLM curation workflow must use precomputed recon, proceed in single-pass extraction, and verify results only through applied file paths.

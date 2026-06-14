@@ -1,0 +1,14 @@
+{
+  "curationsSinceDream": 1,
+  "lastDreamAt": "2026-06-14T09:18:01.270Z",
+  "lastDreamLogId": "drm-1781428631186",
+  "pendingMerges": [],
+  "staleSummaryPaths": [
+    {
+      "enqueuedAt": 1781429437799,
+      "path": "your_domain/your_topic/your_title.md"
+    }
+  ],
+  "totalDreams": 1,
+  "version": 1
+}

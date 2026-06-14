@@ -1,0 +1,5 @@
+- Admins maintain a list of test questions for each agent in the database.
+- Test questions are sent to an endpoint for evaluation.
+- Answers are compiled into a report stored in the database.
+- Reports can be evaluated by AI, which scores answers and suggests improvements.
+- Specific database migrations are required for implementation.

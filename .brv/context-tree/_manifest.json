@@ -1,67 +1,67 @@
 {
   "active_context": [
     {
-      "order": 1,
-      "path": "architecture/ai_runtime/_index.md",
-      "tokens": 991,
+      "order": 2,
+      "path": "facts/_index.md",
+      "tokens": 1489,
       "type": "summary"
-    },
-    {
-      "importance": 55,
-      "path": "facts/project/uzzapp_openai_slides_skill_pptx_rebuild_facts_2026_04_05.md",
-      "tokens": 976,
-      "type": "context"
     },
     {
       "importance": 50,
       "path": "architecture/ai_runtime/agent_framework_decision_for_realtime_flow.md",
-      "tokens": 1082,
+      "tokens": 1096,
       "type": "context"
     },
     {
       "importance": 50,
       "path": "architecture/ai_runtime/byterover_global_mode_cwd_requirement.md",
-      "tokens": 733,
+      "tokens": 747,
       "type": "context"
     },
     {
       "importance": 50,
       "path": "architecture/ai_runtime/context.md",
-      "tokens": 113,
+      "tokens": 117,
       "type": "context"
     },
     {
       "importance": 50,
       "path": "architecture/context.md",
-      "tokens": 201,
+      "tokens": 206,
+      "type": "context"
+    },
+    {
+      "importance": 50,
+      "path": "architecture/project_state/chatbot_oficial_snapshot_2026_03_31.md",
+      "tokens": 919,
       "type": "context"
     },
     {
       "importance": 50,
       "path": "architecture/project_state/context.md",
-      "tokens": 110,
+      "tokens": 113,
       "type": "context"
     },
     {
       "importance": 50,
       "path": "architecture/project_state/theme_default_fallback_light_mode_2026_03_31.md",
-      "tokens": 529,
+      "tokens": 542,
       "type": "context"
     },
     {
       "importance": 50,
       "path": "facts/context.md",
-      "tokens": 159,
+      "tokens": 164,
       "type": "context"
     }
   ],
-  "generated_at": "2026-04-05T13:07:46.827Z",
+  "generated_at": "2026-06-14T09:30:37.810Z",
   "lane_tokens": {
-    "contexts": 3903,
+    "contexts": 3904,
     "stubs": 0,
-    "summaries": 991
+    "summaries": 1489
   },
-  "source_fingerprint": "ea4dc3d590f037decea6456eb6229b10a0e896604b5145f12b9c79eb342b2080",
-  "total_tokens": 4894,
+  "source_fingerprint": "867c947fba210c10de487bbc4e82a832302c077e27376b5d9bcb0e471e7df77e",
+  "total_tokens": 5393,
   "version": 1
 }

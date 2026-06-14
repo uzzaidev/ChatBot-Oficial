@@ -1,0 +1,157 @@
+{
+  "completedAt": 1781428681268,
+  "id": "drm-1781428631186",
+  "operations": [
+    {
+      "action": "KEEP",
+      "file": "architecture/ai_runtime/agent_framework_decision_for_realtime_flow.md",
+      "needsReview": false,
+      "reason": "Contains actionable architectural guidance about realtime AI execution using callDirectAI, latency constraints, and framework isolation; not a placeholder or superseded.",
+      "type": "PRUNE"
+    },
+    {
+      "action": "KEEP",
+      "file": "architecture/ai_runtime/byterover_global_mode_cwd_requirement.md",
+      "needsReview": false,
+      "reason": "Records a durable environment requirement and repository instruction updates; still actionable despite being environment-specific.",
+      "type": "PRUNE"
+    },
+    {
+      "action": "KEEP",
+      "file": "architecture/project_state/chatbot_oficial_snapshot_2026_03_31.md",
+      "needsReview": false,
+      "reason": "Provides a useful dated repository snapshot with validation and drift observations; stale but not worthless.",
+      "type": "PRUNE"
+    },
+    {
+      "action": "KEEP",
+      "file": "architecture/project_state/commercial_deck_mobile_pdf_export_pattern.md",
+      "needsReview": false,
+      "reason": "Documents a reusable export pattern with concrete implementation details for mobile-friendly PDF generation.",
+      "type": "PRUNE"
+    },
+    {
+      "action": "KEEP",
+      "file": "architecture/ai_runtime/context.md",
+      "needsReview": false,
+      "reason": "Active topic summary for ai_runtime with real architectural concepts and related topic links.",
+      "type": "PRUNE"
+    },
+    {
+      "action": "KEEP",
+      "file": "architecture/context.md",
+      "needsReview": false,
+      "reason": "Active domain overview that defines scope and usage for architectural knowledge.",
+      "type": "PRUNE"
+    },
+    {
+      "action": "KEEP",
+      "file": "architecture/project_state/context.md",
+      "needsReview": false,
+      "reason": "Active topic summary describing the project_state snapshot area and its scope.",
+      "type": "PRUNE"
+    },
+    {
+      "action": "KEEP",
+      "file": "architecture/project_state/theme_default_fallback_light_mode_2026_03_31.md",
+      "needsReview": false,
+      "reason": "Contains a concrete, actionable UI/theme configuration change with structure, dependencies, and flow.",
+      "type": "PRUNE"
+    },
+    {
+      "action": "KEEP",
+      "file": "architecture/project_state/uzzapp_deck_export_only_hybrid_cta_light_pdf_2026_04_02.md",
+      "needsReview": false,
+      "reason": "Documents a specific export strategy refinement with concrete changes and related artifacts.",
+      "type": "PRUNE"
+    },
+    {
+      "action": "KEEP",
+      "file": "architecture/project_state/uzzapp_deck_export_only_hybrid_minimal_override_pattern_2026_04_02.md",
+      "needsReview": false,
+      "reason": "Contains a reusable refined PDF export pattern and concrete implementation details.",
+      "type": "PRUNE"
+    },
+    {
+      "action": "KEEP",
+      "file": "architecture/project_state/uzzapp_deck_export_only_hybrid_pdf_pattern_2026_04_02.md",
+      "needsReview": false,
+      "reason": "Describes a specific export-only hybrid PDF strategy with implementation and artifact details.",
+      "type": "PRUNE"
+    },
+    {
+      "action": "KEEP",
+      "file": "architecture/project_state/uzzapp_deck_html_pdf_export_pattern_2026_04_02.md",
+      "needsReview": false,
+      "reason": "Useful documentation of the HTML-to-PDF export pattern with preserved text and fidelity goals.",
+      "type": "PRUNE"
+    },
+    {
+      "action": "KEEP",
+      "file": "architecture/project_state/uzzapp_deck_live_html_vs_image_pdf_comparison_pattern.md",
+      "needsReview": false,
+      "reason": "Captures a diagnostic comparison pattern between live-html and image-based PDF exports; actionable and reusable.",
+      "type": "PRUNE"
+    },
+    {
+      "action": "KEEP",
+      "file": "architecture/project_state/uzzapp_deck_pdf_safe_framework_variant_2026_04_02.md",
+      "needsReview": false,
+      "reason": "Documents a reusable PDF-safe framework variant with concrete rendering substitutions.",
+      "type": "PRUNE"
+    },
+    {
+      "action": "KEEP",
+      "file": "facts/project/byterover_cwd_requirement_for_repository.md",
+      "needsReview": false,
+      "reason": "Durable operational fact about ByteRover cwd usage; still relevant and actionable.",
+      "type": "PRUNE"
+    },
+    {
+      "action": "KEEP",
+      "file": "architecture/project_state/uzzapp_native_gradient_html_background_alignment_2026_04_05.md",
+      "needsReview": false,
+      "reason": "Documents a concrete pipeline adjustment for native gradient alignment with validated output.",
+      "type": "PRUNE"
+    },
+    {
+      "action": "KEEP",
+      "file": "architecture/project_state/uzzapp_native_gradient_pptx_pipeline_2026_04_05.md",
+      "needsReview": false,
+      "reason": "Contains actionable implementation details for the PPTX pipeline and gradient post-processing.",
+      "type": "PRUNE"
+    },
+    {
+      "action": "KEEP",
+      "file": "architecture/project_state/uzzapp_openai_slides_skill_pptx_rebuild.md",
+      "needsReview": false,
+      "reason": "Describes a concrete native PPTX rebuild workflow with validation details; not a placeholder.",
+      "type": "PRUNE"
+    },
+    {
+      "action": "KEEP",
+      "file": "architecture/project_state/uzzapp_openai_slides_skill_pptx_rebuild_2026_04_05.md",
+      "needsReview": false,
+      "reason": "Contains specific rebuild steps, tooling setup, and validation notes for the UzzApp deck.",
+      "type": "PRUNE"
+    },
+    {
+      "action": "KEEP",
+      "file": "facts/context.md",
+      "needsReview": false,
+      "reason": "Active domain overview for repository-level facts with clear scope and usage.",
+      "type": "PRUNE"
+    }
+  ],
+  "startedAt": 1781428631186,
+  "status": "completed",
+  "summary": {
+    "consolidated": 0,
+    "errors": 0,
+    "flaggedForReview": 0,
+    "pruned": 20,
+    "synthesized": 0
+  },
+  "taskId": "54e341fa-7ac3-4bc3-934b-3a32780f1773",
+  "trigger": "agent-idle"
+}

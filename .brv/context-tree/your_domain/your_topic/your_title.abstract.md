@@ -1,0 +1,1 @@
+This document outlines the process of extracting and curating factual statements using the RLM approach, detailing test question storage, report evaluation, and database migrations.
