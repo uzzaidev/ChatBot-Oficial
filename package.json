@@ -33,7 +33,8 @@
     "cap:open:ios": "npx cap open ios",
     "contacts:xlsx-to-csv": "node scripts/xlsx-to-csv.js",
     "db:export": "node scripts/export-database-schema.js",
-    "db:map": "python scripts/analyze_supabase.py"
+    "db:map": "python scripts/analyze_supabase.py",
+    "backup": "node scripts/backup.mjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.56",
