@@ -1015,6 +1015,10 @@ export const AgentEditorModal = ({
                   <FileText className="w-4 h-4" />
                   Prompt Final
                 </TabsTrigger>
+                <TabsTrigger value="optimize" className="gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  Otimizar IA
+                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -2807,14 +2811,50 @@ export const AgentEditorModal = ({
                   onNavigate={handleNavigateToField}
                 />
 
-                <div className="mt-6 border-t border-border pt-6">
-                  <PromptEvaluatorPanel
-                    agentId={isNew ? null : agent?.id ?? null}
-                    agent={formData}
-                    onApply={handleApplySuggestion}
-                    onNavigate={handleNavigateToField}
-                  />
+                <div className="mt-6 flex items-center justify-between gap-4 rounded-lg border border-primary/30 bg-primary/5 p-4">
+                  <div className="flex items-center gap-3">
+                    <Sparkles className="h-5 w-5 shrink-0 text-primary" />
+                    <div>
+                      <p className="text-sm font-semibold">
+                        Quer melhorar este prompt?
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Um especialista de IA revisa, pontua e sugere ajustes
+                        que você aplica com um clique.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="shrink-0 gap-2"
+                    onClick={() => setActiveTab("optimize")}
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    Otimizar com IA
+                  </Button>
                 </div>
+              </TabsContent>
+
+              {/* OPTIMIZE (AI PROMPT EVALUATOR) TAB */}
+              <TabsContent value="optimize" className="p-6 mt-0">
+                <div className="mb-5">
+                  <h2 className="flex items-center gap-2 text-lg font-semibold">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                    Otimizar prompt com IA
+                  </h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Um engenheiro de prompts (IA) revisa o prompt compilado,
+                    atribui uma nota e sugere melhorias por seção. Você aprova e
+                    aplica cada sugestão direto no editor.
+                  </p>
+                </div>
+                <PromptEvaluatorPanel
+                  agentId={isNew ? null : agent?.id ?? null}
+                  agent={formData}
+                  onApply={handleApplySuggestion}
+                  onNavigate={handleNavigateToField}
+                />
               </TabsContent>
             </ScrollArea>
           </Tabs>
