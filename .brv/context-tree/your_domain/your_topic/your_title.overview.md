@@ -1,5 +1,6 @@
-- Admins maintain a list of test questions for each agent in the database.
-- Test questions are sent to an endpoint for evaluation.
-- Answers are compiled into a report stored in the database.
-- Reports can be evaluated by AI, which scores answers and suggests improvements.
-- Specific database migrations are required for implementation.
+
+- Title: Your Title
+- Summary: Curated knowledge from RLM context
+- Task: Curate content from extracted facts
+- Structure: Factual statements extracted and organized
+- Created and updated on 2026-06-14
