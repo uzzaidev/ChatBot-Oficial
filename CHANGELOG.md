@@ -8,6 +8,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-06-18
+
+### feat
+- Implementada funcionalidade de diff ao nível de palavra no componente `PromptSuggestionCard`, permitindo visualizar mudanças entre texto atual e sugerido em formato lado a lado ou inline estilo git.
+- Adicionado botão para alternar entre visualização lado a lado e diff inline com destaque colorido para palavras removidas e adicionadas.
+  - Arquivos: `src/components/agents/PromptSuggestionCard.tsx`
+  - Confiança: alta
+
 ## 2026-06-14
 
 ### feat
