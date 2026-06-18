@@ -11,6 +11,13 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-06-14
 
 ### feat
+- Adicionado script de backup para gerenciamento da base de dados, que lê a conexão do arquivo .env.local e executa o backup via pg_dump ajustando a porta para compatibilidade com Supabase
+  - Arquivos: `scripts/backup.mjs`, `package.json`
+  - Confiança: alta
+
+## 2026-06-14
+
+### feat
 - Adicionada aba "Otimizar IA" no modal de edição de agentes com painel avaliador de prompts que revisa, pontua e sugere melhorias aplicáveis com um clique
   - Arquivos: `src/components/agents/AgentEditorModal.tsx`
   - Confiança: alta
