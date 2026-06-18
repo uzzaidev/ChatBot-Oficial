@@ -11,6 +11,22 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-06-18
 
 ### feat
+- Implementadas APIs para upload de mídia e listagem de documentos da base de conhecimento, permitindo anexar imagens e documentos em blocos de mensagem.
+- Adicionado suporte a anexos de mídia (imagem ou documento) com legenda opcional no bloco de mensagem do fluxo, incluindo interface para seleção da base ou upload direto.
+- Adaptado executor de fluxo para enviar mensagens com anexos de mídia via WhatsApp (imagem ou documento) com suporte a legenda.
+  - Arquivos: `src/app/api/flows/media/upload/route.ts`, `src/app/api/flows/media/documents/route.ts`, `src/components/flows/blocks/MessageBlock.tsx`, `src/components/flows/properties/MessageBlockProperties.tsx`, `src/lib/flows/flowExecutor.ts`
+  - Confiança: alta
+
+### fix
+- Ajustado controle de limite de budget para ser ativado apenas se variável de ambiente `BUDGET_ENFORCEMENT_ENABLED` estiver `true`, evitando bloqueios inesperados.
+- Tratamento de erro na API de teste de agentes para retornar status 402 com mensagem clara quando limite de budget é atingido.
+  - Arquivos: `src/lib/direct-ai-client.ts`, `src/nodes/generateAIResponse.ts`, `src/app/api/agents/[id]/test/route.ts`
+  - Evidência: checagem condicional da variável de ambiente e retorno HTTP 402 no handler
+  - Confiança: alta
+
+## 2026-06-18
+
+### feat
 - Adicionada funcionalidade completa de recuperação e redefinição de senha via email, incluindo páginas para solicitar link de redefinição (`/forgot-password`) e para criar nova senha (`/reset-password`).
 - Implementado fluxo seguro que não revela existência do email na solicitação de recuperação e valida sessão de recuperação antes de permitir alteração da senha.
 - Adicionado link "Esqueceu a senha?" na tela de login para acesso rápido à recuperação.
