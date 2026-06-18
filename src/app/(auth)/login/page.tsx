@@ -357,12 +357,20 @@ function LoginContent() {
           </div>
 
           <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-foreground/80 mb-2"
-            >
-              Senha
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-foreground/80"
+              >
+                Senha
+              </label>
+              <Link
+                href="/forgot-password"
+                className="text-xs text-primary hover:text-primary/80 font-medium hover:underline transition-colors"
+              >
+                Esqueceu a senha?
+              </Link>
+            </div>
             <input
               id="password"
               type="password"

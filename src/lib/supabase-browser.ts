@@ -108,6 +108,39 @@ export const signInWithEmail = async (
 };
 
 /**
+ * Helper: Envia email de redefinição de senha
+ *
+ * O usuário recebe um link que (via /auth/confirm com type=recovery) cria uma
+ * sessão de recuperação e cai em /reset-password para definir a nova senha.
+ *
+ * @param email Email da conta
+ *
+ * @example
+ * const { error } = await resetPasswordForEmail('user@example.com')
+ */
+export const resetPasswordForEmail = async (email: string) => {
+  const supabase = createBrowserClient();
+  const redirectTo = `${window.location.origin}/reset-password`;
+  return supabase.auth.resetPasswordForEmail(email, { redirectTo });
+};
+
+/**
+ * Helper: Define uma nova senha para o usuário autenticado
+ *
+ * Requer uma sessão ativa (ex: a sessão de recuperação criada pelo link do
+ * email de reset).
+ *
+ * @param password Nova senha
+ *
+ * @example
+ * const { error } = await updatePassword('novaSenhaSegura')
+ */
+export const updatePassword = async (password: string) => {
+  const supabase = createBrowserClient();
+  return supabase.auth.updateUser({ password });
+};
+
+/**
  * Helper: Logout
  *
  * @example
