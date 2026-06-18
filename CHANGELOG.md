@@ -11,6 +11,13 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-06-18
 
 ### feat
+- Adicionado script para gerar diagrama Excalidraw da arquitetura do UzzApp, representando o fluxo do chatbot SaaS multi-tenant para WhatsApp, incluindo componentes como webhook, pipeline de processamento, IA, serviços externos e dashboard.
+  - Arquivos: `scripts/gen-excalidraw.mjs`, `UzzApp-Arquitetura.excalidraw`
+  - Confiança: alta
+
+## 2026-06-18
+
+### feat
 - Implementadas APIs para upload de mídia e listagem de documentos da base de conhecimento, permitindo anexar imagens e documentos em blocos de mensagem.
 - Adicionado suporte a anexos de mídia (imagem ou documento) com legenda opcional no bloco de mensagem do fluxo, incluindo interface para seleção da base ou upload direto.
 - Adaptado executor de fluxo para enviar mensagens com anexos de mídia via WhatsApp (imagem ou documento) com suporte a legenda.
