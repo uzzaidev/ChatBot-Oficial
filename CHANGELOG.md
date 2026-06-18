@@ -10,6 +10,16 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-06-18
 
+### feat
+- Adicionada funcionalidade completa de recuperação e redefinição de senha via email, incluindo páginas para solicitar link de redefinição (`/forgot-password`) e para criar nova senha (`/reset-password`).
+- Implementado fluxo seguro que não revela existência do email na solicitação de recuperação e valida sessão de recuperação antes de permitir alteração da senha.
+- Adicionado link "Esqueceu a senha?" na tela de login para acesso rápido à recuperação.
+- Atualizadas rotas e helpers para suportar o fluxo de recuperação com Supabase, incluindo redirecionamento após confirmação do token.
+  - Arquivos: `src/app/(auth)/forgot-password/page.tsx`, `src/app/(auth)/reset-password/page.tsx`, `src/app/(auth)/login/page.tsx`, `src/app/auth/confirm/route.ts`, `src/lib/supabase-browser.ts`
+  - Confiança: alta
+
+## 2026-06-18
+
 ### docs
 - Atualizado comando no arquivo de exemplo de ambiente móvel para refletir nome correto do arquivo de destino
   - Arquivos: `.env.mobile.example`
