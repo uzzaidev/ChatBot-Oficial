@@ -305,12 +305,16 @@ export const generateAIResponse = async (
       content: `${customerName}: ${message}`,
     });
 
-    // 💰 FASE 1: Budget Enforcement - Check before API call
-    const budgetAvailable = await checkBudgetAvailable(config.id);
-    if (!budgetAvailable) {
-      throw new Error(
-        "❌ Limite de budget atingido. Entre em contato com o suporte para aumentar seu limite.",
-      );
+    // 💰 Budget Enforcement — DESLIGADO por padrão.
+    // Para reativar o bloqueio por limite, defina BUDGET_ENFORCEMENT_ENABLED=true.
+    // (O uso continua sendo registrado em gateway_usage_logs independente disso.)
+    if (process.env.BUDGET_ENFORCEMENT_ENABLED === "true") {
+      const budgetAvailable = await checkBudgetAvailable(config.id);
+      if (!budgetAvailable) {
+        throw new Error(
+          "❌ Limite de budget atingido. Entre em contato com o suporte para aumentar seu limite.",
+        );
+      }
     }
 
     // 🌐 SEMPRE usa callDirectAI() - credenciais diretas do Vault do cliente

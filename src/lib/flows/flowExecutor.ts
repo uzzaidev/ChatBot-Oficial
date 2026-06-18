@@ -11,7 +11,11 @@
  */
 
 import { getClientConfig } from "@/lib/config";
-import { sendTextMessage as sendWhatsAppText } from "@/lib/meta";
+import {
+  sendDocumentMessage,
+  sendImageMessage,
+  sendTextMessage as sendWhatsAppText,
+} from "@/lib/meta";
 import { createServiceRoleClient } from "@/lib/supabase";
 import {
   ListSection as InteractiveListSection,
@@ -386,18 +390,54 @@ export class FlowExecutor {
     clientId: string,
     block: FlowBlock,
   ): Promise<void> {
-    const { messageText } = block.data;
+    const {
+      messageText,
+      mediaUrl,
+      mediaType,
+      mediaFilename,
+      mediaCaption,
+    } = block.data as {
+      messageText?: string;
+      mediaUrl?: string;
+      mediaType?: "image" | "document";
+      mediaFilename?: string;
+      mediaCaption?: string;
+    };
 
-    if (!messageText) {
-      throw new Error("Message block has no messageText");
+    if (!messageText && !mediaUrl) {
+      throw new Error("Message block has no text or attachment");
     }
 
-    console.log(
-      `💬 [FlowExecutor] Sending message to ${phone}: ${messageText}`,
-    );
+    // 1) Text message (if any)
+    if (messageText) {
+      console.log(
+        `💬 [FlowExecutor] Sending message to ${phone}: ${messageText}`,
+      );
+      await this.sendTextMessage(phone, clientId, messageText);
+      await this.saveOutgoingMessage(phone, clientId, messageText);
+    }
 
-    await this.sendTextMessage(phone, clientId, messageText);
-    await this.saveOutgoingMessage(phone, clientId, messageText);
+    // 2) Attachment (image or document) with optional caption
+    if (mediaUrl) {
+      const caption = mediaCaption || undefined;
+      const filename = mediaFilename || "arquivo";
+      console.log(
+        `📎 [FlowExecutor] Sending ${mediaType || "document"} to ${phone}: ${filename}`,
+      );
+      const config = (await getClientConfig(clientId)) || undefined;
+
+      if (mediaType === "image") {
+        await sendImageMessage(phone, mediaUrl, caption, config);
+      } else {
+        await sendDocumentMessage(phone, mediaUrl, filename, caption, config);
+      }
+
+      await this.saveOutgoingMessage(
+        phone,
+        clientId,
+        caption || `[${(mediaType || "document").toUpperCase()}] ${filename}`,
+      );
+    }
   }
 
   /**
