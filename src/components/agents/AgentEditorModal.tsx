@@ -331,7 +331,7 @@ const DEFAULT_AGENT: Partial<Agent> = {
   groq_model: "llama-3.3-70b-versatile",
   temperature: 0.7,
   max_tokens: 2000,
-  reasoning_effort: "low",
+  reasoning_effort: "medium",
   max_chat_history: 15,
   max_input_tokens: 24000,
   max_history_tokens: 6000,
@@ -1826,7 +1826,7 @@ export const AgentEditorModal = ({
                     <div className="space-y-2">
                       <Label>Reasoning</Label>
                       <Select
-                        value={formData.reasoning_effort || "low"}
+                        value={formData.reasoning_effort || "medium"}
                         onValueChange={(v) =>
                           updateField(
                             "reasoning_effort",

@@ -497,7 +497,7 @@ export const callDirectAI = async (
     }
 
     if (isReasoningModel) {
-      const rawEffort = config.settings?.reasoningEffort || "low";
+      const rawEffort = config.settings?.reasoningEffort || "medium";
       const effectiveEffort = getEffectiveReasoningEffort(model, rawEffort);
 
       generateParams.providerOptions = {

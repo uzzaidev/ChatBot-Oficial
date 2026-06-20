@@ -317,7 +317,7 @@ export async function POST(request: NextRequest) {
       groq_model: body.groq_model || "llama-3.3-70b-versatile",
       temperature: body.temperature ?? 0.7,
       max_tokens: body.max_tokens ?? 2000,
-      reasoning_effort: body.reasoning_effort ?? "low",
+      reasoning_effort: body.reasoning_effort ?? "medium",
 
       // Context budgets
       max_chat_history: body.max_chat_history ?? 15,

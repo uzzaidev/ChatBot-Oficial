@@ -260,7 +260,12 @@ export const getClientConfig = async (
       maxInputTokens: client.settings?.max_input_tokens ?? 24000,
       maxHistoryTokens: client.settings?.max_history_tokens ?? 6000,
       maxKnowledgeTokens: client.settings?.max_knowledge_tokens ?? 6000,
-      reasoningEffort: client.settings?.reasoning_effort ?? "low",
+      // Default "medium": com "low" os modelos de reasoning (gpt-5.x) raciocinam
+      // pouco no canal interno e tendem a "pensar em voz alta" no canal de
+      // resposta, vazando chain-of-thought em inglês ao cliente. "medium" dá
+      // orçamento de reasoning real e reduz esse vazamento na raiz. Tenants que
+      // configuram reasoning_effort explicitamente continuam mandando.
+      reasoningEffort: client.settings?.reasoning_effort ?? "medium",
       temperature: client.settings?.temperature ?? 0.7,
       enableRAG: client.settings?.enable_rag ?? false,
       enableTools: client.settings?.enable_tools ?? false,

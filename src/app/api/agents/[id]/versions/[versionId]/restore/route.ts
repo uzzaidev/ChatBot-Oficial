@@ -135,7 +135,7 @@ export const POST = async (
       max_input_tokens: (snapshot.max_input_tokens as number | null) ?? 24000,
       max_history_tokens: (snapshot.max_history_tokens as number | null) ?? 6000,
       max_knowledge_tokens: (snapshot.max_knowledge_tokens as number | null) ?? 6000,
-      reasoning_effort: (snapshot.reasoning_effort as string | null) ?? "low",
+      reasoning_effort: (snapshot.reasoning_effort as string | null) ?? "medium",
       max_chat_history: snapshot.max_chat_history as number,
       batching_delay_seconds: snapshot.batching_delay_seconds as number | null,
       message_delay_ms: snapshot.message_delay_ms as number | null,
