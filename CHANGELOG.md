@@ -11,6 +11,14 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-06-20
 
 ### feat
+- Adicionado script `build_infra_frame.py` para geração automática do diagrama de arquitetura de infraestrutura
+- Atualizado arquivo de diagrama `UzzApp-Arquitetura.excalidraw` com nova estrutura visual detalhada da arquitetura de infraestrutura e deploy, incluindo front-end, back-end serverless, banco de dados, nuvem e serviços externos
+  - Arquivos: `scripts/build_infra_frame.py`, `UzzApp-Arquitetura.excalidraw`
+  - Confiança: alta
+
+## 2026-06-20
+
+### feat
 - Atualizado o valor padrão de `reasoning_effort` de "low" para "medium" para agentes novos e existentes sem configuração explícita, visando melhorar o raciocínio interno dos modelos GPT-5.x e reduzir vazamento de chain-of-thought em inglês nas respostas ao cliente.
 - Implementada filtragem defensiva para remover trechos de raciocínio em inglês vazados nas respostas, mantendo apenas o conteúdo válido em português brasileiro.
 - Ajustada a formatação das respostas para evitar exposição de raciocínio interno e melhorar a clareza do texto enviado ao cliente.
