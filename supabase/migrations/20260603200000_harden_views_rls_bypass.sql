@@ -51,7 +51,7 @@ END $$;
 COMMIT;
 
 -- =====================================================================
--- ROLLBACK:
+-- ROLLBACK:ddddd
 --   GRANT SELECT ON public.client_secrets_decrypted TO authenticated, anon;
 --   ALTER VIEW public.budget_status SET (security_invoker = false); GRANT SELECT ... TO anon;
 --   (idem para as outras)
