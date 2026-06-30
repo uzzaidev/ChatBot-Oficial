@@ -11,6 +11,14 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-06-30
 
 ### fix
+- Atualizado comentário de rollback para maior clareza no script de migração `20260603200000_harden_views_rls_bypass.sql`
+  - Arquivos: `supabase/migrations/20260603200000_harden_views_rls_bypass.sql`
+  - Evidência: modificação no comentário de rollback no final do arquivo de migração
+  - Confiança: alta
+
+## 2026-06-30
+
+### fix
 - Ajustado consulta em `captureLeadSource.ts` para evitar erro ao buscar tags de cartão, usando `.maybeSingle()` em vez de `.single()`.
 - Corrigidos dois erros recorrentes que geravam muitos logs no banco de dados:
   1) Tornada a coluna `phone` da tabela `usage_logs` nullable para evitar falhas em inserts sem telefone.
