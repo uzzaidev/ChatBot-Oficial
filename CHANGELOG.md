@@ -11,6 +11,17 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-06-30
 
 ### fix
+- Ajustado consulta em `captureLeadSource.ts` para evitar erro ao buscar tags de cartão, usando `.maybeSingle()` em vez de `.single()`.
+- Corrigidos dois erros recorrentes que geravam muitos logs no banco de dados:
+  1) Tornada a coluna `phone` da tabela `usage_logs` nullable para evitar falhas em inserts sem telefone.
+  2) Atualizada restrição `message_traces_status_check` para permitir o status `success`, evitando erros e spam de logs.
+  - Arquivos: `src/nodes/captureLeadSource.ts`, `supabase/migrations/20260630140000_fix_recurring_log_errors.sql`
+  - Evidência: alteração no select para `.maybeSingle()` e migração SQL que altera constraints e coluna nullable para evitar erros de inserção e restrição.
+  - Confiança: alta
+
+## 2026-06-30
+
+### fix
 - Reforçado controle de acesso em views que ignoravam Row Level Security (RLS), evitando vazamento de dados sensíveis entre tenants. A view `client_secrets_decrypted` teve todos os acessos públicos revogados, restringindo uso apenas ao backend, e outras views foram configuradas para usar `security_invoker=true` e tiveram permissões públicas removidas.
   - Arquivos: `supabase/migrations/20260603200000_harden_views_rls_bypass.sql`
   - Evidência: migração que revoga permissões públicas e ativa `security_invoker` para views específicas, corrigindo exposição de chaves secretas.
