@@ -8,6 +8,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-06-30
+
+### feat
+- Ativado Row Level Security (RLS) em 8 tabelas que estavam sem restrição para evitar acesso cross-tenant não autorizado, incluindo `clients`, `user_profiles`, tabelas internas `crm_*` e `feature_flags`. Políticas foram criadas para restringir leitura e escrita por tenant e permitir acesso admin, mantendo funcionamento normal do backend via service_role que ignora RLS.
+  - Arquivos: `supabase/migrations/20260603190000_enable_rls_remaining_tables.sql`
+  - Confiança: alta
+
 ## 2026-06-20
 
 ### feat
