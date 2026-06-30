@@ -10,6 +10,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-06-30
 
+### fix
+- Reforçado controle de acesso em views que ignoravam Row Level Security (RLS), evitando vazamento de dados sensíveis entre tenants. A view `client_secrets_decrypted` teve todos os acessos públicos revogados, restringindo uso apenas ao backend, e outras views foram configuradas para usar `security_invoker=true` e tiveram permissões públicas removidas.
+  - Arquivos: `supabase/migrations/20260603200000_harden_views_rls_bypass.sql`
+  - Evidência: migração que revoga permissões públicas e ativa `security_invoker` para views específicas, corrigindo exposição de chaves secretas.
+  - Confiança: alta
+
+## 2026-06-30
+
 ### feat
 - Ativado Row Level Security (RLS) em 8 tabelas que estavam sem restrição para evitar acesso cross-tenant não autorizado, incluindo `clients`, `user_profiles`, tabelas internas `crm_*` e `feature_flags`. Políticas foram criadas para restringir leitura e escrita por tenant e permitir acesso admin, mantendo funcionamento normal do backend via service_role que ignora RLS.
   - Arquivos: `supabase/migrations/20260603190000_enable_rls_remaining_tables.sql`
