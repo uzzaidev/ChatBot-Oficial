@@ -23,6 +23,7 @@ import {
   sendInteractiveButtons,
   sendInteractiveList,
 } from "@/lib/whatsapp/interactiveMessages";
+import { META_BYTE_LIMITS, truncateToBytes } from "@/lib/whatsapp/byteLimits";
 import {
   FlowBlock,
   FlowExecution,
@@ -464,13 +465,17 @@ export class FlowExecutor {
 
     console.log(`📋 [FlowExecutor] Sending interactive list to ${phone}`);
 
-    // Convert to library format
+    // Convert to library format.
+    // Defensive truncation by UTF-8 bytes so legacy/overlong values (accents,
+    // emojis) don't crash the flow — Meta rejects fields over their byte limit.
     const sections: InteractiveListSection[] = listSections.map((section) => ({
-      title: section.title,
+      title: truncateToBytes(section.title, META_BYTE_LIMITS.listSectionTitle),
       rows: section.rows.map((row) => ({
         id: row.id,
-        title: row.title,
-        description: row.description,
+        title: truncateToBytes(row.title, META_BYTE_LIMITS.listRowTitle),
+        description: row.description
+          ? truncateToBytes(row.description, META_BYTE_LIMITS.listRowDescription)
+          : row.description,
       })),
     }));
 
@@ -524,10 +529,10 @@ export class FlowExecutor {
 
     console.log(`🔘 [FlowExecutor] Sending interactive buttons to ${phone}`);
 
-    // Convert to library format
+    // Convert to library format (truncate title by bytes — see list block note)
     const buttonsList: InteractiveReplyButton[] = buttons.map((btn) => ({
       id: btn.id,
-      title: btn.title,
+      title: truncateToBytes(btn.title, META_BYTE_LIMITS.buttonTitle),
     }));
 
     const clientConfig = await getClientConfig(clientId);
