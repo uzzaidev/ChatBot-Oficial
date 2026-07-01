@@ -8,6 +8,16 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-07-01
+
+### feat
+- Implementado componente `ByteLimitedInput` para inputs com limite de bytes UTF-8, considerando acentuação e emojis, com contador visual e truncamento automático.
+- Integrado `ByteLimitedInput` nos componentes de propriedades interativas (`InteractiveButtonsProperties`, `InteractiveListProperties`) para garantir limites de bytes conforme especificação Meta.
+- Adicionado módulo `byteLimits` com constantes de limites e funções utilitárias para contagem e truncamento de bytes UTF-8.
+- Aplicado truncamento defensivo por bytes UTF-8 no executor de fluxos (`flowExecutor.ts`) para evitar envio de campos que excedam limites da API Meta.
+  - Arquivos: `src/components/flows/properties/ByteLimitedInput.tsx`, `src/components/flows/properties/InteractiveButtonsProperties.tsx`, `src/components/flows/properties/InteractiveListProperties.tsx`, `src/lib/flows/flowExecutor.ts`, `src/lib/whatsapp/byteLimits.ts`
+  - Confiança: alta
+
 ## 2026-06-30
 
 ### fix
