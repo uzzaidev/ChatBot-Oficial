@@ -8,6 +8,39 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-07-04
+
+### chore
+- Configurado ByteRover local memory com checkpoint de 2026-04-16 para suporte a memória persistente
+  - Arquivos: `.brv/context-tree/ai-system/context.md`
+  - Confiança: alta
+
+### feat
+- Adicionado suporte completo para build e publicação iOS sem Mac físico usando GitHub Actions e fastlane
+- Incluído workflow GitHub Actions para bootstrap de certificados iOS (`ios-match-bootstrap.yml`) e release (`ios-release.yml`)
+- Criados playbooks detalhados para iOS sem Mac, Firebase push via CLI, App Store review rejeições, screenshots headless, GitHub secrets CLI, Google Play publishing CLI e setup Capacitor para mobile
+- Implementadas features nativas para app mobile Capacitor: push notifications via Firebase/APNs, biometria, deep linking, câmera, status bar, rede, haptics e outras integrações nativas para aprovação Apple App Store
+- Atualizado projeto Android para versão 2.1.0 com incrementos em `versionCode` e `versionName`, e ajustes em build.gradle e capacitor settings para suporte a novos plugins Firebase e Capacitor
+- Ajustado `capacitor.config.ts` para desabilitar plugins CapacitorCookies e CapacitorHttp no iOS para corrigir bug de sessão e relogin, além de configurar FirebaseMessaging nativo
+- Adicionados scripts e documentação para setup e automação de CI/CD mobile (iOS e Android)
+  - Arquivos principais: `.github/workflows/ios-match-bootstrap.yml`, `.github/workflows/ios-release.yml`, `capacitor.config.ts`, `android/app/build.gradle`, `android/app/capacitor.build.gradle`, `android/capacitor.settings.gradle`, `fastlane/*`, `scripts/setup-ios-ci-secrets.mjs`, `docs/playbooks/**`, `docs/universal-mobile-app/**`, `src/components/NativeBottomTabBar.tsx`, `src/lib/nativeCamera.ts`, `src/lib/pushNotifications.ts`, `src/components/NativeNetworkBanner.tsx`, entre outros
+  - Confiança: alta
+
+### docs
+- Adicionados e atualizados playbooks e documentação técnica para:
+  - Setup Capacitor mobile (Android/iOS)
+  - Publicação Google Play via CLI
+  - Publicação iOS sem Mac via GitHub Actions + fastlane
+  - Firebase Cloud Messaging push via CLI
+  - GitHub Actions secrets via CLI
+  - Apple App Store review rejeições comuns e soluções
+  - Captura headless de screenshots para lojas
+  - Features nativas do app Capacitor para aprovação Apple
+  - Checklists de lançamento e requisitos de assets para lojas
+- Documentação detalhada de arquitetura AI, banco de dados, módulos, pipeline, multi-tenancy, padrões de código e tech debt atualizada com checkpoint 2026-04-16
+  - Arquivos: `docs/playbooks/**`, `.brv/context-tree/**`, `MEMORY_POLICY.md`
+  - Confiança: alta
+
 ## 2026-07-01
 
 ### feat
