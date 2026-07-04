@@ -1,6 +1,12 @@
 "use client";
 
+import { AgentQAPanel } from "@/components/agents/AgentQAPanel";
 import { AgentVersionHistory } from "@/components/agents/AgentVersionHistory";
+import { PromptEvaluatorPanel } from "@/components/agents/PromptEvaluatorPanel";
+import {
+  RawPromptPreview,
+  type AgentEditorTab,
+} from "@/components/agents/RawPromptPreview";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,12 +45,14 @@ import {
   getModelPricing,
   OPENAI_PRICING_URL,
 } from "@/lib/openai-pricing";
+import type { PromptApplyTarget } from "@/lib/prompt-builder";
 import type { Agent, DaySchedule } from "@/lib/types";
 import {
   Bot,
   Brain,
   Check,
   CheckCircle2,
+  ClipboardList,
   Clock,
   FileText,
   History,
@@ -323,7 +331,7 @@ const DEFAULT_AGENT: Partial<Agent> = {
   groq_model: "llama-3.3-70b-versatile",
   temperature: 0.7,
   max_tokens: 2000,
-  reasoning_effort: "low",
+  reasoning_effort: "medium",
   max_chat_history: 15,
   max_input_tokens: 24000,
   max_history_tokens: 6000,
@@ -343,6 +351,7 @@ const DEFAULT_AGENT: Partial<Agent> = {
     { day: 6, active: false, start: "09:00", end: "18:00" },
   ],
   business_hours_off_message: "",
+  qa_questions: [],
 };
 
 // =====================================================
@@ -662,6 +671,30 @@ export const AgentEditorModal = ({
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  // Navigate from the raw prompt preview to the field that controls a section
+  const handleNavigateToField = (tab: AgentEditorTab, fieldId?: string) => {
+    setActiveTab(tab);
+    if (!fieldId) return;
+    // Wait for the target tab to render before focusing/scrolling.
+    setTimeout(() => {
+      const el = document.getElementById(fieldId);
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      const focusable =
+        el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement
+          ? el
+          : el.querySelector<HTMLElement>(
+              "textarea, input, [role='combobox'], button",
+            );
+      focusable?.focus({ preventScroll: true });
+      el.classList.add("ring-2", "ring-primary", "ring-offset-2");
+      setTimeout(
+        () => el.classList.remove("ring-2", "ring-primary", "ring-offset-2"),
+        1600,
+      );
+    }, 120);
+  };
+
   const updatePromptSection = (
     field: keyof NonNullable<Agent["prompt_sections"]>,
     value: string,
@@ -673,6 +706,15 @@ export const AgentEditorModal = ({
         [field]: value,
       },
     }));
+  };
+
+  // Apply an AI prompt-evaluator suggestion back into the right editor field.
+  const handleApplySuggestion = (target: PromptApplyTarget, value: string) => {
+    if (target.kind === "field") {
+      updateField(target.field, value as Agent[typeof target.field]);
+    } else if (target.kind === "section") {
+      updatePromptSection(target.section, value);
+    }
   };
 
   // Handle save
@@ -965,6 +1007,18 @@ export const AgentEditorModal = ({
                   <Send className="w-4 h-4" />
                   Testar
                 </TabsTrigger>
+                <TabsTrigger value="qa" className="gap-2" disabled={isNew}>
+                  <ClipboardList className="w-4 h-4" />
+                  QA
+                </TabsTrigger>
+                <TabsTrigger value="raw-prompt" className="gap-2">
+                  <FileText className="w-4 h-4" />
+                  Prompt Final
+                </TabsTrigger>
+                <TabsTrigger value="optimize" className="gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  Otimizar IA
+                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -1089,7 +1143,7 @@ export const AgentEditorModal = ({
                 <Separator />
 
                 {/* Tone & Style */}
-                <div className="space-y-4">
+                <div className="space-y-4" id="agent-field-communication_style">
                   <h3 className="text-lg font-semibold">
                     Tom & Estilo de Comunicação
                   </h3>
@@ -1205,7 +1259,7 @@ export const AgentEditorModal = ({
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Papel & Objetivo</h3>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2" id="agent-field-role">
                     <Label htmlFor="role">
                       Descrição do Papel / System Prompt
                       <span className="text-xs text-muted-foreground ml-2">
@@ -1225,7 +1279,7 @@ export const AgentEditorModal = ({
                     />
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2" id="agent-field-goal">
                     <Label htmlFor="goal">
                       Objetivo Principal
                       <span className="text-xs text-muted-foreground ml-2">
@@ -1245,7 +1299,10 @@ export const AgentEditorModal = ({
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div className="space-y-2">
+                    <div
+                      className="space-y-2"
+                      id="agent-field-business_context"
+                    >
                       <Label>Contexto do Negocio</Label>
                       <Textarea
                         value={formData.prompt_sections?.business_context || ""}
@@ -1261,7 +1318,7 @@ export const AgentEditorModal = ({
                       />
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-2" id="agent-field-response_rules">
                       <Label>Regras de Resposta</Label>
                       <Textarea
                         value={formData.prompt_sections?.response_rules || ""}
@@ -1274,7 +1331,7 @@ export const AgentEditorModal = ({
                       />
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-2" id="agent-field-boundaries">
                       <Label>Limites e Assuntos Proibidos</Label>
                       <Textarea
                         value={formData.prompt_sections?.boundaries || ""}
@@ -1287,7 +1344,10 @@ export const AgentEditorModal = ({
                       />
                     </div>
 
-                    <div className="space-y-2">
+                    <div
+                      className="space-y-2"
+                      id="agent-field-escalation_policy"
+                    >
                       <Label>Politica de Escalacao</Label>
                       <Textarea
                         value={
@@ -1306,7 +1366,7 @@ export const AgentEditorModal = ({
                     </div>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2" id="agent-field-examples">
                     <Label>Exemplos e Instrucoes Avancadas</Label>
                     <Textarea
                       value={
@@ -1330,7 +1390,7 @@ export const AgentEditorModal = ({
                   <h3 className="text-lg font-semibold">Mensagens Especiais</h3>
 
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
+                    <div className="space-y-2" id="agent-field-greeting">
                       <Label htmlFor="greeting">Mensagem de Saudação</Label>
                       <Textarea
                         id="greeting"
@@ -1344,7 +1404,7 @@ export const AgentEditorModal = ({
                       />
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-2" id="agent-field-fallback">
                       <Label htmlFor="fallback">Mensagem de Fallback</Label>
                       <Textarea
                         id="fallback"
@@ -1766,7 +1826,7 @@ export const AgentEditorModal = ({
                     <div className="space-y-2">
                       <Label>Reasoning</Label>
                       <Select
-                        value={formData.reasoning_effort || "low"}
+                        value={formData.reasoning_effort || "medium"}
                         onValueChange={(v) =>
                           updateField(
                             "reasoning_effort",
@@ -2729,6 +2789,72 @@ export const AgentEditorModal = ({
                     </Button>
                   </div>
                 </div>
+              </TabsContent>
+
+              {/* QA TAB */}
+              <TabsContent value="qa" className="p-6 mt-0">
+                <AgentQAPanel
+                  agentId={isNew ? null : agent?.id ?? null}
+                  agent={formData}
+                  onQuestionsChange={(questions) =>
+                    updateField("qa_questions", questions)
+                  }
+                  onApplySuggestion={handleApplySuggestion}
+                  onNavigate={handleNavigateToField}
+                />
+              </TabsContent>
+
+              {/* RAW PROMPT TAB */}
+              <TabsContent value="raw-prompt" className="p-6 mt-0">
+                <RawPromptPreview
+                  agent={formData}
+                  onNavigate={handleNavigateToField}
+                />
+
+                <div className="mt-6 flex items-center justify-between gap-4 rounded-lg border border-primary/30 bg-primary/5 p-4">
+                  <div className="flex items-center gap-3">
+                    <Sparkles className="h-5 w-5 shrink-0 text-primary" />
+                    <div>
+                      <p className="text-sm font-semibold">
+                        Quer melhorar este prompt?
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Um especialista de IA revisa, pontua e sugere ajustes
+                        que você aplica com um clique.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="shrink-0 gap-2"
+                    onClick={() => setActiveTab("optimize")}
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    Otimizar com IA
+                  </Button>
+                </div>
+              </TabsContent>
+
+              {/* OPTIMIZE (AI PROMPT EVALUATOR) TAB */}
+              <TabsContent value="optimize" className="p-6 mt-0">
+                <div className="mb-5">
+                  <h2 className="flex items-center gap-2 text-lg font-semibold">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                    Otimizar prompt com IA
+                  </h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Um engenheiro de prompts (IA) revisa o prompt compilado,
+                    atribui uma nota e sugere melhorias por seção. Você aprova e
+                    aplica cada sugestão direto no editor.
+                  </p>
+                </div>
+                <PromptEvaluatorPanel
+                  agentId={isNew ? null : agent?.id ?? null}
+                  agent={formData}
+                  onApply={handleApplySuggestion}
+                  onNavigate={handleNavigateToField}
+                />
               </TabsContent>
             </ScrollArea>
           </Tabs>

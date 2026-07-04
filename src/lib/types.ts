@@ -682,9 +682,85 @@ export interface Agent {
   compiled_system_prompt: string | null;
   compiled_formatter_prompt: string | null;
 
+  // === QA (Bateria de perguntas reutilizável) ===
+  qa_questions?: AgentQAQuestion[];
+
   // Timestamps
   created_at: string;
   updated_at: string;
+}
+
+/**
+ * A single reusable QA question saved on the agent's battery.
+ */
+export interface AgentQAQuestion {
+  id: string;
+  text: string;
+}
+
+/**
+ * Result of running one QA question against the agent.
+ * Mirrors what /api/agents/[id]/test returns, condensed for the report.
+ */
+export interface AgentQAResultItem {
+  id: string;
+  question: string;
+  response: string | null;
+  error: string | null;
+  latencyMs: number | null;
+  model: string | null;
+  provider: string | null;
+  toolCallNames: string[];
+  ragChunkCount: number;
+  historySource: string | null;
+}
+
+/**
+ * AI verdict for a single question in a QA report.
+ */
+export interface AgentQAQuestionReview {
+  /** Matches AgentQAResultItem.id. */
+  id: string;
+  verdict: "good" | "partial" | "bad";
+  score: number; // 0-100
+  issue: string; // what's wrong / what's good (pt-BR)
+}
+
+/**
+ * AI evaluation of a QA report. Suggestions mirror the prompt-evaluator shape
+ * (PromptSuggestion) so they can be applied back into the editor fields.
+ */
+export interface AgentQAEvaluation {
+  overallScore: number;
+  overallAssessment: string;
+  questionReviews: AgentQAQuestionReview[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  suggestions: any[]; // PromptSuggestion[] (from src/lib/prompt-evaluator.ts)
+  evaluatorProvider: string;
+  evaluatorModel: string;
+  usage: { tokensInput: number; tokensOutput: number };
+  durationMs: number;
+}
+
+/**
+ * A saved QA run: the battery of questions and how the agent answered each.
+ */
+export interface AgentQAReport {
+  id: string;
+  client_id: string;
+  agent_id: string;
+  label: string | null;
+  agent_snapshot: Partial<Agent>;
+  provider: string | null;
+  model_used: string | null;
+  results: AgentQAResultItem[];
+  question_count: number;
+  total_latency_ms: number | null;
+  evaluation: AgentQAEvaluation | null;
+  evaluator_model: string | null;
+  evaluated_at: string | null;
+  created_by: string | null;
+  created_at: string;
 }
 
 export interface DaySchedule {

@@ -5,7 +5,7 @@
  * plus a factory function that auto-selects the connected provider.
  */
 
-import { createServerClient } from "@/lib/supabase-server";
+import { createServiceClient } from "@/lib/supabase-server";
 import { getClientCalendarTokens } from "@/lib/vault";
 
 export interface CalendarEvent {
@@ -38,7 +38,7 @@ export interface CalendarClient {
 export const getCalendarClient = async (
   clientId: string,
 ): Promise<CalendarClient | null> => {
-  const supabase = await createServerClient();
+  const supabase = createServiceClient() as any;
 
   const { data: client, error } = await supabase
     .from("clients")

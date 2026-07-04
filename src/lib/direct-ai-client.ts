@@ -419,12 +419,15 @@ export const callDirectAI = async (
   const startTime = Date.now();
 
   try {
-    // 1. Budget check - throws if exceeded
-    const budgetAvailable = await checkBudgetAvailable(config.clientId);
-    if (!budgetAvailable) {
-      throw new Error(
-        "❌ Limite de budget atingido. Entre em contato com o suporte.",
-      );
+    // 1. Budget check — DESLIGADO por padrão.
+    // Para reativar o bloqueio por limite, defina BUDGET_ENFORCEMENT_ENABLED=true.
+    if (process.env.BUDGET_ENFORCEMENT_ENABLED === "true") {
+      const budgetAvailable = await checkBudgetAvailable(config.clientId);
+      if (!budgetAvailable) {
+        throw new Error(
+          "❌ Limite de budget atingido. Entre em contato com o suporte.",
+        );
+      }
     }
 
     // 2. Get Vault credentials
@@ -494,7 +497,7 @@ export const callDirectAI = async (
     }
 
     if (isReasoningModel) {
-      const rawEffort = config.settings?.reasoningEffort || "low";
+      const rawEffort = config.settings?.reasoningEffort || "medium";
       const effectiveEffort = getEffectiveReasoningEffort(model, rawEffort);
 
       generateParams.providerOptions = {

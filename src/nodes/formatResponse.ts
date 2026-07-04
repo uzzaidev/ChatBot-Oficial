@@ -44,6 +44,74 @@ const LEAKED_TOOL_NARRATION_PATTERNS: RegExp[] = [
   /^\s*criando\s+(o\s+)?evento[.\s…]*$/i,
 ];
 
+// Marcadores inequívocos de chain-of-thought em INGLÊS. O bot responde SEMPRE
+// em pt-BR ao cliente; modelos de reasoning (gpt-5.x via Responses API) às vezes
+// usam o canal de `message` como rascunho e vazam o raciocínio interno — que vem
+// em inglês e SEMPRE depois da resposta válida (o modelo responde e "continua
+// pensando" no mesmo item). Não é fraqueza de um modelo específico: é o modelo
+// escrevendo a análise no canal de resposta. Como o SDK já separa o reasoning
+// summary (canal `reasoning`), qualquer inglês meta-analítico aqui é vazamento.
+// As frases abaixo foram escolhidas por serem praticamente impossíveis numa
+// resposta real de WhatsApp em português — minimiza falso-positivo.
+const LEAKED_REASONING_MARKERS: RegExp[] = [
+  /\bThen user\b/i,
+  /\bThe user\b/i,
+  /\bLet'?s\s+(do|call|go|use|say|send|ask|clarify|check)\b/i,
+  /\bWe\s+(can|could|should|need|must|didn'?t|can'?t|don'?t|won'?t)\b/i,
+  /\bI\s+(should|need to|must|can|think)\b/i,
+  /\b(maybe|perhaps)\s+(meaning|the|we|they|need|best|clarify|is)\b/i,
+  /\bIt could be\b/i,
+  /\bHowever,?\s/i,
+  /\bSince they\b/i,
+  /\bYet they\b/i,
+  /\bbut the (system|developer|tool|assistant|user)\b/i,
+  /\bthe (system|developer) (says|rules|say)\b/i,
+  /\bdeveloper (says|rules)\b/i,
+  /\brespond with (the )?mandated\b/i,
+  /\bNeed (not|no JSON)\b/i,
+  /\bnarrate (action|the)\b/i,
+  /\bambiguous\b/i,
+  /\buse (the )?tool\b/i,
+  /\bdocumenttype\b/i,
+];
+
+/**
+ * Trunca a mensagem no primeiro marcador de raciocínio em inglês vazado.
+ * Mantém a resposta válida em pt-BR (que sempre vem antes) e descarta o CoT.
+ * Se a mensagem inteira for vazamento (sem resposta válida antes), retorna "".
+ */
+const stripLeakedReasoning = (text: string): string => {
+  let earliest = -1;
+  for (const re of LEAKED_REASONING_MARKERS) {
+    const m = re.exec(text);
+    if (m && (earliest === -1 || m.index < earliest)) {
+      earliest = m.index;
+    }
+  }
+
+  if (earliest === -1) {
+    return text;
+  }
+
+  // Recua até o fim da última frase/linha válida antes do marcador, para não
+  // cortar no meio de uma sentença em português.
+  const before = text.slice(0, earliest);
+  const cut = Math.max(
+    before.lastIndexOf("\n"),
+    before.lastIndexOf("."),
+    before.lastIndexOf("!"),
+    before.lastIndexOf("?"),
+  );
+  const kept = (cut >= 0 ? before.slice(0, cut + 1) : "").trim();
+
+  console.warn(
+    `[formatResponse] Chain-of-thought em inglês vazado e removido ` +
+      `(${text.length - kept.length} chars descartados).`,
+  );
+
+  return kept;
+};
+
 /**
  * Remove tool calls (function calls) do texto da IA.
  * Cobre três formatos:
@@ -185,8 +253,12 @@ export const formatResponse = (aiResponseContent: string): string[] => {
       return [];
     }
 
-    // Remove tool calls antes de formatar
-    const contentWithoutToolCalls = removeToolCalls(aiResponseContent);
+    // 1) Remove chain-of-thought em inglês vazado para o canal de resposta
+    //    (modelos de reasoning usando o `message` item como rascunho).
+    const contentWithoutReasoning = stripLeakedReasoning(aiResponseContent);
+
+    // 2) Remove tool calls antes de formatar
+    const contentWithoutToolCalls = removeToolCalls(contentWithoutReasoning);
     const cleanedContent = sanitizeMarkdownForWhatsApp(contentWithoutToolCalls);
 
     if (!cleanedContent || cleanedContent.trim().length === 0) {

@@ -1,0 +1,7 @@
+- Captures the explicit RLM curation workflow requirements for the current task, including the instruction to use precomputed recon rather than rerunning recon.
+- Specifies a single-pass flow: precomputed recon -> extraction -> curate -> verify applied file paths.
+- Emphasizes verification must rely only on result.applied[].filePath / applied file paths, and must not use readFile for verification.
+- Includes prohibitions such as: do not print raw context and do not call tools.curation.recon.
+- Notes that chunked extraction should use tools.curation.mapExtract().
+- Records the request timestamp and identifies the author/context as a ByteRover context engineering task.
+- The document is organized into Reason, Raw Concept, Narrative, and Facts sections, with the Facts section formalizing the workflow as a convention.

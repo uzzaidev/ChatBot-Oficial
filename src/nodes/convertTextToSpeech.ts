@@ -1,7 +1,7 @@
 // src/nodes/convertTextToSpeech.ts
 import OpenAI from "openai";
 import crypto from "crypto";
-import { createServerClient } from "@/lib/supabase-server";
+import { createServiceClient } from "@/lib/supabase-server";
 import { checkBudgetAvailable } from "@/lib/unified-tracking";
 import { elevenLabsTTS } from "@/lib/elevenlabs";
 
@@ -50,7 +50,7 @@ export const convertTextToSpeech = async (
   }
 
   // Criar cliente Supabase uma única vez
-  const supabase = await createServerClient();
+  const supabase = createServiceClient() as any;
 
   // 1. Verificar cache
   if (useCache) {

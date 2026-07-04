@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const token_hash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType;
+  const next = searchParams.get("next");
   const base = process.env.NEXT_PUBLIC_URL ?? "https://uzzapp.uzzai.com.br";
 
   if (!token_hash || !type) {
@@ -20,6 +21,13 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     return NextResponse.redirect(`${base}/login?error=confirm_failed`);
+  }
+
+  // Password recovery: the OTP created a recovery session — send the user to
+  // the page where they set a new password.
+  if (type === "recovery") {
+    const dest = next && next.startsWith("/") ? next : "/reset-password";
+    return NextResponse.redirect(`${base}${dest}`);
   }
 
   // Verificar se o usuário é novo (client com status pending_setup)

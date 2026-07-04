@@ -2,7 +2,7 @@ import { runInactivityCheck } from "@/lib/jobs/inactivity-check";
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const isAuthorizedCronRequest = (request: NextRequest): boolean => {
   const cronSecret = process.env.CRON_SECRET;

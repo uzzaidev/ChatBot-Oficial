@@ -472,6 +472,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           { status: 422 },
         );
       }
+      if (msg.includes("Limite de budget") || msg.includes("budget")) {
+        return NextResponse.json(
+          {
+            error:
+              "Limite de budget atingido para este cliente. Ajuste/zere o limite em client_budgets ou mantenha a aplicação do limite desligada (BUDGET_ENFORCEMENT_ENABLED).",
+          },
+          { status: 402 },
+        );
+      }
       return NextResponse.json({ error: msg }, { status: 500 });
     }
 

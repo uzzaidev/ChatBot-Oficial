@@ -13,7 +13,6 @@
  * - Backward compatible with usage_logs
  */
 
-import { createServerClient } from "@/lib/supabase-server";
 import { convertUSDtoBRL, getExchangeRate } from "@/lib/currency";
 import { createServiceRoleClient } from "@/lib/supabase";
 import { sendBudgetAlertNotification } from "@/lib/push-dispatch";
@@ -121,7 +120,7 @@ export const trackUnifiedUsage = async (
   } = params;
 
   try {
-    const supabase = await createServerClient();
+    const supabase = createServiceRoleClient() as any;
 
     // =====================================================
     // 1. CALCULATE TOTAL TOKENS
@@ -538,7 +537,7 @@ export const checkBudgetAvailable = async (
   clientId: string,
 ): Promise<boolean> => {
   try {
-    const supabase = await createServerClient();
+    const supabase = createServiceRoleClient() as any;
 
     const { data, error } = await supabase.rpc("check_budget_available", {
       p_client_id: clientId,
@@ -561,7 +560,7 @@ export const checkBudgetAvailable = async (
  */
 export const getBudgetStatus = async (clientId: string) => {
   try {
-    const supabase = await createServerClient();
+    const supabase = createServiceRoleClient() as any;
 
     const { data, error } = await supabase
       .from("budget_status")
@@ -614,7 +613,7 @@ const insertLegacyLog = async (params: {
   metadata?: any;
 }): Promise<void> => {
   try {
-    const supabase = await createServerClient();
+    const supabase = createServiceRoleClient() as any;
 
     await supabase.from("usage_logs").insert({
       client_id: params.clientId,

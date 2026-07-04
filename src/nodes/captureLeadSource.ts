@@ -138,10 +138,10 @@ export const captureLeadSource = async (
         if (tagId) {
           const { data: existingCardTag } = await supabase
             .from("crm_card_tags")
-            .select("id")
+            .select("card_id")
             .eq("card_id", cardId)
             .eq("tag_id", tagId)
-            .single();
+            .maybeSingle();
 
           if (!existingCardTag) {
             await supabase.from("crm_card_tags").insert({

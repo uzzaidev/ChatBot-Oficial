@@ -232,6 +232,30 @@ export async function PUT(request: NextRequest) {
       typeof SecretUpdateSchema
     >;
 
+    // 🛡️ Guard: never persist a MASKED/placeholder value over a real secret.
+    // The UI shows secrets masked ("***1234"). If the user saves without typing
+    // a new value, the mask/placeholder would overwrite the real key in the Vault
+    // (caused several clients' OpenAI keys to become "***VkYA"/"placeholder"/empty).
+    // meta_phone_number_id is stored in plain text (numeric) so it is exempt.
+    if (key !== "meta_phone_number_id") {
+      const trimmed = (value ?? "").trim();
+      const looksInvalid =
+        trimmed.length === 0 ||
+        trimmed.startsWith("***") ||
+        trimmed === "CONFIGURE_IN_SETTINGS" ||
+        trimmed.toLowerCase() === "placeholder" ||
+        trimmed === "NOT_CONFIGURED";
+      if (looksInvalid) {
+        return NextResponse.json(
+          {
+            error:
+              "Valor inválido: parece um placeholder/máscara, não a credencial real. Cole a chave/token completo (ex.: sk-... ou EAA...).",
+          },
+          { status: 400 },
+        );
+      }
+    }
+
     const supabase = await createRouteHandlerClient(request as any);
 
     // Verificar autenticação

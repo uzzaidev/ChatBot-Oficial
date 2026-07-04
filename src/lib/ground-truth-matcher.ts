@@ -1,6 +1,6 @@
 import { getBotConfig } from "@/lib/config";
 import { generateEmbedding } from "@/lib/openai";
-import { createServerClient } from "@/lib/supabase";
+import { createServiceRoleClient } from "@/lib/supabase";
 
 export interface GroundTruthEntry {
   id: string;
@@ -64,7 +64,7 @@ export const findSimilarGroundTruthList = async (
     );
   }
 
-  const supabase = await createServerClient();
+  const supabase = createServiceRoleClient() as any;
   const { data, error } = await (supabase as any).rpc("match_ground_truth", {
     query_embedding: embedding,
     match_threshold: matchThreshold,

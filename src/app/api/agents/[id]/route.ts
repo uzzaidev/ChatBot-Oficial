@@ -258,6 +258,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (body.business_hours_off_message !== undefined)
       updateData.business_hours_off_message = body.business_hours_off_message;
 
+    // QA battery (reusable list of questions saved on the agent)
+    if (body.qa_questions !== undefined)
+      updateData.qa_questions = body.qa_questions;
+
     // Recompile prompts if any relevant fields changed
     const promptRelatedFields = [
       "name",

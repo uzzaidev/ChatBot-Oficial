@@ -1,0 +1,1 @@
+This document defines the RLM context engineering workflow: use precomputed recon, perform single-pass or chunked extraction with UPSERT curation, and verify results via applied file paths without rereading files or asking for confirmation.

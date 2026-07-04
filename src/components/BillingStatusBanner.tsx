@@ -65,7 +65,7 @@ export const BillingStatusBanner = () => {
         <div className="flex-1 text-sm">
           <p className="font-semibold text-destructive">Conta suspensa</p>
           <p className="text-muted-foreground">
-            Sua assinatura foi cancelada e o WhatsApp foi desconectado.{" "}
+            Sua assinatura foi cancelada e o atendimento esta pausado.{" "}
             <Link
               href="/dashboard/billing"
               className="underline text-primary hover:text-primary/80"

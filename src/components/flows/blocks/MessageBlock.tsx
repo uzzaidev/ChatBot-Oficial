@@ -15,6 +15,9 @@ import { MessageSquare, Trash2 } from 'lucide-react'
 
 interface MessageBlockData {
   messageText?: string
+  mediaUrl?: string
+  mediaType?: 'image' | 'document'
+  mediaFilename?: string
 }
 
 const MessageBlock = memo(({ id, data, selected }: NodeProps) => {
@@ -71,8 +74,15 @@ const MessageBlock = memo(({ id, data, selected }: NodeProps) => {
       <div className="text-xs text-gray-600">
         {blockData.messageText ? (
           <p className="line-clamp-2">{blockData.messageText}</p>
-        ) : (
+        ) : !blockData.mediaUrl ? (
           <p className="text-gray-400 italic">Clique para editar...</p>
+        ) : null}
+
+        {blockData.mediaUrl && (
+          <div className="mt-1.5 flex items-center gap-1 text-blue-600">
+            <span>{blockData.mediaType === 'image' ? '🖼️' : '📄'}</span>
+            <span className="truncate">{blockData.mediaFilename || 'Anexo'}</span>
+          </div>
         )}
       </div>
     </div>

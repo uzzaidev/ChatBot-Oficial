@@ -12,6 +12,8 @@
 import { useState, useEffect } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import type { ListSection } from '@/types/interactiveFlows'
+import { META_BYTE_LIMITS } from '@/lib/whatsapp/byteLimits'
+import ByteLimitedInput from './ByteLimitedInput'
 
 interface InteractiveListPropertiesProps {
   node: any
@@ -110,14 +112,15 @@ export default function InteractiveListProperties({ node, onUpdate }: Interactiv
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Texto Principal
         </label>
-        <textarea
+        <ByteLimitedInput
+          multiline
           value={listBody}
-          onChange={(e) => setListBody(e.target.value)}
+          onChange={setListBody}
           onBlur={handleSave}
           placeholder="Digite o texto principal..."
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
           rows={3}
-          maxLength={1024}
+          maxBytes={META_BYTE_LIMITS.body}
         />
       </div>
 
@@ -126,14 +129,13 @@ export default function InteractiveListProperties({ node, onUpdate }: Interactiv
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Texto do Botão
         </label>
-        <input
-          type="text"
+        <ByteLimitedInput
           value={listButtonText}
-          onChange={(e) => setListButtonText(e.target.value)}
+          onChange={setListButtonText}
           onBlur={handleSave}
           placeholder="Ver opções"
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-          maxLength={20}
+          maxBytes={META_BYTE_LIMITS.listButtonText}
         />
       </div>
 
@@ -156,16 +158,17 @@ export default function InteractiveListProperties({ node, onUpdate }: Interactiv
         <div className="space-y-3 max-h-[400px] overflow-y-auto">
           {sections.map((section, sectionIdx) => (
             <div key={section.id} className="border border-gray-200 rounded-lg p-3">
-              <div className="flex items-center justify-between mb-2">
-                <input
-                  type="text"
-                  value={section.title}
-                  onChange={(e) => updateSection(section.id, { title: e.target.value })}
-                  onBlur={handleSave}
-                  placeholder="Nome da seção"
-                  className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
-                  maxLength={24}
-                />
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex-1">
+                  <ByteLimitedInput
+                    value={section.title}
+                    onChange={(v) => updateSection(section.id, { title: v })}
+                    onBlur={handleSave}
+                    placeholder="Nome da seção"
+                    className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                    maxBytes={META_BYTE_LIMITS.listSectionTitle}
+                  />
+                </div>
                 <button
                   onClick={() => removeSection(section.id)}
                   className="ml-2 p-1 text-red-600 hover:bg-red-50 rounded"
@@ -179,23 +182,21 @@ export default function InteractiveListProperties({ node, onUpdate }: Interactiv
                 {section.rows.map((row) => (
                   <div key={row.id} className="flex items-start gap-2 p-2 bg-gray-50 rounded">
                     <div className="flex-1 space-y-1">
-                      <input
-                        type="text"
+                      <ByteLimitedInput
                         value={row.title}
-                        onChange={(e) => updateRow(section.id, row.id, { title: e.target.value })}
+                        onChange={(v) => updateRow(section.id, row.id, { title: v })}
                         onBlur={handleSave}
                         placeholder="Título da opção"
                         className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                        maxLength={24}
+                        maxBytes={META_BYTE_LIMITS.listRowTitle}
                       />
-                      <input
-                        type="text"
+                      <ByteLimitedInput
                         value={row.description || ''}
-                        onChange={(e) => updateRow(section.id, row.id, { description: e.target.value })}
+                        onChange={(v) => updateRow(section.id, row.id, { description: v })}
                         onBlur={handleSave}
                         placeholder="Descrição (opcional)"
                         className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                        maxLength={72}
+                        maxBytes={META_BYTE_LIMITS.listRowDescription}
                       />
                     </div>
                     <button

@@ -223,6 +223,28 @@ export default function AdminBillingPage() {
     }
   };
 
+  const handleExtendFreeMonth = async (subId: string) => {
+    if (
+      !confirm(
+        "Dar +1 mês grátis? A próxima cobrança será adiada em 1 mês (sem cobrar nada nesse período).",
+      )
+    ) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/admin/billing/subscriptions/${subId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "extend_free_month", months: 1 }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+      fetchData("subscriptions");
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
   const handleCreatePlan = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setFormLoading(true);
@@ -705,6 +727,16 @@ export default function AdminBillingPage() {
                               <td className="py-2.5 text-right">
                                 {s.status !== "canceled" && (
                                   <div className="flex gap-1 justify-end">
+                                    <Button
+                                      variant="secondary"
+                                      size="sm"
+                                      onClick={() =>
+                                        handleExtendFreeMonth(s.id)
+                                      }
+                                      title="Adia a próxima cobrança em 1 mês (mês grátis extra)"
+                                    >
+                                      +1 mês grátis
+                                    </Button>
                                     <Button
                                       variant="outline"
                                       size="sm"

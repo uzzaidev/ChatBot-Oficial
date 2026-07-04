@@ -142,7 +142,7 @@ const DEFAULT_AGENT: Partial<Agent> = {
   groq_model: "llama-3.3-70b-versatile",
   temperature: 0.7,
   max_tokens: 2000,
-  reasoning_effort: "low",
+  reasoning_effort: "medium",
   max_input_tokens: 24000,
   max_history_tokens: 6000,
   max_knowledge_tokens: 6000,

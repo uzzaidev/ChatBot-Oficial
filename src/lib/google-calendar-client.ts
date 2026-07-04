@@ -6,7 +6,7 @@
 
 import type { CalendarClient, CalendarEvent } from "@/lib/calendar-client";
 import { refreshGoogleAccessToken } from "@/lib/google-calendar-oauth";
-import { createServerClient } from "@/lib/supabase-server";
+import { createServiceClient } from "@/lib/supabase-server";
 import { updateCalendarToken } from "@/lib/vault";
 import { google } from "googleapis";
 
@@ -34,7 +34,7 @@ export const createGoogleCalendarClient = (
     oauth2Client.setCredentials({ access_token: newToken });
 
     // Update Vault
-    const supabase = await createServerClient();
+    const supabase = createServiceClient() as any;
     const { data } = await supabase
       .from("clients")
       .select("google_calendar_token_secret_id")

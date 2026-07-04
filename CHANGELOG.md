@@ -8,6 +8,308 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-07-01
+
+### feat
+- Implementado componente `ByteLimitedInput` para inputs com limite de bytes UTF-8, considerando acentuação e emojis, com contador visual e truncamento automático.
+- Integrado `ByteLimitedInput` nos componentes de propriedades interativas (`InteractiveButtonsProperties`, `InteractiveListProperties`) para garantir limites de bytes conforme especificação Meta.
+- Adicionado módulo `byteLimits` com constantes de limites e funções utilitárias para contagem e truncamento de bytes UTF-8.
+- Aplicado truncamento defensivo por bytes UTF-8 no executor de fluxos (`flowExecutor.ts`) para evitar envio de campos que excedam limites da API Meta.
+  - Arquivos: `src/components/flows/properties/ByteLimitedInput.tsx`, `src/components/flows/properties/InteractiveButtonsProperties.tsx`, `src/components/flows/properties/InteractiveListProperties.tsx`, `src/lib/flows/flowExecutor.ts`, `src/lib/whatsapp/byteLimits.ts`
+  - Confiança: alta
+
+## 2026-06-30
+
+### fix
+- Atualizado comentário de rollback para maior clareza no script de migração `20260603200000_harden_views_rls_bypass.sql`
+  - Arquivos: `supabase/migrations/20260603200000_harden_views_rls_bypass.sql`
+  - Evidência: modificação no comentário de rollback no final do arquivo de migração
+  - Confiança: alta
+
+## 2026-06-30
+
+### fix
+- Ajustado consulta em `captureLeadSource.ts` para evitar erro ao buscar tags de cartão, usando `.maybeSingle()` em vez de `.single()`.
+- Corrigidos dois erros recorrentes que geravam muitos logs no banco de dados:
+  1) Tornada a coluna `phone` da tabela `usage_logs` nullable para evitar falhas em inserts sem telefone.
+  2) Atualizada restrição `message_traces_status_check` para permitir o status `success`, evitando erros e spam de logs.
+  - Arquivos: `src/nodes/captureLeadSource.ts`, `supabase/migrations/20260630140000_fix_recurring_log_errors.sql`
+  - Evidência: alteração no select para `.maybeSingle()` e migração SQL que altera constraints e coluna nullable para evitar erros de inserção e restrição.
+  - Confiança: alta
+
+## 2026-06-30
+
+### fix
+- Reforçado controle de acesso em views que ignoravam Row Level Security (RLS), evitando vazamento de dados sensíveis entre tenants. A view `client_secrets_decrypted` teve todos os acessos públicos revogados, restringindo uso apenas ao backend, e outras views foram configuradas para usar `security_invoker=true` e tiveram permissões públicas removidas.
+  - Arquivos: `supabase/migrations/20260603200000_harden_views_rls_bypass.sql`
+  - Evidência: migração que revoga permissões públicas e ativa `security_invoker` para views específicas, corrigindo exposição de chaves secretas.
+  - Confiança: alta
+
+## 2026-06-30
+
+### feat
+- Ativado Row Level Security (RLS) em 8 tabelas que estavam sem restrição para evitar acesso cross-tenant não autorizado, incluindo `clients`, `user_profiles`, tabelas internas `crm_*` e `feature_flags`. Políticas foram criadas para restringir leitura e escrita por tenant e permitir acesso admin, mantendo funcionamento normal do backend via service_role que ignora RLS.
+  - Arquivos: `supabase/migrations/20260603190000_enable_rls_remaining_tables.sql`
+  - Confiança: alta
+
+## 2026-06-20
+
+### feat
+- Adicionado script `build_infra_frame.py` para geração automática do diagrama de arquitetura de infraestrutura
+- Atualizado arquivo de diagrama `UzzApp-Arquitetura.excalidraw` com nova estrutura visual detalhada da arquitetura de infraestrutura e deploy, incluindo front-end, back-end serverless, banco de dados, nuvem e serviços externos
+  - Arquivos: `scripts/build_infra_frame.py`, `UzzApp-Arquitetura.excalidraw`
+  - Confiança: alta
+
+## 2026-06-20
+
+### feat
+- Atualizado o valor padrão de `reasoning_effort` de "low" para "medium" para agentes novos e existentes sem configuração explícita, visando melhorar o raciocínio interno dos modelos GPT-5.x e reduzir vazamento de chain-of-thought em inglês nas respostas ao cliente.
+- Implementada filtragem defensiva para remover trechos de raciocínio em inglês vazados nas respostas, mantendo apenas o conteúdo válido em português brasileiro.
+- Ajustada a formatação das respostas para evitar exposição de raciocínio interno e melhorar a clareza do texto enviado ao cliente.
+- Atualizado arquivo de arquitetura (`UzzApp-Arquitetura.excalidraw`) com nova estrutura de frames.
+  - Arquivos: `src/app/api/agents/[id]/versions/[versionId]/restore/route.ts`, `src/app/api/agents/route.ts`, `src/components/agents/AgentEditor.tsx`, `src/components/agents/AgentEditorModal.tsx`, `src/lib/config.ts`, `src/lib/direct-ai-client.ts`, `src/nodes/formatResponse.ts`, `supabase/migrations/20260620120000_bump_reasoning_effort_to_medium.sql`, `UzzApp-Arquitetura.excalidraw`
+  - Confiança: alta
+
+## 2026-06-18
+
+### feat
+- Adicionado script para gerar diagrama Excalidraw da arquitetura do UzzApp, representando o fluxo do chatbot SaaS multi-tenant para WhatsApp, incluindo componentes como webhook, pipeline de processamento, IA, serviços externos e dashboard.
+  - Arquivos: `scripts/gen-excalidraw.mjs`, `UzzApp-Arquitetura.excalidraw`
+  - Confiança: alta
+
+## 2026-06-18
+
+### feat
+- Implementadas APIs para upload de mídia e listagem de documentos da base de conhecimento, permitindo anexar imagens e documentos em blocos de mensagem.
+- Adicionado suporte a anexos de mídia (imagem ou documento) com legenda opcional no bloco de mensagem do fluxo, incluindo interface para seleção da base ou upload direto.
+- Adaptado executor de fluxo para enviar mensagens com anexos de mídia via WhatsApp (imagem ou documento) com suporte a legenda.
+  - Arquivos: `src/app/api/flows/media/upload/route.ts`, `src/app/api/flows/media/documents/route.ts`, `src/components/flows/blocks/MessageBlock.tsx`, `src/components/flows/properties/MessageBlockProperties.tsx`, `src/lib/flows/flowExecutor.ts`
+  - Confiança: alta
+
+### fix
+- Ajustado controle de limite de budget para ser ativado apenas se variável de ambiente `BUDGET_ENFORCEMENT_ENABLED` estiver `true`, evitando bloqueios inesperados.
+- Tratamento de erro na API de teste de agentes para retornar status 402 com mensagem clara quando limite de budget é atingido.
+  - Arquivos: `src/lib/direct-ai-client.ts`, `src/nodes/generateAIResponse.ts`, `src/app/api/agents/[id]/test/route.ts`
+  - Evidência: checagem condicional da variável de ambiente e retorno HTTP 402 no handler
+  - Confiança: alta
+
+## 2026-06-18
+
+### feat
+- Adicionada funcionalidade completa de recuperação e redefinição de senha via email, incluindo páginas para solicitar link de redefinição (`/forgot-password`) e para criar nova senha (`/reset-password`).
+- Implementado fluxo seguro que não revela existência do email na solicitação de recuperação e valida sessão de recuperação antes de permitir alteração da senha.
+- Adicionado link "Esqueceu a senha?" na tela de login para acesso rápido à recuperação.
+- Atualizadas rotas e helpers para suportar o fluxo de recuperação com Supabase, incluindo redirecionamento após confirmação do token.
+  - Arquivos: `src/app/(auth)/forgot-password/page.tsx`, `src/app/(auth)/reset-password/page.tsx`, `src/app/(auth)/login/page.tsx`, `src/app/auth/confirm/route.ts`, `src/lib/supabase-browser.ts`
+  - Confiança: alta
+
+## 2026-06-18
+
+### docs
+- Atualizado comando no arquivo de exemplo de ambiente móvel para refletir nome correto do arquivo de destino
+  - Arquivos: `.env.mobile.example`
+  - Confiança: alta
+
+## 2026-06-18
+
+### feat
+- Implementada funcionalidade de diff ao nível de palavra no componente `PromptSuggestionCard`, permitindo visualizar mudanças entre texto atual e sugerido em formato lado a lado ou inline estilo git.
+- Adicionado botão para alternar entre visualização lado a lado e diff inline com destaque colorido para palavras removidas e adicionadas.
+  - Arquivos: `src/components/agents/PromptSuggestionCard.tsx`
+  - Confiança: alta
+
+## 2026-06-14
+
+### feat
+- Adicionado script de backup para gerenciamento da base de dados, que lê a conexão do arquivo .env.local e executa o backup via pg_dump ajustando a porta para compatibilidade com Supabase
+  - Arquivos: `scripts/backup.mjs`, `package.json`
+  - Confiança: alta
+
+## 2026-06-14
+
+### feat
+- Adicionada aba "Otimizar IA" no modal de edição de agentes com painel avaliador de prompts que revisa, pontua e sugere melhorias aplicáveis com um clique
+  - Arquivos: `src/components/agents/AgentEditorModal.tsx`
+  - Confiança: alta
+
+### chore
+- Removido arquivo de contexto obsoleto `.brv/context-tree/your_domain/your_topic/your_title.overview.md`
+  - Arquivos: `.brv/context-tree/your_domain/your_topic/your_title.overview.md`
+  - Confiança: alta
+
+## 2026-06-14
+
+### fix
+- Atualizado status da fila reduzindo pendentes e incrementando processados; incrementado contador de curations no estado dream
+  - Arquivos: `.brv/_queue_status.json`, `.brv/dream-state.json`
+  - Evidência: alteração dos campos `pending` e `processed` e incremento de `curationsSinceDream`
+  - Confiança: alta
+
+### chore
+- Removidos arquivos de contexto obsoletos e ajustada estrutura de metadados para curadoria de fatos
+  - Arquivos: `.brv/context-tree/your_domain/your_topic/your_title.*`
+  - Confiança: alta
+
+### feat
+- Adicionada aba QA no editor de agentes para testes de regressão de prompts, com armazenamento e avaliação AI de relatórios
+- Implementada ação administrativa no dashboard para estender assinatura de clientes em +1 mês grátis via Stripe sem cupom
+- Atualizado padrão de cliente para matcher de ground-truth usando `createServiceRoleClient()` síncrono, com orientações para mocks em testes
+  - Arquivos: `.brv/context-tree/facts/project/dashboard_qa_billing_matcher.md`, `src/lib/ground-truth-matcher.ts`
+  - Confiança: alta
+
+## 2026-06-14
+
+### docs
+- Adicionada documentação completa do ByteRover para gerenciamento de conhecimento e guia de uso da CLI.
+- Atualizados e reorganizados arquivos de contexto e fatos para refletir o estado atual do projeto, incluindo arquitetura do runtime AI, estado do projeto, e pipeline de exportação e reconstrução do deck comercial UzzApp.
+- Documentados fluxos de trabalho de engenharia de contexto RLM e requisitos de curadoria, detalhando uso de recon precomputado, extração single-pass, e verificação via paths aplicados.
+  - Arquivos: `.brv/context-tree/architecture/ai_runtime/*`, `.brv/context-tree/facts/*`, `.brv/context-tree/facts/project/*`, `.brv/context-tree/your_domain/your_topic/your_title.*`, `.github/skills/byterover/SKILL.md`, `claude/skills/byterover/SKILL.md`
+- Confiança: alta
+
+### chore
+- Criados arquivos de configuração e status para ByteRover MCP (`.brv/_queue_status.json`, `.brv/config.json`).
+- Atualizada estrutura e manifesto do contexto para refletir nova organização e tokens totais.
+- Confiança: alta
+
+## 2026-06-14
+
+### fix
+- Atualizado importação e mocks de `createServerClient` para `createServiceRoleClient` nos testes de `ground-truth-matcher`
+  - Arquivos: `src/lib/__tests__/ground-truth-matcher.test.ts`
+  - Evidência: substituição direta no import e nos mocks Jest
+  - Confiança: alta
+
+## 2026-06-13
+
+### feat
+- Adicionada funcionalidade no dashboard admin para estender o período grátis de assinaturas, adiando a próxima cobrança em até 12 meses sem gerar fatura.
+- Implementada rota PATCH `/api/admin/billing/subscriptions/[id]` para atualizar o trial_end da assinatura no Stripe e refletir no banco Supabase.
+- Incluído botão "+1 mês grátis" na lista de assinaturas do admin para facilitar a extensão do período grátis.
+  - Arquivos: `src/app/api/admin/billing/subscriptions/[id]/route.ts`, `src/app/dashboard/admin/billing/page.tsx`
+  - Confiança: alta
+
+## 2026-06-13
+
+### feat
+- Adicionada avaliação automática por IA para relatórios de QA, com julgamento de cada pergunta/resposta e sugestões aplicáveis de ajuste de prompt. A avaliação é salva no relatório e pode ser reavaliada pelo usuário via interface.
+  - Arquivos: `src/app/api/agents/[id]/qa/reports/[reportId]/evaluate/route.ts`, `src/components/agents/AgentQAPanel.tsx`, `src/components/agents/PromptSuggestionCard.tsx`, `src/lib/qa-evaluator.ts`, `src/lib/types.ts`
+  - Confiança: alta
+
+### chore
+- Criada migração para adicionar colunas `evaluation` (JSONB), `evaluator_model` (texto) e `evaluated_at` (timestamp) na tabela `agent_qa_reports` para armazenar a avaliação IA dos relatórios de QA.
+  - Arquivos: `supabase/migrations/20260613130000_add_qa_report_evaluation.sql`
+  - Confiança: alta
+
+## 2026-06-05
+
+### fix
+- Atualizado texto do banner de status de cobrança para indicar que o atendimento está pausado em vez de desconectado.
+- Alterada lógica de suspensão de clientes para preservar credenciais do WhatsApp, permitindo reativação manual sem necessidade de novo onboarding Meta.
+- Ajustado lookup de cliente por WABA ID para bloquear clientes com status de plano "canceled" ou "suspended", evitando uso indevido.
+  - Arquivos: `src/components/BillingStatusBanner.tsx`, `src/lib/billing-lifecycle.ts`, `src/lib/waba-lookup.ts`
+  - Evidência: remoção da desconexão automática do WhatsApp na suspensão e checagem explícita de status no lookup
+  - Confiança: alta
+
+## 2026-06-05
+
+### fix
+- Atualizado endpoint de override de billing para definir status operacional e de cobrança como ativos no cliente, além de limpar período de carência
+  - Arquivos: `src/app/api/admin/billing/override/route.ts`
+  - Evidência: alteração na função POST para atualizar campos `status`, `plan_status` e `grace_period_ends_at`
+  - Confiança: alta
+
+## 2026-06-03
+
+### fix
+- Corrigido erro de digitação em comentário sobre revogação de acesso do papel anon em migração de segurança
+  - Arquivos: `supabase/migrations/20260601120000_security_lockdown_anon_exposure.sql`
+  - Evidência: ajuste em comentário de linha referente a papel anon
+  - Confiança: alta
+
+## 2026-06-03
+
+### fix
+- Ajustado endpoint de secrets no Vault para rejeitar valores mascarados ou placeholders ao salvar, evitando sobrescrever chaves reais com valores inválidos (ex: "***1234", "placeholder")
+  - Arquivos: `src/app/api/vault/secrets/route.ts`
+  - Evidência: validação explícita no PUT que bloqueia valores com máscaras e placeholders comuns
+  - Confiança: alta
+
+## 2026-06-03
+
+### fix
+- Ajustado autenticação dos sockets Realtime para usar o JWT do usuário antes de assinar canais, garantindo que as políticas RLS por tenant funcionem corretamente e evitando assinaturas anônimas que retornavam zero dados.
+- Adicionadas mensagens de aviso para estados de canal diferentes de "SUBSCRIBED" nas assinaturas Realtime de notificações globais, conversas e mensagens.
+  - Arquivos: `src/hooks/useGlobalRealtimeNotifications.ts`, `src/hooks/useRealtimeConversations.ts`, `src/hooks/useRealtimeMessages.ts`
+  - Evidência: inclusão de chamadas `setAuth(token)` antes das assinaturas e logs de status de canal
+  - Confiança: alta
+
+## 2026-06-03
+
+### refactor
+- Refatorada a inicialização do cliente Supabase para utilizar o client com role de serviço em múltiplos módulos, substituindo o client de servidor padrão. Essa alteração unifica a forma de acesso ao Supabase para operações que requerem privilégios elevados.
+  - Arquivos: `src/lib/calendar-client.ts`, `src/lib/google-calendar-client.ts`, `src/lib/ground-truth-matcher.ts`, `src/lib/microsoft-calendar-client.ts`, `src/lib/unified-tracking.ts`, `src/lib/vault.ts`, `src/nodes/convertTextToSpeech.ts`, `src/nodes/getRAGContext.ts`
+  - Confiança: alta
+
+## 2026-06-03
+
+### feat
+- Atualizado o acesso às configurações de cliente e bot para usar o client com service role, garantindo conformidade com Row Level Security (RLS) no backend e webhook
+  - Arquivos: `src/lib/config.ts`
+  - Confiança: alta
+
+## 2026-06-01
+
+### feat
+- Removidos endpoints de debug obsoletos relacionados a billing OpenAI e vault para limpeza do código
+  - Arquivos removidos: `src/app/api/debug/config/route.ts`, `src/app/api/debug/env-check/route.ts`, `src/app/api/openai-billing/test-billing-usage/route.ts`, `src/app/api/openai-billing/test-costs/route.ts`, `src/app/api/openai-billing/test-subscription/route.ts`, `src/app/api/vault/debug/route.ts`
+  - Confiança: alta
+
+## 2026-06-01
+
+### feat
+- Implementado lockdown de segurança para o papel `anon`, removendo acesso público a tabelas e funções sensíveis para mitigar exposição de dados após incidente de vazamento de chaves. Revogadas permissões e corrigidas policies excessivamente permissivas, mantendo acesso normal para `authenticated` e `service_role`.
+  - Arquivos: `supabase/migrations/20260601120000_security_lockdown_anon_exposure.sql`
+  - Confiança: alta
+
+## 2026-05-31
+
+### feat
+- Melhorada a navegação e exibição de tooltip nas seções editáveis do componente `RawPromptPreview`, facilitando a edição direta a partir da visualização do prompt
+  - Arquivos: `src/components/agents/RawPromptPreview.tsx`
+  - Confiança: alta
+
+### chore
+- Aumentado o tempo máximo da cron job de verificação de inatividade de 60 para 300 segundos para maior tolerância na execução
+  - Arquivos: `src/app/api/cron/inactivity-check/route.ts`
+  - Confiança: alta
+
+### refactor
+- Implementado cache temporário (30 segundos) para checagem se o engine está habilitado para um cliente, reduzindo consultas repetidas ao banco
+- Ajustada concorrência da verificação de inatividade para processar até 3 cards simultaneamente, alinhando com o pool de conexões do Postgres e evitando timeouts por excesso de conexões
+  - Arquivos: `src/lib/crm-automation-engine.ts`, `src/lib/jobs/inactivity-check.ts`
+  - Confiança: alta
+
+## 2026-05-31
+
+### feat
+- Adicionado componente de visualização do prompt final bruto com seções editáveis e navegação para campos do editor, integrado na aba "Prompt Final" do modal de edição do agente (`AgentEditorModal.tsx`, `RawPromptPreview.tsx`).
+- Implementado painel de avaliação de prompt por IA que executa uma revisão especializada do prompt compilado do agente, gera sugestões aplicáveis e permite aplicar ou descartar cada sugestão diretamente no editor (`PromptEvaluatorPanel.tsx`, `AgentEditorModal.tsx`).
+- Criada API REST `/api/agents/[id]/evaluate-prompt` para listar avaliações anteriores (GET) e executar nova avaliação (POST), armazenando resultados e sugestões estruturadas no banco (`src/app/api/agents/[id]/evaluate-prompt/route.ts`).
+- Desenvolvida lógica de avaliação de prompt especializada que usa LLM para revisar o prompt compilado do agente, produzindo sugestões por seção mapeadas para campos do editor e avaliação geral com escore e justificativa (`prompt-evaluator.ts`).
+- Refatorado o construtor do prompt do sistema para retornar segmentos estruturados com metadados que permitem mapear cada seção para o campo correspondente no editor, suportando navegação e aplicação de sugestões (`prompt-builder.ts`).
+- Criada migração para nova tabela `agent_prompt_evaluations` no banco, que armazena avaliações de prompt com sugestões, estado de aplicação, referência opcional a mensagens reais, e políticas RLS para isolamento multi-tenant (`20260531120000_create_agent_prompt_evaluations.sql`).
+
+- Arquivos principais:  
+  `src/components/agents/AgentEditorModal.tsx`,  
+  `src/components/agents/RawPromptPreview.tsx`,  
+  `src/components/agents/PromptEvaluatorPanel.tsx`,  
+  `src/app/api/agents/[id]/evaluate-prompt/route.ts`,  
+  `src/lib/prompt-evaluator.ts`,  
+  `src/lib/prompt-builder.ts`,  
+  `supabase/migrations/20260531120000_create_agent_prompt_evaluations.sql`
+
+- Confiança: alta
+
 ## 2026-05-29
 
 ### feat

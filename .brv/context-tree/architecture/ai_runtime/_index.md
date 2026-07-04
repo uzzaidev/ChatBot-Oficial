@@ -1,103 +1,41 @@
 ---
-children_hash: 3703748cfab48bf5722d157b69f88c1ec37ea41389fe90cd4eb092ca4c14cfd6
-compression_ratio: 0.5140041493775933
+children_hash: ace80bddc8caefb4828764f1107c883e5d0d15341888874a4f94b3bf1ff0c2c2
+compression_ratio: 0.3056122448979592
 condensation_order: 1
 covers: [agent_framework_decision_for_realtime_flow.md, byterover_global_mode_cwd_requirement.md, context.md]
-covers_token_total: 1928
+covers_token_total: 1960
 summary_level: d1
-token_count: 991
+token_count: 599
 type: summary
 ---
 # ai_runtime
 
 ## Overview
-The `ai_runtime` topic captures how ChatBot-Oficial executes AI in customer-facing realtime flows and the operational constraints around that runtime. It centers on a custom, deterministic execution path built around `callDirectAI()` and distinguishes between hot-path runtime concerns versus optional asynchronous agent-style modules. See `agent_framework_decision_for_realtime_flow.md` and the topic `context.md`.
+ChatBot-Oficial’s AI runtime is centered on a realtime, multi-tenant execution path that prioritizes predictable latency, fail-safe orchestration, and explicit tool handling over heavy agent frameworks. The topic also captures an environment-specific ByteRover MCP operational requirement that affects how agents query and curate knowledge from this repository.
 
-## Core Runtime Architecture
-From `agent_framework_decision_for_realtime_flow.md`:
+## Structural Themes
 
-- ChatBot-Oficial is a **multi-tenant WhatsApp SaaS** built with **Next.js**.
-- Realtime execution follows a bounded pipeline:
-  - `incoming webhook -> flow routing -> serverless node pipeline -> callDirectAI() -> explicit tool processing/handoff -> response`
-- The platform uses its own **serverless pipeline with 13 nodes** and internal routing logic.
-- The main customer-facing AI runtime is **`callDirectAI()`**, not LangChain or LangGraph.
+- **Realtime AI execution model**  
+  - The main customer-facing path uses `callDirectAI()` as the normalized AI execution layer.
+  - Flow shape: incoming webhook → flow routing → serverless node pipeline → `callDirectAI()` → explicit tool processing/handoff → response.
+  - The runtime is described as a multi-tenant WhatsApp SaaS in Next.js with a custom serverless pipeline of 13 nodes.
 
-## What `callDirectAI()` Owns
-`agent_framework_decision_for_realtime_flow.md` establishes `callDirectAI()` as the normalized runtime layer responsible for:
+- **Framework adoption decision**  
+  - Heavy frameworks such as LangChain, LangGraph, and especially Deep Agents are not used on the realtime hot path.
+  - These frameworks are considered acceptable only in isolated asynchronous modules for internal automations, backoffice copilots, CRM, or classification use cases.
+  - ADR-006 is referenced as guidance to reuse `callDirectAI()` and keep LangChain optional rather than core.
 
-- provider access
-- per-client credential resolution via Vault
-- budget enforcement
-- usage tracking
-- tool-call normalization
-- agent/config overrides through `getClientConfig()`
+- **Runtime dependencies and constraints**  
+  - `callDirectAI()` depends on per-client Vault credential resolution, budget enforcement, usage tracking, and configuration overrides from `getClientConfig()`.
+  - The hot path is constrained by limited, explicitly processed tools to preserve deterministic behavior and fail-safe execution.
+  - Example overridden flags include `enableTools`, `enableRAG`, and `enableHumanHandoff`.
 
-Relevant runtime overrides noted for the active agent include:
+- **Repository operational requirement for ByteRover**  
+  - ByteRover MCP runs in global mode in this environment, so every query/retrieve and curate/store call must pass the repository cwd explicitly.
+  - The required cwd is `C:\Users\Luisf\Documents\GITHUB\ChatBot-Oficial`.
+  - This is treated as an environment mode detail, not an installation bug.
 
-- prompt
-- provider
-- model
-- feature flags such as:
-  - `enableTools`
-  - `enableRAG`
-  - `enableHumanHandoff`
-
-## Realtime Design Constraints
-The topic-level decision is that the **hot path must remain predictable and fail-safe**.
-
-Key constraints from `agent_framework_decision_for_realtime_flow.md`:
-
-- latency predictability is required for WhatsApp atendimento flows
-- tool usage in the hot path must be **explicitly bounded**
-- tool processing should remain deterministic rather than delegated to heavier orchestration frameworks
-
-Examples of explicitly cited hot-path tools:
-
-- `transferir_atendimento`
-- `buscar_documento`
-
-## Framework Adoption Decision
-The main architectural decision, documented in `agent_framework_decision_for_realtime_flow.md`, is:
-
-- **heavy agent frameworks** such as **Deep Agents** are **not suitable as the core runtime** for realtime customer-service flows
-- such frameworks may still be used in:
-  - separate asynchronous modules
-  - internal automations
-  - backoffice copilots
-
-This preserves a strict separation between:
-
-- **realtime customer-facing execution** → `callDirectAI()` path
-- **non-core / async orchestration** → optional heavier agent frameworks
-
-## Governing Guidance
-`agent_framework_decision_for_realtime_flow.md` also links this direction to existing project guidance:
-
-- **ADR-006** is treated as supporting reuse of `callDirectAI()`
-- **LangChain** remains **optional**, especially for CRM/classification workloads, not as the principal runtime
-
-## Environment/Operational Rule for Agents
-From `byterover_global_mode_cwd_requirement.md`:
-
-This topic also records an environment-specific rule affecting agent operations around this repository:
-
-- ByteRover MCP runs in **global mode**
-- every ByteRover **query/retrieve** and **curate/store** call must pass:
-  - `cwd='C:\Users\Luisf\Documents\GITHUB\ChatBot-Oficial'`
-
-This is documented as:
-
-- an **environment mode detail**
-- **not** an installation bug by default
-
-Instruction sources updated to enforce this rule:
-
-- `AGENTS.md`
-- `CLAUDE.md`
-- `.github/copilot-instructions.md`
-
-## Relationships
-- `context.md` defines the topic scope as the runtime AI execution model and framework-adoption constraints for realtime flows.
-- `agent_framework_decision_for_realtime_flow.md` contains the primary architectural decision and runtime model.
-- `byterover_global_mode_cwd_requirement.md` adds the repository-specific operational requirement for agent interactions with ByteRover tooling.
-- Related broader reference: `facts/project` for repository-level facts and sanity checks.
+## Drill-down Entries
+- `agent_framework_decision_for_realtime_flow.md` — framework choice, realtime flow architecture, ADR-006 alignment, and the `callDirectAI()` hot path.
+- `byterover_global_mode_cwd_requirement.md` — explicit cwd requirement for ByteRover MCP operations in this repository.
+- `context.md` — top-level topic overview, key concepts, and related topic reference.

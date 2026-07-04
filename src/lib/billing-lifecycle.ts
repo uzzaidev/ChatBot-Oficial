@@ -60,13 +60,15 @@ export const clearGracePeriod = async (clientId: string): Promise<void> => {
 // ---------------------------------------------------------------------------
 
 /**
- * Mark a client as suspended. This does NOT disconnect WhatsApp.
+ * Mark a client as suspended. This preserves WhatsApp credentials so manual
+ * reactivation can restore routing without forcing a new Meta onboarding.
  */
 export const suspendClient = async (clientId: string): Promise<void> => {
   const supabase = getSupabase();
   await supabase
     .from("clients")
     .update({
+      status: "suspended",
       plan_status: "suspended",
       updated_at: new Date().toISOString(),
     })
@@ -205,10 +207,12 @@ export const disconnectClientWhatsApp = async (
 // ---------------------------------------------------------------------------
 
 /**
- * Suspend client AND disconnect WhatsApp. Used after grace period expires.
+ * Suspend client after grace period expires.
+ *
+ * Do not call disconnectClientWhatsApp here: billing suspension should block
+ * routing while preserving Meta Vault secrets for later manual reactivation.
  */
 export const enforceNonPayment = async (clientId: string): Promise<void> => {
   await suspendClient(clientId);
-  await disconnectClientWhatsApp(clientId);
   console.info(`${LOG_PREFIX} Non-payment enforced for client ${clientId}`);
 };

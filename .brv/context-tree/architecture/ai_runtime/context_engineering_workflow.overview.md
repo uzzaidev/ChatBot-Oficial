@@ -1,0 +1,8 @@
+- Describes an RLM-based context engineering curation workflow centered on precomputed recon, single-pass extraction, UPSERT curation, and result-based verification.
+- Emphasizes operational constraints: do not re-run recon if it is already computed, and avoid printing raw context.
+- For chunked extraction, the workflow requires `tools.curation.mapExtract` with `taskId` passed as a bare variable and a `code_exec` timeout of `300000`.
+- Verification must use `result.applied[].filePath` from curation output, not `readFile`.
+- The process is autonomous and immediate: no confirmation prompts are used before executing operations.
+- The document frames the workflow as supporting small/single-pass contexts with strict handling of chunked extraction and verification.
+- Notable entities include `tools.curation.recon`, `tools.curation.mapExtract`, `code_exec`, `result.applied[].filePath`, and the ByteRover context engineering instructions.
+- Sections summarize as: Reason, Raw Concept, Narrative, and Facts, with the Facts section listing convention-style rules and workflow behaviors.

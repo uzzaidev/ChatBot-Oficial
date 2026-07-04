@@ -9,8 +9,8 @@ export const dynamic = "force-dynamic";
  * Grant or revoke free manual access for a client, bypassing Stripe.
  * Body: { clientId, action: 'grant' | 'revoke' }
  *
- * grant → sets plan_status = 'active' in clients + upserts a manual
- *          platform_client_subscriptions row (no Stripe IDs).
+ * grant → sets operational + billing status active in clients + upserts a
+ *          manual platform_client_subscriptions row (no Stripe IDs).
  * revoke → marks the override row as 'canceled' and resets plan_status.
  */
 export async function POST(request: NextRequest) {
@@ -67,7 +67,12 @@ export async function POST(request: NextRequest) {
 
       await supabase
         .from("clients")
-        .update({ plan_status: "active" })
+        .update({
+          status: "active",
+          plan_status: "active",
+          grace_period_ends_at: null,
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", clientId);
 
       return NextResponse.json({

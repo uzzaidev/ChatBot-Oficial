@@ -12,6 +12,8 @@
 import { useState, useEffect } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import type { ReplyButton } from '@/types/interactiveFlows'
+import { META_BYTE_LIMITS } from '@/lib/whatsapp/byteLimits'
+import ByteLimitedInput from './ByteLimitedInput'
 
 interface InteractiveButtonsPropertiesProps {
   node: any
@@ -66,14 +68,15 @@ export default function InteractiveButtonsProperties({ node, onUpdate }: Interac
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Texto Principal
         </label>
-        <textarea
+        <ByteLimitedInput
+          multiline
           value={buttonsBody}
-          onChange={(e) => setButtonsBody(e.target.value)}
+          onChange={setButtonsBody}
           onBlur={handleSave}
           placeholder="Digite o texto principal..."
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           rows={3}
-          maxLength={1024}
+          maxBytes={META_BYTE_LIMITS.body}
         />
       </div>
 
@@ -97,18 +100,14 @@ export default function InteractiveButtonsProperties({ node, onUpdate }: Interac
           {buttons.map((button, idx) => (
             <div key={button.id} className="flex items-center gap-2 p-2 border border-gray-200 rounded-lg">
               <div className="flex-1">
-                <input
-                  type="text"
+                <ByteLimitedInput
                   value={button.title}
-                  onChange={(e) => updateButton(button.id, { title: e.target.value })}
+                  onChange={(v) => updateButton(button.id, { title: v })}
                   onBlur={handleSave}
                   placeholder={`Botão ${idx + 1}`}
                   className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                  maxLength={20}
+                  maxBytes={META_BYTE_LIMITS.buttonTitle}
                 />
-                <p className="text-xs text-gray-500 mt-0.5">
-                  {button.title.length}/20 caracteres
-                </p>
               </div>
               <button
                 onClick={() => removeButton(button.id)}

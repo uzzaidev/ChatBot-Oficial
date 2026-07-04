@@ -11,7 +11,11 @@
  */
 
 import { getClientConfig } from "@/lib/config";
-import { sendTextMessage as sendWhatsAppText } from "@/lib/meta";
+import {
+  sendDocumentMessage,
+  sendImageMessage,
+  sendTextMessage as sendWhatsAppText,
+} from "@/lib/meta";
 import { createServiceRoleClient } from "@/lib/supabase";
 import {
   ListSection as InteractiveListSection,
@@ -19,6 +23,7 @@ import {
   sendInteractiveButtons,
   sendInteractiveList,
 } from "@/lib/whatsapp/interactiveMessages";
+import { META_BYTE_LIMITS, truncateToBytes } from "@/lib/whatsapp/byteLimits";
 import {
   FlowBlock,
   FlowExecution,
@@ -386,18 +391,54 @@ export class FlowExecutor {
     clientId: string,
     block: FlowBlock,
   ): Promise<void> {
-    const { messageText } = block.data;
+    const {
+      messageText,
+      mediaUrl,
+      mediaType,
+      mediaFilename,
+      mediaCaption,
+    } = block.data as {
+      messageText?: string;
+      mediaUrl?: string;
+      mediaType?: "image" | "document";
+      mediaFilename?: string;
+      mediaCaption?: string;
+    };
 
-    if (!messageText) {
-      throw new Error("Message block has no messageText");
+    if (!messageText && !mediaUrl) {
+      throw new Error("Message block has no text or attachment");
     }
 
-    console.log(
-      `💬 [FlowExecutor] Sending message to ${phone}: ${messageText}`,
-    );
+    // 1) Text message (if any)
+    if (messageText) {
+      console.log(
+        `💬 [FlowExecutor] Sending message to ${phone}: ${messageText}`,
+      );
+      await this.sendTextMessage(phone, clientId, messageText);
+      await this.saveOutgoingMessage(phone, clientId, messageText);
+    }
 
-    await this.sendTextMessage(phone, clientId, messageText);
-    await this.saveOutgoingMessage(phone, clientId, messageText);
+    // 2) Attachment (image or document) with optional caption
+    if (mediaUrl) {
+      const caption = mediaCaption || undefined;
+      const filename = mediaFilename || "arquivo";
+      console.log(
+        `📎 [FlowExecutor] Sending ${mediaType || "document"} to ${phone}: ${filename}`,
+      );
+      const config = (await getClientConfig(clientId)) || undefined;
+
+      if (mediaType === "image") {
+        await sendImageMessage(phone, mediaUrl, caption, config);
+      } else {
+        await sendDocumentMessage(phone, mediaUrl, filename, caption, config);
+      }
+
+      await this.saveOutgoingMessage(
+        phone,
+        clientId,
+        caption || `[${(mediaType || "document").toUpperCase()}] ${filename}`,
+      );
+    }
   }
 
   /**
@@ -424,13 +465,17 @@ export class FlowExecutor {
 
     console.log(`📋 [FlowExecutor] Sending interactive list to ${phone}`);
 
-    // Convert to library format
+    // Convert to library format.
+    // Defensive truncation by UTF-8 bytes so legacy/overlong values (accents,
+    // emojis) don't crash the flow — Meta rejects fields over their byte limit.
     const sections: InteractiveListSection[] = listSections.map((section) => ({
-      title: section.title,
+      title: truncateToBytes(section.title, META_BYTE_LIMITS.listSectionTitle),
       rows: section.rows.map((row) => ({
         id: row.id,
-        title: row.title,
-        description: row.description,
+        title: truncateToBytes(row.title, META_BYTE_LIMITS.listRowTitle),
+        description: row.description
+          ? truncateToBytes(row.description, META_BYTE_LIMITS.listRowDescription)
+          : row.description,
       })),
     }));
 
@@ -484,10 +529,10 @@ export class FlowExecutor {
 
     console.log(`🔘 [FlowExecutor] Sending interactive buttons to ${phone}`);
 
-    // Convert to library format
+    // Convert to library format (truncate title by bytes — see list block note)
     const buttonsList: InteractiveReplyButton[] = buttons.map((btn) => ({
       id: btn.id,
-      title: btn.title,
+      title: truncateToBytes(btn.title, META_BYTE_LIMITS.buttonTitle),
     }));
 
     const clientConfig = await getClientConfig(clientId);
