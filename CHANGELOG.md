@@ -11,6 +11,14 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-07-04
 
 ### fix
+- Declarado `ITSAppUsesNonExemptEncryption=false` no `Info.plist` para conformidade com políticas de criptografia iOS
+  - Arquivos: `ios/App/App/Info.plist`
+  - Evidência: adição da chave `ITSAppUsesNonExemptEncryption` com valor `false` no plist
+  - Confiança: alta
+
+## 2026-07-04
+
+### fix
 - Atualizado Node para versão 22 no workflow de release iOS, conforme exigência do Capacitor CLI 8.x
   - Arquivos: `.github/workflows/ios-release.yml`
   - Evidência: alteração da versão Node de 20 para 22 no arquivo de workflow
