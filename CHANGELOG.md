@@ -11,6 +11,14 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-07-04
 
 ### fix
+- Atualizado Node para versão 22 no workflow de release iOS, conforme exigência do Capacitor CLI 8.x
+  - Arquivos: `.github/workflows/ios-release.yml`
+  - Evidência: alteração da versão Node de 20 para 22 no arquivo de workflow
+  - Confiança: alta
+
+## 2026-07-04
+
+### fix
 - Restaurado script `build:mobile` para gerar fallback estático mínimo exigido pelo Capacitor, evitando conflito com rotas dinâmicas do Next.js
   - Arquivos: `scripts/build-mobile.js`
   - Evidência: script cria pasta `out/` com HTML básico para atender requisito técnico do Capacitor sem exportar app inteiro
