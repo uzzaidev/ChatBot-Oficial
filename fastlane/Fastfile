@@ -1,0 +1,104 @@
+require "fileutils"
+
+ROOT         = File.expand_path("..", __dir__)   # raiz do repo
+BUNDLE_ID    = "com.uzzai.uzzapp"
+TEAM_ID      = "2YRXNXGL8K"
+PROFILE_NAME = "match AppStore #{BUNDLE_ID}"
+
+# setup_certs roda UMA VEZ (via workflow ios-match-bootstrap.yml) para gerar
+# e salvar o Distribution Certificate + Provisioning Profile no repo privado
+# uzzapp-certs (fastlane match).
+lane :setup_certs do
+  create_keychain(
+    name: "CI_KEYCHAIN", password: ENV["MATCH_PASSWORD"],
+    default_keychain: true, unlock: true, timeout: 3600
+  )
+
+  api_key = app_store_connect_api_key(
+    key_id:      ENV["APP_STORE_CONNECT_API_KEY_ID"],
+    issuer_id:   ENV["APP_STORE_CONNECT_API_ISSUER_ID"],
+    key_content: ENV["APP_STORE_CONNECT_API_KEY_CONTENT"],
+    in_house:    false
+  )
+
+  match(
+    type: "appstore", readonly: false,
+    api_key: api_key,
+    git_basic_authorization: ENV["MATCH_GIT_BASIC_AUTHORIZATION"],
+    app_identifier: BUNDLE_ID, team_id: TEAM_ID,
+    keychain_name: "CI_KEYCHAIN", keychain_password: ENV["MATCH_PASSWORD"]
+  )
+end
+
+# beta faz build + upload TestFlight — roda a cada release (ios-release.yml).
+#
+# Lições aprendidas no Convoca (mesma arquitetura, mesma conta Apple):
+# 1. Caminhos absolutos via ROOT — actions rodam da raiz do repo, mas sh()
+#    roda da pasta fastlane/. Caminhos relativos são ambíguos.
+# 2. Signing manual obrigatório — sem update_code_signing_settings, o Xcode
+#    usa "Automatic" e falha em CI com "Signing requires a development team".
+# 3. `cap copy` em vez de `cap sync` — cap sync chama pod install internamente
+#    via bundle exec, herdando o Ruby do bundle exec fastlane e conflitando
+#    com o CocoaPods do Homebrew. pod install roda como step separado no
+#    workflow, ANTES desta lane.
+# 4. CAPACITOR_PLATFORM=ios no cap copy — desliga CapacitorHttp/CapacitorCookies
+#    (ver capacitor.config.ts) para a sessão do Supabase sobreviver a um
+#    relançamento do app no iOS.
+lane :beta do
+  create_keychain(name: "CI_KEYCHAIN", password: ENV["MATCH_PASSWORD"],
+    default_keychain: true, unlock: true, timeout: 3600, lock_when_sleeps: false)
+
+  api_key = app_store_connect_api_key(
+    key_id:      ENV["APP_STORE_CONNECT_API_KEY_ID"],
+    issuer_id:   ENV["APP_STORE_CONNECT_API_ISSUER_ID"],
+    key_content: ENV["APP_STORE_CONNECT_API_KEY_CONTENT"],
+    in_house:    false
+  )
+
+  # Instala certs + profile do repo uzzapp-certs (readonly=true: não gera novos)
+  match(type: "appstore", readonly: true, api_key: api_key,
+    git_basic_authorization: ENV["MATCH_GIT_BASIC_AUTHORIZATION"],
+    app_identifier: BUNDLE_ID, team_id: TEAM_ID,
+    keychain_name: "CI_KEYCHAIN", keychain_password: ENV["MATCH_PASSWORD"])
+
+  # Grava Manual Signing no .pbxproj — sem isso xcodebuild falha em CI
+  update_code_signing_settings(
+    use_automatic_signing: false,
+    path:               "#{ROOT}/ios/App/App.xcodeproj",
+    team_id:            TEAM_ID,
+    bundle_identifier:  BUNDLE_ID,
+    code_sign_identity: "iPhone Distribution",
+    profile_name:       PROFILE_NAME
+  )
+
+  app_version = ENV["APP_VERSION"] || "1.0.0"
+  build_num   = ENV["BUILD_NUMBER"] || "1"
+
+  sh("cd #{ROOT} && pnpm build:mobile")
+
+  # cap COPY (sem pod install) com CAPACITOR_PLATFORM=ios — ver nota 3/4 acima
+  sh("cd #{ROOT} && CAPACITOR_PLATFORM=ios pnpm cap copy ios")
+
+  # pod install é um step separado no workflow, ANTES desta lane (ver nota 3)
+
+  FileUtils.mkdir_p("#{ROOT}/build")
+
+  gym(
+    workspace:        "#{ROOT}/ios/App/App.xcworkspace",
+    scheme:           "App",
+    configuration:    "Release",
+    export_method:    "app-store",
+    output_directory: "#{ROOT}/build",
+    output_name:      "UzzApp.ipa",
+    xcargs: "MARKETING_VERSION=#{app_version} CURRENT_PROJECT_VERSION=#{build_num}",
+    export_options: {
+      method:               "app-store",
+      teamID:               TEAM_ID,
+      provisioningProfiles: { BUNDLE_ID => PROFILE_NAME }
+    }
+  )
+
+  pilot(api_key: api_key, skip_waiting_for_build_processing: true)
+
+  UI.success "TestFlight ✅ v#{app_version} (#{build_num})"
+end

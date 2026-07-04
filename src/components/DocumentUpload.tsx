@@ -15,9 +15,11 @@
  */
 
 import { useState, useCallback, useEffect } from 'react'
-import { Upload, FileText, Loader2, CheckCircle2, XCircle } from 'lucide-react'
+import { Upload, FileText, Camera as CameraIcon, Loader2, CheckCircle2, XCircle } from 'lucide-react'
+import { Capacitor } from '@capacitor/core'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
+import { pickImageNative } from '@/lib/nativeCamera'
 
 interface DocumentUploadProps {
   onUploadSuccess?: () => void
@@ -307,6 +309,17 @@ export const DocumentUpload = ({ onUploadSuccess }: DocumentUploadProps) => {
     }
   }, [toast, onUploadSuccess, maxUploadSize])
 
+  const handlePickPhoto = useCallback(async () => {
+    try {
+      const file = await pickImageNative()
+      if (file) {
+        await handleFileUpload(file)
+      }
+    } catch {
+      // Usuário cancelou a captura/seleção — nada a fazer
+    }
+  }, [handleFileUpload])
+
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -448,18 +461,33 @@ export const DocumentUpload = ({ onUploadSuccess }: DocumentUploadProps) => {
                   Você pode selecionar até 10 arquivos por vez
                 </p>
               </div>
-              <label htmlFor="file-upload">
-                <Button variant="outline" size="sm" asChild>
-                  <span>
-                    <FileText className="h-4 w-4 mr-2" />
-                    Selecionar arquivo
-                  </span>
-                </Button>
-              </label>
+              <div className="flex gap-2">
+                <label htmlFor="file-upload">
+                  <Button variant="outline" size="sm" asChild>
+                    <span>
+                      <FileText className="h-4 w-4 mr-2" />
+                      Selecionar arquivo
+                    </span>
+                  </Button>
+                </label>
+                {Capacitor.isNativePlatform() && (
+                  <Button variant="outline" size="sm" onClick={handlePickPhoto}>
+                    <CameraIcon className="h-4 w-4 mr-2" />
+                    Adicionar foto
+                  </Button>
+                )}
+              </div>
               <input
                 id="file-upload"
                 type="file"
-                accept=".pdf,.txt,.md,.markdown,.jpg,.jpeg,.png,.webp"
+                // No app nativo, a captura de foto passa pelo plugin @capacitor/camera
+                // (botão "Adicionar foto" acima) para evitar o crash do action sheet
+                // nativo da WKWebView com fotos de alta resolução.
+                accept={
+                  Capacitor.isNativePlatform()
+                    ? '.pdf,.txt,.md,.markdown'
+                    : '.pdf,.txt,.md,.markdown,.jpg,.jpeg,.png,.webp'
+                }
                 multiple
                 onChange={handleFileSelect}
                 className="hidden"

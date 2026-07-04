@@ -1,9 +1,11 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Plus, Image as ImageIcon, FileText, Loader2, MessageSquare } from 'lucide-react'
+import { Capacitor } from '@capacitor/core'
 import { toast } from '@/hooks/use-toast'
+import { pickImageNative } from '@/lib/nativeCamera'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,6 +38,24 @@ export const MediaUploadButton = ({ onFileSelect, onTemplateSelect }: MediaUploa
     onFileSelect(file, type)
   }
 
+  const handlePickImage = async () => {
+    // No app nativo, usa @capacitor/camera em vez do <input accept="image/*">
+    // puro: evita o action sheet nativo da WKWebView, que crasha com fotos
+    // de alta resolução (ver src/lib/nativeCamera.ts).
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const file = await pickImageNative()
+        if (file) {
+          handleFileUpload(file, 'image')
+        }
+      } catch {
+        // Usuário cancelou a captura/seleção — nada a fazer
+      }
+      return
+    }
+    imageInputRef.current?.click()
+  }
+
   return (
     <>
       <DropdownMenu>
@@ -50,7 +70,7 @@ export const MediaUploadButton = ({ onFileSelect, onTemplateSelect }: MediaUploa
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
-          <DropdownMenuItem onClick={() => imageInputRef.current?.click()}>
+          <DropdownMenuItem onClick={handlePickImage}>
             <ImageIcon className="h-4 w-4 mr-2" />
             Imagem
           </DropdownMenuItem>

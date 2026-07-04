@@ -25,7 +25,7 @@
 			<string>com.uzzai.uzzapp</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>uzzapp</string>
+				<string>chatbot</string>
 			</array>
 		</dict>
 	</array>

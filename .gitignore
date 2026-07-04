@@ -34,6 +34,11 @@ android/app/*.keystore
 android/release.properties
 KEYSTORE_INFO.txt
 
+# iOS signing / Firebase (NÃO COMMITAR)
+ios/App/App/GoogleService-Info.plist
+*.p8
+*.mobileprovision
+
 # debug
 npm-debug.log*
 yarn-debug.log*

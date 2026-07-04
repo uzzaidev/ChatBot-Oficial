@@ -66,10 +66,20 @@ export default function DeleteAccountPage() {
           </p>
         </div>
 
+        {/* Exclusão direta no app */}
+        <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+          <p className="text-green-900 text-sm leading-relaxed">
+            <strong>Já é usuário do app UzzApp?</strong> Você pode excluir sua
+            conta imediatamente, sem precisar enviar e-mail: acesse{' '}
+            <strong>Configurações → Perfil → Excluir Conta</strong> dentro do
+            app ou dashboard, logado com sua conta. A exclusão é instantânea.
+          </p>
+        </div>
+
         {/* Como solicitar */}
         <section>
           <h2 className="text-xl font-bold text-gray-900 mb-5">
-            Como solicitar a exclusão
+            Como solicitar a exclusão por e-mail (alternativa)
           </h2>
           <div className="space-y-4">
             <div className="flex gap-4">

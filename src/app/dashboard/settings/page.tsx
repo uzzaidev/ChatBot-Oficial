@@ -33,12 +33,14 @@ import {
   Settings,
   Shield,
   Sparkles,
+  Trash2,
   Unplug,
   User,
   WifiOff,
   XCircle,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 type SettingsTab =
@@ -102,6 +104,7 @@ type CoexistenceSyncState = {
 };
 
 export default function SettingsPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<SettingsTab>("perfil");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -147,6 +150,10 @@ export default function SettingsPage() {
   const [revalidationPassword, setRevalidationPassword] = useState("");
   const [showRevalidationModal, setShowRevalidationModal] = useState(false);
   const [revalidating, setRevalidating] = useState(false);
+
+  // Exclusão de conta in-app
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   const [aiKeysMode, setAiKeysMode] = useState<
     "platform_only" | "byok_allowed"
@@ -474,6 +481,36 @@ export default function SettingsPage() {
       setNotification({ type: "error", message: "Erro ao atualizar senha" });
     } finally {
       setLoadingPassword(false);
+    }
+  };
+
+  // Excluir conta (in-app, direto — sem exigir email)
+  const handleDeleteAccount = async () => {
+    setDeletingAccount(true);
+
+    try {
+      const { hapticNotification } = await import("@/lib/haptics");
+      const { NotificationType } = await import("@capacitor/haptics");
+      void hapticNotification(NotificationType.Warning);
+      const { apiFetch } = await import("@/lib/api");
+      const response = await apiFetch("/api/user/me", { method: "DELETE" });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Erro ao excluir conta");
+      }
+
+      const { signOut } = await import("@/lib/supabase-browser");
+      await signOut();
+      router.push("/login");
+    } catch (error) {
+      setNotification({
+        type: "error",
+        message:
+          error instanceof Error ? error.message : "Erro ao excluir conta",
+      });
+      setDeletingAccount(false);
+      setShowDeleteAccountModal(false);
     }
   };
 
@@ -976,6 +1013,28 @@ export default function SettingsPage() {
                     {loadingPassword ? "Atualizando..." : "Atualizar Senha"}
                   </Button>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Seção: Excluir conta (Apple Guideline 5.1.1(v) — exclusão direta no app) */}
+            <Card className="bg-destructive/5 border-destructive/30">
+              <CardHeader className="border-b border-destructive/20">
+                <CardTitle className="text-base font-semibold flex items-center gap-2 text-destructive">
+                  <Trash2 className="w-4 h-4" />
+                  Excluir Conta
+                </CardTitle>
+                <CardDescription>
+                  Remove permanentemente o seu login e perfil da plataforma.
+                  Esta ação não pode ser desfeita.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <Button
+                  variant="destructive"
+                  onClick={() => setShowDeleteAccountModal(true)}
+                >
+                  Excluir minha conta
+                </Button>
               </CardContent>
             </Card>
           </>
@@ -1951,6 +2010,40 @@ export default function SettingsPage() {
                   Cancelar
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Modal de Confirmação de Exclusão de Conta */}
+      {showDeleteAccountModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md bg-card border-destructive/30">
+            <CardHeader>
+              <CardTitle className="text-destructive">
+                Excluir sua conta permanentemente?
+              </CardTitle>
+              <CardDescription>
+                Seu login e perfil serão apagados imediatamente. Essa ação não
+                pode ser desfeita. Você será desconectado em seguida.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex gap-2">
+              <Button
+                variant="destructive"
+                onClick={handleDeleteAccount}
+                disabled={deletingAccount}
+                className="flex-1"
+              >
+                {deletingAccount ? "Excluindo..." : "Sim, excluir minha conta"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteAccountModal(false)}
+                disabled={deletingAccount}
+              >
+                Cancelar
+              </Button>
             </CardContent>
           </Card>
         </div>

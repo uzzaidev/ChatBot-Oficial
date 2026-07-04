@@ -7,6 +7,7 @@ import { PushNotificationsProvider } from '@/components/PushNotificationsProvide
 import { NotificationManager } from '@/components/NotificationManager'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { MobileViewportProvider } from '@/components/MobileViewportProvider'
+import { NativeNetworkBanner } from '@/components/NativeNetworkBanner'
 
 // Fontes UZZ.AI
 const poppins = Poppins({
@@ -83,6 +84,7 @@ export default function RootLayout({
             <DeepLinkingProvider>
               <PushNotificationsProvider>
                 <NotificationManager enabled={true} />
+                <NativeNetworkBanner />
                 {children}
               </PushNotificationsProvider>
             </DeepLinkingProvider>

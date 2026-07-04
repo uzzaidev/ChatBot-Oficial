@@ -1,0 +1,10 @@
+git_url "https://github.com/uzzaidev/uzzapp-certs.git"
+storage_mode "git"
+type "appstore"
+app_identifier "com.uzzai.uzzapp"
+team_id "2YRXNXGL8K"
+# Sem username — autenticação via git_basic_authorization (token), configurado
+# no Fastfile a partir do secret MATCH_GIT_BASIC_AUTHORIZATION.
+
+# Pré-requisito (1x, manual): criar o repo privado antes de rodar match.
+#   gh repo create uzzapp-certs --private --add-readme

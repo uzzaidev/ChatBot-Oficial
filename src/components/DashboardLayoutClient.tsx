@@ -10,10 +10,12 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { NativeBottomTabBar } from "@/components/NativeBottomTabBar";
 import { useResizableSidebar } from "@/hooks/useResizableSidebar";
 import { cn } from "@/lib/utils";
-import { Menu } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { Capacitor } from "@capacitor/core";
+import { ArrowLeft, Menu } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 interface DashboardLayoutClientProps {
@@ -46,6 +48,7 @@ export function DashboardLayoutClient({
   const [isDesktop, setIsDesktop] = useState(false);
   const mainContentRef = useRef<HTMLElement>(null);
   const pathname = usePathname();
+  const router = useRouter();
 
   const { width: sidebarWidth, handleMouseDown: handleSidebarResize } =
     useResizableSidebar({
@@ -116,7 +119,30 @@ export function DashboardLayoutClient({
   }, [lastScrollY, isFullScreenRoute]);
 
   if (isFullScreenRoute) {
-    return <>{children}</>;
+    // No app nativo essas rotas não têm sidebar nem outro jeito de voltar ao
+    // menu principal (rejeição Apple: "Contatos, Caixa de Entrada... sem botão
+    // de voltar"). Na web mantém o comportamento full-screen sem header extra.
+    if (!Capacitor.isNativePlatform()) {
+      return <>{children}</>;
+    }
+
+    return (
+      <div className="flex flex-col h-screen bg-background">
+        <div className="shrink-0 border-b border-border/50 px-2 py-2 flex items-center gap-2 bg-card">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push("/dashboard")}
+            className="text-foreground hover:bg-muted"
+          >
+            <ArrowLeft className="h-5 w-5 mr-1" />
+            Menu
+          </Button>
+        </div>
+        <div className="flex-1 min-h-0 pb-14">{children}</div>
+        <NativeBottomTabBar />
+      </div>
+    );
   }
 
   return (
@@ -186,11 +212,21 @@ export function DashboardLayoutClient({
 
         {/* Page Content */}
         {isFluidRoute ? (
-          <div className="flex-1 overflow-hidden bg-background flex flex-col">
+          <div
+            className={cn(
+              "flex-1 overflow-hidden bg-background flex flex-col",
+              Capacitor.isNativePlatform() && "pb-14",
+            )}
+          >
             <PaymentWall>{children}</PaymentWall>
           </div>
         ) : (
-          <div className="flex-1 overflow-auto bg-background px-2 py-2 sm:px-3 sm:py-2 md:px-4 md:py-3 xl:px-6 xl:py-4">
+          <div
+            className={cn(
+              "flex-1 overflow-auto bg-background px-2 py-2 sm:px-3 sm:py-2 md:px-4 md:py-3 xl:px-6 xl:py-4",
+              Capacitor.isNativePlatform() && "pb-14",
+            )}
+          >
             <div className="max-w-[1600px] mx-auto w-full">
               <BillingStatusBanner />
               <PaymentWall>{children}</PaymentWall>
@@ -198,6 +234,7 @@ export function DashboardLayoutClient({
           </div>
         )}
       </main>
+      <NativeBottomTabBar />
     </div>
   );
 }

@@ -1,0 +1,3 @@
+app_identifier "com.uzzai.uzzapp"
+team_id "2YRXNXGL8K"
+# Sem apple_id — autenticação via API Key (.p8), não Apple ID/senha.

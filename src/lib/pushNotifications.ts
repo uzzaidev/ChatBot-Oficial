@@ -8,11 +8,19 @@
  * 2. Token é salvo no backend (Supabase) associado ao user_id
  * 3. Backend envia notificação → Firebase → Device
  * 4. App recebe e processa notificação
+ *
+ * IMPORTANTE: usa @capacitor-firebase/messaging (não @capacitor/push-notifications).
+ * No iOS, @capacitor/push-notifications retorna o token APNs cru, que não é
+ * aceito pelo backend de envio (FCM HTTP v1 via firebase-admin, ver
+ * src/lib/push-dispatch.ts) — o token era salvo mas todo envio ao iOS falhava
+ * silenciosamente e o token acabava removido como "inválido". O plugin
+ * @capacitor-firebase/messaging troca o token APNs pelo token FCM internamente,
+ * então Android e iOS salvam o mesmo formato de token.
  */
 
 "use client";
 
-import { PushNotifications } from "@capacitor/push-notifications";
+import { FirebaseMessaging } from "@capacitor-firebase/messaging";
 import { Capacitor } from "@capacitor/core";
 import { createBrowserClient } from "@/lib/supabase-browser";
 
@@ -27,19 +35,21 @@ export const initPushNotifications = async () => {
   }
 
   try {
-    // 1. Solicitar permissão (Android 13+)
-    const permissionResult = await PushNotifications.requestPermissions();
+    // 1. Solicitar permissão (Android 13+ / iOS)
+    const permissionResult = await FirebaseMessaging.requestPermissions();
 
-    if (permissionResult.receive === "granted") {
-      // 2. Registrar para receber notificações
-      await PushNotifications.register();
-    } else {
-      // Permission denied
+    if (permissionResult.receive !== "granted") {
       return;
     }
 
-    // 3. Configurar listeners
+    // 2. Configurar listeners (inclui o de token, que substitui o "register")
     setupListeners();
+
+    // 3. Obter token FCM atual e salvar
+    const { token } = await FirebaseMessaging.getToken();
+    if (token) {
+      await saveTokenToBackend(token);
+    }
   } catch (error) {
     // Error initializing push notifications
   }
@@ -49,34 +59,27 @@ export const initPushNotifications = async () => {
  * Configura listeners de eventos de push notifications
  */
 const setupListeners = () => {
-  // Listener: Token registrado com sucesso
-  PushNotifications.addListener("registration", async (token) => {
-    // Salvar token no backend(Supabase)
-    await saveTokenToBackend(token.value);
-  });
-
-  // Listener: Erro ao registrar token
-  PushNotifications.addListener("registrationError", (error) => {
-    // Error registering token
+  // Listener: token (novo ou renovado)
+  FirebaseMessaging.addListener("tokenReceived", async (event) => {
+    if (event.token) {
+      await saveTokenToBackend(event.token);
+    }
   });
 
   // Listener: Notificação recebida (app em foreground)
-  PushNotifications.addListener("pushNotificationReceived", (notification) => {
+  FirebaseMessaging.addListener("notificationReceived", (event) => {
     // Mark as delivered for analytics (best effort)
-    void trackNotificationEvent("delivered", notification.data || {});
-
-    // Aqui você pode mostrar uma notificação customizada ou atualizar UI
-    // Por padrão, Android mostra automaticamente se app está em background
+    void trackNotificationEvent("delivered", event.notification?.data || {});
   });
 
   // Listener: Usuário clicou na notificação (app em background ou fechado)
-  PushNotifications.addListener("pushNotificationActionPerformed", (action) => {
+  FirebaseMessaging.addListener("notificationActionPerformed", (event) => {
     // Mark as opened for analytics (best effort)
-    const data = action?.notification?.data || {};
+    const data = event.notification?.data || {};
     void trackNotificationEvent("opened", data);
 
     // Processar ação (ex: navegar para chat específico)
-    handleNotificationAction(action);
+    handleNotificationAction(event);
   });
 };
 
@@ -203,7 +206,7 @@ const saveTokenToBackend = async (token: string) => {
 const handleNotificationAction = (action: any) => {
   try {
     const notification = action.notification;
-    const data = notification.data || {};
+    const data = notification?.data || {};
 
     // Conversas usam query param (?phone=...) no app atual.
     const phone = data.phone || data.chat_id || data.conversation_phone;
@@ -234,6 +237,6 @@ const handleNotificationAction = (action: any) => {
  */
 export const removePushNotificationListeners = () => {
   if (Capacitor.isNativePlatform()) {
-    PushNotifications.removeAllListeners();
+    FirebaseMessaging.removeAllListeners();
   }
 };

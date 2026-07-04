@@ -1,0 +1,92 @@
+name: iOS Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_version:
+        description: "Versão do app (ex: 1.0.0)"
+        required: true
+        default: "1.0.0"
+      build_number:
+        description: "Build number (inteiro crescente). Vazio = usa o run number do GitHub."
+        required: false
+
+jobs:
+  release:
+    name: Build + TestFlight (sem Mac local — macos-26)
+    runs-on: macos-26
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode 26.5
+        run: sudo xcode-select -s /Applications/Xcode_26.5.app
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install JS dependencies
+        run: pnpm install --frozen-lockfile
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: false
+
+      - name: Install fastlane
+        run: bundle install --jobs 4 --retry 3
+
+      - name: Restore GoogleService-Info.plist
+        run: |
+          echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64 }}" | base64 --decode > ios/App/App/GoogleService-Info.plist
+
+      - name: Determine app version / build number
+        id: version
+        run: |
+          echo "app_version=${{ github.event.inputs.app_version }}" >> "$GITHUB_OUTPUT"
+          if [ -n "${{ github.event.inputs.build_number }}" ]; then
+            echo "build_number=${{ github.event.inputs.build_number }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "build_number=${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: ios/App/Pods
+          key: pods-${{ runner.os }}-${{ hashFiles('ios/App/Podfile.lock') }}
+
+      - name: cap copy ios (CAPACITOR_PLATFORM=ios)
+        env:
+          CAPACITOR_PLATFORM: ios
+        run: |
+          pnpm build:mobile
+          pnpm exec cap copy ios
+
+      - name: Fix Podfile pnpm paths
+        run: node scripts/fix-ios-podfile-paths.mjs
+
+      - name: pod install
+        working-directory: ios/App
+        run: pod install --repo-update
+
+      - name: fastlane beta (match + signing + gym + pilot)
+        env:
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          APP_VERSION: ${{ steps.version.outputs.app_version }}
+          BUILD_NUMBER: ${{ steps.version.outputs.build_number }}
+        run: bundle exec fastlane beta
+
+      - name: Cleanup GoogleService-Info.plist
+        if: always()
+        run: rm -f ios/App/App/GoogleService-Info.plist
