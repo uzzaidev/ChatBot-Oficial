@@ -10,6 +10,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-07-04
 
+### fix
+- Restaurado script `build:mobile` para gerar fallback estático mínimo exigido pelo Capacitor, evitando conflito com rotas dinâmicas do Next.js
+  - Arquivos: `scripts/build-mobile.js`
+  - Evidência: script cria pasta `out/` com HTML básico para atender requisito técnico do Capacitor sem exportar app inteiro
+  - Confiança: alta
+
+## 2026-07-04
+
 ### chore
 - Configurado ByteRover local memory com checkpoint de 2026-04-16 para suporte a memória persistente
   - Arquivos: `.brv/context-tree/ai-system/context.md`
