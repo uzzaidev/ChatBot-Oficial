@@ -14,7 +14,7 @@ set DB_NAME=postgres
 set DB_USER=postgres.vczfsmymvjvxuxlqswai
 set DB_SCHEMA=public
 set BACKUP_DIR=.
-set PGPASSWORD=yX7DuOtr9Ei0ecdG
+set PGPASSWORD=%POSTGRES_PASSWORD%
 
 REM Criar timestamp para o arquivo
 for /f "tokens=2 delims==" %%I in ('wmic os get localdatetime /value') do set datetime=%%I

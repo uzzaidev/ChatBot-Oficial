@@ -9,7 +9,8 @@ async function testConnection() {
   console.log("🔌 Testando conexão com Supabase PostgreSQL...\n");
 
   const connectionString =
-    "postgres://postgres.vczfsmymvjvxuxlqswai:yX7DuOtr9Ei0ecdG@aws-1-sa-east-1.pooler.supabase.com:5432/postgres";
+    process.env.POSTGRES_URL ||
+    `postgres://postgres.vczfsmymvjvxuxlqswai:${process.env.POSTGRES_PASSWORD}@aws-1-sa-east-1.pooler.supabase.com:5432/postgres`;
 
   console.log(
     "📋 Connection String:",

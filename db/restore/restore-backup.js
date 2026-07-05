@@ -11,7 +11,7 @@ async function main() {
   console.log('🔄 RESTORE COMPLETO DO BACKUP ORIGINAL\n');
   
   const client = new Client({
-    connectionString: "postgres://postgres.jhodhxvvhohygijqcxbo:affJLwPDtzPm0LYI@aws-1-sa-east-1.pooler.supabase.com:5432/postgres",
+    connectionString: process.env.POSTGRES_URL,
     ssl: { rejectUnauthorized: false }
   });
   

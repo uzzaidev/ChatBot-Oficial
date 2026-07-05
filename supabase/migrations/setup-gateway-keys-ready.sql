@@ -10,7 +10,7 @@
 
 -- Gateway API Key (vck_...)
 SELECT vault.create_secret(
-  'vck_4a4BgUYsrXlTsKaaH9R8uGRw8FR7IipUGf660FfqnX6CcdpFyb2f9Qm4',
+  'vck_REDACTED',
   'shared_gateway_api_key',
   'Shared Vercel AI Gateway API Key'
 ) AS gateway_key_id;

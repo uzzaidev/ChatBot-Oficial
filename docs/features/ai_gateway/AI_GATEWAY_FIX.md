@@ -71,7 +71,7 @@ Ou execute manualmente no Supabase SQL Editor:
 
 1. Acesse: http://localhost:3000/dashboard/ai-gateway/setup
 2. Cole suas API keys:
-   - **Gateway Key:** `vck_4a4BgUYsrXlTsKaaH9R8uGRw8FR7IipUGf660FfqnX6CcdpFyb2f9Qm4`
+   - **Gateway Key:** `vck_REDACTED`
    - **OpenAI Key:** `sk-proj-...` (obtenha em https://platform.openai.com/api-keys)
    - **Groq Key:** `gsk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` (substitua pela sua)
 3. Clique em **Save Configuration**
