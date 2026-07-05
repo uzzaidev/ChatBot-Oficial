@@ -35,13 +35,13 @@ Configurar o backend do AI Gateway com **arquitetura de keys compartilhadas**:
 
 1. Clique em **Create key**
 2. Confirme a criação
-3. **COPIE A KEY** (formato: `vck_5NPScLD6MXiM9kUxG2eTFZwQq5lvgiq6Ishr0gm6PwBtYRqOAb2EHKD5`)
+3. **COPIE A KEY** (formato: `vck_REVOKED_SEE_DOPPLER`)
 4. **⚠️ Você NÃO poderá ver essa key novamente!**
 5. Salve em local seguro
 
 **Exemplo:**
 ```
-vck_5NPScLD6MXiM9kUxG2eTFZwQq5lvgiq6Ishr0gm6PwBtYRqOAb2EHKD5
+vck_REVOKED_SEE_DOPPLER
 ```
 
 ---
@@ -109,7 +109,7 @@ npm run dev
 ```sql
 -- 1. Gateway Key (vck_...)
 SELECT vault.create_secret(
-  'vck_5NPScLD6MXiM9kUxG2eTFZwQq5lvgiq6Ishr0gm6PwBtYRqOAb2EHKD5',  -- Sua key
+  'vck_REVOKED_SEE_DOPPLER',  -- Sua key
   'shared_gateway_api_key',
   'Shared Vercel AI Gateway API Key'
 );

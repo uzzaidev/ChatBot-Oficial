@@ -13,7 +13,13 @@ set DB_HOST=aws-1-sa-east-1.pooler.supabase.com
 set DB_PORT=6543
 set DB_NAME=postgres
 set DB_USER=postgres.vczfsmymvjvxuxlqswai
-set PGPASSWORD=yX7DuOtr9Ei0ecdG
+
+if "%PGPASSWORD%"=="" (
+    echo ERRO: Defina a variavel de ambiente PGPASSWORD antes de rodar este script.
+    echo Exemplo:  set PGPASSWORD=sua_senha_aqui ^&^& backup-complete.bat
+    pause
+    exit /b 1
+)
 
 REM Criar timestamp para o arquivo (YYYY_MM_DD_HHMMSS)
 for /f "tokens=2 delims==" %%I in ('wmic os get localdatetime /value') do set datetime=%%I

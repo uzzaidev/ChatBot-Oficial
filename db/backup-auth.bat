@@ -14,7 +14,13 @@ set DB_NAME=postgres
 set DB_USER=postgres.vczfsmymvjvxuxlqswai
 set DB_SCHEMA=auth
 set BACKUP_DIR=.
-set PGPASSWORD=yX7DuOtr9Ei0ecdG
+
+if "%PGPASSWORD%"=="" (
+    echo ERRO: Defina a variavel de ambiente PGPASSWORD antes de rodar este script.
+    echo Exemplo:  set PGPASSWORD=sua_senha_aqui ^&^& backup-auth.bat
+    pause
+    exit /b 1
+)
 
 REM Criar timestamp para o arquivo
 for /f "tokens=2 delims==" %%I in ('wmic os get localdatetime /value') do set datetime=%%I

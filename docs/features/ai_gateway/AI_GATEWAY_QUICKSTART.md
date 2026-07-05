@@ -1,6 +1,6 @@
 # AI Gateway - Guia Rápido de Configuração
 
-**Sua Gateway Key:** `vck_4a4BgUYsrXlTsKaaH9R8uGRw8FR7IipUGf660FfqnX6CcdpFyb2f9Qm4`
+**Sua Gateway Key:** `vck_REVOKED_SEE_DOPPLER`
 
 ---
 
@@ -61,7 +61,7 @@ npm run dev
 1. Acesse: http://localhost:3000/dashboard/ai-gateway/setup
 
 2. Preencha as keys:
-   - **Gateway API Key (vck_...):** `vck_4a4BgUYsrXlTsKaaH9R8uGRw8FR7IipUGf660FfqnX6CcdpFyb2f9Qm4`
+   - **Gateway API Key (vck_...):** `vck_REVOKED_SEE_DOPPLER`
    - **OpenAI API Key:** `sk-proj-...` (sua key)
    - **Groq API Key:** `gsk_...` (sua key)
    - Anthropic e Google (opcional)

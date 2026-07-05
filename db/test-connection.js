@@ -9,7 +9,14 @@ async function testConnection() {
   console.log("🔌 Testando conexão com Supabase PostgreSQL...\n");
 
   const connectionString =
-    "postgres://postgres.vczfsmymvjvxuxlqswai:yX7DuOtr9Ei0ecdG@aws-1-sa-east-1.pooler.supabase.com:5432/postgres";
+    process.env.DATABASE_URL || process.env.POSTGRES_URL_NON_POOLING;
+
+  if (!connectionString) {
+    console.error(
+      "❌ Defina DATABASE_URL ou POSTGRES_URL_NON_POOLING no .env.local antes de rodar este script.",
+    );
+    process.exit(1);
+  }
 
   console.log(
     "📋 Connection String:",

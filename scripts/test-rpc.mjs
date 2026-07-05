@@ -1,8 +1,14 @@
+import "dotenv/config";
 import { createClient } from "@supabase/supabase-js";
 
-const SUPABASE_URL = "https://vczfsmymvjvxuxlqswai.supabase.co";
-const SERVICE_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjemZzbXltdmp2eHV4bHFzd2FpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MzgwMTk1MSwiZXhwIjoyMDc5Mzc3OTUxfQ.YDhSd5praF_bWIBLVyRlKcnGvqqfTAO9qFIvYEz8M8M";
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!SUPABASE_URL || !SERVICE_KEY) {
+  throw new Error(
+    "Defina NEXT_PUBLIC_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY no .env.local antes de rodar este script.",
+  );
+}
 
 const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
