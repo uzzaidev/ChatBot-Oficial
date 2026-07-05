@@ -8,6 +8,16 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-07-05
+
+### fix
+- Removidos segredos hardcoded expostos em scripts de backup, conexão e documentação, substituindo-os por variáveis de ambiente e placeholders revogados.
+- Atualizados exemplos e instruções de API keys no AI Gateway para usar chave revogada e evitar exposição.
+- Adicionado aviso para definir variáveis de ambiente obrigatórias em scripts `.bat` e Node.js.
+  - Arquivos: `db/backup-auth.bat`, `db/backup-complete.bat`, `db/backup-postgres.bat`, `db/test-connection.js`, `scripts/test-rpc.mjs`, `docs/features/ai_gateway/*`, `supabase/migrations/setup-gateway-keys.sql`, `supabase/migrations/setup-gateway-keys-ready.sql`
+  - Evidência: remoção de valores sensíveis fixos e inclusão de validações para variáveis de ambiente
+  - Confiança: alta
+
 ## 2026-07-04
 
 ### fix
