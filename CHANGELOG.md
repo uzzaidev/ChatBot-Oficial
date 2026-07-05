@@ -10,6 +10,23 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-07-05
 
+### chore
+- Removidos segredos hardcoded dos scripts de backup e restore, substituindo por variáveis de ambiente (`POSTGRES_PASSWORD` e `POSTGRES_URL`)
+  - Arquivos: `db/backup-auth.bat`, `db/backup-complete.bat`, `db/backup-postgres.bat`, `db/restore/restore-backup.js`, `db/restore/restore-complete-backup.js`, `db/test-connection.js`
+  - Confiança: alta
+
+### chore
+- Atualizadas referências da Gateway API Key nos documentos de configuração do AI Gateway para valor redigido (`vck_REDACTED`), removendo chaves expostas
+  - Arquivos: `docs/features/ai_gateway/AI_GATEWAY_FIX.md`, `docs/features/ai_gateway/AI_GATEWAY_QUICKSTART.md`, `docs/features/ai_gateway/IMPLEMENTATION_SUMMARY.md`, `docs/features/ai_gateway/QUICK_SETUP.md`, `docs/features/ai_gateway/SETUP_GUIDE.md`, `supabase/migrations/setup-gateway-keys.sql`, `supabase/migrations/setup-gateway-keys-ready.sql`
+  - Confiança: alta
+
+### chore
+- Ajustado script `scripts/test-rpc.mjs` para usar variável `SUPABASE_URL` com fallback para `NEXT_PUBLIC_SUPABASE_URL` e removida verificação explícita de variáveis de ambiente
+  - Arquivo: `scripts/test-rpc.mjs`
+  - Confiança: alta
+
+## 2026-07-05
+
 ### fix
 - Removidos segredos hardcoded expostos em scripts de backup, conexão e documentação, substituindo-os por variáveis de ambiente e placeholders revogados.
 - Atualizados exemplos e instruções de API keys no AI Gateway para usar chave revogada e evitar exposição.
