@@ -10,6 +10,18 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-07-06
 
+### chore
+- Adicionado script para captura automatizada de screenshots para App Store (iPhone 6.5") com Puppeteer, incluindo novas imagens geradas em `docs/ios/screenshots/appstore-6.5in/` e comando npm para execução
+  - Arquivos: `scripts/ios-capture-appstore-screenshots.mjs`, `package.json`, `docs/ios/screenshots/appstore-6.5in/*`
+  - Confiança: alta
+
+### docs
+- Atualizada descrição do produto na página de suporte para refletir plataforma de atendimento e automação com IA
+  - Arquivo: `src/app/support/page.tsx`
+  - Confiança: alta
+
+## 2026-07-06
+
 ### fix
 - Ajustado conformidade com a App Store para o app companion nativo iOS, incluindo permissões de acesso à câmera e biblioteca de fotos com descrições específicas no Info.plist.
 - Implementado bloqueio de funcionalidades de cadastro, preços, assinatura e pagamentos no app nativo, redirecionando para telas informativas que orientam uso via web.
