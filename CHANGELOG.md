@@ -11,6 +11,20 @@ Gerado automaticamente por IA a cada push no `main`.
 ## 2026-07-06
 
 ### fix
+- Ajustado conformidade com a App Store para o app companion nativo iOS, incluindo permissões de acesso à câmera e biblioteca de fotos com descrições específicas no Info.plist.
+- Implementado bloqueio de funcionalidades de cadastro, preços, assinatura e pagamentos no app nativo, redirecionando para telas informativas que orientam uso via web.
+- Modificadas telas de login, registro, onboarding, dashboard de faturamento e pagamentos para respeitar restrições do app companion nativo.
+- Adicionado componente `NativeCompanionGate` para exibir mensagens explicativas e impedir ações não permitidas no app nativo.
+- Criados componentes `NativeLandingRedirect` e `NativePrecosGate` para redirecionar ou bloquear acesso a páginas de marketing e preços no app nativo.
+- Introduzida função `isNativeCompanionApp` para detectar execução no app nativo via Capacitor.
+- Atualizadas mensagens e links para evitar criação de conta e checkout no app nativo, conforme guidelines da Apple.
+  - Arquivos: `ios/App/App/Info.plist`, `src/app/(auth)/login/page.tsx`, `src/app/(auth)/register/page.tsx`, `src/app/dashboard/billing/page.tsx`, `src/app/dashboard/payments/onboarding/page.tsx`, `src/app/dashboard/payments/page.tsx`, `src/app/onboarding/page.tsx`, `src/app/page.tsx`, `src/app/precos/page.tsx`, `src/components/BillingStatusBanner.tsx`, `src/components/NativeCompanionGate.tsx`, `src/components/NativeLandingRedirect.tsx`, `src/components/NativePrecosRedirect.tsx`, `src/lib/nativeAppCompliance.ts`
+  - Evidência: mensagens de commit e diff detalham ajustes para compliance App Store 3.1.1 e 5.1.1(ii), bloqueios e redirecionamentos no app nativo.
+  - Confiança: alta
+
+## 2026-07-06
+
+### fix
 - Ajustado componente ScrollArea para garantir altura mínima e evitar problemas de layout no modal de edição de filtros
   - Arquivos: `src/components/FilterEditorModal.tsx`
   - Evidência: adição da classe `min-h-0` para manter altura mínima no ScrollArea
