@@ -29,6 +29,7 @@
     "ios:setup-secrets": "node scripts/setup-ios-ci-secrets.mjs",
     "ios:screenshots:draft": "node scripts/ios-capture-draft-screenshots.mjs",
     "ios:screenshots:auth": "node scripts/ios-capture-authenticated-screenshots.mjs",
+    "ios:screenshots:appstore": "node scripts/ios-capture-appstore-screenshots.mjs",
     "cap:sync": "npx cap sync",
     "cap:sync:android": "cross-env CAPACITOR_PLATFORM=android npx cap sync android",
     "cap:sync:ios": "cross-env CAPACITOR_PLATFORM=ios npx cap sync ios && node scripts/fix-ios-podfile-paths.mjs",

@@ -58,7 +58,7 @@ export default function SupportPage() {
               Informacoes para review
             </h2>
             <ul className="ml-4 list-disc space-y-1 text-erie-black-700">
-              <li>Produto: UzzApp (plataforma de atendimento WhatsApp com IA).</li>
+              <li>Produto: UzzApp (plataforma de atendimento e automação com IA).</li>
               <li>Ambiente web oficial: https://uzzapp.uzzai.com.br</li>
               <li>Politica de privacidade: https://uzzapp.uzzai.com.br/privacy</li>
               <li>Termos de uso: https://uzzapp.uzzai.com.br/terms</li>
