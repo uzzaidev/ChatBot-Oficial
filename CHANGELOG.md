@@ -8,6 +8,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-07-06
+
+### fix
+- Ajustado componente ScrollArea para garantir altura mínima e evitar problemas de layout no modal de edição de filtros
+  - Arquivos: `src/components/FilterEditorModal.tsx`
+  - Evidência: adição da classe `min-h-0` para manter altura mínima no ScrollArea
+  - Confiança: alta
+
 ## 2026-07-05
 
 ### chore
