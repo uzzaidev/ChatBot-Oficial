@@ -10,10 +10,16 @@
 "use client";
 
 import Link from "next/link";
+import { NativeCompanionGate } from "@/components/NativeCompanionGate";
 import { Button } from "@/components/ui/button";
 import { StripeOnboardingCard } from "@/components/StripeOnboardingCard";
+import { isNativeCompanionApp } from "@/lib/nativeAppCompliance";
 
 export default function PaymentsOnboardingPage() {
+  if (isNativeCompanionApp()) {
+    return <NativeCompanionGate variant="pricing" />;
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">

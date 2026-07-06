@@ -3,6 +3,7 @@ import { Hero } from "@/components/landing/Hero";
 import { Highlights } from "@/components/landing/Highlights";
 import { Plans } from "@/components/landing/Plans";
 import { Security } from "@/components/landing/Security";
+import { NativeLandingRedirect } from "@/components/NativeLandingRedirect";
 import Link from "next/link";
 
 /**
@@ -14,6 +15,7 @@ import Link from "next/link";
 export default function LandingPage() {
   return (
     <main className="min-h-screen bg-background">
+      <NativeLandingRedirect />
       <Hero />
       <Highlights />
       <Plans />

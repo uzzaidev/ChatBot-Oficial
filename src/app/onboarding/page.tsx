@@ -1,7 +1,9 @@
 "use client";
 
 import { EmbeddedSignupButton } from "@/components/EmbeddedSignupButton";
+import { NativeCompanionGate } from "@/components/NativeCompanionGate";
 import { apiFetch } from "@/lib/api";
+import { isNativeCompanionApp } from "@/lib/nativeAppCompliance";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
@@ -701,6 +703,10 @@ function OnboardingContent() {
   }
 
   if (needsPayment) {
+    if (isNativeCompanionApp()) {
+      return <NativeCompanionGate variant="subscription" />;
+    }
+
     return (
       <div className="bg-gradient-to-br from-gray-950 to-gray-900 min-h-screen flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-lg">

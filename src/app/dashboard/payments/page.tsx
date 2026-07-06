@@ -10,6 +10,7 @@
 "use client";
 
 import { SubscriptionsList } from "@/components/SubscriptionsList";
+import { isNativeCompanionApp } from "@/lib/nativeAppCompliance";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -34,6 +35,7 @@ export default function PaymentsDashboardPage() {
   const [subscriptions, setSubscriptions] = useState<SubscriptionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isNativeApp = isNativeCompanionApp();
 
   const loadSubscriptions = async () => {
     setLoading(true);
@@ -70,6 +72,7 @@ export default function PaymentsDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {!isNativeApp && (
         <Card>
           <CardHeader>
             <CardTitle>Onboarding</CardTitle>
@@ -85,7 +88,9 @@ export default function PaymentsDashboardPage() {
             </Button>
           </CardContent>
         </Card>
+        )}
 
+        {!isNativeApp && (
         <Card>
           <CardHeader>
             <CardTitle>Catalogo</CardTitle>
@@ -101,7 +106,15 @@ export default function PaymentsDashboardPage() {
             </Button>
           </CardContent>
         </Card>
+        )}
       </div>
+
+      {isNativeApp && (
+        <p className="text-sm text-muted-foreground">
+          Configuração de pagamentos Stripe Connect não está disponível no app
+          mobile. Use o portal web para gerenciar produtos e cobranças.
+        </p>
+      )}
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 

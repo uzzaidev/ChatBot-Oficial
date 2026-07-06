@@ -1,11 +1,21 @@
 "use client";
 
+import { NativeCompanionGate } from "@/components/NativeCompanionGate";
 import { apiFetch } from "@/lib/api";
+import { isNativeCompanionApp } from "@/lib/nativeAppCompliance";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
 export default function RegisterPage() {
+  if (isNativeCompanionApp()) {
+    return <NativeCompanionGate variant="registration" />;
+  }
+
+  return <RegisterPageContent />;
+}
+
+function RegisterPageContent() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     fullName: "",

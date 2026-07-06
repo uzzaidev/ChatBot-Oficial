@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { NativePrecosGate } from '@/components/NativePrecosRedirect'
 
 export const metadata: Metadata = {
   title: 'Planos e Preços — UZZ.AI',
@@ -39,6 +40,7 @@ const faqs = [
 
 export default function PrecosPage() {
   return (
+    <NativePrecosGate>
     <div className="min-h-screen bg-gradient-to-br from-erie-black-900 via-erie-black-800 to-erie-black-900">
       <div className="container mx-auto px-4 py-12 max-w-4xl">
 
@@ -154,5 +156,6 @@ export default function PrecosPage() {
 
       </div>
     </div>
+    </NativePrecosGate>
   )
 }

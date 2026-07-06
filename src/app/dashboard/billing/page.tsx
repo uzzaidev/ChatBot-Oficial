@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { isNativeCompanionApp } from "@/lib/nativeAppCompliance";
 import {
   AlertTriangle,
   Calendar,
@@ -132,6 +133,7 @@ export default function BillingPage() {
   const [loading, setLoading] = useState(true);
   const [portalLoading, setPortalLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isNativeApp = isNativeCompanionApp();
 
   useEffect(() => {
     const fetchBilling = async () => {
@@ -199,17 +201,30 @@ export default function BillingPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Faturamento</h1>
         <p className="text-muted-foreground mt-1">
-          Gerencie sua assinatura e histórico de pagamentos
+          {isNativeApp
+            ? "Visualize o status da assinatura da sua organização"
+            : "Gerencie sua assinatura e histórico de pagamentos"}
         </p>
       </div>
+
+      {isNativeApp && (
+        <Alert>
+          <AlertDescription>
+            No app mobile, esta tela é somente para consulta. Alterações de
+            plano e pagamento são feitas pelo administrador da conta fora deste
+            aplicativo.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Past Due Alert */}
       {sub?.status === "past_due" && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            Seu pagamento está pendente. Atualize seu método de pagamento para
-            evitar a suspensão do serviço.
+            {isNativeApp
+              ? "Seu pagamento está pendente. Entre em contato com o administrador da conta para regularizar o acesso."
+              : "Seu pagamento está pendente. Atualize seu método de pagamento para evitar a suspensão do serviço."}
           </AlertDescription>
         </Alert>
       )}
@@ -299,7 +314,7 @@ export default function BillingPage() {
             </div>
           )}
 
-          {sub?.stripe_customer_id && (
+          {sub?.stripe_customer_id && !isNativeApp && (
             <Button
               onClick={openPortal}
               disabled={portalLoading}
@@ -316,8 +331,9 @@ export default function BillingPage() {
 
           {!sub && (
             <p className="text-sm text-muted-foreground">
-              Você ainda não possui uma assinatura. Entre em contato com o
-              administrador.
+              {isNativeApp
+                ? "Nenhuma assinatura ativa nesta conta. Entre em contato com o administrador."
+                : "Você ainda não possui uma assinatura. Entre em contato com o administrador."}
             </p>
           )}
         </CardContent>

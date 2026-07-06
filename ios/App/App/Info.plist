@@ -51,13 +51,13 @@
 	<key>NSFaceIDUsageDescription</key>
 	<string>UzzApp usa Face ID para autenticacao segura e rapida.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>UzzApp precisa acessar a camera para tirar fotos na base de conhecimento.</string>
+	<string>O UzzApp usa a câmera para tirar fotos e anexá-las em atendimentos com clientes ou na base de conhecimento, por exemplo fotos de produtos ou documentos.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>UzzApp precisa acessar sua galeria para selecionar arquivos.</string>
+	<string>O UzzApp acessa suas fotos para anexar imagens em conversas com clientes e na base de conhecimento, por exemplo comprovantes, documentos ou fotos de produtos.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>UzzApp precisa salvar arquivos na sua galeria.</string>
+	<string>O UzzApp pode salvar na galeria imagens exportadas ou geradas pelo app, por exemplo comprovantes ou materiais de atendimento.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>UzzApp precisa acessar o microfone para gravar audios.</string>
+	<string>O UzzApp usa o microfone para gravar áudios enviados em atendimentos com clientes.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

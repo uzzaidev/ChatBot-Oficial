@@ -1,6 +1,7 @@
 "use client";
 
 import { createClientBrowser } from "@/lib/supabase";
+import { isNativeCompanionApp } from "@/lib/nativeAppCompliance";
 import { AlertTriangle, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -49,6 +50,8 @@ export const BillingStatusBanner = () => {
 
   if (!status) return null;
 
+  const isNativeApp = isNativeCompanionApp();
+
   const daysLeft = graceEnds
     ? Math.max(
         0,
@@ -65,13 +68,20 @@ export const BillingStatusBanner = () => {
         <div className="flex-1 text-sm">
           <p className="font-semibold text-destructive">Conta suspensa</p>
           <p className="text-muted-foreground">
-            Sua assinatura foi cancelada e o atendimento esta pausado.{" "}
-            <Link
-              href="/dashboard/billing"
-              className="underline text-primary hover:text-primary/80"
-            >
-              Reativar plano
-            </Link>
+            Sua assinatura foi cancelada e o atendimento esta pausado.
+            {isNativeApp ? (
+              " Entre em contato com o administrador da conta."
+            ) : (
+              <>
+                {" "}
+                <Link
+                  href="/dashboard/billing"
+                  className="underline text-primary hover:text-primary/80"
+                >
+                  Reativar plano
+                </Link>
+              </>
+            )}
           </p>
         </div>
       </div>
@@ -91,13 +101,20 @@ export const BillingStatusBanner = () => {
             ? `Você tem ${daysLeft} dia${
                 daysLeft !== 1 ? "s" : ""
               } para regularizar antes da suspensão.`
-            : "Regularize o pagamento para evitar a suspensão."}{" "}
-          <Link
-            href="/dashboard/billing"
-            className="underline text-primary hover:text-primary/80"
-          >
-            Ver faturamento
-          </Link>
+            : "Regularize o pagamento para evitar a suspensão."}
+          {isNativeApp ? (
+            " Entre em contato com o administrador da conta."
+          ) : (
+            <>
+              {" "}
+              <Link
+                href="/dashboard/billing"
+                className="underline text-primary hover:text-primary/80"
+              >
+                Ver faturamento
+              </Link>
+            </>
+          )}
         </p>
       </div>
     </div>

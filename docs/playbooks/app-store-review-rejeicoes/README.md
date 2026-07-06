@@ -93,6 +93,42 @@ estourar o limite de memória do processo da WebView.
 de arquivo nativo perde os tipos de imagem no accept (só documentos), então a
 Apple/iOS não oferece mais o sheet de câmera por esse caminho.
 
+### 1.5. Rejeição real de 2026-07-06 (build 4) — 3 guidelines
+
+Submissão 1.0 (build 4), revisada em iPad Air 11-inch (M3). 3 achados:
+
+#### 4.1(c) — Copycats (WhatsApp no subtítulo)
+
+**Mensagem da Apple:** subtítulo continha marca/nome WhatsApp.
+
+**Correção:** subtítulo alterado para texto genérico (ex.: "Agentes inteligentes").
+Revisar também screenshots, descrição e keywords. **Não exige novo build** se só
+metadata no App Store Connect mudou.
+
+#### 3.1.1 — Payments (cadastro empresarial + assinatura externa)
+
+**Mensagem da Apple:** cadastro de contas para empresas/organizações + mecanismo
+externo de compra/assinatura.
+
+**Correção aplicada neste repo (app nativo = companion only):**
+- `src/lib/nativeAppCompliance.ts` — helper `isNativeCompanionApp()`
+- `src/components/NativeCompanionGate.tsx` — telas bloqueadas no Capacitor
+- `/register`, `/precos`, onboarding com gate Stripe, `/dashboard/billing`
+  (somente leitura), `/dashboard/payments/*` — sem checkout/portal no nativo
+- Login sem link "Criar conta" no app nativo
+- Landing `/` redireciona para `/login` no nativo
+
+**Web (`uzzapp.uzzai.com.br`):** register + Stripe inalterados.
+
+**Review Notes:** conta demo com assinatura **já ativa**; explicar 3.1.3(b).
+
+#### 5.1.1(ii) — Photo Library purpose string
+
+**Mensagem da Apple:** `NSPhotoLibraryUsageDescription` genérico demais.
+
+**Correção:** textos com exemplo de uso em `ios/App/App/Info.plist`. **Exige novo
+build iOS** (`cap sync ios` + CI/TestFlight).
+
 ---
 
 ## 2. Guideline 5.1.2(i) — Privacy: Data Use and Sharing (Tracking)

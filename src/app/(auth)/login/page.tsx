@@ -12,6 +12,7 @@ import {
   signInWithEmail,
   signInWithOAuth,
 } from "@/lib/supabase-browser";
+import { isNativeCompanionApp } from "@/lib/nativeAppCompliance";
 import { Capacitor } from "@capacitor/core";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -465,15 +466,22 @@ function LoginContent() {
         )}
 
         <div className="mt-6 text-center text-sm text-muted-foreground">
-          <p>
-            N&#227;o tem uma conta?{" "}
-            <Link
-              href="/register"
-              className="text-primary hover:text-primary/80 font-medium hover:underline transition-colors"
-            >
-              Crie uma conta
-            </Link>
-          </p>
+          {isNativeCompanionApp() ? (
+            <p>
+              Este app é para contas já existentes. Se você recebeu um convite,
+              use o link enviado por e-mail.
+            </p>
+          ) : (
+            <p>
+              N&#227;o tem uma conta?{" "}
+              <Link
+                href="/register"
+                className="text-primary hover:text-primary/80 font-medium hover:underline transition-colors"
+              >
+                Crie uma conta
+              </Link>
+            </p>
+          )}
         </div>
       </div>
     </div>
