@@ -42,7 +42,8 @@ export default function FlowsListPage() {
       const response = await apiFetch('/api/flows')
       
       if (!response.ok) {
-        throw new Error('Failed to load flows')
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.error || 'Failed to load flows')
       }
 
       const data = await response.json()
@@ -73,7 +74,7 @@ export default function FlowsListPage() {
     }
 
     try {
-      const response = await fetch(`/api/flows/${flowId}`, {
+      const response = await apiFetch(`/api/flows/${flowId}`, {
         method: 'DELETE'
       })
 
@@ -91,7 +92,7 @@ export default function FlowsListPage() {
 
   const handleToggleActive = async (flowId: string, currentStatus: boolean) => {
     try {
-      const response = await fetch(`/api/flows/${flowId}`, {
+      const response = await apiFetch(`/api/flows/${flowId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isActive: !currentStatus })

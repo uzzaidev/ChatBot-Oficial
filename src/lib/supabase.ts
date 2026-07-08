@@ -28,16 +28,37 @@ const getSupabaseServiceRoleKey = (): string => {
 
 /**
  * createServerClient - Para API routes que precisam LER a sessão do usuário
- * Usa cookies para manter a autenticação do browser
+ * Usa cookies (web) ou Bearer token (mobile Capacitor)
  */
 export const createServerClient = async () => {
+  const supabaseUrl = getSupabaseUrl()
+  const supabaseAnonKey = getSupabaseAnonKey()
+
+  // Mobile (Capacitor): apiFetch envia Authorization: Bearer <token>
+  const { headers } = require('next/headers')
+  const headersList = await headers()
+  const authHeader = headersList.get('authorization')
+  const bearerToken = authHeader?.startsWith('Bearer ')
+    ? authHeader.substring(7)
+    : null
+
+  if (bearerToken) {
+    return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${bearerToken}`,
+        },
+      },
+    })
+  }
+
   // Import dinâmico para evitar erro em client components
   const { cookies } = require('next/headers')
   const cookieStore = await cookies()
 
   return createSSRServerClient(
-    getSupabaseUrl(),
-    getSupabaseAnonKey(),
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         get(name: string) {

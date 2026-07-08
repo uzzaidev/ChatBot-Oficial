@@ -14,7 +14,7 @@
 
 import { createServerClient as createSupabaseServerClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import type { Database } from './types'
 
 /**
@@ -41,6 +41,18 @@ export const createServerClient = async () => {
       'Certifique-se de ter NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY ' +
       'no arquivo .env.local'
     )
+  }
+
+  const bearerToken = await resolveBearerToken()
+
+  if (bearerToken) {
+    return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${bearerToken}`,
+        },
+      },
+    })
   }
 
   const cookieStore = await cookies()
@@ -133,7 +145,7 @@ export const createRouteHandlerClient = async (request?: Request) => {
   }
 
   // Check for Bearer token first (mobile)
-  const bearerToken = getBearerToken(request)
+  const bearerToken = await resolveBearerToken(request)
 
   if (bearerToken) {
     // Mobile: use standard client with Bearer token
@@ -204,12 +216,16 @@ export const getCurrentUser = async () => {
  * }
  */
 /**
- * Extrai token Bearer do header Authorization
+ * Extrai token Bearer do header Authorization (request ou headers() do Next.js)
+ *
+ * Mobile (Capacitor): apiFetch envia Bearer token porque cookies não são
+ * repassados com credentials: 'omit' nas chamadas cross-origin/nativas.
  */
-function getBearerToken(request?: Request): string | null {
-  if (!request) return null
+async function resolveBearerToken(request?: Request): Promise<string | null> {
+  const authHeader =
+    request?.headers.get('authorization') ??
+    (await headers()).get('authorization')
 
-  const authHeader = request.headers.get('authorization')
   if (!authHeader?.startsWith('Bearer ')) return null
 
   return authHeader.substring(7)
@@ -229,7 +245,7 @@ export const getClientIdFromSession = async (request?: Request): Promise<string 
   }
 
   // Tentar usar Bearer token primeiro (mobile)
-  const bearerToken = getBearerToken(request)
+  const bearerToken = await resolveBearerToken(request)
 
   let supabase
   if (bearerToken) {

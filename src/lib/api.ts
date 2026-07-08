@@ -81,9 +81,15 @@ export async function apiFetch(
       // Importar dinamicamente para evitar erro no servidor
       const { createBrowserClient } = await import("@/lib/supabase-browser");
       const supabase = createBrowserClient();
-      const {
+      let {
         data: { session },
       } = await supabase.auth.getSession();
+
+      // iOS/Capacitor: sessão pode expirar no storage local — tenta refresh
+      if (!session?.access_token) {
+        const refreshed = await supabase.auth.refreshSession();
+        session = refreshed.data.session;
+      }
 
       if (session?.access_token) {
         headers["Authorization"] = `Bearer ${session.access_token}`;
