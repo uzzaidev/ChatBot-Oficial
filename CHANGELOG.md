@@ -8,6 +8,18 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-07-08
+
+### fix
+- Ajustado suporte para aceitar token Bearer nas APIs de flows e agentes, permitindo autenticação via header Authorization em chamadas mobile (Capacitor).
+- Modificada criação do cliente Supabase para priorizar token Bearer quando presente, suportando sessões expiradas em iOS/Capacitor com refresh automático.
+- Atualizado middleware de autenticação para passar o objeto request na criação do cliente Supabase, garantindo leitura correta do token Bearer.
+- Refatorado método de extração do token Bearer para suportar headers do Next.js e requisições nativas.
+- Alterado componente de dashboard de flows para usar `apiFetch` com autenticação aprimorada e melhor tratamento de erros.
+  - Arquivos: `src/lib/supabase-server.ts`, `src/lib/supabase.ts`, `src/lib/api.ts`, `src/lib/middleware/api-auth.ts`, `src/app/dashboard/flows/page.tsx`
+  - Evidência: uso consistente de token Bearer no header Authorization, tratamento de refresh de sessão e passagem do request para leitura do token
+  - Confiança: alta
+
 ## 2026-07-06
 
 ### chore
