@@ -8,6 +8,14 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-07-17
+
+### fix
+- Bloqueado o acesso ao checkout Stripe no app nativo (iOS/Android Capacitor) para cumprir políticas da Google Play e App Store, exibindo aviso customizado em vez da interface de pagamento.
+  - Arquivos: `src/app/dashboard/payments/products/page.tsx`, `src/components/PaymentWall.tsx`
+  - Evidência: uso de `isNativeCompanionApp()` para condicionalmente substituir UI de checkout por `NativeCompanionGate` em ambos os componentes
+  - Confiança: alta
+
 ## 2026-07-08
 
 ### fix
