@@ -11,7 +11,9 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NativeCompanionGate } from "@/components/NativeCompanionGate";
 import { apiFetch } from "@/lib/api";
+import { isNativeCompanionApp } from "@/lib/nativeAppCompliance";
 import {
   AlertTriangle,
   CreditCard,
@@ -89,7 +91,14 @@ export function PaymentWall({ children }: { children: React.ReactNode }) {
   const status = billing?.subscription?.status;
   if (status && !BLOCKED_STATUSES.has(status)) return <>{children}</>;
 
-  // No subscription OR blocked status → show payment wall
+  // No subscription OR blocked status → normally show the payment wall.
+  // On the native app (Capacitor iOS/Android) we MUST NOT surface external
+  // (Stripe) checkout — Google Play Payments policy / App Store Guideline 3.1.
+  // Show the companion-app notice instead; billing is managed on the web.
+  if (isNativeCompanionApp()) {
+    return <NativeCompanionGate variant="subscription" />;
+  }
+
   const handleCheckout = async () => {
     setCheckoutLoading(true);
     setCheckoutError(null);

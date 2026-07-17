@@ -11,9 +11,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { NativeCompanionGate } from "@/components/NativeCompanionGate";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductForm, type ProductFormValues } from "@/components/ProductForm";
 import { Button } from "@/components/ui/button";
+import { isNativeCompanionApp } from "@/lib/nativeAppCompliance";
 
 interface StripeProductRow {
   id: string;
@@ -158,6 +160,15 @@ export default function PaymentsProductsPage() {
       setSaving(false);
     }
   };
+
+  // On the native app (Capacitor iOS/Android) the whole Stripe Connect
+  // storefront — including the "Comprar" checkout button — must not be
+  // reachable, even via a direct URL/deep link. Google Play Payments policy /
+  // App Store Guideline 3.1. Managed on the web only. (After hooks to respect
+  // the Rules of Hooks.)
+  if (isNativeCompanionApp()) {
+    return <NativeCompanionGate variant="pricing" />;
+  }
 
   return (
     <div className="space-y-6">
