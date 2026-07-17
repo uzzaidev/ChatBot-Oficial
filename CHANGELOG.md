@@ -10,6 +10,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-07-17
 
+### chore
+- Atualizada a versão do app para release de compliance: Android 2.1.1 (versionCode 10) e iOS build 4
+  - Arquivos: `android/app/build.gradle`, `ios/App/App.xcodeproj/project.pbxproj`
+  - Confiança: alta
+
+## 2026-07-17
+
 ### fix
 - Bloqueado o acesso ao checkout Stripe no app nativo (iOS/Android Capacitor) para cumprir políticas da Google Play e App Store, exibindo aviso customizado em vez da interface de pagamento.
   - Arquivos: `src/app/dashboard/payments/products/page.tsx`, `src/components/PaymentWall.tsx`
