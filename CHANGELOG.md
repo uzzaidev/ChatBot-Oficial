@@ -8,6 +8,15 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-07-21
+
+### feat
+- Adicionado job cron para envio de lembrete de renovação automática de assinaturas 7 dias antes do vencimento, com controle de idempotência e fallback para email alternativo do perfil do usuário.
+- Criada tabela `subscription_renewal_reminders` para registro dos avisos enviados, garantindo não duplicidade e aplicando políticas de segurança por roles.
+- Configurado agendamento no Vercel para execução diária do cron às 9h.
+  - Arquivos: `src/app/api/cron/renewal-reminder/route.ts`, `supabase/migrations/20260721120000_create_subscription_renewal_reminders.sql`, `vercel.json`
+  - Confiança: alta
+
 ## 2026-07-17
 
 ### chore
