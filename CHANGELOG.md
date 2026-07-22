@@ -10,6 +10,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ## 2026-07-22
 
+### chore
+- Atualizado versionCode do Android para 11 para evitar conflito com versão 10 já usada no Play Console
+  - Arquivos: `android/app/build.gradle`
+  - Confiança: alta
+
+## 2026-07-22
+
 ### perf
 - Habilitado R8 (minifyEnabled) no build de release para otimização do app Android
   - Arquivos: `android/app/build.gradle`
