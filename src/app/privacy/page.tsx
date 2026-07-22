@@ -329,8 +329,8 @@ export default function PrivacyPage() {
                   <tr>
                     <td className="border border-erie-black-200 p-3 text-erie-black-700 font-medium">OpenAI</td>
                     <td className="border border-erie-black-200 p-3 text-erie-black-700">EUA</td>
-                    <td className="border border-erie-black-200 p-3 text-erie-black-700">Conteúdo de mensagens, áudios, imagens</td>
-                    <td className="border border-erie-black-200 p-3 text-erie-black-700">IA generativa, Whisper, GPT-4o Vision</td>
+                    <td className="border border-erie-black-200 p-3 text-erie-black-700">Conteúdo de mensagens, áudios, imagens, documentos da base de conhecimento</td>
+                    <td className="border border-erie-black-200 p-3 text-erie-black-700">IA generativa, Whisper, GPT-4o Vision, embeddings (RAG)</td>
                     <td className="border border-erie-black-200 p-3 text-erie-black-700">SOC 2 Type II, ISO 27001</td>
                   </tr>
                   <tr>
