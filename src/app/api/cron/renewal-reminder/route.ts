@@ -10,6 +10,7 @@
  */
 
 import { sendEmail } from "@/lib/gmail";
+import { REMINDER_DAYS_BEFORE, buildRenewalReminderEmailHtml } from "@/lib/renewal-reminder-email";
 import { createServiceClient } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -17,36 +18,6 @@ export const dynamic = "force-dynamic";
 
 const CRON_SECRET = process.env.CRON_SECRET;
 const LOG_PREFIX = "[cron:renewal-reminder]";
-const REMINDER_DAYS_BEFORE = 7;
-
-const formatDateBR = (iso: string): string =>
-  new Date(iso).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
-
-const formatCurrency = (amountCents: number, currency: string): string =>
-  new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: currency.toUpperCase(),
-  }).format(amountCents / 100);
-
-const buildEmailHtml = (params: {
-  clientName: string;
-  periodEnd: string;
-  planName: string;
-  amount: number;
-  currency: string;
-}): string => {
-  const { clientName, periodEnd, planName, amount, currency } = params;
-  const renewalDate = formatDateBR(periodEnd);
-  const priceLabel = formatCurrency(amount, currency);
-
-  return `
-Olá, ${clientName}!<br><br>
-Este é um aviso automático: sua assinatura do plano <strong>${planName}</strong> será renovada automaticamente em <strong>${renewalDate}</strong> (daqui a ${REMINDER_DAYS_BEFORE} dias).<br><br>
-Valor da renovação: <strong>${priceLabel}</strong>.<br><br>
-Se você não deseja renovar, cancele antes dessa data pelo painel. Caso não haja nenhuma ação, a cobrança será feita automaticamente no cartão cadastrado.<br><br>
-Qualquer dúvida, é só responder este email.
-`.trim();
-};
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -138,7 +109,7 @@ export async function GET(request: NextRequest) {
           continue;
         }
 
-        const html = buildEmailHtml({
+        const html = buildRenewalReminderEmailHtml({
           clientName: client.name ?? "cliente",
           periodEnd: sub.current_period_end,
           planName: sub.plan_name ?? "pro",
