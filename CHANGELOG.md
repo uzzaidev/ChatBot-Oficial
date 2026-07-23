@@ -8,6 +8,13 @@ Gerado automaticamente por IA a cada push no `main`.
 
 ```
 
+## 2026-07-23
+
+### feat
+- Implementada funcionalidade de envio de email de lembrete de renovação de assinatura, incluindo template HTML reutilizável e script de teste para envio manual
+  - Arquivos: `src/app/api/cron/renewal-reminder/route.ts`, `src/lib/renewal-reminder-email.ts`, `scripts/tmp-test-renewal-email.ts`
+  - Confiança: alta
+
 ## 2026-07-22
 
 ### chore
