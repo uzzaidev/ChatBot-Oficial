@@ -1960,6 +1960,12 @@ export const processChatbotMessage = async (
     }
 
     let metadataToolTriggered = false;
+    // Set whenever the model produced at least one tool call this turn.
+    // Used below to recover a real text answer when the model emits a tool
+    // call with no accompanying message text (common for small/reasoning
+    // models on the Responses API — the tool call and the visible reply
+    // don't always come back in the same turn).
+    let toolCallsHandled = false;
 
     // Collects snapshots of every follow-up AI call made after a tool result
     // (buscar_conhecimento, buscar_documento text-file path, etc.).
@@ -1975,6 +1981,7 @@ export const processChatbotMessage = async (
 
     if (aiResponse.toolCalls && aiResponse.toolCalls.length > 0) {
       const uniqueToolCalls = dedupeToolCalls(aiResponse.toolCalls);
+      toolCallsHandled = uniqueToolCalls.length > 0;
       if (uniqueToolCalls.length !== aiResponse.toolCalls.length) {
         console.warn("[chatbotFlow] Duplicate tool calls ignored", {
           originalCount: aiResponse.toolCalls.length,
@@ -2690,15 +2697,22 @@ export const processChatbotMessage = async (
       }
     }
 
-    // After registrar_dado_cadastral: if no text response was generated, do a follow-up
-    // call so the user always receives a message (data was saved, but agent stayed silent).
+    // After ANY tool call that doesn't naturally produce user-facing text
+    // (registrar_dado_cadastral, rejected tools, empty document/audio
+    // results): do a follow-up call so the user gets a real, contextual
+    // answer instead of silently falling through to the generic
+    // "Perfeito..." safeguard below. Root cause: the model sometimes emits
+    // a function_call with no accompanying message text in the same turn —
+    // this recovers the actual answer for that case, with tools disabled so
+    // the follow-up is forced to produce text.
     if (
-      metadataToolTriggered &&
+      toolCallsHandled &&
       (!aiResponse.content || aiResponse.content.trim().length === 0)
     ) {
-      logger.logNodeStart("15.77. Follow-up After Metadata Tool", {
+      logger.logNodeStart("15.77. Follow-up After Tool Call With No Text", {
         phone: parsedMessage.phone,
-        reason: "metadata_only_no_text",
+        reason: "tool_call_no_text",
+        metadataToolTriggered,
       });
       try {
         const followUp = await generateAIResponse({
@@ -2710,14 +2724,17 @@ export const processChatbotMessage = async (
           config,
           greetingInstruction: continuityInfo.greetingInstruction,
           enableTools: false,
+          conversationId: conversation?.id,
+          phone: parsedMessage.phone,
+          supportModeEnabled,
         });
         aiResponse.content = followUp.content;
         aiResponse.toolCalls = undefined;
-        logger.logNodeSuccess("15.77. Follow-up After Metadata Tool", {
+        logger.logNodeSuccess("15.77. Follow-up After Tool Call With No Text", {
           contentLength: followUp.content?.length || 0,
         });
       } catch (followUpErr) {
-        logger.logNodeWarning("15.77. Follow-up After Metadata Tool", {
+        logger.logNodeWarning("15.77. Follow-up After Tool Call With No Text", {
           warning: "follow_up_failed",
           error: followUpErr instanceof Error ? followUpErr.message : "unknown",
         });

@@ -295,6 +295,44 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       enableTools: config.settings.enableTools,
       phone: historyPhone,
     });
+
+    // Parity with production (src/flows/chatbotFlow.ts "15.77"): the model
+    // sometimes emits a tool call with no accompanying message text in the
+    // same turn (small/reasoning models on the Responses API). Production
+    // recovers a real answer via a follow-up call with tools disabled — do
+    // the same here so the test panel doesn't show a misleading blank
+    // response for a case production actually handles.
+    let usedEmptyContentFollowUp = false;
+    if (
+      Array.isArray(aiResponse.toolCalls) &&
+      aiResponse.toolCalls.length > 0 &&
+      (!aiResponse.content || aiResponse.content.trim().length === 0)
+    ) {
+      try {
+        const followUp = await generateAIResponse({
+          message,
+          chatHistory,
+          ragContext,
+          customerName:
+            realCustomerName || (historyPhone ? historyPhone : "Cliente Teste"),
+          contactMetadata:
+            (realCustomerMetadata as
+              | Record<string, string | number | boolean>
+              | undefined) || undefined,
+          config,
+          includeDateTimeInfo: true,
+          enableTools: false,
+          phone: historyPhone,
+        });
+        aiResponse.content = followUp.content;
+        usedEmptyContentFollowUp = true;
+      } catch (followUpErr) {
+        console.warn(
+          "[test-agent] Empty-content follow-up failed:",
+          followUpErr,
+        );
+      }
+    }
     const latencyMs = Date.now() - startTime;
 
     // ===== Execute SAFE tool calls in test mode =====
@@ -404,6 +442,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       meta: {
         historySource,
         historyMessageCount,
+        usedEmptyContentFollowUp,
         ragEnabled: config.settings.enableRAG,
         ragChunkCount,
         ragChunks,
