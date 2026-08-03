@@ -16,13 +16,23 @@
  * - Delay de 1s entre envios (evita rate limit)
  * - Detecta tipo de mídia automaticamente (MIME type)
  * - Retorna mensagem descritiva para o agente
+ *
+ * A parte de DECISÃO (buscar, filtrar texto vs mídia, pontuar por intenção,
+ * checar cooldown de duplicidade, extrair conteúdo de arquivos de texto) vive
+ * em `resolveDocumentSearch`, sem nenhum efeito colateral (sem enviar
+ * WhatsApp, sem gravar no banco). Isso permite que o painel de teste de
+ * agente (`/api/agents/[id]/test`) reproduza a MESMA decisão de produção
+ * sem disparar envios reais — ver uso em `src/app/api/agents/[id]/test/route.ts`.
  */
 
 import { sendDocumentMessage, sendImageMessage } from "@/lib/meta";
 import { createServiceRoleClient } from "@/lib/supabase";
 import type { ClientConfig, StoredMediaMetadata } from "@/lib/types";
 import { ErrorDetails, saveChatMessage } from "@/nodes/saveChatMessage";
-import { searchDocumentInKnowledge } from "./searchDocumentInKnowledge";
+import {
+  DocumentSearchResult,
+  searchDocumentInKnowledge,
+} from "./searchDocumentInKnowledge";
 
 export interface HandleDocumentSearchInput {
   /** Tool call object do AI response */
@@ -169,6 +179,22 @@ const isImageDocument = (doc: { originalMimeType?: string | null }): boolean =>
   typeof doc.originalMimeType === "string" &&
   doc.originalMimeType.toLowerCase().startsWith("image/");
 
+// Arquivos .txt e .md NUNCA são enviados como anexo — servem apenas para
+// RAG (o conteúdo é injetado numa chamada de follow-up à IA).
+const isTextFileDoc = (doc: {
+  filename: string;
+  originalMimeType?: string | null;
+}): boolean => {
+  const fileName = doc.filename.toLowerCase();
+  return (
+    fileName.endsWith(".txt") ||
+    fileName.endsWith(".md") ||
+    fileName.endsWith(".markdown") ||
+    doc.originalMimeType === "text/plain" ||
+    doc.originalMimeType === "text/markdown"
+  );
+};
+
 const findImageDocumentsByFilename = async (input: {
   supabaseAny: any;
   clientId: string;
@@ -244,6 +270,245 @@ const scoreDocumentByIntent = (
   return score;
 };
 
+export interface ResolveDocumentSearchInput {
+  query: string;
+  documentType?: string;
+  clientId: string;
+  openaiApiKey?: string;
+  /**
+   * Telefone real do contato — usado apenas para o gate de cooldown
+   * (evita reenviar o mesmo material em menos de 90s). Quando omitido
+   * (ex.: painel de teste de agente), o cooldown é simplesmente ignorado.
+   */
+  phone?: string;
+}
+
+export interface ResolvedDocumentSearch {
+  /** Resultados brutos da busca (já com fallback por filename para imagens aplicado) */
+  results: DocumentSearchResult[];
+  metadata: {
+    totalDocumentsInBase: number;
+    chunksFound: number;
+    uniqueDocumentsFound: number;
+    threshold: number;
+    documentTypeFilter?: string;
+  };
+  /** Nenhum documento encontrado na base */
+  notFound: boolean;
+  /** Documentos candidatos a envio como mídia (exclui .txt/.md) */
+  mediaCandidates: DocumentSearchResult[];
+  /** Único documento de mídia escolhido para envio (produção envia no máximo 1 por chamada) */
+  selectedMediaDoc: DocumentSearchResult | null;
+  textFilesFound: number;
+  textFilesNames: string[];
+  /** Conteúdo completo (todos os chunks) de cada arquivo de texto encontrado, já formatado */
+  textFilesContent: string[];
+  /** true quando o documento selecionado já foi enviado há menos de DOCUMENT_COOLDOWN_MS */
+  cooldownBlocked: boolean;
+  cooldownMessage?: string;
+  suppressedDocumentsCount: number;
+}
+
+/**
+ * Resolve a decisão de busca de documento (o que seria enviado e o
+ * conteúdo de texto a usar) SEM nenhum efeito colateral — não envia
+ * mensagens no WhatsApp nem grava no banco. Compartilhado entre o fluxo de
+ * produção (`handleDocumentSearchToolCall`, que envia de fato) e o painel
+ * de teste de agente (que só precisa da decisão para preview).
+ */
+export const resolveDocumentSearch = async (
+  input: ResolveDocumentSearchInput,
+): Promise<ResolvedDocumentSearch> => {
+  const { query, documentType, clientId, openaiApiKey, phone } = input;
+
+  const searchResult = await searchDocumentInKnowledge({
+    query,
+    clientId,
+    documentType: documentType === "any" ? undefined : documentType,
+    openaiApiKey,
+    searchThreshold: 0.3, // Threshold reduzido para diagnóstico (0.3 = muito permissivo)
+    maxResults: 5,
+  });
+
+  let { results } = searchResult;
+  const { metadata } = searchResult;
+
+  if (results.length === 0) {
+    return {
+      results,
+      metadata,
+      notFound: true,
+      mediaCandidates: [],
+      selectedMediaDoc: null,
+      textFilesFound: 0,
+      textFilesNames: [],
+      textFilesContent: [],
+      cooldownBlocked: false,
+      suppressedDocumentsCount: 0,
+    };
+  }
+
+  const supabaseServiceRole = createServiceRoleClient();
+  const supabaseAny = supabaseServiceRole as any;
+
+  if (documentType === "image" && !results.some(isImageDocument)) {
+    const filenameImageResults = await findImageDocumentsByFilename({
+      supabaseAny,
+      clientId,
+      query,
+      maxResults: 5,
+    });
+
+    if (filenameImageResults.length > 0) {
+      results = filenameImageResults;
+    }
+  }
+
+  const intent = detectDocumentIntent(query);
+  const mediaCandidates = results.filter((doc) => !isTextFileDoc(doc));
+
+  const sortedMediaCandidates = mediaCandidates
+    .map((doc, idx) => ({
+      doc,
+      idx,
+      score: scoreDocumentByIntent(doc.filename, intent),
+    }))
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return a.idx - b.idx;
+    });
+
+  const selectedMediaDoc = sortedMediaCandidates[0]?.doc ?? null;
+  const selectedMediaIntent = selectedMediaDoc
+    ? inferIntentFromFilename(selectedMediaDoc.filename)
+    : intent;
+
+  let cooldownBlocked = false;
+  let cooldownMessage: string | undefined;
+
+  if (phone && selectedMediaDoc) {
+    const nowIso = new Date().toISOString();
+    const cooldownSinceIso = new Date(
+      Date.now() - DOCUMENT_COOLDOWN_MS,
+    ).toISOString();
+    const { data: recentMediaData } = await supabaseAny
+      .from("n8n_chat_histories")
+      .select("message, media_metadata, created_at")
+      .eq("session_id", phone)
+      .eq("client_id", clientId)
+      .gte("created_at", cooldownSinceIso)
+      .lte("created_at", nowIso)
+      .not("media_metadata", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    const recentMediaRows = recentMediaData || [];
+
+    cooldownBlocked = recentMediaRows.some((row: any) => {
+      try {
+        const metadataValue = row.media_metadata;
+        const media =
+          typeof metadataValue === "string"
+            ? JSON.parse(metadataValue)
+            : metadataValue;
+        const filename = media?.filename || "";
+        if (!filename) return false;
+        return inferIntentFromFilename(filename) === selectedMediaIntent;
+      } catch {
+        return false;
+      }
+    });
+
+    if (cooldownBlocked) {
+      cooldownMessage =
+        "Acabei de te enviar esse material. Me diz se voce ja conseguiu abrir ou se quer que eu explique algum ponto especifico.";
+    }
+  }
+
+  // Arquivos de texto: buscar TODOS os chunks para devolver o conteúdo completo
+  let textFilesFound = 0;
+  const textFilesNames: string[] = [];
+  const textFilesContent: string[] = [];
+
+  for (const doc of results) {
+    if (!isTextFileDoc(doc)) continue;
+
+    textFilesFound++;
+    textFilesNames.push(doc.filename);
+
+    try {
+      const { data: chunks, error: chunksError } = await supabaseAny
+        .from("documents")
+        .select("content, metadata")
+        .eq("client_id", clientId)
+        .eq("metadata->>filename", doc.filename)
+        .order("metadata->>chunkIndex", { ascending: true });
+
+      if (!chunksError && chunks && chunks.length > 0) {
+        const fullContent = chunks
+          .map((chunk: any) => chunk.content)
+          .join("\n\n");
+
+        textFilesContent.push(
+          `\n\n---\n📄 ${doc.filename}\n---\n${fullContent}`,
+        );
+      } else {
+        console.warn(
+          `⚠️ [resolveDocumentSearch] No chunks found for ${doc.filename}`,
+        );
+      }
+    } catch (fetchError) {
+      console.error(
+        `❌ [resolveDocumentSearch] Error fetching chunks for ${doc.filename}:`,
+        fetchError,
+      );
+    }
+  }
+
+  return {
+    results,
+    metadata,
+    notFound: false,
+    mediaCandidates,
+    selectedMediaDoc,
+    textFilesFound,
+    textFilesNames,
+    textFilesContent,
+    cooldownBlocked,
+    cooldownMessage,
+    suppressedDocumentsCount: Math.max(0, mediaCandidates.length - 1),
+  };
+};
+
+/**
+ * Monta o bloco de texto com o conteúdo dos arquivos de texto encontrados,
+ * pronto para ser usado como `ragContext` numa chamada de follow-up à IA.
+ * Mesmo texto usado em produção (chatbotFlow.ts, tool `buscar_documento`)
+ * e reaproveitado no painel de teste de agente para manter paridade.
+ */
+export const buildTextFilesMessage = (resolved: ResolvedDocumentSearch): string => {
+  if (resolved.textFilesFound === 0) return "";
+
+  let message = `Info: Encontrei ${resolved.textFilesFound} arquivo(s) de texto (${resolved.textFilesNames.join(
+    ", ",
+  )}). `;
+  message +=
+    "Estes arquivos sao usados apenas para busca de informacoes (RAG) e nao sao enviados como anexo.\n\n";
+  message += "**CONTEUDO DOS ARQUIVOS DE TEXTO ENCONTRADOS:**\n";
+  message +=
+    "Use as informacoes abaixo para responder ao usuario com precisao:\n";
+  message += resolved.textFilesContent.join("\n\n");
+  message += "\n\n---\n";
+  message += [
+    "**IMPORTANTE:** Use essas informacoes para responder ao usuario.",
+    "Se o usuario pediu foto, imagem, link ou anexo, mas este conteudo nao tiver uma URL real ou arquivo de midia enviado, diga claramente que nao encontrou anexo/imagem disponivel na base.",
+    "Nunca invente links, nem placeholders como Foto 1, Foto 2 ou Foto 3.",
+  ].join(" ");
+  message += "\n";
+
+  return message;
+};
+
 /**
  * Processa tool call buscar_documento
  *
@@ -273,7 +538,7 @@ const scoreDocumentByIntent = (
 export const handleDocumentSearchToolCall = async (
   input: HandleDocumentSearchInput,
 ): Promise<HandleDocumentSearchOutput> => {
-  const { toolCall, phone, clientId, config, userMessage } = input;
+  const { toolCall, phone, clientId, config } = input;
 
   try {
     // 1. Parse arguments
@@ -311,21 +576,17 @@ export const handleDocumentSearchToolCall = async (
     // Gate `no_explicit_intent` removido: se o LLM decidiu chamar `buscar_documento`,
     // ele ja avaliou contexto. Mantemos apenas o gate de cooldown/dedup mais abaixo.
 
-    // 2. Buscar documentos na base de conhecimento
-    const searchResult = await searchDocumentInKnowledge({
+    // 2-4. Buscar, filtrar (texto vs midia), pontuar por intencao e checar cooldown.
+    const resolved = await resolveDocumentSearch({
       query,
+      documentType: document_type,
       clientId,
-      documentType: document_type === "any" ? undefined : document_type,
       openaiApiKey: config.apiKeys.openaiApiKey,
-      searchThreshold: 0.3, // Threshold reduzido para diagnóstico (0.3 = muito permissivo)
-      maxResults: 5,
+      phone,
     });
 
-    let { results } = searchResult;
-    const { metadata } = searchResult;
-
     // 3. Se não encontrou documentos
-    if (results.length === 0) {
+    if (resolved.notFound) {
       // ❌ FIX: Save "no documents found" as failed message in conversation
       const errorDetails: ErrorDetails = {
         code: "NOT_FOUND",
@@ -334,8 +595,8 @@ export const handleDocumentSearchToolCall = async (
         error_data: {
           query,
           document_type,
-          totalDocumentsInBase: metadata.totalDocumentsInBase,
-          threshold: metadata.threshold,
+          totalDocumentsInBase: resolved.metadata.totalDocumentsInBase,
+          threshold: resolved.metadata.threshold,
         },
       };
 
@@ -353,17 +614,30 @@ export const handleDocumentSearchToolCall = async (
         message: "",
         documentsFound: 0,
         documentsSent: 0,
-        searchMetadata: metadata,
+        searchMetadata: resolved.metadata,
         documentGateDecision: "allowed",
         documentGateReason: "allowed",
       };
     }
 
-    // 4. Enviar documentos via WhatsApp
+    if (resolved.cooldownBlocked && resolved.selectedMediaDoc) {
+      return {
+        success: true,
+        message: resolved.cooldownMessage || "",
+        documentsFound: resolved.results.length,
+        documentsSent: 0,
+        searchMetadata: resolved.metadata,
+        documentGateDecision: "blocked",
+        documentGateReason: "cooldown_duplicate",
+        selectedDocument: resolved.selectedMediaDoc.filename,
+        suppressedDocumentsCount: resolved.mediaCandidates.length,
+        useMessageAsReply: true,
+      };
+    }
+
+    // 4. Enviar o documento de mídia selecionado (no máximo 1 por chamada,
+    // para não misturar assunto) via WhatsApp.
     let sentCount = 0;
-    let textFilesFound = 0; // Contador de arquivos .txt/.md encontrados (não enviados)
-    const textFilesNames: string[] = []; // Nomes dos arquivos de texto encontrados
-    const textFilesContent: string[] = []; // Conteúdo dos arquivos de texto (para o agente usar)
     const filesSent: string[] = [];
     const filesMetadata: Array<{
       url: string;
@@ -371,162 +645,9 @@ export const handleDocumentSearchToolCall = async (
       mimeType: string;
       size: number;
     }> = [];
-    const errors: string[] = [];
 
-    // Buscar conteúdo dos arquivos de texto encontrados
-    const supabaseServiceRole = createServiceRoleClient();
-    const supabaseAny = supabaseServiceRole as any;
-
-    if (document_type === "image" && !results.some(isImageDocument)) {
-      const filenameImageResults = await findImageDocumentsByFilename({
-        supabaseAny,
-        clientId,
-        query,
-        maxResults: 5,
-      });
-
-      if (filenameImageResults.length > 0) {
-        results = filenameImageResults;
-      }
-    }
-
-    const intent = detectDocumentIntent(query);
-    const mediaCandidates = results.filter((doc) => {
-      const fileName = doc.filename.toLowerCase();
-      const isTextFile =
-        fileName.endsWith(".txt") ||
-        fileName.endsWith(".md") ||
-        fileName.endsWith(".markdown") ||
-        doc.originalMimeType === "text/plain" ||
-        doc.originalMimeType === "text/markdown";
-      return !isTextFile;
-    });
-
-    const sortedMediaCandidates = mediaCandidates
-      .map((doc, idx) => ({
-        doc,
-        idx,
-        score: scoreDocumentByIntent(doc.filename, intent),
-      }))
-      .sort((a, b) => {
-        if (b.score !== a.score) return b.score - a.score;
-        return a.idx - b.idx;
-      });
-
-    const selectedMediaDoc = sortedMediaCandidates[0]?.doc ?? null;
-    const selectedMediaIntent = selectedMediaDoc
-      ? inferIntentFromFilename(selectedMediaDoc.filename)
-      : intent;
-
-    const nowIso = new Date().toISOString();
-    const cooldownSinceIso = new Date(
-      Date.now() - DOCUMENT_COOLDOWN_MS,
-    ).toISOString();
-    const { data: recentMediaData } = await supabaseAny
-      .from("n8n_chat_histories")
-      .select("message, media_metadata, created_at")
-      .eq("session_id", phone)
-      .eq("client_id", clientId)
-      .gte("created_at", cooldownSinceIso)
-      .lte("created_at", nowIso)
-      .not("media_metadata", "is", null)
-      .order("created_at", { ascending: false })
-      .limit(20);
-
-    const recentMediaRows = recentMediaData || [];
-
-    const hasDuplicateMediaInCooldown = recentMediaRows.some((row: any) => {
-      try {
-        const metadataValue = row.media_metadata;
-        const media =
-          typeof metadataValue === "string"
-            ? JSON.parse(metadataValue)
-            : metadataValue;
-        const filename = media?.filename || "";
-        if (!filename) return false;
-        return inferIntentFromFilename(filename) === selectedMediaIntent;
-      } catch {
-        return false;
-      }
-    });
-
-    if (hasDuplicateMediaInCooldown && selectedMediaDoc) {
-      return {
-        success: true,
-        message:
-          "Acabei de te enviar esse material. Me diz se voce ja conseguiu abrir ou se quer que eu explique algum ponto especifico.",
-        documentsFound: results.length,
-        documentsSent: 0,
-        searchMetadata: metadata,
-        documentGateDecision: "blocked",
-        documentGateReason: "cooldown_duplicate",
-        selectedDocument: selectedMediaDoc.filename,
-        suppressedDocumentsCount: mediaCandidates.length,
-        useMessageAsReply: true,
-      };
-    }
-
-    for (const doc of results) {
-      // ✅ FILTRO: Arquivos .txt e .md NUNCA são enviados como anexo
-      // Eles são usados apenas para RAG (busca semântica de informações)
-      const fileName = doc.filename.toLowerCase();
-      const isTextFile =
-        fileName.endsWith(".txt") ||
-        fileName.endsWith(".md") ||
-        fileName.endsWith(".markdown") ||
-        doc.originalMimeType === "text/plain" ||
-        doc.originalMimeType === "text/markdown";
-
-      if (isTextFile) {
-        // Arquivo de texto - buscar TODOS os chunks para retornar conteúdo ao agente
-        console.log(
-          `ℹ️ [handleDocumentSearchToolCall] Found text file, fetching content: ${doc.filename}`,
-        );
-        textFilesFound++;
-        textFilesNames.push(doc.filename);
-
-        try {
-          // Buscar todos os chunks deste arquivo
-          const { data: chunks, error: chunksError } = await supabaseAny
-            .from("documents")
-            .select("content, metadata")
-            .eq("client_id", clientId)
-            .eq("metadata->>filename", doc.filename)
-            .order("metadata->>chunkIndex", { ascending: true });
-
-          if (!chunksError && chunks && chunks.length > 0) {
-            // Concatenar conteúdo de todos os chunks
-            const fullContent = chunks
-              .map((chunk: any) => chunk.content)
-              .join("\n\n");
-
-            textFilesContent.push(
-              `\n\n---\n📄 ${doc.filename}\n---\n${fullContent}`,
-            );
-            console.log(
-              `✅ [handleDocumentSearchToolCall] Retrieved ${chunks.length} chunks from ${doc.filename}`,
-            );
-          } else {
-            console.warn(
-              `⚠️ [handleDocumentSearchToolCall] No chunks found for ${doc.filename}`,
-            );
-          }
-        } catch (fetchError) {
-          console.error(
-            `❌ [handleDocumentSearchToolCall] Error fetching chunks for ${doc.filename}:`,
-            fetchError,
-          );
-        }
-
-        continue; // Pula para o próximo documento (não envia como anexo)
-      }
-
-      // Para anexos de mídia, envia apenas 1 arquivo por chamada para evitar misturar assunto.
-      if (!selectedMediaDoc || doc.filename !== selectedMediaDoc.filename) {
-        continue;
-      }
-
-      // Determinar tipo de mídia baseado no MIME type (moved outside try for catch access)
+    const doc = resolved.selectedMediaDoc;
+    if (doc) {
       const isImage = doc.originalMimeType.startsWith("image/");
 
       try {
@@ -587,15 +708,9 @@ export const handleDocumentSearchToolCall = async (
           mimeType: doc.originalMimeType,
           size: doc.originalFileSize,
         });
-
-        // Delay entre envios para evitar rate limit (hoje enviamos apenas 1 mídia por chamada)
-        if (sentCount < 1) {
-          await new Promise((resolve) => setTimeout(resolve, 300));
-        }
       } catch (sendError) {
         const errorMessage =
           sendError instanceof Error ? sendError.message : "Unknown error";
-        errors.push(`${doc.filename}: ${errorMessage}`);
 
         // ❌ FIX: Save send error as failed message in conversation
         const sendErrorDetails: ErrorDetails = {
@@ -632,50 +747,33 @@ export const handleDocumentSearchToolCall = async (
     // 5. Montar mensagem de retorno
     // ✅ FIX: Errors are now saved as failed messages in the conversation
     // No need to return error messages - they're visible in the chat
-    let message = "";
-
-    // Informar sobre arquivos de texto encontrados e incluir o CONTEÚDO para o agente usar
-    if (textFilesFound > 0) {
-      message += `Info: Encontrei ${textFilesFound} arquivo(s) de texto (${textFilesNames.join(
-        ", ",
-      )}). `;
-      message +=
-        "Estes arquivos sao usados apenas para busca de informacoes (RAG) e nao sao enviados como anexo.\n\n";
-      message += "**CONTEUDO DOS ARQUIVOS DE TEXTO ENCONTRADOS:**\n";
-      message +=
-        "Use as informacoes abaixo para responder ao usuario com precisao:\n";
-      message += textFilesContent.join("\n\n");
-      message += "\n\n---\n";
-      message += [
-        "**IMPORTANTE:** Use essas informacoes para responder ao usuario.",
-        "Se o usuario pediu foto, imagem, link ou anexo, mas este conteudo nao tiver uma URL real ou arquivo de midia enviado, diga claramente que nao encontrou anexo/imagem disponivel na base.",
-        "Nunca invente links, nem placeholders como Foto 1, Foto 2 ou Foto 3.",
-      ].join(" ");
-      message += "\n";
-    }
+    let message = buildTextFilesMessage(resolved);
 
     if (sentCount > 0) {
       if (message) message += "\n\n";
       message += `✅ Enviei ${sentCount} documento(s) via WhatsApp: ${filesSent.join(
         ", ",
       )}.`;
-    } else if (textFilesFound === 0) {
+    } else if (resolved.textFilesFound === 0) {
       message = "Nenhum documento encontrado para enviar.";
     }
 
     return {
-      success: sentCount > 0 || textFilesFound > 0, // Sucesso se enviou arquivos OU encontrou arquivos de texto
+      success: sentCount > 0 || resolved.textFilesFound > 0, // Sucesso se enviou arquivos OU encontrou arquivos de texto
       message,
-      documentsFound: results.length,
+      documentsFound: resolved.results.length,
       documentsSent: sentCount,
-      textFilesFound, // Novo campo: quantidade de arquivos de texto encontrados
+      textFilesFound: resolved.textFilesFound, // Novo campo: quantidade de arquivos de texto encontrados
       filesSent,
       filesMetadata,
-      searchMetadata: metadata,
+      searchMetadata: resolved.metadata,
       documentGateDecision: "allowed",
       documentGateReason: "allowed",
-      selectedDocument: selectedMediaDoc?.filename,
-      suppressedDocumentsCount: Math.max(0, mediaCandidates.length - sentCount),
+      selectedDocument: resolved.selectedMediaDoc?.filename,
+      suppressedDocumentsCount: Math.max(
+        0,
+        resolved.mediaCandidates.length - sentCount,
+      ),
     };
   } catch (error) {
     const errorMessage =

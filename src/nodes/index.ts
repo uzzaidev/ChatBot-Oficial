@@ -59,10 +59,16 @@ export type {
 } from "./detectRepetition";
 
 // 🔧 RAG: Document processing with semantic chunking
-export { handleDocumentSearchToolCall } from "./handleDocumentSearchToolCall";
+export {
+  handleDocumentSearchToolCall,
+  resolveDocumentSearch,
+  buildTextFilesMessage,
+} from "./handleDocumentSearchToolCall";
 export type {
   HandleDocumentSearchInput,
   HandleDocumentSearchOutput,
+  ResolveDocumentSearchInput,
+  ResolvedDocumentSearch,
 } from "./handleDocumentSearchToolCall";
 export {
   deleteDocuments,

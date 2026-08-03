@@ -296,12 +296,147 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       phone: historyPhone,
     });
 
+    // ===== Execute SAFE tool calls in test mode =====
+    // We run read-only tools (buscar_documento) so the test chat can preview
+    // documents/images inline, using the SAME decision logic production uses
+    // (resolveDocumentSearch: at most 1 media doc selected by intent, .txt/.md
+    // files never attached, cooldown gate) so the test panel doesn't show
+    // something a real customer wouldn't actually receive. Side-effect tools
+    // (transferir_atendimento, enviar_resposta_em_audio, criar_evento_agenda,
+    // etc.) are NOT executed — we only report their args back so the user
+    // can verify the call.
+    const attachments: Array<{
+      url: string;
+      filename: string;
+      mimeType: string;
+      size: number;
+      similarity?: number;
+    }> = [];
+    const executedTools: Array<{
+      name: string;
+      arguments: Record<string, unknown>;
+      executed: boolean;
+      result?: unknown;
+    }> = [];
+
+    let documentTextFollowUpUsed = false;
+
+    if (
+      Array.isArray(aiResponse.toolCalls) &&
+      aiResponse.toolCalls.length > 0
+    ) {
+      const { resolveDocumentSearch, buildTextFilesMessage } = await import(
+        "@/nodes/handleDocumentSearchToolCall"
+      );
+
+      for (const tc of aiResponse.toolCalls) {
+        const name = tc?.function?.name;
+        let args: Record<string, unknown> = {};
+        try {
+          args = JSON.parse(tc?.function?.arguments || "{}");
+        } catch {
+          args = {};
+        }
+
+        if (name === "buscar_documento") {
+          try {
+            const resolved = await resolveDocumentSearch({
+              query: String(args.query || message),
+              documentType: args.document_type
+                ? String(args.document_type)
+                : undefined,
+              clientId: profile.client_id,
+              openaiApiKey: config.apiKeys.openaiApiKey,
+              // Cooldown gate only makes sense against a real conversation.
+              phone: historyPhone,
+            });
+
+            if (resolved.selectedMediaDoc && !resolved.cooldownBlocked) {
+              attachments.push({
+                url: resolved.selectedMediaDoc.originalFileUrl,
+                filename: resolved.selectedMediaDoc.filename,
+                mimeType: resolved.selectedMediaDoc.originalMimeType,
+                size: resolved.selectedMediaDoc.originalFileSize,
+                similarity: resolved.selectedMediaDoc.similarity,
+              });
+            }
+
+            if (resolved.cooldownBlocked && resolved.cooldownMessage) {
+              // Same as production: don't attach again, just tell the user
+              // they already got it.
+              aiResponse.content = resolved.cooldownMessage;
+            } else if (resolved.textFilesFound > 0) {
+              // Same as chatbotFlow.ts NODE 15.6: when the tool found
+              // .txt/.md knowledge files, production makes a follow-up AI
+              // call with their content as ragContext instead of showing
+              // the raw tool result — replicate that so the response text
+              // matches what a real customer would get.
+              const followUp = await generateAIResponse({
+                message,
+                chatHistory,
+                ragContext: buildTextFilesMessage(resolved),
+                customerName:
+                  realCustomerName ||
+                  (historyPhone ? historyPhone : "Cliente Teste"),
+                contactMetadata:
+                  (realCustomerMetadata as
+                    | Record<string, string | number | boolean>
+                    | undefined) || undefined,
+                config,
+                includeDateTimeInfo: true,
+                enableTools: false,
+                phone: historyPhone,
+              });
+              aiResponse.content = followUp.content;
+              documentTextFollowUpUsed = true;
+            }
+
+            executedTools.push({
+              name,
+              arguments: args,
+              executed: true,
+              result: {
+                documentsFound: resolved.results.length,
+                selectedDocument: resolved.selectedMediaDoc?.filename ?? null,
+                cooldownBlocked: resolved.cooldownBlocked,
+                textFilesFound: resolved.textFilesFound,
+                files: resolved.results.map((d) => ({
+                  filename: d.filename,
+                  mimeType: d.originalMimeType,
+                  similarity: d.similarity,
+                })),
+              },
+            });
+          } catch (err) {
+            console.warn("[test-agent] buscar_documento failed:", err);
+            executedTools.push({
+              name,
+              arguments: args,
+              executed: false,
+              result: {
+                error: err instanceof Error ? err.message : "search_failed",
+              },
+            });
+          }
+        } else {
+          // Side-effect tools — show args but DO NOT execute
+          executedTools.push({
+            name: name || "unknown",
+            arguments: args,
+            executed: false,
+          });
+        }
+      }
+    }
+
     // Parity with production (src/flows/chatbotFlow.ts "15.77"): the model
     // sometimes emits a tool call with no accompanying message text in the
-    // same turn (small/reasoning models on the Responses API). Production
-    // recovers a real answer via a follow-up call with tools disabled — do
-    // the same here so the test panel doesn't show a misleading blank
-    // response for a case production actually handles.
+    // same turn (small/reasoning models on the Responses API), and some
+    // tools (registrar_dado_cadastral, buscar_documento with no results,
+    // rejected tools) never produce user-facing text on their own.
+    // Production recovers a real answer via a follow-up call with tools
+    // disabled — do the same here so the test panel doesn't show a
+    // misleading blank response for a case production actually handles.
     let usedEmptyContentFollowUp = false;
     if (
       Array.isArray(aiResponse.toolCalls) &&
@@ -335,100 +470,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
     const latencyMs = Date.now() - startTime;
 
-    // ===== Execute SAFE tool calls in test mode =====
-    // We run read-only tools (buscar_documento) so the test chat can preview
-    // documents/images inline. Side-effect tools (transferir_atendimento,
-    // enviar_resposta_em_audio, criar_evento_agenda, etc.) are NOT executed —
-    // we only report their args back so the user can verify the call.
-    const attachments: Array<{
-      url: string;
-      filename: string;
-      mimeType: string;
-      size: number;
-      similarity?: number;
-    }> = [];
-    const executedTools: Array<{
-      name: string;
-      arguments: Record<string, unknown>;
-      executed: boolean;
-      result?: unknown;
-    }> = [];
-
-    if (
-      Array.isArray(aiResponse.toolCalls) &&
-      aiResponse.toolCalls.length > 0
-    ) {
-      const { searchDocumentInKnowledge } = await import(
-        "@/nodes/searchDocumentInKnowledge"
-      );
-
-      for (const tc of aiResponse.toolCalls) {
-        const name = tc?.function?.name;
-        let args: Record<string, unknown> = {};
-        try {
-          args = JSON.parse(tc?.function?.arguments || "{}");
-        } catch {
-          args = {};
-        }
-
-        if (name === "buscar_documento") {
-          try {
-            const searchResult = await searchDocumentInKnowledge({
-              query: String(args.query || message),
-              clientId: profile.client_id,
-              documentType: args.document_type
-                ? String(args.document_type)
-                : undefined,
-              openaiApiKey: config.apiKeys.openaiApiKey,
-            });
-
-            for (const doc of searchResult.results.slice(0, 3)) {
-              if (doc.originalFileUrl) {
-                attachments.push({
-                  url: doc.originalFileUrl,
-                  filename: doc.filename,
-                  mimeType: doc.originalMimeType,
-                  size: doc.originalFileSize,
-                  similarity: doc.similarity,
-                });
-              }
-            }
-
-            executedTools.push({
-              name,
-              arguments: args,
-              executed: true,
-              result: {
-                documentsFound: searchResult.results.length,
-                files: searchResult.results.map((d) => ({
-                  filename: d.filename,
-                  mimeType: d.originalMimeType,
-                  similarity: d.similarity,
-                })),
-              },
-            });
-          } catch (err) {
-            console.warn("[test-agent] buscar_documento failed:", err);
-            executedTools.push({
-              name,
-              arguments: args,
-              executed: false,
-              result: {
-                error: err instanceof Error ? err.message : "search_failed",
-              },
-            });
-          }
-        } else {
-          // Side-effect tools — show args but DO NOT execute
-          executedTools.push({
-            name: name || "unknown",
-            arguments: args,
-            executed: false,
-          });
-        }
-      }
-    }
-
     return NextResponse.json({
       success: true,
       response: aiResponse.content,
@@ -443,6 +484,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         historySource,
         historyMessageCount,
         usedEmptyContentFollowUp,
+        documentTextFollowUpUsed,
         ragEnabled: config.settings.enableRAG,
         ragChunkCount,
         ragChunks,
