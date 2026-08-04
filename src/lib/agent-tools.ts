@@ -77,7 +77,11 @@ export const buildAllowedTools = (input: {
 }): Record<string, any> | undefined => {
   const { config, contactMetadata, enableTools = true } = input;
 
-  if (!enableTools || !config.settings.enableTools) {
+  // `enableTools` here is a per-call override (e.g. follow-up calls pass
+  // false to force a text-only reply) — it still fully disables every tool
+  // for that one call. There is no per-agent master switch anymore: each
+  // tool below is gated only by its own config.settings.enable* flag.
+  if (!enableTools) {
     return undefined;
   }
 
@@ -95,7 +99,10 @@ export const buildAllowedTools = (input: {
     };
   }
 
-  if (config.settings.enableRAG) {
+  // Only expose the on-demand search tool when RAG mode is "on_demand" —
+  // in "always_inject" mode the context is already injected into every
+  // prompt (see chatbotFlow.ts), so the tool would be redundant.
+  if (config.settings.enableRAG && config.settings.ragMode === "on_demand") {
     tools.buscar_conhecimento = {
       description:
         "Busca trechos textuais na base de conhecimento do cliente. Use quando precisar de informacao factual da base antes de responder.",
@@ -137,37 +144,42 @@ export const buildAllowedTools = (input: {
     };
   }
 
-  tools.registrar_dado_cadastral = {
-    description:
-      "Use quando o usuario fornecer dado cadastral. Salva os campos para nao perguntar novamente.",
-    inputSchema: z
-      .object({
-        campo: z.enum(CONTACT_METADATA_FIELDS).optional(),
-        valor: z.string().optional(),
-        campos: z.record(z.string(), z.string()).optional(),
-      })
-      .refine(
-        (payload) => {
-          const hasSingleField =
-            typeof payload.campo === "string" &&
-            typeof payload.valor === "string" &&
-            payload.valor.trim().length > 0;
-          const hasMultiFields = Object.entries(payload.campos ?? {}).some(
-            ([field, value]) =>
-              CONTACT_METADATA_FIELD_SET.has(field) &&
-              typeof value === "string" &&
-              value.trim().length > 0,
-          );
-          return hasSingleField || hasMultiFields;
-        },
-        {
-          message:
-            "Informe campo + valor ou campos com pelo menos um campo valido.",
-        },
-      ),
-  };
+  if (config.settings.enableContactRegistration) {
+    tools.registrar_dado_cadastral = {
+      description:
+        "Use quando o usuario fornecer dado cadastral. Salva os campos para nao perguntar novamente.",
+      inputSchema: z
+        .object({
+          campo: z.enum(CONTACT_METADATA_FIELDS).optional(),
+          valor: z.string().optional(),
+          campos: z.record(z.string(), z.string()).optional(),
+        })
+        .refine(
+          (payload) => {
+            const hasSingleField =
+              typeof payload.campo === "string" &&
+              typeof payload.valor === "string" &&
+              payload.valor.trim().length > 0;
+            const hasMultiFields = Object.entries(payload.campos ?? {}).some(
+              ([field, value]) =>
+                CONTACT_METADATA_FIELD_SET.has(field) &&
+                typeof value === "string" &&
+                value.trim().length > 0,
+            );
+            return hasSingleField || hasMultiFields;
+          },
+          {
+            message:
+              "Informe campo + valor ou campos com pelo menos um campo valido.",
+          },
+        ),
+    };
+  }
 
-  if (shouldExposeCalendarTools(config, contactMetadata)) {
+  if (
+    config.settings.enableCalendarTools &&
+    shouldExposeCalendarTools(config, contactMetadata)
+  ) {
     tools.verificar_agenda = {
       description:
         "Verifica disponibilidade na agenda sem revelar detalhes internos de compromissos.",

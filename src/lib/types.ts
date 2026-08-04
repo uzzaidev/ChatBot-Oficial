@@ -558,10 +558,15 @@ export interface ClientConfig {
     reasoningEffort: ReasoningEffort;
     temperature: number;
     enableRAG: boolean;
+    /** on_demand: RAG exposed as the buscar_conhecimento tool. always_inject: RAG context injected into every message. */
+    ragMode: "on_demand" | "always_inject";
+    /** @deprecated No longer gates tool exposure — each tool has its own enable* flag below. Kept for backward compat only. */
     enableTools: boolean;
     enableHumanHandoff: boolean;
     enableDocumentSearch: boolean;
     enableAudioResponse: boolean;
+    enableContactRegistration: boolean;
+    enableCalendarTools: boolean;
     messageSplitEnabled: boolean;
     maxChatHistory: number;
     messageDelayMs: number; // Delay between split messages (in milliseconds)
@@ -643,13 +648,19 @@ export interface Agent {
   fallback_message: string | null;
 
   // === FERRAMENTAS (Tools) ===
+  // Each tool is independently toggleable — there is no single master switch.
   enable_human_handoff: boolean;
   enable_document_search: boolean;
   enable_audio_response: boolean;
-  enable_tools: boolean; // Function calling (ações, agendamento, etc)
+  enable_contact_registration: boolean; // registrar_dado_cadastral
+  enable_calendar_tools: boolean; // verificar/criar/alterar/cancelar_evento_agenda (also requires calendar connected)
+  /** @deprecated No longer gates tool exposure. Kept in the schema/type for backward compat only. */
+  enable_tools: boolean;
 
   // === INTEGRACOES (RAG) ===
   enable_rag: boolean;
+  /** on_demand: exposed as buscar_conhecimento tool. always_inject: fetched and injected into every message. */
+  rag_mode: "on_demand" | "always_inject";
   rag_threshold: number;
   rag_max_results: number;
 

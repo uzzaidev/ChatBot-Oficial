@@ -116,7 +116,18 @@ export const generateAIResponse = async (
       },
     ];
 
-    if (enableTools && config.settings.enableTools) {
+    // Mirrors the gating in buildAllowedTools() (agent-tools.ts) — there is
+    // no single master switch anymore, so check whether any individual tool
+    // is actually enabled before injecting tool-usage instructions.
+    const anyToolEnabled =
+      config.settings.enableHumanHandoff ||
+      (config.settings.enableRAG && config.settings.ragMode === "on_demand") ||
+      config.settings.enableDocumentSearch ||
+      config.settings.enableAudioResponse ||
+      config.settings.enableContactRegistration ||
+      config.settings.enableCalendarTools;
+
+    if (enableTools && anyToolEnabled) {
       messages.push({
         role: "system",
         content: [

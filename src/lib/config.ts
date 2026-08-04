@@ -268,10 +268,16 @@ export const getClientConfig = async (
       reasoningEffort: client.settings?.reasoning_effort ?? "medium",
       temperature: client.settings?.temperature ?? 0.7,
       enableRAG: client.settings?.enable_rag ?? false,
+      ragMode:
+        (client.settings?.rag_mode as "on_demand" | "always_inject") ??
+        "on_demand",
       enableTools: client.settings?.enable_tools ?? false,
       enableHumanHandoff: client.settings?.enable_human_handoff ?? true,
       enableDocumentSearch: client.settings?.enable_document_search ?? false,
       enableAudioResponse: client.tts_enabled ?? false,
+      enableContactRegistration:
+        client.settings?.enable_contact_registration ?? true,
+      enableCalendarTools: client.settings?.enable_calendar_tools ?? true,
       messageSplitEnabled: client.settings?.message_split_enabled ?? false,
       maxChatHistory: client.settings?.max_chat_history ?? 15,
       messageDelayMs: client.settings?.message_delay_ms ?? 2000,
@@ -298,15 +304,21 @@ export const getClientConfig = async (
           messageSplitEnabled:
             activeAgent.message_split_enabled ??
             baseSettings.messageSplitEnabled,
-          // Tools & Features from Agent
+          // Tools & Features from Agent — each tool is independently gated
           enableTools: activeAgent.enable_tools ?? baseSettings.enableTools,
           enableRAG: activeAgent.enable_rag ?? baseSettings.enableRAG,
+          ragMode: activeAgent.rag_mode ?? baseSettings.ragMode,
           enableHumanHandoff:
             activeAgent.enable_human_handoff ?? baseSettings.enableHumanHandoff,
           enableDocumentSearch:
             activeAgent.enable_document_search ?? baseSettings.enableDocumentSearch,
           enableAudioResponse:
             activeAgent.enable_audio_response ?? baseSettings.enableAudioResponse,
+          enableContactRegistration:
+            activeAgent.enable_contact_registration ??
+            baseSettings.enableContactRegistration,
+          enableCalendarTools:
+            activeAgent.enable_calendar_tools ?? baseSettings.enableCalendarTools,
           // Model settings from Agent
           maxTokens: activeAgent.max_tokens ?? baseSettings.maxTokens,
           maxInputTokens:
@@ -446,10 +458,13 @@ export const getClientConfig = async (
           maxKnowledgeTokens: config.settings.maxKnowledgeTokens,
           reasoningEffort: config.settings.reasoningEffort,
           enableRAG: config.settings.enableRAG,
+          ragMode: config.settings.ragMode,
           enableTools: config.settings.enableTools,
           enableHumanHandoff: config.settings.enableHumanHandoff,
           enableDocumentSearch: config.settings.enableDocumentSearch,
           enableAudioResponse: config.settings.enableAudioResponse,
+          enableContactRegistration: config.settings.enableContactRegistration,
+          enableCalendarTools: config.settings.enableCalendarTools,
         },
       },
     );

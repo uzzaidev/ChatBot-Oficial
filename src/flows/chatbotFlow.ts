@@ -1328,9 +1328,14 @@ export const processChatbotMessage = async (
       });
     }
 
-    // Check if we should fetch RAG context
+    // Check if we should fetch RAG context.
+    // ragMode "on_demand" exposes buscar_conhecimento as a tool the model can
+    // call when it needs the knowledge base; "always_inject" fetches and
+    // injects RAG context into every message instead (no tool call needed).
     const shouldUseKnowledgeTool =
-      config.settings.enableTools && config.settings.enableRAG && !isFastTrack;
+      config.settings.enableRAG &&
+      config.settings.ragMode === "on_demand" &&
+      !isFastTrack;
     const shouldGetRAG =
       shouldExecuteNode("get_rag_context", nodeStates) &&
       config.settings.enableRAG &&

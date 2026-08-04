@@ -153,6 +153,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         enableTools:
           mergedAgent.enable_tools ?? baseConfig.settings.enableTools,
         enableRAG: mergedAgent.enable_rag ?? baseConfig.settings.enableRAG,
+        ragMode: mergedAgent.rag_mode ?? baseConfig.settings.ragMode,
         enableHumanHandoff:
           mergedAgent.enable_human_handoff ??
           baseConfig.settings.enableHumanHandoff,
@@ -162,6 +163,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         enableAudioResponse:
           mergedAgent.enable_audio_response ??
           baseConfig.settings.enableAudioResponse,
+        enableContactRegistration:
+          mergedAgent.enable_contact_registration ??
+          baseConfig.settings.enableContactRegistration,
+        enableCalendarTools:
+          mergedAgent.enable_calendar_tools ??
+          baseConfig.settings.enableCalendarTools,
         maxChatHistory:
           mergedAgent.max_chat_history ?? baseConfig.settings.maxChatHistory,
       },
@@ -486,9 +493,19 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         usedEmptyContentFollowUp,
         documentTextFollowUpUsed,
         ragEnabled: config.settings.enableRAG,
+        ragMode: config.settings.ragMode,
         ragChunkCount,
         ragChunks,
-        toolsEnabled: config.settings.enableTools,
+        toolsEnabled: {
+          handoff: config.settings.enableHumanHandoff,
+          rag:
+            config.settings.enableRAG &&
+            config.settings.ragMode === "on_demand",
+          documentSearch: config.settings.enableDocumentSearch,
+          audioResponse: config.settings.enableAudioResponse,
+          contactRegistration: config.settings.enableContactRegistration,
+          calendarTools: config.settings.enableCalendarTools,
+        },
         toolCallNames: Array.isArray(aiResponse.toolCalls)
           ? aiResponse.toolCalls
               .map((tc: { function?: { name?: string } }) => tc?.function?.name)

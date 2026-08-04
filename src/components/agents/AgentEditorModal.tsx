@@ -322,8 +322,11 @@ const DEFAULT_AGENT: Partial<Agent> = {
   enable_human_handoff: true,
   enable_document_search: true,
   enable_audio_response: false,
+  enable_contact_registration: true,
+  enable_calendar_tools: true,
   enable_tools: false,
   enable_rag: true,
+  rag_mode: "on_demand",
   rag_threshold: 0.7,
   rag_max_results: 3,
   primary_provider: "groq",
@@ -548,7 +551,14 @@ export const AgentEditorModal = ({
     ragEnabled?: boolean;
     ragChunkCount?: number;
     ragChunks?: Array<{ snippet: string; similarity: number | null }>;
-    toolsEnabled?: boolean;
+    toolsEnabled?: {
+      handoff: boolean;
+      rag: boolean;
+      documentSearch: boolean;
+      audioResponse: boolean;
+      contactRegistration: boolean;
+      calendarTools: boolean;
+    };
     modelUsed?: string;
     primaryProvider?: string;
     toolCalls?: number;
@@ -2279,22 +2289,152 @@ export const AgentEditorModal = ({
                   <h4 className="font-medium flex items-center gap-2">
                     🔧 Function Calling (Tools)
                   </h4>
+                  <p className="text-xs text-muted-foreground -mt-2">
+                    Cada ferramenta é ativada individualmente — não existe mais
+                    um switch único que liga ou desliga todas de uma vez.
+                  </p>
 
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <Label className="cursor-pointer">
-                        Habilitar Function Calling
-                      </Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <Label className="cursor-pointer">
+                          Transferir para Humano
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Tool transferir_atendimento — encaminha a conversa
+                          quando o usuário pede atendente
+                        </p>
+                      </div>
+                      <Switch
+                        checked={formData.enable_human_handoff}
+                        onCheckedChange={(v) =>
+                          updateField("enable_human_handoff", v)
+                        }
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <Label className="cursor-pointer">
+                          Base de Conhecimento (RAG)
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Busca informações nos documentos da base
+                        </p>
+                      </div>
+                      <Switch
+                        checked={formData.enable_rag}
+                        onCheckedChange={(v) => updateField("enable_rag", v)}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <Label className="cursor-pointer">
+                          Buscar Documentos
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Tool buscar_documento — envia PDFs, imagens e
+                          materiais da base
+                        </p>
+                      </div>
+                      <Switch
+                        checked={formData.enable_document_search}
+                        onCheckedChange={(v) =>
+                          updateField("enable_document_search", v)
+                        }
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <Label className="cursor-pointer">
+                          Resposta em Áudio (TTS)
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Tool enviar_resposta_em_audio — converte a resposta
+                          final em áudio
+                        </p>
+                      </div>
+                      <Switch
+                        checked={formData.enable_audio_response}
+                        onCheckedChange={(v) =>
+                          updateField("enable_audio_response", v)
+                        }
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <Label className="cursor-pointer">
+                          Registrar Dados Cadastrais
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Tool registrar_dado_cadastral — salva dados que o
+                          usuário fornecer (nome, e-mail, etc.)
+                        </p>
+                      </div>
+                      <Switch
+                        checked={formData.enable_contact_registration}
+                        onCheckedChange={(v) =>
+                          updateField("enable_contact_registration", v)
+                        }
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <Label className="cursor-pointer">
+                          Tools de Calendário
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Verificar/criar/alterar/cancelar evento — também
+                          exige Google/Microsoft Calendar conectado
+                        </p>
+                      </div>
+                      <Switch
+                        checked={formData.enable_calendar_tools}
+                        onCheckedChange={(v) =>
+                          updateField("enable_calendar_tools", v)
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  {formData.enable_rag && (
+                    <div className="pl-4 border-l-2 border-primary/30 space-y-2 pt-2">
+                      <Label>Modo de entrega do RAG</Label>
+                      <Select
+                        value={formData.rag_mode || "on_demand"}
+                        onValueChange={(v) =>
+                          updateField(
+                            "rag_mode",
+                            v as "on_demand" | "always_inject",
+                          )
+                        }
+                      >
+                        <SelectTrigger className="max-w-md">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="on_demand">
+                            Sob demanda (tool) — a IA busca só quando decide
+                            que precisa
+                          </SelectItem>
+                          <SelectItem value="always_inject">
+                            Sempre injetado — o contexto vai em toda mensagem,
+                            sem tool call
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
                       <p className="text-xs text-muted-foreground">
-                        Permite executar ações como transferência, agendamento,
-                        busca de documentos
+                        Sob demanda evita gastar tokens quando o RAG não é
+                        necessário. Sempre injetado garante que o contexto
+                        chega mesmo se a IA não chamar a tool — bom pra bases
+                        pequenas e FAQs.
                       </p>
                     </div>
-                    <Switch
-                      checked={formData.enable_tools}
-                      onCheckedChange={(v) => updateField("enable_tools", v)}
-                    />
-                  </div>
+                  )}
                 </div>
 
                 <Separator />
@@ -2471,12 +2611,19 @@ export const AgentEditorModal = ({
                   <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
                     <span className="flex items-center gap-1">
                       <Zap className="w-3 h-3" />
-                      Tools:{" "}
-                      <Badge
-                        variant={formData.enable_tools ? "default" : "outline"}
-                        className="text-[10px] py-0 px-1.5"
-                      >
-                        {formData.enable_tools ? "ON" : "OFF"}
+                      Tools ativas:{" "}
+                      <Badge variant="outline" className="text-[10px] py-0 px-1.5">
+                        {
+                          [
+                            formData.enable_human_handoff,
+                            formData.enable_rag,
+                            formData.enable_document_search,
+                            formData.enable_audio_response,
+                            formData.enable_contact_registration,
+                            formData.enable_calendar_tools,
+                          ].filter(Boolean).length
+                        }
+                        /6
                       </Badge>
                     </span>
                     <span className="flex items-center gap-1">
@@ -2486,7 +2633,11 @@ export const AgentEditorModal = ({
                         variant={formData.enable_rag ? "default" : "outline"}
                         className="text-[10px] py-0 px-1.5"
                       >
-                        {formData.enable_rag ? "ON" : "OFF"}
+                        {formData.enable_rag
+                          ? formData.rag_mode === "always_inject"
+                            ? "sempre injetado"
+                            : "sob demanda"
+                          : "OFF"}
                       </Badge>
                     </span>
                     <span className="flex items-center gap-1">
@@ -2502,7 +2653,7 @@ export const AgentEditorModal = ({
                       </Badge>
                     </span>
                     <span className="ml-auto text-[11px] italic">
-                      Configure na aba &quot;Recursos&quot;
+                      Configure na aba &quot;Avançado&quot;
                     </span>
                   </div>
                 </div>

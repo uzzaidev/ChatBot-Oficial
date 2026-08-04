@@ -47,13 +47,16 @@ Minha abordagem é consultiva: primeiro ouço e entendo, depois sugiro. Acredito
     fallback_message:
       "Desculpe, não consegui entender sua mensagem. Poderia me contar mais sobre o que você está procurando?",
 
-    // Tools
+    // Tools — each independently toggleable
     enable_human_handoff: true,
     enable_document_search: true,
     enable_audio_response: false,
+    enable_contact_registration: true,
+    enable_calendar_tools: true,
 
     // RAG
     enable_rag: true,
+    rag_mode: "on_demand",
     rag_threshold: 0.7,
     rag_max_results: 5,
 
@@ -103,13 +106,16 @@ Explico as soluções passo a passo, garantindo que o cliente entenda o que est�
     fallback_message:
       "Não consegui entender o problema. Poderia descrever com mais detalhes o que está acontecendo?",
 
-    // Tools
+    // Tools — each independently toggleable
     enable_human_handoff: true,
     enable_document_search: true,
     enable_audio_response: false,
+    enable_contact_registration: true,
+    enable_calendar_tools: true,
 
     // RAG
     enable_rag: true,
+    rag_mode: "on_demand",
     rag_threshold: 0.75,
     rag_max_results: 5,
 
@@ -159,13 +165,16 @@ Faço perguntas estratégicas para entender o contexto, urgência e capacidade d
     fallback_message:
       "Desculpe, não entendi. Vamos continuar: qual é o principal desafio que você está tentando resolver?",
 
-    // Tools
+    // Tools — each independently toggleable
     enable_human_handoff: true,
     enable_document_search: false,
     enable_audio_response: false,
+    enable_contact_registration: false,
+    enable_calendar_tools: false,
 
     // RAG
     enable_rag: false,
+    rag_mode: "on_demand",
     rag_threshold: 0.7,
     rag_max_results: 3,
 
@@ -215,13 +224,16 @@ Meu foco é ser prestativo e eficiente, direcionando o cliente para a melhor sol
     fallback_message:
       "Desculpe, não consegui entender. Poderia reformular sua pergunta?",
 
-    // Tools
+    // Tools — each independently toggleable
     enable_human_handoff: true,
     enable_document_search: true,
     enable_audio_response: false,
+    enable_contact_registration: true,
+    enable_calendar_tools: true,
 
     // RAG
     enable_rag: true,
+    rag_mode: "on_demand",
     rag_threshold: 0.7,
     rag_max_results: 5,
 
@@ -271,13 +283,16 @@ Dedico atenção especial a cada detalhe, oferecendo um serviço de excelência 
     fallback_message:
       "Perdão, não compreendi completamente. Poderia gentilmente elaborar sua solicitação?",
 
-    // Tools
+    // Tools — each independently toggleable
     enable_human_handoff: true,
     enable_document_search: true,
     enable_audio_response: true,
+    enable_contact_registration: true,
+    enable_calendar_tools: true,
 
     // RAG
     enable_rag: true,
+    rag_mode: "on_demand",
     rag_threshold: 0.65,
     rag_max_results: 7,
 
@@ -417,14 +432,17 @@ export const createLegacyAgentFromClientConfig = (
     greeting_message: null,
     fallback_message: null,
 
-    // Ferramentas - habilitadas por padrao (default ON)
+    // Ferramentas - habilitadas por padrao (default ON), cada uma independente
     enable_human_handoff: clientConfig.settings.enableHumanHandoff,
     enable_document_search: true,
     enable_audio_response: clientConfig.settings.tts_enabled || false,
+    enable_contact_registration: true,
+    enable_calendar_tools: true,
     enable_tools: true,
 
     // RAG - habilitado por padrao
     enable_rag: true,
+    rag_mode: "on_demand",
     rag_threshold: 0.7,
     rag_max_results: 3,
 

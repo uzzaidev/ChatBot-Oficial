@@ -203,16 +203,21 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (body.fallback_message !== undefined)
       updateData.fallback_message = body.fallback_message;
 
-    // Tools
+    // Tools — each independently toggleable, no single master switch
     if (body.enable_human_handoff !== undefined)
       updateData.enable_human_handoff = body.enable_human_handoff;
     if (body.enable_document_search !== undefined)
       updateData.enable_document_search = body.enable_document_search;
     if (body.enable_audio_response !== undefined)
       updateData.enable_audio_response = body.enable_audio_response;
+    if (body.enable_contact_registration !== undefined)
+      updateData.enable_contact_registration = body.enable_contact_registration;
+    if (body.enable_calendar_tools !== undefined)
+      updateData.enable_calendar_tools = body.enable_calendar_tools;
 
     // RAG
     if (body.enable_rag !== undefined) updateData.enable_rag = body.enable_rag;
+    if (body.rag_mode !== undefined) updateData.rag_mode = body.rag_mode;
     if (body.rag_threshold !== undefined)
       updateData.rag_threshold = body.rag_threshold;
     if (body.rag_max_results !== undefined)

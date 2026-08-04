@@ -301,13 +301,17 @@ export async function POST(request: NextRequest) {
       fallback_message: body.fallback_message || null,
 
       // Tools (default ON: SaaS clients expect doc/handoff/RAG ready out of the box)
+      // Each tool is independently toggleable — no single master switch.
       enable_human_handoff: body.enable_human_handoff ?? true,
       enable_document_search: body.enable_document_search ?? true,
       enable_audio_response: body.enable_audio_response ?? false,
+      enable_contact_registration: body.enable_contact_registration ?? true,
+      enable_calendar_tools: body.enable_calendar_tools ?? true,
       enable_tools: body.enable_tools ?? true,
 
       // RAG
       enable_rag: body.enable_rag ?? true,
+      rag_mode: body.rag_mode ?? "on_demand",
       rag_threshold: body.rag_threshold ?? 0.7,
       rag_max_results: body.rag_max_results ?? 5,
 

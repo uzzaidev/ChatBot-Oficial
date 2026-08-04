@@ -124,7 +124,17 @@ export const POST = async (
       enable_document_search: snapshot.enable_document_search as boolean,
       enable_audio_response: snapshot.enable_audio_response as boolean,
       enable_tools: snapshot.enable_tools as boolean,
+      // Older snapshots predate these fields — fall back to the same
+      // defaults the DB columns use so restoring an old version doesn't
+      // silently disable tools that were implicitly on via enable_tools.
+      enable_contact_registration:
+        (snapshot.enable_contact_registration as boolean | undefined) ?? true,
+      enable_calendar_tools:
+        (snapshot.enable_calendar_tools as boolean | undefined) ?? true,
       enable_rag: snapshot.enable_rag as boolean,
+      rag_mode:
+        (snapshot.rag_mode as "on_demand" | "always_inject" | undefined) ??
+        "on_demand",
       rag_threshold: snapshot.rag_threshold as number | null,
       rag_max_results: snapshot.rag_max_results as number | null,
       primary_provider: snapshot.primary_provider as string,
