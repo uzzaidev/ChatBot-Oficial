@@ -124,10 +124,17 @@ export const buildAllowedTools = (input: {
           .describe(
             "Termo de busca extraido da solicitacao do usuario, incluindo nome do material, foto, local, produto ou documento.",
           ),
+        // NUNCA usar `.default(...)` aqui. OpenAI's function-calling schema
+        // rejects/ignora `default` no JSON Schema (openai-node's zodFunction
+        // helper trata como erro explicito: "'default' is not permitted").
+        // Modelos mais novos (gpt-5.4-mini) parecem simplesmente evitar
+        // chamar a tool quando o schema carrega essa keyword — nano tolerava,
+        // 5.4-mini nao. "any"/omitido ja sao tratados como equivalentes no
+        // codigo (resolveDocumentSearch), entao optional() sem default basta.
         document_type: z
           .enum(["any", "catalog", "manual", "faq", "image"])
-          .default("any")
-          .describe("Tipo de documento. Use any na maioria dos casos."),
+          .optional()
+          .describe("Tipo de documento. Use any ou omita na maioria dos casos."),
       }),
     };
   }
