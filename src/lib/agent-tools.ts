@@ -116,13 +116,17 @@ export const buildAllowedTools = (input: {
 
   if (config.settings.enableDocumentSearch) {
     tools.buscar_documento = {
+      // Curta e concreta de proposito: modelos menores (gpt-5.4-mini) sao
+      // sensiveis a descricao de tool — uma lista longa de sinonimos +
+      // instrucao negativa embutida dilui o gatilho principal. A regra de
+      // "nao invente/liste sem chamar" fica por ultimo, como aviso curto.
       description:
-        "Busca e envia documentos, imagens, fotos, links ou materiais da base. Use quando o usuario solicitar explicitamente arquivo, documento, PDF, catalogo, tabela, imagem, foto, link, material, anexo, ou reclamar que algo nao foi enviado. Nao prometa nem liste Foto 1/2/3, links ou arquivos sem chamar esta ferramenta.",
+        "Envia um arquivo da base de conhecimento (imagem, foto, PDF, catalogo, tabela, documento) diretamente ao cliente pelo WhatsApp. Use sempre que o cliente pedir para ver, receber, mandar algo assim, ou reclamar que nao recebeu — mesmo sem saber o nome exato do arquivo, chame mesmo assim com o melhor termo de busca. Nunca invente nem liste nomes de arquivo/foto no texto sem chamar esta ferramenta.",
       inputSchema: z.object({
         query: z
           .string()
           .describe(
-            "Termo de busca extraido da solicitacao do usuario, incluindo nome do material, foto, local, produto ou documento.",
+            "Termo de busca extraido da solicitacao do usuario: nome do arquivo (se mencionado), assunto, produto ou tipo de material.",
           ),
         // NUNCA usar `.default(...)` aqui. OpenAI's function-calling schema
         // rejects/ignora `default` no JSON Schema (openai-node's zodFunction

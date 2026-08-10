@@ -113,6 +113,98 @@ const looksLikeMetaInstructionWrapper = (value: string): boolean => {
   );
 };
 
+// Rule-type sections where fallback/escalation logic legitimately lives \u2014
+// but where a NEW deflection rule is risky enough to deserve a caution
+// (see introducesNewFallbackEscape below).
+const RULE_FIELD_TAGS = new Set(["rules", "boundaries", "escalation_policy"]);
+
+const KNOWN_TOOL_NAMES = [
+  "buscar_documento",
+  "transferir_atendimento",
+  "buscar_conhecimento",
+  "registrar_dado_cadastral",
+  "enviar_resposta_em_audio",
+  "verificar_agenda",
+  "criar_evento_agenda",
+  "alterar_evento_agenda",
+  "cancelar_evento_agenda",
+];
+
+const FILENAME_PATTERN =
+  /\b[\w-]+\.(jpe?g|png|gif|webp|pdf|docx?|xlsx?|pptx?|txt|md)\b/gi;
+
+/**
+ * Concrete, load-bearing references (tool names, filenames) present in the
+ * current content but missing from the suggested replacement \u2014 usually an
+ * accidental "simplification" that breaks tool-calling or filename lookups.
+ * Returns what disappeared, for the caution note; empty when nothing dropped.
+ */
+const findDroppedConcreteReferences = (
+  current: string,
+  suggested: string,
+): string[] => {
+  const dropped = new Set<string>();
+  const suggestedLower = suggested.toLowerCase();
+
+  for (const name of KNOWN_TOOL_NAMES) {
+    if (current.includes(name) && !suggestedLower.includes(name)) {
+      dropped.add(name);
+    }
+  }
+
+  const currentFilenames = current.match(FILENAME_PATTERN) ?? [];
+  for (const filename of currentFilenames) {
+    if (!suggestedLower.includes(filename.toLowerCase())) {
+      dropped.add(filename);
+    }
+  }
+
+  return Array.from(dropped);
+};
+
+const FALLBACK_ESCAPE_PHRASES = [
+  "peca para a equipe",
+  "pedir para a equipe",
+  "encaminhe depois",
+  "encaminhar depois",
+  "nao conseguiu",
+  "diga que vai",
+  "avise que",
+  "nao foi possivel",
+  "entraremos em contato",
+  "retornaremos",
+  "nossa equipe vai",
+  "equipe vai te passar",
+  "assim que possivel",
+];
+
+/**
+ * True when `suggested` introduces deflection/escape language that wasn't
+ * already present in `current` \u2014 e.g. "se nao conseguir, diga que a equipe
+ * vai te passar depois". Legitimate sometimes, but risky: it can make the
+ * model prefer deferring over actually trying the action/tool it has
+ * available (this is exactly what stopped an agent from sending images \u2014
+ * it started deferring to "a equipe vai te passar" instead of calling
+ * buscar_documento). Used to force elevated severity + a caution note,
+ * never to block \u2014 unlike the message-wrapper case, this can be legitimate.
+ */
+const introducesNewFallbackEscape = (
+  current: string,
+  suggested: string,
+): boolean => {
+  const normalize = (value: string) =>
+    value
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  const currentNorm = normalize(current);
+  const suggestedNorm = normalize(suggested);
+  return FALLBACK_ESCAPE_PHRASES.some(
+    (phrase) =>
+      suggestedNorm.includes(phrase) && !currentNorm.includes(phrase),
+  );
+};
+
 const normalizeSeverity = (value: unknown): SuggestionSeverity => {
   const v = String(value ?? "").toLowerCase();
   if (v === "high" || v === "alta") return "high";
@@ -158,6 +250,9 @@ const EVALUATOR_SYSTEM_PROMPT = [
   "5. Mantenha o idioma original de cada secao (portugues do Brasil) no `suggested_value`.",
   "6. Para secoes marcadas como advisory=true, `suggested_value` DEVE ser null (apenas oriente em texto, nao reescreva).",
   "7. Nao reescreva tudo de uma vez: foque nas mudancas de maior impacto. No maximo 6 sugestoes.",
+  "8. IDEMPOTENCIA — voce SUBSTITUI o campo inteiro, nunca empilha em cima. Se o `conteudo_atual` ja mostrar sinais de seu proprio patch anterior (frases repetidas, instrucoes duplicadas, camadas redundantes), sua tarefa e CONSOLIDAR e limpar isso no `suggested_value` — nunca adicionar mais uma camada por cima do que ja esta la.",
+  "9. NUNCA remova referencias concretas que ja existam no `conteudo_atual`: nomes de ferramenta (ex: buscar_documento, transferir_atendimento, buscar_conhecimento, registrar_dado_cadastral), nomes de arquivo (ex: planos-humana.jpg), URLs ou identificadores exatos. Essas referencias sustentam chamadas de tool e buscas por nome — remover ou generalizar 'para simplificar' quebra funcionalidade real.",
+  "10. CAUTELA COM 'SAIDA FACIL': prefira resolver contradicao/ambiguidade a inventar uma nova regra de fallback/desvio (ex: 'se nao conseguir X, diga que vai encaminhar/pedir para a equipe depois'). Se mesmo assim a mudanca de maior impacto for adicionar uma logica de fallback/escalação nova a uma secao de REGRA, marque `severity: \"high\"` e explique no `rationale` que isso precisa ser testado no QA antes de confiar (pode fazer o agente preferir desviar a de fato tentar a acao/tool).",
   "",
   "PRINCIPIOS DE ENGENHARIA DE PROMPT que voce aplica ao avaliar:",
   "- Regras criticas e nao-negociaveis devem vir primeiro e ser inequivocas.",
@@ -167,6 +262,11 @@ const EVALUATOR_SYSTEM_PROMPT = [
   "- Especifique o empacotamento da resposta: tamanho, se faz pergunta de follow-up, ordem das secoes.",
   "- Modelos menores/mais literais (ex: mini) seguem melhor escopo explicito e ordem de execucao completa.",
   "- Remova contradicoes, redundancias e instrucoes que competem entre si.",
+  "",
+  "INVARIANTES DO PRODUTO (nunca proponha `suggested_value` que viole isto):",
+  "- RAG e automatico: quando habilitado, o proprio sistema injeta o contexto ou expõe a ferramenta de busca de conhecimento — nunca adicione uma regra tipo 'sempre chame a busca de conhecimento antes de responder', isso e redundante e pode confundir o modelo.",
+  "- Formato WhatsApp: mensagens curtas, sem markdown (sem **negrito**, sem headers #, sem travessao —), no maximo 1 emoji por mensagem quando fizer sentido. Nunca proponha um `suggested_value` com formatacao markdown pesada ou listas numeradas longas destinadas ao cliente final.",
+  "- Nunca exponha terminologia interna ao cliente (ex: 'nossa base de dados', 'de acordo com o sistema', 'nossa documentacao'). O cliente nao deve saber que existe um sistema, base ou pipeline por tras — fale como um atendente humano falaria.",
   "",
   "PROCEDIMENTO (execute em ordem):",
   "1. Leia o prompt completo e o contexto opcional da mensagem real.",
@@ -356,6 +456,8 @@ export const evaluateAgentPrompt = async (
 
       const title = String(raw.title ?? "Sugestao").trim() || "Sugestao";
       let rationale = String(raw.rationale ?? "").trim();
+      let severity = normalizeSeverity(raw.severity);
+      const currentContent = segment.evaluatorContent ?? segment.content;
 
       // Defense-in-depth: never let a verbatim-message suggestion apply the
       // mandatory-use instruction wrapper into the raw field (see
@@ -375,14 +477,41 @@ export const evaluateAgentPrompt = async (
         suggestedValue = null;
       }
 
+      // Defense-in-depth: flag (never block) when a suggestion silently
+      // drops a tool name or filename that was load-bearing in the current
+      // content — likely an over-eager "simplification".
+      if (suggestedValue) {
+        const dropped = findDroppedConcreteReferences(
+          currentContent,
+          suggestedValue,
+        );
+        if (dropped.length > 0) {
+          severity = "high";
+          rationale = `${rationale} ⚠️ Esta sugestão remove referência(s) que pode(m) ser essencial(is): ${dropped.join(", ")}. Confira antes de aplicar.`.trim();
+        }
+      }
+
+      // Defense-in-depth: flag (never block) when a rule/escalation section
+      // gains NEW deflection/fallback language — the exact pattern that made
+      // an agent stop calling buscar_documento and defer to "a equipe vai
+      // te passar depois" instead.
+      if (
+        suggestedValue &&
+        RULE_FIELD_TAGS.has(sectionTag) &&
+        introducesNewFallbackEscape(currentContent, suggestedValue)
+      ) {
+        severity = "high";
+        rationale = `${rationale} ⚠️ Esta sugestão adiciona uma nova regra de fallback/desvio — teste no QA antes de confiar, isso pode fazer o agente preferir desviar a tentar a ação/tool de fato.`.trim();
+      }
+
       return {
         id: randomUUID(),
         sectionTag,
         sectionLabel: source.label,
         title,
-        severity: normalizeSeverity(raw.severity),
+        severity,
         rationale,
-        currentExcerpt: segment.evaluatorContent ?? segment.content,
+        currentExcerpt: currentContent,
         suggestedValue,
         apply: source.apply,
         status: "open",
