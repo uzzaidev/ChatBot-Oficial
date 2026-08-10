@@ -99,8 +99,18 @@ export type PromptSegmentSource =
 export interface PromptSegment {
   /** XML tag used as section delimiter (e.g. "identity"). */
   tag: string;
-  /** Inner content (without the XML wrapper). */
+  /** Inner content (without the XML wrapper) — used verbatim by compileSystemPrompt. */
   content: string;
+  /**
+   * What a prompt reviewer should see/edit for this section, when it differs
+   * from `content`. Some sections (greeting, fallback) compile `content` into
+   * an instruction wrapper ("OBRIGATORIO: use EXATAMENTE este texto: ...")
+   * around the raw field — that wrapper must never be shown to a reviewer as
+   * "current content to replace", or a suggested_value round-tripped back
+   * through `apply` nests another wrapper around the already-wrapped text
+   * every time it's re-evaluated. Falls back to `content` when absent.
+   */
+  evaluatorContent?: string;
   /** Where in the editor this section is configured. */
   source: PromptSegmentSource;
 }
@@ -209,6 +219,9 @@ export const buildSystemPromptSegments = (agent: Agent): PromptSegment[] => {
     segments.push({
       tag: "greeting",
       content: `OBRIGATORIO: Na primeira mensagem de QUALQUER conversa, use EXATAMENTE este texto, sem alterar nenhuma palavra:\n"${agent.greeting_message}"`,
+      // Raw field value — what a reviewer should read/rewrite. The wrapper
+      // above is compiled fresh from this every time, never stored.
+      evaluatorContent: agent.greeting_message,
       source: {
         editable: true,
         tab: "behavior",
@@ -224,6 +237,9 @@ export const buildSystemPromptSegments = (agent: Agent): PromptSegment[] => {
     segments.push({
       tag: "fallback",
       content: `OBRIGATORIO: Quando nao entender ou nao conseguir responder a mensagem do usuario, responda EXATAMENTE com este texto, sem alterar nenhuma palavra:\n"${agent.fallback_message}"`,
+      // Raw field value — what a reviewer should read/rewrite. The wrapper
+      // above is compiled fresh from this every time, never stored.
+      evaluatorContent: agent.fallback_message,
       source: {
         editable: true,
         tab: "behavior",

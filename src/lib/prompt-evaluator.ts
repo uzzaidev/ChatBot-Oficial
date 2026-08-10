@@ -88,6 +88,31 @@ const clampScore = (value: unknown): number => {
   return Math.max(0, Math.min(100, Math.round(n)));
 };
 
+// Sections whose compiled content is a system-generated "use this text
+// verbatim" wrapper around a raw field (see buildSystemPromptSegments).
+// A suggested_value for these must be the bare message, never the wrapper.
+const VERBATIM_MESSAGE_TAGS = new Set(["greeting", "fallback"]);
+
+/**
+ * Defense-in-depth against the evaluator echoing back the mandatory-use
+ * instruction wrapper (or inventing its own) instead of the plain message.
+ * Even with explicit prompt instructions telling the model not to do this,
+ * an LLM can still slip — this is a structural guard so a corrupted
+ * suggestion can never be one-click applied. Matches were chosen from the
+ * literal wrapper text in buildSystemPromptSegments (prompt-builder.ts).
+ */
+const looksLikeMetaInstructionWrapper = (value: string): boolean => {
+  const normalized = value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  return (
+    normalized.includes("obrigatorio") ||
+    normalized.includes("exatamente este texto") ||
+    normalized.includes("sem alterar nenhuma palavra")
+  );
+};
+
 const normalizeSeverity = (value: unknown): SuggestionSeverity => {
   const v = String(value ?? "").toLowerCase();
   if (v === "high" || v === "alta") return "high";
@@ -129,9 +154,10 @@ const EVALUATOR_SYSTEM_PROMPT = [
   "1. Avalie SOMENTE o prompt fornecido. Nao invente secoes, ferramentas ou contexto que nao estejam no material.",
   "2. So proponha mudanca para uma secao cujo `tag` esteja na lista de SECOES EDITAVEIS. Nunca sugira mudar blocos fixos do sistema.",
   "3. Para cada sugestao com mudanca de texto, `suggested_value` DEVE ser o texto COMPLETO que substitui o conteudo atual daquela secao (nao um diff, nao um trecho).",
-  "4. Mantenha o idioma original de cada secao (portugues do Brasil) no `suggested_value`.",
-  "5. Para secoes marcadas como advisory=true, `suggested_value` DEVE ser null (apenas oriente em texto, nao reescreva).",
-  "6. Nao reescreva tudo de uma vez: foque nas mudancas de maior impacto. No maximo 6 sugestoes.",
+  "4. Secoes marcadas 'ATENCAO: esta secao e uma MENSAGEM LITERAL' (ex: greeting, fallback) sao textos enviados ao cliente, nao instrucoes. `suggested_value` para elas deve ser APENAS a mensagem em si — NUNCA inclua prefixos tipo 'OBRIGATORIO', 'use EXATAMENTE este texto', aspas envolvendo a mensagem inteira, ou qualquer outra meta-instrucao. O sistema ja adiciona esse envoltorio sozinho ao compilar; incluir de novo cria instrucoes aninhadas que vazam pro cliente.",
+  "5. Mantenha o idioma original de cada secao (portugues do Brasil) no `suggested_value`.",
+  "6. Para secoes marcadas como advisory=true, `suggested_value` DEVE ser null (apenas oriente em texto, nao reescreva).",
+  "7. Nao reescreva tudo de uma vez: foque nas mudancas de maior impacto. No maximo 6 sugestoes.",
   "",
   "PRINCIPIOS DE ENGENHARIA DE PROMPT que voce aplica ao avaliar:",
   "- Regras criticas e nao-negociaveis devem vir primeiro e ser inequivocas.",
@@ -174,12 +200,19 @@ const buildUserMessage = (
         { editable: true }
       >;
       const advisory = source.apply.kind === "advisory";
+      const isVerbatimMessage =
+        segment.tag === "greeting" || segment.tag === "fallback";
       return [
         `### tag: ${segment.tag}`,
         `label: ${source.label}`,
         `advisory: ${advisory}`,
+        ...(isVerbatimMessage
+          ? [
+              "ATENCAO: esta secao e uma MENSAGEM LITERAL enviada ao cliente (nao uma instrucao). O sistema ja envolve este texto automaticamente com uma instrucao de uso obrigatorio ao compilar o prompt final — NUNCA inclua essa instrucao (nem qualquer variante de 'OBRIGATORIO', 'use EXATAMENTE este texto', aspas envolvendo tudo, etc.) no suggested_value. suggested_value deve ser APENAS o texto da mensagem em si.",
+            ]
+          : []),
         "conteudo_atual:",
-        segment.content,
+        segment.evaluatorContent ?? segment.content,
       ].join("\n");
     })
     .join("\n\n");
@@ -318,11 +351,29 @@ export const evaluateAgentPrompt = async (
         typeof raw.suggested_value === "string"
           ? raw.suggested_value.trim()
           : "";
-      const suggestedValue =
+      let suggestedValue =
         isAdvisory || rawValue.length === 0 ? null : rawValue;
 
       const title = String(raw.title ?? "Sugestao").trim() || "Sugestao";
-      const rationale = String(raw.rationale ?? "").trim();
+      let rationale = String(raw.rationale ?? "").trim();
+
+      // Defense-in-depth: never let a verbatim-message suggestion apply the
+      // mandatory-use instruction wrapper into the raw field (see
+      // looksLikeMetaInstructionWrapper doc comment) — degrade to advisory
+      // instead of risking a corrupted, self-nesting field value.
+      if (
+        suggestedValue &&
+        VERBATIM_MESSAGE_TAGS.has(sectionTag) &&
+        looksLikeMetaInstructionWrapper(suggestedValue)
+      ) {
+        console.warn(
+          `[prompt-evaluator] Blocked suggestion for "${sectionTag}": suggested_value looked like the compiled instruction wrapper instead of the plain message.`,
+        );
+        rationale = rationale
+          ? `${rationale} (Sugestão de texto bloqueada automaticamente — a IA incluiu uma instrução de sistema em vez da mensagem pura. Edite manualmente.)`
+          : "Sugestão de texto bloqueada automaticamente — a IA incluiu uma instrução de sistema em vez da mensagem pura. Edite manualmente.";
+        suggestedValue = null;
+      }
 
       return {
         id: randomUUID(),
@@ -331,7 +382,7 @@ export const evaluateAgentPrompt = async (
         title,
         severity: normalizeSeverity(raw.severity),
         rationale,
-        currentExcerpt: segment.content,
+        currentExcerpt: segment.evaluatorContent ?? segment.content,
         suggestedValue,
         apply: source.apply,
         status: "open",
