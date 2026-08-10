@@ -95,7 +95,7 @@ npm run lint                     # Lint
 | Tool calls in messages           | Not stripped             | See Critical #5                         |
 | Redis connection failed          | Redis not running        | Start Redis (flow continues gracefully) |
 | Webhook not working              | Wrong verify token       | Check `META_VERIFY_TOKEN`               |
-| Build fails (Google Fonts)       | Network restrictions     | Expected in sandboxed environments      |
+| Fonts stopped loading             | Fonte não self-hosted     | Fonts are self-hosted via `@fontsource/*` + `next/font/local` in `src/app/layout.tsx` — no build-time network dependency. If adding a new font, follow the same pattern instead of `next/font/google` (which fetches from Google's CDN during build and has broken production builds on Vercel before). |
 
 ---
 
