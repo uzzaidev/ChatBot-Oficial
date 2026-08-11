@@ -299,7 +299,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           | undefined) || undefined,
       config,
       includeDateTimeInfo: true,
-      enableTools: config.settings.enableTools,
+      // `enableTools` here is the per-call kill switch (used by follow-up
+      // calls to force text-only output) — it is NOT the same as the
+      // deprecated `config.settings.enableTools` field. Each tool is gated
+      // individually inside buildAllowedTools now; passing the deprecated
+      // agent.enable_tools value here would silently disable every tool
+      // whenever that legacy flag happens to be false, exactly like the
+      // old single master switch used to.
+      enableTools: true,
       phone: historyPhone,
     });
 
