@@ -6,6 +6,7 @@
  * to plain markdown headers, and enables prompt caching on matching prefixes.
  */
 
+import { resolveDocumentReferences } from "./prompt-document-refs";
 import type { Agent, AgentPromptSections } from "./types";
 
 const TONE_DESCRIPTIONS: Record<string, string> = {
@@ -42,10 +43,11 @@ const sectionValue = (
   fallback?: string | null,
 ): string => {
   const value = sections?.[key];
-  if (typeof value === "string" && value.trim().length > 0) {
-    return value.trim();
-  }
-  return fallback?.trim() ?? "";
+  const raw =
+    typeof value === "string" && value.trim().length > 0
+      ? value.trim()
+      : fallback?.trim() ?? "";
+  return resolveDocumentReferences(raw);
 };
 
 /**
@@ -153,7 +155,7 @@ export const buildSystemPromptSegments = (agent: Agent): PromptSegment[] => {
   if (agent.primary_goal) {
     segments.push({
       tag: "objective",
-      content: agent.primary_goal,
+      content: resolveDocumentReferences(agent.primary_goal),
       source: {
         editable: true,
         tab: "behavior",

@@ -2,6 +2,7 @@
 
 import { AgentQAPanel } from "@/components/agents/AgentQAPanel";
 import { AgentVersionHistory } from "@/components/agents/AgentVersionHistory";
+import { MentionTextarea } from "@/components/agents/MentionTextarea";
 import { PromptEvaluatorPanel } from "@/components/agents/PromptEvaluatorPanel";
 import {
   RawPromptPreview,
@@ -1314,15 +1315,12 @@ export const AgentEditorModal = ({
                       id="agent-field-business_context"
                     >
                       <Label>Contexto do Negocio</Label>
-                      <Textarea
+                      <MentionTextarea
                         value={formData.prompt_sections?.business_context || ""}
-                        onChange={(e) =>
-                          updatePromptSection(
-                            "business_context",
-                            e.target.value,
-                          )
+                        onChange={(value) =>
+                          updatePromptSection("business_context", value)
                         }
-                        placeholder="Fatos fixos sobre empresa, produtos, publico e limites comerciais."
+                        placeholder="Fatos fixos sobre empresa, produtos, publico e limites comerciais. Digite @ para referenciar um arquivo da base."
                         rows={4}
                         className="resize-y"
                       />
@@ -1330,12 +1328,12 @@ export const AgentEditorModal = ({
 
                     <div className="space-y-2" id="agent-field-response_rules">
                       <Label>Regras de Resposta</Label>
-                      <Textarea
+                      <MentionTextarea
                         value={formData.prompt_sections?.response_rules || ""}
-                        onChange={(e) =>
-                          updatePromptSection("response_rules", e.target.value)
+                        onChange={(value) =>
+                          updatePromptSection("response_rules", value)
                         }
-                        placeholder="Passos que o agente deve seguir antes de responder."
+                        placeholder="Passos que o agente deve seguir antes de responder. Digite @ para referenciar um arquivo da base."
                         rows={4}
                         className="resize-y"
                       />
@@ -1343,10 +1341,10 @@ export const AgentEditorModal = ({
 
                     <div className="space-y-2" id="agent-field-boundaries">
                       <Label>Limites e Assuntos Proibidos</Label>
-                      <Textarea
+                      <MentionTextarea
                         value={formData.prompt_sections?.boundaries || ""}
-                        onChange={(e) =>
-                          updatePromptSection("boundaries", e.target.value)
+                        onChange={(value) =>
+                          updatePromptSection("boundaries", value)
                         }
                         placeholder="O que o agente nao deve prometer, inventar ou responder."
                         rows={4}
@@ -1359,15 +1357,12 @@ export const AgentEditorModal = ({
                       id="agent-field-escalation_policy"
                     >
                       <Label>Politica de Escalacao</Label>
-                      <Textarea
+                      <MentionTextarea
                         value={
                           formData.prompt_sections?.escalation_policy || ""
                         }
-                        onChange={(e) =>
-                          updatePromptSection(
-                            "escalation_policy",
-                            e.target.value,
-                          )
+                        onChange={(value) =>
+                          updatePromptSection("escalation_policy", value)
                         }
                         placeholder="Quando transferir para humano ou dizer que vai confirmar."
                         rows={4}
@@ -1378,16 +1373,16 @@ export const AgentEditorModal = ({
 
                   <div className="space-y-2" id="agent-field-examples">
                     <Label>Exemplos e Instrucoes Avancadas</Label>
-                    <Textarea
+                    <MentionTextarea
                       value={
                         formData.prompt_sections?.examples ||
                         formData.prompt_sections?.custom_instructions ||
                         ""
                       }
-                      onChange={(e) =>
-                        updatePromptSection("examples", e.target.value)
+                      onChange={(value) =>
+                        updatePromptSection("examples", value)
                       }
-                      placeholder="Exemplos curtos de boas respostas ou regras avancadas."
+                      placeholder="Exemplos curtos de boas respostas ou regras avancadas. Digite @ para referenciar um arquivo da base."
                       rows={5}
                       className="font-mono text-sm resize-y"
                     />
