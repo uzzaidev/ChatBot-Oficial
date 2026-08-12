@@ -1109,6 +1109,19 @@ export default function SettingsPage() {
                                 data.error || "Erro ao desconectar",
                               );
                             setIsAutoProvisioned(false);
+                            setWebhookRoutingMode("legacy");
+                            setProvisionedAt(null);
+                            setOnboardingType(null);
+                            setCoexistenceSync({
+                              contacts: null,
+                              history: null,
+                            });
+                            setSecrets((prev) => ({
+                              ...prev,
+                              meta_phone_number_id: "",
+                              whatsapp_business_account_id: "",
+                            }));
+                            setWhatsappHealth(null);
                             setNotification({
                               type: "success",
                               message: `WhatsApp ${
