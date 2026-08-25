@@ -14,6 +14,8 @@
  *   FINANCEIRO_AGENT_URL        — e.g. https://gestao.luisfboff.com/api/agente/whatsapp
  *   FINANCEIRO_AGENT_TOKEN      — same string as the financeiro's DIGEST_API_TOKEN
  *   FINANCEIRO_OWNER_NUMBERS    — comma-separated whitelist of digits; missing = feature off
+ *   FINANCEIRO_OWNER_CLIENT_ID  — restricts the bridge to one client/WABA (the
+ *                                 owner's personal number); missing = no restriction
  *
  * Wire contract with the financeiro:
  *   Request:  { from: "<phone-digits>", message?: "<text>", button_id?: "<id>" }
@@ -98,6 +100,18 @@ export const isFinanceiroOwner = (phone: string): boolean => {
   const replyTo = getReplyToOverride();
   if (replyTo && normalized === replyTo) return true;
   return false;
+};
+
+/**
+ * Restricts the financeiro bridge to a single tenant (the owner's personal
+ * WABA), so other clients are never intercepted even if a message happens to
+ * arrive from a whitelisted owner number on a different WABA. Unset env =
+ * no restriction (backward compatible with single-tenant setups).
+ */
+export const isFinanceiroScopedClient = (clientId: string): boolean => {
+  const scopedId = (process.env.FINANCEIRO_OWNER_CLIENT_ID ?? "").trim();
+  if (!scopedId) return true;
+  return clientId === scopedId;
 };
 
 /**

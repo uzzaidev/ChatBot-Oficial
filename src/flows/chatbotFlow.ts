@@ -1,5 +1,6 @@
 import {
   isFinanceiroOwner,
+  isFinanceiroScopedClient,
   resolveCanonicalOwnerPhone,
   routeMessageToFinanceiro,
 } from "@/lib/financeiro-bridge";
@@ -283,7 +284,7 @@ export const processChatbotMessage = async (
     // (gestao.luisfboff.com/api/agente/whatsapp) and sends back its reply —
     // either a plain text message or a 3-button approval card. Gated by the
     // FINANCEIRO_OWNER_NUMBERS env var; feature is off when unset.
-    if (isFinanceiroOwner(parsedMessage.phone)) {
+    if (isFinanceiroOwner(parsedMessage.phone) && isFinanceiroScopedClient(config.id)) {
       logger.logNodeStart("2.1. Financeiro Bridge", {
         phone: parsedMessage.phone,
         type: parsedMessage.type,

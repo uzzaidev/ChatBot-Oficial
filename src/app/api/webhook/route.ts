@@ -7,6 +7,7 @@ import {
   forwardCsvToFinanceiro,
   forwardMediaToFinanceiro,
   isFinanceiroOwner,
+  isFinanceiroScopedClient,
   resolveCanonicalOwnerPhone,
   routeMessageToFinanceiro,
 } from "@/lib/financeiro-bridge";
@@ -1680,7 +1681,7 @@ async function processSMBEcho(
     //   video    → idem (video pode ser usado em reuniões gravadas)
     // The text path responds back via WhatsApp; document/audio paths log the
     // outcome and the user checks the painel web for results.
-    if (isFinanceiroOwner(customerPhone)) {
+    if (isFinanceiroOwner(customerPhone) && isFinanceiroScopedClient(config.id)) {
       const canonicalPhone =
         resolveCanonicalOwnerPhone(customerPhone) ?? customerPhone;
 
