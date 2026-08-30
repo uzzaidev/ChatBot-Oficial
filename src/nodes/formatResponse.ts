@@ -173,38 +173,25 @@ const sanitizeMarkdownForWhatsApp = (text: string): string => {
       .replace(/__([^_]+)__/g, "$1")
       .replace(/\*([^*]+)\*/g, "$1")
       .replace(/_([^_]+)_/g, "$1")
-      // Limpar linhas que ficaram vazias após remoções
-      .replace(/^\s*\n/gm, "")
+      // Normalizar quebras SEM destruir o separador de bolha `\n\n` que o
+      // modelo emite (WHATSAPP_FORMATTING_RULES nº 2 em generateAIResponse.ts).
+      // Antes isto era `.replace(/^\s*\n/gm, "")`, que colapsava TODOS os
+      // `\n\n` em `\n` — o split de bolhas em formatResponse() nunca disparava
+      // e blocos/listas saíam agrupados numa bolha só.
+      .replace(/[ \t]+$/gm, "")
+      .replace(/\n{3,}/g, "\n\n")
       .trim()
   );
 };
 
-const splitIntoParagraphs = (text: string): string[] => {
-  const paragraphs = text.split("\n\n").filter((p) => p.trim().length > 0);
-
-  if (paragraphs.length >= 2) {
-    return paragraphs;
-  }
-
-  const sentences = text.split(/(?<=[.!?])\s+/);
-  if (sentences.length >= 2) {
-    const midPoint = Math.floor(sentences.length / 2);
-    return [
-      sentences.slice(0, midPoint).join(" "),
-      sentences.slice(midPoint).join(" "),
-    ];
-  }
-
-  return [text];
-};
-
-// Quebra um trecho longo agrupando UNIDADES (frases ou palavras) ate o cap.
-const packUnits = (units: string[], cap: number): string[] => {
+// Quebra um trecho longo agrupando UNIDADES (linhas, frases ou palavras) ate o
+// cap. `joiner` mantem o separador original — use "\n" para NAO achatar listas.
+const packUnits = (units: string[], cap: number, joiner = " "): string[] => {
   const chunks: string[] = [];
   let current = "";
 
   for (const unit of units) {
-    const candidate = current ? `${current} ${unit}` : unit;
+    const candidate = current ? `${current}${joiner}${unit}` : unit;
     if (candidate.length > cap) {
       if (current) {
         chunks.push(current.trim());
@@ -222,28 +209,37 @@ const packUnits = (units: string[], cap: number): string[] => {
   return chunks;
 };
 
+// Fallback para UMA linha isolada acima do cap: agrupa por frase, depois por
+// palavra. So chega aqui quando nem a quebra por linha resolveu.
+const splitLongLine = (text: string): string[] => {
+  const sentences = text.split(/(?<=[.!?])\s+/).filter((s) => s.length > 0);
+  if (sentences.length > 1) {
+    return packUnits(sentences, MAX_MESSAGE_LENGTH).flatMap((chunk) =>
+      chunk.length <= MAX_MESSAGE_LENGTH
+        ? [chunk]
+        : packUnits(chunk.split(" "), MAX_MESSAGE_LENGTH),
+    );
+  }
+  return packUnits(text.split(" "), MAX_MESSAGE_LENGTH);
+};
+
+// Rede de seguranca: so age em blocos acima do cap. Preserva a estrutura
+// interna do bloco (cabecalho + lista em linhas separadas) — quebra por linha
+// mantendo os `\n`, nunca achata para espaco.
 const enforceMaxLength = (messages: string[]): string[] => {
   return messages.flatMap((msg) => {
     if (msg.length <= MAX_MESSAGE_LENGTH) {
       return [msg];
     }
 
-    // 1) Quebra por sentencas e tenta agrupar em mensagens <= cap.
-    //    Preserva limite de frase — muito melhor pra leitura no WhatsApp do
-    //    que cortes no meio da frase.
-    const sentences = msg.split(/(?<=[.!?])\s+/).filter((s) => s.length > 0);
-    if (sentences.length > 1) {
-      const sentencePacked = packUnits(sentences, MAX_MESSAGE_LENGTH);
-      // Se alguma sentenca isolada ainda for > cap, cai pra word-split nela.
-      return sentencePacked.flatMap((chunk) =>
-        chunk.length <= MAX_MESSAGE_LENGTH
-          ? [chunk]
-          : packUnits(chunk.split(" "), MAX_MESSAGE_LENGTH),
+    const lines = msg.split("\n").filter((l) => l.trim().length > 0);
+    if (lines.length > 1) {
+      return packUnits(lines, MAX_MESSAGE_LENGTH, "\n").flatMap((chunk) =>
+        chunk.length <= MAX_MESSAGE_LENGTH ? [chunk] : splitLongLine(chunk),
       );
     }
 
-    // 2) Sentenca unica monstruosa — fallback pra palavras.
-    return packUnits(msg.split(" "), MAX_MESSAGE_LENGTH);
+    return splitLongLine(msg);
   });
 };
 
@@ -265,17 +261,17 @@ export const formatResponse = (aiResponseContent: string): string[] => {
       return [];
     }
 
-    const initialSplit = cleanedContent
-      .split("\n\n")
-      .filter((msg) => msg.trim().length > 0);
+    // O modelo separa cada bolha com uma linha em branco (`\n\n`) — ver
+    // WHATSAPP_FORMATTING_RULES nº 2. Respeitamos EXATAMENTE esses blocos:
+    // um `\n\n` = uma mensagem; `\n` simples fica dentro da bolha (cabecalho +
+    // lista, itens numerados). Nao reprocessamos por frase/tamanho aqui — so
+    // `enforceMaxLength` atua, e apenas em bloco que estoure o cap.
+    const blocks = cleanedContent
+      .split(/\n{2,}/)
+      .map((block) => block.trim())
+      .filter((block) => block.length > 0);
 
-    let messages: string[] = [];
-
-    if (initialSplit.length >= 2) {
-      messages = initialSplit;
-    } else {
-      messages = splitIntoParagraphs(cleanedContent);
-    }
+    const messages = blocks.length > 0 ? blocks : [cleanedContent.trim()];
 
     const finalMessages = enforceMaxLength(messages);
 
