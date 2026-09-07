@@ -32,7 +32,7 @@ export async function GET(
       .from("user_profiles")
       .select("id, full_name, email, phone, role, is_active")
       .eq("client_id", clientId)
-      .eq("role", "client_admin")
+      .order("role", { ascending: true }) // 'admin'/'client_admin' sort before 'user'
       .order("created_at", { ascending: true })
       .limit(1)
       .maybeSingle();

@@ -66,8 +66,7 @@ export async function GET(request: NextRequest) {
         SELECT up.email AS owner_email
         FROM public.user_profiles up
         WHERE up.client_id = c.id
-          AND up.role = 'client_admin'
-        ORDER BY up.created_at ASC
+        ORDER BY (up.role = 'client_admin') DESC, up.created_at ASC
         LIMIT 1
       ) owner ON TRUE
     `;
