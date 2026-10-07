@@ -81,40 +81,52 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Invalid 'from'/'to' range" }, { status: 400 });
   }
 
-  // Pull from the modern `messages` table joined with `clientes_whatsapp` for name.
-  // Direction in `messages` is stored as 'inbound'/'outbound' or 'in'/'out' depending
-  // on legacy data — normalize via CASE.
+  // Fonte: `n8n_chat_histories` (type 'human' = cliente → 'in', 'ai' = nós → 'out').
+  // A tabela `messages` só guarda o que ENVIAMOS (nunca tem 'incoming'), então
+  // usá-la deixava o digest cego para o que os clientes mandam.
+  // `phones` (CSV, opcional) restringe a contatos específicos e libera mais
+  // mensagens por contato (o resumo por cliente precisa do contexto completo).
+  const phonesParam = (searchParams.get("phones") || "")
+    .split(",")
+    .map((p) => p.replace(/\D+/g, ""))
+    .filter(Boolean);
+  const scoped = phonesParam.length > 0;
+  const maxPerContact = scoped ? 200 : MAX_MESSAGES_PER_CONTACT;
+  const maxRows = scoped ? 4000 : MAX_TOTAL_ROWS;
+
   const sql = `
     SELECT
-      m.phone::text AS phone,
-      m.content AS content,
-      CASE
-        WHEN LOWER(m.direction) IN ('in','inbound','incoming','received') THEN 'in'
-        WHEN LOWER(m.direction) IN ('out','outbound','outgoing','sent') THEN 'out'
-        ELSE 'out'
-      END AS direction,
-      m."timestamp" AS ts,
-      m.transcription AS transcription,
+      h.session_id::text AS phone,
+      COALESCE(h.message->>'content', '') AS content,
+      CASE WHEN h.message->>'type' = 'human' THEN 'in' ELSE 'out' END AS direction,
+      h.created_at AS ts,
+      h.transcription AS transcription,
       c.nome AS contact_name
-    FROM messages m
+    FROM n8n_chat_histories h
     LEFT JOIN clientes_whatsapp c
-      ON CAST(c.telefone AS TEXT) = m.phone::text
-     AND c.client_id = m.client_id
-    WHERE m.client_id = $1
-      AND m."timestamp" >= $2
-      AND m."timestamp" <  $3
-      AND m.content IS NOT NULL
-    ORDER BY m."timestamp" ASC
+      ON CAST(c.telefone AS TEXT) = h.session_id::text
+     AND c.client_id = h.client_id
+    WHERE h.client_id = $1
+      AND h.created_at >= $2
+      AND h.created_at <  $3
+      AND ($5::text[] IS NULL OR h.session_id::text = ANY($5::text[]))
+    ORDER BY h.created_at ASC
     LIMIT $4
   `;
 
-  const result = await query<Row>(sql, [clientId, fromDate.toISOString(), toDate.toISOString(), MAX_TOTAL_ROWS]);
+  const result = await query<Row>(sql, [
+    clientId,
+    fromDate.toISOString(),
+    toDate.toISOString(),
+    maxRows,
+    scoped ? phonesParam : null,
+  ]);
 
   const byPhone = new Map<string, ConversationOut>();
   for (const r of result.rows) {
     const phone = r.phone;
     const text = r.transcription ? `[áudio] ${r.transcription}` : r.content;
-    const clean = truncate(text, PREVIEW_CHARS);
+    const clean = truncate(text, scoped ? 600 : PREVIEW_CHARS);
     if (!clean) continue;
 
     let conv = byPhone.get(phone);
@@ -138,9 +150,9 @@ export async function GET(request: NextRequest) {
     else conv.outbound += 1;
     conv.lastAt = r.ts;
     conv.lastDirection = r.direction;
-    if (conv.messages.length < MAX_MESSAGES_PER_CONTACT) {
-      conv.messages.push({ direction: r.direction, ts: r.ts, content: clean });
-    }
+    // Mantém as mais RECENTES (as linhas vêm em ordem crescente).
+    conv.messages.push({ direction: r.direction, ts: r.ts, content: clean });
+    if (conv.messages.length > maxPerContact) conv.messages.shift();
   }
 
   // Build a short preview (last 1-2 messages) for each conversation.
@@ -162,7 +174,7 @@ export async function GET(request: NextRequest) {
     totals: {
       conversations: conversations.length,
       messages: totalMessages,
-      truncated: result.rows.length >= MAX_TOTAL_ROWS,
+      truncated: result.rows.length >= maxRows,
     },
     conversations,
   });

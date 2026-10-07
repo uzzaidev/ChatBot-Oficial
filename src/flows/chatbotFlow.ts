@@ -621,12 +621,63 @@ export const processChatbotMessage = async (
             ? "[Figurinha recebida]"
             : parsedMessage.content || "";
 
+        // Guarda o arquivo da mídia (só download + storage; sem IA e sem
+        // enviar nada) para que o conteúdo não se perca com o bot pausado.
+        // A transcrição dos áudios é feita fora daqui (app financeiro).
+        let pausedMediaMetadata: StoredMediaMetadata | undefined;
+        const mediaType = parsedMessage.type;
+        if (
+          (mediaType === "audio" ||
+            mediaType === "image" ||
+            mediaType === "document" ||
+            mediaType === "sticker") &&
+          parsedMessage.metadata?.id
+        ) {
+          try {
+            const buffer = await downloadMetaMedia(
+              parsedMessage.metadata.id,
+              config.apiKeys.metaAccessToken,
+            );
+            const fallback =
+              mediaType === "audio"
+                ? { mime: "audio/ogg", ext: "ogg" }
+                : mediaType === "document"
+                ? { mime: "application/pdf", ext: "pdf" }
+                : mediaType === "sticker"
+                ? { mime: "image/webp", ext: "webp" }
+                : { mime: "image/jpeg", ext: "jpg" };
+            const mimeType = parsedMessage.metadata.mimeType || fallback.mime;
+            const filename =
+              (mediaType === "document" && parsedMessage.metadata.filename) ||
+              `${mediaType}_${parsedMessage.phone}_${Date.now()}.${getExtensionFromMimeType(mimeType, fallback.ext)}`;
+            const url = await uploadFileToStorage(
+              buffer,
+              filename,
+              mimeType,
+              config.id,
+            );
+            pausedMediaMetadata = {
+              type: mediaType === "sticker" ? "image" : mediaType,
+              url,
+              mimeType,
+              filename,
+              size: buffer.length,
+            };
+          } catch (mediaError) {
+            console.warn(
+              "[chatbotFlow] Paused bot: media download/upload failed (saving placeholder only):",
+              mediaError,
+            );
+          }
+        }
+
         await saveChatMessage({
           phone: parsedMessage.phone,
           message: rawContent,
           type: "user",
           clientId: config.id,
           wamid: parsedMessage.messageId,
+          mediaMetadata: pausedMediaMetadata,
         });
         console.log(
           "💾 [chatbotFlow] Incoming message saved (no active agent).",
