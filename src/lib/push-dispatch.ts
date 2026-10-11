@@ -668,3 +668,55 @@ export const sendIncomingMessagePushWithTimeout = async (
     }),
   ]);
 };
+
+export interface HumanHandoffPushParams {
+  clientId: string;
+  phone: string;
+  customerName?: string;
+  excludeUserId?: string;
+}
+
+const dispatchHumanHandoff = async ({
+  clientId,
+  phone,
+  customerName,
+  excludeUserId,
+}: HumanHandoffPushParams): Promise<void> => {
+  try {
+    const supabase = createServiceRoleClient() as any;
+
+    const { data: users, error: usersError } = await supabase
+      .from("user_profiles")
+      .select("id")
+      .eq("client_id", clientId)
+      .eq("is_active", true);
+
+    if (usersError) {
+      console.warn("[handoff-push] Failed to fetch active users", usersError);
+      return;
+    }
+
+    const userIds = (Array.isArray(users) ? users : [])
+      .map((user: { id: string }) => user.id)
+      .filter((id: string) => id !== excludeUserId);
+
+    if (userIds.length === 0) return;
+
+    await sendHumanHandoffNotification(userIds, phone, customerName, clientId);
+  } catch (error) {
+    console.warn("[handoff-push] Failed to send handoff push", error);
+  }
+};
+
+// Never throws; bounded by timeout so callers can safely await.
+export const notifyHumanHandoff = async (
+  params: HumanHandoffPushParams,
+  timeoutMs = 4000,
+): Promise<void> => {
+  await Promise.race([
+    dispatchHumanHandoff(params),
+    new Promise<void>((resolve) => {
+      setTimeout(resolve, timeoutMs);
+    }),
+  ]);
+};

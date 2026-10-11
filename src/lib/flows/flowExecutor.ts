@@ -24,6 +24,7 @@ import {
   sendInteractiveList,
 } from "@/lib/whatsapp/interactiveMessages";
 import { META_BYTE_LIMITS, truncateToBytes } from "@/lib/whatsapp/byteLimits";
+import { notifyHumanHandoff } from "@/lib/push-dispatch";
 import {
   FlowBlock,
   FlowExecution,
@@ -1065,6 +1066,17 @@ export class FlowExecutor {
       console.log(
         `✅ [FlowExecutor] Status changed: fluxo_inicial → humano (${phone})`,
       );
+      const { data: contact } = await this.supabase
+        .from("clientes_whatsapp")
+        .select("nome")
+        .eq("telefone", phone)
+        .eq("client_id", clientId)
+        .maybeSingle();
+      await notifyHumanHandoff({
+        clientId,
+        phone,
+        customerName: contact?.nome || phone,
+      });
     }
 
     // 4. Mark flow as completed

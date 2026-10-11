@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createRouteHandlerClient } from "@/lib/supabase-server";
+import { notifyHumanHandoff } from "@/lib/push-dispatch";
 
 export const dynamic = "force-dynamic";
 
@@ -71,6 +72,14 @@ export async function PUT(
       updateData.transferred_by = null;
     }
 
+    // Status anterior (para notificar só na transição para atendimento humano)
+    const { data: previous } = await supabase
+      .from("clientes_whatsapp")
+      .select("status, nome")
+      .eq("telefone", phone)
+      .eq("client_id", profile.client_id)
+      .maybeSingle();
+
     // Atualizar status do cliente
     const { error: updateError } = await supabase
       .from("clientes_whatsapp")
@@ -83,6 +92,17 @@ export async function PUT(
         { error: "Erro ao atualizar status" },
         { status: 500 },
       );
+    }
+
+    const isHandoff = (value?: string | null) =>
+      value === "humano" || value === "transferido";
+    if (isHandoff(status) && !isHandoff(previous?.status)) {
+      await notifyHumanHandoff({
+        clientId: profile.client_id,
+        phone,
+        customerName: previous?.nome || phone,
+        excludeUserId: user.id,
+      });
     }
 
     return NextResponse.json({

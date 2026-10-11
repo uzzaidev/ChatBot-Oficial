@@ -72,7 +72,18 @@ export async function proxy(request: NextRequest) {
   // Refresh session (importante para manter usuário logado)
   const {
     data: { user },
+    error: userError,
   } = await supabase.auth.getUser();
+
+  // Erro de rede/transitório (não é "sem usuário"): não desloga, deixa passar
+  const isTransientAuthError =
+    !!userError &&
+    (userError.name === "AuthRetryableFetchError" ||
+      !userError.status ||
+      userError.status >= 500);
+  if (!user && isTransientAuthError) {
+    return response;
+  }
 
   let profile: {
     client_id: string | null;
@@ -93,9 +104,14 @@ export async function proxy(request: NextRequest) {
       .eq("id", user.id)
       .single();
 
+    // Falha ao carregar perfil (rede/timeout): não desloga, deixa passar
+    if (profileError && profileError.code !== "PGRST116") {
+      return response;
+    }
+
     profile = loadedProfile as any;
 
-    if (profileError || !profile || !profile.is_active) {
+    if (!profile || !profile.is_active) {
       await supabase.auth.signOut();
       const loginUrl = new URL("/login", request.url);
       return NextResponse.redirect(loginUrl);

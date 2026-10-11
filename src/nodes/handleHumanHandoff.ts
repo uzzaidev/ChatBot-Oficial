@@ -1,8 +1,7 @@
 import { query } from '@/lib/postgres'
 import { sendEmail } from '@/lib/gmail'
 import { ClientConfig } from '@/lib/types'
-import { createServiceRoleClient } from '@/lib/supabase'
-import { sendHumanHandoffNotification } from '@/lib/push-dispatch'
+import { notifyHumanHandoff } from '@/lib/push-dispatch'
 
 export interface HandleHumanHandoffInput {
   phone: string
@@ -36,18 +35,12 @@ export const handleHumanHandoff = async (input: HandleHumanHandoffInput): Promis
     throw new Error(`Failed to update customer status: ${errorMessage}`)
   }
 
-  // Tentar enviar email de notificação (OPCIONAL - não deve quebrar o handoff se falhar)
+  // Email opcional - falha ou falta de config não bloqueia o push
   try {
-    // Usar notificationEmail do config do cliente (ou fallback para env)
     const notificationEmail = config.notificationEmail || process.env.GMAIL_USER
-    const hasGmailConfig = notificationEmail && process.env.GMAIL_APP_PASSWORD
 
-    if (!hasGmailConfig) {
-      return
-    }
-
-    const emailSubject = 'Novo Lead aguardando contato'
-    const emailBody = `Novo lead aguardando atendimento no WhatsApp.
+    if (notificationEmail && process.env.GMAIL_APP_PASSWORD) {
+      const emailBody = `Novo lead aguardando atendimento no WhatsApp.
 
 Nome: ${customerName}
 Telefone: ${phone}
@@ -55,37 +48,16 @@ ${reason ? `Motivo: ${reason}` : ''}
 
 Por favor, entre em contato o mais breve possível.`
 
-    await sendEmail(
-      notificationEmail, // 🔐 Usa email do config do cliente
-      emailSubject,
-      emailBody.replace(/\n/g, '<br>')
-    )
-
+      await sendEmail(
+        notificationEmail,
+        'Novo Lead aguardando contato',
+        emailBody.replaceAll('\n','<br>')
+      )
+    }
   } catch (emailError) {
     // NÃO lança erro - handoff deve continuar mesmo se email falhar
   }
 
-  // Tentar enviar push crítico para usuários ativos do cliente
-  // (não pode quebrar o handoff se falhar)
-  try {
-    const supabase = createServiceRoleClient() as any
-
-    const { data: users, error: usersError } = await supabase
-      .from('user_profiles')
-      .select('id')
-      .eq('client_id', config.id)
-      .eq('is_active', true)
-
-    if (usersError) {
-      console.warn('[handoff-push] Failed to fetch active users', usersError)
-      return
-    }
-
-    if (users && users.length > 0) {
-      const userIds = users.map((user: { id: string }) => user.id)
-      await sendHumanHandoffNotification(userIds, phone, customerName, config.id)
-    }
-  } catch (pushError) {
-    console.warn('[handoff-push] Failed to send handoff push notification', pushError)
-  }
+  // Push crítico para usuários ativos (nunca lança)
+  await notifyHumanHandoff({ clientId: config.id, phone, customerName })
 }
