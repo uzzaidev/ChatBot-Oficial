@@ -1,12 +1,7 @@
 import {
-  mapStripeSubscriptionStatus,
-  toClientPlanStatus,
-} from "@/lib/admin-helpers";
-import {
-  clearGracePeriod,
-  enforceNonPayment,
-  startGracePeriod,
-} from "@/lib/billing-lifecycle";
+  resolveClientIdByStripeCustomer,
+  syncPlatformSubscription,
+} from "@/lib/platform-subscription-sync";
 import { constructWebhookEvent } from "@/lib/stripe";
 import { createServiceClient } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
@@ -52,11 +47,6 @@ const getWebhookSecret = (): string => {
     );
   }
   return secret;
-};
-
-const unixToIso = (value?: number | null): string | null => {
-  if (!value || !Number.isFinite(value)) return null;
-  return new Date(value * 1000).toISOString();
 };
 
 const getSupabase = () => createServiceClient() as any;
@@ -108,96 +98,6 @@ const markWebhookEventFailed = async (eventId: string, message: string) => {
       processed_at: new Date().toISOString(),
     })
     .eq("stripe_event_id", eventId);
-};
-
-const resolveClientIdByStripeCustomer = async (
-  stripeCustomerId?: string | null,
-): Promise<string | null> => {
-  if (!stripeCustomerId) return null;
-
-  const supabase = getSupabase();
-  const { data } = await supabase
-    .from("platform_client_subscriptions")
-    .select("client_id")
-    .eq("stripe_customer_id", stripeCustomerId)
-    .maybeSingle();
-
-  return data?.client_id ?? null;
-};
-
-const resolveClientIdFromSubscription = async (
-  subscription: Stripe.Subscription,
-): Promise<string | null> => {
-  if (subscription.metadata?.client_id) {
-    return subscription.metadata.client_id;
-  }
-
-  const stripeCustomerId =
-    typeof subscription.customer === "string" ? subscription.customer : null;
-  return resolveClientIdByStripeCustomer(stripeCustomerId);
-};
-
-const upsertPlatformSubscription = async (
-  subscription: Stripe.Subscription,
-  forcedStatus?: string,
-) => {
-  const clientId = await resolveClientIdFromSubscription(subscription);
-  if (!clientId) {
-    logWarn("Could not map platform subscription to client", {
-      subscriptionId: subscription.id,
-      customer:
-        typeof subscription.customer === "string"
-          ? subscription.customer
-          : null,
-    });
-    return;
-  }
-
-  const supabase = getSupabase();
-  const stripeCustomerId =
-    typeof subscription.customer === "string" ? subscription.customer : "";
-  const firstItem = subscription.items.data[0];
-  const currentPeriodStart = firstItem?.current_period_start ?? null;
-  const currentPeriodEnd = firstItem?.current_period_end ?? null;
-  const normalizedStatus = mapStripeSubscriptionStatus(
-    forcedStatus ?? subscription.status,
-  );
-  const clientPlanStatus = toClientPlanStatus(
-    forcedStatus ?? subscription.status,
-  );
-
-  await supabase.from("platform_client_subscriptions").upsert(
-    {
-      client_id: clientId,
-      stripe_customer_id: stripeCustomerId,
-      stripe_subscription_id: subscription.id,
-      stripe_price_id: firstItem?.price?.id ?? null,
-      plan_name: "pro",
-      plan_amount: firstItem?.price?.unit_amount ?? 24900,
-      plan_currency:
-        firstItem?.price?.currency ?? subscription.currency ?? "brl",
-      plan_interval: firstItem?.price?.recurring?.interval ?? "month",
-      status: normalizedStatus,
-      trial_start: unixToIso(subscription.trial_start),
-      trial_end: unixToIso(subscription.trial_end),
-      current_period_start: unixToIso(currentPeriodStart),
-      current_period_end: unixToIso(currentPeriodEnd),
-      cancel_at_period_end: Boolean(subscription.cancel_at_period_end),
-      canceled_at: unixToIso(subscription.canceled_at),
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "client_id" },
-  );
-
-  await supabase
-    .from("clients")
-    .update({
-      plan_name: "pro",
-      plan_status: clientPlanStatus,
-      trial_ends_at: unixToIso(subscription.trial_end),
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", clientId);
 };
 
 const upsertInvoiceHistory = async (invoice: Stripe.Invoice) => {
@@ -263,55 +163,10 @@ const upsertInvoiceHistory = async (invoice: Stripe.Invoice) => {
       last_payment_at: paidAt,
       last_payment_amount: invoice.amount_paid ?? invoice.amount_due ?? 0,
       last_payment_status: invoice.status ?? "unknown",
-      status:
-        invoice.status === "paid"
-          ? "active"
-          : invoice.status === "open"
-          ? "past_due"
-          : undefined,
       updated_at: new Date().toISOString(),
     })
     .eq("client_id", clientId);
-
-  await supabase
-    .from("clients")
-    .update({
-      plan_status: invoice.status === "paid" ? "active" : "past_due",
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", clientId);
-};
-
-const setClientPlanStatusByCustomer = async (
-  stripeCustomerId: string | null,
-  status: "active" | "past_due" | "canceled",
-) => {
-  const clientId = await resolveClientIdByStripeCustomer(stripeCustomerId);
-  if (!clientId) {
-    logWarn("Could not map customer to client for plan status update", {
-      stripeCustomerId,
-      status,
-    });
-    return;
-  }
-
-  const supabase = getSupabase();
-  await supabase
-    .from("platform_client_subscriptions")
-    .update({
-      status,
-      updated_at: new Date().toISOString(),
-      canceled_at: status === "canceled" ? new Date().toISOString() : null,
-    })
-    .eq("client_id", clientId);
-
-  await supabase
-    .from("clients")
-    .update({
-      plan_status: status,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", clientId);
+  // Subscription/plan status comes only from syncPlatformSubscription
 };
 
 export async function POST(request: NextRequest) {
@@ -377,75 +232,27 @@ export async function POST(request: NextRequest) {
 
     switch (event.type) {
       case "customer.subscription.created":
+      case "customer.subscription.updated":
+      case "customer.subscription.deleted":
+      case "customer.subscription.paused":
       case "customer.subscription.resumed":
       case "customer.subscription.trial_will_end":
-        await upsertPlatformSubscription(
-          event.data.object as Stripe.Subscription,
+        await syncPlatformSubscription(
+          (event.data.object as Stripe.Subscription).id,
         );
         break;
 
-      case "customer.subscription.updated": {
-        const sub = event.data.object as Stripe.Subscription;
-        await upsertPlatformSubscription(sub);
-
-        // If subscription went past_due, start grace period
-        if (sub.status === "past_due") {
-          const cId = await resolveClientIdFromSubscription(sub);
-          if (cId) await startGracePeriod(cId, 7);
-        }
-        // If subscription is back to active, clear grace period
-        if (sub.status === "active") {
-          const cId = await resolveClientIdFromSubscription(sub);
-          if (cId) await clearGracePeriod(cId);
-        }
-        break;
-      }
-
-      case "customer.subscription.deleted": {
-        const deletedSub = event.data.object as Stripe.Subscription;
-        await upsertPlatformSubscription(deletedSub, "canceled");
-
-        // Enforce non-payment: suspend + disconnect WhatsApp
-        const clientIdForDelete = await resolveClientIdFromSubscription(
-          deletedSub,
-        );
-        if (clientIdForDelete) {
-          await enforceNonPayment(clientIdForDelete);
-          logInfo("Client WhatsApp disconnected after subscription deletion", {
-            clientId: clientIdForDelete,
-          });
-        }
-        break;
-      }
-
-      // Cobertura para nomenclaturas diferentes de eventos de invoice.
       case "invoice.payment_succeeded":
-      case "invoice.paid": {
-        const paidInvoice = event.data.object as Stripe.Invoice;
-        await upsertInvoiceHistory(paidInvoice);
-        // Payment succeeded → clear grace period
-        const paidCustomer =
-          typeof paidInvoice.customer === "string"
-            ? paidInvoice.customer
-            : null;
-        const paidClientId = await resolveClientIdByStripeCustomer(
-          paidCustomer,
-        );
-        if (paidClientId) await clearGracePeriod(paidClientId);
-        break;
-      }
-
+      case "invoice.paid":
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
         await upsertInvoiceHistory(invoice);
-        const failedCustomer =
-          typeof invoice.customer === "string" ? invoice.customer : null;
-        await setClientPlanStatusByCustomer(failedCustomer, "past_due");
-        // Start 7-day grace period
-        const failedClientId = await resolveClientIdByStripeCustomer(
-          failedCustomer,
-        );
-        if (failedClientId) await startGracePeriod(failedClientId, 7);
+        const invoiceSubscriptionId =
+          (invoice.parent?.subscription_details?.subscription as string | null) ??
+          null;
+        if (invoiceSubscriptionId) {
+          await syncPlatformSubscription(invoiceSubscriptionId);
+        }
         break;
       }
 
