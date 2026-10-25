@@ -62,22 +62,16 @@ export const createServerClient = async () => {
     supabaseAnonKey,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
+        getAll() {
+          return cookieStore.getAll()
         },
-        set(name: string, value: string, options) {
+        setAll(cookiesToSet) {
           try {
-            cookieStore.set({ name, value, ...options })
-          } catch (error) {
-            // Ignora erro em Server Components (cookies são read-only)
-            // Cookies são setados corretamente em Route Handlers
-          }
-        },
-        remove(name: string, options) {
-          try {
-            cookieStore.set({ name, value: '', ...options })
-          } catch (error) {
-            // Ignora erro em Server Components
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {
+            // Server Components: cookies são read-only (o proxy renova a sessão)
           }
         },
       },
@@ -170,14 +164,17 @@ export const createRouteHandlerClient = async (request?: Request) => {
     supabaseAnonKey,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
+        getAll() {
+          return cookieStore.getAll()
         },
-        set(name: string, value: string, options) {
-          cookieStore.set({ name, value, ...options })
-        },
-        remove(name: string, options) {
-          cookieStore.set({ name, value: '', ...options })
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {
+            // Server Components: cookies são read-only (o proxy renova a sessão)
+          }
         },
       },
     }

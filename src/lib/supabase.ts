@@ -61,21 +61,16 @@ export const createServerClient = async () => {
     supabaseAnonKey,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
+        getAll() {
+          return cookieStore.getAll()
         },
-        set(name: string, value: string, options: any) {
+        setAll(cookiesToSet: any[]) {
           try {
-            cookieStore.set({ name, value, ...options })
-          } catch (error) {
-            // Cookies podem não ser settable em alguns contextos (middleware, etc)
-          }
-        },
-        remove(name: string, options: any) {
-          try {
-            cookieStore.set({ name, value: '', ...options })
-          } catch (error) {
-            // Ignore
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {
+            // Server Components: cookies são read-only (o proxy renova a sessão)
           }
         },
       },
