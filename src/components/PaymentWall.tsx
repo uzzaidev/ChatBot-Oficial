@@ -30,6 +30,7 @@ interface BillingInfo {
     status: string;
     plan_name: string;
   } | null;
+  has_access?: boolean;
   role: string;
 }
 
@@ -42,13 +43,6 @@ const ALLOWED_ROUTES = [
 
 const isRouteAllowed = (pathname: string): boolean =>
   ALLOWED_ROUTES.some((r) => pathname.startsWith(r));
-
-const BLOCKED_STATUSES = new Set([
-  "pending_payment",
-  "suspended",
-  "canceled",
-  "incomplete",
-]);
 
 export function PaymentWall({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -87,9 +81,9 @@ export function PaymentWall({ children }: { children: React.ReactNode }) {
   // Allow certain routes (billing page itself, settings)
   if (isRouteAllowed(pathname)) return <>{children}</>;
 
-  // If subscription exists and is active/trial/past_due — allow through
+  // Access is decided server-side (src/lib/plan-access.ts)
   const status = billing?.subscription?.status;
-  if (status && !BLOCKED_STATUSES.has(status)) return <>{children}</>;
+  if (billing?.has_access) return <>{children}</>;
 
   // No subscription OR blocked status → normally show the payment wall.
   // On the native app (Capacitor iOS/Android) we MUST NOT surface external

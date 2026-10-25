@@ -16,6 +16,7 @@
 
 import { processChatbotMessage } from "@/flows/chatbotFlow";
 import { getClientConfig } from "@/lib/config";
+import { hasActivePlan } from "@/lib/plan-access";
 import { checkDuplicateMessage, markMessageAsProcessed } from "@/lib/dedup";
 import { createExecutionLogger } from "@/lib/logger";
 import { sendIncomingMessagePushWithTimeout } from "@/lib/push-dispatch";
@@ -243,6 +244,12 @@ export async function POST(
 
     if (config.status !== "active") {
       return new NextResponse("Client not active", { status: 403 });
+    }
+
+    // Sem plano ativo: ignora a mensagem (200 para a Meta nao reenviar)
+    if (!(await hasActivePlan(clientId))) {
+      console.warn(`[Webhook POST] Client ${clientId} blocked: no active plan`);
+      return new NextResponse("Plan inactive", { status: 200 });
     }
 
     // SECURITY FIX (VULN-012): Validar assinatura HMAC

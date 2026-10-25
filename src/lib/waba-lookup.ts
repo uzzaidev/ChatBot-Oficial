@@ -1,4 +1,5 @@
 import { getClientConfig } from "@/lib/config";
+import { hasActivePlan } from "@/lib/plan-access";
 import { get, setWithExpiry } from "@/lib/redis";
 import { createServiceRoleClient } from "@/lib/supabase";
 import type { ClientConfig } from "@/lib/types";
@@ -48,13 +49,9 @@ export const getClientByWABAId = async (
   }
 
   const typedClientRow = clientRow as { id: string; plan_status?: string | null };
-  const blockedPlanStatuses = new Set(["canceled", "suspended"]);
-  if (
-    typedClientRow.plan_status &&
-    blockedPlanStatuses.has(typedClientRow.plan_status)
-  ) {
+  if (!(await hasActivePlan(typedClientRow.id))) {
     console.log(
-      `[WABA Lookup] Client ${typedClientRow.id} blocked by plan status ${typedClientRow.plan_status} for WABA ${wabaId}`,
+      `[WABA Lookup] Client ${typedClientRow.id} blocked: no active plan (plan_status ${typedClientRow.plan_status}) for WABA ${wabaId}`,
     );
     return null;
   }

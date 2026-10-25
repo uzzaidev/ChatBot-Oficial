@@ -1,5 +1,6 @@
 import { centsToCurrency, normalizePlanStatus } from "@/lib/admin-helpers";
 import { getCurrentUserRole } from "@/lib/auth-helpers";
+import { isPlanActive } from "@/lib/plan-access";
 import { createServiceClient } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -60,6 +61,7 @@ export async function GET(request: NextRequest) {
           }
         : null,
       payments: payments ?? [],
+      has_access: isPlanActive(subscription?.status, clientRow?.grace_period_ends_at),
       role,
     });
   } catch (error: any) {

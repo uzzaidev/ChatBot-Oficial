@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 
     if (action === "grant") {
       // Upsert a manual subscription row (no Stripe IDs)
-      await supabase.from("platform_client_subscriptions").upsert(
+      const { error: overrideErr } = await supabase.from("platform_client_subscriptions").upsert(
         {
           client_id: clientId,
           plan_name: "manual_override",
@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
         },
         { onConflict: "client_id" },
       );
+      if (overrideErr) throw overrideErr;
 
       await supabase
         .from("clients")
