@@ -130,11 +130,36 @@ const parseTimeToMinutes = (time: string | null | undefined): number | null => {
   return hours * 60 + minutes;
 };
 
-const isInDNDPeriod = (
+// DND times are entered as local (Brazil) wall-clock time, but the server runs
+// in UTC, so getHours() shifted the window by 3h.
+// ponytail: fixed zone, store a per-user timezone if non-BR users appear
+const DND_TIMEZONE = "America/Sao_Paulo";
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+const localDayAndMinutes = (now: Date): { day: number; minutes: number } => {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: DND_TIMEZONE,
+      weekday: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    })
+      .formatToParts(now)
+      .map((p) => [p.type, p.value]),
+  );
+  return {
+    day: WEEKDAYS.indexOf(parts.weekday),
+    minutes: Number(parts.hour) * 60 + Number(parts.minute),
+  };
+};
+
+export const isInDNDPeriod = (
   dndEnabled: boolean,
   dndStartTime?: string | null,
   dndEndTime?: string | null,
   dndDays?: number[] | null,
+  now: Date = new Date(),
 ): boolean => {
   if (!dndEnabled) return false;
 
@@ -142,9 +167,7 @@ const isInDNDPeriod = (
   const end = parseTimeToMinutes(dndEndTime);
   if (start === null || end === null) return false;
 
-  const now = new Date();
-  const currentDay = now.getDay();
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const { day: currentDay, minutes: currentMinutes } = localDayAndMinutes(now);
 
   if (Array.isArray(dndDays) && dndDays.length > 0 && !dndDays.includes(currentDay)) {
     return false;

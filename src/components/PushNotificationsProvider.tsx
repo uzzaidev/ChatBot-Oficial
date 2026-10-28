@@ -14,15 +14,24 @@
 'use client'
 
 import { useEffect } from 'react'
-import { initPushNotifications, removePushNotificationListeners } from '@/lib/pushNotifications'
+import { initPushNotifications, removePushNotificationListeners, syncPushToken } from '@/lib/pushNotifications'
+import { createBrowserClient } from '@/lib/supabase-browser'
 
 export function PushNotificationsProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Inicializar push notifications apenas uma vez no mount
     initPushNotifications()
 
+    // Re-save the token on sign-in (login navigates client-side, no remount)
+    const {
+      data: { subscription },
+    } = createBrowserClient().auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN') void syncPushToken()
+    })
+
     // Cleanup: remover listeners quando componente desmonta
     return () => {
+      subscription.unsubscribe()
       removePushNotificationListeners()
     }
   }, [])

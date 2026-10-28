@@ -56,6 +56,23 @@ export const initPushNotifications = async () => {
 };
 
 /**
+ * Saves the current FCM token for the logged-in user. Call after sign-in:
+ * init runs once on app start, usually on /login with no user, and login
+ * navigates client-side, so without this the token was never stored.
+ */
+export const syncPushToken = async () => {
+  if (!Capacitor.isNativePlatform()) return;
+  try {
+    const { receive } = await FirebaseMessaging.checkPermissions();
+    if (receive !== "granted") return;
+    const { token } = await FirebaseMessaging.getToken();
+    if (token) await saveTokenToBackend(token);
+  } catch {
+    // Best effort
+  }
+};
+
+/**
  * Configura listeners de eventos de push notifications
  */
 const setupListeners = () => {
