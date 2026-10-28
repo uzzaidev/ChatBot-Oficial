@@ -642,10 +642,9 @@ function OnboardingContent() {
           return;
         }
         const data = await res.json();
-        const status = data.subscription?.status;
-        const paid =
-          status === "active" || status === "trialing" || status === "past_due";
-        setNeedsPayment(!paid);
+        // /api/billing normalizes "trialing" to "trial", so the old status list
+        // sent trial clients back to checkout (which then answered 409)
+        setNeedsPayment(!data.has_access);
       } catch {
         setNeedsPayment(true);
       } finally {
