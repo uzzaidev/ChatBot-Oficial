@@ -41,6 +41,11 @@ export const resolveClientIdByStripeCustomer = async (
   return data?.client_id ?? null;
 };
 
+const customerIdOf = (subscription: Stripe.Subscription): string | null =>
+  typeof subscription.customer === "string"
+    ? subscription.customer
+    : subscription.customer?.id ?? null;
+
 const resolveClientIdFromSubscription = async (
   subscription: Stripe.Subscription,
 ): Promise<string | null> => {
@@ -48,30 +53,39 @@ const resolveClientIdFromSubscription = async (
     return subscription.metadata.client_id;
   }
 
-  const stripeCustomerId =
-    typeof subscription.customer === "string" ? subscription.customer : null;
-  return resolveClientIdByStripeCustomer(stripeCustomerId);
+  const fromRow = await resolveClientIdByStripeCustomer(customerIdOf(subscription));
+  if (fromRow) return fromRow;
+
+  // Checkout subscriptions carry no client_id metadata, but the customer does
+  // (both checkout flows create it with metadata.client_id).
+  const customer = subscription.customer;
+  if (customer && typeof customer !== "string" && !("deleted" in customer && customer.deleted)) {
+    return (customer as Stripe.Customer).metadata?.client_id ?? null;
+  }
+  return null;
+};
+
+// Supabase returns errors instead of throwing; a swallowed error here meant the
+// webhook was marked processed and the payment never reached the database.
+const check = ({ error }: { error: any }, what: string) => {
+  if (error) throw new Error(`${what}: ${error.message ?? error}`);
 };
 
 export const upsertPlatformSubscription = async (
   subscription: Stripe.Subscription,
   forcedStatus?: string,
-) => {
+): Promise<string | null> => {
   const clientId = await resolveClientIdFromSubscription(subscription);
   if (!clientId) {
     console.warn("[platform-subscription-sync] Could not map platform subscription to client", {
       subscriptionId: subscription.id,
-      customer:
-        typeof subscription.customer === "string"
-          ? subscription.customer
-          : null,
+      customer: customerIdOf(subscription),
     });
-    return;
+    return null;
   }
 
   const supabase = getSupabase();
-  const stripeCustomerId =
-    typeof subscription.customer === "string" ? subscription.customer : "";
+  const stripeCustomerId = customerIdOf(subscription);
   const firstItem = subscription.items.data[0];
   const currentPeriodStart = firstItem?.current_period_start ?? null;
   const currentPeriodEnd = firstItem?.current_period_end ?? null;
@@ -82,7 +96,7 @@ export const upsertPlatformSubscription = async (
     forcedStatus ?? subscription.status,
   );
 
-  await supabase.from("platform_client_subscriptions").upsert(
+  const upserted = await supabase.from("platform_client_subscriptions").upsert(
     {
       client_id: clientId,
       stripe_customer_id: stripeCustomerId,
@@ -104,25 +118,31 @@ export const upsertPlatformSubscription = async (
     },
     { onConflict: "client_id" },
   );
+  check(upserted, "platform_client_subscriptions upsert");
 
-  await supabase
-    .from("clients")
-    .update({
-      plan_name: "pro",
-      plan_status: clientPlanStatus,
-      trial_ends_at: unixToIso(subscription.trial_end),
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", clientId);
+  check(
+    await supabase
+      .from("clients")
+      .update({
+        plan_name: "pro",
+        plan_status: clientPlanStatus,
+        trial_ends_at: unixToIso(subscription.trial_end),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", clientId),
+    "clients plan update",
+  );
+  return clientId;
 };
 
 export const syncPlatformSubscription = async (
   subscriptionId: string,
 ): Promise<void> => {
-  const subscription = await getStripeClient().subscriptions.retrieve(subscriptionId);
-  await upsertPlatformSubscription(subscription);
-
-  const clientId = await resolveClientIdFromSubscription(subscription);
+  const subscription = await getStripeClient().subscriptions.retrieve(
+    subscriptionId,
+    { expand: ["customer"] },
+  );
+  const clientId = await upsertPlatformSubscription(subscription);
   if (!clientId) return;
 
   if (subscription.status === "past_due" || subscription.status === "unpaid") {

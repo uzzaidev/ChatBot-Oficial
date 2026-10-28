@@ -128,6 +128,8 @@ export async function POST(request: NextRequest) {
       success_url: `${appUrl}${successPath}`,
       cancel_url: `${appUrl}${cancelPath}`,
       metadata: { client_id: clientId },
+      // Lets the webhook map the subscription to the client without a DB lookup
+      subscription_data: { metadata: { client_id: clientId } },
       allow_promotion_codes: true,
     };
 

@@ -51,18 +51,12 @@ const getWebhookSecret = (): string => {
 
 const getSupabase = () => createServiceClient() as any;
 
-const isWebhookEventAlreadyProcessed = async (eventId: string) => {
-  const supabase = getSupabase();
-  const { data } = await supabase
-    .from("webhook_events")
-    .select("id")
-    .eq("stripe_event_id", eventId)
-    .maybeSingle();
-
-  return Boolean(data?.id);
-};
-
-const createWebhookEventRecord = async (eventId: string, eventType: string) => {
+/**
+ * Claims the event for processing. Returns false for duplicates.
+ * An event whose previous attempt failed is reclaimed, so Stripe's retry is
+ * processed instead of being dropped as a duplicate.
+ */
+const claimWebhookEvent = async (eventId: string, eventType: string) => {
   const supabase = getSupabase();
   const { error } = await supabase.from("webhook_events").insert({
     stripe_event_id: eventId,
@@ -72,8 +66,16 @@ const createWebhookEventRecord = async (eventId: string, eventType: string) => {
   });
 
   if (!error) return true;
-  if (error.code === UNIQUE_VIOLATION_CODE) return false;
-  throw error;
+  if (error.code !== UNIQUE_VIOLATION_CODE) throw error;
+
+  const { data, error: reclaimError } = await supabase
+    .from("webhook_events")
+    .update({ status: "processing", error_message: null })
+    .eq("stripe_event_id", eventId)
+    .eq("status", "failed")
+    .select("id");
+  if (reclaimError) throw reclaimError;
+  return Boolean(data?.length);
 };
 
 const markWebhookEventDone = async (eventId: string) => {
@@ -138,7 +140,7 @@ const upsertInvoiceHistory = async (invoice: Stripe.Invoice) => {
       ? invoicePaymentIntent
       : invoicePaymentIntent?.id ?? null;
 
-  await supabase.from("platform_payment_history").upsert(
+  const history = await supabase.from("platform_payment_history").upsert(
     {
       client_id: clientId,
       platform_subscription_id: platformSubscription?.id ?? null,
@@ -156,8 +158,9 @@ const upsertInvoiceHistory = async (invoice: Stripe.Invoice) => {
     },
     { onConflict: "stripe_invoice_id" },
   );
+  if (history.error) throw new Error(`platform_payment_history upsert: ${history.error.message}`);
 
-  await supabase
+  const { error: lastPaymentError } = await supabase
     .from("platform_client_subscriptions")
     .update({
       last_payment_at: paidAt,
@@ -166,6 +169,7 @@ const upsertInvoiceHistory = async (invoice: Stripe.Invoice) => {
       updated_at: new Date().toISOString(),
     })
     .eq("client_id", clientId);
+  if (lastPaymentError) throw new Error(`last payment update: ${lastPaymentError.message}`);
   // Subscription/plan status comes only from syncPlatformSubscription
 };
 
@@ -210,14 +214,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    if (await isWebhookEventAlreadyProcessed(event.id)) {
-      logInfo("Duplicate event ignored", { eventId: event.id });
-      return NextResponse.json({ received: true, duplicate: true });
-    }
-
-    const created = await createWebhookEventRecord(event.id, event.type);
-    if (!created) {
-      logInfo("Duplicate event ignored after insert race", {
+    if (!(await claimWebhookEvent(event.id, event.type))) {
+      logInfo("Duplicate event ignored", {
         eventId: event.id,
         eventType: event.type,
       });
@@ -247,9 +245,16 @@ export async function POST(request: NextRequest) {
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
         await upsertInvoiceHistory(invoice);
-        const invoiceSubscriptionId =
-          (invoice.parent?.subscription_details?.subscription as string | null) ??
+        // `parent` exists from API 2025-03-31 on; older endpoint versions send
+        // `invoice.subscription` instead (payload shape follows the endpoint)
+        const rawSubscription =
+          invoice.parent?.subscription_details?.subscription ??
+          (invoice as any).subscription ??
           null;
+        const invoiceSubscriptionId: string | null =
+          typeof rawSubscription === "string"
+            ? rawSubscription
+            : rawSubscription?.id ?? null;
         if (invoiceSubscriptionId) {
           await syncPlatformSubscription(invoiceSubscriptionId);
         }
@@ -274,11 +279,11 @@ export async function POST(request: NextRequest) {
       error: error?.message ?? "unknown_error",
     });
 
-    // Mantem 200 para evitar retries agressivos em erros nao transitivos.
-    return NextResponse.json({
-      received: true,
-      failed: true,
-      error: error?.message ?? "unknown_error",
-    });
+    // 500 so Stripe retries (with backoff, up to 3 days). Returning 200 here
+    // lost payments: the event was never retried and the plan stayed blocked.
+    return NextResponse.json(
+      { received: false, error: error?.message ?? "unknown_error" },
+      { status: 500 },
+    );
   }
 }

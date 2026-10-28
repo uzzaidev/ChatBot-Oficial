@@ -25,7 +25,10 @@ export const isPlanActive = (
 
 export const hasActivePlan = async (clientId: string): Promise<boolean> => {
   const supabase = createServiceRoleClient() as any;
-  const [{ data: subscription }, { data: client }] = await Promise.all([
+  const [
+    { data: subscription, error: subscriptionError },
+    { data: client, error: clientError },
+  ] = await Promise.all([
     supabase
       .from("platform_client_subscriptions")
       .select("status")
@@ -37,6 +40,16 @@ export const hasActivePlan = async (clientId: string): Promise<boolean> => {
       .eq("id", clientId)
       .maybeSingle(),
   ]);
+
+  // Fail open on a DB error: the webhooks answer 200 when blocked, so failing
+  // closed would silently drop a paying client's messages for good.
+  if (subscriptionError || clientError) {
+    console.error("[plan-access] Plan lookup failed, allowing", clientId, {
+      subscriptionError,
+      clientError,
+    });
+    return true;
+  }
 
   return isPlanActive(subscription?.status, client?.grace_period_ends_at);
 };
