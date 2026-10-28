@@ -141,7 +141,10 @@ export function ConversationPageClient({
 
   // Quando filtro é "all", já temos todas as conversas — evitar chamada duplicada
   // Quando filtro é específico, buscar todas sem realtime (apenas para lookup)
-  const { conversations: filteredAllConversations } = useConversations({
+  const {
+    conversations: filteredAllConversations,
+    refetchSilent: refetchAllSilent,
+  } = useConversations({
     clientId,
     enableRealtime: false,
     limit: statusFilter === "all" ? 0 : 50,
@@ -460,8 +463,14 @@ export function ConversationPageClient({
                 {/* Status Toggle */}
                 <div className="w-full sm:w-auto">
                   <StatusToggle
+                    // key: remount per conversation so no status leaks between contacts
+                    key={phone}
                     phone={phone}
                     currentStatus={conversation.status}
+                    onChanged={() => {
+                      void refetchSilent();
+                      void refetchAllSilent();
+                    }}
                   />
                 </div>
               </div>

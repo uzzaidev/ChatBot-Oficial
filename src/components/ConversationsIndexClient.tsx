@@ -106,7 +106,10 @@ export function ConversationsIndexClient({
 
   // Quando filtro é "all", já temos todas as conversas — evitar chamada duplicada
   // Quando filtro é específico, buscar todas sem realtime (apenas para lookup da selecionada)
-  const { conversations: filteredAllConversations } = useConversations({
+  const {
+    conversations: filteredAllConversations,
+    refetchSilent: refetchAllSilent,
+  } = useConversations({
     clientId,
     enableRealtime: false,
     // Só buscar quando filtro NÃO é "all" (caso contrário "conversations" já tem tudo)
@@ -825,8 +828,14 @@ export function ConversationsIndexClient({
                   {/* Status Toggle */}
                   <div className="flex-shrink-0 ml-auto">
                     <StatusToggle
+                      // key: remount per conversation so no status leaks between contacts
+                      key={selectedPhone}
                       phone={selectedPhone}
                       currentStatus={selectedConversation.status}
+                      onChanged={() => {
+                        void refetchSilent();
+                        void refetchAllSilent();
+                      }}
                     />
                   </div>
                 </div>

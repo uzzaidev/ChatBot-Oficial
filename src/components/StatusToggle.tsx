@@ -24,6 +24,8 @@ import { useEffect, useState } from "react";
 interface StatusToggleProps {
   phone: string;
   currentStatus: string;
+  /** Called after a successful change so the parent refetches its conversation list */
+  onChanged?: () => void;
 }
 
 type StatusConfig = {
@@ -80,7 +82,11 @@ const defaultConfig: StatusConfig = {
   description: "Status desconhecido",
 };
 
-export const StatusToggle = ({ phone, currentStatus }: StatusToggleProps) => {
+export const StatusToggle = ({
+  phone,
+  currentStatus,
+  onChanged,
+}: StatusToggleProps) => {
   const [status, setStatus] = useState(currentStatus);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -113,6 +119,7 @@ export const StatusToggle = ({ phone, currentStatus }: StatusToggleProps) => {
       }
 
       setStatus(newStatus);
+      onChanged?.();
       router.refresh();
 
       toast({
