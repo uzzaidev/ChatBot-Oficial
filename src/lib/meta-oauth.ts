@@ -128,16 +128,22 @@ export const checkTokenPermissions = async (
  */
 export const fetchWABADetails = async (
   accessToken: string,
+  // IDs reported by the Embedded Signup popup (WA_EMBEDDED_SIGNUP message).
+  // They identify exactly what the user picked; discovery below takes the
+  // first business/WABA/phone, which is wrong for accounts with several.
+  hints: { wabaId?: string | null; phoneNumberId?: string | null; businessId?: string | null } = {},
 ): Promise<WABADetails> => {
   try {
+    let businessId = hints.businessId ?? "";
+    let wabaId = hints.wabaId ?? "";
+
     // 0. Check actual permissions
-    const permissions = await checkTokenPermissions(accessToken);
+    const permissions = wabaId ? [] : await checkTokenPermissions(accessToken);
     const hasBusinessManagement = permissions.includes("business_management");
 
-    let businessId = "";
-    let wabaId = "";
-
-    if (hasBusinessManagement) {
+    if (wabaId) {
+      console.log("[Meta OAuth] Using WABA from Embedded Signup session:", wabaId);
+    } else if (hasBusinessManagement) {
       // Strategy A: via /me/businesses (requires business_management)
       console.log("[Meta OAuth] Using business_management strategy");
 
@@ -280,7 +286,8 @@ export const fetchWABADetails = async (
       );
     }
 
-    const phone = phones[0];
+    const phone =
+      phones.find((p: { id: string }) => p.id === hints.phoneNumberId) ?? phones[0];
 
     return {
       wabaId,

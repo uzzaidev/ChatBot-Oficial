@@ -16,7 +16,7 @@ import {
   registerPhoneNumber,
   subscribeAppToWABA,
 } from "@/lib/meta-oauth";
-import { createServerClient } from "@/lib/supabase-server";
+import { createServerClient, createServiceClient } from "@/lib/supabase-server";
 import { createOrUpdateSecret, generateSecureToken } from "@/lib/vault";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { code, event_type = "FINISH", client_id: existingClientId } = body;
+    const { code, event_type = "FINISH" } = body;
 
     const isCoexistence =
       event_type === "FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING";
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     console.log("[Embedded Signup] Processing:", {
       event_type,
       isCoexistence,
-      hasClientId: !!existingClientId,
+      hasClientId: !!body.client_id,
       hasSessionWaba: !!body.waba_id,
     });
 
@@ -79,6 +79,19 @@ export async function POST(request: NextRequest) {
         { error: "Não autenticado. Faça login primeiro." },
         { status: 401 },
       );
+    }
+
+    // Fall back to the user's own client: without it the route tried to INSERT
+    // a new client with the user session, which RLS rejects (insert is
+    // service-role only) — Meta showed success and the token was never saved.
+    let existingClientId = body.client_id ?? null;
+    if (!existingClientId) {
+      const { data: profile } = await supabase
+        .from("user_profiles")
+        .select("client_id")
+        .eq("id", user.id)
+        .maybeSingle();
+      existingClientId = profile?.client_id ?? null;
     }
 
     // 3. Exchange code for access token
@@ -110,7 +123,11 @@ export async function POST(request: NextRequest) {
 
     // 5. Fetch WABA details (or use session data as hints)
     const { wabaId, phoneNumberId, displayPhone, businessId } =
-      await fetchWABADetails(accessToken);
+      await fetchWABADetails(accessToken, {
+        wabaId: body.waba_id,
+        phoneNumberId: body.phone_number_id,
+        businessId: body.business_id,
+      });
 
     console.log("[Embedded Signup] ✅ WABA details:", {
       wabaId,
@@ -120,16 +137,19 @@ export async function POST(request: NextRequest) {
     });
 
     // 6. Check if WABA already exists (on a different client)
-    const { data: wabaClient } = await supabase
+    // Service role: under RLS the user cannot see other tenants' rows, so the
+    // duplicate check never matched (read-only, id only)
+    const { data: wabaClient } = await (createServiceClient() as any)
       .from("clients")
-      .select("id, name")
+      .select("id")
       .eq("meta_waba_id", wabaId)
-      .single();
+      .maybeSingle();
 
     if (wabaClient && wabaClient.id !== existingClientId) {
       return NextResponse.json(
         {
-          error: `Este WhatsApp Business já está conectado ao cliente "${wabaClient.name}". Desconecte primeiro antes de reconectar.`,
+          error:
+            "Este WhatsApp Business já está conectado a outra conta. Desconecte primeiro antes de reconectar.",
           code: "WABA_ALREADY_CONNECTED",
         },
         { status: 409 },
