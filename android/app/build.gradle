@@ -13,19 +13,22 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace "com.uzzai.uzzapp"
-    compileSdk rootProject.ext.compileSdkVersion
+    namespace = "com.uzzai.uzzapp"
+    compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
         applicationId "com.uzzai.uzzapp"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 20
-        versionName "2.1.1"
+        // O CI (android-release.yml) passa -PversionCode/-PversionName, sem commit de bump.
+        // Build local sem -P usa os valores abaixo. Cada envio à Play precisa de versionCode
+        // MAIOR que o último (até 20 já usados). 21 / 2.2.0 = Capacitor 8 (03/11/2026).
+        versionCode project.hasProperty("versionCode") ? project.property("versionCode").toInteger() : 21
+        versionName project.hasProperty("versionName") ? project.property("versionName") : "2.2.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
-            ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
 
