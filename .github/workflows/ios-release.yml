@@ -1,32 +1,79 @@
 name: iOS Release
 
+# Build + archive + upload para o TestFlight (fastlane beta). Só dispara à mão.
+# O app usa server.url = https://uzzapp.uzzai.com.br (capacitor.config.ts): o JS vem
+# sempre do deploy web. Build verde aqui não substitui validar o deploy da Vercel junto.
+#
+# Cota: runner macOS conta 10x no Actions da conta uzzaidev (Free, dividida com
+# UzzOPS, Liga e Convoca). Por isso o timeout: job travado sem limite queima a cota.
+#
+# iOS segue em CocoaPods (Podfile + scripts/fix-ios-podfile-paths.mjs). Capacitor 8
+# usa SPM em projeto NOVO; projeto existente continua com CocoaPods sem problema.
+#
+# Pré-requisito: certificado e perfil gerados pelo ios-match-bootstrap.yml.
+# Secrets: APP_STORE_CONNECT_API_KEY_ID, APP_STORE_CONNECT_API_ISSUER_ID,
+#   APP_STORE_CONNECT_API_KEY_CONTENT, MATCH_PASSWORD, MATCH_GIT_BASIC_AUTHORIZATION,
+#   GOOGLE_SERVICE_INFO_PLIST_BASE64 (sem ele o app sai sem push; o job falha).
+
 on:
   workflow_dispatch:
     inputs:
       app_version:
-        description: "Versão do app (ex: 1.0.0)"
+        # A Apple só aceita versão MAIOR que a última aprovada. Em 03/11/2026 a última
+        # aprovada era 4.0.0 (a 2.2.0 foi recusada no upload); o Capacitor 8 subiu como
+        # 4.1.0. A numeração do iOS é separada da do Android (versionName 2.x).
+        description: "Versão do app (MARKETING_VERSION), maior que a última aprovada, ex: 4.1.0"
         required: true
-        default: "1.0.0"
+        default: "4.1.0"
       build_number:
         description: "Build number (inteiro crescente). Vazio = usa o run number do GitHub."
         required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-release
+  cancel-in-progress: false
 
 jobs:
   release:
     name: Build + TestFlight (sem Mac local — macos-26)
     runs-on: macos-26
+    timeout-minutes: 40
 
     steps:
-      - uses: actions/checkout@v4
+      # Entradas vão para o xcodebuild via fastlane: só número, nada de texto livre.
+      - name: Valida app_version e build_number
+        env:
+          APP_VERSION: ${{ github.event.inputs.app_version }}
+          BUILD_NUMBER_INPUT: ${{ github.event.inputs.build_number }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          if ! printf '%s' "$APP_VERSION" | grep -Eq '^[0-9]+(\.[0-9]+){1,2}$'; then
+            echo "::error::app_version inválido: use o formato 1.2 ou 1.2.3"
+            exit 1
+          fi
+          BUILD_NUMBER="${BUILD_NUMBER_INPUT:-$RUN_NUMBER}"
+          if ! printf '%s' "$BUILD_NUMBER" | grep -Eq '^[0-9]+$'; then
+            echo "::error::build_number inválido: use só número inteiro"
+            exit 1
+          fi
+          echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_ENV"
+          echo "BUILD_NUMBER=$BUILD_NUMBER" >> "$GITHUB_ENV"
 
-      - name: Select Xcode 26.5
-        run: sudo xcode-select -s /Applications/Xcode_26.5.app
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - uses: pnpm/action-setup@v4
+      - name: Select Xcode 26.6
+        run: sudo xcode-select -s /Applications/Xcode_26.6.app
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           version: 10
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "22"
           cache: "pnpm"
@@ -34,7 +81,7 @@ jobs:
       - name: Install JS dependencies
         run: pnpm install --frozen-lockfile
 
-      - uses: ruby/setup-ruby@v1
+      - uses: ruby/setup-ruby@7f797815d8adceb1c412e7abefdd1ab4abc47a5f # v1.335.0
         with:
           ruby-version: "3.3"
           bundler-cache: false
@@ -42,25 +89,22 @@ jobs:
       - name: Install fastlane
         run: bundle install --jobs 4 --retry 3
 
+      # Os secrets entram por env, nunca colados no script.
       - name: Restore GoogleService-Info.plist
+        env:
+          GOOGLE_SERVICE_INFO_PLIST_BASE64: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64 }}
         run: |
-          echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64 }}" | base64 --decode > ios/App/App/GoogleService-Info.plist
-
-      - name: Determine app version / build number
-        id: version
-        run: |
-          echo "app_version=${{ github.event.inputs.app_version }}" >> "$GITHUB_OUTPUT"
-          if [ -n "${{ github.event.inputs.build_number }}" ]; then
-            echo "build_number=${{ github.event.inputs.build_number }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "build_number=${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+          if [ -z "$GOOGLE_SERVICE_INFO_PLIST_BASE64" ]; then
+            echo "::error::Falta o secret GOOGLE_SERVICE_INFO_PLIST_BASE64: o app sairia sem push."
+            exit 1
           fi
+          printf '%s' "$GOOGLE_SERVICE_INFO_PLIST_BASE64" | base64 --decode > ios/App/App/GoogleService-Info.plist
 
       - name: Cache CocoaPods
-        uses: actions/cache@v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ios/App/Pods
-          key: pods-${{ runner.os }}-${{ hashFiles('ios/App/Podfile.lock') }}
+          key: pods-${{ runner.os }}-${{ hashFiles('ios/App/Podfile.lock', 'pnpm-lock.yaml') }}
 
       - name: cap copy ios (CAPACITOR_PLATFORM=ios)
         env:
@@ -68,6 +112,14 @@ jobs:
         run: |
           pnpm build:mobile
           pnpm exec cap copy ios
+
+      # Release nunca pode sair com a WebView inspecionável.
+      - name: Confere que a depuração da WebView está desligada
+        run: |
+          if grep -Eq '"webContentsDebuggingEnabled"[[:space:]]*:[[:space:]]*true' ios/App/App/capacitor.config.json; then
+            echo "::error::capacitor.config.ts liga webContentsDebuggingEnabled no release."
+            exit 1
+          fi
 
       - name: Fix Podfile pnpm paths
         run: node scripts/fix-ios-podfile-paths.mjs
@@ -83,8 +135,6 @@ jobs:
           APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
-          APP_VERSION: ${{ steps.version.outputs.app_version }}
-          BUILD_NUMBER: ${{ steps.version.outputs.build_number }}
         run: bundle exec fastlane beta
 
       - name: Cleanup GoogleService-Info.plist

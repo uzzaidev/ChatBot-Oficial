@@ -34,6 +34,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
+import { useKeyboardAwareViewport } from "@/hooks/useKeyboardAwareViewport";
 import {
   useCallback,
   useEffect,
@@ -63,6 +64,8 @@ export function ConversationsIndexClient({
 }: ConversationsIndexClientProps) {
   // Load and apply saved chat theme (bubble colors) on mount + react to dark/light mode changes
   useChatTheme();
+  // Container acompanha a área visível: o teclado não cobre o campo de mensagem.
+  useKeyboardAwareViewport();
 
   const [statusFilter, setStatusFilter] = useState<
     "all" | "bot" | "humano" | "transferido" | "fluxo_inicial"
@@ -467,7 +470,7 @@ export function ConversationsIndexClient({
     selectedConversationRawName || "Sem nome";
 
   return (
-    <div className="fixed inset-0 flex overflow-hidden bg-background">
+    <div className="fixed inset-x-0 top-[var(--app-offset-top,0px)] h-[var(--app-height,100dvh)] flex overflow-hidden bg-background">
       {/* Sidebar Desktop - Full Height */}
       <div
         className="hidden lg:flex flex-shrink-0 flex-col border-r border-border/50 bg-card/95 relative"
@@ -601,7 +604,7 @@ export function ConversationsIndexClient({
       </div>
 
       {/* Coluna Direita - Header + Chat */}
-      <div className="flex-1 flex flex-col overflow-hidden pt-[calc(var(--safe-area-inset-top)+8px)] pb-[calc(var(--safe-area-inset-bottom)+8px)] lg:pt-0 lg:pb-0">
+      <div className="flex-1 flex flex-col overflow-hidden pt-[calc(var(--safe-area-inset-top)+8px)] pb-[calc(var(--safe-area-inset-bottom)+8px)] [.keyboard-open_&]:pb-2 lg:pt-0 lg:pb-0">
         {/* Header - oculto em mobile quando conversa selecionada */}
         <div className={`relative ${selectedPhone ? "hidden lg:block" : ""}`}>
           <Button

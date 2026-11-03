@@ -1,13 +1,12 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
-// iOS: CapacitorCookies/CapacitorHttp intercept fetch and write cookies to the
-// native URLSession jar (HTTPCookieStorage), separate from the WKWebView's own
-// jar (WKWebsiteDataStore). Supabase's cookie-based session (@supabase/ssr) is
-// set by the WKWebView, so on iOS the native jar and the WebView jar diverge and
-// the session doesn't survive a relaunch. Android's WebView shares a single
-// cookie store, so it's unaffected. Build iOS with `CAPACITOR_PLATFORM=ios`.
-const isIosBuild = process.env.CAPACITOR_PLATFORM === 'ios';
-
+// CapacitorCookies/CapacitorHttp OFF on every platform (since 2026-11-03, Capacitor 8).
+// They intercept fetch/document.cookie and route them through the native cookie jar.
+// iOS: the native jar (HTTPCookieStorage) diverges from the WKWebView jar, so the
+// Supabase cookie session (@supabase/ssr) didn't survive a relaunch. UzzOPS, Liga and
+// Convoca hit the same class of bug ("login looks fine, next request goes back to
+// /login") and run with both off. The web app already works without them (browser and
+// iOS), so Android now uses the plain WebView cookie store too.
 const config: CapacitorConfig = {
   appId: 'com.uzzai.uzzapp',
   appName: 'UzzApp',
@@ -27,10 +26,10 @@ const config: CapacitorConfig = {
 
   plugins: {
     CapacitorCookies: {
-      enabled: !isIosBuild,
+      enabled: false,
     },
     CapacitorHttp: {
-      enabled: !isIosBuild,
+      enabled: false,
     },
     SplashScreen: {
       launchShowDuration: 2000,

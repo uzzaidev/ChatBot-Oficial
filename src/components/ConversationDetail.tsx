@@ -737,6 +737,34 @@ export const ConversationDetail = ({
     dateRefs.current.clear();
   }, [phone]);
 
+  // Teclado do celular: quando a área de mensagens encolhe (teclado abriu) e o
+  // usuário estava no fim da conversa, mantém a última mensagem à vista.
+  const lastViewportHeightRef = useRef(0);
+  useEffect(() => {
+    const scrollElement = scrollAreaRef.current?.querySelector<HTMLElement>(
+      "[data-radix-scroll-area-viewport]",
+    );
+    if (!scrollElement || typeof ResizeObserver === "undefined") return;
+
+    lastViewportHeightRef.current = scrollElement.clientHeight;
+
+    const observer = new ResizeObserver(() => {
+      const previousHeight = lastViewportHeightRef.current;
+      const currentHeight = scrollElement.clientHeight;
+      lastViewportHeightRef.current = currentHeight;
+
+      const wasAtBottom =
+        scrollElement.scrollHeight - scrollElement.scrollTop - previousHeight <
+        100;
+      if (currentHeight < previousHeight && wasAtBottom) {
+        scrollElement.scrollTop = scrollElement.scrollHeight;
+      }
+    });
+
+    observer.observe(scrollElement);
+    return () => observer.disconnect();
+  }, [phone, error]);
+
   // Group messages with date separators
   const messagesWithDates = useMemo(() => {
     const result: Array<

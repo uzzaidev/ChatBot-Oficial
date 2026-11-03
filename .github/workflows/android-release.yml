@@ -1,0 +1,148 @@
+name: Android Release (AAB assinado)
+
+# Gera o Android App Bundle assinado para a Play Console. Só dispara à mão.
+# O envio para a Play continua manual (Play Console -> Teste interno -> enviar o .aab),
+# igual ao UzzOPS e à Liga.
+#
+# Versão: entra pelos inputs (-PversionCode / -PversionName), sem commit de bump.
+# Cada envio à Play precisa de version_code MAIOR que o último (20 já foi usado).
+#
+# Secrets (keystore de produção do UzzApp, alias padrão "chatbot"):
+#   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS,
+#   ANDROID_KEY_PASSWORD
+# Keystore: perder o arquivo ou a senha = nunca mais atualizar o app com a mesma
+# identidade. Ele fica num cofre, nunca no repo. Este job grava e apaga no Cleanup.
+#
+# google-services.json já está versionado em android/app/ (config pública do Firebase).
+# O job confere no fim que o plugin do Google Services rodou: sem ele o app sai sem push.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_code:
+        description: "versionCode (inteiro, maior que o último enviado à Play)"
+        required: true
+      version_name:
+        description: "versionName, ex: 2.2.0"
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-release
+  cancel-in-progress: false
+
+jobs:
+  build_signed_aab:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+
+    steps:
+      - name: Valida version_code e version_name
+        env:
+          VERSION_CODE: ${{ github.event.inputs.version_code }}
+          VERSION_NAME: ${{ github.event.inputs.version_name }}
+        run: |
+          if ! printf '%s' "$VERSION_CODE" | grep -Eq '^[0-9]+$' || [ "$VERSION_CODE" -le 20 ]; then
+            echo "::error::version_code inválido: inteiro maior que 20"
+            exit 1
+          fi
+          if ! printf '%s' "$VERSION_NAME" | grep -Eq '^[0-9]+(\.[0-9]+){1,2}$'; then
+            echo "::error::version_name inválido: use o formato 2.2 ou 2.2.0"
+            exit 1
+          fi
+          echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
+          echo "VERSION_NAME=$VERSION_NAME" >> "$GITHUB_ENV"
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          version: 10
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: "temurin"
+          java-version: "21"
+          cache: "gradle"
+          cache-dependency-path: |
+            android/*.gradle
+            android/app/*.gradle
+            android/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Sync Capacitor
+        run: |
+          pnpm build:mobile
+          pnpm cap:sync:android
+
+      # Release nunca pode sair com a WebView inspecionável por USB (chrome://inspect).
+      - name: Confere que a depuração da WebView está desligada
+        run: |
+          if grep -Eq '"webContentsDebuggingEnabled"[[:space:]]*:[[:space:]]*true' android/app/src/main/assets/capacitor.config.json; then
+            echo "::error::capacitor.config.ts liga webContentsDebuggingEnabled no release. Remova a opção (o padrão do Capacitor só liga no debug)."
+            exit 1
+          fi
+
+      # Os secrets entram por env, nunca colados no script: senha com cifrão não quebra.
+      # android/app/build.gradle lê android/release.properties; storeFile é relativo a android/app.
+      - name: Restore keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KS_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KS_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          falta=""
+          [ -n "$ANDROID_KEYSTORE_BASE64" ] || falta="$falta ANDROID_KEYSTORE_BASE64"
+          [ -n "$KS_STORE_PASSWORD" ] || falta="$falta ANDROID_KEYSTORE_PASSWORD"
+          [ -n "$KS_KEY_ALIAS" ] || falta="$falta ANDROID_KEY_ALIAS"
+          [ -n "$KS_KEY_PASSWORD" ] || falta="$falta ANDROID_KEY_PASSWORD"
+          if [ -n "$falta" ]; then
+            echo "::error::Secrets faltando:$falta. Ver o topo deste workflow."
+            exit 1
+          fi
+          umask 077
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/uzzapp-release.jks
+          {
+            echo "storeFile=uzzapp-release.jks"
+            printf 'storePassword=%s\n' "$KS_STORE_PASSWORD"
+            printf 'keyAlias=%s\n' "$KS_KEY_ALIAS"
+            printf 'keyPassword=%s\n' "$KS_KEY_PASSWORD"
+          } > android/release.properties
+
+      - name: Build signed AAB
+        working-directory: android
+        run: chmod +x gradlew && ./gradlew bundleRelease --no-daemon -PversionCode="$VERSION_CODE" -PversionName="$VERSION_NAME"
+
+      - name: Confere que o push (Google Services) entrou no build
+        run: |
+          if ! find android/app/build -type d -name 'processReleaseGoogleServices' | grep -q .; then
+            echo "::error::A task processReleaseGoogleServices não rodou: o AAB sairia sem push."
+            exit 1
+          fi
+          echo "Google Services aplicado no release."
+
+      - name: Cleanup keystore
+        if: always()
+        run: rm -f android/app/uzzapp-release.jks android/release.properties
+
+      # Retenção curta: storage de artifact conta na cota da conta Free.
+      - name: Upload AAB
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: uzzapp-release-aab-${{ env.VERSION_CODE }}
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 7
+          if-no-files-found: error
