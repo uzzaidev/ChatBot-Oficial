@@ -30,6 +30,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
+import { useKeyboardAwareViewport } from "@/hooks/useKeyboardAwareViewport";
 import {
   memo,
   useCallback,
@@ -106,6 +107,9 @@ export function ConversationPageClient({
   phone,
   clientId,
 }: ConversationPageClientProps) {
+  // Container acompanha a área visível: o teclado não cobre o campo de mensagem.
+  useKeyboardAwareViewport();
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<
     "all" | "bot" | "humano" | "transferido" | "fluxo_inicial"
@@ -355,7 +359,7 @@ export function ConversationPageClient({
   );
 
   return (
-    <div className="fixed inset-0 flex overflow-hidden bg-background pt-[calc(var(--safe-area-inset-top)+8px)] pb-[calc(var(--safe-area-inset-bottom)+8px)] lg:pt-0 lg:pb-0">
+    <div className="fixed inset-x-0 top-[var(--app-offset-top,0px)] h-[var(--app-height,100dvh)] flex overflow-hidden bg-background pt-[calc(var(--safe-area-inset-top)+8px)] pb-[calc(var(--safe-area-inset-bottom)+8px)] [.keyboard-open_&]:pb-2 lg:pt-0 lg:pb-0">
       {/* Sidebar Desktop - Oculta em mobile (< lg) */}
       <div className="hidden lg:flex w-96 border-r border-border flex-col bg-card">
         {sidebarHeader}
