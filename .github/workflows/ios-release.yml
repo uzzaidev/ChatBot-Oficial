@@ -19,9 +19,12 @@ on:
   workflow_dispatch:
     inputs:
       app_version:
-        description: "Versão do app (MARKETING_VERSION), ex: 2.2.0"
+        # A Apple só aceita versão MAIOR que a última aprovada. Em 03/11/2026 a última
+        # aprovada era 4.0.0 (a 2.2.0 foi recusada no upload); o Capacitor 8 subiu como
+        # 4.1.0. A numeração do iOS é separada da do Android (versionName 2.x).
+        description: "Versão do app (MARKETING_VERSION), maior que a última aprovada, ex: 4.1.0"
         required: true
-        default: "1.0.0"
+        default: "4.1.0"
       build_number:
         description: "Build number (inteiro crescente). Vazio = usa o run number do GitHub."
         required: false
