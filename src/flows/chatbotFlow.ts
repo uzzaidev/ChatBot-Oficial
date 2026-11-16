@@ -4,6 +4,7 @@ import {
   resolveCanonicalOwnerPhone,
   routeMessageToFinanceiro,
 } from "@/lib/financeiro-bridge";
+import { decideUzzopsRoute, routeMessageToUzzops } from "@/lib/uzzops-bridge";
 import { resolvePolicy } from "@/lib/policy-engine";
 import {
   AIResponse,
@@ -373,6 +374,56 @@ export const processChatbotMessage = async (
           error: failureReason,
         };
       }
+    }
+
+    // NODE 2.2: UzzOPS Bridge
+    // UzzAI partners (UZZOPS_MEMBER_NUMBERS) writing to the UzzAI number
+    // (UZZOPS_CLIENT_ID) talk to the UzzOPS Copiloto, not the sales bot.
+    // Runs BEFORE business hours (2.5) so the Copiloto also answers at night.
+    // "#bot ..." from a member falls through to the sales bot. Off when any
+    // UZZOPS_* env is empty. No phone or message body in these logs.
+    const uzzopsDecision = decideUzzopsRoute({
+      clientId: config.id,
+      phone: parsedMessage.phone,
+      type: parsedMessage.type,
+      content: parsedMessage.content,
+      interactiveType: parsedMessage.interactiveType,
+      interactiveResponseId: parsedMessage.interactiveResponseId,
+      mediaId: parsedMessage.metadata?.id,
+    });
+
+    if (
+      uzzopsDecision.action !== "skip" &&
+      uzzopsDecision.action !== "sales_bot"
+    ) {
+      logger.logNodeStart("2.2. UzzOPS Bridge", {
+        action: uzzopsDecision.action,
+        type: parsedMessage.type,
+      });
+
+      const uzzopsResult = await routeMessageToUzzops({
+        decision: uzzopsDecision,
+        phone: parsedMessage.phone,
+        messageId: parsedMessage.messageId,
+        config,
+      });
+
+      if (uzzopsResult.ok) {
+        logger.logNodeSuccess("2.2. UzzOPS Bridge", uzzopsResult);
+      } else {
+        logger.logNodeError(
+          "2.2. UzzOPS Bridge",
+          new Error(`uzzops_${uzzopsResult.outcome}`),
+        );
+      }
+      logger.finishExecution(uzzopsResult.ok ? "success" : "error");
+      await flushTrace();
+      return {
+        success: uzzopsResult.ok,
+        skipped: true,
+        reason: "uzzops_bridge",
+        ...(uzzopsResult.ok ? {} : { error: uzzopsResult.outcome }),
+      };
     }
 
     // NODE 2.5: Business Hours Check

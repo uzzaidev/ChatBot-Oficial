@@ -27,6 +27,10 @@ import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
+// The flow runs inside this request (see chatbotFlow). 120 s covers the
+// slowest path: audio download + Whisper + up to 58 s waiting for the UzzOPS
+// Copiloto (uzzops-bridge) + sending the reply.
+export const maxDuration = 120;
 
 const MIME_TO_EXTENSION: Record<string, string> = {
   "application/msword": "doc",
