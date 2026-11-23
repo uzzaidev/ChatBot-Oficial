@@ -220,7 +220,7 @@ export const parseUzzopsReply = (data: unknown): UzzopsReply | null => {
 
 export type UzzopsCallResult =
   | { outcome: "reply"; reply: UzzopsReply }
-  | { outcome: "config_error"; status: number }
+  | { outcome: "config_error"; status: number; detail?: string }
   | {
       outcome: "unavailable";
       reason: "timeout" | "network" | "http_error" | "invalid_reply";
@@ -229,6 +229,14 @@ export type UzzopsCallResult =
 
 // Contract: these mean "integration off / bad signature / bad request".
 const CONFIG_ERROR_STATUSES = new Set([400, 401, 404]);
+
+// UzzOPS answers config errors with { error: "<reason>" }: "assinatura inválida",
+// "assinatura vencida", "integração desligada", "pedido inválido". Short, no
+// personal data — safe to log, and it tells which side to fix.
+const readErrorDetail = async (res: Response): Promise<string | undefined> => {
+  const data = (await res.json().catch(() => null)) as { error?: unknown } | null;
+  return typeof data?.error === "string" ? data.error.slice(0, 80) : undefined;
+};
 
 export const callUzzops = async (params: {
   payload: UzzopsRequestPayload;
@@ -240,8 +248,10 @@ export const callUzzops = async (params: {
   const fetchImpl = params.fetchImpl ?? fetch;
   const timestamp = String((params.now ?? Date.now)());
   const rawBody = JSON.stringify(params.payload);
+  // Trim like UzzOPS does: a space or newline pasted into the Vercel value
+  // would otherwise make every signature differ (seen on 23/11/2026).
   const signature = signUzzopsRequest(
-    params.env.secret ?? "",
+    (params.env.secret ?? "").trim(),
     timestamp,
     rawBody,
   );
@@ -253,7 +263,7 @@ export const callUzzops = async (params: {
   );
 
   try {
-    const res = await fetchImpl(params.env.url ?? "", {
+    const res = await fetchImpl((params.env.url ?? "").trim(), {
       method: "POST",
       headers: {
         "content-type": "application/json",
@@ -265,7 +275,11 @@ export const callUzzops = async (params: {
     });
 
     if (CONFIG_ERROR_STATUSES.has(res.status)) {
-      return { outcome: "config_error", status: res.status };
+      return {
+        outcome: "config_error",
+        status: res.status,
+        detail: await readErrorDetail(res),
+      };
     }
     if (!res.ok) {
       return { outcome: "unavailable", reason: "http_error", status: res.status };
@@ -354,7 +368,17 @@ export interface RouteUzzopsResult {
   outcome: UzzopsRouteOutcome;
   replyType?: UzzopsReply["type"];
   status?: number;
+  /** UzzOPS's own reason on 400/401/404, e.g. "assinatura inválida". */
+  detail?: string;
 }
+
+/** One-line reason for the execution log, e.g. "uzzops_config_error 401: assinatura inválida". */
+export const describeUzzopsFailure = (result: RouteUzzopsResult): string =>
+  [
+    `uzzops_${result.outcome}`,
+    result.status ? ` ${result.status}` : "",
+    result.detail ? `: ${result.detail}` : "",
+  ].join("");
 
 type ForwardDecision = Exclude<
   UzzopsRouteDecision,
@@ -432,10 +456,15 @@ export const routeMessageToUzzops = async (params: {
   if (call.outcome === "config_error") {
     errorSafe(
       "UzzOPS refused the request (integration off, bad signature or bad request)",
-      { status: call.status },
+      { status: call.status, detail: call.detail },
       LOG_CONTEXT,
     );
-    return { ok: false, outcome: "config_error", status: call.status };
+    return {
+      ok: false,
+      outcome: "config_error",
+      status: call.status,
+      detail: call.detail,
+    };
   }
 
   if (call.outcome === "unavailable") {
