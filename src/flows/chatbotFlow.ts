@@ -4,7 +4,11 @@ import {
   resolveCanonicalOwnerPhone,
   routeMessageToFinanceiro,
 } from "@/lib/financeiro-bridge";
-import { decideUzzopsRoute, routeMessageToUzzops } from "@/lib/uzzops-bridge";
+import {
+  decideUzzopsRoute,
+  describeUzzopsFailure,
+  routeMessageToUzzops,
+} from "@/lib/uzzops-bridge";
 import { resolvePolicy } from "@/lib/policy-engine";
 import {
   AIResponse,
@@ -413,7 +417,7 @@ export const processChatbotMessage = async (
       } else {
         logger.logNodeError(
           "2.2. UzzOPS Bridge",
-          new Error(`uzzops_${uzzopsResult.outcome}`),
+          new Error(describeUzzopsFailure(uzzopsResult)),
         );
       }
       logger.finishExecution(uzzopsResult.ok ? "success" : "error");

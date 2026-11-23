@@ -4,6 +4,7 @@ import {
   brazilPhoneVariants,
   callUzzops,
   decideUzzopsRoute,
+  describeUzzopsFailure,
   isUzzopsMember,
   routeMessageToUzzops,
   signUzzopsRequest,
@@ -164,12 +165,37 @@ describe("signed request (callUzzops)", () => {
     expect(signUzzopsRequest(SECRET, "1", "{}")).not.toBe(signUzzopsRequest("x".repeat(40), "1", "{}"));
   });
 
-  it.each([400, 401, 404])("treats HTTP %i as a configuration error", async (status) => {
-    const fetchImpl = jest.fn(async () => jsonResponse({ error: "x" }, status));
+  it("ignores spaces and newlines around the secret and the URL, like UzzOPS (23/11 incident)", async () => {
+    const fetchImpl = jest.fn(async () => jsonResponse({ type: "noop" }));
+    await callUzzops({
+      payload,
+      env: { ...env, secret: `  ${SECRET}\n`, url: ` ${env.url}\n` },
+      fetchImpl,
+      now: () => 1_763_300_000_000,
+    });
+
+    const [url, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
+    const headers = init.headers as Record<string, string>;
+    expect(url).toBe(env.url);
+    expect(headers["x-uzzapp-signature"]).toBe(
+      createHmac("sha256", SECRET).update(`1763300000000.${init.body as string}`).digest("hex"),
+    );
+  });
+
+  it.each([400, 401, 404])("treats HTTP %i as a configuration error and keeps UzzOPS's reason", async (status) => {
+    const fetchImpl = jest.fn(async () => jsonResponse({ error: "assinatura inválida" }, status));
     await expect(callUzzops({ payload, env, fetchImpl })).resolves.toEqual({
       outcome: "config_error",
       status,
+      detail: "assinatura inválida",
     });
+  });
+
+  it("describes failures in one line for the execution log", () => {
+    expect(
+      describeUzzopsFailure({ ok: false, outcome: "config_error", status: 401, detail: "assinatura inválida" }),
+    ).toBe("uzzops_config_error 401: assinatura inválida");
+    expect(describeUzzopsFailure({ ok: false, outcome: "unavailable" })).toBe("uzzops_unavailable");
   });
 
   it("treats other HTTP errors and malformed replies as unavailable", async () => {
@@ -301,7 +327,12 @@ describe("routeMessageToUzzops", () => {
   it("stays silent on configuration errors (adjustment 2)", async () => {
     const fetchImpl = jest.fn(async () => jsonResponse({ error: "off" }, 404));
     const { senders, run } = route({ fetchImpl });
-    await expect(run()).resolves.toEqual({ ok: false, outcome: "config_error", status: 404 });
+    await expect(run()).resolves.toEqual({
+      ok: false,
+      outcome: "config_error",
+      status: 404,
+      detail: "off",
+    });
     expect(senders.sendText).not.toHaveBeenCalled();
   });
 
